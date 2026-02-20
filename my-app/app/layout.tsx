@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import { ConvexClientProvider } from "@/components/providers/ConvexProvider";
 import { Toaster } from "sonner";
+import { Providers } from "@/components/Providers";
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
 });
@@ -29,10 +29,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ConvexClientProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </ConvexClientProvider>
+            <Providers>
+              {children}
+              <Toaster richColors position="top-right" />
+            </Providers>
         </ThemeProvider>
       </body>
     </html>

@@ -35,20 +35,20 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: User }) {
-      if (user) token.id = user.id;
-      return token;
-    },
-    async session({ session, token }: { session: Session; token: JWT }) {
-      if (token?.id) {
-        session.user = {
-          ...session.user,
-          id: token.id,
-        };
-      }
-      return session;
-    },
+  async jwt({ token, user }) {
+    if (user) token.id = user.id;
+    return token;
   },
+  async session({ session, token }) {
+    if (token?.id) {
+      session.user = {
+        ...session.user,
+        id: token.id,
+      };
+    }
+    return session;
+  },
+},
   pages: {
     signIn: "/login",
   },
