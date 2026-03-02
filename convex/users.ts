@@ -47,9 +47,79 @@ export const getAllUsers = query({
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    // This function is meant to be called with a userId from the client
-    // For now, return null - the page should use useAuthStore instead
-    return null;
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) return null;
+    
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .first();
+    
+    return user;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CREATE OAUTH USER — for Google OAuth sign in
+// ─────────────────────────────────────────────────────────────────────────────
+export const createOAuthUser = mutation({
+  args: {
+    email: v.string(),
+    name: v.string(),
+    avatarUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, { email, name, avatarUrl }) => {
+    const emailLower = email.toLowerCase().trim();
+    
+    // Check if user already exists
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", emailLower))
+      .first();
+    
+    if (existing) {
+      // Update avatar if provided
+      if (avatarUrl && !existing.avatarUrl) {
+        await ctx.db.patch(existing._id, { avatarUrl, updatedAt: Date.now() });
+      }
+      return existing._id;
+    }
+    
+    // For new OAuth users, check if they are superadmin
+    const isSuperAdmin = emailLower === SUPERADMIN_EMAIL;
+    
+    // Get first organization or create error
+    const allOrgs = await ctx.db.query("organizations").collect();
+    
+    if (allOrgs.length === 0) {
+      throw new Error("No organization found. Please create an organization first.");
+    }
+    
+    const organizationId = allOrgs[0]._id;
+    
+    // Create new OAuth user
+    const userId = await ctx.db.insert("users", {
+      organizationId,
+      name,
+      email: emailLower,
+      passwordHash: "", // OAuth users don't have password
+      role: isSuperAdmin ? "superadmin" : "employee",
+      employeeType: "full_time",
+      department: isSuperAdmin ? "Management" : undefined,
+      position: isSuperAdmin ? "Administrator" : undefined,
+      isActive: true,
+      isApproved: isSuperAdmin, // Superadmin auto-approved
+      approvedAt: isSuperAdmin ? Date.now() : undefined,
+      travelAllowance: 20000,
+      paidLeaveBalance: 24,
+      sickLeaveBalance: 10,
+      familyLeaveBalance: 5,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      avatarUrl,
+    });
+    
+    return userId;
   },
 });
 
