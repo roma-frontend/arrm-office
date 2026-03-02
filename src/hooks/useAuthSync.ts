@@ -14,29 +14,43 @@ export function useAuthSync() {
 
   useEffect(() => {
     const syncAuth = async () => {
-      if (status === "loading") return;
+      console.log("[useAuthSync] Status:", status, "Session:", session?.user?.email);
+      
+      if (status === "loading") {
+        console.log("[useAuthSync] Still loading...");
+        return;
+      }
 
       // If logged out via NextAuth, logout from useAuthStore
       if (status === "unauthenticated") {
+        console.log("[useAuthSync] Unauthenticated - logging out");
         logout();
         return;
       }
 
       // If authenticated via NextAuth
       if (status === "authenticated" && session?.user) {
+        console.log("[useAuthSync] Authenticated! User:", session.user.email);
+        
         try {
           // Create/update user in Convex
+          console.log("[useAuthSync] Creating/updating user in Convex...");
           await createOAuthUser({
             email: session.user.email!,
             name: session.user.name || session.user.email!.split("@")[0],
             avatarUrl: session.user.image || undefined,
           });
 
+          console.log("[useAuthSync] User created/updated in Convex");
+
           // Wait a bit for Convex to update
           await new Promise(resolve => setTimeout(resolve, 1000));
 
           // Get the current user from Convex
+          console.log("[useAuthSync] Current user from Convex:", currentUser);
+          
           if (currentUser) {
+            console.log("[useAuthSync] Syncing to useAuthStore...");
             // Sync to useAuthStore
             login({
               id: currentUser._id,
@@ -49,9 +63,12 @@ export function useAuthSync() {
               employeeType: currentUser.employeeType,
               organizationId: currentUser.organizationId,
             });
+            console.log("[useAuthSync] ✅ User logged into useAuthStore!");
+          } else {
+            console.log("[useAuthSync] ⚠️ No current user found in Convex");
           }
         } catch (error) {
-          console.error("Error syncing OAuth user:", error);
+          console.error("[useAuthSync] ❌ Error syncing OAuth user:", error);
         }
       }
     };
