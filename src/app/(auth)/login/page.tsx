@@ -75,6 +75,9 @@ export default function LoginPage() {
 
   return (
     <>
+      {/* OAuth Sync Loader */}
+      <OAuthSyncLoader />
+      
       {/* Onboarding Tour */}
       <OnboardingTour 
         steps={loginTourSteps} 

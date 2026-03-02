@@ -35,9 +35,13 @@ export function OAuthSyncLoader() {
   }, [status, isAuthenticated, pathname]);
 
   // Show loader during sync
+  console.log("[OAuthSyncLoader] Render - isSyncing:", isSyncing);
+  
   if (!isSyncing) {
     return null;
   }
+  
+  console.log("[OAuthSyncLoader] 🎉 Showing loader!");
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-[#020817] via-[#0a0f2e] to-[#120820]">
