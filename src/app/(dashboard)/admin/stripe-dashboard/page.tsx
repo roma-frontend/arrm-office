@@ -1,8 +1,5 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
-
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

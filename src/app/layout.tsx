@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/lib/convex";
+import { SessionProvider } from '@/components/providers/SessionProvider'
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { I18nProvider } from "@/components/I18nProvider";
@@ -254,32 +255,34 @@ export default function RootLayout({
         />
       </head>
       <body className={`${ibmPlexSans.variable} ${montserrat.variable} ${workSans.variable} ${inter.variable} antialiased`}>
-        <I18nProvider>
-          <ConvexClientProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem={false}
-              disableTransitionOnChange
-            >
-              {children}
-              <Toaster
-                position="top-right"
-                closeButton
-                expand={false}
-                duration={4000}
-                toastOptions={{
-                  style: {
-                    background: 'var(--card)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--foreground)',
-                  },
-                  className: 'sonner-toast',
-                }}
-              />
-            </ThemeProvider>
-          </ConvexClientProvider>
-        </I18nProvider>
+        <SessionProvider>
+          <I18nProvider>
+            <ConvexClientProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="light"
+                enableSystem={false}
+                disableTransitionOnChange
+              >
+                {children}
+                <Toaster
+                  position="top-right"
+                  closeButton
+                  expand={false}
+                  duration={4000}
+                  toastOptions={{
+                    style: {
+                      background: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--foreground)',
+                    },
+                    className: 'sonner-toast',
+                  }}
+                />
+              </ThemeProvider>
+            </ConvexClientProvider>
+          </I18nProvider>
+        </SessionProvider>
       </body>
     </html>
   );
