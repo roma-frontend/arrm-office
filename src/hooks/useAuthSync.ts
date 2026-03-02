@@ -1,15 +1,16 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export function useAuthSync() {
   const { data: session, status } = useSession();
-  const { login, logout } = useAuthStore();
+  const { login, logout, isAuthenticated } = useAuthStore();
   const createOAuthUser = useMutation(api.users.createOAuthUser);
+  const sessionCreated = useRef(false);
   
   // Get user by email instead of using getCurrentUser
   const currentUser = useQuery(
