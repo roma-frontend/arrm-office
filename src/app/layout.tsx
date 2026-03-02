@@ -8,6 +8,7 @@ import {
 import "./globals.css";
 import { ConvexClientProvider } from "@/lib/convex";
 import { SessionProvider } from '@/components/providers/SessionProvider'
+import { AuthSyncProvider } from '@/components/providers/AuthSyncProvider'
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { I18nProvider } from "@/components/I18nProvider";
@@ -258,13 +259,14 @@ export default function RootLayout({
         <SessionProvider>
           <I18nProvider>
             <ConvexClientProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="light"
-                enableSystem={false}
-                disableTransitionOnChange
-              >
-                {children}
+              <AuthSyncProvider>
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="light"
+                  enableSystem={false}
+                  disableTransitionOnChange
+                >
+                  {children}
                 <Toaster
                   position="top-right"
                   closeButton
@@ -279,7 +281,8 @@ export default function RootLayout({
                     className: 'sonner-toast',
                   }}
                 />
-              </ThemeProvider>
+                </ThemeProvider>
+              </AuthSyncProvider>
             </ConvexClientProvider>
           </I18nProvider>
         </SessionProvider>
