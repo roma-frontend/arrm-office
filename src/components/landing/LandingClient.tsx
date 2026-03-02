@@ -179,9 +179,20 @@ function Navbar() {
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const [scrolled, setScrolled] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Track scroll position for navbar background effect
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleLogout = async () => {
@@ -203,16 +214,21 @@ function Navbar() {
       {/* nav-animate class uses CSS animation — zero JS cost vs framer-motion */}
       {/* fixed position to keep navbar visible on scroll */}
       <nav
-        className="nav-animate fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-8 lg:px-12 py-3 md:py-4"
+        className={`nav-animate fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 md:px-8 lg:px-12 transition-all duration-300 ${scrolled ? 'py-2 md:py-3 shadow-lg' : 'py-3 md:py-4'
+          }`}
         role="navigation"
         aria-label="Main navigation"
       >
         {/* Glassmorphism nav background - uses CSS variable */}
         <div
-          className="absolute inset-0 backdrop-blur-xl border-b"
+          className={`absolute inset-0 backdrop-blur-xl border-b transition-all duration-300 ${scrolled ? 'bg-opacity-95' : 'bg-opacity-80'
+            }`}
           style={{
-            background: 'var(--landing-navbar-bg)',
-            borderColor: 'var(--landing-card-border)'
+            background: scrolled
+              ? 'var(--landing-navbar-bg)'
+              : 'var(--landing-navbar-bg)',
+            borderColor: 'var(--landing-card-border)',
+            boxShadow: scrolled ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none'
           }}
         />
 
@@ -262,7 +278,7 @@ function Navbar() {
         <div className="relative flex items-center gap-2 md:gap-3">
           {/* Language Switcher */}
           {mounted && <LanguageSwitcher />}
-          
+
           {/* Theme Toggle Button */}
           {mounted && (
             <button
@@ -283,16 +299,10 @@ function Navbar() {
           )}
 
           {user ? (
-            // Logged in - show user menu
+            // Logged in - show user menu with DropdownMenu
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all outline-none focus:ring-2 focus:ring-blue-500/50"
-                  style={{ backgroundColor: 'var(--landing-card-bg)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--card-hover)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--landing-card-bg)'}
-                  aria-label="User menu"
-                >
+                <button className="flex items-center gap-2 rounded-xl px-3 py-2 transition-all outline-none focus-visible:outline-none focus:outline-none hover:bg-[var(--background-subtle)]">
                   <Avatar className="w-8 h-8">
                     {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
                     <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
@@ -300,50 +310,42 @@ function Navbar() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden sm:block text-left">
-                    <p className="text-xs font-semibold leading-tight" style={{ color: 'var(--landing-text-primary)' }}>{user.name}</p>
-                    <p className="text-[10px] capitalize" style={{ color: 'var(--landing-text-muted)', opacity: 0.85 }}>{user.role}</p>
+                    <p className="text-xs font-semibold text-[var(--text-primary)] leading-tight">{user.name}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] capitalize">{user.role}</p>
                   </div>
-                  <ChevronDown className="w-3 h-3 hidden sm:block" style={{ color: 'var(--landing-text-muted)' }} />
+                  <ChevronDown className="w-3 h-3 text-[var(--text-muted)] hidden sm:block" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-48 backdrop-blur-xl border shadow-xl rounded-xl"
-                style={{
-                  backgroundColor: 'var(--popover)',
-                  borderColor: 'var(--border)'
-                }}
+                sideOffset={8}
+                className="w-56 bg-[var(--card)] border-[var(--border)] shadow-xl"
               >
-                <DropdownMenuLabel className="text-xs font-semibold tracking-widest uppercase px-2 py-1.5" style={{ color: 'var(--muted-foreground)' }}>{t('landingExtra.myAccount')}</DropdownMenuLabel>
-                <DropdownMenuSeparator style={{ backgroundColor: 'var(--border)' }} />
+                <DropdownMenuLabel className="text-[var(--text-muted)] text-xs">
+                  {t('landingExtra.myAccount')}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-[var(--border)]" />
+                
                 <DropdownMenuItem
-                  className="cursor-pointer gap-2 rounded-lg transition-colors focus:outline-none focus-visible:outline-none outline-none border-0 focus:border-0 focus:ring-0 focus-visible:ring-0"
-                  style={{
-                    boxShadow: 'none',
-                    color: 'var(--foreground)'
-                  }}
+                  className="text-[var(--text-primary)] cursor-pointer hover:bg-[var(--background-subtle)] focus:bg-[var(--background-subtle)] gap-2"
                   onClick={() => router.push('/dashboard')}
                 >
-                  <UserIcon className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+                  <UserIcon className="w-4 h-4 text-[var(--primary)]" />
                   {t('nav.dashboard')}
                 </DropdownMenuItem>
+
                 <DropdownMenuItem
-                  className="cursor-pointer gap-2 rounded-lg transition-colors focus:outline-none focus-visible:outline-none outline-none border-0 focus:border-0 focus:ring-0 focus-visible:ring-0"
-                  style={{
-                    boxShadow: 'none',
-                    color: 'var(--foreground)'
-                  }}
+                  className="text-[var(--text-primary)] cursor-pointer hover:bg-[var(--background-subtle)] focus:bg-[var(--background-subtle)] gap-2"
                   onClick={() => router.push('/settings')}
                 >
-                  <SettingsIcon className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+                  <SettingsIcon className="w-4 h-4 text-[var(--primary)]" />
                   {t('nav.settings')}
                 </DropdownMenuItem>
-                <DropdownMenuSeparator style={{ backgroundColor: 'var(--border)' }} />
+
+                <DropdownMenuSeparator className="bg-[var(--border)]" />
+                
                 <DropdownMenuItem
-                  className="text-red-400 hover:text-red-300 focus:text-red-300 focus:outline-none focus-visible:outline-none outline-none cursor-pointer gap-2 rounded-lg transition-colors"
-                  style={{
-                    backgroundColor: 'transparent'
-                  }}
+                  className="text-red-400 cursor-pointer hover:bg-red-500/10 focus:bg-red-500/10 hover:text-red-300 gap-2"
                   onClick={handleLogout}
                 >
                   <LogOut className="w-4 h-4" />
@@ -428,7 +430,7 @@ function HeroSection() {
 
   return (
     <div
-      className="relative z-10 flex flex-col items-center text-center pt-56 pb-20 px-6 min-h-screen justify-center"
+      className="relative flex flex-col items-center text-center pb-20 px-6 min-h-screen justify-center"
       role="banner"
       aria-label="Hero section"
     >
@@ -617,7 +619,7 @@ function StatsSection() {
   }, []);
 
   return (
-    <section className="relative z-10 px-6 md:px-12 py-20" id="stats" aria-label="Platform statistics">
+    <section className="relative px-6 md:px-12 py-20" id="stats" aria-label="Platform statistics">
       <div
         ref={ref}
         className="text-center mb-12"
@@ -658,7 +660,7 @@ function FeaturesSection() {
   }, []);
 
   return (
-    <section id="features" className="relative z-10 px-6 md:px-12 py-20" aria-label="Platform features">
+    <section id="features" className="relative px-6 md:px-12 py-20" aria-label="Platform features">
       {/* Section header */}
       <div
         ref={ref}
@@ -696,7 +698,7 @@ function CTABanner() {
   const { user } = useAuthStore();
 
   return (
-    <section className="relative z-10 py-28" aria-label="Call to action">
+    <section className="relative py-28" aria-label="Call to action">
       {/* Static CSS glows — no JS animation needed */}
       <div className="absolute -top-24 right-0 w-[600px] h-[600px] rounded-full pointer-events-none orb-pulse-1"
         style={{ background: 'radial-gradient(circle, rgba(14,165,233,0.3) 0%, transparent 70%)', filter: 'blur(60px)' }} />
@@ -812,7 +814,7 @@ function Footer() {
   };
 
   return (
-    <footer className="relative z-10 border-t" style={{ borderColor: 'var(--landing-card-border)' }} role="contentinfo">
+    <footer className="relative border-t" style={{ borderColor: 'var(--landing-card-border)' }} role="contentinfo">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-16">
         {/* Main footer content */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
@@ -935,7 +937,7 @@ export default function LandingClient() {
       <Navbar />
 
       {/* Page content - add pt-16 to compensate for fixed navbar (h-16 = 64px) */}
-      <main className="relative z-10 pt-16">
+      <main className="relative pt-16">
         <HeroSection />
         <div className="section-lazy">
           <SocialProof />

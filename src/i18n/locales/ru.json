@@ -614,6 +614,13 @@
     "newRequest": "Новая заявка",
     "manageOrgs": "Управление организациями",
     "welcome": "Добро пожаловать",
+    "qualityOfWork": "Качество работы",
+    "efficiency": "Эффективность",
+    "teamwork": "Командная работа",
+    "initiative": "Инициативность",
+    "communication": "Коммуникация",
+    "reliability": "Надежность",
+    "settingsSubtitle": "Управляйте своей учетной записью, настройками и конфигурацией системы",
     "overview": "Обзор",
     "quickStats": "Быстрая статистика",
     "recentActivity": "Недавняя активность",
@@ -2622,6 +2629,16 @@
     "marketingDesc": "Используются для таргетированной рекламы",
     "preference": "Cookies предпочтений",
     "preferenceDesc": "Запоминают ваши настройки"
+  },
+  "mobileMenu": {
+    "home": "Главная",
+    "features": "Возможности",
+    "analytics": "Аналитика",
+    "pricing": "Цены",
+    "testimonials": "Отзывы",
+    "signIn": "Войти",
+    "getStartedFree": "Начать бесплатно",
+    "closeMenu": "Закрыть меню"
   },
   "keyboard": {
     "title": "Keyboard Shortcuts",

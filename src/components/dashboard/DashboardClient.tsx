@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import {
   Users, Clock, CheckCircle, UserCheck,
   Plus, CalendarDays, ArrowRight, TrendingUp, Building2,
+  CreditCard,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, Tooltip as RechartsTooltip,
@@ -132,7 +133,7 @@ export default function DashboardClient() {
       </div>
       <h2 className="text-xl font-semibold text-[var(--text-primary)]">{t('dashboard.convexNotDeployed')}</h2>
       <p className="text-[var(--text-muted)] text-sm max-w-sm">
-        Run <code className="bg-[var(--background-subtle)] px-2 py-0.5 rounded text-[#2563eb]">npx convex dev</code> in the terminal to connect to the database.
+        {t('dashboard.convexNotDeployed')}
       </p>
     </div>
   );
