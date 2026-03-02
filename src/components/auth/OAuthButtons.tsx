@@ -57,7 +57,7 @@ export function OAuthButtons() {
         <span>Continue with Google</span>
       </button>
 
-      {/* Microsoft */}
+      {/* Microsoft - Commented out until credentials are added
       <button
         type="button"
         onClick={() => handleOAuthSignIn("microsoft")}
@@ -82,8 +82,9 @@ export function OAuthButtons() {
         )}
         <span>Continue with Microsoft</span>
       </button>
+      */}
 
-      {/* GitHub */}
+      {/* GitHub - Commented out until credentials are added
       <button
         type="button"
         onClick={() => handleOAuthSignIn("github")}
@@ -104,6 +105,7 @@ export function OAuthButtons() {
         )}
         <span>Continue with GitHub</span>
       </button>
+      */}
     </div>
   );
 }

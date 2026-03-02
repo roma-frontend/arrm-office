@@ -11,15 +11,17 @@ export const { auth, signIn, signOut, store } = convexAuth({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
     }),
-    Microsoft({
-      clientId: process.env.AUTH_MICROSOFT_ID,
-      clientSecret: process.env.AUTH_MICROSOFT_SECRET,
-      tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || "common",
-    }),
-    GitHub({
-      clientId: process.env.AUTH_GITHUB_ID,
-      clientSecret: process.env.AUTH_GITHUB_SECRET,
-    }),
+    // Uncomment when you have Microsoft credentials
+    // Microsoft({
+    //   clientId: process.env.AUTH_MICROSOFT_ID,
+    //   clientSecret: process.env.AUTH_MICROSOFT_SECRET,
+    //   tenantId: process.env.AUTH_MICROSOFT_TENANT_ID || "common",
+    // }),
+    // Uncomment when you have GitHub credentials
+    // GitHub({
+    //   clientId: process.env.AUTH_GITHUB_ID,
+    //   clientSecret: process.env.AUTH_GITHUB_SECRET,
+    // }),
   ],
   callbacks: {
     async createOrUpdateUser(ctx, args) {
