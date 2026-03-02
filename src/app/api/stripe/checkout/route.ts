@@ -8,6 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const PLANS: Record<string, { priceId: string; name: string }> = {
   // Starter is now free, so no Stripe checkout needed
   professional: { priceId: process.env.STRIPE_PRICE_PROFESSIONAL!, name: 'Professional' },
+  enterprise: { priceId: process.env.STRIPE_PRICE_ENTERPRISE!, name: 'Enterprise' },
 };
 
 export async function POST(req: NextRequest) {

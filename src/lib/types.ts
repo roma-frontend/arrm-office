@@ -12,6 +12,18 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   doctor: "Doctor Visit",
 };
 
+// Helper function to get translated leave type labels
+export function getLeaveTypeLabel(type: LeaveType, t: (key: string) => string): string {
+  const labelKeys: Record<LeaveType, string> = {
+    paid: "leaveTypes.paid",
+    unpaid: "leaveTypes.unpaid",
+    sick: "leaveTypes.sick",
+    family: "leaveTypes.family",
+    doctor: "leaveTypes.doctor",
+  };
+  return t(labelKeys[type]);
+}
+
 export const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
   paid: "#2563eb",
   unpaid: "#f59e0b",

@@ -9,7 +9,6 @@ import "./globals.css";
 import { ConvexClientProvider } from "@/lib/convex";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import CookieBanner from "@/components/CookieBanner";
 import { I18nProvider } from "@/components/I18nProvider";
 
 // Corporate & Professional - IBM PLEX SANS
@@ -278,7 +277,6 @@ export default function RootLayout({
                   className: 'sonner-toast',
                 }}
               />
-              <CookieBanner />
             </ThemeProvider>
           </ConvexClientProvider>
         </I18nProvider>

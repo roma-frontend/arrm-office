@@ -235,7 +235,7 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
-                  placeholder="вЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂў"
+                  placeholder="••••••••"
                   className="w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-all"
                   style={{
                     background: "var(--input)",

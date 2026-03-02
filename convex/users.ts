@@ -702,3 +702,35 @@ export const migrateFaceToAvatar = mutation({
     return { migrated: count };
   },
 });
+
+// List all users - SCOPED TO ORGANIZATION (admin sees only their org, superadmin sees all)
+export const listAll = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .first();
+    
+    if (!currentUser) return [];
+    
+    // Superadmin sees all users across all organizations
+    if (currentUser.email.toLowerCase() === SUPERADMIN_EMAIL) {
+      return await ctx.db.query("users").collect();
+    }
+    
+    // Admin sees only users from their organization
+    if (currentUser.role === "admin") {
+      if (!currentUser.organizationId) return [];
+      
+      return await ctx.db
+        .query("users")
+        .withIndex("by_org", (q) => q.eq("organizationId", currentUser.organizationId))
+        .collect();
+    }
+    
+    return [];
+  },
+});

@@ -10,20 +10,41 @@ import type { Id } from "../../../convex/_generated/dataModel";
 type Status = "pending" | "in_progress" | "review" | "completed" | "cancelled";
 type Priority = "low" | "medium" | "high" | "urgent";
 
-const STATUS_CONFIG: Record<Status, { label: string; color: string; bg: string; dot: string }> = {
-  pending:     { label: "Pending",     color: "text-[var(--text-muted)]", bg: "bg-[var(--background-subtle)]", dot: "bg-[var(--text-muted)]" },
-  in_progress: { label: "In Progress", color: "text-blue-400",            bg: "bg-blue-500/10",                dot: "bg-blue-500" },
-  review:      { label: "In Review",   color: "text-amber-400",           bg: "bg-amber-500/10",               dot: "bg-amber-500" },
-  completed:   { label: "Completed",   color: "text-emerald-400",         bg: "bg-emerald-500/10",             dot: "bg-emerald-500" },
-  cancelled:   { label: "Cancelled",   color: "text-rose-400",            bg: "bg-rose-500/10",                dot: "bg-rose-400" },
+const STATUS_STYLES: Record<Status, { color: string; bg: string; dot: string }> = {
+  pending:     { color: "text-[var(--text-muted)]", bg: "bg-[var(--background-subtle)]", dot: "bg-[var(--text-muted)]" },
+  in_progress: { color: "text-blue-400",            bg: "bg-blue-500/10",                dot: "bg-blue-500" },
+  review:      { color: "text-amber-400",           bg: "bg-amber-500/10",               dot: "bg-amber-500" },
+  completed:   { color: "text-emerald-400",         bg: "bg-emerald-500/10",             dot: "bg-emerald-500" },
+  cancelled:   { color: "text-rose-400",            bg: "bg-rose-500/10",                dot: "bg-rose-400" },
 };
 
-const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: string; icon: string }> = {
-  low:    { label: "Low",    color: "text-[var(--text-muted)]", bg: "bg-[var(--background-subtle)]", icon: "↓" },
-  medium: { label: "Medium", color: "text-blue-400",            bg: "bg-blue-500/10",                icon: "→" },
-  high:   { label: "High",   color: "text-orange-400",          bg: "bg-orange-500/10",              icon: "↑" },
-  urgent: { label: "Urgent", color: "text-rose-400",            bg: "bg-rose-500/10",                icon: "⚡" },
+const PRIORITY_STYLES: Record<Priority, { color: string; bg: string; icon: string }> = {
+  low:    { color: "text-[var(--text-muted)]", bg: "bg-[var(--background-subtle)]", icon: "↓" },
+  medium: { color: "text-blue-400",            bg: "bg-blue-500/10",                icon: "→" },
+  high:   { color: "text-orange-400",          bg: "bg-orange-500/10",              icon: "↑" },
+  urgent: { color: "text-rose-400",            bg: "bg-rose-500/10",                icon: "⚡" },
 };
+
+function getStatusLabel(status: Status, t: (key: string) => string): string {
+  const keys: Record<Status, string> = {
+    pending: "tasksClient.pending",
+    in_progress: "tasksClient.inProgress",
+    review: "tasksClient.inReview",
+    completed: "tasksClient.completed",
+    cancelled: "tasksClient.cancelled",
+  };
+  return t(keys[status]);
+}
+
+function getPriorityLabel(priority: Priority, t: (key: string) => string): string {
+  const keys: Record<Priority, string> = {
+    low: "tasksClient.low",
+    medium: "tasksClient.medium",
+    high: "tasksClient.high",
+    urgent: "tasksClient.urgent",
+  };
+  return t(keys[priority]);
+}
 
 // Status transitions available per role
 const EMPLOYEE_TRANSITIONS: Record<Status, Status[]> = {
@@ -85,8 +106,10 @@ export function TaskDetailModal({ task, currentUserId, userRole, onClose }: Prop
     markRead({ userId: currentUserId }).catch(() => {});
   }, []);
 
-  const statusCfg = STATUS_CONFIG[task.status as Status];
-  const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
+  const statusCfg = STATUS_STYLES[task.status as Status];
+  const priorityCfg = PRIORITY_STYLES[task.priority as Priority];
+  const statusLabel = getStatusLabel(task.status as Status, t);
+  const priorityLabel = getPriorityLabel(task.priority as Priority, t);
 
   const transitions = canManage
     ? MANAGER_TRANSITIONS[task.status as Status]
@@ -146,10 +169,10 @@ export function TaskDetailModal({ task, currentUserId, userRole, onClose }: Prop
               )}
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                  {statusCfg.label}
+                  {statusLabel}
                 </span>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                  {priorityCfg.icon} {priorityCfg.label}
+                  {priorityCfg.icon} {priorityLabel}
                 </span>
                 {deadlinePassed && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-500/80 text-white">⏰ Overdue</span>
@@ -228,7 +251,7 @@ export function TaskDetailModal({ task, currentUserId, userRole, onClose }: Prop
                   </select>
                 ) : (
                   <span className={`text-sm font-semibold px-3 py-1 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}>
-                    {priorityCfg.icon} {priorityCfg.label}
+                    {priorityCfg.icon} {priorityLabel}
                   </span>
                 )}
               </div>
@@ -265,7 +288,7 @@ export function TaskDetailModal({ task, currentUserId, userRole, onClose }: Prop
                 <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">Move To</h3>
                 <div className="flex flex-wrap gap-2">
                   {transitions.map(st => {
-                    const cfg = STATUS_CONFIG[st];
+                    const cfg = STATUS_STYLES[st];
                     return (
                       <button
                         key={st}
@@ -273,7 +296,7 @@ export function TaskDetailModal({ task, currentUserId, userRole, onClose }: Prop
                         className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border ${cfg.bg} ${cfg.color} border-current/20 hover:scale-105 transition-all shadow-sm`}
                       >
                         <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                        {cfg.label}
+                        {getStatusLabel(st, t)}
                       </button>
                     );
                   })}

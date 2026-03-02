@@ -122,71 +122,71 @@ export default function SettingsPage() {
   const tabs = [
     {
       value: "profile",
-      label: t('nav.profile'),
+      label: t('settings.profile'),
       icon: User,
-      description: "Personal information",
+      description: t('settings.profileDesc'),
     },
     {
       value: "productivity",
-      label: "Productivity",
+      label: t('settings.productivity'),
       icon: Zap,
-      description: "Focus & efficiency",
+      description: t('settings.productivityDesc'),
     },
     {
       value: "notifications",
-      label: "Notifications",
+      label: t('settings.notifications'),
       icon: Bell,
-      description: "Email & alerts",
+      description: t('settings.notificationsDesc'),
     },
     {
       value: "security",
-      label: "Security",
+      label: t('settings.security'),
       icon: Shield,
-      description: "Authentication",
+      description: t('settings.securityDesc'),
     },
     {
       value: "advanced-security",
-      label: "Privacy",
+      label: t('settings.privacy'),
       icon: ShieldCheck,
-      description: "2FA & sessions",
+      description: t('settings.privacyDesc'),
     },
     {
       value: "appearance",
-      label: "Appearance",
+      label: t('settings.appearance'),
       icon: Palette,
-      description: "Theme",
+      description: t('settings.appearanceDesc'),
     },
     {
       value: "dashboard",
       label: t('nav.dashboard'),
       icon: LayoutDashboard,
-      description: "Widgets",
+      description: t('settings.dashboardDesc'),
     },
     {
       value: "localization",
-      label: "Regional",
+      label: t('settings.regional'),
       icon: Globe,
-      description: "Language",
+      description: t('settings.regionalDesc'),
     },
     {
       value: "integrations",
-      label: "Integrations",
+      label: t('settings.integrations'),
       icon: Link2,
-      description: "Apps",
+      description: t('settings.integrationsDesc'),
     },
     {
       value: "billing",
-      label: "Billing",
+      label: t('settings.billing'),
       icon: CreditCard,
-      description: "Plans",
+      description: t('settings.billingDesc'),
     },
     ...(user?.role === "admin"
       ? [
           {
             value: "admin",
-            label: "Admin",
+            label: t('settings.admin'),
             icon: SettingsIcon,
-            description: "System settings",
+            description: t('settings.adminDesc'),
           },
         ]
       : []),
@@ -204,7 +204,7 @@ export default function SettingsPage() {
           <h2 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
             <SettingsIcon className="w-8 h-8 text-[var(--primary)]" />{t('nav.settings')}</h2>
           <p className="text-[var(--text-muted)] text-sm mt-2">
-            Manage your account, preferences, and system configuration
+            {t('dashboard.settingsSubtitle')}
           </p>
         </div>
       </div>

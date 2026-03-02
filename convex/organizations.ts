@@ -62,6 +62,45 @@ export const createOrganization = mutation({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SUPERADMIN ONLY: List all organizations (for subscription management)
+// ─────────────────────────────────────────────────────────────────────────────
+export const listAll = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .first();
+    
+    // Only superadmin can access payment/subscription features
+    const isSuperAdmin = currentUser?.email.toLowerCase() === SUPERADMIN_EMAIL;
+    
+    if (!currentUser || !isSuperAdmin) {
+      return [];
+    }
+
+    const orgs = await ctx.db.query("organizations").collect();
+
+    // Enrich with employee counts
+    return await Promise.all(
+      orgs.map(async (org) => {
+        const employees = await ctx.db
+          .query("users")
+          .withIndex("by_org", (q) => q.eq("organizationId", org._id))
+          .collect();
+
+        return {
+          ...org,
+          employeeCount: employees.length,
+        };
+      })
+    );
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SUPERADMIN: Get all organizations
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllOrganizations = query({

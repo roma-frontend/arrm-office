@@ -200,12 +200,12 @@ function PricingCard({ tier, delay, currentPlan }: { tier: PricingTier; delay: n
           style={{ background: `linear-gradient(90deg, transparent, ${tier.accentFrom}, ${tier.accentTo}, transparent)` }}
         />
 
-        <div className="p-8 flex flex-col flex-1">
+        <div className="p-5 sm:p-6 md:p-8 flex flex-col flex-1">
           {/* Icon + name */}
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex items-start justify-between mb-4 sm:mb-6">
             <div>
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg"
                 style={{
                   background: `linear-gradient(135deg, ${tier.accentFrom}33, ${tier.accentTo}22)`,
                   border: `1px solid ${tier.accentFrom}44`,
@@ -215,16 +215,16 @@ function PricingCard({ tier, delay, currentPlan }: { tier: PricingTier; delay: n
               >
                 {tier.icon}
               </div>
-              <h3 className="text-xl font-bold" style={{ color: 'var(--landing-text-primary)' }}>{t(tier.nameKey)}</h3>
-              <p className="text-sm mt-1" style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}>{t(tier.descriptionKey)}</p>
+              <h3 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--landing-text-primary)' }}>{t(tier.nameKey)}</h3>
+              <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}>{t(tier.descriptionKey)}</p>
             </div>
           </div>
 
           {/* Price */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <div className="flex items-end gap-2">
               <span
-                className="text-5xl font-black leading-none"
+                className="text-3xl sm:text-4xl md:text-5xl font-black leading-none"
                 style={{ color: 'var(--landing-text-primary)' }}
               >
                 {t(tier.priceKey)}
@@ -242,16 +242,16 @@ function PricingCard({ tier, delay, currentPlan }: { tier: PricingTier; delay: n
           </div>
 
           {/* Features */}
-          <ul className="space-y-3 mb-8 flex-1">
+          <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8 flex-1">
             {tier.featureKeys.map((feature, i) => (
-              <li key={i} className="flex items-start gap-3">
+              <li key={i} className="flex items-start gap-2 sm:gap-3">
                 <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
                   style={{ background: `${tier.accentFrom}22`, border: `1px solid ${tier.accentFrom}44` }}
                 >
-                  <Check size={11} style={{ color: tier.accentFrom }} />
+                  <Check size={10} className="sm:w-[11px] sm:h-[11px]" style={{ color: tier.accentFrom }} />
                 </div>
-                <span className="text-sm" style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}>{feature}</span>
+                <span className="text-xs sm:text-sm flex-1 leading-relaxed" style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}>{t(feature)}</span>
               </li>
             ))}
           </ul>
@@ -260,7 +260,7 @@ function PricingCard({ tier, delay, currentPlan }: { tier: PricingTier; delay: n
           <button
             onClick={handleCheckout}
             disabled={loading || isCurrentPlan}
-            className={`relative w-full py-4 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden group/btn
+            className={`relative w-full py-3 sm:py-4 rounded-2xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden group/btn
               ${loading || isCurrentPlan ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'}
             `}
             style={tier.popular || isCurrentPlan ? {
@@ -352,7 +352,7 @@ export default function PricingPreview() {
       </div>
 
       {/* Cards grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto items-start pt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto items-start pt-6">
         {pricingTiers.map((tier, i) => (
           <PricingCard key={tier.id} tier={tier} delay={i * 0.12} currentPlan={currentPlan} />
         ))}

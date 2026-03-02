@@ -1,6 +1,8 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 
+const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
+
 // ── Upsert subscription after checkout.session.completed ─────────────────────
 export const upsertSubscription = mutation({
   args: {
@@ -174,10 +176,22 @@ export const getSubscriptionByEmail = query({
   },
 });
 
-// ── List all subscriptions (for admin/viewer) ──────────────────────────────────
+// ── List all subscriptions (SUPERADMIN ONLY) ───────────────────────────────────
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    
+    const currentUser = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .first();
+    
+    const isSuperAdmin = currentUser?.email.toLowerCase() === SUPERADMIN_EMAIL;
+    
+    if (!currentUser || !isSuperAdmin) return [];
+    
     return ctx.db
       .query('subscriptions')
       .collect();

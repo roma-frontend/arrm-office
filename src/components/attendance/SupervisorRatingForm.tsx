@@ -28,39 +28,6 @@ interface RatingCategory {
   description: string;
 }
 
-const categories: RatingCategory[] = [
-  {
-    key: "qualityOfWork",
-    label: "Quality of Work",
-    description: "Accuracy, thoroughness, and attention to detail",
-  },
-  {
-    key: "efficiency",
-    label: "Efficiency",
-    description: "Speed and productivity in completing tasks",
-  },
-  {
-    key: "teamwork",
-    label: "Teamwork",
-    description: "Collaboration and support for colleagues",
-  },
-  {
-    key: "initiative",
-    label: "Initiative",
-    description: "Proactiveness and self-motivation",
-  },
-  {
-    key: "communication",
-    label: "Communication",
-    description: "Clarity and effectiveness in communication",
-  },
-  {
-    key: "reliability",
-    label: "Reliability",
-    description: "Dependability and consistency",
-  },
-];
-
 export function SupervisorRatingForm({ 
 employeeId,
   employeeName,
@@ -68,6 +35,39 @@ employeeId,
   onSuccess,
 }: SupervisorRatingFormProps) {
   const { t } = useTranslation();
+  
+  const categories: RatingCategory[] = [
+    {
+      key: "qualityOfWork",
+      label: t('dashboard.qualityOfWork'),
+      description: "Accuracy, thoroughness, and attention to detail",
+    },
+    {
+      key: "efficiency",
+      label: t('dashboard.efficiency'),
+      description: "Speed and productivity in completing tasks",
+    },
+    {
+      key: "teamwork",
+      label: t('dashboard.teamwork'),
+      description: "Collaboration and support for colleagues",
+    },
+    {
+      key: "initiative",
+      label: t('dashboard.initiative'),
+      description: "Proactiveness and self-motivation",
+    },
+    {
+      key: "communication",
+      label: t('dashboard.communication'),
+      description: "Clarity and effectiveness in communication",
+    },
+    {
+      key: "reliability",
+      label: t('dashboard.reliability'),
+      description: "Dependability and consistency",
+    },
+  ];
   const { user } = useAuthStore();
   const createRating = useMutation(api.supervisorRatings.createRating);
 

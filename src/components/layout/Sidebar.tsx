@@ -21,6 +21,7 @@ import {
   User,
   Sparkles,
   X,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/useSidebarStore";
@@ -40,6 +41,7 @@ const navItems = [
   { href: "/reports", labelKey: "nav.reports", icon: FileText, roles: ["admin", "supervisor"] },
   { href: "/tasks", labelKey: "nav.tasks", icon: CheckSquare, roles: ["admin", "supervisor", "employee"] },
   { href: "/approvals", labelKey: "nav.approvals", icon: UserCheck, roles: ["admin"] },
+  { href: "/admin/subscriptions", labelKey: "nav.subscriptions", icon: CreditCard, roles: ["admin"] },
   { href: "/ai-site-editor", labelKey: "nav.aiSiteEditor", icon: Sparkles, roles: ["admin", "supervisor", "employee"], badge: "AI" },
   { href: "/profile", labelKey: "nav.profile", icon: User, roles: ["admin", "supervisor", "employee"] },
   { href: "/settings", labelKey: "nav.settings", icon: Settings, roles: ["admin", "supervisor", "employee"] },
@@ -79,56 +81,117 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "relative hidden lg:flex flex-col h-screen border-r z-30 flex-shrink-0 transition-all duration-300 ease-out",
+        "relative hidden lg:flex flex-col h-screen border-r z-[60] flex-shrink-0",
         collapsed ? "w-[72px]" : "w-60"
       )}
       style={{
         background: "var(--sidebar-bg)",
         borderColor: "var(--sidebar-border)",
+        transition: "width 600ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+        willChange: "width",
       }}
     >
-      {/* Header with Logo and Toggle */}
+      {/* Header with Logo */}
       <div
-        className="flex items-center h-16 px-4 border-b"
+        className="flex items-center justify-center h-16 px-4 border-b"
         style={{ borderColor: "var(--sidebar-border)" }}
       >
-        <div className="flex items-center justify-between w-full gap-2">
-          {/* Logo */}
+        {!collapsed ? (
           <div 
-            className={cn(
-              "flex items-center gap-2 overflow-hidden transition-all duration-300",
-              collapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
-            )}
+            className="flex items-center justify-between w-full gap-3"
+            style={{
+              transition: "all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-sm">HR</span>
-            </div>
-            <div>
-              <h1 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                HRLeave
-              </h1>
-              <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                {t('sidebar.subtitle')}
-              </p>
-            </div>
+            {/* Logo with text */}
+            <Link
+              href="/"
+              className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity duration-300"
+            >
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg transition-all duration-300"
+                style={{
+                  background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
+                }}
+              >
+                <span className="text-white font-bold text-sm">HR</span>
+              </div>
+              <div>
+                <h1 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                  HRLeave
+                </h1>
+                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+                  {t('sidebar.subtitle')}
+                </p>
+              </div>
+            </Link>
+            
+            {/* Toggle Button */}
+            <button
+              onClick={toggle}
+              className={cn(
+                "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+                "border transition-all duration-300 hover:scale-105",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 group",
+                "shadow-sm hover:shadow-md"
+              )}
+              style={{
+                borderColor: "var(--border)",
+                color: "var(--text-muted)",
+                backgroundColor: "var(--background)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)";
+                e.currentTarget.style.borderColor = "var(--primary)";
+                e.currentTarget.style.color = "var(--primary)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--background)";
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.color = "var(--text-muted)";
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.outlineColor = "var(--primary)";
+              }}
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
+            </button>
           </div>
-
-          {/* Toggle Button */}
+        ) : (
           <button
             onClick={toggle}
             className={cn(
-              "flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 hover:scale-110",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              "w-9 h-9 rounded-lg flex items-center justify-center",
+              "border transition-all duration-300 hover:scale-105",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 group",
+              "shadow-sm hover:shadow-md"
             )}
             style={{
-              backgroundColor: "var(--background-subtle)",
+              borderColor: "var(--border)",
               color: "var(--text-muted)",
+              backgroundColor: "var(--background)",
             }}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)";
+              e.currentTarget.style.borderColor = "var(--primary)";
+              e.currentTarget.style.color = "var(--primary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--background)";
+              e.currentTarget.style.borderColor = "var(--border)";
+              e.currentTarget.style.color = "var(--text-muted)";
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outlineColor = "var(--primary)";
+            }}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
           </button>
-        </div>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -148,7 +211,7 @@ export function Sidebar() {
                 onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
                   "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
-                  "focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                  "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30",
                   isActive && "shadow-sm"
                 )}
                 style={{
@@ -163,8 +226,9 @@ export function Sidebar() {
                 {/* Active Indicator */}
                 {isActive && (
                   <div
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full bg-gradient-to-b from-blue-600 to-blue-700"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
                     style={{
+                      background: "linear-gradient(180deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
                       animation: "slideIn 0.3s ease-out",
                     }}
                   />
@@ -198,29 +262,9 @@ export function Sidebar() {
                 </div>
 
                 {/* Label */}
-                <span
-                  className={cn(
-                    "flex-1 text-sm font-medium transition-all duration-300 truncate",
-                    collapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
-                  )}
-                >
+                <span className="flex-1 text-sm font-medium truncate">
                   {t(item.labelKey)}
                 </span>
-
-                {/* Tooltip for collapsed state */}
-                {collapsed && (
-                  <div
-                    className="absolute left-full ml-2 px-3 py-1.5 rounded-lg whitespace-nowrap z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    style={{
-                      backgroundColor: "var(--card)",
-                      color: "var(--text-primary)",
-                      border: "1px solid var(--border)",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    }}
-                  >
-                    <span className="text-xs font-medium">{t(item.labelKey)}</span>
-                  </div>
-                )}
               </Link>
             );
           })}
@@ -239,9 +283,12 @@ export function Sidebar() {
           <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
           <div
             className={cn(
-              "min-w-0 flex-1 transition-all duration-300",
+              "min-w-0 flex-1",
               collapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
             )}
+            style={{
+              transition: "opacity 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms, width 600ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
           >
             <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
               {t('sidebar.orgName')}
@@ -256,23 +303,40 @@ export function Sidebar() {
       {/* User Info */}
       <div className="border-t p-3" style={{ borderColor: "var(--sidebar-border)" }}>
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-          <Avatar className="w-8 h-8 flex-shrink-0 ring-2 ring-blue-500/20 transition-all duration-200 hover:ring-blue-500/40">
+          <Avatar 
+            className="w-8 h-8 flex-shrink-0 ring-2 transition-all duration-200"
+            style={{
+              borderColor: "var(--primary)",
+              opacity: 0.3,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.6";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "0.3";
+            }}
+          >
             {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-            <AvatarFallback className="text-xs bg-gradient-to-br from-blue-600 to-blue-700 text-white font-bold">
+            <AvatarFallback 
+              className="text-xs text-white font-bold"
+              style={{
+                background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
+              }}
+            >
               {user?.name ? getInitials(user.name) : "U"}
             </AvatarFallback>
           </Avatar>
           <div
             className={cn(
-              "min-w-0 flex-1 transition-all duration-300",
+              "min-w-0 flex-1",
               collapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
             )}
+            style={{
+              transition: "opacity 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms, width 600ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
           >
             <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>
               {user?.name ?? "User"}
-            </p>
-            <p className="text-[10px] truncate capitalize" style={{ color: "var(--text-muted)" }}>
-              {user?.role ?? "admin"}
             </p>
           </div>
         </div>
@@ -366,7 +430,7 @@ export function MobileSidebar() {
       <div
         onClick={() => setMobileOpen(false)}
         className={cn(
-          "fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-300",
+          "fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-500",
           mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         aria-hidden="true"
@@ -376,8 +440,8 @@ export function MobileSidebar() {
       <aside
         ref={sidebarRef}
         className={cn(
-          "fixed top-0 left-0 bottom-0 z-50 w-[280px] lg:hidden flex flex-col",
-          "transition-transform duration-300 ease-out shadow-2xl",
+          "fixed top-0 left-0 bottom-0 z-[70] w-[280px] lg:hidden flex flex-col",
+          "transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
         style={{
@@ -390,8 +454,13 @@ export function MobileSidebar() {
           className="flex items-center justify-between h-16 px-4 border-b"
           style={{ borderColor: "var(--sidebar-border)" }}
         >
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg transition-all duration-300"
+              style={{
+                background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
+              }}
+            >
               <span className="text-white font-bold text-sm">HR</span>
             </div>
             <div>
@@ -402,15 +471,26 @@ export function MobileSidebar() {
                 {t('sidebar.subtitle')}
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Close Button */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 border"
             style={{
-              backgroundColor: "var(--background-subtle)",
+              backgroundColor: "var(--sidebar-bg)",
+              borderColor: "var(--sidebar-border)",
               color: "var(--text-muted)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)";
+              e.currentTarget.style.borderColor = "var(--primary)";
+              e.currentTarget.style.color = "var(--primary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--sidebar-bg)";
+              e.currentTarget.style.borderColor = "var(--sidebar-border)";
+              e.currentTarget.style.color = "var(--text-muted)";
             }}
             aria-label="Close sidebar"
           >
@@ -433,9 +513,19 @@ export function MobileSidebar() {
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200",
-                    "focus:outline-none focus:ring-2 focus:ring-blue-500/50",
+                    "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30",
                     isActive && "shadow-sm"
                   )}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = "var(--sidebar-item-hover)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
                   style={{
                     backgroundColor: isActive ? "var(--sidebar-item-active)" : "transparent",
                     color: isActive ? "var(--sidebar-item-active-text)" : "var(--text-muted)",
@@ -446,7 +536,12 @@ export function MobileSidebar() {
                 >
                   {/* Active Indicator */}
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full bg-gradient-to-b from-blue-600 to-blue-700" />
+                    <div 
+                      className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
+                      style={{
+                        background: "linear-gradient(180deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
+                      }}
+                    />
                   )}
 
                   {/* Icon */}
@@ -510,18 +605,20 @@ export function MobileSidebar() {
           }}
         >
           <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8 ring-2 ring-blue-500/20">
+            <Avatar className="w-8 h-8 ring-2" style={{ borderColor: "var(--primary-light, var(--primary))", opacity: 0.2 }}>
               {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-              <AvatarFallback className="text-xs bg-gradient-to-br from-blue-600 to-blue-700 text-white font-bold">
+              <AvatarFallback 
+                className="text-xs text-white font-bold"
+                style={{
+                  background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
+                }}
+              >
                 {user?.name ? getInitials(user.name) : "U"}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>
                 {user?.name ?? "User"}
-              </p>
-              <p className="text-[10px] truncate capitalize" style={{ color: "var(--text-muted)" }}>
-                {user?.role ?? "admin"}
               </p>
             </div>
           </div>

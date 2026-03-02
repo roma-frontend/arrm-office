@@ -6,21 +6,8 @@ import { Star, Quote } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Testimonial {
-  id: number; name: string; role: string; company: string;
-  avatar: string; rating: number; text: string; gradient: string;
+  id: number; gradient: string; rating: number;
 }
-
-const testimonials: Testimonial[] = [
-  { id: 1, name: 'Sarah Johnson', role: 'HR Director', company: 'TechCorp Inc.', avatar: '', rating: 5,
-    text: 'HRLeave transformed our leave management process. What used to take hours now takes minutes. The analytics are incredible!',
-    gradient: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(165,180,252,0.08))' },
-  { id: 2, name: 'Michael Chen', role: 'Operations Manager', company: 'GlobalTech', avatar: '', rating: 5,
-    text: "The real-time tracking and automated approvals have saved us countless hours. Best HR tool we've ever used.",
-    gradient: 'linear-gradient(135deg, rgba(129,140,248,0.12), rgba(79,70,229,0.06))' },
-  { id: 3, name: 'Emily Rodriguez', role: 'Chief People Officer', company: 'Innovate LLC', avatar: '', rating: 5,
-    text: 'Finally, a leave management system that employees actually love to use. The face recognition login is a game-changer!',
-    gradient: 'linear-gradient(135deg, rgba(148,163,184,0.12), rgba(148,163,184,0.06))' },
-];
 
 function useReveal(margin = '-50px') {
   const ref = useRef<HTMLDivElement>(null);
@@ -37,8 +24,16 @@ function useReveal(margin = '-50px') {
   return { ref, visible };
 }
 
-function TestimonialCard({ testimonial, delay }: { testimonial: Testimonial; delay: number }) {
+function TestimonialCard({ testimonial, delay, index }: { testimonial: Testimonial; delay: number; index: number }) {
+  const { t } = useTranslation();
   const { ref, visible } = useReveal('-50px');
+  
+  const testimonialKey = `testimonial${index + 1}`;
+  const name = t(`testimonials.${testimonialKey}.name`);
+  const role = t(`testimonials.${testimonialKey}.role`);
+  const company = t(`testimonials.${testimonialKey}.company`);
+  const text = t(`testimonials.${testimonialKey}.text`);
+  
   const getInitials = (name: string) => name.split(' ').map((n) => n[0]).join('');
 
   return (
@@ -59,24 +54,28 @@ function TestimonialCard({ testimonial, delay }: { testimonial: Testimonial; del
       <div className="relative h-full rounded-2xl border backdrop-blur-xl p-6 flex flex-col gap-4 group-hover:-translate-y-2 transition-transform duration-300"
         style={{ borderColor: 'var(--landing-card-border)', backgroundColor: 'var(--landing-card-bg)' }}>
         <div className="flex items-start justify-between">
-          <Quote size={32} style={{ color: 'var(--primary)', opacity: 0.6 }} />
+          <Quote size={32} style={{ color: 'var(--primary)', opacity: 0.4 }} />
           <div className="flex gap-1">
             {Array.from({ length: testimonial.rating }).map((_, i) => (
               <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />
             ))}
           </div>
         </div>
-        <p className="leading-relaxed text-sm flex-1" style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}>"{testimonial.text}"</p>
+        <p className="leading-relaxed text-sm flex-1" style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}>"{text}"</p>
         <div className="flex items-center gap-3 pt-4 border-t" style={{ borderColor: 'var(--landing-card-border)' }}>
           <Avatar className="w-10 h-10">
-            {testimonial.avatar && <AvatarImage src={testimonial.avatar} alt={testimonial.name} />}
-            <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
-              {getInitials(testimonial.name)}
+            <AvatarFallback 
+              className="text-xs text-white font-semibold"
+              style={{
+                background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
+              }}
+            >
+              {getInitials(name)}
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-semibold text-sm" style={{ color: 'var(--landing-text-primary)' }}>{testimonial.name}</p>
-            <p className="text-xs" style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}>{testimonial.role} at {testimonial.company}</p>
+            <p className="font-semibold text-sm" style={{ color: 'var(--landing-text-primary)' }}>{name}</p>
+            <p className="text-xs" style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}>{role} at {company}</p>
           </div>
         </div>
       </div>
@@ -85,9 +84,15 @@ function TestimonialCard({ testimonial, delay }: { testimonial: Testimonial; del
 }
 
 export default function TestimonialsSection() {
-  
   const { t } = useTranslation();
-const { ref, visible } = useReveal('-30px');
+  const { ref, visible } = useReveal('-30px');
+  
+  const testimonials: Testimonial[] = [
+    { id: 1, rating: 5, gradient: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(165,180,252,0.08))' },
+    { id: 2, rating: 5, gradient: 'linear-gradient(135deg, rgba(129,140,248,0.12), rgba(79,70,229,0.06))' },
+    { id: 3, rating: 5, gradient: 'linear-gradient(135deg, rgba(148,163,184,0.12), rgba(148,163,184,0.06))' },
+  ];
+  
   return (
     <section className="relative z-10 px-6 md:px-12 py-20">
       {/* Section header — reveal on scroll */}
@@ -108,8 +113,8 @@ const { ref, visible } = useReveal('-30px');
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-        {testimonials.map((t, i) => (
-          <TestimonialCard key={t.id} testimonial={t} delay={i * 0.15} />
+        {testimonials.map((testimonial, i) => (
+          <TestimonialCard key={testimonial.id} testimonial={testimonial} delay={i * 0.15} index={i} />
         ))}
       </div>
     </section>

@@ -29,6 +29,7 @@ import {
 import StatsCard from './StatsCard';
 import FeatureCard from './FeatureCard';
 import MobileMenu from './MobileMenu';
+import CookieBanner from '@/components/CookieBanner';
 
 const FloatingParticles = dynamic(() => import('./FloatingParticles'), { ssr: false, loading: () => null });
 
@@ -212,23 +213,25 @@ function Navbar() {
   return (
     <>
       {/* nav-animate class uses CSS animation — zero JS cost vs framer-motion */}
-      {/* fixed position to keep navbar visible on scroll */}
+      {/* sticky position - works exactly like dashboard navbar */}
       <nav
-        className={`nav-animate fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 md:px-8 lg:px-12 transition-all duration-300 ${scrolled ? 'py-2 md:py-3 shadow-lg' : 'py-3 md:py-4'
+        className={`nav-animate sticky top-0 z-[100] flex items-center justify-between px-4 md:px-8 lg:px-12 transition-all duration-300 border-b ${scrolled ? 'py-2 md:py-3 shadow-lg' : 'py-3 md:py-4'
           }`}
         role="navigation"
         aria-label="Main navigation"
+        style={{
+          borderColor: 'var(--landing-card-border)',
+        }}
       >
         {/* Glassmorphism nav background - uses CSS variable */}
         <div
-          className={`absolute inset-0 backdrop-blur-xl border-b transition-all duration-300 ${scrolled ? 'bg-opacity-95' : 'bg-opacity-80'
-            }`}
+          className="absolute inset-0 backdrop-blur-xl border-b transition-all duration-300"
           style={{
             background: scrolled
-              ? 'var(--landing-navbar-bg)'
-              : 'var(--landing-navbar-bg)',
+              ? 'rgba(var(--landing-navbar-bg-rgb, 15, 23, 42), 0.98)'
+              : 'rgba(var(--landing-navbar-bg-rgb, 15, 23, 42), 0.7)',
             borderColor: 'var(--landing-card-border)',
-            boxShadow: scrolled ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none'
+            boxShadow: scrolled ? '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)' : 'none'
           }}
         />
 
@@ -590,6 +593,9 @@ function HeroSection() {
         </div>
       </div>
 
+      {/* Cookie Banner - integrated in hero section */}
+      <CookieBanner />
+
       {/* Scroll indicator */}
       <div
         className="absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-2 hidden md:flex"
@@ -926,18 +932,18 @@ function Footer() {
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export default function LandingClient() {
   return (
-    <div className="relative min-h-screen" style={{ background: 'var(--landing-bg)' }}>
-      {/* Background layers - lowest z-index */}
+    <div className="min-h-screen" style={{ background: 'var(--landing-bg)' }}>
+      {/* Background layers - lowest z-index, fixed to viewport */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <GradientOrbs />
         <FloatingParticles />
       </div>
 
-      {/* Navigation */}
+      {/* Navigation - sticky at top */}
       <Navbar />
 
-      {/* Page content - add pt-16 to compensate for fixed navbar (h-16 = 64px) */}
-      <main className="relative pt-16">
+      {/* Page content - no padding needed with sticky */}
+      <main className="relative">
         <HeroSection />
         <div className="section-lazy">
           <SocialProof />

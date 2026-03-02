@@ -1,0 +1,445 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useTranslation } from "react-i18next";
+// framer-motion removed from Sidebar — replaced with CSS transitions to eliminate
+// forced reflow, reduce main-thread work and reduce JS bundle on initial load
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Users,
+  FileText,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  Building2,
+  UserCheck,
+  BarChart3,
+  Clock,
+  CheckSquare,
+  User,
+  Sparkles,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useSidebarStore } from "@/store/useSidebarStore";
+import { useAuthStore } from "@/store/useAuthStore";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+
+const navItems = [
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: ["admin", "supervisor", "employee"] },
+  { href: "/attendance", labelKey: "nav.attendance", icon: Clock, roles: ["admin", "supervisor", "employee"] },
+  { href: "/analytics", labelKey: "nav.analytics", icon: BarChart3, roles: ["admin", "supervisor"] },
+  { href: "/leaves", labelKey: "nav.leaves", icon: ClipboardList, roles: ["admin", "supervisor", "employee"] },
+  { href: "/employees", labelKey: "nav.employees", icon: Users, roles: ["admin", "supervisor", "employee"] },
+  { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, roles: ["admin", "supervisor", "employee"] },
+  { href: "/reports", labelKey: "nav.reports", icon: FileText, roles: ["admin", "supervisor"] },
+  { href: "/tasks", labelKey: "nav.tasks", icon: CheckSquare, roles: ["admin", "supervisor", "employee"] },
+  { href: "/approvals", labelKey: "nav.approvals", icon: UserCheck, roles: ["admin"] },
+  { href: "/ai-site-editor", labelKey: "nav.aiSiteEditor", icon: Sparkles, roles: ["admin", "supervisor", "employee"], badge: "AI" },
+  { href: "/profile", labelKey: "nav.profile", icon: User, roles: ["admin", "supervisor", "employee"] },
+  { href: "/settings", labelKey: "nav.settings", icon: Settings, roles: ["admin", "supervisor", "employee"] },
+];
+
+function getInitials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+export function Sidebar() {
+  const { t } = useTranslation();
+  const pathname = usePathname();
+  const { collapsed, toggle, setMobileOpen } = useSidebarStore();
+  const { user } = useAuthStore();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  // Unread task notifications badge
+  const notifications = useQuery(
+    api.notifications.getUserNotifications,
+    mounted && user?.id ? { userId: user.id as Id<"users"> } : "skip"
+  );
+  const taskUnreadCount = (notifications ?? []).filter(
+    (n: any) => !n.isRead && n.type === "system" && (n.title?.includes("Task") || n.title?.includes("task"))
+  ).length;
+
+  if (!mounted) return null;
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      {/* CSS width transition instead of framer-motion — avoids JS-driven layout recalc */}
+      <aside
+        className="relative hidden lg:flex flex-col h-screen border-r z-30 flex-shrink-0"
+        style={{
+          background: "var(--sidebar-bg)",
+          borderColor: "var(--sidebar-border)",
+          width: collapsed ? 72 : 240,
+          transition: "width 0.25s ease",
+          minWidth: collapsed ? 72 : 240,
+        }}
+      >
+        {/* Logo + Toggle */}
+        <div
+          className="flex items-center h-16 px-3 flex-shrink-0 border-b justify-between gap-2"
+          style={{ borderColor: "var(--sidebar-border)" }}
+        >
+          {/* Logo — CSS opacity/width transition instead of AnimatePresence */}
+          <div
+            className="flex items-center gap-2 overflow-hidden"
+            style={{
+              opacity: collapsed ? 0 : 1,
+              width: collapsed ? 0 : "auto",
+              transition: "opacity 0.2s ease, width 0.2s ease",
+              pointerEvents: collapsed ? "none" : "auto",
+            }}
+          >
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity outline-none">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1d4ed8] to-[#0ea5e9] flex items-center justify-center flex-shrink-0 shadow-md">
+                <Building2 className="w-4 h-4 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-sm leading-tight truncate text-[var(--text-primary)]">{t('sidebar.appName')}</p>
+                <p className="text-[10px] truncate text-[var(--text-muted)]">{t('sidebar.appSubtitle')}</p>
+              </div>
+            </Link>
+          </div>
+
+          {/* Collapse toggle */}
+          <button
+            onClick={toggle}
+            className={cn(
+              "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 border",
+              collapsed && "ml-auto mr-auto"
+            )}
+            style={{
+              background: "var(--sidebar-item-active)",
+              borderColor: "color-mix(in srgb, var(--primary) 30%, transparent)",
+              color: "var(--primary)",
+            }}
+            title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+          >
+            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {/* Nav Items */}
+        <nav className={cn("flex-1 py-4 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-3")}>
+          {navItems.filter(item => item.roles.includes(user?.role || "employee")).map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const Icon = item.icon;
+            const badge = item.href === "/tasks" && taskUnreadCount > 0 ? taskUnreadCount : 0;
+
+            const linkContent = (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "flex items-center rounded-lg text-sm font-medium transition-colors duration-150 relative outline-none focus-visible:outline-none",
+                  collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
+                  isActive ? "border" : "hover:text-[var(--text-primary)]"
+                )}
+                style={
+                  isActive
+                    ? {
+                        background: "var(--sidebar-item-active)",
+                        color: "var(--sidebar-item-active-text)",
+                        borderColor: "color-mix(in srgb, var(--primary) 20%, transparent)",
+                      }
+                    : { color: "var(--text-muted)", background: "transparent" }
+                }
+                onMouseEnter={(e) => {
+                  if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--sidebar-item-hover)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent";
+                }}
+              >
+                {/* Active indicator — CSS only, no layoutId reflow */}
+                {isActive && (
+                  <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[var(--primary)] rounded-full" />
+                )}
+                <div className="relative flex-shrink-0">
+                  <Icon
+                    className="w-5 h-5"
+                    style={{ color: isActive ? "var(--sidebar-item-active-text)" : "var(--text-disabled)" }}
+                  />
+                  {badge > 0 && collapsed && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  )}
+                </div>
+                {/* Label — CSS transition instead of motion.span */}
+                <span
+                  className="truncate flex-1"
+                  style={{
+                    opacity: collapsed ? 0 : 1,
+                    width: collapsed ? 0 : "auto",
+                    overflow: "hidden",
+                    transition: "opacity 0.15s ease",
+                    display: collapsed ? "none" : undefined,
+                  }}
+                >
+                  {t(item.labelKey)}
+                </span>
+                {!collapsed && badge > 0 && (
+                  <span className="ml-auto min-w-[20px] h-5 px-1 rounded-full bg-gradient-to-r from-blue-600 to-sky-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm shadow-blue-300">
+                    {badge > 9 ? "9+" : badge}
+                  </span>
+                )}
+              </Link>
+            );
+
+            if (collapsed) {
+              return (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                  <TooltipContent side="right" className="bg-[var(--card)] text-[var(--text-primary)] border-[var(--border)]">
+                    {t(item.labelKey)}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return linkContent;
+          })}
+        </nav>
+
+        {/* Organization Branding */}
+        <div className="mt-auto px-3 py-2 flex-shrink-0">
+          <div 
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg transition-all",
+              collapsed ? "justify-center" : ""
+            )}
+            style={{ backgroundColor: "var(--background-subtle)" }}
+          >
+            <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                  {t('sidebar.orgName')}
+                </p>
+                <p className="text-[9px] truncate" style={{ color: "var(--text-muted)" }}>
+                  {t('sidebar.orgSubtitle')}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* User info */}
+        <div
+          className="border-t p-3 flex-shrink-0"
+          style={{ borderColor: "var(--sidebar-border)" }}
+        >
+          <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
+            <Avatar className="w-8 h-8 flex-shrink-0">
+              {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+              <AvatarFallback className="text-xs bg-gradient-to-br from-[#1d4ed8] to-[#0ea5e9] text-white font-bold">
+                {user?.name ? getInitials(user.name) : "U"}
+              </AvatarFallback>
+            </Avatar>
+            {/* CSS transition instead of AnimatePresence motion.div */}
+            <div
+              className="min-w-0 flex-1"
+              style={{
+                opacity: collapsed ? 0 : 1,
+                transition: "opacity 0.15s ease",
+                display: collapsed ? "none" : undefined,
+              }}
+            >
+              <p className="text-xs font-medium truncate text-[var(--text-primary)]">
+                {user?.name ?? "User"}
+              </p>
+              <p className="text-[10px] truncate capitalize text-[var(--text-muted)]">
+                {user?.role ?? "admin"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </TooltipProvider>
+  );
+}
+
+export default Sidebar;
+
+// ─── Mobile Sidebar ────────────────────────────────────────────────────────────
+export function MobileSidebar() {
+  const { t } = useTranslation();
+  const pathname = usePathname();
+  const { mobileOpen, setMobileOpen } = useSidebarStore();
+  const { user } = useAuthStore();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  const mobileNotifications = useQuery(
+    api.notifications.getUserNotifications,
+    mounted && user?.id ? { userId: user.id as Id<"users"> } : "skip"
+  );
+  const mobileTaskBadge = (mobileNotifications ?? []).filter(
+    (n: any) => !n.isRead && n.type === "system" && (n.title?.includes("Task") || n.title?.includes("task"))
+  ).length;
+
+  if (!mounted) return null;
+
+  return (
+    <>
+      {/* Overlay — CSS opacity transition, display toggled via pointer-events */}
+      <div
+        onClick={() => setMobileOpen(false)}
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+        style={{
+          opacity: mobileOpen ? 1 : 0,
+          pointerEvents: mobileOpen ? "auto" : "none",
+          transition: "opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+      />
+      {/* Drawer — Smooth slide-in with staggered content animation */}
+      <aside
+        className="fixed left-0 bottom-0 z-40 w-64 flex flex-col lg:hidden border-r shadow-2xl"
+        style={{
+          top: 64,
+          background: "var(--sidebar-bg)",
+          borderColor: "var(--sidebar-border)",
+          transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+          willChange: "transform",
+          minWidth: "256px",
+        }}
+      >
+          {/* Logo */}
+          <div
+            className="flex items-center h-16 px-4 border-b"
+            style={{
+              borderColor: "var(--sidebar-border)",
+              opacity: mobileOpen ? 1 : 0,
+              transform: mobileOpen ? "translateY(0)" : "translateY(-10px)",
+              transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.1s",
+            }}
+          >
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity outline-none" onClick={() => setMobileOpen(false)}>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1d4ed8] to-[#0ea5e9] flex items-center justify-center shadow-md">
+                <Building2 className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm leading-tight text-[var(--text-primary)]">{t('sidebar.appName')}</p>
+                <p className="text-[10px] text-[var(--text-muted)]">{t('sidebar.appSubtitle')}</p>
+              </div>
+            </Link>
+          </div>
+
+          {/* Nav */}
+          <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
+            {navItems.filter(item => item.roles.includes(user?.role || "employee")).map((item, index) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              const Icon = item.icon;
+              const mobileBadge = item.href === "/tasks" && mobileTaskBadge > 0 ? mobileTaskBadge : 0;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium outline-none focus-visible:outline-none",
+                    isActive ? "border" : ""
+                  )}
+                  style={{
+                    ...(isActive
+                      ? {
+                          background: "var(--sidebar-item-active)",
+                          color: "var(--sidebar-item-active-text)",
+                          borderColor: "color-mix(in srgb, var(--primary) 20%, transparent)",
+                        }
+                      : { color: "var(--text-muted)" }),
+                    opacity: mobileOpen ? 1 : 0,
+                    transform: mobileOpen ? "translateX(0)" : "translateX(-20px)",
+                    transition: `all 0.3s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.05}s`,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.background = "var(--sidebar-item-hover)";
+                      (e.currentTarget as HTMLElement).style.color = "var(--text-primary)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                      (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
+                    }
+                  }}
+                >
+                  <Icon
+                    className="w-5 h-5"
+                    style={{ color: isActive ? "var(--sidebar-item-active-text)" : "var(--text-disabled)" }}
+                  />
+                  <span className="flex-1">{t(item.labelKey)}</span>
+                  {mobileBadge > 0 && (
+                    <span className="min-w-[20px] h-5 px-1 rounded-full bg-gradient-to-r from-blue-600 to-sky-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {mobileBadge > 9 ? "9+" : mobileBadge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Organization Branding - Mobile */}
+          <div className="mt-auto px-3 py-2 flex-shrink-0">
+            <div 
+              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+              style={{
+                backgroundColor: "var(--background-subtle)",
+                opacity: mobileOpen ? 1 : 0,
+                transition: "opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.5s",
+              }}
+            >
+              <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                  {t('sidebar.orgName')}
+                </p>
+                <p className="text-[9px] truncate" style={{ color: "var(--text-muted)" }}>
+                  {t('sidebar.orgSubtitleFull')}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* User */}
+          <div
+            className="border-t p-3"
+            style={{
+              borderColor: "var(--sidebar-border)",
+              opacity: mobileOpen ? 1 : 0,
+              transition: "opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.6s",
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <Avatar className="w-8 h-8">
+                {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+                <AvatarFallback className="text-xs bg-gradient-to-br from-[#1d4ed8] to-[#0ea5e9] text-white font-bold">
+                  {user?.name ? getInitials(user.name) : "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-xs font-medium truncate text-[var(--text-primary)]">
+                  {user?.name ?? "User"}
+                </p>
+                <p className="text-[10px] truncate capitalize text-[var(--text-muted)]">
+                  {user?.role ?? "admin"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </aside>
+    </>
+  );
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,21 @@ import {
   Download,
   RefreshCw,
   Calendar,
-  CreditCard
+  CreditCard,
+  Play,
+  Terminal,
+  FileSpreadsheet,
+  FileText,
+  BarChart3,
+  RefreshCcw,
+  Bell,
+  ShieldAlert
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import { useUser } from "@clerk/nextjs";
+
+const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
 
 interface Subscription {
   _id: string;
@@ -35,8 +47,38 @@ interface Subscription {
 }
 
 export default function StripeDashboardPage() {
+  const { user } = useUser();
   const subscriptions = useQuery(api.subscriptions.listAll) as Subscription[] | undefined;
+  
+  // Check if user is superadmin
+  const isSuperAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === SUPERADMIN_EMAIL;
+  
+  // If not superadmin, show access denied
+  if (user && !isSuperAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <div className="flex items-center gap-2 text-red-500">
+              <ShieldAlert className="w-6 h-6" />
+              <CardTitle>Access Denied</CardTitle>
+            </div>
+            <CardDescription>
+              This page is only accessible to the superadmin.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Payment and subscription management features are restricted to authorized personnel only.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   const [refreshing, setRefreshing] = useState(false);
+  const [runningScript, setRunningScript] = useState<string | null>(null);
+  const [scriptOutput, setScriptOutput] = useState<string>("");
 
   const stats = useMemo(() => {
     if (!subscriptions) return null;
@@ -96,9 +138,35 @@ export default function StripeDashboardPage() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const handleExport = () => {
-    // Trigger export script
-    window.alert('Export functionality - run: npm run stripe:export');
+  const handleRunScript = async (script: string) => {
+    setRunningScript(script);
+    setScriptOutput("");
+    
+    try {
+      toast.loading(`Running ${script}...`, { id: script });
+      
+      const response = await fetch('/api/stripe/run-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ script }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setScriptOutput(data.output);
+        toast.success(`✅ ${script} completed successfully`, { id: script });
+      } else {
+        setScriptOutput(data.output || data.error);
+        toast.error(`❌ ${script} failed`, { id: script });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setScriptOutput(message);
+      toast.error(`❌ Error: ${message}`, { id: script });
+    } finally {
+      setRunningScript(null);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -148,6 +216,13 @@ export default function StripeDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
+          <Button
+            variant="ghost"
+            onClick={() => window.history.back()}
+            className="mb-4 -ml-2"
+          >
+            ← Back to Dashboard
+          </Button>
           <h1 className="text-4xl font-bold">💳 Stripe Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             Real-time subscription analytics and insights
@@ -157,10 +232,6 @@ export default function StripeDashboardPage() {
           <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
-          </Button>
-          <Button onClick={handleExport}>
-            <Download className="w-4 h-4 mr-2" />
-            Export
           </Button>
         </div>
       </div>
@@ -221,6 +292,145 @@ export default function StripeDashboardPage() {
           </Card>
         </div>
       )}
+
+      {/* Stripe Commands Section */}
+      <Card className="border-2 border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Terminal className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            Stripe Commands
+          </CardTitle>
+          <CardDescription>Execute Stripe operations directly from the dashboard</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Button
+              onClick={() => handleRunScript('stripe:view')}
+              disabled={runningScript !== null}
+              variant="outline"
+              className="h-auto flex-col items-start gap-2 p-4 hover:bg-blue-500/10 hover:border-blue-500/50"
+            >
+              <div className="flex items-center gap-2 w-full">
+                <Terminal className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="font-semibold">View Transactions</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-left">Display all Stripe transactions</p>
+              {runningScript === 'stripe:view' && (
+                <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+              )}
+            </Button>
+
+            <Button
+              onClick={() => handleRunScript('stripe:export')}
+              disabled={runningScript !== null}
+              variant="outline"
+              className="h-auto flex-col items-start gap-2 p-4 hover:bg-green-500/10 hover:border-green-500/50"
+            >
+              <div className="flex items-center gap-2 w-full">
+                <FileSpreadsheet className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <span className="font-semibold">Export to Excel</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-left">Export data to XLSX format</p>
+              {runningScript === 'stripe:export' && (
+                <RefreshCw className="w-4 h-4 animate-spin text-green-600" />
+              )}
+            </Button>
+
+            <Button
+              onClick={() => handleRunScript('stripe:export-pdf')}
+              disabled={runningScript !== null}
+              variant="outline"
+              className="h-auto flex-col items-start gap-2 p-4 hover:bg-red-500/10 hover:border-red-500/50"
+            >
+              <div className="flex items-center gap-2 w-full">
+                <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <span className="font-semibold">Export to PDF</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-left">Generate PDF report</p>
+              {runningScript === 'stripe:export-pdf' && (
+                <RefreshCw className="w-4 h-4 animate-spin text-red-600" />
+              )}
+            </Button>
+
+            <Button
+              onClick={() => handleRunScript('stripe:growth-chart')}
+              disabled={runningScript !== null}
+              variant="outline"
+              className="h-auto flex-col items-start gap-2 p-4 hover:bg-purple-500/10 hover:border-purple-500/50"
+            >
+              <div className="flex items-center gap-2 w-full">
+                <BarChart3 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span className="font-semibold">Growth Chart</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-left">Generate growth visualization</p>
+              {runningScript === 'stripe:growth-chart' && (
+                <RefreshCw className="w-4 h-4 animate-spin text-purple-600" />
+              )}
+            </Button>
+
+            <Button
+              onClick={() => handleRunScript('stripe:sync')}
+              disabled={runningScript !== null}
+              variant="outline"
+              className="h-auto flex-col items-start gap-2 p-4 hover:bg-orange-500/10 hover:border-orange-500/50"
+            >
+              <div className="flex items-center gap-2 w-full">
+                <RefreshCcw className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                <span className="font-semibold">Sync Data</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-left">Sync with Stripe API</p>
+              {runningScript === 'stripe:sync' && (
+                <RefreshCw className="w-4 h-4 animate-spin text-orange-600" />
+              )}
+            </Button>
+
+            <Button
+              onClick={() => handleRunScript('stripe:check-trials')}
+              disabled={runningScript !== null}
+              variant="outline"
+              className="h-auto flex-col items-start gap-2 p-4 hover:bg-yellow-500/10 hover:border-yellow-500/50"
+            >
+              <div className="flex items-center gap-2 w-full">
+                <Bell className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                <span className="font-semibold">Check Trials</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-left">Check trial reminders</p>
+              {runningScript === 'stripe:check-trials' && (
+                <RefreshCw className="w-4 h-4 animate-spin text-yellow-600" />
+              )}
+            </Button>
+
+            <Button
+              onClick={() => handleRunScript('stripe:add-test-data')}
+              disabled={runningScript !== null}
+              variant="outline"
+              className="h-auto flex-col items-start gap-2 p-4 hover:bg-pink-500/10 hover:border-pink-500/50"
+            >
+              <div className="flex items-center gap-2 w-full">
+                <Play className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+                <span className="font-semibold">Add Test Data</span>
+              </div>
+              <p className="text-xs text-muted-foreground text-left">Add sample subscriptions</p>
+              {runningScript === 'stripe:add-test-data' && (
+                <RefreshCw className="w-4 h-4 animate-spin text-pink-600" />
+              )}
+            </Button>
+          </div>
+
+          {/* Output Display */}
+          {scriptOutput && (
+            <div className="mt-4 p-4 bg-slate-900 dark:bg-slate-950 rounded-lg border border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                <Terminal className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-semibold text-emerald-400">Output:</span>
+              </div>
+              <pre className="text-xs text-slate-300 whitespace-pre-wrap font-mono overflow-x-auto">
+                {scriptOutput}
+              </pre>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -208,7 +208,7 @@ export function Navbar() {
 
   return (
     <>
-    <header className="h-16 border-b border-[var(--border)] bg-[var(--navbar-bg)] backdrop-blur-md flex items-center px-4 gap-4 fixed top-0 left-0 right-0 z-[60] transition-colors duration-300">
+    <header className="h-16 border-b border-[var(--border)] bg-[var(--navbar-bg)] flex items-center px-4 gap-4 sticky top-0 z-[50] transition-colors duration-300">
       {/* Mobile hamburger */}
       <Button
         variant="ghost"
@@ -230,9 +230,9 @@ export function Navbar() {
         <Home className="w-5 h-5" />
       </Button>
 
-      {/* Page title */}
+      {/* Page title - hidden */}
       <div className="flex-1">
-        <h1 className="text-base font-semibold text-[var(--text-primary)]">{pageTitle}</h1>
+        {/* Title removed for cleaner navbar */}
       </div>
 
       {/* Right side actions */}
@@ -360,7 +360,9 @@ export function Navbar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-80 max-h-[85vh] overflow-y-auto bg-[var(--card)] border-[var(--border)] shadow-xl"
+            sideOffset={8}
+            collisionPadding={{ top: 72, bottom: 16, left: 16, right: 16 }}
+            className="w-80 max-h-[calc(100vh-90px)] overflow-y-auto bg-[var(--card)] border-[var(--border)] shadow-xl"
           >
             {/* Productivity Widgets */}
             {mounted && user && (

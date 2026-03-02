@@ -73,7 +73,7 @@ export function EmployeeDashboard() {
       {/* Welcome header */}
       <motion.div variants={itemVariants}>
         <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-          Welcome, {user?.name?.split(" ")[0]} 👋
+          {t('dashboard.welcome')}, {user?.name?.split(" ")[0]} 👋
         </h2>
         <p className="text-[var(--text-muted)] text-sm mt-1">
           {format(today, "EEEE, MMMM d, yyyy")}
@@ -147,12 +147,12 @@ export function EmployeeDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {[
-                { label: "Quality of Work", value: latestRating.qualityOfWork },
-                { label: "Efficiency", value: latestRating.efficiency },
-                { label: "Teamwork", value: latestRating.teamwork },
-                { label: "Initiative", value: latestRating.initiative },
-                { label: "Communication", value: latestRating.communication },
-                { label: "Reliability", value: latestRating.reliability },
+                { label: t('dashboard.qualityOfWork'), value: latestRating.qualityOfWork },
+                { label: t('dashboard.efficiency'), value: latestRating.efficiency },
+                { label: t('dashboard.teamwork'), value: latestRating.teamwork },
+                { label: t('dashboard.initiative'), value: latestRating.initiative },
+                { label: t('dashboard.communication'), value: latestRating.communication },
+                { label: t('dashboard.reliability'), value: latestRating.reliability },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-sm text-[var(--text-muted)] w-36">{label}</span>
@@ -167,19 +167,19 @@ export function EmployeeDashboard() {
 
               {latestRating.strengths && (
                 <div className="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-950">
-                  <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1">💪 Strengths</p>
+                  <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1">💪 {t('dashboard.strengths')}</p>
                   <p className="text-sm text-green-700 dark:text-green-300">{latestRating.strengths}</p>
                 </div>
               )}
               {latestRating.areasForImprovement && (
                 <div className="mt-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
-                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">📈 Areas for Improvement</p>
+                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">📈 {t('dashboard.areasForImprovement')}</p>
                   <p className="text-sm text-orange-700 dark:text-orange-300">{latestRating.areasForImprovement}</p>
                 </div>
               )}
               {latestRating.generalComments && (
                 <div className="mt-2 p-3 rounded-lg bg-[var(--background-subtle)]">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] mb-1">💬 Comments</p>
+                  <p className="text-xs font-semibold text-[var(--text-muted)] mb-1">💬 {t('dashboard.comments')}</p>
                   <p className="text-sm text-[var(--text-primary)]">{latestRating.generalComments}</p>
                 </div>
               )}
@@ -290,7 +290,7 @@ export function EmployeeDashboard() {
               <Button asChild size="sm">
                 <Link href="/leaves">
                   <Plus className="w-4 h-4" />
-                  New Request
+                  {t('dashboard.newRequest')}
                 </Link>
               </Button>
             </div>
@@ -319,7 +319,7 @@ export function EmployeeDashboard() {
                         {LEAVE_TYPE_LABELS[leave.type as LeaveType]}
                       </p>
                       <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                        {format(new Date(leave.startDate), "MMM d")} – {format(new Date(leave.endDate), "MMM d, yyyy")} ({leave.days} days)
+                        {format(new Date(leave.startDate), "MMM d")} – {format(new Date(leave.endDate), "MMM d, yyyy")} ({leave.days} {t('ui.days').toLowerCase()})
                       </p>
                     </div>
                     <StatusBadge status={leave.status as LeaveStatus} />

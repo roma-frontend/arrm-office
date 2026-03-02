@@ -82,8 +82,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Navbar — ssr:false prevents theme/user/notification mismatch */}
         <Navbar />
-        {/* Add padding-top to compensate for fixed navbar (h-16 = 64px) */}
-        <main className="flex-1 overflow-y-auto pt-16">
+        {/* Main content area */}
+        <main className="flex-1 overflow-y-auto">
           <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
             {children}
           </div>

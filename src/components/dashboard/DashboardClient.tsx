@@ -143,27 +143,11 @@ export default function DashboardClient() {
       {/* Welcome header */}
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-4">
-            <motion.h1 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight capitalize" 
-              style={{ 
-                fontFamily: "var(--font-montserrat), sans-serif", 
-                letterSpacing: '-0.02em',
-                color: 'var(--text-primary)',
-                fontWeight: 700
-              }}
-            >
-              {user?.role ?? "Dashboard"}
-            </motion.h1>
-          </div>
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-[var(--text-muted)] text-sm mt-2"
+            className="text-[var(--text-muted)] text-sm"
           >
             {format(today, "EEEE, MMMM d, yyyy")}
           </motion.p>
@@ -176,6 +160,9 @@ export default function DashboardClient() {
               </Button>
               <Button asChild size="sm" variant="default" className="bg-gradient-to-r from-[#1e40af] to-[#2563eb] hover:from-[#1e40af]/90 hover:to-[#2563eb]/90">
                 <Link href="/superadmin/create-org"><Building2 className="w-4 h-4" />{t('dashboard.createOrg')}</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Link href="/admin/stripe-dashboard"><CreditCard className="w-4 h-4" />{t('dashboard.stripeDashboard')}</Link>
               </Button>
             </>
           )}

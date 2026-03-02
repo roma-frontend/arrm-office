@@ -107,8 +107,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           />
           
           <div className="relative z-10">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
+                style={{
+                  background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
+                }}
+              >
                 <span className="text-white font-bold text-sm">HR</span>
               </div>
               <div>
@@ -119,7 +124,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   {t('sidebar.subtitle')}
                 </p>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Close Button */}
@@ -140,8 +145,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <nav 
           className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar" 
           aria-label="Mobile navigation"
+          style={{ minHeight: 0 }}
         >
-          <div className="space-y-2">
+          <div className="space-y-2 mb-4">
             {menuItemsConfig.map((item, index) => {
               const Icon = item.icon;
               return (
@@ -195,17 +201,14 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               );
             })}
           </div>
-        </nav>
 
-        {/* Footer with CTAs */}
-        <div 
-          className="flex-shrink-0 p-4 space-y-3 border-t backdrop-blur-xl"
-          style={{
-            borderColor: 'var(--landing-card-border)',
-            backgroundColor: 'var(--background)',
-            boxShadow: '0 -4px 20px rgba(0,0,0,0.05)'
-          }}
-        >
+          {/* Footer with CTAs - Inside scrollable area */}
+          <div 
+            className="space-y-4 pt-6 pb-6 border-t mt-6"
+            style={{
+              borderColor: 'var(--landing-card-border)',
+            }}
+          >
           {/* Language Switcher */}
           <div className="flex justify-center pb-2">
             <LanguageSwitcher />
@@ -248,7 +251,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <span>{t('landing.getStartedFree')}</span>
             </button>
           </Link>
-        </div>
+          </div>
+        </nav>
 
         {/* Custom Scrollbar */}
         <style jsx>{`

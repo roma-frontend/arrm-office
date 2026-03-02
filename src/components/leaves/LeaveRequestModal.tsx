@@ -23,20 +23,20 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useAuthStore } from "@/store/useAuthStore";
-import { LEAVE_TYPE_LABELS, calculateDays, type LeaveType } from "@/lib/types";
+import { LEAVE_TYPE_LABELS, getLeaveTypeLabel, calculateDays, type LeaveType } from "@/lib/types";
 
 interface LeaveRequestModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-const LEAVE_TYPES: { value: LeaveType; label: string; color: string }[] = [
-  { value: "paid", label: "Paid Vacation", color: "text-[#2563eb]" },
-  { value: "unpaid", label: "Unpaid Leave", color: "text-[#f59e0b]" },
-  { value: "sick", label: "Sick Leave", color: "text-[#ef4444]" },
-  { value: "family", label: "Family Leave", color: "text-[#10b981]" },
-  { value: "doctor", label: "Doctor Visit", color: "text-[#06b6d4]" },
-];
+const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
+  paid: "text-[#2563eb]",
+  unpaid: "text-[#f59e0b]",
+  sick: "text-[#ef4444]",
+  family: "text-[#10b981]",
+  doctor: "text-[#06b6d4]",
+};
 
 export function LeaveRequestModal({ open, onClose }: LeaveRequestModalProps) {
   const { user } = useAuthStore();
@@ -165,18 +165,20 @@ export function LeaveRequestModal({ open, onClose }: LeaveRequestModalProps) {
           <div className="space-y-1.5">
             <Label>{t('labels.leaveType')} {t('forms.required')}</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {LEAVE_TYPES.map((lt) => (
+              {(Object.keys(LEAVE_TYPE_COLORS) as LeaveType[]).map((type) => (
                 <button
-                  key={lt.value}
+                  key={type}
                   type="button"
-                  onClick={() => setLeaveType(lt.value)}
+                  onClick={() => setLeaveType(type)}
                   className={`px-3 py-2.5 rounded-lg border text-xs font-medium transition-all text-left ${
-                    leaveType === lt.value
+                    leaveType === type
                       ? "border-[#2563eb] bg-[#2563eb]/10 text-[var(--text-primary)]"
                       : "border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-subtle)] hover:text-[var(--text-secondary)]"
                   }`}
                 >
-                  {lt.label}
+                  <span className={LEAVE_TYPE_COLORS[type]}>
+                    {getLeaveTypeLabel(type, t)}
+                  </span>
                 </button>
               ))}
             </div>

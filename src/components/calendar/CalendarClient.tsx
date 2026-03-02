@@ -33,7 +33,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { LEAVE_TYPE_LABELS, LEAVE_TYPE_COLORS, type LeaveType, type LeaveStatus } from "@/lib/types";
+import { LEAVE_TYPE_LABELS, LEAVE_TYPE_COLORS, getLeaveTypeLabel, type LeaveType, type LeaveStatus } from "@/lib/types";
 import { useAuthStore } from "@/store/useAuthStore";
 import { LeaveRequestModal } from "@/components/leaves/LeaveRequestModal";
 
@@ -283,7 +283,7 @@ export function CalendarClient() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToday}>
             <CalendarDays className="w-4 h-4" />
-            Today
+            {t('buttons.today')}
           </Button>
           <Button size="sm" onClick={() => setShowLeaveModal(true)}>
             <Plus className="w-4 h-4" />
@@ -395,12 +395,12 @@ export function CalendarClient() {
             {(Object.entries(LEAVE_TYPE_COLORS) as [LeaveType, string][]).map(([type, color]) => (
               <div key={type} className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: color }} />
-                <span className="text-xs text-[var(--text-muted)]">{LEAVE_TYPE_LABELS[type]}</span>
+                <span className="text-xs text-[var(--text-muted)]">{getLeaveTypeLabel(type, t)}</span>
               </div>
             ))}
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full border-2 border-[var(--primary)] bg-[var(--primary)]/10 flex-shrink-0" />
-              <span className="text-xs text-[var(--text-muted)]">{t('timePeriods.today')}Today</span>
+              <span className="text-xs text-[var(--text-muted)]">{t('timePeriods.today')}</span>
             </div>
           </motion.div>
         </motion.div>
@@ -467,7 +467,7 @@ export function CalendarClient() {
                           <div className="flex items-center gap-1 mt-1">
                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: LEAVE_TYPE_BG[leave.type] }} />
                             <span className="text-[10px] text-[var(--text-secondary)]">
-                              {LEAVE_TYPE_LABELS[leave.type as LeaveType] ?? leave.type}
+                              {getLeaveTypeLabel(leave.type as LeaveType, t)}
                             </span>
                           </div>
                           <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
@@ -507,7 +507,7 @@ export function CalendarClient() {
                         style={{ background: LEAVE_TYPE_BG[type] }}
                       />
                       <span className="text-xs text-[var(--text-secondary)]">
-                        {LEAVE_TYPE_LABELS[type]}
+                        {getLeaveTypeLabel(type, t)}
                       </span>
                     </div>
                     <Badge variant="secondary" className="text-xs h-5 px-2">{count}</Badge>
@@ -522,7 +522,7 @@ export function CalendarClient() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm uppercase tracking-wider text-[var(--text-muted)]">
-                  On Leave Today
+                  {t('calendar.onLeaveToday')}
                 </CardTitle>
                 {onLeaveToday.length > 0 && (
                   <Badge variant="warning" className="text-[10px] h-5 px-2">
@@ -553,7 +553,7 @@ export function CalendarClient() {
                         {l.userName ?? "Unknown"}
                       </p>
                       <p className="text-[10px] text-[var(--text-muted)]">
-                        {LEAVE_TYPE_LABELS[l.type as LeaveType] ?? l.type}
+                        {getLeaveTypeLabel(l.type as LeaveType, t)}
                       </p>
                     </div>
                     <Badge className="ml-auto text-[9px] h-4 px-1.5 flex-shrink-0" variant="success">

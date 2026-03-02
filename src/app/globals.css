@@ -43,7 +43,7 @@
 html {
   /* scroll-behavior: smooth removed — prevents bfcache restoration (back/forward cache) */
   color-scheme: light dark;
-  overflow-x: hidden;
+  /* overflow-x: hidden removed - it breaks sticky positioning */
 }
 html.dark {
   color-scheme: dark;
@@ -146,11 +146,12 @@ html.light {
   --landing-text-primary:  #0c1a2e;
   --landing-text-secondary: #1e3a6e;
   --landing-text-muted:    #4a6fa5;
-  --landing-navbar-bg:     rgba(255,255,255,0.75);
+  --landing-navbar-bg:     rgba(255,255,255,0.88);
+  --landing-navbar-bg-rgb: 255, 255, 255;
   --landing-navbar-text:   #1e3a6e;
   --landing-navbar-text-hover: #2563eb;
   --landing-card-bg:       rgba(255,255,255,0.5);
-  --landing-card-border:   rgba(37,99,235,0.15);
+  --landing-card-border:   rgba(199,217,245,0.5);
   --landing-gradient-from: #2563eb;
   --landing-gradient-to:   #60a5fa;
   --landing-orb-1:         rgba(37,99,235,0.15);
@@ -248,15 +249,16 @@ html.light {
   --text-on-accent-secondary: rgba(255, 255, 255, 0.9);
 
   /* Landing page specific colors - Dark Theme */
-  --landing-bg:            linear-gradient(135deg, #0f172a 0%, #0c1e3a 50%, #0f172a 100%);
-  --landing-text-primary:  #ffffff;
+  --landing-bg:            linear-gradient(135deg, #060e1e 0%, #0d1e38 50%, #060e1e 100%);
+  --landing-text-primary:  #e8f0fe;
   --landing-text-secondary: #bdd4fa;
   --landing-text-muted:    #7ab3f5;
-  --landing-navbar-bg:     rgba(15,23,42,0.75);
+  --landing-navbar-bg:     rgba(6,14,30,0.88);
+  --landing-navbar-bg-rgb: 6, 14, 30;
   --landing-navbar-text:   #bdd4fa;
   --landing-navbar-text-hover: #60a5fa;
   --landing-card-bg:       rgba(13,30,56,0.4);
-  --landing-card-border:   rgba(59,130,246,0.2);
+  --landing-card-border:   rgba(26,52,96,0.3);
   --landing-gradient-from: #2563eb;
   --landing-gradient-to:   #93c5fd;
   --landing-orb-1:         rgba(37,99,235,0.25);
@@ -285,7 +287,8 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* overflow-x: hidden removed - it breaks sticky positioning */
+  /* Use overflow-x: clip on specific containers instead if needed */
   max-width: 100vw;
 }
 

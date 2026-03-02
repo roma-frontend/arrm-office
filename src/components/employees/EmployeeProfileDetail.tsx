@@ -210,12 +210,12 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           </CardHeader>
           <CardContent className="space-y-3">
             {[
-              { label: "Quality of Work", value: latestRating.qualityOfWork },
-              { label: "Efficiency", value: latestRating.efficiency },
-              { label: "Teamwork", value: latestRating.teamwork },
-              { label: "Initiative", value: latestRating.initiative },
-              { label: "Communication", value: latestRating.communication },
-              { label: "Reliability", value: latestRating.reliability },
+              { label: t('dashboard.qualityOfWork'), value: latestRating.qualityOfWork },
+              { label: t('dashboard.efficiency'), value: latestRating.efficiency },
+              { label: t('dashboard.teamwork'), value: latestRating.teamwork },
+              { label: t('dashboard.initiative'), value: latestRating.initiative },
+              { label: t('dashboard.communication'), value: latestRating.communication },
+              { label: t('dashboard.reliability'), value: latestRating.reliability },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between">
                 <span className="text-sm text-[var(--text-muted)] w-36">{label}</span>

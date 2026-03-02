@@ -132,14 +132,14 @@ export default function ContactPage() {
           {/* ── Right — Form ─────────────────────────────────────────────────── */}
           <div className="relative">
             {/* Card glow */}
-            <div className="absolute -inset-1 rounded-3xl blur-2xl opacity-30"
+            <div className="absolute -inset-1 rounded-3xl blur-xl opacity-15"
               style={{ background: 'linear-gradient(135deg, #38bdf8, #6366f1)' }} />
 
             <div className="relative rounded-3xl border border-white/[0.1] overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))' }}>
+              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))' }}>
 
               {/* Top accent */}
-              <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #38bdf8, #6366f1, transparent)' }} />
+              <div className="h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(56,189,248,0.4), rgba(99,102,241,0.4), transparent)' }} />
 
               <div className="p-8 md:p-10">
                 {sent ? (
@@ -160,7 +160,7 @@ export default function ContactPage() {
                     </div>
                     <Link href="/"
                       className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold text-white transition-all hover:scale-105"
-                      style={{ background: 'linear-gradient(135deg, #38bdf8, #6366f1)', boxShadow: '0 8px 24px rgba(56,189,248,0.25)' }}>
+                      style={{ background: 'linear-gradient(135deg, #38bdf8, #6366f1)', boxShadow: '0 4px 16px rgba(56,189,248,0.15)' }}>
                       {t('ui.backToHome')} <ArrowRight size={15} />
                     </Link>
                   </div>
@@ -178,14 +178,14 @@ export default function ContactPage() {
                         <input
                           type="text" placeholder={t('placeholders.johnSmith')} required
                           value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                          className="w-full bg-transparent text-white placeholder-blue-200/25 text-sm outline-none"
+                          className="w-full bg-transparent text-white placeholder-white/50 text-sm outline-none"
                         />
                       </Field>
                       <Field label={t('contact.email') + ' *'} icon={<Mail size={14} />}>
                         <input
                           type="email" placeholder="john@company.com" required
                           value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                          className="w-full bg-transparent text-white placeholder-blue-200/25 text-sm outline-none"
+                          className="w-full bg-transparent text-white placeholder-white/50 text-sm outline-none"
                         />
                       </Field>
                     </div>
@@ -196,7 +196,7 @@ export default function ContactPage() {
                         <input
                           type="text" placeholder={t('placeholders.acmeCorp')}
                           value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
-                          className="w-full bg-transparent text-white placeholder-blue-200/25 text-sm outline-none"
+                          className="w-full bg-transparent text-white placeholder-white/50 text-sm outline-none"
                         />
                       </Field>
                       <Field label={t('contact.teamSize')} icon={<Users size={14} />}>
@@ -217,7 +217,7 @@ export default function ContactPage() {
                         placeholder={t('contactPage.requirementsPlaceholder')}
                         required rows={4}
                         value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                        className="w-full bg-transparent text-white placeholder-blue-200/25 text-sm outline-none resize-none"
+                        className="w-full bg-transparent text-white placeholder-white/50 text-sm outline-none resize-none"
                       />
                     </Field>
 
@@ -231,7 +231,7 @@ export default function ContactPage() {
                     <button
                       type="submit" disabled={loading}
                       className="w-full py-4 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{ background: 'linear-gradient(135deg, #38bdf8, #6366f1)', boxShadow: '0 8px 32px rgba(56,189,248,0.25)' }}
+                      style={{ background: 'linear-gradient(135deg, #38bdf8, #6366f1)', boxShadow: '0 4px 16px rgba(56,189,248,0.15)' }}
                     >
                       {loading ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -263,11 +263,11 @@ export default function ContactPage() {
 function Field({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
-      <label className="flex items-center gap-1.5 text-blue-200/50 text-xs font-medium mb-2">
-        <span className="text-blue-400/60">{icon}</span>
+      <label className="flex items-center gap-1.5 text-white text-xs font-medium mb-2">
+        <span className="text-white/80">{icon}</span>
         {label}
       </label>
-      <div className="px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.04] focus-within:border-blue-500/40 focus-within:bg-white/[0.06] transition-all">
+      <div className="px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] focus-within:border-blue-500/30 focus-within:bg-white/[0.03] transition-all">
         {children}
       </div>
     </div>

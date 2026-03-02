@@ -24,6 +24,7 @@ import type * as organizations from "../organizations.js";
 import type * as productivity from "../productivity.js";
 import type * as sla from "../sla.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as subscriptions_admin from "../subscriptions_admin.js";
 import type * as supervisorRatings from "../supervisorRatings.js";
 import type * as tasks from "../tasks.js";
 import type * as timeTracking from "../timeTracking.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   productivity: typeof productivity;
   sla: typeof sla;
   subscriptions: typeof subscriptions;
+  subscriptions_admin: typeof subscriptions_admin;
   supervisorRatings: typeof supervisorRatings;
   tasks: typeof tasks;
   timeTracking: typeof timeTracking;

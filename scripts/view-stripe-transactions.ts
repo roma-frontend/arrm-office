@@ -10,6 +10,8 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
+import Stripe from 'stripe';
+import dotenv from 'dotenv';
 
 // Load environment variables from .env.local
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
@@ -102,7 +104,7 @@ function printSeparator() {
   console.log(colors.dim + '─'.repeat(100) + colors.reset);
 }
 
-function printSubscription(sub: any, index: number) {
+async function printSubscription(sub: any, index: number, stripe: Stripe) {
   const periodStart = formatDate(sub.currentPeriodStart);
   const periodEnd = formatDate(sub.currentPeriodEnd);
   const created = formatDate(sub.createdAt);
@@ -114,6 +116,26 @@ function printSubscription(sub: any, index: number) {
   console.log(`${colors.bright}Email:${colors.reset}               ${colors.cyan}${sub.email || 'N/A'}${colors.reset}`);
   console.log(`${colors.bright}Stripe Customer ID:${colors.reset}  ${colors.yellow}${sub.stripeCustomerId}${colors.reset}`);
   console.log(`${colors.bright}Subscription ID:${colors.reset}     ${colors.yellow}${sub.stripeSubscriptionId}${colors.reset}`);
+  
+  // Get payment method info from Stripe
+  try {
+    const customer = await stripe.customers.retrieve(sub.stripeCustomerId, {
+      expand: ['invoice_settings.default_payment_method']
+    });
+    
+    if (customer && !customer.deleted) {
+      const paymentMethod = customer.invoice_settings?.default_payment_method;
+      
+      if (paymentMethod && typeof paymentMethod === 'object') {
+        if (paymentMethod.card) {
+          const card = paymentMethod.card;
+          console.log(`${colors.bright}Payment Card:${colors.reset}        ${colors.green}💳 ${card.brand.toUpperCase()} •••• ${card.last4}${colors.reset} (exp: ${card.exp_month}/${card.exp_year})`);
+        }
+      }
+    }
+  } catch (error) {
+    // Если не удалось получить данные карты, просто пропускаем
+  }
   
   if (sub.stripeSessionId) {
     console.log(`${colors.bright}Session ID:${colors.reset}          ${colors.yellow}${sub.stripeSessionId}${colors.reset}`);
@@ -189,6 +211,7 @@ async function main() {
     
     // Read Convex deployment URL from environment or .env.local
     const deploymentUrl = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     
     if (!deploymentUrl) {
       console.error(`${colors.red}❌ Error: CONVEX_URL not found in environment variables${colors.reset}`);
@@ -196,9 +219,18 @@ async function main() {
       process.exit(1);
     }
     
+    if (!stripeSecretKey) {
+      console.error(`${colors.red}❌ Error: STRIPE_SECRET_KEY not found in environment variables${colors.reset}`);
+      console.log(`\n${colors.yellow}Please set STRIPE_SECRET_KEY in your .env.local file${colors.reset}\n`);
+      process.exit(1);
+    }
+    
     console.log(`${colors.dim}Connecting to: ${deploymentUrl}${colors.reset}\n`);
     
     const client = new ConvexHttpClient(deploymentUrl);
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2024-12-18.acacia',
+    });
     
     console.log(`${colors.cyan}📡 Fetching subscriptions...${colors.reset}\n`);
     
@@ -217,12 +249,12 @@ async function main() {
     const sorted = [...subscriptions].sort((a, b) => b.createdAt - a.createdAt);
     
     // Print each subscription
-    sorted.forEach((sub, index) => {
-      printSubscription(sub, index);
+    for (let index = 0; index < sorted.length; index++) {
+      await printSubscription(sorted[index], index, stripe);
       if (index < sorted.length - 1) {
         printSeparator();
       }
-    });
+    }
     
     // Print summary
     printSummary(subscriptions);
