@@ -1581,6 +1581,13 @@
     "hour12": "12-hour (2:30 PM)"
   },
   "settingsProductivity": {
+    "focusMode": "Focus Mode",
+    "focusModeDesc": "Minimize distractions and stay focused on your work",
+    "focusModeToggle": "Enable Focus Mode",
+    "focusModeHelp": "When enabled, notifications will be muted and distractions minimized",
+    "breakReminders": "Break Reminders",
+    "breakRemindersDesc": "Get reminded to take breaks at regular intervals",
+    "breakReminderMessage": "Time for a break! Remember to stretch and rest your eyes.",
     "breakNotifications": "Break Notifications",
     "getReminded": "Get reminded to take breaks and stretch",
     "dailyGoals": "Daily Goals",
@@ -1588,6 +1595,7 @@
     "tasksPerDay": "Number of tasks to complete per day",
     "tasksDay": "tasks/day",
     "keyboardShortcuts": "Keyboard Shortcuts",
+    "keyboardShortcutsDesc": "Use keyboard shortcuts to navigate faster",
     "commandPalette": "Command Palette",
     "quickSearch": "Quick search and actions",
     "newTaskShortcut": "New task",
@@ -1603,6 +1611,16 @@
     "toggleSidebar": "Toggle Sidebar",
     "showHideNav": "Show/hide navigation",
     "openNotifications": "Open notification panel"
+  },
+  "settingsNotifications": {
+    "title": "Notification Settings",
+    "description": "Manage how and when you receive notifications",
+    "emailNotifications": "Email Notifications",
+    "emailNotificationsDesc": "Receive notifications via email",
+    "pushNotifications": "Push Notifications",
+    "pushNotificationsDesc": "Receive push notifications in your browser",
+    "weeklyReport": "Weekly Report",
+    "weeklyReportDesc": "Get a weekly summary of your activities via email"
   },
   "settingsIntegration": {
     "automatedReports": "Automated Reports",

@@ -23,6 +23,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
 
@@ -43,13 +44,13 @@ export default function SubscriptionsManagementPage() {
   const [loading, setLoading] = useState(false);
   
   // Check if user is superadmin
-  console.log("[Subscriptions Page] currentUser:", currentUser);
-  console.log("[Subscriptions Page] isSuperAdmin:", currentUser?.email?.toLowerCase() === SUPERADMIN_EMAIL);
+  console.log("[Subscriptions Page] user from useAuthStore:", user);
+  console.log("[Subscriptions Page] isSuperAdmin:", user?.email?.toLowerCase() === SUPERADMIN_EMAIL);
   
-  const isSuperAdmin = currentUser?.email?.toLowerCase() === SUPERADMIN_EMAIL;
+  const isSuperAdmin = user?.email?.toLowerCase() === SUPERADMIN_EMAIL;
   
   // Wait for user to load
-  if (currentUser === undefined) {
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div>Loading...</div>
@@ -58,7 +59,7 @@ export default function SubscriptionsManagementPage() {
   }
   
   // If not superadmin, show access denied
-  if (!currentUser || !isSuperAdmin) {
+  if (!isSuperAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-md">
