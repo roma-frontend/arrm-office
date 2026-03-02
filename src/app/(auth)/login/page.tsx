@@ -28,9 +28,17 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loginMode, setLoginMode] = useState<"email" | "face">("email");
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
-  // Check if OAuth sync is in progress
-  const isOAuthSyncing = status === "authenticated" && !isAuthenticated;
+  // Check if OAuth sync is in progress OR redirecting
+  const isOAuthSyncing = (status === "authenticated" && !isAuthenticated) || isRedirecting;
+  
+  // Detect when auth completes and set redirecting state
+  useEffect(() => {
+    if (status === "authenticated" && isAuthenticated && !isRedirecting) {
+      setIsRedirecting(true);
+    }
+  }, [status, isAuthenticated, isRedirecting]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

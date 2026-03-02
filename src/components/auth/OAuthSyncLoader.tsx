@@ -25,12 +25,15 @@ export function OAuthSyncLoader() {
       const timer = setTimeout(() => {
         console.log("[OAuthSyncLoader] ⏰ Timeout - hiding loader");
         setIsSyncing(false);
-      }, 5000); // Max 5 seconds
+      }, 8000); // Max 8 seconds to allow smooth transition
       
       return () => clearTimeout(timer);
-    } else if (isAuthenticated) {
-      console.log("[OAuthSyncLoader] ✅ User authenticated - hiding loader");
-      setIsSyncing(false);
+    } else if (isAuthenticated && pathname === "/login") {
+      // Keep showing for a bit longer after auth to prevent flash
+      console.log("[OAuthSyncLoader] ✅ User authenticated - keeping loader briefly...");
+      setTimeout(() => {
+        setIsSyncing(false);
+      }, 300);
     }
   }, [status, isAuthenticated, pathname]);
 
