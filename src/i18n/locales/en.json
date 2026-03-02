@@ -1071,7 +1071,23 @@
     "daysActive": "Days Active",
     "tasksCompleted": "Tasks Completed",
     "leavesTaken": "Leaves Taken",
-    "projects": "Projects"
+    "projects": "Projects",
+    "employeeType": "Employee Type"
+  },
+  "modals": {
+    "addEmployee": {
+      "title": "Add New Employee",
+      "description": "Fill in the employee information below",
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "invalidEmail": "Invalid email address",
+      "departmentRequired": "Department is required",
+      "positionRequired": "Position is required",
+      "employeeAddedSuccess": "Employee added successfully",
+      "failedToAdd": "Failed to add employee",
+      "addingEmployee": "Adding...",
+      "addEmployeeButton": "Add Employee"
+    }
   },
   "employeeInfo": {
     "email": "Email",

@@ -92,11 +92,14 @@ export default function LoginPage() {
         tourId="login-tour"
         onComplete={() => console.log("Tour completed!")}
         onSkip={() => console.log("Tour skipped")}
-      />
+      />}
 
       <div
         className="min-h-screen flex items-center justify-center p-4"
-        style={{ background: "var(--background)" }}
+        style={{ 
+          display: isOAuthSyncing ? 'none' : 'flex',
+          background: "var(--background)" 
+        }}
       >
         {/* Background gradient */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
