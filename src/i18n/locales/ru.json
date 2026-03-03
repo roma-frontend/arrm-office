@@ -695,7 +695,7 @@
     "unpaid": "Неоплачиваемый отпуск",
     "sick": "Больничный",
     "family": "Семейный отпуск",
-    "doctor": "Визит к врачу"
+    "doctor": "Посещение врача"
   },
   "leave": {
     "allStatuses": "Все статусы",
@@ -2436,7 +2436,7 @@
     "features": "Возможности",
     "analytics": "Аналитика",
     "pricing": "Цены",
-    "about": "О нас",
+    "testimonials": "Отзывы",
     "signIn": "Войти",
     "getStartedFree": "Начать бесплатно",
     "closeMenu": "Закрыть меню"
@@ -2564,7 +2564,10 @@
     "leaveApprovals": "Leave Approvals: Instant notifications",
     "connected": "Connected",
     "disconnect": "Disconnect",
-    "connect": "Connect"
+    "connect": "Connect",
+    "googleCalendar": "Google Календарь",
+    "googleCalendarDesc": "Синхронизация отпусков с Google Календарь",
+    "teamCommunication": "Командное общение"
   },
   "settingsAdvancedSecurity": {
     "twoFactor": "Two-Factor Authentication",
@@ -2686,16 +2689,6 @@
     "marketingDesc": "Используются для таргетированной рекламы",
     "preference": "Предпочтения cookies",
     "preferenceDesc": "Запоминают ваши настройки"
-  },
-  "mobileMenu": {
-    "home": "Главная",
-    "features": "Возможности",
-    "analytics": "Аналитика",
-    "pricing": "Цены",
-    "testimonials": "Отзывы",
-    "signIn": "Войти",
-    "getStartedFree": "Начать бесплатно",
-    "closeMenu": "Закрыть меню"
   },
   "keyboard": {
     "title": "Keyboard Shortcuts",
@@ -4672,13 +4665,6 @@
     "stillHaveQuestions": "Остались вопросы?",
     "contactSupport": "Связаться с поддержкой"
   },
-  "leaveTypes": {
-    "paid": "Оплачиваемый отпуск",
-    "unpaid": "Неоплачиваемый отпуск",
-    "sick": "Больничный",
-    "family": "Семейный отпуск",
-    "doctor": "Посещение врача"
-  },
   "faceRegistration": {
     "waitForDetected": "Дождитесь индикатора \"Лицо обнаружено\"",
     "faceDetected": "Лицо обнаружено"
@@ -4688,5 +4674,48 @@
   },
   "features": {
     "advancedAnalytics": "Расширенная аналитика"
+  },
+  "contactPage": {
+    "team1to10": "1-10 сотрудников",
+    "team11to50": "11-50 сотрудников",
+    "team51to200": "51-200 сотрудников",
+    "team201to500": "201-500 сотрудников",
+    "team500plus": "500+ сотрудников",
+    "employeesSupported": "Неограниченное количество сотрудников",
+    "securityReview": "Проверка безопасности и соответствия",
+    "customIntegrations": "Пользовательские интеграции",
+    "prioritySupport": "Приоритетная поддержка 24/7",
+    "onPremise": "Возможность локального развертывания",
+    "uptime": "99.9% гарантия работоспособности"
+  },
+  "task": {
+    "createTask": "Создать задачу",
+    "assignTask": "Назначить задачу"
+  },
+  "settingsDashboard": {
+    "defaultLandingPage": "Главная страница",
+    "redirectAfterLogin": "Перенаправление после входа",
+    "quickStatistics": "Быстрая статистика",
+    "quickStatisticsDesc": "Отображение ключевых показателей",
+    "leaveCalendar": "Календарь отпусков",
+    "leaveCalendarDesc": "Просмотр графика отпусков команды",
+    "upcomingTasks": "Предстоящие задачи",
+    "upcomingTasksDesc": "Показать приближающиеся задачи",
+    "teamActivity": "Активность команды",
+    "teamActivityDesc": "Отображение последних действий команды",
+    "recentLeaves": "Последние отпуска",
+    "recentLeavesDesc": "Показать недавно поданные заявки",
+    "analyticsChart": "График аналитики",
+    "analyticsChartDesc": "Визуальное представление HR данных",
+    "displayPerformanceDesc": "Показать метрики производительности",
+    "compactModeDesc": "Уменьшить отступы для более компактного вида",
+    "every5Minutes": "Каждые 5 минут",
+    "manualRefreshOnly": "Только ручное обновление"
+  },
+  "modals": {
+    "assignSupervisor": {
+      "title": "Назначить руководителя",
+      "description": "Выберите руководителя для этого сотрудника"
+    }
   }
 }

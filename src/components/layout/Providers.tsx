@@ -55,7 +55,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             id: session.userId,
             name: session.name,
             email: session.email,
-            role: session.role as "admin" | "supervisor" | "employee",
+            role: session.role as "superadmin" | "admin" | "supervisor" | "employee",
             department: session.department,
             position: session.position,
             employeeType: session.employeeType as "staff" | "contractor",

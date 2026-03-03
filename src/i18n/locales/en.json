@@ -1098,6 +1098,10 @@
       "failedToAdd": "Failed to add employee",
       "addingEmployee": "Adding...",
       "addEmployeeButton": "Add Employee"
+    },
+    "assignSupervisor": {
+      "title": "Assign Supervisor",
+      "description": "Select a supervisor for this employee"
     }
   },
   "employeeInfo": {
@@ -1497,10 +1501,10 @@
     "features": "Features",
     "analytics": "Analytics",
     "pricing": "Pricing",
-    "about": "About",
+    "testimonials": "Testimonials",
     "signIn": "Sign In",
     "getStartedFree": "Get Started Free",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close Menu"
   },
   "registerPage": {
     "weak": "Weak",
@@ -1631,7 +1635,10 @@
     "leaveApprovals": "Leave Approvals: Instant notifications",
     "connected": "Connected",
     "disconnect": "Disconnect",
-    "connect": "Connect"
+    "connect": "Connect",
+    "googleCalendar": "Google Calendar",
+    "googleCalendarDesc": "Sync leave requests with Google Calendar",
+    "teamCommunication": "Team Communication"
   },
   "settingsAdvancedSecurity": {
     "twoFactor": "Two-Factor Authentication",
@@ -1688,14 +1695,8 @@
     "assignTo": "Assign To",
     "dueDate": "Due Date",
     "priority": "Priority",
-    "low": "Low",
-    "medium": "Medium",
-    "high": "High",
-    "urgent": "Urgent",
     "status": "Status",
     "todo": "To Do",
-    "inProgress": "In Progress",
-    "completed": "Completed",
     "taskCreated": "Task created successfully",
     "taskUpdated": "Task updated successfully",
     "taskDeleted": "Task deleted successfully",
@@ -1754,16 +1755,6 @@
     "acceptAll": "Accept All",
     "rejectAll": "Reject All",
     "settings": "Settings"
-  },
-  "mobileMenu": {
-    "home": "Home",
-    "features": "Features",
-    "analytics": "Analytics",
-    "pricing": "Pricing",
-    "testimonials": "Testimonials",
-    "signIn": "Sign In",
-    "getStartedFree": "Get Started Free",
-    "closeMenu": "Close Menu"
   },
   "keyboard": {
     "title": "Keyboard Shortcuts",
@@ -2313,5 +2304,42 @@
     "preparing": "Preparing",
     "exporting": "Exporting",
     "complete": "Complete"
+  },
+  "contactPage": {
+    "team1to10": "1-10 employees",
+    "team11to50": "11-50 employees",
+    "team51to200": "51-200 employees",
+    "team201to500": "201-500 employees",
+    "team500plus": "500+ employees",
+    "employeesSupported": "Unlimited employees supported",
+    "securityReview": "Security & compliance review",
+    "customIntegrations": "Custom integrations",
+    "prioritySupport": "24/7 priority support",
+    "onPremise": "On-premise deployment option",
+    "uptime": "99.9% uptime SLA"
+  },
+  "task": {
+    "createTask": "Create Task",
+    "assignTask": "Assign Task"
+  },
+  "settingsDashboard": {
+    "defaultLandingPage": "Default Landing Page",
+    "redirectAfterLogin": "Redirect after login",
+    "quickStatistics": "Quick Statistics",
+    "quickStatisticsDesc": "Display key metrics and numbers at a glance",
+    "leaveCalendar": "Leave Calendar",
+    "leaveCalendarDesc": "View team leave schedule in calendar format",
+    "upcomingTasks": "Upcoming Tasks",
+    "upcomingTasksDesc": "Show tasks that are due soon",
+    "teamActivity": "Team Activity",
+    "teamActivityDesc": "Display recent team member activities",
+    "recentLeaves": "Recent Leaves",
+    "recentLeavesDesc": "Show recently submitted leave requests",
+    "analyticsChart": "Analytics Chart",
+    "analyticsChartDesc": "Visual representation of HR analytics data",
+    "displayPerformanceDesc": "Show performance metrics and scores",
+    "compactModeDesc": "Reduce spacing for more compact layout",
+    "every5Minutes": "Every 5 minutes",
+    "manualRefreshOnly": "Manual refresh only"
   }
 }

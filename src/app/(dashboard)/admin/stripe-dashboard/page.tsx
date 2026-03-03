@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
 
@@ -48,14 +49,14 @@ interface Subscription {
 export default function StripeDashboardPage() {
   const subscriptions = useQuery(api.subscriptions.listAll) as Subscription[] | undefined;
   
-  // Get current user from Convex Auth
-  const currentUser = useQuery(api.users.getCurrentUser);
+  // Get current user from auth store
+  const { user: currentUser } = useAuthStore();
   
   // Check if user is superadmin
   const isSuperAdmin = currentUser?.email?.toLowerCase() === SUPERADMIN_EMAIL;
   
   // Wait for user to load
-  if (currentUser === undefined) {
+  if (!currentUser) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div>Loading...</div>
@@ -64,7 +65,7 @@ export default function StripeDashboardPage() {
   }
   
   // If not superadmin, show access denied
-  if (!currentUser || !isSuperAdmin) {
+  if (!isSuperAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-md">
