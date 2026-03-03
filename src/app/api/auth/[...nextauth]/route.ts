@@ -25,10 +25,11 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async redirect({ url, baseUrl }) {
-      // After successful sign in, redirect to dashboard
+      // Allow redirects to any internal URL
       if (url.startsWith(baseUrl)) return url;
       if (url.startsWith("/")) return `${baseUrl}${url}`;
-      return `${baseUrl}/dashboard`;
+      // Only redirect to dashboard for external URLs or as fallback
+      return baseUrl;
     },
     async session({ session, token }) {
       // Add user info to session
