@@ -1,0 +1,11 @@
+{
+  "planGate": {
+    "upgradeRequired": "Upgrade Required",
+    "featureNotAvailable": "This feature is not available on your current plan. Upgrade to unlock it.",
+    "upgradeTo": "Upgrade to {plan}",
+    "analyticsTitle": "Analytics — Professional Plan Required",
+    "analyticsDescription": "Advanced analytics and HR insights are available on the Professional plan and above.",
+    "reportsTitle": "Reports — Professional Plan Required",
+    "reportsDescription": "Detailed reports and CSV export are available on the Professional plan and above."
+  }
+}

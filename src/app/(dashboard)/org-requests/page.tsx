@@ -37,7 +37,11 @@ export default function OrgRequestsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
 
   // Check if superadmin
-  if (!user || user.email.toLowerCase() !== "romangulanyan@gmail.com") {
+  const isSuperadmin = user?.role === "superadmin" || user?.email?.toLowerCase() === "romangulanyan@gmail.com";
+  
+  console.log("🔍 [Org Requests] User check:", { email: user?.email, role: user?.role, isSuperadmin });
+  
+  if (!user || !isSuperadmin) {
     redirect("/dashboard");
   }
 

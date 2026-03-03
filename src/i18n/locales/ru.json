@@ -4717,5 +4717,14 @@
       "title": "Назначить руководителя",
       "description": "Выберите руководителя для этого сотрудника"
     }
+  },
+  "planGate": {
+    "upgradeRequired": "Требуется обновление",
+    "featureNotAvailable": "Эта функция недоступна в вашем текущем тарифе. Обновите тариф, чтобы разблокировать.",
+    "upgradeTo": "Обновить до",
+    "analyticsTitle": "Аналитика — Требуется тариф Professional",
+    "analyticsDescription": "Расширенная аналитика и HR-инсайты доступны в тарифе Professional и выше.",
+    "reportsTitle": "Отчёты — Требуется тариф Professional",
+    "reportsDescription": "Детальные отчёты и экспорт в CSV доступны в тарифе Professional и выше."
   }
 }

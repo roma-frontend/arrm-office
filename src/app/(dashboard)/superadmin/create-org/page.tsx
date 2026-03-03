@@ -31,13 +31,17 @@ export default function SuperadminCreateOrgPage() {
     );
   }
 
-  if (user?.email?.toLowerCase() !== "romangulanyan@gmail.com") {
+  const isSuperadmin = user?.role === "superadmin" || user?.email?.toLowerCase() === "romangulanyan@gmail.com";
+  
+  console.log("🔍 [Create Org] User check:", { email: user.email, role: user.role, isSuperadmin });
+  
+  if (!isSuperadmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-2">{t('ui.accessDenied')}</h1>
           <p>{t('ui.onlySuperadminCanAccess')}</p>
-          <p className="text-sm mt-2">Your email: {user.email}</p>
+          <p className="text-sm mt-2">Your email: {user.email} | Role: {user.role}</p>
         </div>
       </div>
     );

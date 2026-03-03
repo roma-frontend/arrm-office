@@ -44,10 +44,10 @@ export default function SubscriptionsManagementPage() {
   const [loading, setLoading] = useState(false);
   
   // Check if user is superadmin
-  console.log("[Subscriptions Page] user from useAuthStore:", user);
-  console.log("[Subscriptions Page] isSuperAdmin:", user?.email?.toLowerCase() === SUPERADMIN_EMAIL);
+  const isSuperAdmin = user?.role === "superadmin" || user?.email?.toLowerCase() === SUPERADMIN_EMAIL;
   
-  const isSuperAdmin = user?.email?.toLowerCase() === SUPERADMIN_EMAIL;
+  console.log("[Subscriptions Page] user from useAuthStore:", user);
+  console.log("[Subscriptions Page] isSuperAdmin:", isSuperAdmin, "role:", user?.role, "email:", user?.email);
   
   // Wait for user to load
   if (!user) {

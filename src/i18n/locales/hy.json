@@ -2738,5 +2738,14 @@
   },
   "features": {
     "advancedAnalytics": "Առաջադեմ վերլուծություն"
+  },
+  "planGate": {
+    "upgradeRequired": "Անհրաժեշտ է թարմացում",
+    "featureNotAvailable": "Այս ֆունկցիան հասանելի չէ ձեր ներկայիս պլանով։ Թարմացրեք՝ ապակողպելու համար:",
+    "upgradeTo": "Թարմացնել մինչև",
+    "analyticsTitle": "Վերլուծություն — Անհրաժեշտ է Professional պլան",
+    "analyticsDescription": "Խորացված վերլուծություն և HR տեղեկատվությունը հասանելի են Professional պլանով և ավելի բարձր:",
+    "reportsTitle": "Հաշվետվություններ — Անհրաժեշտ է Professional պլան",
+    "reportsDescription": "Մանրամասն հաշվետվություններ և CSV արտահանումը հասանելի են Professional պլանով և ավելի բարձր:"
   }
 }

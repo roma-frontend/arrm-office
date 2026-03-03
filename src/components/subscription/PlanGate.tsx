@@ -5,6 +5,7 @@ import { Lock, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePlanFeatures, PLAN_LABELS, type PlanFeatures, type PlanType } from '@/hooks/usePlanFeatures';
 import { UpgradeModal } from './UpgradeModal';
+import { useTranslation } from 'react-i18next';
 
 interface PlanGateProps {
   /** Feature key from PlanFeatures to check */
@@ -37,6 +38,7 @@ function UpgradeCard({
   requiredPlan: PlanType;
   onUpgradeClick: () => void;
 }) {
+  const { t } = useTranslation();
   const planLabel = PLAN_LABELS[requiredPlan];
 
   return (
@@ -50,7 +52,7 @@ function UpgradeCard({
       </div>
       <Button size="sm" className="gap-1.5" onClick={onUpgradeClick}>
         <Zap className="w-4 h-4" />
-        Upgrade to {planLabel}
+        {t('planGate.upgradeTo')} {planLabel}
       </Button>
     </div>
   );
@@ -61,13 +63,18 @@ function UpgradeCard({
 export function PlanGate({
   feature,
   children,
-  title = 'Upgrade Required',
-  description = 'This feature is not available on your current plan. Upgrade to unlock it.',
+  title,
+  description,
   mode = 'replace',
   fallback,
 }: PlanGateProps) {
+  const { t } = useTranslation();
   const { canAccess, requiresPlan, isLoading } = usePlanFeatures();
   const [modalOpen, setModalOpen] = useState(false);
+  
+  // Use translations as defaults
+  const finalTitle = title || t('planGate.upgradeRequired');
+  const finalDescription = description || t('planGate.featureNotAvailable');
 
   // While loading — render children to avoid flash of upgrade screen
   if (isLoading) return <>{children}</>;
