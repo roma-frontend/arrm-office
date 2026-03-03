@@ -60,7 +60,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden" style={{ background: 'var(--background)' }}>
 
       {/* Background glows */}
       <div className="absolute inset-0 pointer-events-none">

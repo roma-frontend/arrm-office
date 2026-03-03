@@ -7,11 +7,10 @@ export default function Loading() {
   const { t } = useTranslation();
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#020817] via-[#0a0f2e] to-[#120820]">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
       <ShieldLoader 
         size="xl" 
-        message="Loading your workspace..." 
-        className="text-white"
+        message="Loading your workspace..."
       />
     </div>
   );
