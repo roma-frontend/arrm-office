@@ -22,6 +22,7 @@ import type * as notifications from "../notifications.js";
 import type * as organizationRequests from "../organizationRequests.js";
 import type * as organizations from "../organizations.js";
 import type * as productivity from "../productivity.js";
+import type * as security from "../security.js";
 import type * as sla from "../sla.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as subscriptions_admin from "../subscriptions_admin.js";
@@ -54,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   organizationRequests: typeof organizationRequests;
   organizations: typeof organizations;
   productivity: typeof productivity;
+  security: typeof security;
   sla: typeof sla;
   subscriptions: typeof subscriptions;
   subscriptions_admin: typeof subscriptions_admin;

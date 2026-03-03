@@ -640,6 +640,69 @@ export default defineSchema({
     .index("by_plan", ["plan"])
     .index("by_status", ["status"]),
 
+  // ── SECURITY SETTINGS (superadmin global toggles) ────────────────────────
+  securitySettings: defineTable({
+    key: v.string(),          // e.g. "adaptive_auth", "keystroke_dynamics", "continuous_face", "audit_logging"
+    enabled: v.boolean(),
+    updatedBy: v.id("users"),
+    updatedAt: v.number(),
+    description: v.optional(v.string()),
+  }).index("by_key", ["key"]),
+
+  // ── LOGIN ATTEMPTS ────────────────────────────────────────────────────────
+  loginAttempts: defineTable({
+    email: v.string(),
+    userId: v.optional(v.id("users")),
+    organizationId: v.optional(v.id("organizations")),
+    success: v.boolean(),
+    method: v.union(
+      v.literal("password"),
+      v.literal("face_id"),
+      v.literal("webauthn"),
+      v.literal("google"),
+    ),
+    ip: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    deviceFingerprint: v.optional(v.string()),
+    riskScore: v.optional(v.number()),
+    riskFactors: v.optional(v.array(v.string())),
+    blockedReason: v.optional(v.string()),
+    country: v.optional(v.string()),
+    city: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_user", ["userId"])
+    .index("by_org", ["organizationId"])
+    .index("by_created", ["createdAt"])
+    .index("by_success", ["success"]),
+
+  // ── DEVICE FINGERPRINTS ───────────────────────────────────────────────────
+  deviceFingerprints: defineTable({
+    userId: v.id("users"),
+    fingerprint: v.string(),           // hash of browser/device signature
+    userAgent: v.optional(v.string()),
+    firstSeenAt: v.number(),
+    lastSeenAt: v.number(),
+    isTrusted: v.boolean(),            // admin/user can mark as trusted
+    loginCount: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_fingerprint", ["fingerprint"])
+    .index("by_user_fingerprint", ["userId", "fingerprint"]),
+
+  // ── KEYSTROKE PROFILES ────────────────────────────────────────────────────
+  keystrokeProfiles: defineTable({
+    userId: v.id("users"),
+    // Average timing patterns (ms between keypresses)
+    avgDwell: v.number(),              // avg key hold time
+    avgFlight: v.number(),             // avg time between keys
+    stdDevDwell: v.optional(v.number()),
+    stdDevFlight: v.optional(v.number()),
+    sampleCount: v.number(),           // how many samples collected
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
+
   // ── AI SITE EDITOR USAGE LIMITS ──────────────────────────────────────────
   // Track monthly usage limits for different plans
   aiSiteEditorUsage: defineTable({
