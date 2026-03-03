@@ -162,7 +162,7 @@ export default function DashboardClient() {
                 <Link href="/superadmin/create-org"><Building2 className="w-4 h-4" />{t('dashboard.createOrg')}</Link>
               </Button>
               <Button asChild size="sm" variant="outline" className="border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Link href="/admin/stripe-dashboard"><CreditCard className="w-4 h-4" />{t('dashboard.stripeDashboard')}</Link>
+                <Link href="/superadmin/stripe-dashboard"><CreditCard className="w-4 h-4" />{t('dashboard.stripeDashboard')}</Link>
               </Button>
             </>
           )}

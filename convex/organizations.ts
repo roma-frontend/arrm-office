@@ -104,9 +104,19 @@ export const listAll = query({
 // SUPERADMIN: Get all organizations
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllOrganizations = query({
-  args: { superadminUserId: v.id("users") },
-  handler: async (ctx, { superadminUserId }) => {
-    const caller = await ctx.db.get(superadminUserId);
+  args: {},
+  handler: async (ctx) => {
+    // Get current user from Convex Auth
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+    
+    const caller = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .first();
+    
     if (!caller || caller.email.toLowerCase() !== SUPERADMIN_EMAIL) {
       throw new Error("Superadmin only");
     }

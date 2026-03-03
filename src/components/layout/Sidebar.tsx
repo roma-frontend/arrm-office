@@ -41,7 +41,7 @@ const navItems = [
   { href: "/reports", labelKey: "nav.reports", icon: FileText, roles: ["admin", "supervisor"] },
   { href: "/tasks", labelKey: "nav.tasks", icon: CheckSquare, roles: ["admin", "supervisor", "employee"] },
   { href: "/approvals", labelKey: "nav.approvals", icon: UserCheck, roles: ["admin"] },
-  { href: "/admin/subscriptions", labelKey: "nav.subscriptions", icon: CreditCard, roles: ["admin"] },
+  { href: "/superadmin/subscriptions", labelKey: "nav.subscriptions", icon: CreditCard, roles: ["superadmin"] },
   { href: "/ai-site-editor", labelKey: "nav.aiSiteEditor", icon: Sparkles, roles: ["admin", "supervisor", "employee"], badge: "AI" },
   { href: "/profile", labelKey: "nav.profile", icon: User, roles: ["admin", "supervisor", "employee"] },
   { href: "/settings", labelKey: "nav.settings", icon: Settings, roles: ["admin", "supervisor", "employee"] },

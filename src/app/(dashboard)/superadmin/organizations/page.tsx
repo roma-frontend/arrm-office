@@ -14,10 +14,7 @@ export default function OrganizationsPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
-  const organizations = useQuery(
-    api.organizations.getAllOrganizations,
-    user?.id ? { superadminUserId: user.id as any } : "skip"
-  );
+  const organizations = useQuery(api.organizations.getAllOrganizations);
 
   const isSuperadmin = user?.role === "superadmin" || user?.email?.toLowerCase() === "romangulanyan@gmail.com";
   
