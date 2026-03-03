@@ -2461,7 +2461,7 @@
         "suspendedAt": "Suspended at",
         "autoBlockNotice": "This user was automatically blocked by the security system due to high-risk activity."
       },
-      "threatLevel": "Threat Level",
+    "threatLevel": "Threat Level",
     "logins24h": "Logins (24h)",
     "failed": "Failed",
     "highRisk": "High Risk",
