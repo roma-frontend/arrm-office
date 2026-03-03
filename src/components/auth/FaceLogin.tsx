@@ -555,28 +555,17 @@ export function FaceLogin() {
         throw new Error(`Login failed: ${loginError?.message || 'Unknown error'}`);
       }
 
-      // Update auth store with matched user data
-      console.log("🔍 Step 6: Updating auth store...");
-      
-      setUser({
-        id: matchedUserData.userId,
-        name: matchedUserData.name,
-        email: matchedUserData.email,
-        role: "employee", // Will be updated from session
-        department: null,
-        position: null,
-        employeeType: "staff",
-        avatar: null,
-      });
-      console.log("✅ Auth store updated with basic user data");
+      // Don't update auth store here - let Providers.tsx load from session
+      console.log("🔍 Step 6: Session created, user data will be loaded by Providers");
       
       // Redirect to dashboard after ensuring session is set
       console.log("🔍 Step 7: Redirecting to dashboard...");
       
-      // Wait a bit longer for session cookies to be properly set
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for session cookies to be properly set
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Hard navigation to ensure fresh page load with new session
+      // Providers will load user data from session automatically
       window.location.href = "/dashboard";
 
     } catch (error: any) {

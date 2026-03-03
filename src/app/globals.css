@@ -77,8 +77,8 @@ html.light {
   --ring:                #2563eb;
 
   /* Primary */
-  --primary:             #1d4ed8;
-  --primary-hover:       #1e40af;
+  --primary:             #2563eb;
+  --primary-hover:       #1d4ed8;
   --primary-foreground:  #ffffff;
 
   /* Secondary */
@@ -92,6 +92,9 @@ html.light {
   /* Accent */
   --accent:              #0ea5e9;
   --accent-foreground:   #ffffff;
+
+  /* Loader - контрастный цвет для светлой темы */
+  --loader-color:        #1e40af;
 
   /* Semantic */
   --destructive:         #ef4444;
@@ -199,6 +202,9 @@ html.light {
   /* Accent */
   --accent:              #38bdf8;
   --accent-foreground:   #ffffff;
+
+  /* Loader - яркий цвет для тёмной темы */
+  --loader-color:        #60a5fa;
 
   /* Semantic */
   --destructive:         #f87171;
