@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/useAuthStore";
+import type { Id } from "@/convex/_generated/dataModel";
 import {
   Shield,
   ShieldCheck,
@@ -85,14 +86,14 @@ const FEATURES = [
   },
 ] as const;
 
-const COLOR_MAP: Record<string, { bg: string; border: string; badge: string; icon: string; toggle: string }> = {
-  blue:   { bg: "bg-blue-950/40",   border: "border-blue-800/50",   badge: "bg-blue-900/60 text-blue-300",   icon: "text-blue-400",   toggle: "bg-blue-500" },
-  orange: { bg: "bg-orange-950/40", border: "border-orange-800/50", badge: "bg-orange-900/60 text-orange-300", icon: "text-orange-400", toggle: "bg-orange-500" },
-  purple: { bg: "bg-purple-950/40", border: "border-purple-800/50", badge: "bg-purple-900/60 text-purple-300", icon: "text-purple-400", toggle: "bg-purple-500" },
-  indigo: { bg: "bg-indigo-950/40", border: "border-indigo-800/50", badge: "bg-indigo-900/60 text-indigo-300", icon: "text-indigo-400", toggle: "bg-indigo-500" },
-  teal:   { bg: "bg-teal-950/40",   border: "border-teal-800/50",   badge: "bg-teal-900/60 text-teal-300",   icon: "text-teal-400",   toggle: "bg-teal-500" },
-  red:    { bg: "bg-red-950/40",    border: "border-red-800/50",    badge: "bg-red-900/60 text-red-300",    icon: "text-red-400",    toggle: "bg-red-500" },
-  yellow: { bg: "bg-yellow-950/40", border: "border-yellow-800/50", badge: "bg-yellow-900/60 text-yellow-300", icon: "text-yellow-400", toggle: "bg-yellow-500" },
+const COLOR_MAP: Record<string, { iconColor: string; accentBg: string; accentText: string }> = {
+  blue:   { iconColor: "#2563eb", accentBg: "rgba(37,99,235,0.1)",  accentText: "#2563eb" },
+  orange: { iconColor: "#f59e0b", accentBg: "rgba(245,158,11,0.1)", accentText: "#d97706" },
+  purple: { iconColor: "#8b5cf6", accentBg: "rgba(139,92,246,0.1)", accentText: "#8b5cf6" },
+  indigo: { iconColor: "#6366f1", accentBg: "rgba(99,102,241,0.1)", accentText: "#6366f1" },
+  teal:   { iconColor: "#0ea5e9", accentBg: "rgba(14,165,233,0.1)", accentText: "#0ea5e9" },
+  red:    { iconColor: "#ef4444", accentBg: "rgba(239,68,68,0.1)",  accentText: "#ef4444" },
+  yellow: { iconColor: "#f59e0b", accentBg: "rgba(251,191,36,0.1)", accentText: "#d97706" },
 };
 
 function Toggle({ enabled, onToggle, loading }: { enabled: boolean; onToggle: () => void; loading?: boolean }) {
@@ -100,9 +101,11 @@ function Toggle({ enabled, onToggle, loading }: { enabled: boolean; onToggle: ()
     <button
       onClick={onToggle}
       disabled={loading}
-      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${
-        enabled ? "bg-green-500" : "bg-gray-600"
-      } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+      style={{
+        backgroundColor: enabled ? "var(--success)" : "var(--border)",
+        opacity: loading ? 0.5 : 1,
+      }}
+      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${loading ? "cursor-not-allowed" : "cursor-pointer"}`}
     >
       <span
         className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ${
@@ -114,13 +117,25 @@ function Toggle({ enabled, onToggle, loading }: { enabled: boolean; onToggle: ()
 }
 
 function RiskBadge({ score }: { score: number }) {
-  if (score >= 60) return <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-900/70 text-red-300">HIGH {score}</span>;
-  if (score >= 30) return <span className="px-2 py-0.5 rounded text-xs font-bold bg-yellow-900/70 text-yellow-300">MED {score}</span>;
-  return <span className="px-2 py-0.5 rounded text-xs font-bold bg-green-900/70 text-green-300">LOW {score}</span>;
+  if (score >= 60) return (
+    <span className="px-2 py-0.5 rounded text-xs font-bold" style={{ background: "rgba(239,68,68,0.15)", color: "var(--destructive)" }}>
+      HIGH {score}
+    </span>
+  );
+  if (score >= 30) return (
+    <span className="px-2 py-0.5 rounded text-xs font-bold" style={{ background: "rgba(245,158,11,0.15)", color: "var(--warning)" }}>
+      MED {score}
+    </span>
+  );
+  return (
+    <span className="px-2 py-0.5 rounded text-xs font-bold" style={{ background: "rgba(16,185,129,0.15)", color: "var(--success)" }}>
+      LOW {score}
+    </span>
+  );
 }
 
 export default function SecurityDashboard() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [toggling, setToggling] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<"settings" | "logs" | "attempts">("settings");
 
@@ -131,8 +146,8 @@ export default function SecurityDashboard() {
 
   if (!user || user.role !== "superadmin") {
     return (
-      <div className="flex items-center justify-center h-96 text-gray-400">
-        <ShieldAlert className="w-8 h-8 mr-3 text-red-400" />
+      <div className="flex items-center justify-center h-96" style={{ color: "var(--text-muted)" }}>
+        <ShieldAlert className="w-8 h-8 mr-3" style={{ color: "var(--destructive)" }} />
         Access denied — superadmin only
       </div>
     );
@@ -141,7 +156,7 @@ export default function SecurityDashboard() {
   const handleToggle = async (key: string, currentEnabled: boolean) => {
     setToggling((prev) => ({ ...prev, [key]: true }));
     try {
-      await toggleSetting({ key, enabled: !currentEnabled, updatedBy: user.userId as any });
+      await toggleSetting({ key, enabled: !currentEnabled, updatedBy: user.id as Id<"users"> });
     } catch (err) {
       console.error("Toggle failed:", err);
     } finally {
@@ -165,59 +180,55 @@ export default function SecurityDashboard() {
     threatLevel === "Moderate" ? "text-yellow-400" : "text-green-400";
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 p-6">
+    <div className="min-h-screen p-6" style={{ background: "var(--background)", color: "var(--text-primary)" }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-900/50 rounded-xl border border-blue-700/50">
-            <Shield className="w-7 h-7 text-blue-400" />
+          <div className="p-2 rounded-xl border" style={{ background: "rgba(37,99,235,0.1)", borderColor: "rgba(37,99,235,0.3)" }}>
+            <Shield className="w-7 h-7" style={{ color: "var(--primary)" }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Security Control Center</h1>
-            <p className="text-gray-400 text-sm">Manage identity verification systems across all organizations</p>
+            <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Security Control Center</h1>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Manage identity verification systems across all organizations</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <Activity className="w-4 h-4" />
+        <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-muted)" }}>
+          <Activity className="w-4 h-4" style={{ color: "var(--success)" }} />
           Live monitoring
         </div>
       </div>
 
       {/* ── Stats bar ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-          <div className={`text-2xl font-bold ${threatColor}`}>{threatLevel}</div>
-          <div className="text-xs text-gray-400 mt-1">Threat Level</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-white">{loginStats?.total ?? 0}</div>
-          <div className="text-xs text-gray-400 mt-1">Logins (24h)</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-red-400">{loginStats?.failed ?? 0}</div>
-          <div className="text-xs text-gray-400 mt-1">Failed</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-orange-400">{loginStats?.highRisk ?? 0}</div>
-          <div className="text-xs text-gray-400 mt-1">High Risk</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">{enabledCount}/{FEATURES.length}</div>
-          <div className="text-xs text-gray-400 mt-1">Features ON</div>
-        </div>
+        {[
+          { label: "Threat Level", value: threatLevel, color: threatLevel === "Critical" ? "var(--destructive)" : threatLevel === "Elevated" ? "var(--warning)" : threatLevel === "Moderate" ? "#f59e0b" : "var(--success)" },
+          { label: "Logins (24h)", value: loginStats?.total ?? 0, color: "var(--text-primary)" },
+          { label: "Failed", value: loginStats?.failed ?? 0, color: "var(--destructive)" },
+          { label: "High Risk", value: loginStats?.highRisk ?? 0, color: "var(--warning)" },
+          { label: "Features ON", value: `${enabledCount}/${FEATURES.length}`, color: "var(--success)" },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-xl p-4 text-center border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+            <div className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
+            <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{stat.label}</div>
+          </div>
+        ))}
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex gap-2 mb-6 border-b border-gray-800">
+      <div className="flex gap-2 mb-6 border-b" style={{ borderColor: "var(--border)" }}>
         {(["settings", "attempts", "logs"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-5 py-2.5 text-sm font-medium capitalize rounded-t-lg transition-colors ${
-              activeTab === tab
-                ? "bg-gray-900 text-white border border-b-0 border-gray-700"
-                : "text-gray-400 hover:text-gray-200"
-            }`}
+            className="px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors"
+            style={{
+              background: activeTab === tab ? "var(--card)" : "transparent",
+              color: activeTab === tab ? "var(--text-primary)" : "var(--text-muted)",
+              borderColor: activeTab === tab ? "var(--border)" : "transparent",
+              border: activeTab === tab ? "1px solid var(--border)" : "1px solid transparent",
+              borderBottom: activeTab === tab ? "1px solid var(--card)" : "1px solid transparent",
+              marginBottom: activeTab === tab ? "-1px" : "0",
+            }}
           >
             {tab === "settings" ? "🛡️ Security Features" : tab === "attempts" ? "🔐 Login Attempts" : "📋 Audit Logs"}
           </button>
@@ -226,10 +237,9 @@ export default function SecurityDashboard() {
 
       {/* ── TAB: Security Features ── */}
       {activeTab === "settings" && (
-        <div className="space-y-4">
-          <p className="text-gray-400 text-sm mb-4">
-            Toggle security systems on/off. Changes take effect immediately for all organizations.
-            If employees report issues — simply disable the feature.
+        <div className="space-y-3">
+          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
+            Toggle security systems on/off instantly. If employees report issues — simply disable the feature.
           </p>
           {FEATURES.map((feature) => {
             const enabled = getSettingEnabled(feature.key);
@@ -241,30 +251,37 @@ export default function SecurityDashboard() {
             return (
               <div
                 key={feature.key}
-                className={`${colors.bg} ${colors.border} border rounded-xl p-5 flex items-center gap-4 transition-all`}
+                className="rounded-xl p-5 flex items-center gap-4 border transition-all"
+                style={{
+                  background: enabled ? colors.accentBg : "var(--card)",
+                  borderColor: enabled ? `${colors.iconColor}33` : "var(--border)",
+                }}
               >
-                <div className={`p-2.5 rounded-lg bg-gray-900/60 ${colors.icon}`}>
+                <div
+                  className="p-2.5 rounded-lg flex-shrink-0"
+                  style={{ background: `${colors.iconColor}18`, color: colors.iconColor }}
+                >
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-white">{feature.title}</span>
+                    <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{feature.title}</span>
                     {feature.critical && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-blue-900/60 text-blue-300">Essential</span>
+                      <span className="text-xs px-2 py-0.5 rounded" style={{ background: "rgba(37,99,235,0.12)", color: "var(--primary)" }}>Essential</span>
                     )}
                     {!enabled && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-400">Disabled</span>
+                      <span className="text-xs px-2 py-0.5 rounded" style={{ background: "var(--muted)", color: "var(--text-muted)" }}>Disabled</span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-400">{feature.description}</p>
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>{feature.description}</p>
                   {savedAt && (
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs mt-1" style={{ color: "var(--text-disabled)" }}>
                       Last changed: {new Date(savedAt).toLocaleString()}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${enabled ? "text-green-400" : "text-gray-500"}`}>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-sm font-medium" style={{ color: enabled ? "var(--success)" : "var(--text-disabled)" }}>
                     {enabled ? "ON" : "OFF"}
                   </span>
                   <Toggle
@@ -282,10 +299,10 @@ export default function SecurityDashboard() {
       {/* ── TAB: Login Attempts ── */}
       {activeTab === "attempts" && (
         <div>
-          <p className="text-gray-400 text-sm mb-4">Recent suspicious and failed login attempts (last 24h)</p>
+          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>Recent suspicious and failed login attempts (last 24h)</p>
           {!loginStats?.suspicious?.length ? (
-            <div className="text-center py-16 text-gray-500">
-              <ShieldCheck className="w-12 h-12 mx-auto mb-3 text-green-600" />
+            <div className="text-center py-16" style={{ color: "var(--text-muted)" }}>
+              <ShieldCheck className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--success)" }} />
               No suspicious activity in last 24 hours
             </div>
           ) : (
@@ -293,36 +310,35 @@ export default function SecurityDashboard() {
               {loginStats.suspicious.map((attempt: any, i: number) => (
                 <div
                   key={i}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex items-center gap-4"
+                  className="rounded-lg p-4 flex items-center gap-4 border"
+                  style={{ background: "var(--card)", borderColor: "var(--border)" }}
                 >
                   <div className="flex-shrink-0">
                     {attempt.success ? (
-                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <CheckCircle className="w-5 h-5" style={{ color: "var(--success)" }} />
                     ) : (
-                      <XCircle className="w-5 h-5 text-red-400" />
+                      <XCircle className="w-5 h-5" style={{ color: "var(--destructive)" }} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-white truncate">{attempt.email}</span>
-                      <span className="text-xs text-gray-500 capitalize bg-gray-800 px-2 py-0.5 rounded">
+                      <span className="font-medium truncate" style={{ color: "var(--text-primary)" }}>{attempt.email}</span>
+                      <span className="text-xs capitalize px-2 py-0.5 rounded" style={{ background: "var(--muted)", color: "var(--text-muted)" }}>
                         {attempt.method}
                       </span>
-                      {attempt.riskScore !== undefined && (
-                        <RiskBadge score={attempt.riskScore} />
-                      )}
+                      {attempt.riskScore !== undefined && <RiskBadge score={attempt.riskScore} />}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
                       <span>IP: {attempt.ip ?? "—"}</span>
                       {attempt.riskFactors?.length > 0 && (
-                        <span className="text-orange-400">⚠ {attempt.riskFactors.join(", ")}</span>
+                        <span style={{ color: "var(--warning)" }}>⚠ {attempt.riskFactors.join(", ")}</span>
                       )}
                       {attempt.blockedReason && (
-                        <span className="text-red-400">🔒 {attempt.blockedReason}</span>
+                        <span style={{ color: "var(--destructive)" }}>🔒 {attempt.blockedReason}</span>
                       )}
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500 flex-shrink-0">
+                  <div className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
                     {new Date(attempt.createdAt).toLocaleTimeString()}
                   </div>
                 </div>
@@ -335,10 +351,10 @@ export default function SecurityDashboard() {
       {/* ── TAB: Audit Logs ── */}
       {activeTab === "logs" && (
         <div>
-          <p className="text-gray-400 text-sm mb-4">All security-related actions across the platform</p>
+          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>All security-related actions across the platform</p>
           {!auditLogs?.length ? (
-            <div className="text-center py-16 text-gray-500">
-              <Eye className="w-12 h-12 mx-auto mb-3 text-gray-700" />
+            <div className="text-center py-16" style={{ color: "var(--text-muted)" }}>
+              <Eye className="w-12 h-12 mx-auto mb-3" style={{ color: "var(--text-disabled)" }} />
               No audit logs yet
             </div>
           ) : (
@@ -346,25 +362,29 @@ export default function SecurityDashboard() {
               {auditLogs.map((log: any) => (
                 <div
                   key={log._id}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex items-center gap-4"
+                  className="rounded-lg p-4 flex items-center gap-4 border"
+                  style={{ background: "var(--card)", borderColor: "var(--border)" }}
                 >
-                  <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--primary)" }} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-medium text-white text-sm">{log.userName}</span>
-                      <span className="text-xs text-gray-500">{log.userEmail}</span>
+                      <span className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>{log.userName}</span>
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>{log.userEmail}</span>
                     </div>
-                    <div className="text-sm text-gray-400">
-                      <span className="text-blue-400 font-mono text-xs bg-blue-950/50 px-1.5 py-0.5 rounded mr-2">
+                    <div className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                      <span
+                        className="font-mono text-xs px-1.5 py-0.5 rounded mr-2"
+                        style={{ background: "rgba(37,99,235,0.12)", color: "var(--primary)" }}
+                      >
                         {log.action}
                       </span>
                       {log.details}
                     </div>
                     {log.ip && (
-                      <div className="text-xs text-gray-600 mt-0.5">IP: {log.ip}</div>
+                      <div className="text-xs mt-0.5" style={{ color: "var(--text-disabled)" }}>IP: {log.ip}</div>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 flex-shrink-0">
+                  <div className="text-xs flex-shrink-0" style={{ color: "var(--text-muted)" }}>
                     {new Date(log.createdAt).toLocaleString()}
                   </div>
                 </div>

@@ -2447,6 +2447,19 @@
     "suspiciousActivity": "Recent suspicious and failed login attempts (last 24h)",
     "noSuspiciousActivity": "No suspicious activity in last 24 hours",
     "allSecurityActions": "All security-related actions across the platform",
-    "noAuditLogs": "No audit logs yet"
+    "noAuditLogs": "No audit logs yet",
+    "suspendUser": "Suspend User",
+    "unsuspendUser": "Unsuspend User",
+    "suspendFor": "Suspend for",
+    "hours": "hours",
+    "suspendReason": "Reason for suspension",
+    "suspendSuccess": "User suspended successfully",
+    "unsuspendSuccess": "User unsuspended successfully",
+    "userSuspended": "Account Temporarily Suspended",
+    "userUnsuspended": "Account Unsuspended",
+    "suspensionExpired": "Suspension Expired",
+    "reviewAndBlock": "Review and Block",
+    "quickActions": "Quick Actions",
+    "suspendTemporarily": "Suspend Temporarily"
   }
 }

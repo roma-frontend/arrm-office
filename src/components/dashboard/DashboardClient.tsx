@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import {
   Users, Clock, CheckCircle, UserCheck,
   Plus, CalendarDays, ArrowRight, TrendingUp, Building2,
-  CreditCard,
+  CreditCard, ShieldCheck, ShieldAlert, ShieldOff, Activity, XCircle,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, Tooltip as RechartsTooltip,
@@ -81,6 +81,12 @@ export default function DashboardClient() {
   const leaves = useQuery(api.leaves.getAllLeaves, user?.id ? { requesterId: user.id as Id<"users"> } : "skip");
   const users = useQuery(api.users.getAllUsers, user?.id ? { requesterId: user.id as Id<"users"> } : "skip");
   const organization = useQuery(api.organizations.getMyOrganization, user?.id ? { userId: user.id as Id<"users"> } : "skip");
+
+  // Security stats — only for superadmin
+  const securityStats = useQuery(
+    api.security.getLoginStats,
+    mounted && user?.role === "superadmin" ? { hours: 24 } : "skip"
+  );
 
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
@@ -164,6 +170,9 @@ export default function DashboardClient() {
               <Button asChild size="sm" variant="outline" className="border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 <Link href="/superadmin/stripe-dashboard"><CreditCard className="w-4 h-4" />{t('dashboard.stripeDashboard')}</Link>
               </Button>
+              <Button asChild size="sm" variant="outline" className="border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 gap-1.5">
+                <Link href="/superadmin/security"><ShieldCheck className="w-4 h-4" />Security Center</Link>
+              </Button>
             </>
           )}
           <Button asChild size="sm" variant="outline">
@@ -182,6 +191,97 @@ export default function DashboardClient() {
         <StatsCard title={t('titles.approvedThisMonth')} value={isLoading ? "—" : approvedThisMonth} icon={<CheckCircle className="w-5 h-5" />} color="green" index={2} />
         <StatsCard title={t('titles.onLeaveNow')} value={isLoading ? "—" : onLeaveNow} icon={<UserCheck className="w-5 h-5" />} color="purple" index={3} />
       </div>
+
+      {/* Security Widget — superadmin only */}
+      {user?.role === "superadmin" && (
+        <motion.div variants={itemVariants}>
+          <Link href="/superadmin/security" className="block group">
+            <div
+              className="rounded-2xl border p-4 flex items-center gap-4 transition-all duration-200 group-hover:shadow-md"
+              style={{
+                background: "var(--card)",
+                borderColor: (securityStats?.highRisk ?? 0) >= 10
+                  ? "rgba(239,68,68,0.4)"
+                  : (securityStats?.highRisk ?? 0) >= 3
+                  ? "rgba(245,158,11,0.4)"
+                  : "var(--border)",
+              }}
+            >
+              {/* Icon */}
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: (securityStats?.highRisk ?? 0) >= 10
+                    ? "rgba(239,68,68,0.12)"
+                    : (securityStats?.highRisk ?? 0) >= 3
+                    ? "rgba(245,158,11,0.12)"
+                    : "rgba(16,185,129,0.12)",
+                }}
+              >
+                {(securityStats?.highRisk ?? 0) >= 10 ? (
+                  <ShieldAlert className="w-5 h-5" style={{ color: "var(--destructive)" }} />
+                ) : (securityStats?.highRisk ?? 0) >= 3 ? (
+                  <ShieldAlert className="w-5 h-5" style={{ color: "var(--warning)" }} />
+                ) : (
+                  <ShieldCheck className="w-5 h-5" style={{ color: "var(--success)" }} />
+                )}
+              </div>
+
+              {/* Title + threat level */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                    Security Center
+                  </span>
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: (securityStats?.highRisk ?? 0) >= 10
+                        ? "rgba(239,68,68,0.15)"
+                        : (securityStats?.highRisk ?? 0) >= 3
+                        ? "rgba(245,158,11,0.15)"
+                        : "rgba(16,185,129,0.15)",
+                      color: (securityStats?.highRisk ?? 0) >= 10
+                        ? "var(--destructive)"
+                        : (securityStats?.highRisk ?? 0) >= 3
+                        ? "var(--warning)"
+                        : "var(--success)",
+                    }}
+                  >
+                    {(securityStats?.highRisk ?? 0) >= 10
+                      ? "⚠ Critical"
+                      : (securityStats?.highRisk ?? 0) >= 3
+                      ? "⚠ Elevated"
+                      : (securityStats?.failed ?? 0) >= 20
+                      ? "⚠ Moderate"
+                      : "✓ Normal"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
+                  <span className="flex items-center gap-1">
+                    <Activity className="w-3 h-3" />
+                    {securityStats?.total ?? 0} logins (24h)
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <XCircle className="w-3 h-3" style={{ color: securityStats?.failed ? "var(--destructive)" : "var(--text-muted)" }} />
+                    {securityStats?.failed ?? 0} failed
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <ShieldAlert className="w-3 h-3" style={{ color: securityStats?.highRisk ? "var(--warning)" : "var(--text-muted)" }} />
+                    {securityStats?.highRisk ?? 0} high risk
+                  </span>
+                </div>
+              </div>
+
+              {/* Arrow */}
+              <ArrowRight
+                className="w-4 h-4 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
+                style={{ color: "var(--text-muted)" }}
+              />
+            </div>
+          </Link>
+        </motion.div>
+      )}
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">

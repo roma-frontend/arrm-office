@@ -407,3 +407,80 @@ export const unlockAccount = mutation({
     return { success: true };
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFY SUPERADMIN about suspicious activity with quick action
+// ─────────────────────────────────────────────────────────────────────────────
+const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
+
+export const notifySuperadminSuspiciousActivity = mutation({
+  args: {
+    userId: v.id("users"),
+    email: v.string(),
+    reason: v.string(),
+    riskScore: v.number(),
+    riskFactors: v.array(v.string()),
+    ip: v.optional(v.string()),
+    deviceInfo: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Find superadmin
+    const superadmin = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", SUPERADMIN_EMAIL))
+      .first();
+    
+    if (!superadmin) {
+      console.error("Superadmin not found for notification");
+      return null;
+    }
+
+    // Get the suspicious user
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      console.error("User not found for suspicious activity notification");
+      return null;
+    }
+
+    // Create notification with action metadata
+    const notificationId = await ctx.db.insert("notifications", {
+      organizationId: superadmin.organizationId,
+      userId: superadmin._id,
+      type: "security_alert",
+      title: "🚨 Suspicious Login Activity Detected",
+      message: `User: ${args.email}\nRisk Score: ${args.riskScore}\nReasons: ${args.riskFactors.join(", ")}\nIP: ${args.ip || "Unknown"}\n\nReview this activity immediately.`,
+      isRead: false,
+      relatedId: args.userId,
+      metadata: JSON.stringify({
+        suspiciousUserId: args.userId,
+        email: args.email,
+        userName: user.name,
+        riskScore: args.riskScore,
+        riskFactors: args.riskFactors,
+        ip: args.ip,
+        deviceInfo: args.deviceInfo,
+        timestamp: Date.now(),
+        actionType: "suspicious_login",
+      }),
+      createdAt: Date.now(),
+    });
+
+    // Log the security event
+    await ctx.db.insert("securityAuditLogs", {
+      userId: args.userId,
+      userName: user.name,
+      userEmail: args.email,
+      action: "superadmin_notified",
+      success: false,
+      blocked: false,
+      riskScore: args.riskScore,
+      riskFactors: args.riskFactors,
+      ip: args.ip,
+      deviceInfo: args.deviceInfo,
+      details: `Superadmin notified about suspicious activity. Risk: ${args.riskScore}, Factors: ${args.riskFactors.join(", ")}`,
+      createdAt: Date.now(),
+    });
+
+    return notificationId;
+  },
+});

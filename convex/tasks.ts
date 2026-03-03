@@ -171,20 +171,25 @@ export const getTasksForEmployee = query({
     const employee = await ctx.db.get(args.userId);
     if (!employee) throw new Error("Employee not found");
     
+    const isSuperadmin = employee.email.toLowerCase() === SUPERADMIN_EMAIL;
+    
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_assigned_to", q => q.eq("assignedTo", args.userId))
       .order("desc")
       .collect();
 
-    // Filter by organization
+    // Filter by organization (skip for superadmin)
     const orgTasks = await Promise.all(
       tasks.map(async task => {
         const assignedBy = await ctx.db.get(task.assignedBy);
         
-        // Only include tasks where assignedBy is from same organization
-        if (employee.organizationId && assignedBy?.organizationId !== employee.organizationId) {
-          return null;
+        // Superadmin sees all tasks assigned to them across all organizations
+        if (!isSuperadmin) {
+          // Only include tasks where assignedBy is from same organization
+          if (employee.organizationId && assignedBy?.organizationId !== employee.organizationId) {
+            return null;
+          }
         }
         
         const comments = await ctx.db

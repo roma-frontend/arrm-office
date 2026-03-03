@@ -157,7 +157,7 @@ export const createOAuthUser = mutation({
       email: emailLower,
       passwordHash: "", // OAuth users don't have password
       role,
-      employeeType: "full_time",
+      employeeType: "staff",
       department: (isSuperAdmin || isFirstMember) ? "Management" : undefined,
       position: (isSuperAdmin || isFirstMember) ? "Administrator" : undefined,
       isActive: true,
@@ -1040,6 +1040,163 @@ export const listAll = query({
     }
     
     return [];
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUSPEND USER TEMPORARILY (for suspicious activity)
+// ─────────────────────────────────────────────────────────────────────────────
+export const suspendUser = mutation({
+  args: {
+    adminId: v.id("users"),
+    userId: v.id("users"),
+    reason: v.string(),
+    duration: v.optional(v.number()), // in hours, default 24
+  },
+  handler: async (ctx, { adminId, userId, reason, duration = 24 }) => {
+    const admin = await requireAdmin(ctx, adminId);
+    const user = await ctx.db.get(userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Verify same organization (unless superadmin)
+    if (
+      admin.organizationId !== user.organizationId &&
+      admin.email.toLowerCase() !== SUPERADMIN_EMAIL
+    ) {
+      throw new Error("Access denied: cannot suspend users from another organization");
+    }
+
+    const suspendedUntil = Date.now() + (duration * 60 * 60 * 1000);
+
+    await ctx.db.patch(userId, {
+      isSuspended: true,
+      suspendedUntil,
+      suspendedReason: reason,
+      suspendedBy: adminId,
+      suspendedAt: Date.now(),
+    });
+
+    // Create audit log
+    await ctx.db.insert("auditLogs", {
+      organizationId: user.organizationId,
+      userId: adminId,
+      action: "user_suspended",
+      target: user.email,
+      details: `User suspended for ${duration}h. Reason: ${reason}`,
+      createdAt: Date.now(),
+    });
+
+    // Notify user
+    await ctx.db.insert("notifications", {
+      organizationId: user.organizationId,
+      userId,
+      type: "system",
+      title: "⚠️ Account Temporarily Suspended",
+      message: `Your account has been suspended until ${new Date(suspendedUntil).toLocaleString()}. Reason: ${reason}. Contact your administrator for more information.`,
+      isRead: false,
+      createdAt: Date.now(),
+    });
+
+    return { userId, suspendedUntil };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UNSUSPEND USER
+// ─────────────────────────────────────────────────────────────────────────────
+export const unsuspendUser = mutation({
+  args: {
+    adminId: v.id("users"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { adminId, userId }) => {
+    const admin = await requireAdmin(ctx, adminId);
+    const user = await ctx.db.get(userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Verify same organization (unless superadmin)
+    if (
+      admin.organizationId !== user.organizationId &&
+      admin.email.toLowerCase() !== SUPERADMIN_EMAIL
+    ) {
+      throw new Error("Access denied: cannot unsuspend users from another organization");
+    }
+
+    await ctx.db.patch(userId, {
+      isSuspended: false,
+      suspendedUntil: undefined,
+      suspendedReason: undefined,
+      suspendedBy: undefined,
+      suspendedAt: undefined,
+    });
+
+    // Create audit log
+    await ctx.db.insert("auditLogs", {
+      organizationId: user.organizationId,
+      userId: adminId,
+      action: "user_unsuspended",
+      target: user.email,
+      details: `User unsuspended by ${admin.name}`,
+      createdAt: Date.now(),
+    });
+
+    // Notify user
+    await ctx.db.insert("notifications", {
+      organizationId: user.organizationId,
+      userId,
+      type: "system",
+      title: "✅ Account Unsuspended",
+      message: `Your account has been reactivated by ${admin.name}. You can now log in again.`,
+      isRead: false,
+      createdAt: Date.now(),
+    });
+
+    return userId;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTO-UNSUSPEND expired suspensions (run periodically)
+// ─────────────────────────────────────────────────────────────────────────────
+export const autoUnsuspendExpired = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const allUsers = await ctx.db.query("users").collect();
+    
+    let count = 0;
+    for (const user of allUsers) {
+      if (user.isSuspended && user.suspendedUntil && user.suspendedUntil <= now) {
+        await ctx.db.patch(user._id, {
+          isSuspended: false,
+          suspendedUntil: undefined,
+          suspendedReason: undefined,
+          suspendedBy: undefined,
+          suspendedAt: undefined,
+        });
+
+        // Notify user
+        await ctx.db.insert("notifications", {
+          organizationId: user.organizationId,
+          userId: user._id,
+          type: "system",
+          title: "✅ Suspension Expired",
+          message: "Your temporary suspension has ended. You can now log in again.",
+          isRead: false,
+          createdAt: Date.now(),
+        });
+
+        count++;
+      }
+    }
+
+    return { unsuspended: count };
   },
 });
 
