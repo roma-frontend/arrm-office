@@ -2507,9 +2507,8 @@
     "userSuspended": "Account Temporarily Suspended",
     "userUnsuspended": "Account Unsuspended",
     "suspensionExpired": "Suspension Expired",
-      "reviewAndBlock": "Review and Block",
-      "quickActions": "Quick Actions",
-      "suspendTemporarily": "Suspend Temporarily"
-    }
+    "reviewAndBlock": "Review and Block",
+    "quickActions": "Quick Actions",
+    "suspendTemporarily": "Suspend Temporarily"
   }
 }
