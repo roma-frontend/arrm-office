@@ -1,0 +1,168 @@
+convex/security.ts(519,25): error TS2345: Argument of type '"securityAuditLogs"' is not assignable to parameter of type 'TableNamesInDataModel<{ organizations: { document: { _id: Id<"organizations">; _creationTime: number; logoUrl?: string | undefined; primaryColor?: string | undefined; timezone?: string | undefined; country?: string | undefined; ... 8 more ...; updatedAt: number; }; fieldPaths: ExtractFieldPaths<...> | "_id"; indexes...'.
+convex/subscriptions_admin.ts(114,25): error TS2339: Property 'metadata' does not exist on type '{ _id: Id<"subscriptions">; _creationTime: number; organizationId?: Id<"organizations"> | undefined; userId?: Id<"users"> | undefined; email?: string | undefined; stripeSessionId?: string | undefined; ... 9 more ...; cancelAtPeriodEnd: boolean; }'.
+convex/userPreferences.ts(39,24): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Id<"users">'.
+  Type 'string' is not assignable to type '{ __tableName: "users"; }'.
+convex/userPreferences.ts(67,24): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Id<"users">'.
+  Type 'string' is not assignable to type '{ __tableName: "users"; }'.
+convex/userPreferences.ts(80,9): error TS2322: Type 'string' is not assignable to type 'Id<"users">'.
+  Type 'string' is not assignable to type '{ __tableName: "users"; }'.
+convex/userPreferences.ts(108,51): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Id<"users">'.
+  Type 'string' is not assignable to type '{ __tableName: "users"; }'.
+convex/userPreferences.ts(134,24): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Id<"users">'.
+  Type 'string' is not assignable to type '{ __tableName: "users"; }'.
+convex/userPreferences.ts(145,9): error TS2322: Type 'string' is not assignable to type 'Id<"users">'.
+  Type 'string' is not assignable to type '{ __tableName: "users"; }'.
+convex/users.ts(916,38): error TS2345: Argument of type 'GenericMutationCtx<{ organizations: { document: { _id: Id<"organizations">; _creationTime: number; logoUrl?: string | undefined; primaryColor?: string | undefined; timezone?: string | undefined; country?: string | undefined; ... 8 more ...; updatedAt: number; }; fieldPaths: ExtractFieldPaths<...> | "_id"; indexes: {...' is not assignable to parameter of type '{ db: { get: (id: unknown) => Promise<unknown>; }; }'.
+  The types of 'db.get' are incompatible between these types.
+    Type '{ <TableName extends TableNamesInDataModel<{ organizations: { document: { _id: Id<"organizations">; _creationTime: number; logoUrl?: string | undefined; primaryColor?: string | undefined; timezone?: string | undefined; ... 9 more ...; updatedAt: number; }; fieldPaths: ExtractFieldPaths<...> | "_id"; indexes: { ...; ...' is not assignable to type '(id: unknown) => Promise<unknown>'.
+      Target signature provides too few arguments. Expected 2 or more, but got 1.
+convex/users.ts(940,21): error TS2339: Property '_id' does not exist on type '{ role: string; organizationId: string; email: string; }'.
+convex/users.ts(943,46): error TS2339: Property 'name' does not exist on type '{ role: string; organizationId: string; email: string; }'.
+convex/users.ts(953,59): error TS2339: Property 'name' does not exist on type '{ role: string; organizationId: string; email: string; }'.
+convex/users.ts(1057,38): error TS2345: Argument of type 'GenericMutationCtx<{ organizations: { document: { _id: Id<"organizations">; _creationTime: number; logoUrl?: string | undefined; primaryColor?: string | undefined; timezone?: string | undefined; country?: string | undefined; ... 8 more ...; updatedAt: number; }; fieldPaths: ExtractFieldPaths<...> | "_id"; indexes: {...' is not assignable to parameter of type '{ db: { get: (id: unknown) => Promise<unknown>; }; }'.
+  The types of 'db.get' are incompatible between these types.
+    Type '{ <TableName extends TableNamesInDataModel<{ organizations: { document: { _id: Id<"organizations">; _creationTime: number; logoUrl?: string | undefined; primaryColor?: string | undefined; timezone?: string | undefined; ... 9 more ...; updatedAt: number; }; fieldPaths: ExtractFieldPaths<...> | "_id"; indexes: { ...; ...' is not assignable to type '(id: unknown) => Promise<unknown>'.
+      Target signature provides too few arguments. Expected 2 or more, but got 1.
+convex/users.ts(1116,38): error TS2345: Argument of type 'GenericMutationCtx<{ organizations: { document: { _id: Id<"organizations">; _creationTime: number; logoUrl?: string | undefined; primaryColor?: string | undefined; timezone?: string | undefined; country?: string | undefined; ... 8 more ...; updatedAt: number; }; fieldPaths: ExtractFieldPaths<...> | "_id"; indexes: {...' is not assignable to parameter of type '{ db: { get: (id: unknown) => Promise<unknown>; }; }'.
+  The types of 'db.get' are incompatible between these types.
+    Type '{ <TableName extends TableNamesInDataModel<{ organizations: { document: { _id: Id<"organizations">; _creationTime: number; logoUrl?: string | undefined; primaryColor?: string | undefined; timezone?: string | undefined; ... 9 more ...; updatedAt: number; }; fieldPaths: ExtractFieldPaths<...> | "_id"; indexes: { ...; ...' is not assignable to type '(id: unknown) => Promise<unknown>'.
+      Target signature provides too few arguments. Expected 2 or more, but got 1.
+convex/users.ts(1145,45): error TS2339: Property 'name' does not exist on type '{ role: string; organizationId: string; email: string; }'.
+convex/users.ts(1155,62): error TS2339: Property 'name' does not exist on type '{ role: string; organizationId: string; email: string; }'.
+convex/userStats.ts(38,24): error TS2339: Property 'projectId' does not exist on type '{ _id: Id<"tasks">; _creationTime: number; description?: string | undefined; organizationId?: Id<"organizations"> | undefined; tags?: string[] | undefined; deadline?: number | undefined; ... 9 more ...; priority: "low" | ... 2 more ... | "urgent"; }'.
+convex/userStats.ts(39,21): error TS2339: Property 'projectId' does not exist on type '{ _id: Id<"tasks">; _creationTime: number; description?: string | undefined; organizationId?: Id<"organizations"> | undefined; tags?: string[] | undefined; deadline?: number | undefined; ... 9 more ...; priority: "low" | ... 2 more ... | "urgent"; }'.
+scripts/check-trial-reminders.ts(70,25): error TS2352: Conversion of type '{ _id: Id<"subscriptions">; _creationTime: number; organizationId?: Id<"organizations"> | undefined; userId?: Id<"users"> | undefined; email?: string | undefined; stripeSessionId?: string | undefined; ... 9 more ...; cancelAtPeriodEnd: boolean; }[]' to type 'Subscription[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'stripeCurrentPeriodEnd' is missing in type '{ _id: Id<"subscriptions">; _creationTime: number; organizationId?: Id<"organizations"> | undefined; userId?: Id<"users"> | undefined; email?: string | undefined; stripeSessionId?: string | undefined; ... 9 more ...; cancelAtPeriodEnd: boolean; }' but required in type 'Subscription'.
+scripts/export-stripe-to-pdf.ts(11,25): error TS7016: Could not find a declaration file for module 'pdfkit'. 'C:/Users/namel/Desktop/office/node_modules/pdfkit/js/pdfkit.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/pdfkit` if it exists or add a new declaration (.d.ts) file containing `declare module 'pdfkit';`
+scripts/export-stripe-to-pdf.ts(96,25): error TS2352: Conversion of type '{ _id: Id<"subscriptions">; _creationTime: number; organizationId?: Id<"organizations"> | undefined; userId?: Id<"users"> | undefined; email?: string | undefined; stripeSessionId?: string | undefined; ... 9 more ...; cancelAtPeriodEnd: boolean; }[]' to type 'Subscription[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ _id: Id<"subscriptions">; _creationTime: number; organizationId?: Id<"organizations"> | undefined; userId?: Id<"users"> | undefined; email?: string | undefined; stripeSessionId?: string | undefined; ... 9 more ...; cancelAtPeriodEnd: boolean; }' is missing the following properties from type 'Subscription': stripePriceId, stripeCurrentPeriodEnd
+scripts/export-stripe-to-pdf.ts(239,54): error TS2345: Argument of type '(value: unknown) => void' is not assignable to parameter of type '() => void'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+scripts/stripe-growth-chart.ts(52,25): error TS2352: Conversion of type '{ _id: Id<"subscriptions">; _creationTime: number; organizationId?: Id<"organizations"> | undefined; userId?: Id<"users"> | undefined; email?: string | undefined; stripeSessionId?: string | undefined; ... 9 more ...; cancelAtPeriodEnd: boolean; }[]' to type 'Subscription[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ _id: Id<"subscriptions">; _creationTime: number; organizationId?: Id<"organizations"> | undefined; userId?: Id<"users"> | undefined; email?: string | undefined; stripeSessionId?: string | undefined; ... 9 more ...; cancelAtPeriodEnd: boolean; }' is missing the following properties from type 'Subscription': stripePriceId, stripeCurrentPeriodEnd
+scripts/sync-stripe-data.ts(60,5): error TS2322: Type '"2024-12-18.acacia"' is not assignable to type '"2026-02-25.clover"'.
+scripts/sync-stripe-data.ts(114,39): error TS2339: Property 'current_period_end' does not exist on type 'Subscription'.
+scripts/sync-stripe-data.ts(121,35): error TS2339: Property 'current_period_start' does not exist on type 'Subscription'.
+scripts/view-stripe-transactions.ts(9,13): error TS2300: Duplicate identifier 'dotenv'.
+scripts/view-stripe-transactions.ts(14,8): error TS2300: Duplicate identifier 'dotenv'.
+scripts/view-stripe-transactions.ts(232,7): error TS2322: Type '"2024-12-18.acacia"' is not assignable to type '"2026-02-25.clover"'.
+src/__tests__/i18n.test.ts(8,38): error TS2307: Cannot find module '@jest/globals' or its corresponding type declarations.
+src/__tests__/i18n.test.ts(19,3): error TS2304: Cannot find name 'beforeAll'.
+src/actions/auth.ts(330,11): error TS2353: Object literal may only specify known properties, and 'userId' does not exist in type 'Error'.
+src/actions/auth.ts(347,7): error TS2454: Variable 'email' is used before being assigned.
+src/app/(auth)/login/page.tsx(139,33): error TS2339: Property 'organizationId' does not exist on type 'JWTPayload'.
+src/app/(dashboard)/ai-site-editor/page.tsx(49,38): error TS2322: Type '{ children: Element; feature: "aiSiteEditor"; showUpgrade: true; }' is not assignable to type 'IntrinsicAttributes & PlanGateProps'.
+  Property 'showUpgrade' does not exist on type 'IntrinsicAttributes & PlanGateProps'.
+src/app/(dashboard)/join-requests/page.tsx(250,26): error TS2304: Cannot find name 'STATUS_BADGES'.
+src/app/(dashboard)/join-requests/page.tsx(250,67): error TS2304: Cannot find name 'STATUS_BADGES'.
+src/app/(dashboard)/profile/page.tsx(115,26): error TS2339: Property 'createdAt' does not exist on type 'User'.
+src/app/(dashboard)/profile/page.tsx(116,21): error TS2339: Property 'createdAt' does not exist on type 'User'.
+src/app/(dashboard)/profile/page.tsx(312,26): error TS2869: Right operand of ?? is unreachable because the left operand is never nullish.
+src/app/(dashboard)/settings/page.tsx(60,52): error TS2339: Property 'breakInterval' does not exist on type 'User'.
+src/app/(dashboard)/settings/page.tsx(61,51): error TS2339: Property 'breakRemindersEnabled' does not exist on type 'User'.
+src/app/(dashboard)/superadmin/security/page.tsx(186,71): error TS18047: 'user' is possibly 'null'.
+src/app/(dashboard)/superadmin/subscriptions/page.tsx(102,9): error TS2322: Type 'string' is not assignable to type '"starter" | "professional" | "enterprise"'.
+src/app/(dashboard)/superadmin/subscriptions/page.tsx(316,29): error TS2339: Property 'metadata' does not exist on type '{ organizationName: string | undefined; organizationSlug: string | undefined; employeeCount: number; isManual: any; _id: Id<"subscriptions">; _creationTime: number; organizationId?: Id<...> | undefined; ... 12 more ...; cancelAtPeriodEnd: boolean; }'.
+src/app/(dashboard)/superadmin/subscriptions/page.tsx(321,35): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'number | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'number | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/app/(dashboard)/tasks/page.tsx(27,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: TasksClientProps, context?: any): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type '"superadmin" | "admin" | "supervisor" | "employee"' is not assignable to type '"admin" | "supervisor" | "employee"'.
+      Type '"superadmin"' is not assignable to type '"admin" | "supervisor" | "employee"'.
+  Overload 2 of 2, '(props: TasksClientProps): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type '"superadmin" | "admin" | "supervisor" | "employee"' is not assignable to type '"admin" | "supervisor" | "employee"'.
+      Type '"superadmin"' is not assignable to type '"admin" | "supervisor" | "employee"'.
+src/app/api/ai-site-editor/route.ts(251,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/app/api/auth/face-login/route.ts(54,7): error TS2353: Object literal may only specify known properties, and 'organizationId' does not exist in type 'JWTPayload'.
+src/app/api/auth/login/route.ts(205,7): error TS2353: Object literal may only specify known properties, and 'organizationId' does not exist in type 'JWTPayload'.
+src/app/api/auth/oauth-session/route.ts(71,7): error TS2353: Object literal may only specify known properties, and 'organizationId' does not exist in type 'JWTPayload'.
+src/app/api/chat/full-context/route.ts(16,41): error TS2345: Argument of type '{}' is not assignable to parameter of type '{ requesterId: Id<"users">; }'.
+  Property 'requesterId' is missing in type '{}' but required in type '{ requesterId: Id<"users">; }'.
+src/app/opengraph-image.tsx(10,17): error TS2304: Cannot find name 'useTranslation'.
+src/components/ai/ChatWidget.tsx(123,48): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(124,13): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(124,42): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(124,72): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(130,74): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(139,13): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(139,46): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(139,73): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(141,33): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(307,38): error TS2322: Type 'SpeechRecognition | null' is not assignable to type 'SpeechRecognition'.
+  Type 'null' is not assignable to type 'SpeechRecognition'.
+src/components/ai/ChatWidget.tsx(702,83): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(753,47): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(753,86): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(753,178): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(779,49): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(779,90): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(779,122): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(859,48): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(859,76): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(875,42): error TS2304: Cannot find name 't'.
+src/components/ai/ChatWidget.tsx(875,74): error TS2304: Cannot find name 't'.
+src/components/attendance/EmployeeAttendanceDrawer.tsx(181,94): error TS2353: Object literal may only specify known properties, and ''&:hover'' does not exist in type 'Properties<string | number, string & {}>'.
+src/components/calendar/CalendarClient.tsx(171,33): error TS2304: Cannot find name 't'.
+src/components/employees/EmployeeProfileDetail.tsx(213,24): error TS2304: Cannot find name 't'.
+src/components/employees/EmployeeProfileDetail.tsx(214,24): error TS2304: Cannot find name 't'.
+src/components/employees/EmployeeProfileDetail.tsx(215,24): error TS2304: Cannot find name 't'.
+src/components/employees/EmployeeProfileDetail.tsx(216,24): error TS2304: Cannot find name 't'.
+src/components/employees/EmployeeProfileDetail.tsx(217,24): error TS2304: Cannot find name 't'.
+src/components/employees/EmployeeProfileDetail.tsx(218,24): error TS2304: Cannot find name 't'.
+src/components/employees/EmployeesClient.tsx(375,97): error TS2339: Property 'label' does not exist on type '{ labelKey: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; color: string; bg: string; } | { ...; } | { ...; } | { ...; }'.
+  Property 'label' does not exist on type '{ labelKey: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; color: string; bg: string; }'.
+src/components/employees/EmployeesClient.tsx(439,11): error TS2322: Type '"superadmin" | "admin" | "supervisor" | "employee"' is not assignable to type '"admin" | "supervisor" | "employee"'.
+  Type '"superadmin"' is not assignable to type '"admin" | "supervisor" | "employee"'.
+src/components/landing/PricingPreview.tsx(162,19): error TS2339: Property 'badge' does not exist on type 'PricingTier'.
+src/components/layout/Providers.tsx(99,27): error TS2339: Property 'breakRemindersEnabled' does not exist on type 'User'.
+src/components/layout/Providers.tsx(100,35): error TS2339: Property 'breakInterval' does not exist on type 'User'.
+src/components/layout/Providers.tsx(101,34): error TS2339: Property 'workHoursStart' does not exist on type 'User'.
+src/components/layout/Providers.tsx(102,32): error TS2339: Property 'workHoursEnd' does not exist on type 'User'.
+src/components/layout/Providers.tsx(105,27): error TS2339: Property 'focusModeEnabled' does not exist on type 'User'.
+src/components/layout/Providers.tsx(106,34): error TS2339: Property 'workHoursStart' does not exist on type 'User'.
+src/components/layout/Providers.tsx(107,32): error TS2339: Property 'workHoursEnd' does not exist on type 'User'.
+src/components/productivity/BreakReminderService.tsx(131,11): error TS2353: Object literal may only specify known properties, and 'renotify' does not exist in type 'NotificationOptions'.
+src/components/productivity/PomodoroTimer.tsx(24,23): error TS2554: Expected 1 arguments, but got 0.
+src/components/productivity/TodayTasksPanel.tsx(25,30): error TS2345: Argument of type '{ taskId: Id<"tasks">; status: "in_progress" | "completed"; }' is not assignable to parameter of type '{ status: "pending" | "in_progress" | "review" | "completed" | "cancelled"; userId: Id<"users">; taskId: Id<"tasks">; }'.
+  Property 'userId' is missing in type '{ taskId: Id<"tasks">; status: "in_progress" | "completed"; }' but required in type '{ status: "pending" | "in_progress" | "review" | "completed" | "cancelled"; userId: Id<"users">; taskId: Id<"tasks">; }'.
+src/components/productivity/TodayTasksPanel.tsx(74,46): error TS2339: Property 'dueDate' does not exist on type '{ _id: Id<"tasks">; _creationTime: number; description?: string | undefined; organizationId?: Id<"organizations"> | undefined; tags?: string[] | undefined; deadline?: number | undefined; ... 9 more ...; priority: "low" | ... 2 more ... | "urgent"; }'.
+src/components/productivity/TodayTasksPanel.tsx(75,34): error TS2339: Property 'dueDate' does not exist on type '{ _id: Id<"tasks">; _creationTime: number; description?: string | undefined; organizationId?: Id<"organizations"> | undefined; tags?: string[] | undefined; deadline?: number | undefined; ... 9 more ...; priority: "low" | ... 2 more ... | "urgent"; }'.
+src/components/productivity/TodayTasksPanel.tsx(75,50): error TS2339: Property 'dueDate' does not exist on type '{ _id: Id<"tasks">; _creationTime: number; description?: string | undefined; organizationId?: Id<"organizations"> | undefined; tags?: string[] | undefined; deadline?: number | undefined; ... 9 more ...; priority: "low" | ... 2 more ... | "urgent"; }'.
+src/components/security/ContinuousFaceVerification.tsx(31,23): error TS2554: Expected 1 arguments, but got 0.
+src/components/settings/DashboardCustomization.tsx(54,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/components/settings/DashboardCustomization.tsx(124,21): error TS2322: Type 'unknown' is not assignable to type 'boolean | undefined'.
+src/components/subscription/SubscriptionPlanCard.tsx(29,51): error TS2304: Cannot find name 't'.
+src/components/subscription/SubscriptionPlanCard.tsx(82,38): error TS2339: Property 'currentPeriodEnd' does not exist on type 'never'.
+src/components/subscription/SubscriptionPlanCard.tsx(83,29): error TS2339: Property 'currentPeriodEnd' does not exist on type 'never'.
+src/components/subscription/SubscriptionPlanCard.tsx(119,50): error TS2339: Property 'status' does not exist on type 'never'.
+src/components/subscription/SubscriptionPlanCard.tsx(141,28): error TS2339: Property 'cancelAtPeriodEnd' does not exist on type 'never'.
+src/components/tasks/TasksClient.tsx(86,43): error TS2339: Property 'label' does not exist on type '{ labelKey: string; color: string; bg: string; icon: string; }'.
+src/components/tasks/TasksClient.tsx(89,22): error TS2339: Property 'label' does not exist on type '{ labelKey: string; color: string; bg: string; border: string; dot: string; }'.
+src/components/tasks/TasksClient.tsx(173,69): error TS2339: Property 'label' does not exist on type '{ labelKey: string; color: string; bg: string; border: string; dot: string; }'.
+src/components/tasks/TasksClient.tsx(219,43): error TS2339: Property 'label' does not exist on type '{ labelKey: string; color: string; bg: string; icon: string; }'.
+src/components/tasks/TasksClient.tsx(224,22): error TS2339: Property 'label' does not exist on type '{ labelKey: string; color: string; bg: string; border: string; dot: string; }'.
+src/components/tasks/TasksClient.tsx(432,66): error TS2339: Property 'label' does not exist on type '{ labelKey: string; color: string; bg: string; border: string; dot: string; }'.
+src/hooks/useSubscription.ts(47,36): error TS2339: Property 'status' does not exist on type 'never'.
+src/hooks/useSubscription.ts(48,36): error TS2339: Property 'status' does not exist on type 'never'.
+src/hooks/useSubscription.ts(49,35): error TS2339: Property 'status' does not exist on type 'never'.
+src/hooks/useSubscription.ts(53,33): error TS2339: Property 'trialEnd' does not exist on type 'never'.
+src/hooks/useSubscription.ts(56,35): error TS2339: Property 'trialEnd' does not exist on type 'never'.
+src/hooks/useSubscription.ts(62,19): error TS2339: Property 'currentPeriodEnd' does not exist on type 'never'.
+src/hooks/useSubscription.ts(66,27): error TS2339: Property 'currentPeriodEnd' does not exist on type 'never'.
+src/i18n/config.ts(42,4): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(callback?: Callback | undefined): Promise<TFunction<"translation", undefined>>', gave the following error.
+    Object literal may only specify known properties, and 'resources' does not exist in type 'Callback'.
+  Overload 2 of 2, '(options: InitOptions<unknown>, callback?: Callback | undefined): Promise<TFunction<"translation", undefined>>', gave the following error.
+    Object literal may only specify known properties, and 'checkWhitelist' does not exist in type 'DetectorOptions'.
+src/lib/pushNotifications.ts(74,9): error TS2322: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'string | BufferSource | null | undefined'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+src/lib/pushNotifications.ts(132,7): error TS2353: Object literal may only specify known properties, and 'vibrate' does not exist in type 'NotificationOptions'.

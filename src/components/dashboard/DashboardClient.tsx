@@ -149,7 +149,7 @@ export default function DashboardClient() {
       {/* Welcome header */}
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
@@ -164,13 +164,13 @@ export default function DashboardClient() {
               <Button asChild size="sm" variant="outline">
                 <Link href="/superadmin/organizations"><Building2 className="w-4 h-4" />{t('dashboard.manageOrgs')}</Link>
               </Button>
-              <Button asChild size="sm" variant="default" className="bg-gradient-to-r from-[#1e40af] to-[#2563eb] hover:from-[#1e40af]/90 hover:to-[#2563eb]/90">
+              <Button asChild size="sm" variant="outline" style={{ borderColor: "color-mix(in srgb, var(--primary) 40%, transparent)", background: "color-mix(in srgb, var(--primary) 12%, transparent)", color: "var(--primary)" }}>
                 <Link href="/superadmin/create-org"><Building2 className="w-4 h-4" />{t('dashboard.createOrg')}</Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Button asChild size="sm" variant="outline" style={{ borderColor: "color-mix(in srgb, var(--success) 25%, transparent)", background: "color-mix(in srgb, var(--success) 6%, transparent)", color: "var(--success)" }}>
                 <Link href="/superadmin/stripe-dashboard"><CreditCard className="w-4 h-4" />{t('dashboard.stripeDashboard')}</Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 gap-1.5">
+              <Button asChild size="sm" variant="outline" style={{ borderColor: "color-mix(in srgb, var(--primary) 30%, transparent)", background: "color-mix(in srgb, var(--primary) 10%, transparent)", color: "var(--primary)" }}>
                 <Link href="/superadmin/security"><ShieldCheck className="w-4 h-4" />Security Center</Link>
               </Button>
             </>
@@ -178,7 +178,7 @@ export default function DashboardClient() {
           <Button asChild size="sm" variant="outline">
             <Link href="/calendar"><CalendarDays className="w-4 h-4" />{t('nav.calendar')}</Link>
           </Button>
-          <Button asChild size="sm">
+          <Button asChild size="sm" variant="default">
             <Link href="/leaves"><Plus className="w-4 h-4" />{t('dashboard.newRequest')}</Link>
           </Button>
         </div>
@@ -203,8 +203,8 @@ export default function DashboardClient() {
                 borderColor: (securityStats?.highRisk ?? 0) >= 10
                   ? "rgba(239,68,68,0.4)"
                   : (securityStats?.highRisk ?? 0) >= 3
-                  ? "rgba(245,158,11,0.4)"
-                  : "var(--border)",
+                    ? "rgba(245,158,11,0.4)"
+                    : "var(--border)",
               }}
             >
               {/* Icon */}
@@ -214,8 +214,8 @@ export default function DashboardClient() {
                   background: (securityStats?.highRisk ?? 0) >= 10
                     ? "rgba(239,68,68,0.12)"
                     : (securityStats?.highRisk ?? 0) >= 3
-                    ? "rgba(245,158,11,0.12)"
-                    : "rgba(16,185,129,0.12)",
+                      ? "rgba(245,158,11,0.12)"
+                      : "rgba(16,185,129,0.12)",
                 }}
               >
                 {(securityStats?.highRisk ?? 0) >= 10 ? (
@@ -239,22 +239,22 @@ export default function DashboardClient() {
                       background: (securityStats?.highRisk ?? 0) >= 10
                         ? "rgba(239,68,68,0.15)"
                         : (securityStats?.highRisk ?? 0) >= 3
-                        ? "rgba(245,158,11,0.15)"
-                        : "rgba(16,185,129,0.15)",
+                          ? "rgba(245,158,11,0.15)"
+                          : "rgba(16,185,129,0.15)",
                       color: (securityStats?.highRisk ?? 0) >= 10
                         ? "var(--destructive)"
                         : (securityStats?.highRisk ?? 0) >= 3
-                        ? "var(--warning)"
-                        : "var(--success)",
+                          ? "var(--warning)"
+                          : "var(--success)",
                     }}
                   >
                     {(securityStats?.highRisk ?? 0) >= 10
                       ? "⚠ Critical"
                       : (securityStats?.highRisk ?? 0) >= 3
-                      ? "⚠ Elevated"
-                      : (securityStats?.failed ?? 0) >= 20
-                      ? "⚠ Moderate"
-                      : "✓ Normal"}
+                        ? "⚠ Elevated"
+                        : (securityStats?.failed ?? 0) >= 20
+                          ? "⚠ Moderate"
+                          : "✓ Normal"}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-[10px] sm:text-xs" style={{ color: "var(--text-muted)" }}>
@@ -300,16 +300,16 @@ export default function DashboardClient() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="month" tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <RechartsTooltip 
-                    contentStyle={{ 
-                      background: "var(--card)", 
-                      border: "1px solid var(--border)", 
-                      borderRadius: "8px", 
-                      color: "var(--text-primary)" 
+                  <RechartsTooltip
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      color: "var(--text-primary)"
                     }}
                     itemStyle={{ color: "var(--text-primary)" }}
                     labelStyle={{ color: "var(--text-primary)" }}
-                    cursor={{ fill: "rgba(99,102,241,0.05)" }} 
+                    cursor={{ fill: "rgba(99,102,241,0.05)" }}
                   />
                   <Legend wrapperStyle={{ fontSize: "12px", color: "var(--text-muted)" }} />
                   <Bar dataKey="approved" name={t('statuses.approved')} fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -343,12 +343,12 @@ export default function DashboardClient() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <RechartsTooltip 
-                      contentStyle={{ 
-                        background: "var(--card)", 
-                        border: "1px solid var(--border)", 
-                        borderRadius: "8px", 
-                        color: "var(--text-primary)" 
+                    <RechartsTooltip
+                      contentStyle={{
+                        background: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        color: "var(--text-primary)"
                       }}
                       itemStyle={{ color: "var(--text-primary)" }}
                       labelStyle={{ color: "var(--text-primary)" }}
@@ -382,7 +382,7 @@ export default function DashboardClient() {
                   {recentLeaves.map((leave) => (
                     <li key={leave._id} className="flex items-center justify-between text-sm">
                       <div>
-                        <p className="font-medium text-[var(--text-primary)]">{leave.requesterName}</p>
+                        <p className="font-medium text-[var(--text-primary)]">{leave.userName}</p>
                         <p className="text-[var(--text-muted)]">{formatDate(leave.startDate, "MMM d")} - {formatDate(leave.endDate, "MMM d")}</p>
                       </div>
                       <StatusBadge status={leave.status} />
@@ -403,32 +403,32 @@ export default function DashboardClient() {
         {organization?.plan === "enterprise" && (
           <>
             <motion.div variants={itemVariants} className="lg:col-span-1">
-              <PlanGate feature="response-time-sla">
+              <PlanGate feature="slaSettings">
                 <ResponseTimeSLA />
               </PlanGate>
             </motion.div>
             <motion.div variants={itemVariants} className="lg:col-span-1">
-              <PlanGate feature="conflict-detection">
+              <PlanGate feature="advancedAnalytics">
                 <ConflictDetection />
               </PlanGate>
             </motion.div>
             <motion.div variants={itemVariants} className="lg:col-span-1">
-              <PlanGate feature="cost-analysis">
+              <PlanGate feature="analytics">
                 <CostAnalysis />
               </PlanGate>
             </motion.div>
             <motion.div variants={itemVariants} className="lg:col-span-1">
-              <PlanGate feature="holiday-sync">
+              <PlanGate feature="calendarSync">
                 <HolidayCalendarSync />
               </PlanGate>
             </motion.div>
             <motion.div variants={itemVariants} className="lg:col-span-1">
-              <PlanGate feature="smart-suggestions">
+              <PlanGate feature="aiInsights">
                 <SmartSuggestions />
               </PlanGate>
             </motion.div>
             <motion.div variants={itemVariants} className="lg:col-span-1">
-              <PlanGate feature="weekly-digest">
+              <PlanGate feature="aiChat">
                 <WeeklyDigestWidget />
               </PlanGate>
             </motion.div>
