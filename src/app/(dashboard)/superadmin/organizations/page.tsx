@@ -20,6 +20,10 @@ export default function OrganizationsPage() {
   
   // Debug logging
   useEffect(() => {
+    console.log("🔍 [Organizations] useEffect triggered");
+    console.log("🔍 [Organizations] user:", user);
+    console.log("🔍 [Organizations] isSuperadmin:", isSuperadmin);
+    
     if (user) {
       console.log("🔍 Organizations page - User data:", {
         email: user.email,
@@ -27,13 +31,16 @@ export default function OrganizationsPage() {
         isSuperadmin,
       });
     }
-  }, [user, isSuperadmin]);
-  
-  useEffect(() => {
+    
     if (!user) {
-      router.push("/login");
+      console.log("🔍 [Organizations] No user - would redirect to /login BUT DISABLED FOR DEBUG");
+      // router.push("/login"); // TEMPORARY DISABLED
+    } else if (!isSuperadmin) {
+      console.log("🔍 [Organizations] Not superadmin - should show access denied");
+    } else {
+      console.log("🔍 [Organizations] ✅ User is superadmin - should show page");
     }
-  }, [user, router]);
+  }, [user, isSuperadmin, router]);
 
   if (!user) {
     return (

@@ -110,27 +110,37 @@ export const getAllOrganizations = query({
     // NOTE: We don't check Convex Auth here because superadmin uses email/password auth
     // The client-side pages already have role="superadmin" checks
     
-    const orgs = await ctx.db.query("organizations").collect();
+    try {
+      console.log("[getAllOrganizations] Starting query...");
+      const orgs = await ctx.db.query("organizations").collect();
+      console.log("[getAllOrganizations] Found", orgs.length, "organizations");
 
-    // Enrich with employee counts and admin info
-    return await Promise.all(
-      orgs.map(async (org) => {
-        const employees = await ctx.db
-          .query("users")
-          .withIndex("by_org", (q) => q.eq("organizationId", org._id))
-          .collect();
+      // Enrich with employee counts and admin info
+      const enriched = await Promise.all(
+        orgs.map(async (org) => {
+          const employees = await ctx.db
+            .query("users")
+            .withIndex("by_org", (q) => q.eq("organizationId", org._id))
+            .collect();
 
-        const admins = employees.filter((u) => u.role === "admin");
-        const activeCount = employees.filter((u) => u.isActive && u.isApproved).length;
+          const admins = employees.filter((u) => u.role === "admin");
+          const activeCount = employees.filter((u) => u.isActive && u.isApproved).length;
 
-        return {
-          ...org,
-          totalEmployees: employees.length,
-          activeEmployees: activeCount,
-          adminNames: admins.map((a) => a.name),
-        };
-      })
-    );
+          return {
+            ...org,
+            totalEmployees: employees.length,
+            activeEmployees: activeCount,
+            adminNames: admins.map((a) => a.name),
+          };
+        })
+      );
+      
+      console.log("[getAllOrganizations] Returning", enriched.length, "enriched organizations");
+      return enriched;
+    } catch (error) {
+      console.error("[getAllOrganizations] Error:", error);
+      throw error;
+    }
   },
 });
 
