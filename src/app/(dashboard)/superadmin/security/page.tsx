@@ -257,7 +257,7 @@ export default function SecurityDashboard() {
               marginBottom: activeTab === tab ? "-1px" : "0",
             }}
           >
-            {tab === "settings" ? "🛡️ Security Features" : tab === "attempts" ? "🔐 Login Attempts" : "📋 Audit Logs"}
+            {tab === "settings" ? "🛡️ Security Features" : tab === "blocked" ? "🚫 Blocked Users" : tab === "attempts" ? "🔐 Login Attempts" : "📋 Audit Logs"}
           </button>
         ))}
       </div>

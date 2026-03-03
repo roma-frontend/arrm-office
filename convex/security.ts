@@ -553,3 +553,23 @@ export const getLoginAttemptsByUser = query({
       .take(limit);
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Get all suspended users (for superadmin)
+// ─────────────────────────────────────────────────────────────────────────────
+export const getSuspendedUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    const allUsers = await ctx.db.query("users").collect();
+    
+    // Filter only suspended users
+    const suspendedUsers = allUsers.filter(user => 
+      user.isSuspended && user.suspendedUntil && user.suspendedUntil > Date.now()
+    );
+
+    // Sort by most recently suspended
+    return suspendedUsers.sort((a, b) => 
+      (b.suspendedAt || 0) - (a.suspendedAt || 0)
+    );
+  },
+});
