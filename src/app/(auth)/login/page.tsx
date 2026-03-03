@@ -2,7 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import { loginTourSteps } from "@/components/onboarding/loginTourSteps";
 import { useSession } from "next-auth/react";
+import { useKeystrokeDynamics } from "@/hooks/useKeystrokeDynamics";
+import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -30,6 +32,15 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loginMode, setLoginMode] = useState<"email" | "face">("email");
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const deviceFingerprintRef = useRef<string | undefined>(undefined);
+  const { onKeyDown, onKeyUp, getSample, reset } = useKeystrokeDynamics();
+
+  // Collect device fingerprint on mount (client-side only)
+  useEffect(() => {
+    getDeviceFingerprint().then(({ fingerprint }) => {
+      deviceFingerprintRef.current = fingerprint;
+    }).catch(() => {});
+  }, []);
   
   // Check if OAuth sync is in progress OR redirecting
   const isOAuthSyncing = (status === "authenticated" && !isAuthenticated) || isRedirecting;
@@ -59,7 +70,11 @@ export default function LoginPage() {
     startTransition(async () => {
       try {
         console.log("🔐 Attempting login...");
-        
+
+        // Collect keystroke sample and device fingerprint
+        const keystrokeSample = getSample();
+        const deviceFingerprint = deviceFingerprintRef.current;
+
         // Use API route instead of Server Action
         const response = await fetch('/api/auth/login', {
           method: 'POST',
@@ -67,6 +82,8 @@ export default function LoginPage() {
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
+            deviceFingerprint,
+            keystrokeSample,
           }),
         });
 
@@ -92,7 +109,8 @@ export default function LoginPage() {
         
         console.log("💾 Saving user to store:", userData);
         login(userData);
-        
+        reset(); // clear keystroke buffer after successful login
+
         // Redirect to dashboard
         console.log("🔄 Redirecting to dashboard...");
         window.location.href = "/dashboard";
@@ -320,6 +338,8 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
+                  onKeyDown={onKeyDown}
+                  onKeyUp={onKeyUp}
                   placeholder="••••••••"
                   className="w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-all"
                   style={{

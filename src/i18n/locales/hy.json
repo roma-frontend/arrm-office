@@ -328,7 +328,8 @@
     "login": "Մուտք",
     "getStarted": "Սկսել",
     "aiSiteEditor": "AI Կայքի խմբագիր",
-    "subscriptions": "Բաժանորդագրություններ"
+    "subscriptions": "Բաժանորդագրություններ",
+    "security": "Անվտանգություն"
   },
   "auth": {
     "login": "Մուտք",

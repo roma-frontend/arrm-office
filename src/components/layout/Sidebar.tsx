@@ -22,6 +22,7 @@ import {
   Sparkles,
   X,
   CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/useSidebarStore";
@@ -42,6 +43,7 @@ const navItems = [
   { href: "/tasks", labelKey: "nav.tasks", icon: CheckSquare, roles: ["superadmin", "admin", "supervisor", "employee"] },
   { href: "/approvals", labelKey: "nav.approvals", icon: UserCheck, roles: ["superadmin", "admin"] },
   { href: "/superadmin/subscriptions", labelKey: "nav.subscriptions", icon: CreditCard, roles: ["superadmin"] },
+  { href: "/superadmin/security", labelKey: "nav.security", icon: ShieldCheck, roles: ["superadmin"], badge: "SEC" },
   { href: "/ai-site-editor", labelKey: "nav.aiSiteEditor", icon: Sparkles, roles: ["superadmin", "admin", "supervisor", "employee"], badge: "AI" },
   { href: "/profile", labelKey: "nav.profile", icon: User, roles: ["superadmin", "admin", "supervisor", "employee"] },
   { href: "/settings", labelKey: "nav.settings", icon: Settings, roles: ["superadmin", "admin", "supervisor", "employee"] },
@@ -257,6 +259,12 @@ export function Sidebar() {
                   {item.badge === "AI" && (
                     <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
                       AI
+                    </span>
+                  )}
+                  {/* Security Badge */}
+                  {item.badge === "SEC" && (
+                    <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                      🛡
                     </span>
                   )}
                 </div>
@@ -562,6 +570,12 @@ export function MobileSidebar() {
                     {item.badge === "AI" && (
                       <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
                         AI
+                      </span>
+                    )}
+                    {/* Security Badge */}
+                    {item.badge === "SEC" && (
+                      <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                        🛡
                       </span>
                     )}
                   </div>

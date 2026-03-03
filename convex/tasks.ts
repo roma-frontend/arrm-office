@@ -212,20 +212,25 @@ export const getTasksAssignedBy = query({
     const supervisor = await ctx.db.get(args.supervisorId);
     if (!supervisor) throw new Error("Supervisor not found");
     
+    const isSuperadmin = supervisor.email.toLowerCase() === SUPERADMIN_EMAIL;
+    
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_assigned_by", q => q.eq("assignedBy", args.supervisorId))
       .order("desc")
       .collect();
 
-    // Filter by organization
+    // Filter by organization (skip for superadmin)
     const orgTasks = await Promise.all(
       tasks.map(async task => {
         const assignedTo = await ctx.db.get(task.assignedTo);
         
-        // Only include tasks where assignedTo is from same organization
-        if (supervisor.organizationId && assignedTo?.organizationId !== supervisor.organizationId) {
-          return null;
+        // Superadmin sees all their assigned tasks across all organizations
+        if (!isSuperadmin) {
+          // Only include tasks where assignedTo is from same organization
+          if (supervisor.organizationId && assignedTo?.organizationId !== supervisor.organizationId) {
+            return null;
+          }
         }
         
         const comments = await ctx.db
@@ -248,31 +253,39 @@ export const getTasksAssignedBy = query({
 });
 
 // ── Get All Tasks (admin) ──────────────────────────────────────────────────
+const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
+
 export const getAllTasks = query({
   args: { requesterId: v.id("users") },
   handler: async (ctx, args) => {
     const requester = await ctx.db.get(args.requesterId);
     if (!requester) throw new Error("Requester not found");
     
-    // Only admin can get all tasks, and only from their organization
-    if (requester.role !== "admin") {
+    // Only admin/superadmin can get all tasks
+    if (requester.role !== "admin" && requester.role !== "superadmin") {
       throw new Error("Only admins can access all tasks");
     }
     
-    if (!requester.organizationId) {
+    const isSuperadmin = requester.email.toLowerCase() === SUPERADMIN_EMAIL;
+    
+    // Superadmin without org can still access (but will see nothing if no tasks exist)
+    if (!isSuperadmin && !requester.organizationId) {
       throw new Error("Admin must belong to an organization");
     }
     
     const tasks = await ctx.db.query("tasks").order("desc").collect();
     
-    // Filter tasks by organization
+    // Filter tasks by organization (skip filter for superadmin)
     const orgTasks = await Promise.all(
       tasks.map(async task => {
         const assignedTo = await ctx.db.get(task.assignedTo);
         const assignedBy = await ctx.db.get(task.assignedBy);
         
-        // Only include tasks where both assignedTo and assignedBy are from the same org
-        if (assignedTo?.organizationId !== requester.organizationId) return null;
+        // Superadmin sees all tasks across all organizations
+        if (!isSuperadmin) {
+          // Regular admin: only include tasks from their organization
+          if (assignedTo?.organizationId !== requester.organizationId) return null;
+        }
         
         const comments = await ctx.db
           .query("taskComments")

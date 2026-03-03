@@ -282,7 +282,8 @@
     "login": "Login",
     "getStarted": "Get Started",
     "aiSiteEditor": "AI Site Editor",
-    "subscriptions": "Subscriptions"
+    "subscriptions": "Subscriptions",
+    "security": "Security"
   },
   "auth": {
     "login": "Login",
