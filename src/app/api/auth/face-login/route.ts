@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       name: result.name,
       email: result.email,
       role: result.role,
+      organizationId: result.organizationId,
       department: result.department,
       position: result.position,
       employeeType: result.employeeType,
