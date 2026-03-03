@@ -72,7 +72,7 @@ const { user } = useAuthStore();
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-white">
             <Clock className="w-5 h-5" />
-            Time Tracker
+            {t('attendance.timeTracker')}
           </CardTitle>
           <div className="text-2xl font-mono">
             {currentTime ? format(currentTime, "HH:mm:ss") : "--:--:--"}
@@ -86,7 +86,7 @@ const { user } = useAuthStore();
           <div>
             <p className="text-sm text-[var(--text-muted)]">Status</p>
             <p className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>
-              {!todayStatus && "Not Checked In"}
+              {!todayStatus && t('attendance.notCheckedIn')}
               {isCheckedIn && "At Work"}
               {isCheckedOut && "Finished for Today"}
             </p>
@@ -202,7 +202,7 @@ const { user } = useAuthStore();
           <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950">
             <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
             <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              Please check in when you arrive at work (9:00 AM - 6:00 PM)
+              {t('ui.notCheckedInWarning')}
             </p>
           </div>
         )}

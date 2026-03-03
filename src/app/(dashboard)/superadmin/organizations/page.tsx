@@ -18,7 +18,16 @@ export default function OrganizationsPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
-  const organizations = useQuery(api.organizations.getAllOrganizations);
+  
+  // Debug user object
+  console.log("🔍 [Organizations] Full user object:", user);
+  console.log("🔍 [Organizations] user.id:", user?.id);
+  console.log("🔍 [Organizations] typeof user.id:", typeof user?.id);
+  
+  const organizations = useQuery(
+    api.organizations.getAllOrganizations,
+    user?.id ? { superadminUserId: user.id as any } : "skip"
+  );
   
   console.log("🔍 [Organizations] organizations query result:", organizations);
 
@@ -218,7 +227,7 @@ export default function OrganizationsPage() {
 
                   {org.adminNames && org.adminNames.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-xs text-muted-foreground mb-1">Admins:</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t('ui.admins')}</p>
                       <div className="flex gap-2 flex-wrap">
                         {org.adminNames.map((name, idx) => (
                           <span

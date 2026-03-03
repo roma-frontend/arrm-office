@@ -62,7 +62,7 @@ export function AttendanceDashboard() {
       iconBg: "bg-sky-400/10",
     },
     {
-      label: "Overtime",
+      label: t('attendance.overtime'),
       value: `${monthlyStats.totalOvertimeHours}h`,
       icon: Award,
       color: "text-orange-500",
@@ -76,7 +76,7 @@ export function AttendanceDashboard() {
       {/* Monthly Stats */}
       <div>
         <h2 className="text-2xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
-          Monthly Attendance
+          {t('attendance.monthlyAttendance')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, index) => (
@@ -133,7 +133,7 @@ export function AttendanceDashboard() {
       {/* Recent History */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Attendance</CardTitle>
+          <CardTitle>{t('attendance.recentAttendance')}</CardTitle>
         </CardHeader>
         <CardContent>
           {!history || history.length === 0 ? (

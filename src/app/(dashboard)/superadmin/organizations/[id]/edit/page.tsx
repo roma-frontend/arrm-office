@@ -19,7 +19,10 @@ export default function EditOrganizationPage() {
   const orgId = params.id as string;
   const isSuperadmin = user?.role === "superadmin" || user?.email?.toLowerCase() === "romangulanyan@gmail.com";
 
-  const organizations = useQuery(api.organizations.getAllOrganizations);
+  const organizations = useQuery(
+    api.organizations.getAllOrganizations,
+    user?.id ? { superadminUserId: user.id as any } : "skip"
+  );
 
   const updateOrg = useMutation(api.organizations.updateOrganization);
 

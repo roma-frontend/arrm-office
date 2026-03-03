@@ -131,8 +131,8 @@ const [tab, setTab] = useState("overview");
       {/* Header */}
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)]">Reports & Analytics</h2>
-          <p className="text-[var(--text-muted)] text-sm mt-1">Comprehensive leave analysis and workforce insights</p>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t('reportsAnalytics.reportsAnalytics')}</h2>
+          <p className="text-[var(--text-muted)] text-sm mt-1">{t('ui.comprehensiveAnalysis')}</p>
         </div>
         <Button variant="outline" onClick={handleExport} disabled={isLoading}>
           <Download className="w-4 h-4" /> Export CSV
@@ -181,7 +181,7 @@ const [tab, setTab] = useState("overview");
                 </CardHeader>
                 <CardContent>
                   {pieData.length === 0 ? (
-                    <div className="h-[220px] flex items-center justify-center text-[var(--text-muted)] text-sm">No data yet</div>
+                    <div className="h-[220px] flex items-center justify-center text-[var(--text-muted)] text-sm">{t('emptyStates.noDataYet')}</div>
                   ) : (
                     <ResponsiveContainer width="100%" height={220}>
                       <PieChart>

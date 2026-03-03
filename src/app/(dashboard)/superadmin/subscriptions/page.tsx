@@ -29,12 +29,17 @@ const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
 
 export default function SubscriptionsManagementPage() {
   const subscriptions = useQuery(api.subscriptions_admin.listAllWithUsers);
-  const allOrganizations = useQuery(api.organizations.listAll);
-  const createManual = useMutation(api.subscriptions_admin.createManualSubscription);
-  const cancelSub = useMutation(api.subscriptions_admin.cancelSubscription);
   
   // Get current user from useAuthStore (works with both email/password and OAuth)
   const { user } = useAuthStore();
+  
+  const allOrganizations = useQuery(
+    api.organizations.getAllOrganizations,
+    user?.id ? { superadminUserId: user.id as any } : "skip"
+  );
+  
+  const createManual = useMutation(api.subscriptions_admin.createManualSubscription);
+  const cancelSub = useMutation(api.subscriptions_admin.cancelSubscription);
 
   const [showForm, setShowForm] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState("");
@@ -48,6 +53,8 @@ export default function SubscriptionsManagementPage() {
   
   console.log("[Subscriptions Page] user from useAuthStore:", user);
   console.log("[Subscriptions Page] isSuperAdmin:", isSuperAdmin, "role:", user?.role, "email:", user?.email);
+  console.log("[Subscriptions Page] allOrganizations:", allOrganizations);
+  console.log("[Subscriptions Page] allOrganizations count:", allOrganizations?.length);
   
   // Wait for user to load
   if (!user) {
@@ -183,7 +190,7 @@ export default function SubscriptionsManagementPage() {
                 </option>
                 {allOrganizations?.map((org: any) => (
                   <option key={org._id} value={org._id}>
-                    {org.name} ({org.slug}) - {org.employeeCount || 0} employees
+                    {org.name} ({org.slug}) - {org.totalEmployees || 0} employees
                   </option>
                 ))}
               </select>

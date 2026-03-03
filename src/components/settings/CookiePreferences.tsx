@@ -114,17 +114,17 @@ const { hasConsent, preferences, savePreferences, resetConsent } = useCookieCons
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Cookie className="w-4 h-4 text-[var(--primary)]" />
-            <CardTitle className="text-base">Privacy & Cookies</CardTitle>
+            <CardTitle className="text-base">{t('cookies.privacyAndCookies')}</CardTitle>
           </div>
           {hasConsent && (
             <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Consent Given
+              {t('cookies.consentGiven')}
             </div>
           )}
         </div>
         <CardDescription>
-          Manage how we use cookies to enhance your experience
+          {t('cookies.manageExperience')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -132,13 +132,13 @@ const { hasConsent, preferences, savePreferences, resetConsent } = useCookieCons
         <div className="flex gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900/50 dark:bg-blue-950/30">
           <Info className="h-4 w-4 flex-shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
           <div className="text-xs text-blue-900 dark:text-blue-100">
-            We respect your privacy. Learn more in our{" "}
+            {t('cookies.respectPrivacy')}{" "}
             <Link 
               href="/privacy" 
               target="_blank"
               className="font-semibold underline hover:text-blue-700 dark:hover:text-blue-300"
             >
-              Privacy Policy
+              {t('cookies.privacyPolicy')}
             </Link>
             {" and "}
             <Link 
@@ -146,7 +146,7 @@ const { hasConsent, preferences, savePreferences, resetConsent } = useCookieCons
               target="_blank"
               className="font-semibold underline hover:text-blue-700 dark:hover:text-blue-300"
             >
-              Terms of Service
+              {t('cookies.termsOfService')}
             </Link>.
           </div>
         </div>
@@ -182,7 +182,7 @@ const { hasConsent, preferences, savePreferences, resetConsent } = useCookieCons
                         </h4>
                         {category.required && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                            Always On
+                            {t('cookies.alwaysOn')}
                           </span>
                         )}
                       </div>

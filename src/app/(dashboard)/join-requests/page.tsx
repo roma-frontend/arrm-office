@@ -56,7 +56,7 @@ export default function JoinRequestsPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-2">
           <AlertCircle className="w-8 h-8 text-[var(--text-muted)] mx-auto" />
-          <p className="text-[var(--text-muted)]">Admin access required</p>
+          <p className="text-[var(--text-muted)]">{t('ui.adminAccessRequired')}</p>
         </div>
       </div>
     );

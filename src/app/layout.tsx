@@ -262,8 +262,8 @@ export default function RootLayout({
               <AuthSyncProvider>
                 <ThemeProvider
                   attribute="class"
-                  defaultTheme="light"
-                  enableSystem={false}
+                  defaultTheme="system"
+                  enableSystem={true}
                   disableTransitionOnChange
                 >
                   {children}

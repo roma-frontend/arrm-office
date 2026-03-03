@@ -41,7 +41,7 @@ export default function SuperadminCreateOrgPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-2">{t('ui.accessDenied')}</h1>
           <p>{t('ui.onlySuperadminCanAccess')}</p>
-          <p className="text-sm mt-2">Your email: {user.email} | Role: {user.role}</p>
+          <p className="text-sm mt-2">{t('ui.yourEmail')} {user.email} | {t('ui.role')} {user.role}</p>
         </div>
       </div>
     );
@@ -66,7 +66,7 @@ export default function SuperadminCreateOrgPage() {
       toast.info(`Creating ${formData.name} organization...`);
       
       const result = await createOrg({
-        superadminUserId: user.id,
+        superadminUserId: user.id as any,
         name: formData.name,
         slug: formData.slug,
         plan: formData.plan,

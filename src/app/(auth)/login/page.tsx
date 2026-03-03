@@ -58,41 +58,77 @@ export default function LoginPage() {
 
     startTransition(async () => {
       try {
-        console.log("рџ”ђ Attempting login...");
-        const result = await loginAction(fd);
-        console.log("вњ… Login successful, result:", result);
+        console.log("🔐 Attempting login...");
+        
+        // Use API route instead of Server Action
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Login failed');
+        }
+
+        const result = await response.json();
+        console.log("✅ Login successful:", result);
         
         const userData = {
-          id: result.userId,
-          name: result.name,
-          email: result.email,
-          role: result.role,
-          department: result.department,
-          position: result.position,
-          employeeType: result.employeeType,
-          avatar: result.avatar,
+          id: result.session.userId,
+          name: result.session.name,
+          email: result.session.email,
+          role: result.session.role,
+          department: result.session.department,
+          position: result.session.position,
+          employeeType: result.session.employeeType,
+          avatar: result.session.avatar,
         };
         
-        console.log("рџ’ѕ Saving user to store:", userData);
+        console.log("💾 Saving user to store:", userData);
         login(userData);
         
-        // Verify it was saved
-        setTimeout(() => {
-          const stored = localStorage.getItem('hr-auth-storage');
-          console.log("рџ”Ќ Verification - localStorage:", stored);
-        }, 100);
-        
-        router.push("/dashboard");
+        // Redirect to dashboard
+        console.log("🔄 Redirecting to dashboard...");
+        window.location.href = "/dashboard";
       } catch (err) {
-        console.error("вќЊ Login failed:", err);
+        console.error("❌ Login failed:", err);
         setError(err instanceof Error ? err.message : "Login failed");
       }
     });
   };
 
-  const handleWebAuthnSuccess = (credentialId: string) => {
-    // For demo: redirect to dashboard after biometric
-    router.push("/dashboard");
+  const handleWebAuthnSuccess = async (credentialId: string) => {
+    try {
+      // Get user data from JWT session
+      const { getSessionAction } = await import("@/actions/auth");
+      const session = await getSessionAction();
+      
+      if (!session) {
+        throw new Error("Failed to get session data after WebAuthn");
+      }
+      
+      const userData = {
+        id: session.userId,
+        name: session.name,
+        email: session.email,
+        role: session.role,
+        department: session.department,
+        position: session.position,
+        employeeType: session.employeeType,
+        avatar: session.avatar,
+      };
+      
+      login(userData);
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("❌ WebAuthn login failed:", err);
+      setError(err instanceof Error ? err.message : "WebAuthn login failed");
+    }
   };
 
   return (
@@ -364,7 +400,7 @@ export default function LoginPage() {
         {/* Back to home */}
         <div className="text-center mt-4">
           <Link href="/" className="text-sm hover:underline" style={{ color: "var(--text-muted)" }}>
-            в†ђ {t('ui.backToHome')}
+            ← {t('ui.backToHome')}
           </Link>
         </div>
       </motion.div>

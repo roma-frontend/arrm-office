@@ -6,69 +6,45 @@ import { log } from "@/lib/logger";
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
-if (!CONVEX_URL) {
-  console.error('❌ NEXT_PUBLIC_CONVEX_URL is not set!');
-  console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('CONVEX')));
-  throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
-}
-
-console.log('✅ CONVEX_URL loaded:', CONVEX_URL);
-
 async function convexMutation(name: string, args: Record<string, unknown>) {
   try {
-    log.debug('convexMutation called', { name, CONVEX_URL });
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    console.log('🔧 convexMutation called', { name, CONVEX_URL, hasURL: !!CONVEX_URL });
+    log.debug('convexMutation called', { name });
     
-    const url = `${CONVEX_URL}/api/mutation`;
-    const payload = { path: name, args };
+    if (!CONVEX_URL) {
+      console.error('❌ CONVEX_URL is undefined!');
+      console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('CONVEX')));
+      throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
+    }
     
-    log.debug('Fetching Convex mutation', { url, payload: JSON.stringify(payload).substring(0, 200) });
-    
-    const res = await fetch(url, {
+    const res = await fetch(`${CONVEX_URL}/api/mutation`, {
       method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: name, args }),
       cache: 'no-store',
     });
     
-    clearTimeout(timeoutId);
-    
-    log.debug('convexMutation response received', { 
-      status: res.status, 
-      ok: res.ok,
-      statusText: res.statusText 
-    });
-    
     if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status} ${res.statusText}`);
+      throw new Error(`HTTP error! status: ${res.status}`);
     }
     
     const data = await res.json();
-    log.debug('convexMutation data parsed', { 
-      status: data.status,
-      hasValue: !!data.value,
-      valueType: typeof data.value
-    });
     
-    if (data.status === "error") throw new Error(data.errorMessage ?? "Convex error");
+    if (data.status === "error") {
+      throw new Error(data.errorMessage ?? "Convex error");
+    }
     
-    // Log the actual value being returned for debugging
     log.debug('convexMutation returning value', { 
-      valueKeys: data.value ? Object.keys(data.value) : null
+      resultKeys: data.value ? Object.keys(data.value) : null
     });
     
     return data.value;
   } catch (error: any) {
     log.error('convexMutation failed', error, { 
-      name, 
-      CONVEX_URL,
+      name,
       errorMessage: error?.message,
-      errorType: error?.name 
+      errorType: error?.name,
+      errorStack: error?.stack
     });
     
     // Provide better error messages
@@ -84,41 +60,38 @@ async function convexMutation(name: string, args: Record<string, unknown>) {
 
 async function convexQuery(name: string, args: Record<string, unknown>) {
   try {
-    log.debug('convexQuery called', { name, CONVEX_URL });
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    log.debug('convexQuery called', { name });
+    
+    if (!CONVEX_URL) {
+      throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
+    }
     
     const res = await fetch(`${CONVEX_URL}/api/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path: name, args }),
-      signal: controller.signal,
       cache: 'no-store',
     });
     
-    clearTimeout(timeoutId);
-    
-    log.debug('convexQuery response received', { 
-      status: res.status, 
-      ok: res.ok,
-      statusText: res.statusText 
-    });
-    
     if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status} ${res.statusText}`);
+      throw new Error(`HTTP error! status: ${res.status}`);
     }
     
     const data = await res.json();
-    log.debug('convexQuery data parsed', { status: data.status });
     
-    if (data.status === "error") throw new Error(data.errorMessage ?? "Convex error");
+    if (data.status === "error") {
+      throw new Error(data.errorMessage ?? "Convex error");
+    }
+    
+    log.debug('convexQuery data parsed', { result: data.value });
+    
     return data.value;
   } catch (error: any) {
     log.error('convexQuery failed', error, { 
-      name, 
-      CONVEX_URL,
+      name,
       errorMessage: error?.message,
-      errorType: error?.name 
+      errorType: error?.name,
+      errorStack: error?.stack
     });
     
     // Provide better error messages
@@ -179,7 +152,7 @@ export async function registerAction(formData: FormData) {
 
   const loginResult = await convexMutation("auth:login", {
     email,
-    password, // Convex handles hashing internally
+    password,
     sessionToken,
     sessionExpiry,
   });

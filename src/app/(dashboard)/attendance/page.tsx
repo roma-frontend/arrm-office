@@ -300,7 +300,7 @@ export default function AttendancePage() {
                   <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
                 </div>
               ) : filteredEmployees.length === 0 ? (
-                <div className="text-center py-10" style={{ color: "var(--text-muted)" }}>No employees found</div>
+                <div className="text-center py-10" style={{ color: "var(--text-muted)" }}>{t('attendance.noFound')}</div>
               ) : (
                 <div className="space-y-2">
                   {filteredEmployees.map(({ user: emp, supervisor, stats, lastRecord }) => (

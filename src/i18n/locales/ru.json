@@ -745,6 +745,11 @@
     "teamAttendance": "Посещаемость команды",
     "checkIn": "Отметиться",
     "checkOut": "Завершить",
+    "timeTracker": "Учет времени",
+    "monthlyAttendance": "Месячная посещаемость",
+    "recentAttendance": "Недавняя посещаемость",
+    "overtime": "Сверхурочные",
+    "status": "Статус",
     "checkedIn": "Отметился",
     "checkedOut": "Вышел",
     "notCheckedIn": "Не отметился",
@@ -2125,7 +2130,20 @@
     "copy": "Копировать",
     "paste": "Вставить",
     "cut": "Вырезать",
-    "selectAll": "Выбрать все"
+    "selectAll": "Выбрать все",
+    "accessDenied": "Доступ запрещен",
+    "onlyAdminsCanAccess": "Только администраторы могут получить доступ к этой странице",
+    "notCheckedInWarning": "Пожалуйста, отметьтесь, когда прибудете на работу (9:00 - 18:00)",
+    "profilePictureUpload": "Загрузите или удалите фото профиля. JPG, PNG или GIF. Максимум 5MB.",
+    "clickCameraToUpload": "Нажмите на значок камеры, чтобы загрузить новое фото",
+    "recommendedImageSize": "Рекомендуется: квадратное изображение, минимум 200x200 пикселей",
+    "personalInformation": "Личная информация",
+    "adminAccessRequired": "Требуется доступ администратора",
+    "yourAccountDetails": "Данные вашего аккаунта и роль",
+    "yourActivity": "Ваша активность и вклад",
+    "admins": "Администраторы:",
+    "yourEmail": "Ваш email:",
+    "role": "Роль:"
   },
   "reportsAnalytics": {
     "reportsAnalytics": "Отчеты и аналитика",
@@ -2152,7 +2170,8 @@
     "sessionTimeout": "Тайм-аут сессии",
     "ipWhitelist": "Белый список IP",
     "loginHistory": "История входов",
-    "activeDevices": "Активные устройства"
+    "activeDevices": "Активные устройства",
+    "customizeInterface": "Настройте внешний вид и функциональность интерфейса"
   },
   "aiFeatures": {
     "ai": "ИИ",
@@ -2567,7 +2586,12 @@
     "connect": "Connect",
     "googleCalendar": "Google Календарь",
     "googleCalendarDesc": "Синхронизация отпусков с Google Календарь",
-    "teamCommunication": "Командное общение"
+    "teamCommunication": "Командное общение",
+    "calendarSync": "Синхронизация календаря",
+    "outlookCalendar": "Календарь Outlook",
+    "outlookCalendarDesc": "Синхронизируйте расписание отпусков с Microsoft Outlook",
+    "emailReports": "Отчеты по электронной почте",
+    "dataManagement": "Управление данными"
   },
   "settingsAdvancedSecurity": {
     "twoFactor": "Two-Factor Authentication",
@@ -2645,9 +2669,9 @@
     "punctuality": "Punctuality"
   },
   "editEmployee": {
-    "fullAccess": "Full access",
-    "manageTeam": "Manage team",
-    "basicAccess": "Basic access"
+    "fullAccess": "Полный доступ",
+    "manageTeam": "Управление командой",
+    "basicAccess": "Базовый доступ"
   },
   "employeesExtra": {
     "contractorTip": "Подсказка: включите \"contractor\" в email для автоматической установки типа подрядчика (12,000 драм/день)",
@@ -2662,18 +2686,19 @@
     "assignedBy": "Assigned By",
     "priority": "Priority",
     "deadline": "Deadline",
-    "tags": "Tags",
-    "moveTo": "Move To",
+    "tags": "Теги",
+    "moveTo": "Переместить в",
+    "overdue": "Просрочено",
     "overdue": "Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В РІР‚в„ўР вЂ™Р’В Р В Р’В Р вЂ™Р’В Р В Р’В Р В Р РЏР В Р’В Р вЂ™Р’В Р В Р вЂ Р В РІР‚С™Р Р†РІР‚С›РЎС›Р В Р’В Р Р†Р вЂљРІвЂћСћР В РІР‚в„ўР вЂ™Р’В° Overdue",
-    "noDeadline": "No deadline",
-    "noComments": "No comments yet",
-    "comments": "Comments",
+    "noDeadline": "Нет срока",
+    "noComments": "Пока нет комментариев",
+    "comments": "Комментарии",
     "deleteConfirm": "Delete this task? This cannot be undone."
   },
   "cookies": {
     "title": "Мы ценим вашу конфиденциальность",
-    "description": "Мы используем cookies для улучшения вашего опыта просмотра, обеспечения безопасности и анализа производительности сайта.",
-    "acceptConsent": "Нажимая «Принять все», вы соглашаетесь с использованием наших cookies.",
+    "description": "Мы используем cookies для улучшения вашего опыта и анализа производительности.",
+    "acceptConsent": "Нажмите «Принять все» для согласия.",
     "or": " или ",
     "learnMore": "Узнать больше",
     "customizeSettings": "настроить параметры",
@@ -2684,6 +2709,21 @@
     "acceptAll": "Принять все",
     "rejectAll": "Отклонить все",
     "settings": "Настройки",
+    "privacyAndCookies": "Конфиденциальность и Cookies",
+    "consentGiven": "Согласие получено",
+    "manageExperience": "Управляйте тем, как мы используем cookies для улучшения вашего опыта",
+    "respectPrivacy": "Мы уважаем вашу конфиденциальность. Узнайте больше в нашей",
+    "privacyPolicy": "Политике конфиденциальности",
+    "termsOfService": "Условиях обслуживания",
+    "essentialCookies": "Обязательные Cookies",
+    "alwaysOn": "Всегда включены",
+    "essentialDesc": "Необходимы для основных функций, таких как аутентификация, безопасность и управление сеансами. Их нельзя отключить.",
+    "analyticsCookies": "Аналитические Cookies",
+    "analyticsDesc": "Помогают нам понять, как вы используете нашу платформу для улучшения производительности и пользовательского опыта.",
+    "marketingCookies": "Маркетинговые Cookies",
+    "marketingDesc": "Используются для показа релевантной рекламы и измерения эффективности кампаний.",
+    "preferenceCookies": "Cookies настроек",
+    "preferenceDesc": "Запоминают ваши настройки, такие как тема, язык и предпочтения макета для персонализированного опыта.",
     "essentialDesc": "Необходимы для работы сайта",
     "analyticsDesc": "Помогают нам понять наш сервис",
     "marketingDesc": "Используются для таргетированной рекламы",
@@ -2811,8 +2851,8 @@
     "hours": "hours",
     "target": "Target: {hours}h",
     "slaStatusDistribution": "SLA Status Distribution",
-    "pendingRequests": "Pending Requests - SLA Status",
-    "noPendingRequests": "No pending requests",
+    "pendingRequests": "Ожидающие запросы - статус SLA",
+    "noPendingRequests": "Нет ожидающих запросов",
     "timeRemaining": "{hours}h remaining",
     "overdue": "Overdue by {hours}h"
   },
@@ -3340,7 +3380,11 @@
     "disable": "Отключить",
     "verified": "Верифицировано",
     "notVerified": "Не верифицировано",
-    "updateProfile": "Обновить профиль"
+    "updateProfile": "Обновить профиль",
+    "myProfile": "Мой профиль",
+    "managePersonalInfo": "Управляйте своей личной информацией и данными аккаунта",
+    "updateDetails": "Обновите свои личные данные",
+    "profilePicture": "Фото профиля"
   },
   "billing": {
     "billing": "Оплата",
@@ -3359,6 +3403,10 @@
     "stripe": "Stripe",
     "billingHistory": "История оплат",
     "paymentHistory": "История платежей",
+    "subscriptionPlan": "План подписки",
+    "currentPlanFeatures": "Ваш текущий план и включенные функции",
+    "noSubscription": "Нет подписки",
+    "includedInPlan": "Включено в ваш план",
     "nextBilling": "Следующая оплата",
     "dueDate": "Срок оплаты",
     "amount": "Сумма",
@@ -4710,7 +4758,14 @@
     "displayPerformanceDesc": "Показать метрики производительности",
     "compactModeDesc": "Уменьшить отступы для более компактного вида",
     "every5Minutes": "Каждые 5 минут",
-    "manualRefreshOnly": "Только ручное обновление"
+    "manualRefreshOnly": "Только ручное обновление",
+    "defaultLandingPageDesc": "Выберите страницу для отображения после входа",
+    "landingPage": "Главная страница",
+    "dashboardWidgets": "Виджеты панели",
+    "displayPerformance": "Отобразить производительность",
+    "compactMode": "Компактный режим",
+    "dataRefreshRate": "Частота обновления данных",
+    "dataUpdatesInstantly": "Данные обновляются мгновенно"
   },
   "modals": {
     "assignSupervisor": {

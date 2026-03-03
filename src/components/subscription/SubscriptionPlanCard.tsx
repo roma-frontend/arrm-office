@@ -26,7 +26,7 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 function StatusBadge({ status, isTrialing }: { status: string | null | undefined; isTrialing: boolean }) {
-  if (!status) return <Badge variant="secondary">No subscription</Badge>;
+  if (!status) return <Badge variant="secondary">{t('billing.noSubscription')}</Badge>;
   if (isTrialing) return (
     <Badge variant="warning" className="flex items-center gap-1">
       <Clock className="w-3 h-3" /> Trial
@@ -91,9 +91,9 @@ const {
       <CardHeader>
         <div className="flex items-center gap-2">
           <CreditCard className="w-4 h-4 text-[var(--primary)]" />
-          <CardTitle className="text-base">Subscription Plan</CardTitle>
+          <CardTitle className="text-base">{t('billing.subscriptionPlan')}</CardTitle>
         </div>
-        <CardDescription>Your current plan and included features</CardDescription>
+        <CardDescription>{t('billing.currentPlanFeatures')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         {isLoading ? (
@@ -148,7 +148,7 @@ const {
             {/* Features list */}
             <div className="space-y-2">
               <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">
-                Included in your plan
+                {t('billing.includedInPlan')}
               </p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {featureList.map(({ label, enabled }) => (

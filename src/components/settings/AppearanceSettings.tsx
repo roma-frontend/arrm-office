@@ -46,7 +46,7 @@ const { theme, setTheme, systemTheme } = useTheme();
             <Palette className="w-5 h-5 text-[var(--primary)]" />
             <CardTitle>{t('settingsExtended.appearance')}</CardTitle>
           </div>
-          <CardDescription>Customize the look and feel of your interface</CardDescription>
+          <CardDescription>{t('settingsExtended.customizeInterface')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -86,7 +86,7 @@ const { theme, setTheme, systemTheme } = useTheme();
           <Palette className="w-5 h-5 text-[var(--primary)]" />
           <CardTitle>{t('settingsExtended.appearance')}</CardTitle>
         </div>
-        <CardDescription>Customize the look and feel of your interface</CardDescription>
+        <CardDescription>{t('settingsExtended.customizeInterface')}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

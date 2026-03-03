@@ -32,19 +32,19 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 const navItems = [
-  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: ["admin", "supervisor", "employee"] },
-  { href: "/attendance", labelKey: "nav.attendance", icon: Clock, roles: ["admin", "supervisor", "employee"] },
-  { href: "/analytics", labelKey: "nav.analytics", icon: BarChart3, roles: ["admin", "supervisor"] },
-  { href: "/leaves", labelKey: "nav.leaves", icon: ClipboardList, roles: ["admin", "supervisor", "employee"] },
-  { href: "/employees", labelKey: "nav.employees", icon: Users, roles: ["admin", "supervisor", "employee"] },
-  { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, roles: ["admin", "supervisor", "employee"] },
-  { href: "/reports", labelKey: "nav.reports", icon: FileText, roles: ["admin", "supervisor"] },
-  { href: "/tasks", labelKey: "nav.tasks", icon: CheckSquare, roles: ["admin", "supervisor", "employee"] },
-  { href: "/approvals", labelKey: "nav.approvals", icon: UserCheck, roles: ["admin"] },
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: ["superadmin", "admin", "supervisor", "employee"] },
+  { href: "/attendance", labelKey: "nav.attendance", icon: Clock, roles: ["superadmin", "admin", "supervisor", "employee"] },
+  { href: "/analytics", labelKey: "nav.analytics", icon: BarChart3, roles: ["superadmin", "admin", "supervisor"] },
+  { href: "/leaves", labelKey: "nav.leaves", icon: ClipboardList, roles: ["superadmin", "admin", "supervisor", "employee"] },
+  { href: "/employees", labelKey: "nav.employees", icon: Users, roles: ["superadmin", "admin", "supervisor", "employee"] },
+  { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, roles: ["superadmin", "admin", "supervisor", "employee"] },
+  { href: "/reports", labelKey: "nav.reports", icon: FileText, roles: ["superadmin", "admin", "supervisor"] },
+  { href: "/tasks", labelKey: "nav.tasks", icon: CheckSquare, roles: ["superadmin", "admin", "supervisor", "employee"] },
+  { href: "/approvals", labelKey: "nav.approvals", icon: UserCheck, roles: ["superadmin", "admin"] },
   { href: "/superadmin/subscriptions", labelKey: "nav.subscriptions", icon: CreditCard, roles: ["superadmin"] },
-  { href: "/ai-site-editor", labelKey: "nav.aiSiteEditor", icon: Sparkles, roles: ["admin", "supervisor", "employee"], badge: "AI" },
-  { href: "/profile", labelKey: "nav.profile", icon: User, roles: ["admin", "supervisor", "employee"] },
-  { href: "/settings", labelKey: "nav.settings", icon: Settings, roles: ["admin", "supervisor", "employee"] },
+  { href: "/ai-site-editor", labelKey: "nav.aiSiteEditor", icon: Sparkles, roles: ["superadmin", "admin", "supervisor", "employee"], badge: "AI" },
+  { href: "/profile", labelKey: "nav.profile", icon: User, roles: ["superadmin", "admin", "supervisor", "employee"] },
+  { href: "/settings", labelKey: "nav.settings", icon: Settings, roles: ["superadmin", "admin", "supervisor", "employee"] },
 ];
 
 function getInitials(name: string) {

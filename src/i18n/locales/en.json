@@ -501,6 +501,11 @@
     "teamAttendance": "Team Attendance",
     "checkIn": "Check In",
     "checkOut": "Check Out",
+    "timeTracker": "Time Tracker",
+    "monthlyAttendance": "Monthly Attendance",
+    "recentAttendance": "Recent Attendance",
+    "overtime": "Overtime",
+    "status": "Status",
     "checkedIn": "Checked In",
     "checkedOut": "Checked Out",
     "notCheckedIn": "Not Checked In",
@@ -1239,7 +1244,20 @@
     "loadingTasks": "Loading tasks...",
     "userApprovals": "User Approvals",
     "noPendingApprovals": "No pending approvals",
-    "allCaughtUp": "All caught up!"
+    "allCaughtUp": "All caught up!",
+    "accessDenied": "Access Denied",
+    "onlyAdminsCanAccess": "Only administrators can access this page",
+    "notCheckedInWarning": "Please check in when you arrive at work (9:00 AM - 6:00 PM)",
+    "profilePictureUpload": "Upload or remove your profile picture. JPG, PNG or GIF. Max 5MB.",
+    "clickCameraToUpload": "Click the camera icon to upload a new picture",
+    "recommendedImageSize": "Recommended: Square image, at least 200x200 pixels",
+    "personalInformation": "Personal Information",
+    "adminAccessRequired": "Admin access required",
+    "yourAccountDetails": "Your account details and role",
+    "yourActivity": "Your activity and contributions",
+    "admins": "Admins:",
+    "yourEmail": "Your email:",
+    "role": "Role:"
   },
   "reportsAnalytics": {
     "reportsAnalytics": "Reports & Analytics",
@@ -1266,7 +1284,8 @@
     "sessionTimeout": "Session Timeout",
     "ipWhitelist": "IP Whitelist",
     "loginHistory": "Login History",
-    "activeDevices": "Active Devices"
+    "activeDevices": "Active Devices",
+    "customizeInterface": "Customize the look and feel of your interface"
   },
   "aiFeatures": {
     "ai": "AI",
@@ -1638,7 +1657,12 @@
     "connect": "Connect",
     "googleCalendar": "Google Calendar",
     "googleCalendarDesc": "Sync leave requests with Google Calendar",
-    "teamCommunication": "Team Communication"
+    "teamCommunication": "Team Communication",
+    "calendarSync": "Calendar Sync",
+    "outlookCalendar": "Outlook Calendar",
+    "outlookCalendarDesc": "Sync your leave schedule with Microsoft Outlook",
+    "emailReports": "Email Reports",
+    "dataManagement": "Data Management"
   },
   "settingsAdvancedSecurity": {
     "twoFactor": "Two-Factor Authentication",
@@ -1739,12 +1763,13 @@
     "noDeadline": "No deadline",
     "noComments": "No comments yet",
     "comments": "Comments",
+    "overdue": "Overdue",
     "deleteConfirm": "Delete this task? This cannot be undone."
   },
   "cookies": {
     "title": "We value your privacy",
-    "description": "We use cookies to enhance your browsing experience, ensure security, and analyze site performance.",
-    "acceptConsent": "By clicking \"Accept All\", you consent to our use of cookies.",
+    "description": "We use cookies to enhance your experience and analyze performance.",
+    "acceptConsent": "Click \"Accept All\" to consent.",
     "or": " or ",
     "learnMore": "Learn more",
     "customizeSettings": "customize settings",
@@ -1754,7 +1779,22 @@
     "preferences": "Preferences",
     "acceptAll": "Accept All",
     "rejectAll": "Reject All",
-    "settings": "Settings"
+    "settings": "Settings",
+    "privacyAndCookies": "Privacy & Cookies",
+    "consentGiven": "Consent Given",
+    "manageExperience": "Manage how we use cookies to enhance your experience",
+    "respectPrivacy": "We respect your privacy. Learn more in our",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "essentialCookies": "Essential Cookies",
+    "alwaysOn": "Always On",
+    "essentialDesc": "Required for core functionality like authentication, security, and session management. These cannot be disabled.",
+    "analyticsCookies": "Analytics Cookies",
+    "analyticsDesc": "Help us understand how you use our platform to improve performance and user experience.",
+    "marketingCookies": "Marketing Cookies",
+    "marketingDesc": "Used to deliver relevant advertisements and measure campaign effectiveness.",
+    "preferenceCookies": "Preference Cookies",
+    "preferenceDesc": "Remember your settings like theme, language, and layout preferences for a personalized experience."
   },
   "keyboard": {
     "title": "Keyboard Shortcuts",
@@ -2217,7 +2257,11 @@
     "disable": "Disable",
     "verified": "Verified",
     "notVerified": "Not Verified",
-    "updateProfile": "Update Profile"
+    "updateProfile": "Update Profile",
+    "myProfile": "My Profile",
+    "managePersonalInfo": "Manage your personal information and account details",
+    "updateDetails": "Update your personal details",
+    "profilePicture": "Profile Picture"
   },
   "billing": {
     "billing": "Billing",
@@ -2236,6 +2280,10 @@
     "stripe": "Stripe",
     "billingHistory": "Billing History",
     "paymentHistory": "Payment History",
+    "subscriptionPlan": "Subscription Plan",
+    "currentPlanFeatures": "Your current plan and included features",
+    "noSubscription": "No subscription",
+    "includedInPlan": "Included in your plan",
     "nextBilling": "Next Billing",
     "dueDate": "Due Date",
     "amount": "Amount",
@@ -2324,6 +2372,7 @@
   },
   "settingsDashboard": {
     "defaultLandingPage": "Default Landing Page",
+    "defaultLandingPageDesc": "Choose which page to show after login",
     "redirectAfterLogin": "Redirect after login",
     "quickStatistics": "Quick Statistics",
     "quickStatisticsDesc": "Display key metrics and numbers at a glance",
@@ -2340,7 +2389,13 @@
     "displayPerformanceDesc": "Show performance metrics and scores",
     "compactModeDesc": "Reduce spacing for more compact layout",
     "every5Minutes": "Every 5 minutes",
-    "manualRefreshOnly": "Manual refresh only"
+    "manualRefreshOnly": "Manual refresh only",
+    "landingPage": "Landing Page",
+    "dashboardWidgets": "Dashboard Widgets",
+    "displayPerformance": "Display Performance",
+    "compactMode": "Compact Mode",
+    "dataRefreshRate": "Data Refresh Rate",
+    "dataUpdatesInstantly": "Data updates instantly"
   },
   "planGate": {
     "upgradeRequired": "Upgrade Required",
