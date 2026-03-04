@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ShieldLoader } from "@/components/ui/ShieldLoader";
 import { 
   DollarSign, 
   Users, 
@@ -63,7 +64,7 @@ export default function StripeDashboardPage() {
   if (!currentUser) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div>Loading...</div>
+        <ShieldLoader size="lg" />
       </div>
     );
   }

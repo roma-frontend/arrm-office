@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ShieldLoader } from "@/components/ui/ShieldLoader";
 import {
   Users,
   Plus,
@@ -62,7 +63,7 @@ export default function SubscriptionsManagementPage() {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div>Loading...</div>
+        <ShieldLoader size="lg" />
       </div>
     );
   }

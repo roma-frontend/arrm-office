@@ -8,6 +8,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { uploadTaskAttachment } from "@/actions/cloudinary";
 import { motion, AnimatePresence } from "framer-motion";
+import { ShieldLoader } from "@/components/ui/ShieldLoader";
 
 interface Attachment {
   url: string;
@@ -140,10 +141,7 @@ taskId, attachments, currentUserId, canUpload }: Props) {
             style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
           >
             {uploading ? (
-              <>
-                <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Uploading...
-              </>
+              <ShieldLoader size="xs" variant="inline" />
             ) : (
               <>+ Attach File</>
             )}
