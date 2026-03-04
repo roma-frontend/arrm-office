@@ -533,6 +533,32 @@ export const deleteMessageForMe = mutation({
   },
 });
 
+/**
+ * Convert emoji to ASCII-safe key format
+ * Example: 👍 → "u1f44d", ❤️ → "u2764_ufe0f"
+ */
+function emojiToKey(emoji: string): string {
+  const codePoints = Array.from(emoji).map(char => {
+    const hex = char.charCodeAt(0).toString(16).toLowerCase();
+    return `u${hex}`;
+  });
+  return codePoints.join('_');
+}
+
+/**
+ * Convert ASCII-safe key back to emoji
+ * Example: "u1f44d" → 👍, "u2764_ufe0f" → ❤️
+ */
+function keyToEmoji(key: string): string {
+  return key
+    .split('_')
+    .map(part => {
+      const codePoint = parseInt(part.substring(1), 16);
+      return String.fromCodePoint(codePoint);
+    })
+    .join('');
+}
+
 /** Toggle reaction on a message */
 export const toggleReaction = mutation({
   args: {
@@ -544,40 +570,47 @@ export const toggleReaction = mutation({
     const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error("Message not found");
 
-    // Sanitize emoji: trim whitespace and remove control characters
-    // Keep only valid characters that Convex allows in field names
+    // Sanitize emoji: trim whitespace
     let sanitizedEmoji = args.emoji.trim();
     
-    // Remove control characters (ASCII 0-31 and 127-159), keep emoji and printable ASCII
-    sanitizedEmoji = sanitizedEmoji.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
-    
-    // Remove leading/trailing spaces that might have been left after control char removal
-    sanitizedEmoji = sanitizedEmoji.trim();
-    
     if (!sanitizedEmoji) {
-      throw new Error("Invalid emoji: must contain at least one valid character");
+      throw new Error("Invalid emoji: must contain at least one character");
     }
+
+    // Convert emoji to ASCII-safe key since Convex doesn't allow non-ASCII field names
+    const emojiKey = emojiToKey(sanitizedEmoji);
 
     // Get existing reactions - safely handle potentially malformed data
     const rawReactions = msg.reactions;
     const reactions: Record<string, Id<"users">[]> = {};
     
-    // Clean up existing reactions by sanitizing all keys
+    // Clean up existing reactions - migrate old emoji keys to new format if needed
     if (rawReactions && typeof rawReactions === 'object') {
       for (const [key, value] of Object.entries(rawReactions)) {
-        // Sanitize existing keys the same way
-        let cleanKey = key.trim();
-        cleanKey = cleanKey.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
-        cleanKey = cleanKey.trim();
+        // Try to detect if this is already an old-format emoji key (contains non-ASCII)
+        // If so, try to convert it, otherwise assume it's already in new format
+        let safeKey = key;
+        try {
+          // If key contains non-ASCII chars, it's an old format - skip it
+          // (we'll not include it in the new reactions)
+          if (!/^[a-z0-9_]+$/.test(key)) {
+            console.warn('[chat] Skipping malformed reaction key:', key);
+            continue;
+          }
+        } catch (e) {
+          console.warn('[chat] Error processing reaction key:', key);
+          continue;
+        }
         
-        if (cleanKey && Array.isArray(value) && value.length > 0) {
-          reactions[cleanKey] = value as Id<"users">[];
+        if (safeKey && Array.isArray(value) && value.length > 0) {
+          // Keep the key if it's valid format
+          reactions[safeKey] = value as Id<"users">[];
         }
       }
     }
 
-    // Toggle the reaction
-    const users = reactions[sanitizedEmoji] ?? [];
+    // Toggle the reaction using the ASCII-safe key
+    const users = reactions[emojiKey] ?? [];
     const idx = users.indexOf(args.userId);
 
     if (idx >= 0) {
@@ -587,9 +620,9 @@ export const toggleReaction = mutation({
     }
 
     if (users.length === 0) {
-      delete reactions[sanitizedEmoji];
+      delete reactions[emojiKey];
     } else {
-      reactions[sanitizedEmoji] = users;
+      reactions[emojiKey] = users;
     }
 
     await ctx.db.patch(args.messageId, { reactions });
