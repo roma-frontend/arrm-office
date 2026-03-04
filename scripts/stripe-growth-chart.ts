@@ -9,6 +9,13 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
+
+// Load environment variables
+// In production, use platform env vars (Vercel, etc)
+// In development, fallback to .env.local
+if (!process.env.CONVEX_URL) {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+}
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import * as fs from 'fs';
 

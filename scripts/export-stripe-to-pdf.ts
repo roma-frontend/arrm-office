@@ -12,7 +12,12 @@ import PDFDocument from 'pdfkit';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+// Load environment variables
+// In production, use platform env vars (Vercel, etc)
+// In development, fallback to .env.local
+if (!process.env.CONVEX_URL) {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+}
 
 const colors = {
   reset: '\x1b[0m',

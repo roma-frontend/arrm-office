@@ -12,9 +12,12 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 import Stripe from 'stripe';
 
-
-// Load environment variables from .env.local
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+// Load environment variables
+// In production, use platform env vars (Vercel, etc)
+// In development, fallback to .env.local
+if (!process.env.STRIPE_SECRET_KEY) {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+}
 
 // ANSI color codes for beautiful terminal output
 const colors = {
