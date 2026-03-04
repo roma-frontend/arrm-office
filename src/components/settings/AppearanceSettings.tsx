@@ -22,19 +22,19 @@ const { theme, setTheme, systemTheme } = useTheme();
       value: "dark" as const,
       label: "Dark",
       icon: Moon,
-      description: "Dark theme for low-light environments",
+      description: t('settingsExtended.darkThemeDesc'),
     },
     {
       value: "light" as const,
       label: "Light",
       icon: Sun,
-      description: "Light theme for bright environments",
+      description: t('settingsExtended.lightThemeDesc'),
     },
     {
       value: "system" as const,
       label: "System",
       icon: Monitor,
-      description: "Match your system preference",
+      description: t('settingsExtended.systemThemeDesc'),
     },
   ];
 
@@ -128,7 +128,7 @@ const { theme, setTheme, systemTheme } = useTheme();
 
           {/* Color Accent (Future feature) */}
           <div className="pt-4 border-t border-[var(--border)]">
-            <p className="text-sm font-medium text-[var(--text-primary)] mb-3">Accent Color</p>
+            <p className="text-sm font-medium text-[var(--text-primary)] mb-3">{t('settingsExtended.accentColor')}</p>
             <div className="flex gap-3">
               {["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"].map((color) => (
                 <button
@@ -140,7 +140,7 @@ const { theme, setTheme, systemTheme } = useTheme();
               ))}
             </div>
             <p className="text-xs text-[var(--text-muted)] mt-2">
-              Choose your preferred accent color (coming soon)
+              {t('settingsExtended.chooseAccentColor')}
             </p>
           </div>
         </div>

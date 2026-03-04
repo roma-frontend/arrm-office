@@ -110,19 +110,19 @@ export function AttendanceDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-500">
               <AlertTriangle className="w-5 h-5" />
-              Attendance Issues
+              {t('attendanceIssues.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {Number(monthlyStats.lateDays) > 0 && (
                 <p style={{ color: "var(--text-primary)" }}>
-                  • {monthlyStats.lateDays} late arrival(s) this month
+                  • {monthlyStats.lateDays} {t('attendanceIssues.lateArrivals')}
                 </p>
               )}
               {Number(monthlyStats.earlyLeaveDays) > 0 && (
                 <p style={{ color: "var(--text-primary)" }}>
-                  • {monthlyStats.earlyLeaveDays} early leave(s) this month
+                  • {monthlyStats.earlyLeaveDays} {t('attendanceIssues.earlyLeaves')}
                 </p>
               )}
             </div>
@@ -138,7 +138,7 @@ export function AttendanceDashboard() {
         <CardContent>
           {!history || history.length === 0 ? (
             <p className="text-center text-[var(--text-muted)] py-4">
-              No attendance records yet
+              {t('attendanceIssues.noRecordsYet')}
             </p>
           ) : (
             <div className="space-y-3">
@@ -176,7 +176,7 @@ export function AttendanceDashboard() {
                       </Badge>
                     )}
                     {record.isLate && <Badge variant="destructive">{t('statuses.late')}</Badge>}
-                    {record.isEarlyLeave && <Badge className="bg-orange-500 text-white">Early</Badge>}
+                    {record.isEarlyLeave && <Badge className="bg-orange-500 text-white">{t('attendanceIssues.early')}</Badge>}
                     {record.overtimeMinutes && record.overtimeMinutes > 0 && (
                       <Badge className="bg-sky-400 text-white">
                         +{Math.floor(record.overtimeMinutes / 60)}h OT

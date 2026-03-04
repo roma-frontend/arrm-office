@@ -229,17 +229,17 @@ export default function StripeDashboardPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <Button
             variant="ghost"
             onClick={() => window.history.back()}
-            className="mb-4 -ml-2"
+            className="mb-4 -ml-2 text-sm"
           >
             ← Back to Dashboard
           </Button>
-          <h1 className="text-4xl font-bold">💳 Stripe Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold">💳 Stripe Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-2">
             Real-time subscription analytics and insights
           </p>
         </div>

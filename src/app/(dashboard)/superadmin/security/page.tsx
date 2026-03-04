@@ -216,8 +216,8 @@ export default function SecurityDashboard() {
             <Shield className="w-5 h-5 sm:w-7 sm:h-7" style={{ color: "var(--primary)" }} />
           </div>
           <div>
-            <h1 className="text-lg sm:text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Security Control</h1>
-            <p className="text-xs sm:text-sm hidden sm:block" style={{ color: "var(--text-muted)" }}>Manage identity verification systems across all organizations</p>
+            <h1 className="text-lg sm:text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{t('superadminSecurity.securityControl')}</h1>
+            <p className="text-xs sm:text-sm hidden sm:block" style={{ color: "var(--text-muted)" }}>{t('superadminSecurity.manageIdentityVerification')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs sm:text-sm" style={{ color: "var(--text-muted)" }}>
@@ -258,7 +258,7 @@ export default function SecurityDashboard() {
               marginBottom: activeTab === tab ? "-1px" : "0",
             }}
           >
-            <span className="hidden sm:inline">{tab === "settings" ? "🛡️ Security Features" : tab === "blocked" ? "🚫 Blocked Users" : tab === "attempts" ? "🔐 Login Attempts" : "📋 Audit Logs"}</span>
+            <span className="hidden sm:inline">{tab === "settings" ? `🛡️ ${t('superadminSecurity.securityFeatures')}` : tab === "blocked" ? `🚫 ${t('superadminSecurity.blockedUsers')}` : tab === "attempts" ? `🔐 ${t('superadminSecurity.loginAttempts')}` : `📋 ${t('superadminSecurity.auditLogs')}`}</span>
             <span className="sm:hidden">{tab === "settings" ? "🛡️" : tab === "blocked" ? "🚫" : tab === "attempts" ? "🔐" : "📋"}</span>
           </button>
         ))}

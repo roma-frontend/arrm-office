@@ -621,7 +621,7 @@
   },
   "settings": {
     "title": "Կարգավորումներ",
-    "profile": "Անձնական էջ",
+    "profile": "Պրոֆիլ",
     "profileDesc": "Կառավարեք ձեր անձնական տեղեկությունները և հաշվի մանրամասները",
     "account": "Հաշիվ",
     "company": "Ընկերության կարգավորումներ",
@@ -645,7 +645,7 @@
     "workingHours": "Աշխատանքային ժամեր",
     "holidays": "Տոներ",
     "leaveTypes": "Արձակուրդների տեսակներ",
-    "emailNotifications": "Էլ. փոստի ծանուցումներ",
+    "emailNotifications": "Էլ․ փոստի ծանուցումներ",
     "pushNotifications": "Ծանուցումներ",
     "darkMode": "Մուգ ռեժիմ",
     "lightMode": "Լուսավոր ռեժիմ",
@@ -1070,7 +1070,8 @@
     "country": "Երկիր",
     "description": "Նկարագրություն",
     "notes": "Նշումներ",
-    "attachments": "Կցորդներ"
+    "attachments": "Կցորդներ",
+    "registered": "Գրանցված"
   },
   "forms": {
     "required": "*",
@@ -1240,38 +1241,16 @@
     "createOrganization": "Ստեղծել կազմակերպություն"
   },
   "ui": {
-    "days": "Օրեր",
-    "hours": "Ժամեր",
-    "minutes": "Րոպեներ",
-    "worked": "Աշխատած է",
-    "done": "Կատարված",
-    "behavior": "Վարքագիծ",
-    "comprehensiveAnalysis": "Հանրային արձակուրդների վերլուծություն և աշխատուժի տեղեկատվություն",
-    "skipToContent": "Անցնել բովանդակությանը",
-    "deleting": "Ջնջվում է...",
-    "deletePicture": "Ջնջել նկարը",
-    "saving": "Պահպանվում է...",
-    "saveChanges": "Պահպանել փոփոխությունները",
-    "saveAllChanges": "Save All Changes",
-    "backToHome": "Վերադառնալ հիմնական էջ",
-    "loadingFromConvex": "Տվյալները բեռնվում են...",
-    "loadingTasks": "Առաջադրանքները բեռնվում են...",
-    "userApprovals": "Օգտատիրոջ հաստատումներ",
-    "noPendingApprovals": "Սպասող հաստատումներ չկան",
-    "allCaughtUp": "Բոլորը թարմացված են!",
+    "loadingAttendanceData": "Բեռնվում են ներկայության տվյալները...",
     "accessDenied": "Մուտքը արգելված է",
     "onlyAdminsCanAccess": "Միայն ադմինիստրատորները կարող են մուտք գործել այս էջ",
-    "notCheckedInWarning": "Խնդրում ենք գրանցվել, երբ ժամանեք աշխատանքի (9:00 AM - 6:00 PM)",
-    "profilePictureUpload": "Վերբեռնել կամ հեռացնել ձեր պրոֆիլի նկարը։ JPG, PNG կամ GIF։ Առավելագույնը 5MB։",
-    "clickCameraToUpload": "Սեղմեք տեսախցիկի պատկերակը նոր նկար վերբեռնելու համար",
-    "recommendedImageSize": "Խորհուրդ է տրվում՝ քառակուսի նկար, առնվազն 200x200 պիքսել",
-    "personalInformation": "Անձնական տվյալներ",
-    "adminAccessRequired": "Անհրաժեշտ է ադմինիստրատորի մուտք",
-    "yourAccountDetails": "Ձեր հաշվի մանրամասներն ու դերը",
-    "yourActivity": "Ձեր գործունեությունը և ներդրումները",
-    "admins": "Ադմիններ:",
-    "yourEmail": "Ձեր էլ. հասցեն՝",
-    "role": "Դեր՝"
+    "userApprovals": "Օգտատերերի հաստատումներ",
+    "noPendingApprovals": "Սպասվող հաստատումներ չկան",
+    "allCaughtUp": "Ամեն ինչ հաստատված է!",
+    "pending": "սպասվող",
+    "approve": "Հաստատել",
+    "reject": "Մերժել",
+    "notCheckedInWarning": "Դուք դեռ չեք նշվել այսօր"
   },
   "reportsAnalytics": {
     "reportsAnalytics": "Հաշվետվություններ և վերլուծություն",
@@ -1284,22 +1263,16 @@
   },
   "settingsExtended": {
     "appearance": "Տեսք",
+    "customizeInterface": "Հարմարեցրեք ինտերֆեյսի տեսքը և թեման",
     "theme": "Թեմա",
-    "lightMode": "Լուսավոր ռեժիմ",
-    "darkMode": "Մուգ ռեժիմ",
-    "systemDefault": "Համակարգի լռելյայն",
-    "colorScheme": "Գունային սխեմա",
-    "accentColor": "Ընդգծված գույն",
-    "fontSize": "Տառատեսակի չափ",
-    "compactMode": "Սեղմ ռեժիմ",
-    "animations": "Անիմացիաներ",
-    "advancedSecurity": "Ընդլայնված անվտանգություն",
-    "twoFactorAuth": "Երկգործոն նույնականացում",
-    "sessionTimeout": "Սեսիայի ժամանակը",
-    "ipWhitelist": "IP սպիտակ ցանկ",
-    "loginHistory": "Մուտքի պատմություն",
-    "activeDevices": "Ակտիվ սարքեր",
-    "customizeInterface": "Հարմարեցրեք ձեր միջերեսի տեսքը և գործառույթները"
+    "darkTheme": "Մուգ",
+    "darkThemeDesc": "Մուգ թեմա ցածր լուսավորության պայմանների համար",
+    "lightTheme": "Լուսավոր",
+    "lightThemeDesc": "Լուսավոր թեմա պայծառ պայմանների համար",
+    "systemTheme": "Համակարգային",
+    "systemThemeDesc": "Համապատասխանել ձեր համակարգի նախապատվությանը",
+    "accentColor": "Շեշտի գույն",
+    "chooseAccentColor": "Ընտրեք ձեր նախընտրելի շեշտի գույնը (շուտով)"
   },
   "aiFeatures": {
     "ai": "ԱԻ",
@@ -1892,13 +1865,13 @@
     "refresh": "Թարմացնել"
   },
   "departmentStats": {
-    "title": "Վերնագիր",
+    "title": "Արձակուրդների օգտագործում ըստ բաժինների (Միջին օրեր)",
     "paidLeave": "Վճարովի արձակուրդ",
     "sickLeave": "Հիվանդության արձակուրդ (օրեր)",
     "familyLeave": "Ընտանեկան արձակուրդ"
   },
   "leaveHeatmap": {
-    "title": "Արձակուրդի ջերմային քարտեզ",
+    "title": "Արձակուրդների ջերմային քարտեզ",
     "subtitle": "Տեսողական ներկայացնել թիմի բացակայությունները տարվա ընթացքում",
     "noData": "Արձակուրդների տվյալներ հասանելի չեն",
     "employees": "աշխատակիցներ",
@@ -2683,5 +2656,91 @@
   "security": {
     "ddosAttempt": "🚨 DDoS հարձակման հանդես տալու հայտնաբերված",
     "sqlInjectionAttempt": "🚨 SQL ներարկման փորձ հայտնաբերված"
+  },
+  "superadminSecurity": {
+    "securityControl": "Անվտանգության վերահսկողություն",
+    "manageIdentityVerification": "Կառավարել ինքնության հաստատման համակարգերը բոլոր կազմակերպություններում",
+    "securityFeatures": "Անվտանգության գործառույթներ",
+    "blockedUsers": "Արգելափակված օգտատերեր",
+    "loginAttempts": "Մուտքի փորձեր",
+    "auditLogs": "Աուդիտի մատյաններ",
+    "toggleSecuritySystems": "Անվտանգության գործառույթների և համակարգերի փոխարկում",
+    "essential": "Էական",
+    "disabled": "Անջատված",
+    "review": "Վերանայել"
+  },
+  "attendanceIssues": {
+    "title": "Ներկայության խնդիրներ",
+    "lateArrivals": "ուշացում(ներ) այս ամիս",
+    "earlyLeaves": "վաղ մեկնում(ներ) այս ամիս",
+    "noRecordsYet": "Ներկայության գրառումներ դեռ չկան",
+    "early": "Վաղ"
+  },
+  "reportsExtended": {
+    "departments": "Բաժիններ",
+    "trends": "Միտումներ",
+    "requestStatusBreakdown": "Հայտերի կարգավիճակների բաշխում",
+    "workforceComposition": "Աշխատուժի կազմ",
+    "staff": "Անձնակազմ",
+    "contractors": "Կապալառուներ",
+    "leavesByDepartment": "Արձակուրդներ ըստ բաժինների",
+    "noDepartmentData": "Բաժնի տվյալներ դեռ չկան",
+    "departmentDetails": "Բաժնի մանրամասներ",
+    "cumulativeLeaveDays": "Կուտակային արձակուրդային օրեր"
+  },
+  "calendarExtended": {
+    "leaveCalendar": "Արձակուրդների օրացույց",
+    "noLeavesThisDay": "Այս օրը արձակուրդներ չկան",
+    "noLeavesThisMonth": "Այս ամիս արձակուրդներ չկան",
+    "everyoneInToday": "Բոլորը աշխատանքի վրա են այսօր",
+    "visualOverview": "Թիմի արձակուրդների տեսողական ակնարկ - սեղմեք ցանկացած օրվա վրա՝ մանրամասների համար"
+  },
+  "profileExtended": {
+    "accountInformation": "Հաշվի տեղեկություններ",
+    "memberSince": "Անդամ է սկսած",
+    "activityStats": "Ակտիվության վիճակագրություն"
+  },
+  "superadminOrgs": {
+    "totalOrgs": "Ընդամենը կազմակերպություններ",
+    "totalUsers": "Ընդամենը օգտատերեր",
+    "employeeLimit": "Աշխատակիցների սահմանաչափ",
+    "industry": "Արդյունաբերություն",
+    "manageAdmins": "Կառավարել ադմիններին"
+  },
+  "superadminCreateOrg": {
+    "easternTime": "Արևելյան ժամանակ",
+    "centralTime": "Կենտրոնական ժամանակ",
+    "pacificTime": "Խաղաղօվկիանոսյան ժամանակ",
+    "london": "Լոնդոն",
+    "paris": "Փարիզ",
+    "tokyo": "Տոկիո",
+    "yerevan": "Երևան"
+  },
+  "superadminStripe": {
+    "accessDenied": "Մուտքը արգելված է",
+    "totalSubscriptions": "Ընդամենը բաժանորդագրություններ",
+    "growthRate": "Աճի տեմպ",
+    "trialEndingSoon": "Փորձաշրջանն ավարտվում է շուտով",
+    "executeOperations": "Կատարել Stripe գործողություններ անմիջապես վահանակից",
+    "viewTransactions": "Դիտել գործարքները",
+    "displayTransactions": "Ցուցադրել բոլոր Stripe գործարքները",
+    "exportToExcel": "Արտահանել Excel",
+    "growthChart": "Աճի գծապատկեր",
+    "generateVisualization": "Ստեղծել աճի վիզուալիզացիա",
+    "syncData": "Սինխրոնացնել տվյալները",
+    "checkTrials": "Ստուգել փորձաշրջանները",
+    "checkTrialReminders": "Ստուգել փորձաշրջանի հիշեցումները",
+    "addTestData": "Ավելացնել թեստային տվյալներ",
+    "addSampleSubscriptions": "Ավելացնել օրինակելի բաժանորդագրություններ",
+    "subscriptionsByStatus": "Բաժանորդագրություններ ըստ կարգավիճակի",
+    "currentDistribution": "Բաժանորդագրությունների կարգավիճակների ընթացիկ բաշխում",
+    "subscriptionsByPlan": "Բաժանորդագրություններ ըստ պլանի",
+    "distributionTiers": "Բաշխում ըստ գնային մակարդակների",
+    "recentSubscriptions": "Վերջին բաժանորդագրություններ",
+    "latestActivity": "Բաժանորդագրությունների վերջին ակտիվություն",
+    "customer": "Հաճախորդ",
+    "plan": "Պլան",
+    "status": "Կարգավիճակ",
+    "periodEnd": "Ժամանակաշրջանի ավարտ"
   }
 }

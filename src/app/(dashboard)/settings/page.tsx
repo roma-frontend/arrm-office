@@ -197,10 +197,10 @@ export default function SettingsPage() {
       className="space-y-6 pb-8"
     >
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-            <SettingsIcon className="w-8 h-8 text-[var(--primary)]" />{t('nav.settings')}</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] flex items-center gap-2 md:gap-3">
+            <SettingsIcon className="w-6 h-6 md:w-8 md:h-8 text-[var(--primary)]" />{t('nav.settings')}</h2>
           <p className="text-[var(--text-muted)] text-sm mt-2">
             {t('dashboard.settingsSubtitle')}
           </p>

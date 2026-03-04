@@ -14,11 +14,11 @@ export async function register() {
     initOpenTelemetryServer();
 
     // Initialize Sentry on server
-    const { initSentryServer } = await import("./sentry.server.config");
-    initSentryServer();
+    // const { initSentryServer } = await import("./sentry.server.config");
+    // initSentryServer();
 
     console.log(
-      "✅ Server instrumentation initialized (OpenTelemetry + Sentry)"
+      "✅ Server instrumentation initialized (OpenTelemetry only - Sentry disabled)"
     );
   }
 

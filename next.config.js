@@ -405,9 +405,11 @@ const nextConfig = {
 
 // Injected content via Sentry wizard
 
-const { withSentryConfig } = require("@sentry/nextjs");
+// const { withSentryConfig } = require("@sentry/nextjs");
 
-module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
+// module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
+module.exports = withBundleAnalyzer(nextConfig);
+/*
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
@@ -443,3 +445,4 @@ module.exports = withSentryConfig(withBundleAnalyzer(nextConfig), {
     },
   },
 });
+*/

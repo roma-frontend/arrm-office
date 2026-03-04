@@ -51,7 +51,7 @@ export function DepartmentStats({ users }: DepartmentStatsProps) {
   return (
     <div className="bg-[var(--background)] rounded-2xl p-6 shadow-lg border border-[var(--border)]">
       <h3 className="text-xl font-bold mb-4 text-[var(--text-primary)]">
-        рџЏў Department Leave Usage (Avg Days Used)
+        🏢 {t('departmentStats.title')}
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>

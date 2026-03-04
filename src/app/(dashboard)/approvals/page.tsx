@@ -134,26 +134,26 @@ export default function ApprovalsPage() {
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                   <div>
-                    <p className="text-[var(--text-muted)] text-xs">{t('labels.role')}Role</p>
+                    <p className="text-[var(--text-muted)] text-xs">{t('labels.role')}</p>
                     <p className="text-[var(--text-primary)] font-medium capitalize">
                       {pendingUser.role}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[var(--text-muted)] text-xs">Type</p>
+                    <p className="text-[var(--text-muted)] text-xs">{t('labels.type')}</p>
                     <p className="text-[var(--text-primary)] font-medium capitalize">
                       {pendingUser.employeeType}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[var(--text-muted)] text-xs">Registered</p>
+                    <p className="text-[var(--text-muted)] text-xs">{t('labels.registered')}</p>
                     <p className="text-[var(--text-primary)] font-medium flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       {format(new Date(pendingUser.createdAt), "MMM d, yyyy")}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[var(--text-muted)] text-xs">{t('employeeInfo.phone')}Phone</p>
+                    <p className="text-[var(--text-muted)] text-xs">{t('employeeInfo.phone')}</p>
                     <p className="text-[var(--text-primary)] font-medium">
                       {pendingUser.phone ?? "—"}
                     </p>

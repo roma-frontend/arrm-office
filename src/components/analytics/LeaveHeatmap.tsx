@@ -43,7 +43,7 @@ leaves, month = new Date() }: LeaveHeatmapProps) {
   return (
     <div className="bg-[var(--background)] rounded-2xl p-6 shadow-lg border border-[var(--border)]">
       <h3 className="text-xl font-bold mb-4 text-[var(--text-primary)]">
-        рџ”Ґ Leave Heatmap - {format(month, 'MMMM yyyy')}
+        📅 {t('leaveHeatmap.title')} - {format(month, 'MMMM yyyy')}
       </h3>
       
       <div className="grid grid-cols-7 gap-2">

@@ -1070,7 +1070,8 @@
     "country": "Country",
     "description": "Description",
     "notes": "Notes",
-    "attachments": "Attachments"
+    "attachments": "Attachments",
+    "registered": "Registered"
   },
   "forms": {
     "required": "*",
@@ -1240,38 +1241,16 @@
     "createOrganization": "Create Organization"
   },
   "ui": {
-    "days": "Days",
-    "hours": "Hours",
-    "minutes": "Minutes",
-    "worked": "Worked",
-    "done": "Done",
-    "behavior": "Behavior",
-    "comprehensiveAnalysis": "Comprehensive leave analysis and workforce insights",
-    "skipToContent": "Skip to content",
-    "deleting": "Deleting...",
-    "deletePicture": "Delete Picture",
-    "saving": "Saving...",
-    "saveChanges": "Save Changes",
-    "saveAllChanges": "Save All Changes",
-    "backToHome": "Back to Home",
-    "loadingFromConvex": "Loading data...",
-    "loadingTasks": "Loading tasks...",
+    "loadingAttendanceData": "Loading attendance data...",
+    "accessDenied": "Access Denied",
+    "onlyAdminsCanAccess": "Only administrators can access this page",
     "userApprovals": "User Approvals",
     "noPendingApprovals": "No pending approvals",
     "allCaughtUp": "All caught up!",
-    "accessDenied": "Access Denied",
-    "onlyAdminsCanAccess": "Only administrators can access this page",
-    "notCheckedInWarning": "Please check in when you arrive at work (9:00 AM - 6:00 PM)",
-    "profilePictureUpload": "Upload or remove your profile picture. JPG, PNG or GIF. Max 5MB.",
-    "clickCameraToUpload": "Click the camera icon to upload a new picture",
-    "recommendedImageSize": "Recommended: Square image, at least 200x200 pixels",
-    "personalInformation": "Personal Information",
-    "adminAccessRequired": "Admin access required",
-    "yourAccountDetails": "Your account details and role",
-    "yourActivity": "Your activity and contributions",
-    "admins": "Admins:",
-    "yourEmail": "Your email:",
-    "role": "Role:"
+    "pending": "pending",
+    "approve": "Approve",
+    "reject": "Reject",
+    "notCheckedInWarning": "You haven't checked in today"
   },
   "reportsAnalytics": {
     "reportsAnalytics": "Reports & Analytics",
@@ -1284,22 +1263,16 @@
   },
   "settingsExtended": {
     "appearance": "Appearance",
+    "customizeInterface": "Customize your interface appearance and theme",
     "theme": "Theme",
-    "lightMode": "Light Mode",
-    "darkMode": "Dark Mode",
-    "systemDefault": "System Default",
-    "colorScheme": "Color Scheme",
+    "darkTheme": "Dark",
+    "darkThemeDesc": "Dark theme for low-light environments",
+    "lightTheme": "Light",
+    "lightThemeDesc": "Light theme for bright environments",
+    "systemTheme": "System",
+    "systemThemeDesc": "Match your system preference",
     "accentColor": "Accent Color",
-    "fontSize": "Font Size",
-    "compactMode": "Compact Mode",
-    "animations": "Animations",
-    "advancedSecurity": "Advanced Security",
-    "twoFactorAuth": "Two-Factor Authentication",
-    "sessionTimeout": "Session Timeout",
-    "ipWhitelist": "IP Whitelist",
-    "loginHistory": "Login History",
-    "activeDevices": "Active Devices",
-    "customizeInterface": "Customize the look and feel of your interface"
+    "chooseAccentColor": "Choose your preferred accent color (coming soon)"
   },
   "aiFeatures": {
     "ai": "AI",
@@ -1892,13 +1865,13 @@
     "refresh": "Refresh"
   },
   "departmentStats": {
-    "title": "?? Department Leave Usage (Avg Days Used)",
+    "title": "Department Leave Usage (Avg Days Used)",
     "paidLeave": "Paid Leave (days)",
     "sickLeave": "Sick Leave (days)",
     "familyLeave": "Family Leave (days)"
   },
   "leaveHeatmap": {
-    "title": "?? Leave Heatmap - {month}",
+    "title": "Leave Heatmap",
     "subtitle": "Visualize team absences across the year",
     "noData": "No leave data available",
     "employees": "employees",
@@ -2466,6 +2439,38 @@
       "invitationSent": "Admin invitation will be sent",
       "fillRequired": "Please fill in all required fields"
     },
+    "superadminSecurity": {
+      "securityControl": "Security Control",
+      "manageIdentityVerification": "Manage identity verification systems across all organizations",
+      "securityFeatures": "Security Features",
+      "blockedUsers": "Blocked Users",
+      "loginAttempts": "Login Attempts",
+      "auditLogs": "Audit Logs",
+      "toggleSecuritySystems": "Toggle security features and systems",
+      "essential": "Essential",
+      "disabled": "Disabled",
+      "review": "Review"
+    },
+    "attendanceIssues": {
+      "title": "Attendance Issues",
+      "lateArrivals": "late arrival(s) this month",
+      "earlyLeaves": "early leave(s) this month",
+      "noRecordsYet": "No attendance records yet",
+      "early": "Early"
+    },
+    "settingsExtended": {
+      "appearance": "Appearance",
+      "customizeInterface": "Customize your interface appearance and theme",
+      "theme": "Theme",
+      "darkTheme": "Dark",
+      "darkThemeDesc": "Dark theme for low-light environments",
+      "lightTheme": "Light",
+      "lightThemeDesc": "Light theme for bright environments",
+      "systemTheme": "System",
+      "systemThemeDesc": "Match your system preference",
+      "accentColor": "Accent Color",
+      "chooseAccentColor": "Choose your preferred accent color (coming soon)"
+    },
     "subscriptions": {
       "title": "Subscription Management",
       "subtitle": "Manage customer subscriptions and Enterprise access",
@@ -2655,9 +2660,7 @@
       "toggleSecuritySystems": "Toggle security systems on/off instantly. If employees report issues — simply disable the feature.",
       "currentlySuspendedUsers": "Currently suspended users - review and unsuspend if needed",
       "recentSuspiciousLogins": "Recent suspicious and failed login attempts (last 24h)",
-      "allSecurityActions": "All security-related actions across the platform",
       "noSuspendedUsers": "No suspended users",
-      "noSuspiciousActivity": "No suspicious activity in last 24 hours",
       "enable": "Enable",
       "disable": "Disable"
     }
@@ -2685,5 +2688,91 @@
   "security": {
     "ddosAttempt": "🚨 Potential DDoS attack detected",
     "sqlInjectionAttempt": "🚨 SQL Injection attempt detected"
+  },
+  "superadminSecurity": {
+    "securityControl": "Security Control",
+    "manageIdentityVerification": "Manage identity verification systems across all organizations",
+    "securityFeatures": "Security Features",
+    "blockedUsers": "Blocked Users",
+    "loginAttempts": "Login Attempts",
+    "auditLogs": "Audit Logs",
+    "toggleSecuritySystems": "Toggle security features and systems",
+    "essential": "Essential",
+    "disabled": "Disabled",
+    "review": "Review"
+  },
+  "attendanceIssues": {
+    "title": "Attendance Issues",
+    "lateArrivals": "late arrival(s) this month",
+    "earlyLeaves": "early leave(s) this month",
+    "noRecordsYet": "No attendance records yet",
+    "early": "Early"
+  },
+  "reportsExtended": {
+    "departments": "Departments",
+    "trends": "Trends",
+    "requestStatusBreakdown": "Request Status Breakdown",
+    "workforceComposition": "Workforce Composition",
+    "staff": "Staff",
+    "contractors": "Contractors",
+    "leavesByDepartment": "Leaves by Department",
+    "noDepartmentData": "No department data yet",
+    "departmentDetails": "Department Details",
+    "cumulativeLeaveDays": "Cumulative Leave Days"
+  },
+  "calendarExtended": {
+    "leaveCalendar": "Leave Calendar",
+    "noLeavesThisDay": "No leaves on this day",
+    "noLeavesThisMonth": "No leaves this month",
+    "everyoneInToday": "Everyone is in today",
+    "visualOverview": "Visual overview of team leaves - click any day to see details"
+  },
+  "profileExtended": {
+    "accountInformation": "Account Information",
+    "memberSince": "Member Since",
+    "activityStats": "Activity Stats"
+  },
+  "superadminOrgs": {
+    "totalOrgs": "Total Orgs",
+    "totalUsers": "Total Users",
+    "employeeLimit": "Employee Limit",
+    "industry": "Industry",
+    "manageAdmins": "Manage admins"
+  },
+  "superadminCreateOrg": {
+    "easternTime": "Eastern Time",
+    "centralTime": "Central Time",
+    "pacificTime": "Pacific Time",
+    "london": "London",
+    "paris": "Paris",
+    "tokyo": "Tokyo",
+    "yerevan": "Yerevan"
+  },
+  "superadminStripe": {
+    "accessDenied": "Access Denied",
+    "totalSubscriptions": "Total Subscriptions",
+    "growthRate": "Growth Rate",
+    "trialEndingSoon": "Trial Ending Soon",
+    "executeOperations": "Execute Stripe operations directly from the dashboard",
+    "viewTransactions": "View Transactions",
+    "displayTransactions": "Display all Stripe transactions",
+    "exportToExcel": "Export to Excel",
+    "growthChart": "Growth Chart",
+    "generateVisualization": "Generate growth visualization",
+    "syncData": "Sync Data",
+    "checkTrials": "Check Trials",
+    "checkTrialReminders": "Check trial reminders",
+    "addTestData": "Add Test Data",
+    "addSampleSubscriptions": "Add sample subscriptions",
+    "subscriptionsByStatus": "Subscriptions by Status",
+    "currentDistribution": "Current distribution of subscription statuses",
+    "subscriptionsByPlan": "Subscriptions by Plan",
+    "distributionTiers": "Distribution across pricing tiers",
+    "recentSubscriptions": "Recent Subscriptions",
+    "latestActivity": "Latest subscription activity",
+    "customer": "Customer",
+    "plan": "Plan",
+    "status": "Status",
+    "periodEnd": "Period End"
   }
 }

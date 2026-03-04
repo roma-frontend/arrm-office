@@ -312,9 +312,9 @@ export function CalendarClient() {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)]">Leave Calendar</h2>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t('calendarExtended.leaveCalendar')}</h2>
           <p className="text-[var(--text-muted)] text-sm mt-1">
-            Visual overview of team leaves � click any day to see details
+            {t('calendarExtended.visualOverview')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -467,7 +467,7 @@ export function CalendarClient() {
                     className="py-6 text-center"
                   >
                     <CalendarDays className="w-8 h-8 text-[var(--border)] mx-auto mb-2" />
-                    <p className="text-sm text-[var(--text-muted)]">No leaves on this day</p>
+                    <p className="text-sm text-[var(--text-muted)]">{t('calendarExtended.noLeavesThisDay')}</p>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -534,7 +534,7 @@ export function CalendarClient() {
             </CardHeader>
             <CardContent className="px-4 pb-4 space-y-2">
               {monthlySummary.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)]">No leaves this month</p>
+                <p className="text-xs text-[var(--text-muted)]">{t('calendarExtended.noLeavesThisMonth')}</p>
               ) : (
                 monthlySummary.map(({ type, count }) => (
                   <div key={type} className="flex items-center justify-between">
@@ -572,7 +572,7 @@ export function CalendarClient() {
               {onLeaveToday.length === 0 ? (
                 <div className="flex items-center gap-2 py-2">
                   <Users className="w-4 h-4 text-[var(--border)]" />
-                  <p className="text-xs text-[var(--text-muted)]">Everyone is in today</p>
+                  <p className="text-xs text-[var(--text-muted)]">{t('calendarExtended.everyoneInToday')}</p>
                 </div>
               ) : (
                 onLeaveToday.map((l) => (

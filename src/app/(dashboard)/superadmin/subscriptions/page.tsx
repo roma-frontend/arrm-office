@@ -147,13 +147,13 @@ export default function SubscriptionsManagementPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)]">{t('superadmin.subscriptions.title')}</h1>
-          <p className="text-[var(--text-muted)] mt-1">{t('superadmin.subscriptions.subtitle')}</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">{t('superadmin.subscriptions.title')}</h1>
+          <p className="text-sm md:text-base text-[var(--text-muted)] mt-1">{t('superadmin.subscriptions.subtitle')}</p>
         </div>
-        <Button
+        <Button className="w-full sm:w-auto"
           onClick={() => setShowForm(!showForm)}
           className="flex items-center gap-2"
         >

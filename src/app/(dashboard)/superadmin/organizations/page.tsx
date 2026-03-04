@@ -172,7 +172,7 @@ export default function OrganizationsPage() {
               className="p-6 rounded-xl border hover:shadow-lg transition-all animate-fade-in"
               style={{ background: "var(--card)" }}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
@@ -199,7 +199,7 @@ export default function OrganizationsPage() {
                     Slug: <span className="font-mono">{org.slug}</span>
                   </p>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                       <p className="text-xs text-muted-foreground">{t('organization.totalEmployees')}</p>
                       <p className="text-lg font-semibold">{org.totalEmployees}</p>
@@ -239,7 +239,7 @@ export default function OrganizationsPage() {
                   <button
                     onClick={() => router.push(`/superadmin/organizations/${org._id}/manage-admins`)}
                     className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
-                    title="Manage admins"
+                    title={t('superadminOrgs.manageAdmins')}
                   >
                     <Shield className="w-5 h-5" />
                   </button>
