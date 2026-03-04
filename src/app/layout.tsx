@@ -1,5 +1,4 @@
 ﻿import type { Metadata, Viewport } from "next";
-import dynamic from "next/dynamic";
 import { 
   IBM_Plex_Sans,
   Montserrat,
@@ -10,20 +9,11 @@ import "./globals.css";
 import { ConvexClientProvider } from "@/lib/convex";
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { AuthSyncProvider } from '@/components/providers/AuthSyncProvider'
+import { MonitoringProvider } from '@/components/providers/MonitoringProvider'
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { I18nProvider } from "@/components/I18nProvider";
-
-// Lazy load non-critical providers and monitors to reduce blocking time
-const MonitoringProvider = dynamic(
-  () => import('@/components/providers/MonitoringProvider').then(mod => ({ default: mod.MonitoringProvider })),
-  { ssr: false }
-);
-
-const PerformanceMonitor = dynamic(
-  () => import('@/components/PerformanceMonitor'),
-  { ssr: false }
-);
+import PerformanceMonitor from "@/components/PerformanceMonitor";
 
 // Corporate & Professional - IBM PLEX SANS
 const ibmPlexSans = IBM_Plex_Sans({
@@ -280,38 +270,39 @@ export default function RootLayout({
         />
       </head>
       <body className={`${ibmPlexSans.variable} ${montserrat.variable} ${workSans.variable} ${inter.variable} antialiased`}>
-        <SessionProvider>
-          <I18nProvider>
-            <ConvexClientProvider>
-              <AuthSyncProvider>
-                <ThemeProvider
-                  attribute="class"
-                  defaultTheme="system"
-                  enableSystem={true}
-                  disableTransitionOnChange
-                >
-                  {children}
-                  <Toaster
-                    position="top-right"
-                    closeButton
-                    expand={false}
-                    duration={4000}
-                    toastOptions={{
-                      style: {
-                        background: 'var(--card)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--foreground)',
-                      },
-                      className: 'sonner-toast',
-                    }}
-                  />
-                </ThemeProvider>
-              </AuthSyncProvider>
-            </ConvexClientProvider>
-          </I18nProvider>
-        </SessionProvider>
-        {/* Lazy load monitoring and performance tracking after page is interactive */}
-        <MonitoringProvider />
+        <MonitoringProvider>
+          <SessionProvider>
+            <I18nProvider>
+              <ConvexClientProvider>
+                <AuthSyncProvider>
+                  <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem={true}
+                    disableTransitionOnChange
+                  >
+                    {children}
+                    <Toaster
+                      position="top-right"
+                      closeButton
+                      expand={false}
+                      duration={4000}
+                      toastOptions={{
+                        style: {
+                          background: 'var(--card)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--foreground)',
+                        },
+                        className: 'sonner-toast',
+                      }}
+                    />
+                  </ThemeProvider>
+                </AuthSyncProvider>
+              </ConvexClientProvider>
+            </I18nProvider>
+          </SessionProvider>
+        </MonitoringProvider>
+        {/* Performance monitoring (только в dev) */}
         {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
       </body>
     </html>
