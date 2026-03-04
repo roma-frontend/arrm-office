@@ -53,9 +53,9 @@ export function SmartEmailInput({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="email" className="text-sm font-medium text-[var(--text-primary)]">
+      <Label htmlFor="email" className="flex items-center gap-1 text-sm font-medium text-[var(--text-primary)]">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-red-500">*</span>}
       </Label>
 
       <div className="relative">

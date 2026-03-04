@@ -117,9 +117,9 @@ export function PasswordStrengthIndicator({
                     <div className="w-4 h-4 rounded-full border-2 border-current opacity-30" />
                   )}
                 </motion.div>
-                <span className={req.required ? 'font-medium' : ''}>
+                <span className={`${req.required ? 'font-medium' : ''} flex items-center gap-1`}>
                   {req.label}
-                  {req.required && <span className="text-red-500 ml-1">*</span>}
+                  {req.required && <span className="text-red-500">*</span>}
                 </span>
               </motion.div>
             ))}

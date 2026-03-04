@@ -55,9 +55,9 @@ export function SmartPasswordInput({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label htmlFor="password" className="text-sm font-medium text-[var(--text-primary)]">
+        <Label htmlFor="password" className="flex items-center gap-1 text-sm font-medium text-[var(--text-primary)]">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-red-500">*</span>}
         </Label>
 
         {showGenerator && (
