@@ -259,7 +259,7 @@ export default function LoginPage() {
                 color: loginMode === "touch" ? "var(--text-primary)" : "var(--text-muted)",
               }}
             >
-              <Fingerprint className="w-4 h-4 inline mr-2" />Touch
+              <Fingerprint className="w-4 h-4 inline mr-2" />Touch ID
             </button>
           </div>
 

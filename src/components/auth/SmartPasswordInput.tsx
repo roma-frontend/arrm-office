@@ -55,7 +55,7 @@ export function SmartPasswordInput({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label htmlFor="password" className="flex items-center gap-1 text-sm font-medium text-[var(--text-primary)]">
+        <Label htmlFor="password" className="flex items-center gap-1 whitespace-nowrap text-sm font-medium text-[var(--text-primary)]">
           {label}
           {required && <span className="text-red-500">*</span>}
         </Label>
@@ -66,7 +66,7 @@ export function SmartPasswordInput({
             whileTap={{ scale: 0.98 }}
             onClick={handleGeneratePassword}
             type="button"
-            className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium group"
+            className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium group ml-2"
           >
             <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
             Сгенерировать
