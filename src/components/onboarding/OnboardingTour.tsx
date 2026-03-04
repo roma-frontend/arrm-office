@@ -128,9 +128,6 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
     }
   }, [shouldShowTour, updateTargetPosition]);
 
-  // Allow scroll for smooth navigation between steps during tour
-  // (scroll blocking removed to allow smooth scrolling to elements)
-
   // Update position on step change or resize
   useEffect(() => {
     if (!isVisible) return;
@@ -146,36 +143,9 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
     };
   }, [isVisible, currentStep, updateTargetPosition]);
 
-  // Helper function to smoothly scroll to element
-  const scrollToElement = useCallback((selector: string) => {
-    if (typeof window === 'undefined') return;
-    
-    const element = document.querySelector(selector);
-    if (!element) return;
-
-    const rect = element.getBoundingClientRect();
-    const elementTop = window.pageYOffset + rect.top;
-    const headerHeight = 80; // Approximate header height
-    const padding = 100; // Padding to show context
-    const targetScroll = Math.max(0, elementTop - headerHeight - padding);
-
-    // Smooth scroll to element
-    window.scrollTo({
-      top: targetScroll,
-      behavior: 'smooth',
-    });
-  }, []);
-
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      const nextStep = currentStep + 1;
-      const nextSelector = steps[nextStep].target;
-      scrollToElement(nextSelector);
-      
-      // Update step after a slight delay to allow scroll to start
-      setTimeout(() => {
-        setCurrentStep(nextStep);
-      }, 100);
+      setCurrentStep(currentStep + 1);
     } else {
       handleComplete();
     }
@@ -183,14 +153,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
 
   const handlePrev = () => {
     if (currentStep > 0) {
-      const prevStep = currentStep - 1;
-      const prevSelector = steps[prevStep].target;
-      scrollToElement(prevSelector);
-      
-      // Update step after a slight delay to allow scroll to start
-      setTimeout(() => {
-        setCurrentStep(prevStep);
-      }, 100);
+      setCurrentStep(currentStep - 1);
     }
   };
 
