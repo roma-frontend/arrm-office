@@ -65,19 +65,6 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   // Determine if tour should be shown
   const shouldShowTour = hasSeenTour === false || (hasSeenTour === null && localStorageChecked && hasSeenTourLocal === false);
 
-  // Update target element position (simple and stable)
-  const updateTargetPosition = useCallback(() => {
-    const step = steps[currentStep];
-    if (!step?.target) return;
-
-    const element = document.querySelector(step.target);
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      setTargetRect(rect);
-      positionTooltip(rect, step.placement || "bottom");
-    }
-  }, [currentStep, steps]);
-
   // Helper function to calculate and set tooltip position
   const positionTooltip = useCallback((rect: DOMRect, placement: string) => {
     let x = 0;
@@ -116,6 +103,40 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
 
     setTooltipPosition({ x, y });
   }, []);
+
+  // Update target element position (simple and stable)
+  const updateTargetPosition = useCallback(() => {
+    const step = steps[currentStep];
+    if (!step?.target) return;
+
+    const element = document.querySelector(step.target);
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      
+      // Ensure element is visible by scrolling it into view
+      const isOffScreen = rect.top < 0 || rect.bottom > window.innerHeight || 
+                          rect.left < 0 || rect.right > window.innerWidth;
+      
+      if (isOffScreen) {
+        // Scroll element into view with smooth behavior
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'center'
+        });
+        
+        // Update position after brief delay to account for scroll animation
+        setTimeout(() => {
+          const updatedRect = element.getBoundingClientRect();
+          setTargetRect(updatedRect);
+          positionTooltip(updatedRect, step.placement || "bottom");
+        }, 500);
+      } else {
+        setTargetRect(rect);
+        positionTooltip(rect, step.placement || "bottom");
+      }
+    }
+  }, [currentStep, steps, positionTooltip]);
 
   // Initialize tour
   useEffect(() => {
