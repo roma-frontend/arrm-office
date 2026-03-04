@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { getSessionAction } from "@/actions/auth";
+import { usePathname } from "next/navigation";
 
 const Sidebar = dynamic(
   () => import("@/components/layout/Sidebar").then((m) => m.Sidebar),
@@ -39,6 +40,8 @@ const FocusModeIndicator = dynamic(
 export function Providers({ children }: { children: React.ReactNode }) {
   const { setUser, user } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  const isChatPage = pathname?.startsWith("/chat");
 
   useEffect(() => {
     // Rehydrate persisted stores from localStorage on client only
@@ -56,6 +59,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             name: session.name,
             email: session.email,
             role: session.role as "superadmin" | "admin" | "supervisor" | "employee",
+            organizationId: session.organizationId,
             department: session.department,
             position: session.position,
             employeeType: session.employeeType as "staff" | "contractor",
@@ -82,15 +86,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Navbar — ssr:false prevents theme/user/notification mismatch */}
         <Navbar />
-        {/* Main content area */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
-            {children}
-          </div>
+        {/* Main content area — chat page gets no padding and no scroll (manages its own) */}
+        <main className={isChatPage ? "flex-1 overflow-hidden flex flex-col min-h-0" : "flex-1 overflow-y-auto"}>
+          {isChatPage ? (
+            <div className="flex flex-col flex-1 min-h-0 h-full p-0 sm:p-3 md:p-4">
+              {children}
+            </div>
+          ) : (
+            <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
+              {children}
+            </div>
+          )}
         </main>
       </div>
-      {/* AI Chat Widget - lazy loaded, ssr:false defers entire chunk until interaction */}
-      <ChatWidget />
+      {/* AI Chat Widget - hidden on /chat page so it doesn't cover the send button */}
+      {!isChatPage && <ChatWidget />}
 
       {/* Productivity Services - only render when mounted to avoid SSR mismatch */}
       {mounted && user && (

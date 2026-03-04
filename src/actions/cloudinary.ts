@@ -54,6 +54,22 @@ export async function uploadAvatarToCloudinary(
   }
 }
 
+export async function uploadChatAttachment(
+  base64File: string,
+  fileName: string,
+  mimeType: string
+): Promise<{ url: string; name: string; type: string }> {
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 60);
+  const publicId = `chat_${Date.now()}_${safeFileName}`;
+  const result = await cloudinary.uploader.upload(base64File, {
+    folder: "hr-office/chat-attachments",
+    public_id: publicId,
+    resource_type: "auto",
+    overwrite: false,
+  });
+  return { url: result.secure_url, name: fileName, type: mimeType };
+}
+
 export async function deleteAvatarFromCloudinary(userId: string): Promise<void> {
   console.log("🗑️ Cloudinary delete starting...");
   console.log("👤 User ID:", userId);

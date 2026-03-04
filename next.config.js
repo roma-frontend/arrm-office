@@ -300,7 +300,7 @@ const nextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel.app https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://*.convex.cloud https://*.googleapis.com https://api.groq.com https://api.openai.com https://api.stripe.com https://sentry.io https://*.sentry.io https://*.ingest.sentry.io wss://*.convex.cloud; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel.app https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://*.convex.cloud https://*.googleapis.com https://api.groq.com https://api.openai.com https://api.stripe.com https://sentry.io https://*.sentry.io https://*.ingest.sentry.io wss://*.convex.cloud https://*.metered.live https://*.metered.ca; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self';",
           },
         ],
       },

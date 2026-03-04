@@ -23,6 +23,7 @@ import {
   X,
   CreditCard,
   ShieldCheck,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store/useSidebarStore";
@@ -42,6 +43,7 @@ const navItems = [
   { href: "/calendar", labelKey: "nav.calendar", icon: CalendarDays, roles: ["superadmin", "admin", "supervisor", "employee"] },
   { href: "/reports", labelKey: "nav.reports", icon: FileText, roles: ["superadmin", "admin", "supervisor"] },
   { href: "/tasks", labelKey: "nav.tasks", icon: CheckSquare, roles: ["superadmin", "admin", "supervisor", "employee"] },
+  { href: "/chat", labelKey: "nav.chat", icon: MessageCircle, roles: ["superadmin", "admin", "supervisor", "employee"], badge: "CHAT" },
   { href: "/approvals", labelKey: "nav.approvals", icon: UserCheck, roles: ["superadmin", "admin"] },
   { href: "/superadmin/subscriptions", labelKey: "nav.subscriptions", icon: CreditCard, roles: ["superadmin"] },
   { href: "/superadmin/security", labelKey: "nav.security", icon: ShieldCheck, roles: ["superadmin"], badge: "SEC" },
@@ -78,10 +80,24 @@ export function Sidebar() {
       ? { requesterId: user.id as Id<"users"> }
       : "skip"
   );
+
+  // Unread chat messages count
+  const chatUnreadCount = useQuery(
+    api.chat.getTotalUnread,
+    mounted && user?.id && user?.organizationId
+      ? { userId: user.id as Id<"users">, organizationId: user.organizationId as Id<"organizations"> }
+      : "skip"
+  );
   
   const taskUnreadCount = (notifications ?? []).filter(
     (n: any) => !n.isRead && n.type === "system" && (n.title?.includes("Task") || n.title?.includes("task"))
   ).length;
+
+  // Update browser tab title with unread chat count
+  React.useEffect(() => {
+    const count = chatUnreadCount ?? 0;
+    document.title = count > 0 ? `(${count}) Shield HR` : "Shield HR";
+  }, [chatUnreadCount]);
 
   if (!mounted) return null;
 
@@ -164,8 +180,8 @@ export function Sidebar() {
               onFocus={(e) => {
                 e.currentTarget.style.outlineColor = "var(--primary)";
               }}
-              aria-label="Collapse sidebar"
-              title="Collapse sidebar"
+              aria-label={t('sidebar.collapseSidebar')}
+              title={t('sidebar.collapseSidebar')}
             >
               <ChevronLeft className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
             </button>
@@ -197,8 +213,8 @@ export function Sidebar() {
             onFocus={(e) => {
               e.currentTarget.style.outlineColor = "var(--primary)";
             }}
-            aria-label="Expand sidebar"
-            title="Expand sidebar"
+            aria-label={t('sidebar.expandSidebar')}
+            title={t('sidebar.expandSidebar')}
           >
             <ChevronRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
           </button>
@@ -218,10 +234,12 @@ export function Sidebar() {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             const taskBadgeCount = taskUnreadCount;
             const leaveBadgeCount = unreadLeavesCount ?? 0;
+            const chatBadgeCount = chatUnreadCount ?? 0;
             const showTaskBadge = item.href === "/tasks" && taskBadgeCount > 0;
             const showLeaveBadge = item.href === "/leaves" && leaveBadgeCount > 0 && user?.role !== "superadmin";
-            const showBadge = showTaskBadge || showLeaveBadge;
-            const badgeCount = item.href === "/leaves" ? leaveBadgeCount : item.href === "/tasks" ? taskBadgeCount : 0;
+            const showChatBadge = item.href === "/chat" && chatBadgeCount > 0;
+            const showBadge = showTaskBadge || showLeaveBadge || showChatBadge;
+            const badgeCount = item.href === "/leaves" ? leaveBadgeCount : item.href === "/tasks" ? taskBadgeCount : item.href === "/chat" ? chatBadgeCount : 0;
 
             return (
               <Link
@@ -268,7 +286,12 @@ export function Sidebar() {
                   
                   {/* Badge */}
                   {showBadge && (
-                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
+                    <span className={cn(
+                      "absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg",
+                      item.href === "/chat"
+                        ? "bg-gradient-to-r from-red-500 to-red-600 animate-chat-badge"
+                        : "bg-gradient-to-r from-red-500 to-red-600 animate-pulse"
+                    )}>
                       {badgeCount > 9 ? "9+" : badgeCount}
                     </span>
                   )}
@@ -291,6 +314,13 @@ export function Sidebar() {
                 <span className="flex-1 text-sm font-medium truncate">
                   {t(item.labelKey)}
                 </span>
+
+                {/* Chat unread badge (next to label, shown when sidebar expanded) */}
+                {item.href === "/chat" && chatBadgeCount > 0 && !collapsed && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-chat-badge">
+                    {chatBadgeCount > 99 ? "99+" : chatBadgeCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -385,14 +415,17 @@ export function Sidebar() {
         }
 
         @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-50%) translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(-50%) translateX(0);
-          }
+          from { opacity: 0; transform: translateY(-50%) translateX(-10px); }
+          to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+        }
+        @keyframes chat-badge {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          25%       { transform: scale(1.3); opacity: 1; }
+          50%       { transform: scale(1); opacity: 0.6; }
+          75%       { transform: scale(1.2); opacity: 1; }
+        }
+        .animate-chat-badge {
+          animation: chat-badge 1.2s ease-in-out infinite;
         }
       `}</style>
     </aside>
@@ -422,6 +455,14 @@ export function MobileSidebar() {
     api.leaves.getUnreadCount,
     mounted && user?.id && (user.role === "admin" || user.role === "supervisor" || user.role === "superadmin")
       ? { requesterId: user.id as Id<"users"> }
+      : "skip"
+  );
+
+  // Mobile unread chat count
+  const mobileChatUnreadCount = useQuery(
+    api.chat.getTotalUnread,
+    mounted && user?.id && user?.organizationId
+      ? { userId: user.id as Id<"users">, organizationId: user.organizationId as Id<"organizations"> }
       : "skip"
   );
   
@@ -526,7 +567,7 @@ export function MobileSidebar() {
               e.currentTarget.style.borderColor = "var(--sidebar-border)";
               e.currentTarget.style.color = "var(--text-muted)";
             }}
-            aria-label="Close sidebar"
+            aria-label={t('sidebar.closeSidebar')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -552,7 +593,8 @@ export function MobileSidebar() {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               const mobileTaskCount = mobileTaskBadge;
               const mobileLeaveCount = mobileUnreadLeavesCount ?? 0;
-              const mobileBadge = item.href === "/tasks" ? mobileTaskCount : item.href === "/leaves" && user?.role !== "superadmin" ? mobileLeaveCount : 0;
+              const mobileChatCount = mobileChatUnreadCount ?? 0;
+              const mobileBadge = item.href === "/tasks" ? mobileTaskCount : item.href === "/leaves" && user?.role !== "superadmin" ? mobileLeaveCount : item.href === "/chat" ? mobileChatCount : 0;
 
               return (
                 <Link

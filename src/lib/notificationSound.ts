@@ -112,6 +112,61 @@ function playNotification(
   });
 }
 
+/**
+ * 💬 Beautiful soft chat message sound
+ * A gentle water-drop + harmonic chime — easy on the ears
+ */
+export const playChatMessageSound = () => {
+  if (typeof window === "undefined") return;
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const now = ctx.currentTime;
+
+    // Layer 1: soft "ping" — sine wave at 880Hz (A5), short attack, long tail
+    const ping = ctx.createOscillator();
+    const pingGain = ctx.createGain();
+    ping.type = "sine";
+    ping.frequency.setValueAtTime(880, now);
+    ping.frequency.exponentialRampToValueAtTime(660, now + 0.3); // slight fall = natural resonance
+    pingGain.gain.setValueAtTime(0, now);
+    pingGain.gain.linearRampToValueAtTime(0.18, now + 0.012);
+    pingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    ping.connect(pingGain);
+    pingGain.connect(ctx.destination);
+    ping.start(now);
+    ping.stop(now + 0.6);
+
+    // Layer 2: harmonic undertone — sine at 440Hz (A4), softer, gives warmth
+    const warm = ctx.createOscillator();
+    const warmGain = ctx.createGain();
+    warm.type = "sine";
+    warm.frequency.value = 440;
+    warmGain.gain.setValueAtTime(0, now);
+    warmGain.gain.linearRampToValueAtTime(0.07, now + 0.02);
+    warmGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    warm.connect(warmGain);
+    warmGain.connect(ctx.destination);
+    warm.start(now);
+    warm.stop(now + 0.5);
+
+    // Layer 3: second tiny chime — 1320Hz (E6), delayed, sparkle effect
+    const sparkle = ctx.createOscillator();
+    const sparkleGain = ctx.createGain();
+    sparkle.type = "sine";
+    sparkle.frequency.value = 1320;
+    sparkleGain.gain.setValueAtTime(0, now + 0.07);
+    sparkleGain.gain.linearRampToValueAtTime(0.06, now + 0.09);
+    sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    sparkle.connect(sparkleGain);
+    sparkleGain.connect(ctx.destination);
+    sparkle.start(now + 0.07);
+    sparkle.stop(now + 0.45);
+
+  } catch {
+    // silent fail
+  }
+};
+
 // Request permission and play sound
 export const requestNotificationPermission = () => {
   if (typeof window !== "undefined" && "Notification" in window) {
