@@ -55,10 +55,6 @@ export function initSentryClient() {
         // Reduce replay payload size
         maxReplayDuration: 30000, // 30 seconds max
       }),
-      // Reduce breadcrumbs for better performance
-      Sentry.breadcrumbs.consoleIntegration({
-        levels: ['warn', 'error'], // Only capture warnings and errors
-      }),
     ],
     
     // Session replay configuration - OPTIMIZED
