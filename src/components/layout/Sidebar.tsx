@@ -92,7 +92,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "relative hidden lg:flex flex-col h-screen border-r z-[60] flex-shrink-0",
+        "relative hidden lg:flex flex-col h-screen border-r z-60 shrink-0",
         collapsed ? "w-[72px]" : "w-60"
       )}
       style={{
@@ -141,7 +141,7 @@ export function Sidebar() {
             <button
               onClick={toggle}
               className={cn(
-                "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+                "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
                 "border transition-all duration-300 hover:scale-105",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 group",
                 "shadow-sm hover:shadow-md"
@@ -205,6 +205,11 @@ export function Sidebar() {
         )}
       </div>
 
+      {/* Organization Selector - Top Position */}
+      <div className="px-2 py-3 border-b" style={{ borderColor: "var(--sidebar-border)" }}>
+        <OrganizationSelector collapsed={collapsed} />
+      </div>
+
       {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 custom-scrollbar">
         <div className="space-y-1">
@@ -214,7 +219,7 @@ export function Sidebar() {
             const taskBadgeCount = taskUnreadCount;
             const leaveBadgeCount = unreadLeavesCount ?? 0;
             const showTaskBadge = item.href === "/tasks" && taskBadgeCount > 0;
-            const showLeaveBadge = item.href === "/leaves" && leaveBadgeCount > 0;
+            const showLeaveBadge = item.href === "/leaves" && leaveBadgeCount > 0 && user?.role !== "superadmin";
             const showBadge = showTaskBadge || showLeaveBadge;
             const badgeCount = item.href === "/leaves" ? leaveBadgeCount : item.href === "/tasks" ? taskBadgeCount : 0;
 
@@ -292,9 +297,6 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {/* Organization Selector */}
-      <OrganizationSelector collapsed={collapsed} />
-
       {/* Organization Branding */}
       <div className="px-3 py-2 border-t" style={{ borderColor: "var(--sidebar-border)" }}>
         <div
@@ -328,7 +330,7 @@ export function Sidebar() {
       <div className="border-t p-3" style={{ borderColor: "var(--sidebar-border)" }}>
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <Avatar 
-            className="w-8 h-8 flex-shrink-0 ring-2 transition-all duration-200"
+            className="w-8 h-8 shrink-0 ring-2 transition-all duration-200"
             style={{
               borderColor: "var(--primary)",
               opacity: 0.3,
@@ -462,7 +464,7 @@ export function MobileSidebar() {
       <div
         onClick={() => setMobileOpen(false)}
         className={cn(
-          "fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-500",
+          "fixed inset-0 z-60 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-500",
           mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         aria-hidden="true"
@@ -472,7 +474,7 @@ export function MobileSidebar() {
       <aside
         ref={sidebarRef}
         className={cn(
-          "fixed top-0 left-0 bottom-0 z-[70] w-[280px] lg:hidden flex flex-col",
+          "fixed top-0 left-0 bottom-0 z-70 w-[280px] lg:hidden flex flex-col",
           "transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
@@ -508,7 +510,7 @@ export function MobileSidebar() {
           {/* Close Button */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 border"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-(--primary)/30 border"
             style={{
               backgroundColor: "var(--sidebar-bg)",
               borderColor: "var(--sidebar-border)",
@@ -530,6 +532,18 @@ export function MobileSidebar() {
           </button>
         </div>
 
+        {/* Organization Selector - Top Position Mobile */}
+        <div
+          className="px-2 py-3 border-b"
+          style={{
+            borderColor: "var(--sidebar-border)",
+            opacity: mobileOpen ? 1 : 0,
+            transition: "opacity 0.25s ease",
+          }}
+        >
+          <OrganizationSelector collapsed={false} />
+        </div>
+
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 custom-scrollbar">
           <div className="space-y-1">
@@ -538,7 +552,7 @@ export function MobileSidebar() {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               const mobileTaskCount = mobileTaskBadge;
               const mobileLeaveCount = mobileUnreadLeavesCount ?? 0;
-              const mobileBadge = item.href === "/tasks" ? mobileTaskCount : item.href === "/leaves" ? mobileLeaveCount : 0;
+              const mobileBadge = item.href === "/tasks" ? mobileTaskCount : item.href === "/leaves" && user?.role !== "superadmin" ? mobileLeaveCount : 0;
 
               return (
                 <Link
@@ -547,7 +561,7 @@ export function MobileSidebar() {
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200",
-                    "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30",
+                    "focus:outline-none focus:ring-2 focus:ring-(--primary)/30",
                     isActive && "shadow-sm"
                   )}
                   onMouseEnter={(e) => {
@@ -587,20 +601,20 @@ export function MobileSidebar() {
                     
                     {/* Badge */}
                     {mobileBadge > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
+                      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
                         {mobileBadge > 9 ? "9+" : mobileBadge}
                       </span>
                     )}
 
                     {/* AI Badge */}
                     {item.badge === "AI" && (
-                      <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
+                      <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
                         AI
                       </span>
                     )}
                     {/* Security Badge */}
                     {item.badge === "SEC" && (
-                      <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                      <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
                         🛡
                       </span>
                     )}
@@ -613,16 +627,6 @@ export function MobileSidebar() {
           </div>
         </nav>
 
-        {/* Organization Selector */}
-        <div
-          style={{
-            opacity: mobileOpen ? 1 : 0,
-            transition: "opacity 0.4s ease 0.25s",
-          }}
-        >
-          <OrganizationSelector collapsed={false} />
-        </div>
-
         {/* Organization Branding */}
         <div className="px-3 py-2 border-t" style={{ borderColor: "var(--sidebar-border)" }}>
           <div
@@ -633,7 +637,7 @@ export function MobileSidebar() {
               transition: "opacity 0.4s ease 0.3s",
             }}
           >
-            <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
+            <Building2 className="w-4 h-4 shrink-0" style={{ color: "var(--primary)" }} />
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
                 {t('sidebar.orgName')}

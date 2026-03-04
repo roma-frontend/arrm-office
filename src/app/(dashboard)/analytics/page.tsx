@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";

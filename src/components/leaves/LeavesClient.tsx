@@ -186,7 +186,8 @@ export function LeavesClient() {
 
   const isLoading = leaves === undefined;
   const isError = leaves === null;
-  const isAdmin = user?.role === "admin" || user?.role === "supervisor";
+  const isSuperadmin = user?.role === "superadmin";
+  const isAdmin = !isSuperadmin && (user?.role === "admin" || user?.role === "supervisor");
 
   if (isError) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">

@@ -85,7 +85,7 @@ export function UnreadRequestsBanner({
         bg-red-500/10 border-red-500/20 flex items-center gap-3 
         animate-pulse ${className}`}
     >
-      <Bell className="w-5 h-5 text-red-500 flex-shrink-0" />
+      <Bell className="w-5 h-5 text-red-500 shrink-0" />
       <div className="flex-1">
         <p className="text-sm font-medium text-red-600 dark:text-red-400">
           {count} pending {count === 1 ? "request" : "requests"} awaiting review
