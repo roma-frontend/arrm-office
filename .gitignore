@@ -46,3 +46,6 @@ build-output.txt
 
 # Stripe transaction exports
 stripe-transactions-*.xlsx
+
+# Sentry Config File
+.env.sentry-build-plugin

@@ -9,6 +9,7 @@ import "./globals.css";
 import { ConvexClientProvider } from "@/lib/convex";
 import { SessionProvider } from '@/components/providers/SessionProvider'
 import { AuthSyncProvider } from '@/components/providers/AuthSyncProvider'
+import { MonitoringProvider } from '@/components/providers/MonitoringProvider'
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { I18nProvider } from "@/components/I18nProvider";
@@ -270,36 +271,38 @@ export default function RootLayout({
         />
       </head>
       <body className={`${ibmPlexSans.variable} ${montserrat.variable} ${workSans.variable} ${inter.variable} antialiased`}>
-        <SessionProvider>
-          <I18nProvider>
-            <ConvexClientProvider>
-              <AuthSyncProvider>
-                <ThemeProvider
-                  attribute="class"
-                  defaultTheme="system"
-                  enableSystem={true}
-                  disableTransitionOnChange
-                >
-                  {children}
-                <Toaster
-                  position="top-right"
-                  closeButton
-                  expand={false}
-                  duration={4000}
-                  toastOptions={{
-                    style: {
-                      background: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--foreground)',
-                    },
-                    className: 'sonner-toast',
-                  }}
-                />
-                </ThemeProvider>
-              </AuthSyncProvider>
-            </ConvexClientProvider>
-          </I18nProvider>
-        </SessionProvider>
+        <MonitoringProvider>
+          <SessionProvider>
+            <I18nProvider>
+              <ConvexClientProvider>
+                <AuthSyncProvider>
+                  <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem={true}
+                    disableTransitionOnChange
+                  >
+                    {children}
+                  <Toaster
+                    position="top-right"
+                    closeButton
+                    expand={false}
+                    duration={4000}
+                    toastOptions={{
+                      style: {
+                        background: 'var(--card)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--foreground)',
+                      },
+                      className: 'sonner-toast',
+                    }}
+                  />
+                  </ThemeProvider>
+                </AuthSyncProvider>
+              </ConvexClientProvider>
+            </I18nProvider>
+          </SessionProvider>
+        </MonitoringProvider>
         {/* Performance monitoring (только в dev) */}
         {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
       </body>

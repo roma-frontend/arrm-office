@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { signJWT } from '@/lib/jwt';
 import { calculateRiskScore } from '@/lib/riskScore';
+import { withTracing, addSpanAttributes } from '@/lib/tracing';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -28,25 +29,33 @@ async function convexQuery(path: string, args: Record<string, unknown>) {
 }
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    'unknown';
-  const userAgent = req.headers.get('user-agent') ?? undefined;
+  return withTracing('auth.login', async () => {
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      req.headers.get('x-real-ip') ??
+      'unknown';
+    const userAgent = req.headers.get('user-agent') ?? undefined;
 
-  let email = '';
+    let email = '';
 
-  try {
-    const body = await req.json();
-    email = body.email ?? '';
-    const { password, deviceFingerprint, keystrokeSample } = body;
+    try {
+      const body = await req.json();
+      email = body.email ?? '';
+      const { password, deviceFingerprint, keystrokeSample } = body;
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-    }
-    if (!CONVEX_URL) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
+      // Add tracing attributes
+      addSpanAttributes({
+        'auth.email': email,
+        'auth.has_device_fingerprint': !!deviceFingerprint,
+        'client.ip': ip,
+      });
+
+      if (!email || !password) {
+        return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+      }
+      if (!CONVEX_URL) {
+        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      }
 
     // ── Check if audit_logging is enabled ────────────────────────────────────
     const auditEnabled = await convexQuery('security:getSetting', { key: 'audit_logging' });
@@ -255,4 +264,5 @@ export async function POST(req: NextRequest) {
     } catch {}
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
+  });
 }
