@@ -289,15 +289,6 @@ export default function LoginPage() {
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
                 <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-                  {t('auth.orContinueWith')}
-                </span>
-                <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
-              </div>
-
-              {/* Divider */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
-                <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
                   or use email
                 </span>
                 <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
