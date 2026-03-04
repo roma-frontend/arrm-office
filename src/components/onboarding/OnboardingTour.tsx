@@ -165,12 +165,20 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
           inline: 'center'
         });
         
-        // Update position after brief delay to account for scroll animation
-        setTimeout(() => {
+        // Update position using requestAnimationFrame for smooth updates
+        let frameId: number;
+        const updateCallback = () => {
           const updatedRect = element.getBoundingClientRect();
           setTargetRect(updatedRect);
           positionTooltip(updatedRect, step.placement || "bottom");
-        }, 500);
+        };
+        
+        // Start updating after a minimal delay (let scroll start)
+        setTimeout(() => {
+          frameId = requestAnimationFrame(updateCallback);
+        }, 50);
+        
+        return () => cancelAnimationFrame(frameId);
       } else {
         setTargetRect(rect);
         positionTooltip(rect, step.placement || "bottom");
@@ -181,11 +189,11 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   // Initialize tour
   useEffect(() => {
     if (shouldShowTour) {
-      // Small delay to ensure DOM is ready
+      // Minimal delay to ensure DOM is ready
       setTimeout(() => {
         setIsVisible(true);
         updateTargetPosition();
-      }, 500);
+      }, 100);
     }
   }, [shouldShowTour, updateTargetPosition]);
 
@@ -195,11 +203,17 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
 
     updateTargetPosition();
 
-    const handleResize = () => updateTargetPosition();
+    // Throttle resize event to avoid excessive recalculations
+    let resizeTimeout: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(updateTargetPosition, 100);
+    };
 
     window.addEventListener("resize", handleResize);
 
     return () => {
+      clearTimeout(resizeTimeout);
       window.removeEventListener("resize", handleResize);
     };
   }, [isVisible, currentStep, updateTargetPosition]);
