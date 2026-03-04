@@ -33,7 +33,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [loginMode, setLoginMode] = useState<"email" | "face">("email");
+  const [loginMode, setLoginMode] = useState<"email" | "face" | "touch">("email");
   const [isRedirecting, setIsRedirecting] = useState(false);
   const deviceFingerprintRef = useRef<string | undefined>(undefined);
   const { onKeyDown, onKeyUp, getSample, reset } = useKeystrokeDynamics();
@@ -248,12 +248,32 @@ export default function LoginPage() {
               <ScanFace className="w-4 h-4 inline mr-2" />
               {t('auth.faceId')}
             </button>
+            <button
+              type="button"
+              onClick={() => setLoginMode("touch")}
+              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                loginMode === "touch" ? "shadow-sm" : ""
+              }`}
+              style={{
+                background: loginMode === "touch" ? "var(--background)" : "transparent",
+                color: loginMode === "touch" ? "var(--text-primary)" : "var(--text-muted)",
+              }}
+            >
+              <Fingerprint className="w-4 h-4 inline mr-2" />Touch
+            </button>
           </div>
 
           {/* Face ID Login */}
           {loginMode === "face" && (
             <div className="mb-4">
               <FaceLogin />
+            </div>
+          )}
+
+          {/* Touch ID Login */}
+          {loginMode === "touch" && (
+            <div id="biometric-login" className="mb-4">
+              <WebAuthnButton mode="login" onSuccess={handleWebAuthnSuccess} />
             </div>
           )}
 
@@ -272,11 +292,6 @@ export default function LoginPage() {
                   {t('auth.orContinueWith')}
                 </span>
                 <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
-              </div>
-
-              {/* WebAuthn */}
-              <div id="biometric-login" className="mb-4">
-                <WebAuthnButton mode="login" onSuccess={handleWebAuthnSuccess} />
               </div>
 
               {/* Divider */}

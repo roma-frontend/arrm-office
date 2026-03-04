@@ -162,7 +162,7 @@ export function WebAuthnButton({ mode, userId, onSuccess, disabled }: WebAuthnBu
       ) : (
         <Fingerprint className="w-4 h-4" />
       )}
-      {!loading && <span className="text-xs">ID</span>}
+      {!loading && <span className="text-xs">Touch</span>}
     </motion.button>
   );
 }
