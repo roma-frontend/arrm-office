@@ -542,6 +542,7 @@ function RegisterPageContent() {
         </div>
       </motion.div>
       </div>
+    </I18nProvider>
   );
 }
 

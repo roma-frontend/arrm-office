@@ -27,6 +27,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isScrolling, setIsScrolling] = useState(false);
+  const [isPositioned, setIsPositioned] = useState(false);
 
   // Get session token if user is logged in
   const [sessionToken, setSessionToken] = useState<string | undefined>();
@@ -69,13 +70,28 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   // Update target element position with smooth scroll
   const updateTargetPosition = useCallback((shouldScroll = true) => {
     const step = steps[currentStep];
-    if (!step?.target) return;
+    if (!step?.target) {
+      // For center placement without target, position immediately
+      if (step?.placement === "center") {
+        setIsPositioned(false);
+        setTimeout(() => {
+          positionTooltip(null, "center");
+          setIsPositioned(true);
+        }, 100);
+      }
+      return;
+    }
 
-    const element = document.querySelector(step.target);
-    if (element) {
+    // Wait for DOM to be ready
+    setTimeout(() => {
+      const element = document.querySelector(step.target);
+      if (!element) {
+        console.warn(`Tour: Element not found: ${step.target}`);
+        return;
+      }
+
       const rect = element.getBoundingClientRect();
-      setTargetRect(rect);
-
+      
       // Check if element is fully visible in viewport
       const isElementVisible = (
         rect.top >= 80 &&
@@ -86,11 +102,13 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
 
       // Smooth scroll to element if it's not fully visible or if placement is center
       if (shouldScroll && (!isElementVisible || step.placement === "center")) {
+        setIsPositioned(false);
         setIsScrolling(true);
+        
         const absoluteElementTop = rect.top + window.pageYOffset;
         const absoluteElementLeft = rect.left + window.pageXOffset;
         
-        // Calculate scroll position to center the element vertically with some offset
+        // Calculate scroll position to center the element vertically
         const scrollToY = absoluteElementTop - (window.innerHeight / 2) + (rect.height / 2);
         const scrollToX = absoluteElementLeft - (window.innerWidth / 2) + (rect.width / 2);
 
@@ -107,48 +125,59 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
           setTargetRect(updatedRect);
           positionTooltip(updatedRect, step.placement || "bottom");
           setIsScrolling(false);
-        }, 700);
+          setIsPositioned(true);
+        }, 750);
       } else {
-        positionTooltip(rect, step.placement || "bottom");
+        setIsPositioned(false);
+        setTargetRect(rect);
+        // Small delay to ensure rect is updated
+        setTimeout(() => {
+          positionTooltip(rect, step.placement || "bottom");
+          setIsPositioned(true);
+        }, 50);
       }
-    }
-  }, [currentStep, steps, setIsScrolling]);
+    }, 100); // Initial delay to ensure DOM is ready
+  }, [currentStep, steps]);
 
   // Helper function to calculate and set tooltip position
-  const positionTooltip = useCallback((rect: DOMRect, placement: string) => {
+  const positionTooltip = useCallback((rect: DOMRect | null, placement: string) => {
     let x = 0;
     let y = 0;
 
-    const tooltipWidth = 280;
-    const tooltipHeight = 160;
-    const spacing = 20;
+    const tooltipWidth = 320; // Slightly wider for better readability
+    const tooltipHeight = 180; // Slightly taller
+    const spacing = 24;
 
-    switch (placement) {
-      case "top":
-        x = rect.left + rect.width / 2 - tooltipWidth / 2;
-        y = rect.top - tooltipHeight - spacing;
-        break;
-      case "bottom":
-        x = rect.left + rect.width / 2 - tooltipWidth / 2;
-        y = rect.bottom + spacing;
-        break;
-      case "left":
-        x = rect.left - tooltipWidth - spacing;
-        y = rect.top + rect.height / 2 - tooltipHeight / 2;
-        break;
-      case "right":
-        x = rect.right + spacing;
-        y = rect.top + rect.height / 2 - tooltipHeight / 2;
-        break;
-      case "center":
-        x = window.innerWidth / 2 - tooltipWidth / 2;
-        y = window.innerHeight / 2 - tooltipHeight / 2;
-        break;
+    if (!rect || placement === "center") {
+      // Center placement
+      x = window.innerWidth / 2 - tooltipWidth / 2;
+      y = window.innerHeight / 2 - tooltipHeight / 2;
+    } else {
+      switch (placement) {
+        case "top":
+          x = rect.left + rect.width / 2 - tooltipWidth / 2;
+          y = rect.top - tooltipHeight - spacing;
+          break;
+        case "bottom":
+          x = rect.left + rect.width / 2 - tooltipWidth / 2;
+          y = rect.bottom + spacing;
+          break;
+        case "left":
+          x = rect.left - tooltipWidth - spacing;
+          y = rect.top + rect.height / 2 - tooltipHeight / 2;
+          break;
+        case "right":
+          x = rect.right + spacing;
+          y = rect.top + rect.height / 2 - tooltipHeight / 2;
+          break;
+      }
     }
 
-    // Keep tooltip on screen
-    x = Math.max(20, Math.min(x, window.innerWidth - tooltipWidth - 20));
-    y = Math.max(20, Math.min(y, window.innerHeight - tooltipHeight - 20));
+    // Keep tooltip on screen with proper margins
+    const marginX = 20;
+    const marginY = 20;
+    x = Math.max(marginX, Math.min(x, window.innerWidth - tooltipWidth - marginX));
+    y = Math.max(marginY, Math.min(y, window.innerHeight - tooltipHeight - marginY));
 
     setTooltipPosition({ x, y });
   }, []);
@@ -334,15 +363,27 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
           {/* Tooltip */}
           <motion.div
             key={currentStep}
-            initial={getAnimationDirection(currentStep, 'initial')}
-            animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotate: 0 }}
-            exit={getAnimationDirection(currentStep, 'exit')}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ 
+              opacity: isPositioned ? 1 : 0, 
+              scale: isPositioned ? 1 : 0.9,
+              x: 0, 
+              y: 0, 
+              rotate: 0 
+            }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 400, 
+              damping: 28,
+              opacity: { duration: isPositioned ? 0.3 : 0 }
+            }}
             className="fixed z-[10000] rounded-2xl shadow-2xl border"
             style={{
               left: tooltipPosition.x,
               top: tooltipPosition.y,
-              width: '280px',
+              width: '320px',
+              visibility: isPositioned ? 'visible' : 'hidden',
               background: "var(--card)",
               borderColor: "var(--border)",
             }}

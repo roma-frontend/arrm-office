@@ -1,8 +1,0 @@
-export default function AITestComponent() {
-  return (
-    <div>
-      <h1>GEMINI WORKS</h1>
-      <p>Этот текст был изменен искусственным интеллектом</p>
-    </div>
-  );
-}

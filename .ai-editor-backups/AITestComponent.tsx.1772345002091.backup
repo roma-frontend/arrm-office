@@ -1,8 +1,0 @@
-export default function AITestComponent() {
-  return (
-    <div>
-      <h1>AI Test - Original Version</h1>
-      <p>If AI works, this text should change</p>
-    </div>
-  );
-}

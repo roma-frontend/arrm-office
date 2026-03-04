@@ -74,9 +74,9 @@ export function SmartPasswordInput({
         )}
       </div>
 
-      <div className="relative">
+      <div className="relative h-9">
         {/* Lock icon */}
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
           <Lock className="w-4 h-4 text-[var(--text-muted)]" />
         </div>
 
@@ -88,11 +88,11 @@ export function SmartPasswordInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="pl-10 pr-20"
+          className="pl-10 pr-20 w-full h-full"
         />
 
         {/* Action buttons */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
           {/* Copy button */}
           <AnimatePresence mode="wait">
             {value && (
