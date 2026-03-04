@@ -10,23 +10,15 @@ import { initSentryClient } from "../../../sentry.client.config";
  */
 export function MonitoringProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Defer Sentry initialization to idle time to avoid blocking main thread
-    // TBT (Total Blocking Time) optimization
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(
-        () => {
-          initSentryClient();
-        },
-        { timeout: 3000 } // Max wait 3 seconds
-      );
-    } else {
-      // Fallback for browsers without requestIdleCallback support
-      setTimeout(() => {
-        initSentryClient();
-      }, 1000);
+    // Initialize Sentry immediately but in background thread
+    // Don't wait for idle - just ensure it doesn't block rendering
+    try {
+      initSentryClient();
+    } catch (error) {
+      console.error('Failed to initialize Sentry:', error);
     }
 
-    // Initialize OpenTelemetry client-side (also deferred)
+    // Initialize OpenTelemetry client-side with deferred timing
     if (process.env.NEXT_PUBLIC_ENABLE_OTEL === "true") {
       if ('requestIdleCallback' in window) {
         requestIdleCallback(

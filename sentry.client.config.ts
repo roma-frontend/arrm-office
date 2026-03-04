@@ -16,7 +16,7 @@ export function initSentryClient() {
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || "https://example@sentry.io/1234567",
     
     // Set sample rates for performance monitoring
-    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.05 : 0.1, // Reduced for performance
     
     // Enable debug mode in development
     debug: process.env.NODE_ENV === "development",
@@ -44,7 +44,7 @@ export function initSentryClient() {
     ],
     
     // Capture breadcrumbs for better context
-    maxBreadcrumbs: 50,
+    maxBreadcrumbs: 30, // Reduced from 50
     
     // Performance monitoring - OPTIMIZED for TBT reduction
     integrations: [
@@ -54,16 +54,20 @@ export function initSentryClient() {
         blockAllMedia: true,
         // Reduce replay payload size
         maxReplayDuration: 30000, // 30 seconds max
+        maskAllInputs: true,
       }),
     ],
     
     // Session replay configuration - OPTIMIZED
     // Reduced sample rate to minimize blocking operations
-    replaysSessionSampleRate: 0.05, // Reduced from 0.1
-    replaysOnErrorSampleRate: 0.5, // Reduced from 1.0
+    replaysSessionSampleRate: 0.02, // Reduced from 0.05
+    replaysOnErrorSampleRate: 0.2, // Reduced from 0.5
     
-    // Initialize request breadcrumbs plugin lazily
-    autoSessionTracking: false, // Manually manage sessions
+    // Minimize initialization overhead
+    autoSessionTracking: false,
+    
+    // Don't capture console logs by default
+    attachStacktrace: false,
   });
 }
 
