@@ -40,11 +40,23 @@ export async function POST(req: NextRequest) {
     }
 
     const emailLower = email.toLowerCase().trim();
+    console.log("[oauth-session] Starting OAuth session creation for:", emailLower);
 
     // 1. Find user by email directly via query
+    console.log("[oauth-session] Querying Convex for user...");
     const userResult = await convexQuery("users:getUserByEmail", { email: emailLower });
 
+    console.log("[oauth-session] Convex query result:", userResult ? {
+      id: userResult._id,
+      name: userResult.name,
+      email: userResult.email,
+      role: userResult.role,
+      department: userResult.department,
+      position: userResult.position,
+    } : "NOT_FOUND");
+
     if (!userResult) {
+      console.error("[oauth-session] ❌ User not found in database:", emailLower);
       return NextResponse.json({ error: "User not found in database" }, { status: 404 });
     }
 
@@ -52,6 +64,7 @@ export async function POST(req: NextRequest) {
     const sessionToken = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const sessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
 
+    console.log("[oauth-session] Creating login session...");
     await convexMutation("auth:login", {
       email: emailLower,
       password: "",
@@ -73,6 +86,12 @@ export async function POST(req: NextRequest) {
       position: result.position,
       employeeType: result.employeeType,
       avatar: result.avatarUrl ?? avatarUrl,
+    });
+
+    console.log("[oauth-session] ✅ JWT created for user:", {
+      userId: result._id,
+      name: result.name,
+      role: result.role,
     });
 
     // Set cookies
@@ -111,7 +130,7 @@ export async function POST(req: NextRequest) {
       }
     } catch {}
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       session: {
         userId: result._id,
@@ -124,9 +143,18 @@ export async function POST(req: NextRequest) {
         employeeType: result.employeeType,
         avatar: result.avatarUrl ?? avatarUrl,
       },
+    };
+
+    console.log("[oauth-session] ✅ Returning success response:", {
+      userId: responseData.session.userId,
+      name: responseData.session.name,
+      email: responseData.session.email,
+      role: responseData.session.role,
     });
+
+    return NextResponse.json(responseData);
   } catch (error: any) {
-    console.error("OAuth session error:", error);
+    console.error("[oauth-session] ❌ OAuth session error:", error.message || error);
     return NextResponse.json(
       { error: error.message || "Failed to create OAuth session" },
       { status: 500 }

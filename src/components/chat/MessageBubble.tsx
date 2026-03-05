@@ -213,6 +213,9 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const actionBarRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const toggleReaction = useMutation(api.chat.toggleReaction);
   const editMessage = useMutation(api.chat.editMessage);
@@ -243,6 +246,57 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
   }
 
   if (message.type === "system") {
+    // Service broadcast: official company-wide announcement
+    if (message.isServiceBroadcast) {
+      const icon = message.broadcastIcon || "ℹ️";
+      const senderIcon = "🔧"; // System icon
+      
+      return (
+        <div className="flex justify-center my-4 animate-fade-in px-4">
+          <div className="max-w-lg w-full">
+            {/* Sender info */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 dark:from-orange-500 dark:to-red-600 flex items-center justify-center text-white text-sm font-bold">
+                {senderIcon}
+              </div>
+              <span className="text-xs font-semibold text-orange-700 dark:text-orange-300 tracking-wide">
+                СИСТЕМА
+              </span>
+            </div>
+
+            {/* Message card */}
+            <div 
+              className="border-l-4 rounded-lg p-4 shadow-md animate-fade-in"
+              style={{
+                borderLeftColor: "var(--warning, #f59e0b)",
+                background: "var(--background-elevated)",
+                color: "var(--text-primary)",
+              }}
+            >
+              {/* Header with icon and title */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">{icon}</span>
+                <span className="font-semibold text-sm tracking-wide" style={{ color: "var(--warning, #f59e0b)" }}>
+                  {message.broadcastTitle || "СЕРВИСНОЕ ОБЪЯВЛЕНИЕ"}
+                </span>
+              </div>
+              
+              {/* Message content */}
+              <p className="text-sm leading-relaxed">
+                {message.content}
+              </p>
+              
+              {/* Timestamp */}
+              <div className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                {format(new Date(message.createdAt), "HH:mm, dd MMM")}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Regular system message (e.g., "John joined the chat")
     return (
       <div className="flex justify-center my-2 animate-fade-in">
         <span className="px-3 py-1 rounded-full text-[11px]" style={{ background: "var(--background-subtle)", color: "var(--text-muted)" }}>
@@ -375,8 +429,17 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
           "flex items-end gap-2 my-0.5 group animate-msg-in",
           isOwn ? "flex-row-reverse" : "flex-row"
         )}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => { setShowActions(false); setShowMenu(false); }}
+        onMouseEnter={() => {
+          setShowActions(true);
+          if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        }}
+        onMouseLeave={() => {
+          // Delay closing to allow moving to menu
+          hoverTimeoutRef.current = setTimeout(() => {
+            setShowActions(false);
+            setShowMenu(false);
+          }, 100);
+        }}
       >
         {/* Avatar */}
         <div className="w-8 shrink-0 mb-1">
@@ -477,7 +540,7 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
                         >
                           <Download className="w-3.5 h-3.5 text-white" />
                         </a>
-                        <p className="text-[10px] mt-0.5 opacity-70 truncate max-w-[240px]">{att.name}</p>
+                        <p className="sm:text-[10px] text-xs mt-0.5 opacity-70 truncate max-w-[240px]">{att.name}</p>
                       </div>
                     );
                   }
@@ -516,8 +579,8 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
               <LinkPreview url={urlInContent} isOwn={isOwn} />
             )}
 
-            {message.isEdited && <span className="text-[9px] opacity-60 ml-1">(edited)</span>}
-            {message.isPinned && <span className="absolute -top-2 -right-1 text-[10px]">📌</span>}
+            {message.isEdited && <span className="sm:text-[9px] text-xs opacity-60 ml-1">(edited)</span>}
+            {message.isPinned && <span className="absolute -top-2 -right-1 sm:text-[10px] text-xs">📌</span>}
           </div>
 
           {/* Poll UI */}
@@ -526,15 +589,15 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
               className="mt-1 rounded-xl overflow-hidden border w-full max-w-[280px] animate-fade-in"
               style={{ borderColor: "var(--border)", background: "var(--background-subtle)" }}
             >
-              <div className="px-3 py-2 border-b" style={{ borderColor: "var(--border)" }}>
-                <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+              <div className="px-3 sm:py-2 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                <p className="sm:text-xs text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                   📊 {message.poll.question}
                 </p>
                 {message.poll.closedAt && (
-                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-disabled)" }}>{L.pollClosed}</p>
+                  <p className="sm:text-[10px] text-xs mt-1" style={{ color: "var(--text-disabled)" }}>{L.pollClosed}</p>
                 )}
               </div>
-              <div className="px-3 py-2 space-y-1.5">
+              <div className="px-3 sm:py-2 py-3 space-y-2 sm:space-y-1.5">
                 {(() => {
                   const totalVotes = message.poll.options.reduce((s, o) => s + o.votes.length, 0);
                   const userVote = message.poll.options.find((o) => o.votes.includes(currentUserId))?.id;
@@ -559,12 +622,12 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
                             opacity: 0.25,
                           }}
                         />
-                        <div className="relative flex items-center justify-between px-2.5 py-1.5">
-                          <span className="text-[11px] font-medium flex items-center gap-1.5" style={{ color: isVoted ? "var(--primary)" : "var(--text-primary)" }}>
+                        <div className="relative flex items-center justify-between sm:px-2.5 px-3 sm:py-1.5 py-2 min-h-[40px] sm:min-h-[32px]">
+                          <span className="sm:text-[11px] text-sm font-medium flex items-center gap-1.5" style={{ color: isVoted ? "var(--primary)" : "var(--text-primary)" }}>
                             {isVoted && <span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--primary)" }} />}
                             {opt.text}
                           </span>
-                          <span className="text-[10px] font-bold shrink-0" style={{ color: "var(--text-muted)" }}>
+                          <span className="sm:text-[10px] text-xs font-bold shrink-0" style={{ color: "var(--text-muted)" }}>
                             {pct}% · {opt.votes.length}
                           </span>
                         </div>
@@ -573,14 +636,14 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
                   });
                 })()}
               </div>
-              <div className="px-3 py-1.5 border-t flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
-                <span className="text-[10px]" style={{ color: "var(--text-disabled)" }}>
+              <div className="px-3 sm:py-1.5 py-2 border-t flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
+                <span className="sm:text-[10px] text-xs" style={{ color: "var(--text-disabled)" }}>
                   {message.poll.options.reduce((s, o) => s + o.votes.length, 0)} {L.votes}
                 </span>
                 {isOwn && !message.poll.closedAt && (
                   <button
                     onClick={() => closePoll({ messageId: message._id, userId: currentUserId })}
-                    className="text-[10px] hover:opacity-70 transition-opacity"
+                    className="sm:text-[10px] text-xs hover:opacity-70 transition-opacity py-1 px-2 hover:bg-opacity-50 rounded"
                     style={{ color: "var(--primary)" }}
                   >
                     {L.closePoll}
@@ -594,7 +657,7 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
           {(message.threadCount ?? 0) > 0 && (
             <button
               onClick={() => onOpenThread(message._id, message.content)}
-              className="flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all duration-200 hover:scale-105"
+              className="flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full sm:text-[10px] text-xs font-medium border transition-all duration-200 hover:scale-105"
               style={{ borderColor: "var(--primary)", color: "var(--primary)", background: "transparent" }}
             >
               <MessageSquare className="w-2.5 h-2.5" />
@@ -612,8 +675,8 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
           )}
 
           {/* Timestamp + read receipt */}
-          <div className={cn("flex items-center gap-1 mt-0.5 px-1", isOwn ? "flex-row-reverse" : "flex-row")}>
-            <span className="text-[10px] opacity-60" style={{ color: "var(--text-muted)" }}>
+          <div className={cn("flex items-center gap-1 mt-1 px-1", isOwn ? "flex-row-reverse" : "flex-row")}>
+            <span className="sm:text-[10px] text-xs opacity-60" style={{ color: "var(--text-muted)" }}>
               {format(new Date(message.createdAt), "HH:mm")}
             </span>
             {isOwn && (
@@ -623,7 +686,7 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
 
           {/* Reactions */}
           {totalReactions > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1 px-1">
+            <div className="flex flex-wrap gap-1.5 mt-2 px-1">
               {Object.entries(message.reactions ?? {}).map(([emojiKey, users]) => {
                 // Convert ASCII-safe key back to emoji for display
                 const displayEmoji = keyToEmoji(emojiKey);
@@ -631,7 +694,7 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
                   <button
                     key={emojiKey}
                     onClick={() => handleReaction(displayEmoji)}
-                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-all duration-200 hover:scale-110"
+                    className="flex items-center gap-0.5 sm:px-1.5 px-2 sm:py-0.5 py-1 rounded-full sm:text-xs text-sm border transition-all duration-200 hover:scale-110 min-h-[28px] sm:min-h-auto"
                     style={{
                       background: users.includes(currentUserId) ? "var(--primary)" : "var(--background-subtle)",
                       borderColor: users.includes(currentUserId) ? "var(--primary)" : "var(--border)",
@@ -647,70 +710,94 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
           )}
         </div>
 
-        {/* Action bar */}
-        <div
-          className={cn(
-            "flex items-center gap-0.5 shrink-0 transition-all duration-200",
-            showActions ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
-          )}
-        >
-          {QUICK_EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => handleReaction(emoji)}
-              className="w-6 h-6 flex items-center justify-center rounded-full text-xs hover:scale-125 transition-transform duration-150"
-              style={{ background: "var(--background-subtle)" }}
-            >
-              {emoji}
-            </button>
-          ))}
-          <button
-            onClick={() => onReply(message._id, message.content, message.sender?.name ?? "Someone")}
-            className="w-6 h-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
-            style={{ background: "var(--background-subtle)", color: "var(--text-muted)" }}
-            title={L.reply}
-          >
-            <Reply className="w-3 h-3" />
-          </button>
-          <div className="relative">
-            <button
-              ref={menuBtnRef}
-              onClick={() => {
-                // Detect if there's enough space below; if not, open upward
-                if (menuBtnRef.current) {
-                  const rect = menuBtnRef.current.getBoundingClientRect();
-                  const spaceBelow = window.innerHeight - rect.bottom;
-                  setMenuOpenDown(spaceBelow > 200);
-                }
-                setShowMenu(!showMenu);
-              }}
-              className="w-6 h-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
-              style={{ background: "var(--background-subtle)", color: "var(--text-muted)" }}
-            >
-              <MoreHorizontal className="w-3 h-3" />
-            </button>
-            {showMenu && (
-              <div
-                className={cn(
-                  "absolute z-50 rounded-xl shadow-xl border py-1 min-w-[160px] animate-slide-up",
-                  // Smart vertical: open down if space below, else up
-                  menuOpenDown ? "top-full mt-1" : "bottom-full mb-1",
-                  // Horizontal: align to edge
-                  isOwn ? "right-0" : "left-0"
-                )}
-                style={{ background: "var(--background)", borderColor: "var(--border)" }}
-              >
-                <MenuItem icon={<Copy className="w-3.5 h-3.5" />} label={L.copy} onClick={handleCopy} />
-                <MenuItem icon={<Pin className="w-3.5 h-3.5" />} label={message.isPinned ? L.unpin : L.pin} onClick={handlePin} />
-                {isOwn && <MenuItem icon={<Edit2 className="w-3.5 h-3.5" />} label={L.edit} onClick={() => { setEditing(true); setShowMenu(false); }} />}
-                <MenuItem icon={<Trash className="w-3.5 h-3.5" />} label={L.deleteForMe} onClick={() => { setShowDeleteDialog(true); setShowMenu(false); }} danger />
-                {isOwn && withinFiveMin && (
-                  <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label={L.deleteForEveryone} onClick={() => { setShowDeleteDialog(true); setShowMenu(false); }} danger />
-                )}
-              </div>
+        {/* Action bar — disabled for service broadcasts unless sender is superadmin */}
+        {(!message.isServiceBroadcast || (message.isServiceBroadcast && isOwn)) && (
+          <div
+            ref={actionBarRef}
+            className={cn(
+              "flex items-center gap-0.5 shrink-0 transition-all duration-200 relative",
+              showActions ? "opacity-100 scale-100 z-40" : "opacity-0 scale-95 pointer-events-none"
             )}
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+              setShowActions(true);
+            }}
+            onMouseLeave={() => {
+              hoverTimeoutRef.current = setTimeout(() => {
+                setShowActions(false);
+                setShowMenu(false);
+              }, 100);
+            }}
+          >
+            {QUICK_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => handleReaction(emoji)}
+                className="w-8 h-8 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-sm sm:text-xs hover:scale-125 transition-transform duration-150 min-h-[36px]"
+                style={{ background: "var(--background-subtle)" }}
+              >
+                {emoji}
+              </button>
+            ))}
+            <button
+              onClick={() => onReply(message._id, message.content, message.sender?.name ?? "Someone")}
+              className="w-8 h-8 sm:w-6 sm:h-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150 min-h-[36px]"
+              style={{ background: "var(--background-subtle)", color: "var(--text-muted)" }}
+              title={L.reply}
+            >
+              <Reply className="sm:w-3 sm:h-3 w-4 h-4" />
+            </button>
+            <div className="relative">
+              <button
+                ref={menuBtnRef}
+                onClick={() => {
+                  // Detect if there's enough space below; if not, open upward
+                  if (menuBtnRef.current) {
+                    const rect = menuBtnRef.current.getBoundingClientRect();
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    setMenuOpenDown(spaceBelow > 200);
+                  }
+                  setShowMenu(!showMenu);
+                }}
+                className="w-8 h-8 sm:w-6 sm:h-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150 min-h-[36px]"
+                style={{ background: "var(--background-subtle)", color: "var(--text-muted)" }}
+              >
+                <MoreHorizontal className="sm:w-3 sm:h-3 w-4 h-4" />
+              </button>
+              {showMenu && (
+                <div
+                  ref={menuRef}
+                  className={cn(
+                    "absolute z-[9999] rounded-xl shadow-2xl border py-1 min-w-[160px] animate-slide-up",
+                    // Smart vertical: open down if space below, else up
+                    menuOpenDown ? "top-full mt-1" : "bottom-full mb-1",
+                    // Horizontal: align to edge
+                    isOwn ? "right-0" : "left-0"
+                  )}
+                  style={{ background: "var(--background)", borderColor: "var(--border)" }}
+                  onMouseEnter={() => {
+                    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                    setShowActions(true);
+                  }}
+                  onMouseLeave={() => {
+                    hoverTimeoutRef.current = setTimeout(() => {
+                      setShowActions(false);
+                      setShowMenu(false);
+                    }, 50);
+                  }}
+                >
+                  <MenuItem icon={<Copy className="w-3.5 h-3.5" />} label={L.copy} onClick={handleCopy} />
+                  <MenuItem icon={<Pin className="w-3.5 h-3.5" />} label={message.isPinned ? L.unpin : L.pin} onClick={handlePin} />
+                  {isOwn && <MenuItem icon={<Edit2 className="w-3.5 h-3.5" />} label={L.edit} onClick={() => { setEditing(true); setShowMenu(false); }} />}
+                  <MenuItem icon={<Trash className="w-3.5 h-3.5" />} label={L.deleteForMe} onClick={() => { setShowDeleteDialog(true); setShowMenu(false); }} danger />
+                  {isOwn && withinFiveMin && (
+                    <MenuItem icon={<Trash2 className="w-3.5 h-3.5" />} label={L.deleteForEveryone} onClick={() => { setShowDeleteDialog(true); setShowMenu(false); }} danger />
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <style jsx>{`

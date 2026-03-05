@@ -41,8 +41,15 @@ export const useAuthStore = create<AuthState>()(
       login: (user: User) =>
         set({ user, isAuthenticated: true }),
 
-      logout: () =>
-        set({ user: null, token: null, isAuthenticated: false }),
+      logout: () => {
+        // Clear Zustand state
+        set({ user: null, token: null, isAuthenticated: false });
+        // Also clear localStorage to prevent hydration of stale data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('hr-auth-storage');
+        }
+        console.log("[Auth] Logout: Cleared Zustand state and localStorage");
+      },
     }),
     {
       name: 'hr-auth-storage',

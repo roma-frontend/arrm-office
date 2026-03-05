@@ -50,10 +50,16 @@ export default function ManageAdminsPage() {
   const orgId = params.id as string;
   const isSuperadmin = user?.role === "superadmin" || user?.email?.toLowerCase() === "romangulanyan@gmail.com";
 
+  // Check if admin is trying to access their own organization
+  const isOwnOrganization = user?.organizationId === orgId;
+  const canAccess = isSuperadmin || (user?.role === "admin" && isOwnOrganization);
+
   // Queries and Mutations
-  const organizations = useQuery(
-    api.organizations.getAllOrganizations,
-    user?.id ? { superadminUserId: user.id as any } : "skip"
+  const organization = useQuery(
+    api.organizations.getOrganizationById,
+    user?.id && orgId
+      ? { callerUserId: user.id as any, organizationId: orgId as any }
+      : "skip"
   );
 
   const orgMembers = useQuery(
@@ -71,8 +77,6 @@ export default function ManageAdminsPage() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [actionType, setActionType] = useState<"promote" | "demote" | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  const organization = organizations?.find((org) => org._id === orgId);
 
   useEffect(() => {
     if (!user) {
@@ -142,21 +146,25 @@ export default function ManageAdminsPage() {
     );
   }
 
-  if (!isSuperadmin) {
+  if (!canAccess) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">{t("ui.accessDenied")}</h1>
-          <p className="text-muted-foreground">{t("ui.onlySuperadminCanAccess")}</p>
+          <p className="text-muted-foreground">
+            {isSuperadmin 
+              ? "Organization not found"
+              : "You can only manage your own organization"}
+          </p>
           <p className="text-xs text-muted-foreground mt-2">
-            Your role: {user.role} | Email: {user.email}
+            Your role: {user.role} | Your org: {user.organizationId} | Requested: {orgId}
           </p>
         </div>
       </div>
     );
   }
 
-  if (organizations === undefined || orgMembers === undefined) {
+  if (organization === undefined || orgMembers === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <ShieldLoader size="lg" />

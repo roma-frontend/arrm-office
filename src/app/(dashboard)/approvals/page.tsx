@@ -33,27 +33,28 @@ export default function ApprovalsPage() {
   const handleApprove = async (userId: Id<"users">, userName: string) => {
     if (!user?.id) {
       console.error("No user ID found in store:", user);
-      toast.error("Please login again");
+      toast.error(t('ui.pleaseLoginAgain'));
       return;
     }
     try {
       console.log("Approving user:", { userId, adminId: user.id });
       await approveUser({ userId, adminId: user.id as Id<"users"> });
-      toast.success(`${userName} has been approved!`);
+      toast.success(t('ui.userApproved', { name: userName }));
     } catch (err) {
       console.error("Approve error:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to approve user");
+      toast.error(err instanceof Error ? err.message : t('ui.failedToApproveUser'));
     }
   };
 
   const handleReject = async (userId: Id<"users">, userName: string) => {
     if (!user?.id) return;
-    if (!confirm(`Are you sure you want to reject ${userName}? This action cannot be undone.`)) return;
+    const message = t('ui.confirmRejectUser', { name: userName });
+    if (!confirm(message)) return;
     try {
       await rejectUser({ userId, adminId: user.id as Id<"users"> });
-      toast.success(`${userName} has been rejected`);
+      toast.success(t('ui.userRejected', { name: userName }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to reject user");
+      toast.error(err instanceof Error ? err.message : t('ui.failedToRejectUser'));
     }
   };
 
@@ -80,7 +81,7 @@ export default function ApprovalsPage() {
       <div>
         <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t('ui.userApprovals')}</h2>
         <p className="text-[var(--text-muted)] text-sm mt-1">
-          {t('ui.noPendingApprovals')}
+          {t('ui.approvalsPageDescription')}
         </p>
       </div>
 

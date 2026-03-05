@@ -23,6 +23,7 @@ import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { SmartEmailInput } from "@/components/auth/SmartEmailInput";
 import { SmartPasswordInput } from "@/components/auth/SmartPasswordInput";
 import { SmartErrorMessage, parseAuthError } from "@/components/auth/SmartErrorMessage";
+import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -48,13 +49,22 @@ export default function LoginPage() {
   // Check if OAuth sync is in progress OR redirecting
   const isOAuthSyncing = (status === "authenticated" && !isAuthenticated) || isRedirecting;
   
-  // Detect when auth completes and redirect
+  // Detect when auth completes and redirect (but NOT during maintenance)
   useEffect(() => {
+    // Check if we're in maintenance mode
+    const params = new URLSearchParams(window.location.search);
+    const isMaintenance = params.get('maintenance') === 'true';
+    
+    // Don't redirect if in maintenance mode
+    if (isMaintenance) {
+      console.log("[Login] Maintenance mode detected - not redirecting");
+      return;
+    }
+    
     if (status === "authenticated" && isAuthenticated && !isRedirecting) {
       setIsRedirecting(true);
       
       // Получаем параметр from из URL
-      const params = new URLSearchParams(window.location.search);
       const from = params.get('from');
       
       // Редиректим на нужную страницу
@@ -156,6 +166,9 @@ export default function LoginPage() {
 
   return (
     <>
+      {/* Maintenance Screen - Display if maintenance is active */}
+      <MaintenanceScreen />
+      
       {/* OAuth Sync Loader */}
       <OAuthSyncLoader />
       

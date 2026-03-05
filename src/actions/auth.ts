@@ -277,7 +277,7 @@ export async function loginAction(formData: FormData | { email: string; password
       throw new Error(convexError?.message || 'Authentication failed');
     }
 
-    log.debug('Creating JWT token', { userId: result.userId });
+    log.debug('Creating JWT token', { userId: result.userId, name: result.name });
 
     const jwt = await signJWT({
       userId: result.userId,
@@ -288,6 +288,13 @@ export async function loginAction(formData: FormData | { email: string; password
       position: result.position,
       employeeType: result.employeeType,
       avatar: result.avatarUrl,
+    });
+    
+    console.log('[loginAction] 🔐 Password login - JWT created with:', {
+      userId: result.userId,
+      name: result.name,
+      email: result.email,
+      role: result.role,
     });
 
     log.debug('JWT token created successfully');

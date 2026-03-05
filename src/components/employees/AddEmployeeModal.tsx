@@ -62,11 +62,11 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = t('modals.addEmployee.nameRequired');
-    if (!email.trim()) errs.email = t('modals.addEmployee.emailRequired');
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = t('modals.addEmployee.invalidEmail');
-    if (!department) errs.department = t('modals.addEmployee.departmentRequired');
-    if (!position.trim()) errs.position = t('modals.addEmployee.positionRequired');
+    if (!name.trim()) errs.name = t('common.name') + ' ' + t('errors.required').toLowerCase();
+    if (!email.trim()) errs.email = t('common.email') + ' ' + t('errors.required').toLowerCase();
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = t('errors.invalidEmail');
+    if (!department) errs.department = t('employees.department') + ' ' + t('errors.required').toLowerCase();
+    if (!position.trim()) errs.position = t('employees.position') + ' ' + t('errors.required').toLowerCase();
     return errs;
   };
 
@@ -82,6 +82,15 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         return;
       }
       
+      console.log("[AddEmployeeModal] 👥 Creating employee with:", {
+        name,
+        email,
+        department,
+        position,
+        role,
+        employeeType: type,
+      });
+      
       await createUser({
         adminId: currentUser.id as any,
         name,
@@ -93,10 +102,10 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         employeeType: type,
         phone: phone || undefined,
       });
-      toast.success(t('modals.addEmployee.employeeAddedSuccess'));
+      toast.success(t('success.created'));
       onClose();
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('modals.addEmployee.failedToAdd'));
+      toast.error(err instanceof Error ? err.message : t('errors.somethingWentWrong'));
     } finally {
       setSubmitting(false);
     }
@@ -106,8 +115,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('modals.addEmployee.title')}</DialogTitle>
-          <DialogDescription>{t('modals.addEmployee.description')}</DialogDescription>
+          <DialogTitle>{t('employees.addEmployee')}</DialogTitle>
+          <DialogDescription>{'Enter the employee details'}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -132,7 +141,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
             />
             {errors.email && <p className="text-xs text-[var(--destructive)]">{errors.email}</p>}
             <p className="text-xs text-[var(--text-muted)]">
-              {t('employeesExtra.contractorTip')}
+              {'Add "contractor" in email if this is a contractor (auto-detected)'}
             </p>
           </div>
 
@@ -191,7 +200,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
 
           {/* Employee type */}
           <div className="space-y-1.5">
-            <Label>{t('profile.employeeType')}</Label>
+            <Label>{'Employee Type'}</Label>
             <div className="grid grid-cols-2 gap-2">
               {(["staff", "contractor"] as const).map((t) => (
                 <button
@@ -215,9 +224,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
             className="rounded-lg bg-[var(--background-subtle)] border border-[var(--border)] p-3 flex items-center justify-between"
           >
             <div>
-              <p className="text-xs text-[var(--text-muted)]">Calculated Travel Allowance</p>
+              <p className="text-xs text-[var(--text-muted)]">Travel Allowance</p>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                {t('employeesExtra.basedOn')} {type === "contractor" ? t('employeesExtra.contractorType') : t('employeesExtra.staffType')} {t('employeesExtra.rate')}
+                {type === "contractor" ? t('employeeTypes.contractor') : t('employeeTypes.staff')} type
               </p>
             </div>
             <p className="text-lg font-bold text-[var(--text-primary)]">{formatCurrency(allowance)}</p>
@@ -226,7 +235,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
           <DialogFooter className="gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>{t('common.cancel')}</Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? t('modals.addEmployee.addingEmployee') : t('modals.addEmployee.addEmployeeButton')}
+              {submitting ? 'Adding...' : t('employees.addEmployee')}
             </Button>
           </DialogFooter>
         </form>

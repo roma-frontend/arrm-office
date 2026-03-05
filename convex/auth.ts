@@ -228,12 +228,31 @@ export const login = mutation({
     isFaceLogin: v.optional(v.boolean()),
   },
   handler: async (ctx, { email, password: passwordHash, sessionToken, sessionExpiry, isFaceLogin }) => {
+    console.log('[auth:login] 🔐 Login attempt:', {
+      email,
+      isFaceLogin,
+      hasPassword: !!passwordHash,
+    });
+    
     const user = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", email.toLowerCase().trim()))
       .unique();
 
-    if (!user) throw new Error("Invalid email or password");
+    if (!user) {
+      console.log('[auth:login] ❌ User not found:', email);
+      throw new Error("Invalid email or password");
+    }
+    
+    console.log('[auth:login] 👤 Found user:', {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      isApproved: user.isApproved,
+    });
+    
     if (!user.isActive) throw new Error("Your account has been deactivated. Contact your administrator.");
     if (!user.isApproved) {
       throw new Error(
@@ -243,6 +262,7 @@ export const login = mutation({
     
     // Skip password check for Face ID login
     if (!isFaceLogin && user.passwordHash !== passwordHash) {
+      console.log('[auth:login] ❌ Password mismatch for:', email);
       throw new Error("Invalid email or password");
     }
 
@@ -262,6 +282,14 @@ export const login = mutation({
     });
 
     const userData = safeUser(user as Parameters<typeof safeUser>[0]);
+    
+    console.log('[auth:login] ✅ Login successful, returning:', {
+      userId: userData.userId,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+    });
+    
     return {
       userId: userData.userId,
       name: userData.name,

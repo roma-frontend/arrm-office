@@ -90,18 +90,18 @@ export function ThreadPanel({ parentMessageId, parentContent, currentUserId, con
           const isOwn = r.senderId === currentUserId;
           return (
             <div key={r._id} className={`flex gap-2 animate-fade-in ${isOwn ? "flex-row-reverse" : ""}`}>
-              <Avatar className="w-6 h-6 shrink-0 mt-0.5">
+              <Avatar className="sm:w-6 w-8 sm:h-6 h-8 shrink-0 mt-0.5">
                 {r.sender?.avatarUrl && <AvatarImage src={r.sender.avatarUrl} />}
-                <AvatarFallback className="text-[8px] font-bold text-white" style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark, var(--primary)))" }}>
+                <AvatarFallback className="sm:text-[8px] text-[10px] font-bold text-white" style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark, var(--primary)))" }}>
                   {getInitials(r.sender?.name ?? "?")}
                 </AvatarFallback>
               </Avatar>
               <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"} max-w-[80%]`}>
-                <span className="text-[10px] font-medium mb-0.5" style={{ color: "var(--text-muted)" }}>
+                <span className="sm:text-[10px] text-xs font-medium sm:mb-0.5 mb-1" style={{ color: "var(--text-muted)" }}>
                   {isOwn ? "You" : r.sender?.name}
                 </span>
                 <div
-                  className="px-3 py-1.5 rounded-xl text-xs break-words"
+                  className="sm:px-3 px-3.5 sm:py-1.5 py-2 rounded-xl sm:text-xs text-sm break-words"
                   style={{
                     background: isOwn ? "linear-gradient(135deg, var(--primary), var(--primary-dark, var(--primary)))" : "var(--background-subtle)",
                     color: isOwn ? "white" : "var(--text-primary)",
@@ -109,7 +109,7 @@ export function ThreadPanel({ parentMessageId, parentContent, currentUserId, con
                 >
                   {r.content}
                 </div>
-                <span className="text-[9px] mt-0.5 opacity-50" style={{ color: "var(--text-muted)" }}>
+                <span className="sm:text-[9px] text-xs mt-1 opacity-50" style={{ color: "var(--text-muted)" }}>
                   {format(new Date(r.createdAt), "HH:mm")}
                 </span>
               </div>

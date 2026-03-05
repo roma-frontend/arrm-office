@@ -66,6 +66,7 @@ html.light {
   --card-hover: #f0f6ff;
   --card-foreground: #0c1a2e;
   --card-border: #c7d9f5;
+  --surface-hover: #f0f6ff;
 
   /* Popover */
   --popover: #ffffff;
@@ -176,6 +177,7 @@ html.light {
   --card-hover: #112344;
   --card-foreground: #e8f0fe;
   --card-border: #1a3460;
+  --surface-hover: #112344;
 
   /* Popover */
   --popover: #0d1e38;

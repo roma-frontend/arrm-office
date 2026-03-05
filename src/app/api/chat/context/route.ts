@@ -37,7 +37,7 @@ export async function GET() {
     // Fetch user's leave data
     const userLeaves = await convexQuery('leaves:getUserLeaves', { userId });
     const analytics = await convexQuery('analytics:getUserAnalytics', { userId });
-    const teamCalendar = await convexQuery('analytics:getTeamCalendar', {});
+    const teamCalendar = await convexQuery('analytics:getTeamCalendar', { requesterId: userId });
 
     // Build context for AI
     const context = {

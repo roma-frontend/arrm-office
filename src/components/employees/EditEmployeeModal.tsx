@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Save, User, Mail, Phone, Briefcase, Building2, Shield } from "lucide-react";
+import { X, Save, User, Mail, Phone, Briefcase, Building2, Shield, AlertTriangle } from "lucide-react";
 import { ShieldLoader } from "@/components/ui/ShieldLoader";
 import { toast } from "sonner";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
@@ -83,6 +83,61 @@ export function EditEmployeeModal({ employee, open, onClose, currentUserRole }: 
   const currentUser = useAuthStore((s) => s.user);
   // Only romangulanyan@gmail.com can assign admin role
   const isActualAdmin = currentUser?.email?.toLowerCase() === ADMIN_EMAIL;
+  
+  // Protection: non-superadmin cannot edit superadmin
+  if (employee.role === "superadmin" && !isActualAdmin) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="relative p-6 rounded-2xl border shadow-2xl max-w-sm w-full text-center"
+          style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: "rgba(239,68,68,0.1)" }}>
+            <AlertTriangle className="w-7 h-7" style={{ color: "#ef4444" }} />
+          </div>
+          <h3 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+            {t('editEmployee.accessDenied')}
+          </h3>
+          <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+            Вы не можете редактировать аккаунт суперадмина
+          </p>
+          <button onClick={onClose}
+            className="w-full py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: "#2563eb" }}>
+            {t('common.close')}
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Protection: admin cannot edit other admins
+  if (employee.role === "admin" && currentUserRole === "admin" && !isActualAdmin) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="relative p-6 rounded-2xl border shadow-2xl max-w-sm w-full text-center"
+          style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: "rgba(239,68,68,0.1)" }}>
+            <AlertTriangle className="w-7 h-7" style={{ color: "#ef4444" }} />
+          </div>
+          <h3 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+            {t('editEmployee.accessDenied')}
+          </h3>
+          <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+            Только суперадмин может редактировать аккаунты администраторов
+          </p>
+          <button onClick={onClose}
+            className="w-full py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: "#2563eb" }}>
+            {t('common.close')}
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+  
   const ALL_ROLES = ALL_ROLES_CONFIG.map(r => ({ ...r, label: t(r.labelKey), description: t(r.descKey) }));
   const ROLES = isActualAdmin ? ALL_ROLES : ALL_ROLES.filter((r) => r.value !== "admin");
 

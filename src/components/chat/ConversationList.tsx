@@ -81,6 +81,13 @@ export function ConversationList({
   const [filter, setFilter] = useState<FilterType>("all");
   const [loadingOpId, setLoadingOpId] = useState<string | null>(null);
 
+  console.log(`[ConversationList] Rendering ${conversations?.length ?? 0} conversations, selected: ${selectedId}`);
+  if (conversations && conversations.length > 0) {
+    conversations.forEach((c, idx) => {
+      console.log(`  [${idx}] ${c.name || c.otherUser?.name || 'DM'} (unread: ${c.membership.unreadCount})`);
+    });
+  }
+
   // Apply filters
   const filtered = conversations.filter((c) => {
     const name = c.type === "direct" ? (c.otherUser?.name ?? "") : (c.name ?? "");
@@ -201,7 +208,8 @@ export function ConversationList({
           const isGroup = conv.type === "group";
           const displayName = isGroup ? (conv.name ?? "Group") : (conv.otherUser?.name ?? "Unknown");
           const avatarUrl = isGroup ? conv.avatarUrl : conv.otherUser?.avatarUrl;
-          const unread = conv.membership.unreadCount ?? 0;
+          // If conversation is selected, hide the unread count (client-side optimization)
+          const unread = isSelected ? 0 : (conv.membership.unreadCount ?? 0);
           const lastTime = conv.lastMessageAt
             ? formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix: false })
             : "";
@@ -270,22 +278,22 @@ export function ConversationList({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-1 min-w-0">
-                      <span className={cn("text-sm truncate", unread > 0 ? "font-semibold" : "font-medium")}>
+                      <span className={cn("sm:text-sm text-base truncate", unread > 0 ? "font-semibold" : "font-medium")}>
                         {displayName}
                       </span>
-                      {conv.isPinned && <Pin className="w-3 h-3 shrink-0" style={{ color: "var(--primary)" }} />}
+                      {conv.isPinned && <Pin className="sm:w-3 sm:h-3 w-4 h-4 shrink-0" style={{ color: "var(--primary)" }} />}
                     </div>
                     {lastTime && (
-                      <span className="text-[10px] shrink-0" style={{ color: "var(--text-disabled)" }}>
+                      <span className="sm:text-[10px] text-xs shrink-0" style={{ color: "var(--text-disabled)" }}>
                         {lastTime}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between gap-1 mt-0.5">
+                  <div className="flex items-center justify-between gap-1 mt-1 sm:mt-0.5">
                     <div className="flex items-center gap-1 min-w-0">
                       {/* Last message sender mini-avatar (groups only, not own) */}
                       {isGroup && conv.lastMessageText && !isOwnLast && (
-                        <div className="w-3.5 h-3.5 rounded-full shrink-0 flex items-center justify-center text-[7px] font-bold text-white overflow-hidden"
+                        <div className="sm:w-3.5 sm:h-3.5 w-4 h-4 rounded-full shrink-0 flex items-center justify-center sm:text-[7px] text-[8px] font-bold text-white overflow-hidden"
                           style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark, var(--primary)))" }}
                         >
                           {lastSenderAvatar
@@ -294,13 +302,13 @@ export function ConversationList({
                           }
                         </div>
                       )}
-                      <p className={cn("text-xs truncate", unread > 0 ? "font-medium" : "opacity-70")}
+                      <p className={cn("sm:text-xs text-sm truncate", unread > 0 ? "font-medium" : "opacity-70")}
                         style={{ color: isSelected ? "var(--sidebar-item-active-text)" : "var(--text-muted)" }}>
                         {conv.isDeleted ? "[Удалено]" : lastMsgPreview}
                       </p>
                     </div>
                     {unread > 0 && !conv.membership.isMuted && (
-                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shrink-0">
+                      <span className="min-w-[20px] sm:min-w-[18px] h-[20px] sm:h-[18px] px-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white sm:text-[9px] text-[10px] font-bold flex items-center justify-center shrink-0">
                         {unread > 99 ? "99+" : unread}
                       </span>
                     )}

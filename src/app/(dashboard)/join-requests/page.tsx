@@ -47,6 +47,16 @@ export default function JoinRequestsPage() {
     userId ? { adminId: userId } : "skip"
   );
 
+  // Debug logging
+  if (requests) {
+    console.log(`[JOIN REQUESTS] Retrieved ${requests.length} requests for status="${filter}"`, {
+      userId,
+      userRole: user?.role,
+      userOrg: user?.organizationId,
+      requestsData: requests
+    });
+  }
+
   const approveRequest = useMutation(api.organizations.approveJoinRequest);
   const rejectRequest = useMutation(api.organizations.rejectJoinRequest);
   const generateToken = useMutation(api.organizations.generateInviteToken);
@@ -203,14 +213,26 @@ export default function JoinRequestsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 gap-3">
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
             <Users className="w-10 h-10 text-[var(--text-muted)] opacity-40" />
-            <p className="text-[var(--text-muted)] font-medium">
-              {filter === "pending" ? "No pending join requests" : `No ${filter} requests`}
-            </p>
-            <p className="text-xs text-[var(--text-muted)]">
-              Share your invite link to let employees join your organization
-            </p>
+            <div className="text-center space-y-2">
+              <p className="text-[var(--text-muted)] font-medium">
+                {filter === "pending" ? "No pending join requests" : `No ${filter} requests`}
+              </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                Share your invite link to let employees join your organization
+              </p>
+              {filter === "pending" && (
+                <p className="text-xs text-[var(--text-muted)] pt-2 border-t border-[var(--border)]">
+                  💡 Tip: Check other filters to see approved or rejected requests
+                </p>
+              )}
+              {!user?.organizationId && user?.role === "admin" && (
+                <p className="text-xs text-amber-600 bg-amber-50 rounded px-3 py-2 mt-2 border border-amber-200">
+                  ⚠️ Your organization hasn't been assigned yet. Contact superadmin.
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       ) : (

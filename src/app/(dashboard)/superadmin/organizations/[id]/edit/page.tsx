@@ -17,10 +17,16 @@ export default function EditOrganizationPage() {
   const { user } = useAuthStore();
   const orgId = params.id as string;
   const isSuperadmin = user?.role === "superadmin" || user?.email?.toLowerCase() === "romangulanyan@gmail.com";
+  
+  // Check if admin is trying to access their own organization
+  const isOwnOrganization = user?.organizationId === orgId;
+  const canAccess = isSuperadmin || (user?.role === "admin" && isOwnOrganization);
 
-  const organizations = useQuery(
-    api.organizations.getAllOrganizations,
-    user?.id ? { superadminUserId: user.id as any } : "skip"
+  const organization = useQuery(
+    api.organizations.getOrganizationById,
+    user?.id && orgId && canAccess
+      ? { callerUserId: user.id as any, organizationId: orgId as any }
+      : "skip"
   );
 
   const updateOrg = useMutation(api.organizations.updateOrganization);
@@ -35,7 +41,6 @@ export default function EditOrganizationPage() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const organization = organizations?.find((org) => org._id === orgId);
 
   useEffect(() => {
     if (organization) {
@@ -64,21 +69,21 @@ export default function EditOrganizationPage() {
     );
   }
 
-  if (!isSuperadmin) {
+  if (!isSuperadmin && !canAccess) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">{t('ui.accessDenied')}</h1>
-          <p className="text-muted-foreground">{t('ui.onlySuperadminCanAccess')}</p>
+          <p className="text-muted-foreground">You can only manage your own organization</p>
           <p className="text-xs text-muted-foreground mt-2">
-            Your role: {user.role} | Email: {user.email}
+            Your role: {user.role} | Your org: {user.organizationId} | Requested: {orgId}
           </p>
         </div>
       </div>
     );
   }
 
-  if (organizations === undefined) {
+  if (organization === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <ShieldLoader size="lg" />

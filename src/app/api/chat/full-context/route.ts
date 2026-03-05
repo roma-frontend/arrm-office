@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const [users, leaves, todayAttendance, allTasks] = await Promise.all([
       fetchQuery(api.users.getAllUsers, { requesterId: requesterId as any }),
       fetchQuery(api.leaves.getAllLeaves, { requesterId: requesterId as any }),
-      fetchQuery(api.timeTracking.getTodayAllAttendance, {}),
+      fetchQuery(api.timeTracking.getTodayAllAttendance, { adminId: requesterId as any }),
       fetchQuery(api.tasks.getAllTasks, { requesterId: requesterId as any }),
     ]);
 

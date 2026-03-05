@@ -129,12 +129,27 @@ export const getMyConversations = query({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
 
+    console.log(`\n[getMyConversations] ===== USER: ${args.userId}, ORG: ${args.organizationId} =====\n`);
+    console.log(`[getMyConversations] User has ${memberships.length} memberships total`);
+
     const conversations = await Promise.all(
       memberships.map(async (m) => {
         const conv = await ctx.db.get(m.conversationId);
-        if (!conv || conv.organizationId !== args.organizationId) return null;
+        if (!conv) {
+          console.log(`[getMyConversations] Conversation ${m.conversationId} not found for membership`);
+          return null;
+        }
+        if (conv.organizationId !== args.organizationId) {
+          console.log(`[getMyConversations] Skipping conversation ${conv._id} - different org (${conv.organizationId} vs ${args.organizationId})`);
+          return null;
+        }
         // Skip archived and deleted conversations
-        if (conv.isArchived || conv.isDeleted) return null;
+        if (conv.isArchived || conv.isDeleted) {
+          console.log(`[getMyConversations] Skipping conversation ${conv._id} - archived/deleted`);
+          return null;
+        }
+
+        console.log(`[getMyConversations] Including conversation: ${conv.name || conv._id} (type: ${conv.type}, unread: ${m.unreadCount})`);
 
         // For DMs: get the other user's info
         let otherUser = null;
@@ -180,7 +195,7 @@ export const getMyConversations = query({
     );
 
     // Filter nulls and sort: pinned first, then by lastMessageAt desc
-    return conversations
+    const result = conversations
       .filter(Boolean)
       .sort((a, b) => {
         // Pinned conversations first
@@ -189,6 +204,12 @@ export const getMyConversations = query({
         // Then by last message time
         return (b!.lastMessageAt ?? b!.createdAt) - (a!.lastMessageAt ?? a!.createdAt);
       });
+    
+    console.log(`[getMyConversations] ===== RESULT: ${result.length} conversations for user in org ${args.organizationId} =====\n`);
+    result.forEach(conv => {
+      console.log(`  - ${conv.name || conv.type} (unread: ${conv.membership?.unreadCount ?? 0})`);
+    });
+    return result;
   },
 });
 
@@ -354,6 +375,15 @@ export const sendMessage = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
+    // Check if trying to send to System Announcements channel
+    const conversation = await ctx.db.get(args.conversationId);
+    if (conversation?.name === "System Announcements") {
+      const sender = await ctx.db.get(args.senderId);
+      if (!sender || sender.role !== "superadmin") {
+        throw new Error("Only superadmin can send messages to System Announcements channel");
+      }
+    }
+
     // Resolve reply preview
     let replyToContent: string | undefined;
     let replyToSenderName: string | undefined;
@@ -409,7 +439,16 @@ export const sendMessage = mutation({
     await Promise.all(
       members
         .filter((m) => m.userId !== args.senderId && !m.isMuted)
-        .map((m) => ctx.db.patch(m._id, { unreadCount: m.unreadCount + 1 }))
+        .map((m) => {
+          // Don't increment unreadCount if user just marked conversation as read in the last 500ms
+          // This handles the race condition where markAsRead completes but new message arrives immediately
+          const recentlyRead = m.lastReadAt && (now - m.lastReadAt) < 500;
+          if (recentlyRead) {
+            // User just read, so don't increment their unread count
+            return Promise.resolve();
+          }
+          return ctx.db.patch(m._id, { unreadCount: m.unreadCount + 1 });
+        })
     );
 
     // Send notification for mentions
@@ -451,7 +490,12 @@ export const getMessages = query({
         q.eq("conversationId", args.conversationId).eq("userId", args.userId)
       )
       .first();
-    if (!membership) return [];
+    if (!membership) {
+      console.warn(`[getMessages] User ${args.userId} is not a member of conversation ${args.conversationId}`);
+      return [];
+    }
+
+    console.log(`[getMessages] User ${args.userId} is member of conversation ${args.conversationId}, fetching up to ${limit} messages`);
 
     const messages = await ctx.db
       .query("chatMessages")
@@ -460,6 +504,8 @@ export const getMessages = query({
       )
       .order("desc")
       .take(limit);
+    
+    console.log(`[getMessages] Found ${messages.length} raw messages for conversation ${args.conversationId}`);
 
     // Enrich with sender info, filter out messages deleted for this user
     const enriched = await Promise.all(
@@ -469,6 +515,9 @@ export const getMessages = query({
         if (deletedForUsers.includes(args.userId)) return null;
 
         const sender = await ctx.db.get(msg.senderId);
+        if (!sender) {
+          console.warn(`[getMessages] Message ${msg._id} has no sender: ${msg.senderId}`);
+        }
         return {
           ...msg,
           readBy: (msg.readBy as Array<{ userId: Id<"users">; readAt: number }> | undefined) ?? [],
@@ -481,7 +530,9 @@ export const getMessages = query({
       })
     );
 
-    return enriched.filter(Boolean).reverse() as typeof enriched; // oldest first
+    const filtered = enriched.filter(Boolean).reverse() as typeof enriched;
+    console.log(`[getMessages] Returning ${filtered.length} enriched messages from conversation ${args.conversationId}`);
+    return filtered;
   },
 });
 
@@ -504,21 +555,83 @@ export const editMessage = mutation({
 });
 
 /** Delete a message for everyone (sender only, within 5 minutes) */
+/** Delete a message only for the requesting user (hide from their view). For senders, can also delete for everyone within 5 minutes */
 export const deleteMessage = mutation({
   args: {
     messageId: v.id("chatMessages"),
     userId: v.id("users"),
+    deleteForEveryone: v.optional(v.boolean()), // sender can do this within 5 mins, superadmin always
   },
   handler: async (ctx, args) => {
+    console.log(`[deleteMessage] Attempting to delete message ${args.messageId} by user ${args.userId}`);
+    
     const msg = await ctx.db.get(args.messageId);
-    if (!msg || msg.senderId !== args.userId) throw new Error("Not authorized");
-    const fiveMin = 5 * 60 * 1000;
-    if (Date.now() - msg.createdAt > fiveMin) throw new Error("Cannot delete after 5 minutes");
-    await ctx.db.patch(args.messageId, {
-      isDeleted: true,
-      deletedAt: Date.now(),
-      content: "This message was deleted",
-    });
+    if (!msg) {
+      console.error(`[deleteMessage] Message not found: ${args.messageId}`);
+      throw new Error("Message not found");
+    }
+
+    // Check if user is superadmin
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      console.error(`[deleteMessage] User not found: ${args.userId}`);
+      throw new Error("User not found");
+    }
+
+    const isSuperadmin = user.role === "superadmin";
+
+    console.log(`[deleteMessage] User: ${user.name} (${args.userId})`);
+    console.log(`[deleteMessage] User data: role=${user.role}, isSuperadmin=${isSuperadmin}`);
+    console.log(`[deleteMessage] Message: sender=${msg.senderId}, isServiceBroadcast=${msg.isServiceBroadcast}, deleteForEveryone=${args.deleteForEveryone}`);
+    console.log(`[deleteMessage] Computed: isSuperadmin=${isSuperadmin}`);
+
+    // If deleteForEveryone flag is set, sender can delete for everyone within 5 minutes (or superadmin anytime)
+    if (args.deleteForEveryone) {
+      console.log(`[deleteMessage] deleteForEveryone=true, checking permissions...`);
+      console.log(`[deleteMessage] isServiceBroadcast=${msg.isServiceBroadcast}, isSuperadmin=${isSuperadmin}`);
+      
+      // Superadmin can delete ANY message without time limit
+      if (isSuperadmin) {
+        console.log(`[deleteMessage] ✓ Superadmin detected - deleting message`);
+        await ctx.db.patch(args.messageId, {
+          isDeleted: true,
+          deletedAt: Date.now(),
+          content: "This message was deleted",
+        });
+        console.log(`[deleteMessage] ✓ Message deleted by superadmin successfully`);
+        return;
+      }
+
+      // Regular messages: only sender (within 5 minutes)
+      if (msg.senderId !== args.userId) {
+        console.error(`[deleteMessage] ✗ Not authorized - sender=${msg.senderId}, userId=${args.userId}`);
+        throw new Error("Not authorized");
+      }
+      
+      const fiveMin = 5 * 60 * 1000;
+      const timeSinceCreation = Date.now() - msg.createdAt;
+      if (timeSinceCreation > fiveMin) {
+        console.error(`[deleteMessage] ✗ Cannot delete - time since creation: ${timeSinceCreation}ms > ${fiveMin}ms`);
+        throw new Error("Cannot delete after 5 minutes");
+      }
+      
+      // Fully delete for everyone
+      console.log(`[deleteMessage] ✓ Deleting regular message`);
+      await ctx.db.patch(args.messageId, {
+        isDeleted: true,
+        deletedAt: Date.now(),
+        content: "This message was deleted",
+      });
+      console.log(`[deleteMessage] ✓ Regular message deleted successfully`);
+    } else {
+      // Delete only for current user
+      const existing: Id<"users">[] = (msg.deletedForUsers as Id<"users">[] | undefined) ?? [];
+      if (!existing.includes(args.userId)) {
+        await ctx.db.patch(args.messageId, {
+          deletedForUsers: [...existing, args.userId],
+        });
+      }
+    }
   },
 });
 
@@ -1466,5 +1579,110 @@ export const getOrgUsers = query({
         position: u.position,
         presenceStatus: u.presenceStatus,
       }));
+  },
+});
+
+// ─── SERVICE BROADCASTS ────────────────────────────────────────────────────────
+
+/** Send a service broadcast message from superadmin to all users in organization */
+export const sendServiceBroadcast = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    conversationId: v.id("chatConversations"),
+    senderId: v.id("users"),  // the superadmin user
+    title: v.string(),        // e.g. "System Maintenance"
+    content: v.string(),      // the announcement message
+    icon: v.optional(v.string()),  // emoji or icon, e.g. "⚠️", "ℹ️", "🔧"
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Create the service broadcast message
+    const msgId = await ctx.db.insert("chatMessages", {
+      conversationId: args.conversationId,
+      organizationId: args.organizationId,
+      senderId: args.senderId,
+      type: "system",
+      content: args.content,
+      isServiceBroadcast: true,
+      broadcastTitle: args.title,
+      broadcastIcon: args.icon || "ℹ️",
+      createdAt: now,
+    });
+
+    // Update conversation last message
+    const preview = args.content.length > 60 ? args.content.slice(0, 60) + "…" : args.content;
+    await ctx.db.patch(args.conversationId, {
+      lastMessageAt: now,
+      lastMessageText: `[${args.title}] ${preview}`,
+      lastMessageSenderId: args.senderId,
+      updatedAt: now,
+    });
+
+    // Add unread count for all members except sender
+    const members = await ctx.db
+      .query("chatMembers")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+      .collect();
+
+    for (const member of members) {
+      if (member.userId !== args.senderId) {
+        await ctx.db.patch(member._id, {
+          unreadCount: (member.unreadCount || 0) + 1,
+        });
+      }
+    }
+
+    return msgId;
+  },
+});
+/** Get all service broadcasts for an organization */
+export const getServiceBroadcasts = query({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    // Get System Announcements conversation
+    const systemAnnouncements = await ctx.db
+      .query("chatConversations")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("type"), "group"),
+          q.eq(q.field("name"), "System Announcements"),
+          q.eq(q.field("isDeleted"), false)
+        )
+      )
+      .first();
+
+    if (!systemAnnouncements) {
+      return [];
+    }
+
+    // Get all service broadcast messages
+    const broadcasts = await ctx.db
+      .query("chatMessages")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", systemAnnouncements._id))
+      .filter((q) => q.eq(q.field("isServiceBroadcast"), true))
+      .collect();
+
+    // Get sender info for each broadcast
+    const enriched = await Promise.all(
+      broadcasts.map(async (b) => {
+        const sender = await ctx.db.get(b.senderId);
+        return {
+          _id: b._id,
+          title: b.broadcastTitle || "Announcement",
+          icon: b.broadcastIcon || "ℹ️",
+          content: b.content,
+          createdAt: b.createdAt,
+          senderName: sender?.name || "Unknown",
+          senderEmail: sender?.email || "unknown",
+        };
+      })
+    );
+
+    // Sort by creation date descending (newest first)
+    return enriched.sort((a, b) => b.createdAt - a.createdAt);
   },
 });

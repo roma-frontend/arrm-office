@@ -17,7 +17,6 @@ import { useSelectedOrganization } from "@/hooks/useSelectedOrganization";
 import { AddEmployeeModal } from "./AddEmployeeModal";
 import { EditEmployeeModal } from "./EditEmployeeModal";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
-import { EmployeeHoverCard } from "./EmployeeHoverCard";
 import { toast } from "sonner";
 import { ShieldLoader } from "@/components/ui/ShieldLoader";
 import { useRouter } from "next/navigation";
@@ -71,11 +70,79 @@ export function EmployeesClient() {
 
   const isAdmin = user?.role === "admin";
   const isSupervisor = user?.role === "supervisor";
-  const canManage = isAdmin || isSupervisor;
+  const canManage = isAdmin || isSupervisor || isSuperadmin;
+
+  // Check if current user can delete a specific employee
+  const canDeleteEmployee = (emp: any) => {
+    if (!canManage) {
+      console.log(`[canDelete] ${emp.name}: false - not a manager`);
+      return false;
+    }
+    
+    // Cannot delete yourself
+    if (emp._id === user?.id) {
+      console.log(`[canDelete] ${emp.name}: false - cannot delete self`);
+      return false;
+    }
+    
+    // Superadmin (by role OR email) can delete anyone (except themselves)
+    const isSuperadminUser = isSuperadmin || user?.email?.toLowerCase() === "romangulanyan@gmail.com";
+    const isSuperadminEmployee = emp.role === "superadmin" || emp.email?.toLowerCase() === "romangulanyan@gmail.com";
+    
+    console.log(`[canDelete] ${emp.name}:`, {
+      userIsSuperadmin: isSuperadminUser,
+      empIsSuperadmin: isSuperadminEmployee,
+      empRole: emp.role,
+      empEmail: emp.email,
+    });
+    
+    if (isSuperadminUser) {
+      console.log(`[canDelete] ${emp.name}: true - you are superadmin`);
+      return true;
+    }
+    
+    // Non-superadmin cannot delete superadmin (by role OR email)
+    if (isSuperadminEmployee) {
+      console.log(`[canDelete] ${emp.name}: false - target is superadmin`);
+      return false;
+    }
+    
+    // Non-superadmin cannot delete other admins
+    if (emp.role === "admin") {
+      console.log(`[canDelete] ${emp.name}: false - target is admin`);
+      return false;
+    }
+    
+    // Admin/supervisor can delete employees and supervisors
+    console.log(`[canDelete] ${emp.name}: true - can delete employee/supervisor`);
+    return true;
+  };
+
+  // Check if current user can edit a specific employee
+  const canEditEmployee = (emp: any) => {
+    if (!canManage) return false;
+    
+    // Superadmin (by role OR email) can edit anyone
+    const isSuperadminUser = isSuperadmin || user?.email?.toLowerCase() === "romangulanyan@gmail.com";
+    if (isSuperadminUser) return true;
+    
+    // Non-superadmin cannot edit superadmin (by role OR email)
+    const isSuperadminEmployee = emp.role === "superadmin" || emp.email?.toLowerCase() === "romangulanyan@gmail.com";
+    if (isSuperadminEmployee) return false;
+    
+    // Admin cannot edit other admins
+    if (emp.role === "admin" && isAdmin) return false;
+    
+    return true;
+  };
 
   const filtered = useMemo(() => {
     if (!users) return [];
     return users.filter((u) => {
+      // Filter out superadmins
+      if (u.role === "superadmin" || u.email?.toLowerCase() === "romangulanyan@gmail.com") {
+        return false;
+      }
       const matchSearch =
         u.name.toLowerCase().includes(search.toLowerCase()) ||
         u.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -130,21 +197,46 @@ export function EmployeesClient() {
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>{t('common.employees')}</h1>
+          <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>👥 {t('common.employees')}</h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
             {stats.total} {t('employees.total')} · {stats.staff} {t('employeeTypes.staff')} · {stats.contractors} {t('employeeTypes.contractors')}
           </p>
         </div>
         {canManage && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all"
             style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)" }}
           >
-            <Plus className="w-4 h-4" /> {t('employees.addEmployee')}
-          </button>
+            <Plus className="w-5 h-5" /> {t('employees.addEmployee')}
+          </motion.button>
         )}
       </motion.div>
+
+      {/* Info Banner for Admins */}
+      {canManage && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.08 }}
+          className="p-4 rounded-xl border flex items-start gap-3"
+          style={{ background: "rgba(37,99,235,0.08)", borderColor: "rgba(37,99,235,0.2)" }}
+        >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-blue-500 bg-blue-500/10">
+            <Plus className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm" style={{ color: "#2563eb" }}>
+              💡 Управление сотрудниками
+            </h3>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+              Вы можете <strong>добавлять новых сотрудников</strong> кнопкой выше, <strong>редактировать</strong> параметры (имя, отдел, роль, должность) через кнопку ✏️ в каждой строке/карточке, и <strong>удалять</strong> через 🗑️. Все изменения сохраняются автоматически.
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Stats */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
@@ -283,21 +375,40 @@ export function EmployeesClient() {
                     const RoleIcon = roleConf.icon;
                     const presence = getPresenceBadge(emp.presenceStatus);
                     return (
-                      <EmployeeHoverCard key={emp._id} employee={emp}
-                        canEditStatus={isAdmin || emp._id === user?.id}
-                        currentUserId={user?.id} userRole={user?.role} allUsers={users ?? []}>
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.03 }}
-                          onClick={() => router.push(`/employees/${emp._id}`)}
-                          className="relative p-5 rounded-2xl border group cursor-pointer hover:shadow-lg transition-shadow"
-                          style={{ background: "var(--card)", borderColor: emp.isActive ? "var(--border)" : "rgba(239,68,68,0.2)", opacity: emp.isActive ? 1 : 0.6 }}
-                        >
-                          <div className="absolute top-4 right-4">{renderMenu(emp)}</div>
+                      <motion.div
+                        key={emp._id}
+                        initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.03 }}
+                        onClick={() => router.push(`/employees/${emp._id}`)}
+                        className="relative p-5 rounded-2xl border group cursor-pointer hover:shadow-lg transition-shadow"
+                        style={{ background: "var(--card)", borderColor: emp.isActive ? "var(--border)" : "rgba(239,68,68,0.2)", opacity: emp.isActive ? 1 : 0.6 }}
+                      >
+                          <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {canEditEmployee(emp) && (
+                              <>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setEditEmployee(emp as any); }}
+                                  className="p-2 rounded-lg bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition-colors"
+                                  title={t('common.edit')}
+                                >
+                                  <Edit2 className="w-5 h-5" />
+                                </button>
+                                {canDeleteEmployee(emp) && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(emp._id); }}
+                                    className="p-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-colors"
+                                    title={t('employees.deactivate')}
+                                  >
+                                    <Trash2 className="w-5 h-5" />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
                           <div className="flex items-start gap-3 mb-4">
                             <AvatarUpload userId={emp._id} currentUrl={emp.avatarUrl} name={emp.name} size="md" readonly={!canManage && emp._id !== user?.id} />
                             <div className="min-w-0 flex-1">
-                              <h3 className="font-semibold truncate" style={{ color: "var(--text-primary)" }}>{emp.name}</h3>
+                              <h3 className="font-semibold truncate cursor-pointer hover:text-blue-500 transition-colors" style={{ color: "var(--text-primary)" }}>{emp.name}</h3>
                               <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{emp.position ?? "No position"}</p>
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mt-1"
                                 style={{ background: roleConf.bg, color: roleConf.color }}>
@@ -321,7 +432,14 @@ export function EmployeesClient() {
                             )}
                           </div>
                           <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: typeConf.bg, color: typeConf.color }}>{t(typeConf.labelKey)}</span>
+                            <div className="flex gap-2">
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: typeConf.bg, color: typeConf.color }}>{t(typeConf.labelKey)}</span>
+                              {emp.supervisorId && (
+                                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-500">
+                                  {supervisors?.find(s => s._id === emp.supervisorId)?.name ?? "Supervisor"}
+                                </span>
+                              )}
+                            </div>
                             {isAdmin
                               ? <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{emp.travelAllowance.toLocaleString()} AMD</span>
                               : <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${presence.cls}`}>{t(presence.labelKey)}</span>
@@ -333,7 +451,6 @@ export function EmployeesClient() {
                             </div>
                           )}
                         </motion.div>
-                      </EmployeeHoverCard>
                     );
                   })}
                 </AnimatePresence>
@@ -356,8 +473,8 @@ export function EmployeesClient() {
                   <div className="col-span-2">{t('employeeInfo.department')}</div>
                   <div className="col-span-2">{t('roles.supervisor')}</div>
                   <div className="col-span-2">{t('dashboard.status')}</div>
-                  <div className="col-span-1">{t('dashboard.type')}</div>
-                  <div className="col-span-1"></div>
+                  <div className="col-span-1" style={{textAlign: "center"}}>{t('dashboard.type')}</div>
+                  <div className="col-span-1" style={{textAlign: "right"}}>🔧 Действия</div>
                 </div>
                 <AnimatePresence mode="popLayout">
                   {filtered.map((emp, i) => {
@@ -366,16 +483,14 @@ export function EmployeesClient() {
                     const RoleIcon = roleConf.icon;
                     const presence = getPresenceBadge(emp.presenceStatus);
                     return (
-                      <EmployeeHoverCard key={emp._id} employee={emp}
-                        canEditStatus={isAdmin || emp._id === user?.id}
-                        currentUserId={user?.id} userRole={user?.role} allUsers={users ?? []}>
-                        <motion.div
-                          initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }} transition={{ delay: i * 0.02 }}
-                          onClick={() => router.push(`/employees/${emp._id}`)}
-                          className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center group cursor-pointer border-t transition-colors hover:bg-[var(--background-subtle)]"
-                          style={{ borderColor: "var(--border)", opacity: emp.isActive ? 1 : 0.5 }}
-                        >
+                      <motion.div
+                        key={emp._id}
+                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }} transition={{ delay: i * 0.02 }}
+                        onClick={() => router.push(`/employees/${emp._id}`)}
+                        className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center group cursor-pointer border-t transition-colors hover:bg-[var(--background-subtle)]"
+                        style={{ borderColor: "var(--border)", opacity: emp.isActive ? 1 : 0.5 }}
+                      >
                           {/* Employee name + avatar */}
                           <div className="col-span-4 flex items-center gap-3 min-w-0">
                             <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-blue-500 to-sky-500 flex items-center justify-center text-white text-xs font-bold">
@@ -414,7 +529,7 @@ export function EmployeesClient() {
                           </div>
 
                           {/* Type */}
-                          <div className="col-span-1">
+                          <div className="col-span-1" style={{textAlign: "center"}}>
                             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                               style={{ background: typeConf.bg, color: typeConf.color }}>
                               {t(typeConf.labelKey)}
@@ -422,13 +537,36 @@ export function EmployeesClient() {
                           </div>
 
                           {/* Actions */}
-                          <div className="col-span-1 flex items-center justify-end gap-1">
-                            {canManage ? renderMenu(emp) : (
-                              <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-muted)" }} />
+                          <div className="col-span-1 flex items-center justify-end gap-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); router.push(`/employees/${emp._id}`); }}
+                              className="p-2 rounded-lg text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 transition-colors"
+                              title={t('common.view')}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            {canEditEmployee(emp) && (
+                              <>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setEditEmployee(emp as any); }}
+                                  className="p-2 rounded-lg text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+                                  title={t('common.edit')}
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                {canDeleteEmployee(emp) && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(emp._id); }}
+                                    className="p-2 rounded-lg text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                                    title={t('employees.deactivate')}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         </motion.div>
-                      </EmployeeHoverCard>
                     );
                   })}
                 </AnimatePresence>

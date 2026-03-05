@@ -82,8 +82,11 @@ export const createOAuthUser = mutation({
     avatarUrl: v.optional(v.string()),
   },
   handler: async (ctx, { email, name, avatarUrl }) => {
-    console.log("[createOAuthUser] Called with:", { email, name, avatarUrl });
+    console.log("[createOAuthUser] 🔐 Called with:", { email, name, avatarUrl });
     const emailLower = email.toLowerCase().trim();
+    
+    // Ensure name is never empty
+    const finalName = name?.trim() || emailLower.split('@')[0] || 'User';
 
     // Check if user already exists
     const existing = await ctx.db
@@ -91,10 +94,15 @@ export const createOAuthUser = mutation({
       .withIndex("by_email", (q) => q.eq("email", emailLower))
       .first();
 
-    console.log("[createOAuthUser] Existing user:", existing);
+    console.log("[createOAuthUser] 🔍 Existing user:", existing ? {
+      id: existing._id,
+      name: existing.name,
+      email: existing.email,
+      role: existing.role,
+    } : "NOT_FOUND");
 
     if (existing) {
-      console.log("[createOAuthUser] User exists, updating avatar and name if needed");
+      console.log("[createOAuthUser] ✅ User exists, updating avatar and name if needed");
       const updates: any = {};
 
       // Update avatar if provided
@@ -102,23 +110,42 @@ export const createOAuthUser = mutation({
         updates.avatarUrl = avatarUrl;
       }
 
-      // Also update name if it's different
-      if (name && name !== existing.name) {
-        console.log("[createOAuthUser] Updating name from", existing.name, "to", name);
-        updates.name = name;
+      // Always update name if:
+      // 1. It's different from existing name, OR
+      // 2. Existing name is "User" (placeholder/email prefix) but we have a better real name
+      const existingNameTrimmed = existing.name?.trim().toLowerCase();
+      const isPlaceholderName = existingNameTrimmed === "user" || !existing.name;
+      const isBetterName = finalName && finalName.toLowerCase() !== "user";
+      
+      const shouldUpdateName = finalName && (
+        finalName !== existing.name || 
+        (isPlaceholderName && isBetterName)
+      );
+      
+      if (shouldUpdateName) {
+        console.log("[createOAuthUser] 📝 Updating name from", existing.name, "to", finalName, {
+          existingNameTrimmed,
+          isPlaceholderName,
+          isBetterName,
+        });
+        updates.name = finalName;
       }
 
       // Apply updates if any
       if (Object.keys(updates).length > 0) {
         await ctx.db.patch(existing._id, updates);
-        console.log("[createOAuthUser] Updated user with:", updates);
+        console.log("[createOAuthUser] ✏️  Updated user with:", updates);
+      } else {
+        console.log("[createOAuthUser] ℹ️  No updates needed");
       }
 
+      console.log("[createOAuthUser] ✅ Returning existing user ID:", existing._id);
       return existing._id;
     }
 
     // For new OAuth users, check if they are superadmin
     const isSuperAdmin = emailLower === SUPERADMIN_EMAIL;
+    console.log("[createOAuthUser] 📋 isSuperAdmin:", isSuperAdmin, "email:", emailLower, "SUPERADMIN_EMAIL:", SUPERADMIN_EMAIL);
 
     // Get first organization or create error
     const allOrgs = await ctx.db.query("organizations").collect();
@@ -128,6 +155,7 @@ export const createOAuthUser = mutation({
     }
 
     const organizationId = allOrgs[0]._id;
+    console.log("[createOAuthUser] 🏢 organizationId:", organizationId);
 
     // Check if user is first member of the org (becomes admin)
     const orgMembers = await ctx.db
@@ -138,13 +166,15 @@ export const createOAuthUser = mutation({
     const isFirstMember = orgMembers.length === 0;
     const role = isSuperAdmin ? "superadmin" : (isFirstMember ? "admin" : "employee");
 
+    console.log("[createOAuthUser] 🎯 isFirstMember:", isFirstMember, "role:", role, "orgMembers:", orgMembers.length);
+
     // OAuth users are auto-approved (trusted authentication)
     const isApproved = true;
 
     // Create new OAuth user
-    console.log("[createOAuthUser] Creating new user with:", {
+    console.log("[createOAuthUser] 🔨 Creating new user with:", {
       organizationId,
-      name,
+      name: finalName,
       email: emailLower,
       role,
       isSuperAdmin,
@@ -153,7 +183,7 @@ export const createOAuthUser = mutation({
 
     const userId = await ctx.db.insert("users", {
       organizationId,
-      name,
+      name: finalName,
       email: emailLower,
       passwordHash: "", // OAuth users don't have password
       role,
@@ -170,6 +200,8 @@ export const createOAuthUser = mutation({
       createdAt: Date.now(),
       avatarUrl,
     });
+
+    console.log("[createOAuthUser] ✅ NEW USER CREATED with ID:", userId, "name:", finalName, "role:", role);
 
     console.log("[createOAuthUser] ✅ User created with ID:", userId);
     return userId;
@@ -261,10 +293,19 @@ export const createUser = mutation({
       .unique();
     if (existing) throw new Error("A user with this email already exists");
 
-    // Check employee limit for this org
-    // If organizationId is provided use it, otherwise use admin's org
-    const targetOrgId = organizationId || admin.organizationId;
-    if (!targetOrgId) throw new Error("Admin must belong to an organization");
+    // Determine target organization:
+    // - If superadmin, MUST pass organizationId explicitly
+    // - If regular admin, use their org or override with explicit organizationId
+    const isSuperadmin = admin.email.toLowerCase() === SUPERADMIN_EMAIL;
+    const targetOrgId = organizationId || (isSuperadmin ? null : admin.organizationId);
+    
+    if (!targetOrgId) {
+      throw new Error(
+        isSuperadmin 
+          ? "Superadmin must specify an organization when creating users"
+          : "Admin must belong to an organization"
+      );
+    }
 
     const org = await ctx.db.get(targetOrgId);
     if (!org) throw new Error("Organization not found");
@@ -283,6 +324,14 @@ export const createUser = mutation({
     }
 
     const travelAllowance = args.employeeType === "contractor" ? 12000 : 20000;
+
+    console.log("[createUser] 👥 Creating new employee:", {
+      email,
+      name: args.name,
+      department: args.department,
+      position: args.position,
+      role: args.role,
+    });
 
     const userId = await ctx.db.insert("users", {
       organizationId: targetOrgId, // ← use targetOrgId instead of admin's org
@@ -326,6 +375,13 @@ export const createUser = mutation({
         createdAt: Date.now(),
       });
     }
+
+    console.log("[createUser] ✅ Employee created successfully:", {
+      userId,
+      email,
+      name: args.name,
+      role: args.role,
+    });
 
     return userId;
   },
@@ -403,6 +459,16 @@ export const deleteUser = mutation({
       throw new Error("Access denied: cannot delete users from another organization");
     }
 
+    // Protect superadmin - only superadmin can deactivate superadmin
+    if (user.role === "superadmin" && admin.email.toLowerCase() !== SUPERADMIN_EMAIL) {
+      throw new Error("Only superadmin can deactivate superadmin account");
+    }
+
+    // Protect other admins - regular admin cannot delete other admins
+    if (user.role === "admin" && admin.role === "admin" && admin.email.toLowerCase() !== user.email.toLowerCase()) {
+      throw new Error("Only superadmin can deactivate admin accounts");
+    }
+
     if (user.role === "admin" && user.email.toLowerCase() === admin.email.toLowerCase()) {
       throw new Error("Cannot delete your own admin account");
     }
@@ -411,6 +477,7 @@ export const deleteUser = mutation({
     return userId;
   },
 });
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET SUPERVISORS — scoped to org

@@ -14,6 +14,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { I18nProvider } from "@/components/I18nProvider";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
+import { MaintenanceAutoLogout } from "@/components/MaintenanceAutoLogout";
 
 // Corporate & Professional - IBM PLEX SANS
 const ibmPlexSans = IBM_Plex_Sans({
@@ -275,6 +276,7 @@ export default function RootLayout({
             <I18nProvider>
               <ConvexClientProvider>
                 <AuthSyncProvider>
+                  <MaintenanceAutoLogout />
                   <ThemeProvider
                     attribute="class"
                     defaultTheme="system"

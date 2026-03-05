@@ -134,17 +134,26 @@ export const getTodayTasks = query({
 // GET TEAM PRESENCE (who's online)
 // ─────────────────────────────────────────────────────────────────────────────
 export const getTeamPresence = query({
-  args: { organizationId: v.optional(v.string()) },
-  handler: async (ctx, { organizationId }) => {
-    const users = await ctx.db.query("users").collect();
+  args: { requesterId: v.id("users") },
+  handler: async (ctx, { requesterId }) => {
+    const requester = await ctx.db.get(requesterId);
+    if (!requester) throw new Error("Requester not found");
+
+    const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
+    const isSuperadmin = requester.email.toLowerCase() === SUPERADMIN_EMAIL;
+
+    let users = await ctx.db.query("users").collect();
     
-    // Filter by organization if provided
-    const filteredUsers = organizationId 
-      ? users.filter(u => u.organizationId === organizationId)
-      : users;
+    // Filter by organization if not superadmin
+    if (!isSuperadmin) {
+      if (!requester.organizationId) {
+        throw new Error("User does not belong to an organization");
+      }
+      users = users.filter(u => u.organizationId === requester.organizationId);
+    }
 
     // Get only active users with presence status
-    const onlineUsers = filteredUsers
+    const onlineUsers = users
       .filter(u => u.isActive && u.presenceStatus)
       .map(u => ({
         _id: u._id,

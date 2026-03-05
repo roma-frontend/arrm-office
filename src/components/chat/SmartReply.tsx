@@ -47,20 +47,20 @@ export function SmartReply({ message, context, onSelect, lang = "en" }: Props) {
   };
 
   return (
-    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+    <div className="flex items-center gap-2 mt-2 flex-wrap">
       {!fetched && !loading && (
         <button
           onClick={fetchReplies}
-          className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all duration-200 hover:scale-105 hover:opacity-80"
+          className="flex items-center gap-1.5 sm:px-2 px-3 sm:py-0.5 py-1.5 rounded-full sm:text-[10px] text-xs font-medium border transition-all duration-200 hover:scale-105 hover:opacity-80 min-h-[36px] sm:min-h-auto"
           style={{ borderColor: "var(--primary)", color: "var(--primary)", background: "transparent" }}
         >
-          <Sparkles className="w-2.5 h-2.5" />
+          <Sparkles className="sm:w-2.5 w-3.5 sm:h-2.5 h-3.5" />
           Smart Reply
         </button>
       )}
       {loading && (
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]" style={{ color: "var(--text-muted)" }}>
-          <span className="w-2.5 h-2.5 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
+        <div className="flex items-center gap-1.5 sm:px-2 px-3 sm:py-0.5 py-1.5 rounded-full sm:text-[10px] text-xs min-h-[36px] sm:min-h-auto" style={{ color: "var(--text-muted)" }}>
+          <span className="sm:w-2.5 w-3.5 sm:h-2.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
           Thinking…
         </div>
       )}
@@ -68,7 +68,7 @@ export function SmartReply({ message, context, onSelect, lang = "en" }: Props) {
         <button
           key={i}
           onClick={() => onSelect(r)}
-          className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-all duration-200 hover:scale-105 animate-fade-in"
+          className="sm:px-2.5 px-3 sm:py-0.5 py-1.5 rounded-full sm:text-[11px] text-xs font-medium border transition-all duration-200 hover:scale-105 animate-fade-in min-h-[36px] sm:min-h-auto"
           style={{
             borderColor: "var(--border)",
             color: "var(--text-primary)",

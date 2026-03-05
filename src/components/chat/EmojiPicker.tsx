@@ -34,13 +34,13 @@ export default function EmojiPicker({ onSelect, onClose }: Props) {
   return (
     <div
       ref={ref}
-      className="absolute bottom-full right-0 mb-2 w-72 rounded-2xl shadow-2xl border overflow-hidden z-50"
+      className="absolute bottom-full right-0 mb-2 sm:w-72 w-80 rounded-2xl shadow-2xl border overflow-hidden z-50"
       style={{ background: "var(--background)", borderColor: "var(--border)" }}
     >
       <div className="max-h-64 overflow-y-auto p-2">
         {EMOJI_GROUPS.map((group) => (
           <div key={group.label} className="mb-2">
-            <p className="text-[10px] font-semibold px-1 mb-1" style={{ color: "var(--text-disabled)" }}>
+            <p className="sm:text-[10px] text-xs font-semibold px-1 mb-1" style={{ color: "var(--text-disabled)" }}>
               {group.label}
             </p>
             <div className="flex flex-wrap gap-0.5">
@@ -48,7 +48,7 @@ export default function EmojiPicker({ onSelect, onClose }: Props) {
                 <button
                   key={emoji}
                   onClick={() => onSelect(emoji)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-base hover:scale-125 transition-transform hover:bg-white/10"
+                  className="sm:w-7 w-8 sm:h-7 h-8 flex items-center justify-center rounded-lg text-base hover:scale-125 transition-transform hover:bg-white/10"
                 >
                   {emoji}
                 </button>

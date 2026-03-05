@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     const [allLeaves, allUsers, attendanceSummary] = await Promise.all([
       convex.query(api.leaves.getAllLeaves, { requesterId: adminId as any }),
       convex.query(api.users.getAllUsers, { requesterId: adminId as any }),
-      convex.query(api.timeTracking.getTodayAttendanceSummary, {}),
+      convex.query(api.timeTracking.getTodayAttendanceSummary, { adminId: adminId as any }),
     ]);
 
     const activeEmployees = allUsers.filter((u: any) => u.isActive && u.role === 'employee');

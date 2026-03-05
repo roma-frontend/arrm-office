@@ -273,10 +273,25 @@ export const getEmployeesNeedingRating = query({
     supervisorId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    const supervisor = await ctx.db.get(args.supervisorId);
+    if (!supervisor) throw new Error("Supervisor not found");
+
+    const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
+    const isSuperadmin = supervisor.email.toLowerCase() === SUPERADMIN_EMAIL;
+
     const currentPeriod = new Date().toISOString().slice(0, 7);
 
     // Get all active employees
-    const allUsers = await ctx.db.query("users").collect();
+    let allUsers = await ctx.db.query("users").collect();
+    
+    // Filter by organization if not superadmin
+    if (!isSuperadmin) {
+      if (!supervisor.organizationId) {
+        throw new Error("User does not belong to an organization");
+      }
+      allUsers = allUsers.filter(u => u.organizationId === supervisor.organizationId);
+    }
+    
     const activeEmployees = allUsers.filter((u) => u.isActive && u.role !== "admin");
 
     // Check which ones don't have a rating this month

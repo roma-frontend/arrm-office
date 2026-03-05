@@ -34,7 +34,7 @@ import { PlanGate } from "@/components/subscription/PlanGate";
 export default function AnalyticsPage() {
   
   const { t } = useTranslation();
-const { user } = useAuthStore();
+  const { user } = useAuthStore();
   const selectedOrgId = useSelectedOrganization();
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => { setMounted(true); }, []);
@@ -44,15 +44,18 @@ const { user } = useAuthStore();
     redirect("/dashboard");
   }
 
-  // Determine which query to use based on selectedOrgId
-  const shouldUseOrgQuery = mounted && selectedOrgId && user?.id;
+  // Determine organizationId to query
+  // - For admin: ALWAYS use their organizationId (not selectedOrgId)
+  // - For superadmin: use selectedOrgId if available, otherwise no filter
+  const orgIdToQuery = 
+    user?.role === "admin"
+      ? user?.organizationId
+      : selectedOrgId;
   
   const analytics = useQuery(
     api.analytics.getAnalyticsOverview,
     mounted && user?.id
-      ? shouldUseOrgQuery
-        ? { organizationId: selectedOrgId as Id<"organizations"> }
-        : {}
+      ? { organizationId: orgIdToQuery as Id<"organizations"> | undefined }
       : "skip"
   );
 

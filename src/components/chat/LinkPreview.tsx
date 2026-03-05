@@ -61,20 +61,20 @@ export function LinkPreview({ url, isOwn }: Props) {
         style={{ background: isOwn ? "rgba(255,255,255,0.1)" : "var(--background-subtle)" }}
       >
         {preview?.siteName && (
-          <p className="text-[9px] font-medium uppercase tracking-wide mb-0.5 flex items-center gap-1"
+          <p className="sm:text-[9px] text-[10px] font-medium uppercase tracking-wide mb-0.5 flex items-center gap-1"
             style={{ color: isOwn ? "rgba(255,255,255,0.6)" : "var(--text-disabled)" }}>
-            <ExternalLink className="w-2.5 h-2.5" />
+            <ExternalLink className="sm:w-2.5 sm:h-2.5 w-3 h-3" />
             {preview.siteName}
           </p>
         )}
         {preview?.title && (
-          <p className="text-xs font-semibold line-clamp-2"
+          <p className="sm:text-xs text-sm font-semibold line-clamp-2"
             style={{ color: isOwn ? "white" : "var(--text-primary)" }}>
             {preview.title}
           </p>
         )}
         {preview?.description && (
-          <p className="text-[10px] mt-0.5 line-clamp-2 opacity-70"
+          <p className="sm:text-[10px] text-xs mt-0.5 line-clamp-2 opacity-70"
             style={{ color: isOwn ? "white" : "var(--text-muted)" }}>
             {preview.description}
           </p>

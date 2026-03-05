@@ -199,6 +199,47 @@ export const assignOrgAdmin = mutation({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Get organization info by ID with access control
+// Superadmin can view any org, admin can only view their own
+// ─────────────────────────────────────────────────────────────────────────────
+export const getOrganizationById = query({
+  args: {
+    callerUserId: v.id("users"),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, { callerUserId, organizationId }) => {
+    const caller = await ctx.db.get(callerUserId);
+    if (!caller) {
+      throw new Error("User not found");
+    }
+
+    const org = await ctx.db.get(organizationId);
+    if (!org) {
+      throw new Error("Organization not found");
+    }
+
+    // Check access
+    const isSuperadmin = caller.email.toLowerCase() === SUPERADMIN_EMAIL;
+    const isOwnOrg = caller.organizationId === organizationId && caller.role === "admin";
+
+    if (!isSuperadmin && !isOwnOrg) {
+      throw new Error("You don't have access to this organization");
+    }
+
+    // Get employee count
+    const members = await ctx.db
+      .query("users")
+      .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    return {
+      ...org,
+      employeeCount: members.length,
+    };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SUPERADMIN: Get all members of a specific organization
 // ─────────────────────────────────────────────────────────────────────────────
 export const getOrgMembers = query({
@@ -220,7 +261,12 @@ export const getOrgMembers = query({
       .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
       .collect();
 
-    return members.map((m) => ({
+    // Filter out superadmins (should never be in org, but just in case)
+    const filteredMembers = members.filter(
+      (m) => m.role !== "superadmin" && m.email.toLowerCase() !== SUPERADMIN_EMAIL
+    );
+
+    return filteredMembers.map((m) => ({
       _id: m._id,
       name: m.name,
       email: m.email,
@@ -374,6 +420,8 @@ export const requestToJoinOrganization = mutation({
       createdAt: Date.now(),
     });
 
+    console.log(`[requestToJoinOrganization] Created invite for org=${args.organizationId}, email=${args.requestedByEmail}`);
+
     // Notify all org admins
     const admins = await ctx.db
       .query("users")
@@ -413,28 +461,49 @@ export const getJoinRequests = query({
       throw new Error("Only org admins can view join requests");
     }
 
-    if (!admin.organizationId) {
-      throw new Error("Admin must belong to an organization");
+    const isSuperadmin = admin.email.toLowerCase() === SUPERADMIN_EMAIL;
+
+    // For admin: must have organizationId
+    // For superadmin: can view all if no organizationId is set
+    if (!admin.organizationId && admin.role === "admin") {
+      console.log(`[getJoinRequests] Admin ${admin.email} has no organizationId assigned`);
+      return [];
     }
 
-    const orgId = admin.organizationId; // Already checked for null above
+    const orgId = admin.organizationId;
+
+    console.log(`[getJoinRequests] ${isSuperadmin ? "Superadmin" : "Admin"} ${admin.email} querying org=${orgId}, status=${status}`);
 
     let invites;
 
-    if (status) {
-      invites = await ctx.db
-        .query("organizationInvites")
-        .withIndex("by_org_status", (q) => q.eq("organizationId", orgId).eq("status", status))
-        .order("desc")
-        .collect();
+    if (!orgId) {
+      // Superadmin without org - return all invites
+      if (status) {
+        invites = await ctx.db
+          .query("organizationInvites")
+          .withIndex("by_status", (q) => q.eq("status", status))
+          .collect();
+      } else {
+        invites = await ctx.db.query("organizationInvites").collect();
+      }
     } else {
-      invites = await ctx.db
-        .query("organizationInvites")
-        .withIndex("by_org", (q) => q.eq("organizationId", orgId))
-        .order("desc")
-        .collect();
+      // Admin or superadmin with org - return org-specific invites
+      if (status) {
+        invites = await ctx.db
+          .query("organizationInvites")
+          .withIndex("by_org_status", (q) => q.eq("organizationId", orgId).eq("status", status))
+          .order("desc")
+          .collect();
+      } else {
+        invites = await ctx.db
+          .query("organizationInvites")
+          .withIndex("by_org", (q) => q.eq("organizationId", orgId))
+          .order("desc")
+          .collect();
+      }
     }
 
+    console.log(`[getJoinRequests] Retrieved ${invites.length} invites`, invites.map(inv => ({ email: inv.requestedByEmail, status: inv.status, org: inv.organizationId })));
     return invites;
   },
 });
@@ -666,10 +735,14 @@ export const getPendingJoinRequestCount = query({
   args: { adminId: v.id("users") },
   handler: async (ctx, { adminId }) => {
     const admin = await ctx.db.get(adminId);
-    if (!admin || admin.role !== "admin") return 0;
-    if (!admin.organizationId) return 0;
+    if (!admin || (admin.role !== "admin" && admin.email.toLowerCase() !== SUPERADMIN_EMAIL)) {
+      return 0;
+    }
+    if (!admin.organizationId) {
+      return 0;
+    }
 
-    const orgId = admin.organizationId; // Already checked for null above
+    const orgId = admin.organizationId;
 
     const pending = await ctx.db
       .query("organizationInvites")
@@ -679,5 +752,40 @@ export const getPendingJoinRequestCount = query({
       .collect();
 
     return pending.length;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPERADMIN: Remove a member from organization (deactivate them)
+// Does NOT delete the user — just removes them from the org
+// ─────────────────────────────────────────────────────────────────────────────
+export const removeMemberFromOrganization = mutation({
+  args: {
+    superadminUserId: v.id("users"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { superadminUserId, userId }) => {
+    const caller = await ctx.db.get(superadminUserId);
+    if (!caller || caller.email.toLowerCase() !== SUPERADMIN_EMAIL) {
+      throw new Error("Only the superadmin can remove members from organizations");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("User not found");
+
+    // Protection: cannot remove superadmin themselves
+    if (user.email.toLowerCase() === SUPERADMIN_EMAIL || user.role === "superadmin") {
+      throw new Error("Cannot remove the superadmin from any organization");
+    }
+
+    // Remove from organization: set organizationId to null and deactivate
+    await ctx.db.patch(userId, {
+      organizationId: null,
+      isActive: false,
+    });
+
+    console.log(`[removeMemberFromOrganization] ✅ Removed ${user.email} from organization`);
+
+    return userId;
   },
 });

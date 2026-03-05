@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { getSessionAction } from "@/actions/auth";
 import { usePathname } from "next/navigation";
 
 const Sidebar = dynamic(
@@ -38,7 +37,7 @@ const FocusModeIndicator = dynamic(
 );
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const { setUser, user } = useAuthStore();
+  const { user } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const isChatPage = pathname?.startsWith("/chat");
@@ -46,31 +45,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Rehydrate persisted stores from localStorage on client only
     // This prevents SSR/client mismatch (hydration errors) from localStorage state
+    
+    // IMPORTANT: Only rehydrate sidebar - DO NOT rehydrate auth store
+    // This prevents race condition where rehydrate() loads old/empty localStorage data
+    // after useAuthSync has already populated the store with fresh session data
     useSidebarStore.persist.rehydrate();
-    useAuthStore.persist.rehydrate();
+    
+    // DO NOT rehydrate useAuthStore here during active NextAuth sessions
+    // useAuthSync handles session hydration and will populate the store
+    // Rehydrating here can overwrite fresh session data with stale localStorage data
+    // causing the "User logs in correctly, then becomes User" bug
+    
     setMounted(true);
-
-    async function loadSession() {
-      try {
-        const session = await getSessionAction();
-        if (session?.userId) {
-          setUser({
-            id: session.userId,
-            name: session.name,
-            email: session.email,
-            role: session.role as "superadmin" | "admin" | "supervisor" | "employee",
-            organizationId: session.organizationId,
-            department: session.department,
-            position: session.position,
-            employeeType: session.employeeType as "staff" | "contractor",
-            avatar: session.avatar,
-          });
-        }
-      } catch {
-        // Session load failed silently
-      }
-    }
-    loadSession();
+    // Note: DO NOT call getSessionAction here - useAuthSync handles OAuth flow
+    // The server session is created by useAuthSync when needed
   }, []);
 
   // transition-colors removed from wrapper div — causes full-tree repaint on theme change

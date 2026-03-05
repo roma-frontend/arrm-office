@@ -11,6 +11,7 @@ export function useAuthSync() {
   const { login, logout, isAuthenticated } = useAuthStore();
   const createOAuthUser = useMutation(api.users.createOAuthUser);
   const sessionCreated = useRef(false);
+  const lastSyncedUserRef = useRef<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   
   // Get current user by email
@@ -22,130 +23,197 @@ export function useAuthSync() {
   useEffect(() => {
     const syncAuth = async () => {
       console.log("[useAuthSync] Status:", status, "Session:", session?.user?.email);
+      console.log("[useAuthSync] Session user name:", session?.user?.name);
+      console.log("[useAuthSync] userEmail state:", userEmail);
       
       if (status === "loading") {
         console.log("[useAuthSync] Still loading...");
         return;
       }
 
-      // If logged out via NextAuth, logout from useAuthStore
-      // BUT: Only logout if user is not authenticated via email/password (useAuthStore)
-      if (status === "unauthenticated" && isAuthenticated) {
-        console.log("[useAuthSync] NextAuth unauthenticated but useAuthStore is authenticated - keeping logged in");
-        console.log("[useAuthSync] isAuthenticated:", isAuthenticated);
-        return;
-      }
-      
-      if (status === "unauthenticated" && !isAuthenticated) {
-        console.log("[useAuthSync] Unauthenticated - logging out");
-        console.log("[useAuthSync] Calling logout and redirecting...");
+      // When NextAuth logs user out, clear everything
+      if (status === "unauthenticated") {
+        console.log("[useAuthSync] NextAuth unauthenticated - logging out and clearing everything");
         logout();
         setUserEmail(null);
-        // NOTE: This might cause redirect
+        sessionCreated.current = false; // Reset so it can initialize again on next login
         return;
       }
 
       // If authenticated via NextAuth
       if (status === "authenticated" && session?.user) {
         console.log("[useAuthSync] Authenticated! User:", session.user.email);
-        console.log("[useAuthSync] Session user data:", {
-          name: session.user.name,
+        console.log("[useAuthSync] Session user full details:", {
           email: session.user.email,
+          name: session.user.name,
           image: session.user.image,
+          id: session.user.id,
         });
         
-        try {
-          // Create/update user in Convex
-          console.log("[useAuthSync] Creating/updating user in Convex...");
-          const userData = {
-            email: session.user.email!,
-            name: session.user.name || session.user.email!.split("@")[0],
-            avatarUrl: session.user.image || undefined,
-          };
-          console.log("[useAuthSync] Sending to Convex:", userData);
-          
-          const result = await createOAuthUser(userData);
-
-          console.log("[useAuthSync] User created/updated in Convex, result:", result);
-
-          // Enable fetching the current user by email
-          setUserEmail(session.user.email!);
-          console.log("[useAuthSync] ✅ Now fetching current user from Convex with email:", session.user.email);
-        } catch (error) {
-          console.error("[useAuthSync] ❌ Error syncing OAuth user:", error);
+        // Only sync if user email changed (prevent excess mutations)
+        if (userEmail !== session.user.email) {
+          console.log("[useAuthSync] Email changed, syncing to Convex...");
+          try {
+            // Ensure name is never empty
+            const finalName = session.user.name?.trim() || session.user.email!.split("@")[0] || 'User';
+            console.log("[useAuthSync] Name extraction:", {
+              sessionName: session.user.name,
+              sessionNameTrimmed: session.user.name?.trim(),
+              emailPrefix: session.user.email!.split("@")[0],
+              finalName,
+            });
+            const userData = {
+              email: session.user.email!,
+              name: finalName,
+              avatarUrl: session.user.image || undefined,
+            };
+            
+            const result = await createOAuthUser(userData);
+            console.log("[useAuthSync] User synced to Convex with name:", finalName);
+            setUserEmail(session.user.email!);
+          } catch (error) {
+            console.error("[useAuthSync] Error syncing OAuth user:", error);
+          }
         }
       }
     };
 
     syncAuth();
-  }, [status, session, createOAuthUser, logout]);
+  }, [status, session?.user?.email, userEmail, createOAuthUser]);
 
   // Separate effect to handle user data once it's loaded
   useEffect(() => {
-    console.log("[useAuthSync] Effect triggered - currentUser:", currentUser, "session:", session?.user?.email);
+    console.log("[useAuthSync] Effect 2 triggered");
+    console.log("[useAuthSync]   currentUser:", currentUser ? { id: currentUser._id, name: currentUser.name, email: currentUser.email, role: currentUser.role } : null);
+    console.log("[useAuthSync]   session.user:", session?.user ? { name: session.user.name, email: session.user.email, role: (session.user as any).role } : null);
     
-    if (!currentUser || !session?.user) {
-      console.log("[useAuthSync] Waiting for currentUser or session...");
+    if (!session?.user?.email) {
+      console.log("[useAuthSync] ❌ No session.user - skipping sync");
       return;
     }
 
-    console.log("[useAuthSync] ✅ Current user from Convex:", currentUser);
-    console.log("[useAuthSync] Syncing to useAuthStore...");
+    // Prevent syncing the same user multiple times (race condition safeguard)
+    if (lastSyncedUserRef.current === session.user.email) {
+      console.log("[useAuthSync] ℹ️  Already synced", session.user.email, "- skipping to prevent race condition");
+      return;
+    }
+
+    // If we have currentUser from Convex, use it (has full profile)
+    if (currentUser) {
+      console.log("[useAuthSync] ✅ Current user from Convex:", {
+        id: currentUser._id,
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        department: currentUser.department,
+        position: currentUser.position,
+      });
+      
+      // If user name is "User" but we have better name from session, use that
+      let finalName = currentUser.name;
+      if (currentUser.name === "User" || !currentUser.name) {
+        const sessionName = session.user.name?.trim();
+        if (sessionName && sessionName !== "User") {
+          console.log("[useAuthSync] 📝 Upgrading name from DB", currentUser.name, "to session name:", sessionName);
+          finalName = sessionName;
+        }
+      }
+      
+      console.log("[useAuthSync] 📤 Syncing to useAuthStore from Convex...");
+      
+      // Sync to useAuthStore
+      const { login } = useAuthStore.getState();
+      login({
+        id: currentUser._id,
+        name: finalName,
+        email: currentUser.email,
+        role: currentUser.role,
+        avatar: currentUser.avatarUrl,
+        department: currentUser.department,
+        position: currentUser.position,
+        employeeType: currentUser.employeeType,
+        organizationId: currentUser.organizationId,
+      });
+      
+      console.log("[useAuthSync] ✅ User logged into useAuthStore:", {
+        id: currentUser._id,
+        name: finalName,
+        email: currentUser.email,
+        role: currentUser.role,
+      });
+      
+      // Mark as synced to prevent race condition re-syncs
+      lastSyncedUserRef.current = currentUser.email;
+    } else if (session.user.email) {
+      // Fallback: if Convex query hasn't returned yet, sync using NextAuth session data
+      console.log("[useAuthSync] ⏳ Convex query pending, using NextAuth session data as fallback...");
+      console.log("[useAuthSync]   session.user.name:", session.user.name);
+      const { login } = useAuthStore.getState();
+      
+      // Ensure name is properly extracted - session.user.name should already be set by NextAuth
+      const syncName = session.user.name?.trim() || session.user.email!.split("@")[0] || "User";
+      
+      console.log("[useAuthSync] Using final name for sync:", {
+        originalSessionName: session.user.name,
+        finalName: syncName,
+      });
+      
+      // Map NextAuth session to our User type
+      login({
+        id: session.user.id || `nextauth-${Date.now()}`,
+        name: syncName,
+        email: session.user.email!,
+        role: ((session.user as any).role as any) || 'employee',
+        avatar: session.user.image,
+        organizationId: ((session.user as any).organizationId as string | undefined),
+        department: ((session.user as any).department as string | undefined),
+        position: ((session.user as any).position as string | undefined),
+        employeeType: ((session.user as any).employeeType as any),
+      });
+      
+      console.log("[useAuthSync] ⚠️  User logged into useAuthStore from NextAuth fallback:", {
+        id: session.user.id,
+        name: syncName,
+        email: session.user.email,
+        role: (session.user as any).role,
+      });
+      
+      // Mark as synced to prevent race condition re-syncs
+      lastSyncedUserRef.current = session.user.email;
+    }
     
-    // Sync to useAuthStore
-    login({
-      id: currentUser._id,
-      name: currentUser.name,
-      email: currentUser.email,
-      role: currentUser.role,
-      avatar: currentUser.avatarUrl,
-      department: currentUser.department,
-      position: currentUser.position,
-      employeeType: currentUser.employeeType,
-      organizationId: currentUser.organizationId,
-    });
-    
-    console.log("[useAuthSync] ✅ User logged into useAuthStore with name:", currentUser.name);
-    
-    // Create server-side session cookie for dashboard auth (only once)
-    if (!sessionCreated.current && !isAuthenticated) {
+    // Create server-side session cookie for dashboard auth (only once per user)
+    if (!sessionCreated.current) {
       sessionCreated.current = true;
       
       const createSession = async () => {
         try {
-          const response = await fetch('/api/auth/create-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: currentUser._id,
-              name: currentUser.name,
-              email: currentUser.email,
-              role: currentUser.role,
-              department: currentUser.department,
-              position: currentUser.position,
-              employeeType: currentUser.employeeType,
-              avatar: currentUser.avatarUrl,
-            }),
-          });
+          // Check if we're in maintenance mode
+          const params = new URLSearchParams(window.location.search);
+          const isMaintenance = params.get('maintenance') === 'true';
           
-          if (response.ok) {
-            console.log("[useAuthSync] ✅ Server session created!");
-            // Wait a moment to ensure everything is synced
-            await new Promise(resolve => setTimeout(resolve, 500));
-            // Redirect to dashboard only if not already there
-            if (window.location.pathname !== '/dashboard') {
-              window.location.href = '/dashboard';
-            }
+          // Skip redirect if in maintenance mode or already on dashboard/login
+          if (isMaintenance) {
+            console.log("[useAuthSync] Maintenance mode detected - not redirecting");
+            return;
+          }
+          
+          // Only redirect if we're not already in the right place
+          const path = window.location.pathname;
+          if (path !== '/dashboard' && path !== '/login' && !path.startsWith('/chat')) {
+            console.log("[useAuthSync] Redirecting from", path, "to dashboard");
+            window.location.href = '/dashboard';
           }
         } catch (error) {
-          console.error("[useAuthSync] Failed to create server session:", error);
+          console.error("[useAuthSync] Session creation error:", error);
           sessionCreated.current = false; // Allow retry on error
         }
       };
       
-      createSession();
+      // Wait for state to update before redirecting
+      setTimeout(createSession, 0);
     }
-  }, [currentUser, session, login, isAuthenticated]);
+  }, [currentUser]);
 
   return { session, status, currentUser };
 }

@@ -64,9 +64,23 @@ export const getAnalyticsOverview = query({
 
 // ── Get department statistics ──────────────────────────────────────────────
 export const getDepartmentStats = query({
-  args: {},
-  handler: async (ctx) => {
-    const users = await ctx.db.query("users").collect();
+  args: { requesterId: v.id("users") },
+  handler: async (ctx, { requesterId }) => {
+    const requester = await ctx.db.get(requesterId);
+    if (!requester) throw new Error("Requester not found");
+
+    const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
+    const isSuperadmin = requester.email.toLowerCase() === SUPERADMIN_EMAIL;
+
+    let users = await ctx.db.query("users").collect();
+    
+    // Filter by organization if not superadmin
+    if (!isSuperadmin) {
+      if (!requester.organizationId) {
+        throw new Error("User does not belong to an organization");
+      }
+      users = users.filter(u => u.organizationId === requester.organizationId);
+    }
     
     const stats = users.reduce((acc, user) => {
       const dept = user.department || "Unassigned";
@@ -102,9 +116,23 @@ export const getDepartmentStats = query({
 
 // ── Get leave trends (last 6 months) ───────────────────────────────────────
 export const getLeaveTrends = query({
-  args: {},
-  handler: async (ctx) => {
-    const leaves = await ctx.db.query("leaveRequests").collect();
+  args: { requesterId: v.id("users") },
+  handler: async (ctx, { requesterId }) => {
+    const requester = await ctx.db.get(requesterId);
+    if (!requester) throw new Error("Requester not found");
+
+    const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
+    const isSuperadmin = requester.email.toLowerCase() === SUPERADMIN_EMAIL;
+
+    let leaves = await ctx.db.query("leaveRequests").collect();
+    
+    // Filter by organization if not superadmin
+    if (!isSuperadmin) {
+      if (!requester.organizationId) {
+        throw new Error("User does not belong to an organization");
+      }
+      leaves = leaves.filter(l => l.organizationId === requester.organizationId);
+    }
     
     const now = Date.now();
     const sixMonthsAgo = now - (6 * 30 * 24 * 60 * 60 * 1000);
@@ -157,12 +185,26 @@ export const getUserAnalytics = query({
 
 // ── Get team calendar (who's on leave) ────────────────────────────────────
 export const getTeamCalendar = query({
-  args: {},
-  handler: async (ctx) => {
-    const leaves = await ctx.db
+  args: { requesterId: v.id("users") },
+  handler: async (ctx, { requesterId }) => {
+    const requester = await ctx.db.get(requesterId);
+    if (!requester) throw new Error("Requester not found");
+
+    const SUPERADMIN_EMAIL = "romangulanyan@gmail.com";
+    const isSuperadmin = requester.email.toLowerCase() === SUPERADMIN_EMAIL;
+
+    let leaves = await ctx.db
       .query("leaveRequests")
       .filter(q => q.eq(q.field("status"), "approved"))
       .collect();
+
+    // Filter by organization if not superadmin
+    if (!isSuperadmin) {
+      if (!requester.organizationId) {
+        throw new Error("User does not belong to an organization");
+      }
+      leaves = leaves.filter(l => l.organizationId === requester.organizationId);
+    }
 
     const now = Date.now();
     const thirtyDaysFromNow = now + (30 * 24 * 60 * 60 * 1000);

@@ -22,7 +22,7 @@ export function TeamPresence() {
   const { user } = useAuthStore();
   const teamMembers = useQuery(
     api.productivity.getTeamPresence,
-    user?.organizationId ? { organizationId: user.organizationId } : "skip"
+    user?.id ? { requesterId: user.id } : "skip"
   );
 
   if (!teamMembers) {

@@ -207,10 +207,16 @@ export const getUserHistory = query({
 
 // ── Get All Employees Currently At Work ──────────────────────────────────
 export const getCurrentlyAtWork = query({
-  args: {},
-  handler: async (ctx) => {
-    const today = getTodayDate();
+  args: {
+    adminId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin || (admin.role !== "admin" && admin.role !== "supervisor" && admin.email?.toLowerCase() !== "romangulanyan@gmail.com")) {
+      throw new Error("Only admins/supervisors can view attendance");
+    }
 
+    const today = getTodayDate();
     const records = await ctx.db
       .query("timeTracking")
       .withIndex("by_date", (q) => q.eq("date", today))
@@ -218,18 +224,27 @@ export const getCurrentlyAtWork = query({
 
     const atWork = records.filter((r) => r.status === "checked_in");
 
+    // Filter by organization if admin (not superadmin)
+    const isSuperadmin = admin.email?.toLowerCase() === "romangulanyan@gmail.com";
+    const orgToFilter = isSuperadmin ? null : admin.organizationId;
+
     const withUsers = await Promise.all(
       atWork.map(async (record) => {
         const user = await ctx.db.get(record.userId);
-        const userWithAvatar = user ? {
+        if (!user) return null;
+        
+        // Skip if org doesn't match
+        if (orgToFilter && user.organizationId !== orgToFilter) return null;
+
+        const userWithAvatar = {
           ...user,
           avatarUrl: user.avatarUrl ?? user.faceImageUrl,
-        } : user;
+        };
         return { ...record, user: userWithAvatar };
       })
     );
 
-    return withUsers;
+    return withUsers.filter(Boolean);
   },
 });
 
@@ -249,28 +264,44 @@ export const getRecentAttendance = query({
 
 // ── Get Today's Full Attendance (all who checked in/out) ─────────────────
 export const getTodayAllAttendance = query({
-  args: {},
-  handler: async (ctx) => {
-    const today = getTodayDate();
+  args: {
+    adminId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin || (admin.role !== "admin" && admin.role !== "supervisor" && admin.email?.toLowerCase() !== "romangulanyan@gmail.com")) {
+      throw new Error("Only admins/supervisors can view attendance");
+    }
 
+    const today = getTodayDate();
     const records = await ctx.db
       .query("timeTracking")
       .withIndex("by_date", (q) => q.eq("date", today))
       .collect();
 
+    // Filter by organization if admin (not superadmin)
+    const isSuperadmin = admin.email?.toLowerCase() === "romangulanyan@gmail.com";
+    const orgToFilter = isSuperadmin ? null : admin.organizationId;
+
     const withUsers = await Promise.all(
       records.map(async (record) => {
         const user = await ctx.db.get(record.userId);
-        const userWithAvatar = user ? {
+        if (!user) return null;
+        
+        // Skip if org doesn't match
+        if (orgToFilter && user.organizationId !== orgToFilter) return null;
+
+        const userWithAvatar = {
           ...user,
           avatarUrl: user.avatarUrl ?? user.faceImageUrl,
-        } : user;
+        };
         return { ...record, user: userWithAvatar };
       })
     );
 
+    const filtered = withUsers.filter(Boolean);
     // Sort: checked_in first, then checked_out, then absent
-    return withUsers.sort((a, b) => {
+    return filtered.sort((a, b) => {
       const order = { checked_in: 0, checked_out: 1, absent: 2 };
       return order[a.status] - order[b.status];
     });
@@ -279,23 +310,45 @@ export const getTodayAllAttendance = query({
 
 // ── Get Today's Attendance Summary ───────────────────────────────────────
 export const getTodayAttendanceSummary = query({
-  args: {},
-  handler: async (ctx) => {
-    const today = getTodayDate();
+  args: {
+    adminId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin || (admin.role !== "admin" && admin.role !== "supervisor" && admin.email?.toLowerCase() !== "romangulanyan@gmail.com")) {
+      throw new Error("Only admins/supervisors can view attendance");
+    }
 
+    const today = getTodayDate();
     const records = await ctx.db
       .query("timeTracking")
       .withIndex("by_date", (q) => q.eq("date", today))
       .collect();
 
-    const totalEmployees = await ctx.db.query("users").collect();
-    const activeEmployees = totalEmployees.filter((u) => u.isActive);
+    // Filter by organization if admin (not superadmin)
+    const isSuperadmin = admin.email?.toLowerCase() === "romangulanyan@gmail.com";
+    const orgToFilter = isSuperadmin ? null : admin.organizationId;
 
-    const checkedIn = records.filter((r) => r.status === "checked_in").length;
-    const checkedOut = records.filter((r) => r.status === "checked_out").length;
-    const late = records.filter((r) => r.isLate).length;
-    const earlyLeave = records.filter((r) => r.isEarlyLeave).length;
-    const absent = activeEmployees.length - records.length;
+    const totalEmployees = await ctx.db.query("users").collect();
+    let activeEmployees = totalEmployees.filter((u) => u.isActive);
+
+    // Filter by org if admin
+    if (orgToFilter) {
+      activeEmployees = activeEmployees.filter((u) => u.organizationId === orgToFilter);
+    }
+
+    // Filter records by org if admin
+    let filteredRecords = records;
+    if (orgToFilter) {
+      const filteredUserIds = activeEmployees.map((u) => u._id);
+      filteredRecords = records.filter((r) => filteredUserIds.includes(r.userId));
+    }
+
+    const checkedIn = filteredRecords.filter((r) => r.status === "checked_in").length;
+    const checkedOut = filteredRecords.filter((r) => r.status === "checked_out").length;
+    const late = filteredRecords.filter((r) => r.isLate).length;
+    const earlyLeave = filteredRecords.filter((r) => r.isEarlyLeave).length;
+    const absent = activeEmployees.length - filteredRecords.length;
 
     return {
       totalActive: activeEmployees.length,
@@ -304,7 +357,7 @@ export const getTodayAttendanceSummary = query({
       late,
       earlyLeave,
       absent,
-      attendanceRate: ((records.length / activeEmployees.length) * 100).toFixed(1),
+      attendanceRate: activeEmployees.length > 0 ? ((filteredRecords.length / activeEmployees.length) * 100).toFixed(1) : "0",
     };
   },
 });
@@ -351,11 +404,25 @@ export const getMonthlyStats = query({
 // ── Admin: Get all employees with attendance for a date range ─────────────
 export const getAllEmployeesAttendanceOverview = query({
   args: {
+    adminId: v.id("users"),
     month: v.string(), // "2026-02"
   },
   handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
+    if (!admin || (admin.role !== "admin" && admin.role !== "supervisor" && admin.email?.toLowerCase() !== "romangulanyan@gmail.com")) {
+      throw new Error("Only admins/supervisors can view attendance");
+    }
+
+    const isSuperadmin = admin.email?.toLowerCase() === "romangulanyan@gmail.com";
+    const orgToFilter = isSuperadmin ? null : admin.organizationId;
+
     const users = await ctx.db.query("users").collect();
-    const activeUsers = users.filter(u => u.isActive && u.role === "employee");
+    let activeUsers = users.filter(u => u.isActive && u.role === "employee");
+
+    // Filter by organization if admin
+    if (orgToFilter) {
+      activeUsers = activeUsers.filter(u => u.organizationId === orgToFilter);
+    }
 
     const results = await Promise.all(
       activeUsers.map(async (user) => {

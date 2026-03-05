@@ -39,15 +39,15 @@ export default function AttendancePage() {
   // Use user?.id as dependency so queries only run after localStorage hydration
   const todaySummary = useQuery(
     api.timeTracking.getTodayAttendanceSummary,
-    mounted && user && (user.role === "admin" || user.role === "supervisor") ? {} : "skip"
+    mounted && user?.id && (user.role === "admin" || user.role === "supervisor") ? { adminId: user.id as Id<"users"> } : "skip"
   );
   const currentlyAtWork = useQuery(
     api.timeTracking.getCurrentlyAtWork,
-    mounted && user && (user.role === "admin" || user.role === "supervisor") ? {} : "skip"
+    mounted && user?.id && (user.role === "admin" || user.role === "supervisor") ? { adminId: user.id as Id<"users"> } : "skip"
   );
   const todayAllAttendance = useQuery(
     api.timeTracking.getTodayAllAttendance,
-    mounted && user && (user.role === "admin" || user.role === "supervisor") ? {} : "skip"
+    mounted && user?.id && (user.role === "admin" || user.role === "supervisor") ? { adminId: user.id as Id<"users"> } : "skip"
   );
   const needsRating = useQuery(
     api.supervisorRatings.getEmployeesNeedingRating,
@@ -58,7 +58,7 @@ export default function AttendancePage() {
 
   const allEmployeesOverview = useQuery(
     api.timeTracking.getAllEmployeesAttendanceOverview,
-    mounted && isAdminOrSupervisor ? { month: selectedMonth } : "skip"
+    mounted && user?.id && isAdminOrSupervisor ? { adminId: user.id as Id<"users">, month: selectedMonth } : "skip"
   );
 
   const MONTHS = [

@@ -844,6 +844,10 @@ export default defineSchema({
     callDuration: v.optional(v.number()),  // seconds
     callType: v.optional(v.union(v.literal("audio"), v.literal("video"))),
     callStatus: v.optional(v.union(v.literal("missed"), v.literal("answered"), v.literal("declined"))),
+    // Service broadcast (official company-wide announcement)
+    isServiceBroadcast: v.optional(v.boolean()),  // true = sent by superadmin to all users
+    broadcastTitle: v.optional(v.string()),       // e.g. "System Maintenance"
+    broadcastIcon: v.optional(v.string()),        // emoji or icon
     createdAt: v.number(),
   })
     .index("by_conversation", ["conversationId"])
@@ -922,4 +926,22 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_org_month", ["organizationId", "month"])
     .index("by_user_month", ["userId", "month"]),
+
+  // ── MAINTENANCE MODE ──────────────────────────────────────────────────────
+  // Site maintenance/downtime management
+  maintenanceMode: defineTable({
+    organizationId: v.id("organizations"),
+    isActive: v.boolean(),              // is maintenance mode on
+    title: v.string(),                  // "System Maintenance"
+    message: v.string(),                // detailed message
+    startTime: v.number(),              // when maintenance starts
+    endTime: v.optional(v.number()),    // when maintenance ends (optional)
+    estimatedDuration: v.optional(v.string()), // "2 hours", "30 minutes"
+    icon: v.optional(v.string()),       // emoji icon
+    enabledBy: v.id("users"),           // who enabled this
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_org", ["organizationId"])
+    .index("by_active", ["isActive"]),
 });

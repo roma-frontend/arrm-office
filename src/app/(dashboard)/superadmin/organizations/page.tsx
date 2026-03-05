@@ -4,15 +4,19 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Building2, Users, CheckCircle, XCircle, Edit, Shield } from "lucide-react";
+import { Building2, Users, CheckCircle, XCircle, Edit, Shield, MessageSquare, Wrench } from "lucide-react";
 import { ShieldLoader } from "@/components/ui/ShieldLoader";
+import { SuperadminBroadcastsPanel } from "@/components/admin/SuperadminBroadcastsPanel";
+import { MaintenanceModeManager } from "@/components/admin/MaintenanceModeManager";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function OrganizationsPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState("organizations");
   
   // Debug user object
   console.log("🔍 [Organizations] Full user object:", user);
@@ -98,173 +102,223 @@ export default function OrganizationsPage() {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "var(--background)" }}>
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen p-4 md:p-6" style={{ background: "var(--background)" }}>
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-            Organizations Management
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+            🏢 Управление системой
           </h1>
           <p className="text-muted-foreground">
-            Manage all organizations in the system
+            Организации, объявления и техническое обслуживание
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 rounded-xl border" style={{ background: "var(--card)" }}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10 dark:bg-blue-500/20">
-                <Building2 className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Orgs</p>
+        {/* Tabs Interface */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Tab List */}
+          <TabsList className="grid w-full grid-cols-3 mb-6" style={{ background: "var(--background-subtle)", padding: "8px" }}>
+            <TabsTrigger value="organizations" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Организации</span>
+              <span className="sm:hidden text-xs">(${organizations?.length || 0})</span>
+            </TabsTrigger>
+            <TabsTrigger value="announcements" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">Объявления</span>
+              <span className="sm:hidden text-xs">Новое</span>
+            </TabsTrigger>
+            <TabsTrigger value="maintenance" className="flex items-center gap-2">
+              <Wrench className="w-4 h-4" />
+              <span className="hidden sm:inline">Обслуживание</span>
+              <span className="sm:hidden text-xs">Конфиг</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab Content - Organizations */}
+          <TabsContent value="organizations" className="space-y-6">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-4 rounded-lg border" style={{ background: "var(--background-subtle)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="w-4 h-4 text-blue-500" />
+                  <p className="text-xs text-muted-foreground">Всего ОРГ</p>
+                </div>
                 <p className="text-2xl font-bold">{organizations?.length || 0}</p>
+                <p className="text-xs text-muted-foreground mt-1">организаций</p>
               </div>
-            </div>
-          </div>
-          <div className="p-4 rounded-xl border" style={{ background: "var(--card)" }}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10 dark:bg-green-500/20">
-                <CheckCircle className="w-5 h-5 text-green-500 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t('statuses.active')}Active</p>
-                <p className="text-2xl font-bold">
+              <div className="p-4 rounded-lg border" style={{ background: "var(--background-subtle)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <p className="text-xs text-muted-foreground">Активных</p>
+                </div>
+                <p className="text-2xl font-bold text-green-500">
                   {organizations?.filter((o) => o.isActive).length || 0}
                 </p>
+                <p className="text-xs text-muted-foreground mt-1">работают</p>
               </div>
-            </div>
-          </div>
-          <div className="p-4 rounded-xl border" style={{ background: "var(--card)" }}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-500/10 dark:bg-orange-500/20">
-                <Users className="w-5 h-5 text-orange-500 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Users</p>
+              <div className="p-4 rounded-lg border" style={{ background: "var(--background-subtle)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-orange-500" />
+                  <p className="text-xs text-muted-foreground">Смотрены</p>
+                </div>
                 <p className="text-2xl font-bold">
                   {organizations?.reduce((sum, o) => sum + (o.totalEmployees || 0), 0) || 0}
                 </p>
+                <p className="text-xs text-muted-foreground mt-1">всего</p>
               </div>
-            </div>
-          </div>
-          <div className="p-4 rounded-xl border" style={{ background: "var(--card)" }}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10 dark:bg-red-500/20">
-                <XCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{t('statuses.inactive')}Inactive</p>
-                <p className="text-2xl font-bold">
+              <div className="p-4 rounded-lg border" style={{ background: "var(--background-subtle)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircle className="w-4 h-4 text-red-500" />
+                  <p className="text-xs text-muted-foreground">Неактивных</p>
+                </div>
+                <p className="text-2xl font-bold text-red-500">
                   {organizations?.filter((o) => !o.isActive).length || 0}
                 </p>
+                <p className="text-xs text-muted-foreground mt-1">приостановлены</p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Organizations List */}
-        <div className="space-y-4">
-          {organizations?.map((org) => (
-            <div
-              key={org._id}
-              className="p-6 rounded-xl border hover:shadow-lg transition-all animate-fade-in"
-              style={{ background: "var(--card)" }}
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
-                      {org.name}
-                    </h3>
-                    <span
-                      className={`px-2 py-1 rounded-md text-xs font-semibold border ${getPlanBadgeColor(
-                        org.plan
-                      )}`}
-                    >
-                      {org.plan.toUpperCase()}
-                    </span>
-                    {org.isActive ? (
-                      <span className="px-2 py-1 rounded-md text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/20 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30">
-                        Active
+            {/* Organizations List */}
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+                  Список организаций
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Управляйте всеми организациями в системе
+                </p>
+              </div>
+
+              {organizations?.map((org) => (
+                <div
+                  key={org._id}
+                  className="p-4 rounded-lg border hover:border-blue-400/50 transition-all hover:shadow-md"
+                  style={{ background: "var(--card)" }}
+                >
+                  {/* Title Row */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base font-bold truncate" style={{ color: "var(--text-primary)" }}>
+                        {org.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground font-mono mt-1">
+                        {org.slug}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-semibold border ${getPlanBadgeColor(
+                          org.plan
+                        )}`}
+                      >
+                        {org.plan.toUpperCase()}
                       </span>
-                    ) : (
-                      <span className="px-2 py-1 rounded-md text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30">
-                        Inactive
-                      </span>
-                    )}
+                      {org.isActive ? (
+                        <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500/10 text-green-500 border border-green-500/30">
+                          ✓ Активна
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 rounded text-xs font-semibold bg-red-500/10 text-red-500 border border-red-500/30">
+                          ✗ Неактивна
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Slug: <span className="font-mono">{org.slug}</span>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Всего</p>
+                      <p className="font-bold">{org.totalEmployees}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Активных</p>
+                      <p className="font-bold text-green-500">{org.activeEmployees}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Лимит</p>
+                      <p className="font-bold">{org.employeeLimit}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Отрасль</p>
+                      <p className="text-sm font-mono">{org.industry || "—"}</p>
+                    </div>
+                  </div>
+
+                  {/* Admins & Actions */}
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex-1">
+                      {org.adminNames && org.adminNames.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {org.adminNames.map((name, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-1 rounded text-xs bg-blue-500/10 text-blue-500 border border-blue-500/30 whitespace-nowrap"
+                            >
+                              👤 {name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => router.push(`/superadmin/organizations/${org._id}/manage-admins`)}
+                        className="p-2 rounded hover:bg-blue-500/10 text-blue-500 transition-colors"
+                        title="Управлять администраторами"
+                      >
+                        <Shield className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => router.push(`/superadmin/organizations/${org._id}/edit`)}
+                        className="p-2 rounded transition-colors"
+                        style={{ color: "var(--text-primary)" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--background-subtle)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        title="Редактировать"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {(!organizations || organizations.length === 0) && (
+                <div className="text-center py-12 rounded-lg" style={{ background: "var(--background-subtle)" }}>
+                  <Building2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-30" />
+                  <h3 className="font-semibold text-lg mb-1" style={{ color: "var(--text-primary)" }}>
+                    Организации не найдены
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Создайте первую организацию, чтобы начать работу
                   </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">{t('organization.totalEmployees')}</p>
-                      <p className="text-lg font-semibold">{org.totalEmployees}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">{t('organization.activeEmployees')}</p>
-                      <p className="text-lg font-semibold text-green-500 dark:text-green-400">{org.activeEmployees}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Employee Limit</p>
-                      <p className="text-lg font-semibold">{org.employeeLimit}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Industry</p>
-                      <p className="text-sm">{org.industry || "—"}</p>
-                    </div>
-                  </div>
-
-                  {org.adminNames && org.adminNames.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-xs text-muted-foreground mb-1">{t('ui.admins')}</p>
-                      <div className="flex gap-2 flex-wrap">
-                        {org.adminNames.map((name, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 rounded-md text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30"
-                          >
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => router.push(`/superadmin/organizations/${org._id}/manage-admins`)}
-                    className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
-                    title={t('superadminOrgs.manageAdmins')}
-                  >
-                    <Shield className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => router.push(`/superadmin/organizations/${org._id}/edit`)}
-                    className="p-2 rounded-lg hover:bg-muted transition-colors"
-                    title={t('titles.editOrganization')}
-                  >
-                    <Edit className="w-5 h-5" style={{ color: "var(--text-primary)" }} />
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
-          ))}
-        </div>
+          </TabsContent>
 
-        {(!organizations || organizations.length === 0) && (
-          <div className="text-center py-12">
-            <Building2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">{t('emptyStates.noOrganizationsYet')}</h3>
-            <p className="text-muted-foreground">
-              {t('organization.createFirstOrg')}
-            </p>
-          </div>
-        )}
+          {/* Tab Content - Service Announcements */}
+          <TabsContent value="announcements" className="space-y-6">
+            <div className="rounded-xl border p-6" style={{ background: "var(--card)" }}>
+              <SuperadminBroadcastsPanel 
+                organizationId={user?.organizationId}
+                userId={user?.id}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Tab Content - Maintenance Mode */}
+          <TabsContent value="maintenance" className="space-y-6">
+            <div className="rounded-xl border p-6" style={{ background: "var(--card)" }}>
+              <MaintenanceModeManager 
+                organizationId={user?.organizationId}
+                userId={user?.id}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
