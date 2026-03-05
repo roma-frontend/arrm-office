@@ -316,7 +316,7 @@ export function ConversationList({
               <ContextMenuContent className="w-48" side="right">
                 {!conv.isDeleted && (
                   <>
-                    <ContextMenuLabel className="text-xs">{displayName}</ContextMenuLabel>
+                    <ContextMenuLabel className="text-xs" style={{ color: "var(--text-muted)" }}>{displayName}</ContextMenuLabel>
                     <ContextMenuSeparator />
                   </>
                 )}
