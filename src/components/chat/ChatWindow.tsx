@@ -705,21 +705,21 @@ export function ChatWindow({ conversationId, currentUserId, organizationId, curr
       )}
 
       {/* Input area */}
-      <div className="px-4 py-3 border-t shrink-0" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
+      <div className="px-3 sm:px-4 py-2 sm:py-3 border-t shrink-0" style={{ borderColor: "var(--border)", background: "var(--background)" }}>
         <div
-          className="flex items-center gap-2 rounded-2xl border px-3 py-2 transition-all"
+          className="flex items-center gap-1.5 sm:gap-2 rounded-2xl border px-2 sm:px-3 py-2 transition-all"
           style={{ borderColor: "var(--border)", background: "var(--background-subtle)" }}
         >
           {/* Attachment */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 relative"
+            className="w-6 sm:w-7 h-6 sm:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 relative shrink-0"
             style={{ color: pendingFiles.length > 0 ? "var(--primary)" : "var(--text-disabled)" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary)")}
             onMouseLeave={(e) => (e.currentTarget.style.color = pendingFiles.length > 0 ? "var(--primary)" : "var(--text-disabled)")}
             title={t('chat.attachFile')}
           >
-            <Paperclip className="w-4 h-4" />
+            <Paperclip className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
             {pendingFiles.length > 0 && (
               <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{ background: "var(--primary)" }}>
                 {pendingFiles.length}
@@ -728,20 +728,20 @@ export function ChatWindow({ conversationId, currentUserId, organizationId, curr
           </button>
           <input ref={fileInputRef} type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" className="hidden" onChange={handleFileChange} />
 
-          {/* Poll button */}
+          {/* Poll button - hidden on mobile */}
           <button
             onClick={() => { setShowPollCreator(!showPollCreator); setShowSchedule(false); }}
-            className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110"
+            className="hidden sm:flex w-7 h-7 items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
             style={{ color: showPollCreator ? "var(--primary)" : "var(--text-disabled)" }}
             title={t('chat.createPollShort')}
           >
             <BarChart2 className="w-4 h-4" />
           </button>
 
-          {/* Scheduled send */}
+          {/* Scheduled send - hidden on mobile */}
           <button
             onClick={() => { setShowSchedule(!showSchedule); setShowPollCreator(false); }}
-            className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110"
+            className="hidden sm:flex w-7 h-7 items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
             style={{ color: scheduledFor ? "var(--primary)" : "var(--text-disabled)" }}
             title={t('chat.scheduleMessage')}
           >
@@ -756,18 +756,18 @@ export function ChatWindow({ conversationId, currentUserId, organizationId, curr
             onKeyDown={handleKeyDown}
             placeholder={pendingFiles.length > 0 ? t('chat.addCaption') : t('chat.messagePlaceholder')}
             rows={1}
-            className="flex-1 resize-none bg-transparent outline-none text-sm leading-5"
+            className="flex-1 resize-none bg-transparent outline-none text-sm leading-5 min-w-0"
             style={{ color: "var(--text-primary)", maxHeight: "120px" }}
           />
 
           {/* Emoji */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setShowEmoji(!showEmoji)}
-              className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110"
+              className="w-6 sm:w-7 h-6 sm:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110"
               style={{ color: showEmoji ? "var(--primary)" : "var(--text-disabled)" }}
             >
-              <Smile className="w-4 h-4" />
+              <Smile className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
             </button>
             {showEmoji && <EmojiPicker onSelect={handleEmojiSelect} onClose={() => setShowEmoji(false)} />}
           </div>
@@ -776,30 +776,42 @@ export function ChatWindow({ conversationId, currentUserId, organizationId, curr
           <button
             onClick={handleSend}
             disabled={!canSend}
-            className="w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-xl transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             style={{ background: canSend ? "linear-gradient(135deg, var(--primary), var(--primary-dark, var(--primary)))" : "var(--border)" }}
           >
             {sending ? (
-              <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              <span className="w-3 sm:w-3.5 h-3 sm:h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             ) : scheduledFor ? (
-              <Clock className="w-3.5 h-3.5 text-white" />
+              <Clock className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-white" />
             ) : (
-              <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13" />
                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
             )}
           </button>
         </div>
-        <p className="text-[10px] mt-1 text-center" style={{ color: "var(--text-disabled)" }}>
+        <p className="text-[10px] mt-1 text-center hidden sm:block" style={{ color: "var(--text-disabled)" }}>
           {t('chat.enterHint')}
         </p>
       </div>
 
       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+          background: var(--border); 
+          border-radius: 3px; 
+          transition: background 0.2s;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { 
+          background: var(--text-muted); 
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:active { 
+          background: var(--primary); 
+        }
       `}</style>
       </div>
 
