@@ -138,9 +138,17 @@ export function ConversationList({
           )}
         </div>
         <button
-          onClick={onNewConversation}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105"
-          style={{ background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)" }}
+          onClick={() => {
+            console.log("[ConversationList] Plus button clicked, calling onNewConversation");
+            onNewConversation();
+          }}
+          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+          style={{ 
+            background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
+            cursor: "pointer",
+            zIndex: 10,
+            position: "relative",
+          }}
           title={t('chat.newConversation')}
         >
           <Plus className="w-4 h-4 text-white" />

@@ -215,7 +215,10 @@ export default function ChatClient({ userId, organizationId, userName, userAvata
           selectedId={selectedConvId}
           currentUserId={uid}
           onSelect={handleSelectConversation}
-          onNewConversation={() => setShowNewConv(true)}
+          onNewConversation={() => {
+            console.log("[ChatClient] onNewConversation called, setting showNewConv to true");
+            setShowNewConv(true);
+          }}
           onTogglePin={(convId) => togglePinMutation({ conversationId: convId, userId: uid })}
           onDelete={(convId) => deleteConversationMutation({ conversationId: convId, userId: uid })}
           onRestore={(convId) => restoreConversationMutation({ conversationId: convId, userId: uid })}

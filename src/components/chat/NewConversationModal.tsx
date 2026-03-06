@@ -63,26 +63,39 @@ export function NewConversationModal({ currentUserId, organizationId, onClose, o
   };
 
   const handleCreate = async () => {
-    if (selectedUsers.length === 0) return;
+    console.log("[NewConversationModal] handleCreate called, mode:", mode, "selectedUsers:", selectedUsers.length);
+    if (selectedUsers.length === 0) {
+      console.log("[NewConversationModal] No users selected, returning");
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "dm") {
+        console.log("[NewConversationModal] Creating DM with user:", selectedUsers[0]);
         const convId = await getOrCreateDM({
           organizationId: effectiveOrgId,
           currentUserId,
           targetUserId: selectedUsers[0],
         });
+        console.log("[NewConversationModal] DM created with ID:", convId);
         onCreated(convId);
       } else {
-        if (!groupName.trim()) return;
+        if (!groupName.trim()) {
+          console.log("[NewConversationModal] Group name is empty, returning");
+          return;
+        }
+        console.log("[NewConversationModal] Creating group:", groupName, "with", selectedUsers.length, "members");
         const convId = await createGroup({
           organizationId: effectiveOrgId,
           createdBy: currentUserId,
           name: groupName.trim(),
           memberIds: selectedUsers,
         });
+        console.log("[NewConversationModal] Group created with ID:", convId);
         onCreated(convId);
       }
+    } catch (err) {
+      console.error("[NewConversationModal] Error creating conversation:", err);
     } finally {
       setLoading(false);
     }
@@ -221,7 +234,10 @@ export function NewConversationModal({ currentUserId, organizationId, onClose, o
         {/* Footer */}
         <div className="p-3 border-t" style={{ borderColor: "var(--border)" }}>
           <button
-            onClick={handleCreate}
+            onClick={() => {
+              console.log("[NewConversationModal] Create button clicked, canCreate:", canCreate, "loading:", loading);
+              handleCreate();
+            }}
             disabled={!canCreate || loading}
             className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark, var(--primary)))" }}
