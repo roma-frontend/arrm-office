@@ -2936,5 +2936,14 @@
     "periodEnd": "Ժամանակաշրջանի ավարտ"
   },
   "$29": "$29/month",
-  "Custom": "Custom plan"
+  "Custom": "Custom plan",
+  "maintenance": {
+    "title": "Սպասարկում",
+    "systemUnavailable": "Համակարգը սպասարկման մեջ է",
+    "pleasWait": "Խնդրում ենք սպասել.",
+    "autoRefresh": "Էջը ինքնաբերաբար թարմացվելու է, երբ սպասարկումը ավարտվի",
+    "needHelp": "Եթե հարցեր ունեք, դրանք ուղղեք ձեր ադմինիստրատորին",
+    "serviceBroadcast": "Ծառայության հայտարարություն",
+    "notificationLabel": "⚠️ Սպասարկում"
+  }
 }

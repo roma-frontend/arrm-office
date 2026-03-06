@@ -2936,5 +2936,14 @@
     "periodEnd": "Period End"
   },
   "$29": "$29/month",
-  "Custom": "Custom plan"
+  "Custom": "Custom plan",
+  "maintenance": {
+    "title": "Maintenance",
+    "systemUnavailable": "System is under maintenance",
+    "pleasWait": "Please wait.",
+    "autoRefresh": "The page will refresh automatically when maintenance is complete",
+    "needHelp": "If you have questions, contact your administrator",
+    "serviceBroadcast": "Service Broadcast",
+    "notificationLabel": "⚠️ Service Maintenance"
+  }
 }

@@ -26,6 +26,8 @@ import { SmartErrorMessage, parseAuthError } from "@/components/auth/SmartErrorM
 import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 
 function MaintenanceBanner() {
+  const { t } = useTranslation();
+  
   return (
     <div style={{
       position: "fixed", 
@@ -94,7 +96,7 @@ function MaintenanceBanner() {
           margin: "0 0 16px 0",
           letterSpacing: "-0.5px",
         }}>
-          Техническое обслуживание
+          {t('maintenance.title')}
         </h1>
         
         <p style={{ 
@@ -104,8 +106,8 @@ function MaintenanceBanner() {
           margin: "0 0 40px 0",
           fontWeight: "400",
         }}>
-          Система находится на техническом обслуживании.<br />
-          Пожалуйста, подождите.
+          {t('maintenance.systemUnavailable')}<br />
+          {t('maintenance.pleasWait')}
         </p>
         
         {/* Info Box */}
@@ -129,7 +131,7 @@ function MaintenanceBanner() {
             gap: "10px",
           }}>
             <span>⏳</span>
-            Страница обновится автоматически после завершения обслуживания
+            {t('maintenance.autoRefresh')}
           </p>
         </div>
         
@@ -147,7 +149,7 @@ function MaintenanceBanner() {
             margin: "0",
             fontWeight: "400",
           }}>
-            ℹ️ Если есть вопросы, обратитесь к администратору
+            ℹ️ {t('maintenance.needHelp')}
           </p>
         </div>
 
