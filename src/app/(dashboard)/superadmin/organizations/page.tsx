@@ -276,7 +276,7 @@ export default function OrganizationsPage() {
                         style={{ color: "var(--text-primary)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--background-subtle)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                        title="Редактировать"
+                        title={t('superadmin.organizations.card.edit')}
                       >
                         <Edit className="w-4 h-4" />
                       </button>

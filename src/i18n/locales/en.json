@@ -2515,7 +2515,8 @@
         "industry": "Industry",
         "statusActive": "✓ Active",
         "statusInactive": "✗ Inactive",
-        "manageAdmins": "Manage administrators"
+        "manageAdmins": "Manage administrators",
+        "edit": "Edit"
       },
       "list": {
         "title": "Organization List",
