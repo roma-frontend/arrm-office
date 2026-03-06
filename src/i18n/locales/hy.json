@@ -1354,7 +1354,25 @@
     "usage": "Օգտագործում",
     "reports": "Հաշվետվություններ",
     "export": "Արտահանել",
-    "import": "Ներմուծել"
+    "import": "Ներմուծել",
+    "fillAllFields": "Խնդրում ենք լրացնել բոլոր դաշտերը",
+    "userAssignedSuccess": "✅ Օգտատերը հաջողությամբ նշանակվել է ադմինիստրատոր!",
+    "failedToAssignUser": "Օգտատերի նշանակումը ձախողվել է",
+    "superadminPanel": "Սուպերադմինի տախտակ",
+    "manageSystemSettings": "Կառավարել համակարգի կարգավորումներ և օգտատերերի նշանակումներ",
+    "assignUserAsAdmin": "Նշանակել օգտատերին կազմակերպության ադմինիստրատոր",
+    "assignUserDescription": "Նշանակել օգտատերին (Google գրանցումից հետո) կազմակերպության ադմինիստրատոր",
+    "emailDescription": "Google-ի մեջ գրանցված օգտատերի էլ.փոստ",
+    "selectOrganization": "Կազմակերպություն",
+    "selectOrgPlaceholder": "Ընտրեք կազմակերպությունը...",
+    "assigning": "Նշանակում...",
+    "assignAsAdmin": "Նշանակել ադմինիստրատոր",
+    "organizationsTitle": "Կազմակերպություններ",
+    "loadingOrganizations": "Կազմակերպությունների բեռնում...",
+    "noOrganizations": "Դեռ կազմակերպություններ չկան",
+    "plan": "Պլան",
+    "active": "Ակտիվ",
+    "inactive": "Ոչ ակտիվ"
   },
   "productivity": {
     "todayTasks": "Այսօրվա առաջադրանքներ",
@@ -2436,7 +2454,7 @@
   },
   "superadmin": {
     "organizations": {
-      "title": "Organizations Management",
+      "title": "Կազմակերպություններ",
       "subtitle": "Manage all organizations in the system",
       "totalOrgs": "Total Organizations",
       "totalUsers": "Total Users",
@@ -2705,6 +2723,14 @@
       "systemThemeDesc": "Match your system preference",
       "accentColor": "Accent Color",
       "chooseAccentColor": "Choose your preferred accent color (coming soon)"
+    },
+    "announcements": {
+      "title": "Հայտարարություններ",
+      "new": "Նոր"
+    },
+    "maintenance": {
+      "title": "Սպասարկում",
+      "config": "Կառուցվածք"
     }
   },
   "pomodoro": {

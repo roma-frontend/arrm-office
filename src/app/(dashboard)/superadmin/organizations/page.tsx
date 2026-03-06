@@ -120,18 +120,18 @@ export default function OrganizationsPage() {
           <TabsList className="grid w-full grid-cols-3 mb-6" style={{ background: "var(--background-subtle)", padding: "8px" }}>
             <TabsTrigger value="organizations" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Организации</span>
+              <span className="hidden sm:inline">{t('superadmin.organizations.title')}</span>
               <span className="sm:hidden text-xs">(${organizations?.length || 0})</span>
             </TabsTrigger>
             <TabsTrigger value="announcements" className="flex items-center gap-2">
               <MessageSquare className="w-4 h-4" />
-              <span className="hidden sm:inline">Объявления</span>
-              <span className="sm:hidden text-xs">Новое</span>
+              <span className="hidden sm:inline">{t('superadmin.announcements.title')}</span>
+              <span className="sm:hidden text-xs">{t('superadmin.announcements.new')}</span>
             </TabsTrigger>
             <TabsTrigger value="maintenance" className="flex items-center gap-2">
               <Wrench className="w-4 h-4" />
-              <span className="hidden sm:inline">Обслуживание</span>
-              <span className="sm:hidden text-xs">Конфиг</span>
+              <span className="hidden sm:inline">{t('superadmin.maintenance.title')}</span>
+              <span className="sm:hidden text-xs">{t('superadmin.maintenance.config')}</span>
             </TabsTrigger>
           </TabsList>
 

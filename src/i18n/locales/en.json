@@ -1354,7 +1354,25 @@
     "usage": "Usage",
     "reports": "Reports",
     "export": "Export",
-    "import": "Import"
+    "import": "Import",
+    "fillAllFields": "Please fill in all fields",
+    "userAssignedSuccess": "✅ User assigned as admin successfully!",
+    "failedToAssignUser": "Failed to assign user",
+    "superadminPanel": "Superadmin Panel",
+    "manageSystemSettings": "Manage system-wide settings and user assignments",
+    "assignUserAsAdmin": "Assign User as Organization Admin",
+    "assignUserDescription": "Assign a user (after Google signup) as admin of an organization",
+    "emailDescription": "Email of the user who signed up via Google",
+    "selectOrganization": "Organization",
+    "selectOrgPlaceholder": "Select organization...",
+    "assigning": "Assigning...",
+    "assignAsAdmin": "Assign as Admin",
+    "organizationsTitle": "Organizations",
+    "loadingOrganizations": "Loading organizations...",
+    "noOrganizations": "No organizations yet",
+    "plan": "Plan",
+    "active": "Active",
+    "inactive": "Inactive"
   },
   "productivity": {
     "todayTasks": "Today's Tasks",
@@ -2436,7 +2454,7 @@
   },
   "superadmin": {
     "organizations": {
-      "title": "Organizations Management",
+      "title": "Organizations",
       "subtitle": "Manage all organizations in the system",
       "totalOrgs": "Total Organizations",
       "totalUsers": "Total Users",
@@ -2705,6 +2723,14 @@
       "noSuspendedUsers": "No suspended users",
       "enable": "Enable",
       "disable": "Disable"
+    },
+    "announcements": {
+      "title": "Announcements",
+      "new": "New"
+    },
+    "maintenance": {
+      "title": "Maintenance",
+      "config": "Config"
     }
   },
   "pomodoro": {

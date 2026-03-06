@@ -1354,7 +1354,25 @@
     "usage": "Использование",
     "reports": "Отчёты",
     "export": "Экспорт",
-    "import": "Импорт"
+    "import": "Импорт",
+    "fillAllFields": "Пожалуйста, заполните все поля",
+    "userAssignedSuccess": "✅ Пользователь успешно назначен администратором!",
+    "failedToAssignUser": "Ошибка при назначении пользователя",
+    "superadminPanel": "Панель суперадмина",
+    "manageSystemSettings": "Управляйте системными параметрами и назначением пользователей",
+    "assignUserAsAdmin": "Назначить пользователя администратором организации",
+    "assignUserDescription": "Назначьте пользователя (после регистрации через Google) администратором организации",
+    "emailDescription": "Электронная почта пользователя, зарегистрировавшегося через Google",
+    "selectOrganization": "Организация",
+    "selectOrgPlaceholder": "Выберите организацию...",
+    "assigning": "Назначение...",
+    "assignAsAdmin": "Назначить администратором",
+    "organizationsTitle": "Организации",
+    "loadingOrganizations": "Загрузка организаций...",
+    "noOrganizations": "Организаций еще нет",
+    "plan": "План",
+    "active": "Активно",
+    "inactive": "Неактивно"
   },
   "productivity": {
     "todayTasks": "Задачи на сегодня",
@@ -2436,7 +2454,7 @@
   },
   "superadmin": {
     "organizations": {
-      "title": "Organizations Management",
+      "title": "Организации",
       "subtitle": "Manage all organizations in the system",
       "totalOrgs": "Total Organizations",
       "totalUsers": "Total Users",
@@ -2705,6 +2723,14 @@
       "systemThemeDesc": "Match your system preference",
       "accentColor": "Accent Color",
       "chooseAccentColor": "Choose your preferred accent color (coming soon)"
+    },
+    "announcements": {
+      "title": "Объявления",
+      "new": "Новое"
+    },
+    "maintenance": {
+      "title": "Обслуживание",
+      "config": "Конфиг"
     }
   },
   "pomodoro": {
