@@ -260,6 +260,14 @@ export function MessageBubble({ message, isOwn, showAvatar, showName, currentUse
       return (
         <div className="flex justify-center my-4 animate-fade-in px-4">
           <div className="max-w-lg w-full">
+            {/* Service maintenance header */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">⚠️</span>
+              <span className="text-xs font-semibold tracking-wide" style={{ color: "var(--warning, #f59e0b)" }}>
+                Service Maintenance
+              </span>
+            </div>
+
             {/* Message card - no sender info for System Announcements */}
             <div 
               className="border-l-4 rounded-lg p-4 shadow-md animate-fade-in"

@@ -242,7 +242,7 @@ export function ConversationList({
           }
           
           const lastMsgPreview = isSystemAnnouncements
-            ? "" // No preview text for System Announcements
+            ? "⚠️ Service Maintenance" // Show this for System Announcements instead of message text
             : displayLastText
               ? (senderName && !isSystemAnnouncements ? `${senderName}: ${displayLastText}` : displayLastText)
               : (isGroup ? `${conv.memberCount ?? 2} ${t('chat.members')}` : t('chat.startConversationHint'));
