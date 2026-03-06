@@ -2455,7 +2455,7 @@
   "superadmin": {
     "organizations": {
       "title": "Организации",
-      "subtitle": "Manage all organizations in the system",
+      "subtitle": "Организации, объявления и техническое обслуживание",
       "totalOrgs": "Total Organizations",
       "totalUsers": "Total Users",
       "active": "Active",
@@ -2497,7 +2497,20 @@
       "createSuccess": "Organization created successfully!",
       "createError": "Failed to create organization",
       "invitationSent": "Admin invitation will be sent",
-      "fillRequired": "Please fill in all required fields"
+      "fillRequired": "Please fill in all required fields",
+      "stats": {
+        "totalOrgs": "Всего ОРГ",
+        "count": "организаций",
+        "active": "Активных",
+        "viewed": "Смотрены",
+        "inactive": "Неактивных"
+      },
+      "list": {
+        "title": "Список организаций",
+        "description": "Управляйте всеми организациями в системе",
+        "notFound": "Организации не найдены",
+        "empty": "Создайте первую организацию, чтобы начать работу"
+      }
     },
     "subscriptions": {
       "title": "Управление подписками",

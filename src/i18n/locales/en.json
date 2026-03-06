@@ -2455,7 +2455,7 @@
   "superadmin": {
     "organizations": {
       "title": "Organizations",
-      "subtitle": "Manage all organizations in the system",
+      "subtitle": "Organizations, announcements and maintenance management",
       "totalOrgs": "Total Organizations",
       "totalUsers": "Total Users",
       "active": "Active",
@@ -2497,7 +2497,20 @@
       "createSuccess": "Organization created successfully!",
       "createError": "Failed to create organization",
       "invitationSent": "Admin invitation will be sent",
-      "fillRequired": "Please fill in all required fields"
+      "fillRequired": "Please fill in all required fields",
+      "stats": {
+        "totalOrgs": "Total ORGs",
+        "count": "organizations",
+        "active": "Active",
+        "viewed": "Viewed",
+        "inactive": "Inactive"
+      },
+      "list": {
+        "title": "Organization List",
+        "description": "Manage all organizations in the system",
+        "notFound": "No organizations found",
+        "empty": "Create your first organization to get started"
+      }
     },
     "superadminSecurity": {
       "securityControl": "Security Control",

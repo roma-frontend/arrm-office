@@ -107,10 +107,10 @@ export default function OrganizationsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-            🏢 Управление системой
+            🏢 {t('admin.superadminPanel')}
           </h1>
           <p className="text-muted-foreground">
-            Организации, объявления и техническое обслуживание
+            {t('superadmin.organizations.subtitle')}
           </p>
         </div>
 
@@ -142,15 +142,15 @@ export default function OrganizationsPage() {
               <div className="p-4 rounded-lg border" style={{ background: "var(--background-subtle)" }}>
                 <div className="flex items-center gap-2 mb-2">
                   <Building2 className="w-4 h-4 text-blue-500" />
-                  <p className="text-xs text-muted-foreground">Всего ОРГ</p>
+                  <p className="text-xs text-muted-foreground">{t('superadmin.organizations.stats.totalOrgs')}</p>
                 </div>
                 <p className="text-2xl font-bold">{organizations?.length || 0}</p>
-                <p className="text-xs text-muted-foreground mt-1">организаций</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('superadmin.organizations.stats.count')}</p>
               </div>
               <div className="p-4 rounded-lg border" style={{ background: "var(--background-subtle)" }}>
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="w-4 h-4 text-green-500" />
-                  <p className="text-xs text-muted-foreground">Активных</p>
+                  <p className="text-xs text-muted-foreground">{t('superadmin.organizations.stats.active')}</p>
                 </div>
                 <p className="text-2xl font-bold text-green-500">
                   {organizations?.filter((o) => o.isActive).length || 0}
@@ -160,7 +160,7 @@ export default function OrganizationsPage() {
               <div className="p-4 rounded-lg border" style={{ background: "var(--background-subtle)" }}>
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="w-4 h-4 text-orange-500" />
-                  <p className="text-xs text-muted-foreground">Смотрены</p>
+                  <p className="text-xs text-muted-foreground">{t('superadmin.organizations.stats.viewed')}</p>
                 </div>
                 <p className="text-2xl font-bold">
                   {organizations?.reduce((sum, o) => sum + (o.totalEmployees || 0), 0) || 0}
@@ -170,7 +170,7 @@ export default function OrganizationsPage() {
               <div className="p-4 rounded-lg border" style={{ background: "var(--background-subtle)" }}>
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="w-4 h-4 text-red-500" />
-                  <p className="text-xs text-muted-foreground">Неактивных</p>
+                  <p className="text-xs text-muted-foreground">{t('superadmin.organizations.stats.inactive')}</p>
                 </div>
                 <p className="text-2xl font-bold text-red-500">
                   {organizations?.filter((o) => !o.isActive).length || 0}
@@ -183,10 +183,10 @@ export default function OrganizationsPage() {
             <div className="space-y-4">
               <div>
                 <h2 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-                  Список организаций
+                  {t('superadmin.organizations.list.title')}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Управляйте всеми организациями в системе
+                  {t('superadmin.organizations.list.description')}
                 </p>
               </div>
 
@@ -289,10 +289,10 @@ export default function OrganizationsPage() {
                 <div className="text-center py-12 rounded-lg" style={{ background: "var(--background-subtle)" }}>
                   <Building2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-30" />
                   <h3 className="font-semibold text-lg mb-1" style={{ color: "var(--text-primary)" }}>
-                    Организации не найдены
+                    {t('superadmin.organizations.list.notFound')}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Создайте первую организацию, чтобы начать работу
+                    {t('superadmin.organizations.list.empty')}
                   </p>
                 </div>
               )}

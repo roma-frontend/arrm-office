@@ -2455,7 +2455,7 @@
   "superadmin": {
     "organizations": {
       "title": "Կազմակերպություններ",
-      "subtitle": "Manage all organizations in the system",
+      "subtitle": "Կազմակերպություններ, հայտարարություններ և սպասարկում",
       "totalOrgs": "Total Organizations",
       "totalUsers": "Total Users",
       "active": "Active",
@@ -2497,7 +2497,20 @@
       "createSuccess": "Organization created successfully!",
       "createError": "Failed to create organization",
       "invitationSent": "Admin invitation will be sent",
-      "fillRequired": "Please fill in all required fields"
+      "fillRequired": "Please fill in all required fields",
+      "stats": {
+        "totalOrgs": "Ընդամենը կազմակերպություններ",
+        "count": "կազմակերպություններ",
+        "active": "Ակտիվ",
+        "viewed": "Դիտված",
+        "inactive": "Ոչ ակտիվ"
+      },
+      "list": {
+        "title": "Կազմակերպությունների ցուցակ",
+        "description": "Կառավարել համակարգի բոլոր կազմակերպությունները",
+        "notFound": "Կազմակերպություններ չեն գտնվել",
+        "empty": "Ստեղծել ձեր առաջին կազմակերպությունը, որ սկսել"
+      }
     },
     "subscriptions": {
       "title": "Բաժանորդագրերի կառավարում",
