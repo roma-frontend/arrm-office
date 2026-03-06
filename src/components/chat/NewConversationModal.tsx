@@ -22,7 +22,6 @@ function getInitials(name: string) {
 }
 
 export function NewConversationModal({ currentUserId, organizationId, onClose, onCreated }: Props) {
-  console.log("[NewConversationModal] RENDERING NOW!, currentUserId:", currentUserId);
   const { t } = useTranslation();
   const [mode, setMode] = useState<"dm" | "group">("dm");
   const [search, setSearch] = useState("");
@@ -94,10 +93,10 @@ export function NewConversationModal({ currentUserId, organizationId, onClose, o
   const canCreate = mode === "dm" ? selectedUsers.length === 1 : (selectedUsers.length >= 1 && groupName.trim().length > 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ border: "4px solid red" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div
         className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ background: "var(--background)", border: "3px solid cyan", maxHeight: "80vh" }}
+        style={{ background: "var(--background)", border: "1px solid var(--border)", maxHeight: "80vh" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "var(--border)" }}>
