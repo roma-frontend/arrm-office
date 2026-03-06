@@ -233,10 +233,12 @@ export function ConversationList({
           let displayLastText = rawLastText;
           if (isSystemAnnouncements && displayLastText) {
             // Strip "Name: " from beginning if present
-            const match = displayLastText.match(/^[^:]+:\s*/);
+            const match = displayLastText.match(/^[^:]*:\s*/);
             if (match) {
               displayLastText = displayLastText.substring(match[0].length);
             }
+            // Also strip common time patterns that appear in maintenance messages
+            displayLastText = displayLastText.replace(/^\d{1,2}\s*[AP]M\s*🔔?\s*/, "");
           }
           
           const lastMsgPreview = displayLastText
@@ -247,8 +249,8 @@ export function ConversationList({
           const lastSenderMember = isGroup && !isSystemAnnouncements && conv.lastMessageSenderId
             ? conv.members?.find((m) => m.userId === conv.lastMessageSenderId)
             : null;
-          const lastSenderAvatar = isOwnLast ? null : lastSenderMember?.user?.avatarUrl;
-          const lastSenderInitial = isOwnLast ? null : (lastSenderMember?.user?.name?.[0]?.toUpperCase() ?? null);
+          const lastSenderAvatar = isSystemAnnouncements ? null : (isOwnLast ? null : lastSenderMember?.user?.avatarUrl);
+          const lastSenderInitial = isSystemAnnouncements ? null : (isOwnLast ? null : (lastSenderMember?.user?.name?.[0]?.toUpperCase() ?? null));
 
           const isLoading = loadingOpId === conv._id;
 
