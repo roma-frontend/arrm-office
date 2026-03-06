@@ -191,13 +191,29 @@ export default function ChatClient({ userId, organizationId, userName, userAvata
     </div>
   );
 
-  console.log("[ChatClient] Main render, showNewConv:", showNewConv);
-
   return (
-    <div
-      className="flex flex-1 min-h-0 h-full overflow-hidden sm:rounded-xl border-0 sm:border relative"
-      style={{ borderColor: "var(--border)", background: "var(--background)" }}
-    >
+    <>
+      {/* New Conversation Modal - OUTSIDE overflow-hidden container */}
+      {showNewConv && (
+        <>
+          {console.log("[ChatClient] Rendering NewConversationModal, showNewConv:", showNewConv)}
+          <NewConversationModal
+            currentUserId={uid}
+            organizationId={effectiveOrgId}
+            onClose={() => setShowNewConv(false)}
+            onCreated={(convId) => {
+              setSelectedConvId(convId);
+              setShowNewConv(false);
+              setMobileShowChat(true);
+            }}
+          />
+        </>
+      )}
+
+      <div
+        className="flex flex-1 min-h-0 h-full overflow-hidden sm:rounded-xl border-0 sm:border relative"
+        style={{ borderColor: "var(--border)", background: "var(--background)" }}
+      >
       {/* ── Sidebar: Conversation List ───────────────────────────────── */}
       <div
         className={cn(
@@ -218,7 +234,6 @@ export default function ChatClient({ userId, organizationId, userName, userAvata
           currentUserId={uid}
           onSelect={handleSelectConversation}
           onNewConversation={() => {
-            console.log("[ChatClient] onNewConversation called, setting showNewConv to true");
             setShowNewConv(true);
           }}
           onTogglePin={(convId) => togglePinMutation({ conversationId: convId, userId: uid })}
@@ -267,25 +282,6 @@ export default function ChatClient({ userId, organizationId, userName, userAvata
           <EmptyState onNewConversation={() => setShowNewConv(true)} />
         )}
       </div>
-
-      {/* New Conversation Modal */}
-      {showNewConv && (
-        <>
-          {console.log("[ChatClient] Rendering NewConversationModal, showNewConv:", showNewConv)}
-          <div className="animate-fade-in">
-            <NewConversationModal
-            currentUserId={uid}
-            organizationId={effectiveOrgId}
-            onClose={() => setShowNewConv(false)}
-            onCreated={(convId) => {
-              setSelectedConvId(convId);
-              setShowNewConv(false);
-              setMobileShowChat(true);
-            }}
-          />
-          </div>
-        </>
-      )}
 
       {/* Active Call Modal */}
       {activeCall && (
@@ -357,7 +353,7 @@ export default function ChatClient({ userId, organizationId, userName, userAvata
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

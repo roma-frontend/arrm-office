@@ -81,13 +81,6 @@ export function ConversationList({
   const [filter, setFilter] = useState<FilterType>("all");
   const [loadingOpId, setLoadingOpId] = useState<string | null>(null);
 
-  console.log(`[ConversationList] Rendering ${conversations?.length ?? 0} conversations, selected: ${selectedId}`);
-  if (conversations && conversations.length > 0) {
-    conversations.forEach((c, idx) => {
-      console.log(`  [${idx}] ${c.name || c.otherUser?.name || 'DM'} (unread: ${c.membership.unreadCount})`);
-    });
-  }
-
   // Apply filters
   const filtered = conversations.filter((c) => {
     const name = c.type === "direct" ? (c.otherUser?.name ?? "") : (c.name ?? "");
@@ -139,7 +132,6 @@ export function ConversationList({
         </div>
         <button
           onClick={() => {
-            console.log("[ConversationList] Plus button clicked, calling onNewConversation");
             onNewConversation();
           }}
           className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"

@@ -22,7 +22,6 @@ function getInitials(name: string) {
 }
 
 export function NewConversationModal({ currentUserId, organizationId, onClose, onCreated }: Props) {
-  console.log("[NewConversationModal] Component rendering!");
   const { t } = useTranslation();
   const [mode, setMode] = useState<"dm" | "group">("dm");
   const [search, setSearch] = useState("");
@@ -64,39 +63,28 @@ export function NewConversationModal({ currentUserId, organizationId, onClose, o
   };
 
   const handleCreate = async () => {
-    console.log("[NewConversationModal] handleCreate called, mode:", mode, "selectedUsers:", selectedUsers.length);
-    if (selectedUsers.length === 0) {
-      console.log("[NewConversationModal] No users selected, returning");
-      return;
-    }
+    if (selectedUsers.length === 0) return;
     setLoading(true);
     try {
       if (mode === "dm") {
-        console.log("[NewConversationModal] Creating DM with user:", selectedUsers[0]);
         const convId = await getOrCreateDM({
           organizationId: effectiveOrgId,
           currentUserId,
           targetUserId: selectedUsers[0],
         });
-        console.log("[NewConversationModal] DM created with ID:", convId);
         onCreated(convId);
       } else {
-        if (!groupName.trim()) {
-          console.log("[NewConversationModal] Group name is empty, returning");
-          return;
-        }
-        console.log("[NewConversationModal] Creating group:", groupName, "with", selectedUsers.length, "members");
+        if (!groupName.trim()) return;
         const convId = await createGroup({
           organizationId: effectiveOrgId,
           createdBy: currentUserId,
           name: groupName.trim(),
           memberIds: selectedUsers,
         });
-        console.log("[NewConversationModal] Group created with ID:", convId);
         onCreated(convId);
       }
     } catch (err) {
-      console.error("[NewConversationModal] Error creating conversation:", err);
+      console.error("Error creating conversation:", err);
     } finally {
       setLoading(false);
     }
@@ -104,13 +92,11 @@ export function NewConversationModal({ currentUserId, organizationId, onClose, o
 
   const canCreate = mode === "dm" ? selectedUsers.length === 1 : (selectedUsers.length >= 1 && groupName.trim().length > 0);
 
-  console.log("[NewConversationModal] Rendering JSX, mode:", mode, "canCreate:", canCreate);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ border: "4px solid red" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div
         className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ background: "var(--background)", border: "3px solid cyan", maxHeight: "80vh" }}
+        style={{ background: "var(--background)", border: "1px solid var(--border)", maxHeight: "80vh" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "var(--border)" }}>
