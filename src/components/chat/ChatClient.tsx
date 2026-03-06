@@ -282,6 +282,7 @@ export default function ChatClient({ userId, organizationId, userName, userAvata
           <EmptyState onNewConversation={() => setShowNewConv(true)} />
         )}
       </div>
+      </div>
 
       {/* Active Call Modal */}
       {activeCall && (
