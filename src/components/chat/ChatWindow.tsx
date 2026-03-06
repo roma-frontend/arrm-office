@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ThreadPanel } from "./ThreadPanel";
+import { ConversationInfoPanel } from "./ConversationInfoPanel";
 import { format, isToday, isYesterday } from "date-fns";
 import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
@@ -690,7 +691,7 @@ export function ChatWindow({ conversationId, currentUserId, organizationId, curr
             <button
               onClick={handleSendPoll}
               disabled={!pollQuestion.trim() || pollOptions.filter(Boolean).length < 2 || sending}
-              className="ml-auto sm:px-3 px-4 sm:py-1 py-1.5 sm:min-h-auto min-h-[36px] rounded-lg sm:text-xs text-sm font-medium text-white transition-all hover:opacity-80 disabled:opacity-40"
+              className="ml-auto sm:px-3 px-4 sm:py-1 py-1.5 sm:min-h-auto min-h-9 rounded-lg sm:text-xs text-sm font-medium text-white transition-all hover:opacity-80 disabled:opacity-40"
               style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-dark, var(--primary)))" }}
             >
               {t('chat.sendPoll')}
@@ -844,6 +845,16 @@ export function ChatWindow({ conversationId, currentUserId, organizationId, curr
           conversationId={conversationId}
           organizationId={organizationId}
           onClose={() => setThread(null)}
+        />
+      )}
+
+      {/* Conversation Info Panel — slides in from right */}
+      {showInfo && (
+        <ConversationInfoPanel
+          conversationId={conversationId}
+          currentUserId={currentUserId}
+          organizationId={organizationId}
+          onClose={() => setShowInfo(false)}
         />
       )}
     </div>
