@@ -107,10 +107,10 @@ export function NewConversationModal({ currentUserId, organizationId, onClose, o
   console.log("[NewConversationModal] Rendering JSX, mode:", mode, "canCreate:", canCreate);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ border: "4px solid red" }}>
       <div
         className="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ background: "var(--background)", border: "1px solid var(--border)", maxHeight: "80vh" }}
+        style={{ background: "var(--background)", border: "3px solid cyan", maxHeight: "80vh" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "var(--border)" }}>
