@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(ls:*)",
-      "Bash(cd /c/Users/namel/Desktop/office && npx convex push 2>&1)",
-      "Bash(cd /c/Users/namel/Desktop/office && npx convex deploy 2>&1)"
-    ]
-  }
-}
