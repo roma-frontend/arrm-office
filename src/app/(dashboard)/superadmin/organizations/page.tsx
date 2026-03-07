@@ -107,7 +107,7 @@ export default function OrganizationsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-            🏢 {t('admin.superadminPanel')}
+            {t('admin.superadminPanel')}
           </h1>
           <p className="text-muted-foreground">
             {t('superadmin.organizations.subtitle')}
@@ -117,18 +117,18 @@ export default function OrganizationsPage() {
         {/* Tabs Interface */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Tab List */}
-          <TabsList className="grid w-full grid-cols-3 mb-6" style={{ background: "var(--background-subtle)", padding: "8px" }}>
-            <TabsTrigger value="organizations" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-3 h-auto p-1.5 mb-6" style={{ background: "var(--background-subtle)" }}>
+            <TabsTrigger value="organizations" className="flex items-center justify-center gap-2 py-2.5">
               <Building2 className="w-4 h-4" />
               <span className="hidden sm:inline">{t('superadmin.organizations.title')}</span>
               <span className="sm:hidden text-xs">({organizations?.length || 0})</span>
             </TabsTrigger>
-            <TabsTrigger value="announcements" className="flex items-center gap-2">
+            <TabsTrigger value="announcements" className="flex items-center justify-center gap-2 py-2.5">
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">{t('superadmin.announcements.title')}</span>
               <span className="sm:hidden text-xs">{t('superadmin.announcements.new')}</span>
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="flex items-center gap-2">
+            <TabsTrigger value="maintenance" className="flex items-center justify-center gap-2 py-2.5">
               <Wrench className="w-4 h-4" />
               <span className="hidden sm:inline">{t('superadmin.maintenance.title')}</span>
               <span className="sm:hidden text-xs">{t('superadmin.maintenance.config')}</span>

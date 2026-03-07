@@ -1748,7 +1748,13 @@
     "neverBackedUp": "Резервная копия не создавалась",
     "slack": "Slack",
     "slackDesc": "Подключите рабочее пространство Slack для мгновенных уведомлений",
-    "title": "Ինտեգրացիաներ"
+    "title": "Ինտեգրացիաներ",
+    "comingSoon": "Շուտով",
+    "googleCalendarConnected": "Google Calendar connected successfully!",
+    "googleCalendarError": "Failed to connect Google Calendar. Please try again.",
+    "googleCalendarDisconnected": "Google Calendar disconnected.",
+    "googleNotConfigured": "Google Calendar integration is not configured.",
+    "disconnectError": "Failed to disconnect. Please try again."
   },
   "settingsAdvancedSecurity": {
     "twoFactor": "Երկգործոն նույնականացում",
@@ -3028,6 +3034,11 @@
     "unmute": "Միացնել",
     "deleted": "[Ջնջված]",
     "restore": "Վերականգնել",
+    "filterAll": "Բոլորը",
+    "filterChat": "Զրույց",
+    "filterUnread": "Չկարդացված",
+    "filterGroups": "Խմբեր",
+    "filterPinned": "Ամրացված",
     "filterArchived": "Արխիվ"
   },
   "superadminStripe": {

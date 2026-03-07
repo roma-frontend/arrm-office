@@ -196,7 +196,7 @@ export default function SecurityDashboard() {
         threatLevel === t('superadmin.security.moderate') ? "text-yellow-400" : "text-green-400";
 
   return (
-    <div className="min-h-screen p-3 sm:p-6" style={{ background: "var(--background)", color: "var(--text-primary)" }}>
+    <div style={{ color: "var(--text-primary)" }}>
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -231,12 +231,12 @@ export default function SecurityDashboard() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex gap-1 sm:gap-2 mb-4 sm:mb-6 border-b overflow-x-auto" style={{ borderColor: "var(--border)" }}>
+      <div className="flex gap-1 sm:gap-2 mb-4 sm:mb-6 border-b" style={{ borderColor: "var(--border)" }}>
         {(["settings", "blocked", "attempts", "logs"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className="px-2 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap shrink-0"
+            className="px-2 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap"
             style={{
               background: activeTab === tab ? "var(--card)" : "transparent",
               color: activeTab === tab ? "var(--text-primary)" : "var(--text-muted)",

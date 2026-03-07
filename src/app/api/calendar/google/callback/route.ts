@@ -8,13 +8,13 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/dashboard?error=google_auth_failed`, request.url)
+      new URL(`/settings?google_calendar=error`, request.url)
     );
   }
 
   if (!code) {
     return NextResponse.redirect(
-      new URL(`/dashboard?error=missing_code`, request.url)
+      new URL(`/settings?google_calendar=error`, request.url)
     );
   }
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     
     // Store tokens securely (in production, save to database)
     const response = NextResponse.redirect(
-      new URL("/dashboard?success=google_connected", request.url)
+      new URL("/settings?google_calendar=connected", request.url)
     );
     
     // Set HTTP-only cookies

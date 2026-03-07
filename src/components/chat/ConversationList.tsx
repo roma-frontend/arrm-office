@@ -46,7 +46,7 @@ interface Props {
   onToggleMute?: (convId: Id<"chatConversations">) => Promise<void>;
 }
 
-type FilterType = "all" | "unread" | "groups" | "pinned" | "archived";
+type FilterType = "all" | "chat" | "unread" | "groups" | "pinned" | "archived";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -78,7 +78,7 @@ export function ConversationList({
 }: Props) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<FilterType>("all");
+  const [filter, setFilter] = useState<FilterType>("chat");
   const [loadingOpId, setLoadingOpId] = useState<string | null>(null);
 
   // Apply filters
@@ -88,17 +88,21 @@ export function ConversationList({
 
     if (!matchesSearch) return false;
 
+    const isHidden = c.membership.isArchived || c.isArchived || c.membership.isDeleted || c.isDeleted;
+
     switch (filter) {
+      case "chat":
+        return c.type === "direct" && !isHidden;
       case "unread":
-        return c.membership.unreadCount > 0;
+        return c.membership.unreadCount > 0 && !isHidden;
       case "groups":
-        return c.type === "group";
+        return c.type === "group" && !isHidden;
       case "pinned":
-        return c.isPinned;
+        return c.isPinned && !isHidden;
       case "archived":
-        return c.membership.isArchived || c.isArchived || c.membership.isDeleted || c.isDeleted;
+        return isHidden;
       default:
-        return !(c.membership.isArchived || c.isArchived || c.membership.isDeleted || c.isDeleted); // "all" shows non-archived/deleted only
+        return !isHidden; // "all" shows non-archived/deleted only
     }
   });
 
@@ -169,29 +173,33 @@ export function ConversationList({
 
       {/* Filters */}
       <div className="px-3 pb-2 flex gap-1 overflow-x-auto scrollbar-hide scroll-smooth">
-        {(["all", "unread", "groups", "pinned", "archived"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={cn(
-              "px-3 py-1 text-xs rounded-full whitespace-nowrap transition-all shrink-0 active:scale-95",
-              filter === f
-                ? "text-white shadow-md"
-                : "text-gray-500 opacity-60 hover:opacity-100"
-            )}
-            style={{
-              background: filter === f ? "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)" : "transparent",
-              cursor: "pointer",
-            }}
-            title={f === "archived" ? "Archived conversations - tap to restore" : undefined}
-          >
-            {f === "all" && t('chat.filterAll', 'All')}
-            {f === "unread" && `${t('chat.filterUnread', 'Unread')} ${conversations.filter(c => c.membership.unreadCount > 0).length > 0 ? `(${conversations.filter(c => c.membership.unreadCount > 0).length})` : ""}`}
-            {f === "groups" && t('chat.filterGroups', 'Groups')}
-            {f === "pinned" && t('chat.filterPinned', 'Pinned')}
-            {f === "archived" && t('chat.filterArchived', 'Archived')}
-          </button>
-        ))}
+        {(["all", "chat", "unread", "groups", "pinned", "archived"] as const).map((f) => {
+          const unreadCount = conversations.filter(c => c.membership.unreadCount > 0 && !(c.membership.isArchived || c.isArchived || c.membership.isDeleted || c.isDeleted)).length;
+          return (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                "px-3 py-1 text-xs rounded-full whitespace-nowrap transition-all shrink-0 active:scale-95",
+                filter === f
+                  ? "text-white shadow-md"
+                  : "text-gray-500 opacity-60 hover:opacity-100"
+              )}
+              style={{
+                background: filter === f ? "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)" : "transparent",
+                cursor: "pointer",
+              }}
+              title={f === "archived" ? "Archived conversations - tap to restore" : undefined}
+            >
+              {f === "all" && t('chat.filterAll', 'All')}
+              {f === "chat" && t('chat.filterChat', 'Chat')}
+              {f === "unread" && `${t('chat.filterUnread', 'Unread')} ${unreadCount > 0 ? `(${unreadCount})` : ""}`}
+              {f === "groups" && t('chat.filterGroups', 'Groups')}
+              {f === "pinned" && t('chat.filterPinned', 'Pinned')}
+              {f === "archived" && t('chat.filterArchived', 'Archived')}
+            </button>
+          );
+        })}
       </div>
 
       {/* List */}
@@ -344,7 +352,7 @@ export function ConversationList({
                   <div className="flex items-center gap-1 shrink-0 ml-1">
                     {(conv.membership.isDeleted || conv.isDeleted) ? (
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleOperation(async () => { await onRestore?.(conv._id); if (conv.membership.isArchived || conv.isArchived) await onToggleArchive?.(conv._id); }, conv._id); }}
+                        onClick={(e) => { e.stopPropagation(); handleOperation(async () => { await onRestore?.(conv._id); setFilter("chat"); }, conv._id); }}
                         className="p-1.5 rounded-lg transition-colors hover:bg-(--sidebar-item-hover)"
                         title={t('chat.restore') || 'Восстановить'}
                       >
@@ -375,7 +383,7 @@ export function ConversationList({
                 
                 {(conv.membership.isDeleted || conv.isDeleted) ? (
                   <ContextMenuItem
-                    onClick={() => handleOperation(() => onRestore?.(conv._id) || Promise.resolve(), conv._id)}
+                    onClick={() => handleOperation(async () => { await onRestore?.(conv._id); setFilter("chat"); }, conv._id)}
                     disabled={isLoading}
                     className="flex items-center gap-2"
                   >

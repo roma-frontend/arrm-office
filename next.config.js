@@ -366,6 +366,12 @@ const nextConfig = {
         destination: '/',
         permanent: true,
       },
+      // Redirect /superadmin to /superadmin/organizations
+      {
+        source: '/superadmin',
+        destination: '/superadmin/organizations',
+        permanent: false,
+      },
     ];
   },
 };

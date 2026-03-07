@@ -70,19 +70,27 @@ export default function SettingsPage() {
 
   // Mouse drag scroll state
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
+  const dragRef = useRef({ x: 0, scrollLeft: 0, hasMoved: false });
+
+  // Block Radix pointerdown from activating tab during potential drag
+  const handlePointerDownCapture = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const tab = (e.target as HTMLElement).closest("[role='tab']");
+    if (tab) {
+      // Prevent Radix from switching tab on pointerdown — we'll do it on mouseup if no drag
+      e.stopPropagation();
+    }
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = tabsScrollRef.current;
     if (!el) return;
-    // Only start drag if clicking on the scrollable area, not on buttons/tabs
-    if ((e.target as HTMLElement).closest("button, [role='tab']")) return;
-    
+
     setIsDragging(true);
-    setDragStart({
-      x: e.pageX - el.offsetLeft,
+    dragRef.current = {
+      x: e.pageX,
       scrollLeft: el.scrollLeft,
-    });
+      hasMoved: false,
+    };
   }, []);
 
   const handleMouseMove = useCallback(
@@ -91,14 +99,25 @@ export default function SettingsPage() {
       const el = tabsScrollRef.current;
       if (!el) return;
 
-      const walk = (e.pageX - el.offsetLeft) - dragStart.x;
-      el.scrollLeft = dragStart.scrollLeft - walk;
+      const dx = e.pageX - dragRef.current.x;
+      if (Math.abs(dx) > 3) {
+        dragRef.current.hasMoved = true;
+      }
+      el.scrollLeft = dragRef.current.scrollLeft - dx;
     },
-    [isDragging, dragStart]
+    [isDragging]
   );
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(false);
+    // If no drag happened, treat as a click — activate the tab
+    if (!dragRef.current.hasMoved) {
+      const tab = (e.target as HTMLElement).closest("[role='tab']");
+      if (tab) {
+        const value = tab.getAttribute("data-value") || tab.getAttribute("value");
+        if (value) setActiveTab(value);
+      }
+    }
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -280,6 +299,7 @@ export default function SettingsPage() {
           <div
             ref={tabsScrollRef}
             onScroll={updateScrollState}
+            onPointerDownCapture={handlePointerDownCapture}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -288,13 +308,14 @@ export default function SettingsPage() {
               isDragging ? "cursor-grabbing select-none" : "cursor-grab"
             }`}
           >
-            <TabsList className={`inline-flex w-auto min-w-full gap-1 bg-transparent h-auto ${isDragging ? "pointer-events-none" : ""}`}>
+            <TabsList className="inline-flex w-auto min-w-full gap-1 bg-transparent h-auto">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
+                    data-value={tab.value}
                     className="data-[state=active]:bg-[var(--primary)] data-[state=active]:text-white data-[state=inactive]:text-[var(--text-muted)] transition-colors rounded-lg py-2.5 px-3 h-auto whitespace-nowrap"
                   >
                     <div className="flex items-center justify-center gap-2">

@@ -71,7 +71,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         {/* Navbar — ssr:false prevents theme/user/notification mismatch */}
         <Navbar />
         {/* Main content area — chat page gets no padding and no scroll (manages its own) */}
-        <main className={isChatPage ? "flex-1 overflow-hidden flex flex-col min-h-0" : "flex-1 overflow-y-auto"}>
+        <main className={isChatPage ? "flex-1 overflow-hidden flex flex-col min-h-0" : "flex-1 overflow-y-auto overflow-x-hidden"}>
           {isChatPage ? (
             <div className="flex flex-col flex-1 min-h-0 h-full p-0 sm:p-3 md:p-4">
               {children}

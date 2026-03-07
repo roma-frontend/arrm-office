@@ -1757,7 +1757,13 @@
     "neverBackedUp": "Never backed up",
     "slack": "Slack",
     "slackDesc": "Connect your Slack workspace for instant notifications",
-    "title": "Integrations"
+    "title": "Integrations",
+    "comingSoon": "Coming Soon",
+    "googleCalendarConnected": "Google Calendar connected successfully!",
+    "googleCalendarError": "Failed to connect Google Calendar. Please try again.",
+    "googleCalendarDisconnected": "Google Calendar disconnected.",
+    "googleNotConfigured": "Google Calendar integration is not configured. Please contact your administrator.",
+    "disconnectError": "Failed to disconnect. Please try again."
   },
   "settingsAdvancedSecurity": {
     "twoFactor": "Two-Factor Authentication",
@@ -3037,6 +3043,11 @@
     "unmute": "Unmute",
     "deleted": "[Deleted]",
     "restore": "Restore",
+    "filterAll": "All",
+    "filterChat": "Chat",
+    "filterUnread": "Unread",
+    "filterGroups": "Groups",
+    "filterPinned": "Pinned",
     "filterArchived": "Archived"
   },
   "superadminStripe": {

@@ -1757,7 +1757,13 @@
     "neverBackedUp": "Резервная копия не создавалась",
     "slack": "Slack",
     "slackDesc": "Подключите рабочее пространство Slack для мгновенных уведомлений",
-    "title": "Интеграции"
+    "title": "Интеграции",
+    "comingSoon": "Скоро",
+    "googleCalendarConnected": "Google Calendar успешно подключён!",
+    "googleCalendarError": "Не удалось подключить Google Calendar. Попробуйте снова.",
+    "googleCalendarDisconnected": "Google Calendar отключён.",
+    "googleNotConfigured": "Интеграция Google Calendar не настроена. Обратитесь к администратору.",
+    "disconnectError": "Не удалось отключить. Попробуйте снова."
   },
   "settingsAdvancedSecurity": {
     "twoFactor": "Двухфакторная аутентификация",
@@ -3037,6 +3043,11 @@
     "unmute": "Включить звук",
     "deleted": "[Удалено]",
     "restore": "Восстановить",
+    "filterAll": "Все",
+    "filterChat": "Чат",
+    "filterUnread": "Непрочитанные",
+    "filterGroups": "Группы",
+    "filterPinned": "Закреплённые",
     "filterArchived": "Архив"
   },
   "superadminStripe": {

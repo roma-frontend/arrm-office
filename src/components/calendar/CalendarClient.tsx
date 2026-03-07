@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,6 +12,7 @@ import {
   XCircle,
   Users,
   Plus,
+  ExternalLink,
 } from "lucide-react";
 import {
   format,
@@ -50,6 +51,19 @@ type LeaveRequest = {
   reason: string;
   status: string;
   comment?: string;
+};
+
+type GoogleCalendarEvent = {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  allDay: boolean;
+  location: string;
+  htmlLink: string;
 };
 
 // --- Helpers ------------------------------------------------------------------
@@ -99,17 +113,21 @@ const LEAVE_TYPE_BG: Record<string, string> = {
 // Days of week will be translated using i18n
 
 // --- Calendar Day Cell ---------------------------------------------------------
+const GOOGLE_EVENT_COLOR = "#8b5cf6";
+
 function DayCell({
   date,
   currentMonth,
   selected,
   leaves,
+  googleEvents,
   onClick,
 }: {
   date: Date;
   currentMonth: Date;
   selected: Date | null;
   leaves: LeaveRequest[];
+  googleEvents: GoogleCalendarEvent[];
   onClick: () => void;
 }) {
   const { t } = useTranslation();
@@ -117,6 +135,8 @@ function DayCell({
   const isTodayDate = isToday(date);
   const isSelected = selected ? isSameDay(date, selected) : false;
   const hasLeaves = leaves.length > 0 && isCurrentMonth;
+  const hasGoogle = googleEvents.length > 0 && isCurrentMonth;
+  const totalItems = leaves.length + googleEvents.length;
 
   return (
     <motion.button
@@ -153,12 +173,13 @@ function DayCell({
         {date.getDate()}
       </span>
 
-      {/* Leave dots / pills */}
-      {hasLeaves && (
+      {/* Event pills */}
+      {(hasLeaves || hasGoogle) && (
         <div className="flex flex-col gap-0.5 mt-0.5">
-          {leaves.slice(0, 2).map((l, i) => (
+          {/* Leave pills */}
+          {leaves.slice(0, hasGoogle ? 1 : 2).map((l, i) => (
             <div
-              key={i}
+              key={`l-${i}`}
               className="flex items-center gap-1 rounded-full px-1.5 py-0.5"
               style={{ background: `${LEAVE_TYPE_BG[l.type]}22` }}
             >
@@ -174,9 +195,28 @@ function DayCell({
               </span>
             </div>
           ))}
-          {leaves.length > 2 && (
+          {/* Google Calendar pills */}
+          {googleEvents.slice(0, hasLeaves ? 1 : 2).map((evt, i) => (
+            <div
+              key={`g-${i}`}
+              className="flex items-center gap-1 rounded-full px-1.5 py-0.5"
+              style={{ background: `${GOOGLE_EVENT_COLOR}22` }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ background: GOOGLE_EVENT_COLOR }}
+              />
+              <span
+                className="text-[9px] font-medium truncate hidden sm:block"
+                style={{ color: GOOGLE_EVENT_COLOR }}
+              >
+                {evt.title}
+              </span>
+            </div>
+          ))}
+          {totalItems > 2 && (
             <span className="text-[9px] text-[var(--text-muted)] pl-1">
-              +{leaves.length - 2} more
+              +{totalItems - 2} more
             </span>
           )}
         </div>
@@ -200,8 +240,31 @@ export function CalendarClient() {
     t('weekdays.thu'), t('weekdays.fri'), t('weekdays.sat')
   ];
 
-  useEffect(() => { 
-    setMounted(true); 
+  // Google Calendar events
+  const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
+  const [googleConnected, setGoogleConnected] = useState(false);
+
+  const fetchGoogleEvents = useCallback(async (month: Date) => {
+    try {
+      const start = startOfMonth(month);
+      const end = endOfMonth(month);
+      const timeMin = start.toISOString();
+      const timeMax = end.toISOString();
+      const res = await fetch(`/api/calendar/google/events?timeMin=${timeMin}&timeMax=${timeMax}`);
+      const data = await res.json();
+      setGoogleConnected(data.connected ?? false);
+      setGoogleEvents(data.events ?? []);
+    } catch {
+      setGoogleEvents([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mounted) fetchGoogleEvents(currentMonth);
+  }, [mounted, currentMonth, fetchGoogleEvents]);
+
+  useEffect(() => {
+    setMounted(true);
     console.log('📅 CalendarClient mounted');
   }, []);
 
@@ -252,6 +315,25 @@ export function CalendarClient() {
     return map;
   }, [leaves]);
 
+  // Build Google Calendar events map
+  const googleDateMap = useMemo(() => {
+    const map = new Map<string, GoogleCalendarEvent[]>();
+    googleEvents.forEach((evt) => {
+      // For all-day events, Google returns end as exclusive (next day)
+      const endDate = evt.allDay && evt.endDate
+        ? format(addDays(new Date(evt.endDate), -1), "yyyy-MM-dd")
+        : evt.endDate;
+      const start = evt.startDate;
+      if (!start) return;
+      getDateRange(start, endDate || start).forEach((d) => {
+        const key = format(d, "yyyy-MM-dd");
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(evt);
+      });
+    });
+    return map;
+  }, [googleEvents]);
+
   // Build calendar grid
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth));
@@ -269,6 +351,11 @@ export function CalendarClient() {
     if (!selectedDay) return [];
     return leaveDateMap.get(format(selectedDay, "yyyy-MM-dd")) ?? [];
   }, [selectedDay, leaveDateMap]);
+
+  const selectedDayGoogle = useMemo(() => {
+    if (!selectedDay) return [];
+    return googleDateMap.get(format(selectedDay, "yyyy-MM-dd")) ?? [];
+  }, [selectedDay, googleDateMap]);
 
   const prevMonth = () => setCurrentMonth((m) => subMonths(m, 1));
   const nextMonth = () => setCurrentMonth((m) => addMonths(m, 1));
@@ -406,6 +493,7 @@ export function CalendarClient() {
                   {calendarDays.map((date, i) => {
                     const key = format(date, "yyyy-MM-dd");
                     const leaves = leaveDateMap.get(key) ?? [];
+                    const gEvents = googleDateMap.get(key) ?? [];
                     return (
                       <DayCell
                         key={i}
@@ -413,6 +501,7 @@ export function CalendarClient() {
                         currentMonth={currentMonth}
                         selected={selectedDay}
                         leaves={leaves}
+                        googleEvents={gEvents}
                         onClick={() => setSelectedDay(date)}
                       />
                     );
@@ -435,6 +524,12 @@ export function CalendarClient() {
                 <span className="text-xs text-[var(--text-muted)]">{getLeaveTypeLabel(type, t)}</span>
               </div>
             ))}
+            {googleConnected && (
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: GOOGLE_EVENT_COLOR }} />
+                <span className="text-xs text-[var(--text-muted)]">Google Calendar</span>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full border-2 border-[var(--primary)] bg-[var(--primary)]/10 flex-shrink-0" />
               <span className="text-xs text-[var(--text-muted)]">{t('timePeriods.today')}</span>
@@ -458,7 +553,7 @@ export function CalendarClient() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <AnimatePresence mode="wait">
-                {selectedDayLeaves.length === 0 ? (
+                {selectedDayLeaves.length === 0 && selectedDayGoogle.length === 0 ? (
                   <motion.div
                     key="empty"
                     initial={{ opacity: 0 }}
@@ -475,8 +570,9 @@ export function CalendarClient() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="space-y-2 max-h-64 overflow-y-auto"
+                    className="space-y-2 max-h-80 overflow-y-auto"
                   >
+                    {/* Leave requests */}
                     {selectedDayLeaves.map((leave, i) => (
                       <motion.div
                         key={leave._id}
@@ -516,6 +612,60 @@ export function CalendarClient() {
                               &quot;{leave.comment}&quot;
                             </p>
                           )}
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {/* Google Calendar events */}
+                    {selectedDayGoogle.map((evt, i) => (
+                      <motion.div
+                        key={evt.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: (selectedDayLeaves.length + i) * 0.04 }}
+                        className="flex items-start gap-2.5 p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background-subtle)]"
+                      >
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white"
+                          style={{ background: GOOGLE_EVENT_COLOR }}
+                        >
+                          G
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                              {evt.title}
+                            </p>
+                            {evt.htmlLink && (
+                              <a
+                                href={evt.htmlLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[var(--text-muted)] hover:text-[var(--primary)] flex-shrink-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                          {evt.startTime && (
+                            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                              {format(new Date(evt.startTime), "h:mm a")}
+                              {evt.endTime && ` – ${format(new Date(evt.endTime), "h:mm a")}`}
+                            </p>
+                          )}
+                          {!evt.startTime && (
+                            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">All day</p>
+                          )}
+                          {evt.location && (
+                            <p className="text-[10px] text-[var(--text-muted)] mt-0.5 truncate">
+                              📍 {evt.location}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: GOOGLE_EVENT_COLOR }} />
+                            <span className="text-[10px] text-[var(--text-secondary)]">Google Calendar</span>
+                          </div>
                         </div>
                       </motion.div>
                     ))}

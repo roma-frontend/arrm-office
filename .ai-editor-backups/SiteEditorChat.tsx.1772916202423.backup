@@ -297,19 +297,19 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
               </h4>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
-                  <div className="text-amber-500 dark:text-amber-600">{t("aiSiteEditor.design")}</div>
+                  <div className="text-amber-300 dark:text-amber-700">{t("aiSiteEditor.design")}</div>
                   <div className="font-semibold text-amber-900 dark:text-amber-100">
                     {usage.designChanges} / {features.aiSiteEditorDesignChanges}
                   </div>
                 </div>
                 <div>
-                  <div className="text-amber-600 dark:text-amber-500">{t("aiSiteEditor.content")}</div>
+                  <div className="text-amber-700 dark:text-amber-300">{t("aiSiteEditor.content")}</div>
                   <div className="font-semibold text-amber-900 dark:text-amber-100">
                     {usage.contentChanges} / {features.aiSiteEditorContentChanges}
                   </div>
                 </div>
                 <div>
-                  <div className="text-amber-600 dark:text-amber-500">{t("aiSiteEditor.layout")}</div>
+                  <div className="text-amber-700 dark:text-amber-300">{t("aiSiteEditor.layout")}</div>
                   <div className="font-semibold text-amber-900 dark:text-amber-100">
                     {usage.layoutChanges} / {features.aiSiteEditorLayoutChanges}
                   </div>

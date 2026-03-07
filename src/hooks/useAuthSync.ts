@@ -208,7 +208,7 @@ export function useAuthSync() {
           // Only redirect if we're on auth pages (login/register), not if already on a dashboard page
           const path = window.location.pathname;
           const isAuthPage = path === '/login' || path === '/register' || path.startsWith('/register-org');
-          const isDashboardPage = path === '/dashboard' || path.startsWith('/superadmin') || path.startsWith('/employees') || path.startsWith('/tasks') || path.startsWith('/calendar') || path.startsWith('/leaves') || path.startsWith('/attendance') || path.startsWith('/settings') || path.startsWith('/chat') || path.startsWith('/analytics') || path.startsWith('/reports') || path.startsWith('/join-requests') || path.startsWith('/org-requests') || path.startsWith('/profile');
+          const isDashboardPage = path === '/dashboard' || path.startsWith('/superadmin') || path.startsWith('/admin') || path.startsWith('/employees') || path.startsWith('/tasks') || path.startsWith('/calendar') || path.startsWith('/leaves') || path.startsWith('/attendance') || path.startsWith('/settings') || path.startsWith('/chat') || path.startsWith('/analytics') || path.startsWith('/reports') || path.startsWith('/join-requests') || path.startsWith('/org-requests') || path.startsWith('/approvals') || path.startsWith('/profile') || path.startsWith('/ai-site-editor');
           if (!isDashboardPage && !isAuthPage) {
             console.log("[useAuthSync] Redirecting from", path, "to dashboard");
             window.location.href = '/dashboard';

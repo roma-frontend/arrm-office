@@ -1417,12 +1417,24 @@ export const restoreConversation = mutation({
 
     if (!member) throw new Error("Not a member of this conversation");
 
+    // Reset per-user flags on chatMembers
     await ctx.db.patch(member._id, {
       isDeleted: false,
       deletedAt: undefined,
+      isArchived: false,
     });
 
-    console.log(`[Chat] Conversation ${args.conversationId} restored for user ${args.userId} (per-user)`);
+    // Also reset conversation-level flags if they were set
+    if (conv.isDeleted || conv.isArchived) {
+      await ctx.db.patch(args.conversationId, {
+        isDeleted: false,
+        isArchived: false,
+        deletedAt: undefined,
+        deletedBy: undefined,
+      });
+    }
+
+    console.log(`[Chat] Conversation ${args.conversationId} restored for user ${args.userId} (per-user + conversation-level)`);
   },
 });
 
