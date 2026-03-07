@@ -930,6 +930,17 @@ export default defineSchema({
     .index("by_org_month", ["organizationId", "month"])
     .index("by_user_month", ["userId", "month"]),
 
+  // ── SHAREPOINT SYNC LOGS ─────────────────────────────────────────────────
+  sharepointSyncLogs: defineTable({
+    organizationId: v.id("organizations"),
+    triggeredBy: v.id("users"),
+    created: v.number(),
+    updated: v.number(),
+    deactivated: v.number(),
+    errors: v.number(),
+    syncedAt: v.number(),
+  }).index("by_org", ["organizationId"]),
+
   // ── MAINTENANCE MODE ──────────────────────────────────────────────────────
   // Site maintenance/downtime management
   maintenanceMode: defineTable({
