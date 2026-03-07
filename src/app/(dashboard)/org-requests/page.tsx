@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';;
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useAuthStore } from "@/store/useAuthStore";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ShieldLoader } from "@/components/ui/ShieldLoader";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -30,6 +30,7 @@ type Status = "pending" | "approved" | "rejected";
 
 export default function OrgRequestsPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { user } = useAuthStore();
   const [statusFilter, setStatusFilter] = useState<Status | "all">("pending");
   const [selectedRequest, setSelectedRequest] = useState<Id<"organizationRequests"> | null>(null);
@@ -40,7 +41,14 @@ export default function OrgRequestsPage() {
   const isAdmin = user?.role === "admin";
   
   if (!user || !isAdmin) {
-    redirect("/dashboard");
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <ShieldLoader size="lg" />
+          <p className="mt-4 text-muted-foreground">{t('ui.accessDenied')}</p>
+        </div>
+      </div>
+    );
   }
 
   const requests = useQuery(

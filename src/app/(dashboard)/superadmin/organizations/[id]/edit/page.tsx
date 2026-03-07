@@ -58,8 +58,13 @@ export default function EditOrganizationPage() {
   useEffect(() => {
     if (!user) {
       router.push("/login");
+      return;
     }
-  }, [user, router]);
+    
+    if (!isSuperadmin && !canAccess) {
+      router.push("/dashboard");
+    }
+  }, [user, isSuperadmin, canAccess, router]);
 
   if (!user) {
     return (

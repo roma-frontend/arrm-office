@@ -81,8 +81,13 @@ export default function ManageAdminsPage() {
   useEffect(() => {
     if (!user) {
       router.push("/login");
+      return;
     }
-  }, [user, router]);
+    
+    if (!canAccess) {
+      router.push("/dashboard");
+    }
+  }, [user, canAccess, router]);
 
   const handlePromoteAdmin = async () => {
     if (!selectedMemberId) return;
