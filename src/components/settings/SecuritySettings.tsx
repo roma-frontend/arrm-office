@@ -72,8 +72,8 @@ userId }: SecuritySettingsProps) {
           <div className="space-y-4">
             {faceData?.faceDescriptor ? (
               <>
-                <div className="flex items-center gap-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-[var(--surface-hover)] border-2 border-green-500/30">
+                <div className="flex items-center gap-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20 overflow-hidden">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-[var(--surface-hover)] border-2 border-green-500/30 flex-shrink-0">
                     {faceData.faceImageUrl ? (
                       <img
                         src={faceData.faceImageUrl}
@@ -86,11 +86,11 @@ userId }: SecuritySettingsProps) {
                       </div>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400 truncate">
                       {t('settingsSecurity.faceIdRegistered')}
                     </p>
-                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                    <p className="text-xs text-[var(--text-muted)] mt-1 truncate">
                       {t('settingsSecurity.registeredOn')} {new Date(faceData.faceRegisteredAt || 0).toLocaleDateString()}
                     </p>
                   </div>

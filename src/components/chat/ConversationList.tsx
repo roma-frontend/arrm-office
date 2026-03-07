@@ -125,7 +125,7 @@ export function ConversationList({
             {t('chat.messages')}
           </h2>
           {totalUnread > 0 && (
-            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] font-bold flex items-center justify-center">
+            <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-[10px] font-bold flex items-center justify-center">
               {totalUnread > 99 ? "99+" : totalUnread}
             </span>
           )}
@@ -168,20 +168,22 @@ export function ConversationList({
       </div>
 
       {/* Filters */}
-      <div className="px-3 pb-2 flex gap-1 flex-wrap">
+      <div className="px-3 pb-2 flex gap-1 overflow-x-auto scrollbar-hide scroll-smooth">
         {(["all", "unread", "groups", "pinned", "archived"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={cn(
-              "px-3 py-1 text-xs rounded-full whitespace-nowrap transition-all shrink-0",
+              "px-3 py-1 text-xs rounded-full whitespace-nowrap transition-all shrink-0 active:scale-95",
               filter === f
-                ? "text-white"
+                ? "text-white shadow-md"
                 : "text-gray-500 opacity-60 hover:opacity-100"
             )}
             style={{
               background: filter === f ? "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)" : "transparent",
+              cursor: "pointer",
             }}
+            title={f === "archived" ? "Archived conversations - tap to restore" : undefined}
           >
             {f === "all" && t('chat.filterAll', 'All')}
             {f === "unread" && `${t('chat.filterUnread', 'Unread')} ${conversations.filter(c => c.membership.unreadCount > 0).length > 0 ? `(${conversations.filter(c => c.membership.unreadCount > 0).length})` : ""}`}
@@ -342,21 +344,21 @@ export function ConversationList({
                   <div className="flex items-center gap-1 shrink-0 ml-1">
                     {(conv.membership.isDeleted || conv.isDeleted) ? (
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleOperation(() => onRestore?.(conv._id) || Promise.resolve(), conv._id); }}
-                        className="p-1.5 rounded-lg transition-colors hover:bg-[var(--sidebar-item-hover)]"
+                        onClick={(e) => { e.stopPropagation(); handleOperation(async () => { await onRestore?.(conv._id); if (conv.membership.isArchived || conv.isArchived) await onToggleArchive?.(conv._id); }, conv._id); }}
+                        className="p-1.5 rounded-lg transition-colors hover:bg-(--sidebar-item-hover)"
                         title={t('chat.restore') || 'Восстановить'}
                       >
                         <RotateCcw className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
                       </button>
-                    ) : (
+                    ) : (conv.membership.isArchived || conv.isArchived) ? (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleOperation(() => onToggleArchive?.(conv._id) || Promise.resolve(), conv._id); }}
-                        className="p-1.5 rounded-lg transition-colors hover:bg-[var(--sidebar-item-hover)]"
+                        className="p-1.5 rounded-lg transition-colors hover:bg-(--sidebar-item-hover)"
                         title={t('chat.unarchive') || 'Разархивировать'}
                       >
                         <Archive className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -441,6 +443,7 @@ export function ConversationList({
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes conv-in {
           from { opacity: 0; transform: translateX(-8px); }
           to   { opacity: 1; transform: translateX(0); }

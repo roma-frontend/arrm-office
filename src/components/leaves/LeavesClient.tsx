@@ -194,9 +194,9 @@ export function LeavesClient() {
       <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
         <Plus className="w-8 h-8 text-amber-500" />
       </div>
-      <h2 className="text-xl font-bold text-[var(--text-primary)]">{t('dashboard.convexNotDeployed')}</h2>
-      <p className="text-[var(--text-muted)] text-sm max-w-sm">
-        Run <code className="bg-[var(--background-subtle)] px-2 py-0.5 rounded text-[#2563eb]">npx convex dev</code> in the terminal to connect to the database.
+      <h2 className="text-xl font-bold text-(--text-primary)">{t('dashboard.convexNotDeployed')}</h2>
+      <p className="text-(--text-muted) text-sm max-w-sm">
+        Run <code className="bg-(--background-subtle) px-2 py-0.5 rounded text-[#2563eb]">npx convex dev</code> in the terminal to connect to the database.
       </p>
     </div>
   );
@@ -212,20 +212,17 @@ export function LeavesClient() {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t('leave.title')}</h2>
-          <p className="text-[var(--text-muted)] text-sm mt-1">
+          <h2 className="text-2xl font-bold text-(--text-primary)">{t('leave.title')}</h2>
+          <p className="text-(--text-muted) text-sm mt-1">
             {t('leave.manageAndTrack')}
           </p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <Button
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all w-full sm:w-auto justify-center"
-          style={{ background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)" }}
+          className="flex items-center gap-2 w-full sm:w-auto justify-center bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark,var(--primary))] hover:opacity-90 transition-opacity text-white font-medium shadow-md hover:shadow-lg"
         >
           <Plus className="w-5 h-5" /> {t('dashboard.newRequest')}
-        </motion.button>
+        </Button>
       </motion.div>
 
       {/* Filters */}
@@ -234,7 +231,7 @@ export function LeavesClient() {
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
                 <Input
                   placeholder={t('placeholders.searchEmployee')}
                   className="pl-9"
@@ -276,7 +273,7 @@ export function LeavesClient() {
             <div className="flex items-center justify-between">
               {/* Only show count for admins, not superadmin */}
               {isAdmin && (
-                <CardTitle className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                <CardTitle className="text-sm font-semibold text-(--text-muted) uppercase tracking-wider">
                   {isLoading ? t('common.loading') : `${filtered.length} request${filtered.length !== 1 ? "s" : ""}`}
                 </CardTitle>
               )}
@@ -284,10 +281,10 @@ export function LeavesClient() {
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="p-12 text-center text-[var(--text-muted)] text-sm">{t('ui.loadingFromConvex')}</div>
+              <div className="p-12 text-center text-(--text-muted) text-sm">{t('ui.loadingFromConvex')}</div>
             ) : filtered.length === 0 ? (
               <div className="p-12 text-center">
-                <p className="text-[var(--text-muted)] text-sm">{t('leave.noLeaves')}</p>
+                <p className="text-(--text-muted) text-sm">{t('leave.noLeaves')}</p>
                 <Button className="mt-4" size="sm" onClick={() => setModalOpen(true)}>
                   <Plus className="w-4 h-4" /> {t('leave.createFirst')}
                 </Button>
@@ -296,43 +293,43 @@ export function LeavesClient() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-[var(--border)]">
-                      <th className="text-left px-6 py-3 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">{t('dashboard.employee')}</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">{t('dashboard.type')}</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden md:table-cell">{t('dashboard.dates')}</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden sm:table-cell">{t('dashboard.days')}</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden lg:table-cell">{t('common.reason')}</th>
-                      <th className="text-left px-4 py-3 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">{t('dashboard.status')}</th>
-                      {isAdmin && <th className="text-left px-4 py-3 text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">{t('common.actions')}</th>}
+                    <tr className="border-b border-(--border)">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">{t('dashboard.employee')}</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">{t('dashboard.type')}</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden md:table-cell">{t('dashboard.dates')}</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden sm:table-cell">{t('dashboard.days')}</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden lg:table-cell">{t('common.reason')}</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">{t('dashboard.status')}</th>
+                      {isAdmin && <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">{t('common.actions')}</th>}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--border)]">
+                  <tbody className="divide-y divide-(--border)">
                     {filtered.map((req, i) => (
                       <React.Fragment key={req._id}>
                         <motion.tr
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: i * 0.03 }}
-                          className="hover:bg-[var(--background-subtle)] transition-colors cursor-pointer"
+                          className="hover:bg-(--background-subtle) transition-colors cursor-pointer"
                           onClick={() => isAdmin && req.status === "pending" && setExpandedRow(expandedRow === req._id ? null : req._id)}
                         >
                         <td className="px-6 py-3">
                           <div>
-                            <p className="text-sm font-medium text-[var(--text-primary)]">{req.userName}</p>
-                            <p className="text-xs text-[var(--text-muted)]">{req.userDepartment}</p>
+                            <p className="text-sm font-medium text-(--text-primary)">{req.userName}</p>
+                            <p className="text-xs text-(--text-muted)">{req.userDepartment}</p>
                           </div>
                         </td>
                         <td className="px-4 py-3"><LeaveTypeBadge type={req.type as LeaveType} /></td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <p className="text-xs text-[var(--text-secondary)]">
+                          <p className="text-xs text-(--text-secondary)">
                             {safeFormat(req.startDate, "MMM d")} – {safeFormat(req.endDate, "MMM d, yyyy")}
                           </p>
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">
-                          <span className="text-sm font-medium text-[var(--text-primary)]">{req.days}d</span>
+                          <span className="text-sm font-medium text-(--text-primary)">{req.days}d</span>
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <p className="text-xs text-[var(--text-muted)] max-w-[180px] truncate">{req.reason}</p>
+                          <p className="text-xs text-(--text-muted) max-w-45 truncate">{req.reason}</p>
                         </td>
                         <td className="px-4 py-3"><StatusBadge status={req.status as LeaveStatus} /></td>
                         {isAdmin && (
@@ -350,7 +347,7 @@ export function LeavesClient() {
                                   </Button>
                                 </>
                               )}
-                              <Button size="icon-sm" variant="ghost" className="text-[var(--text-muted)] hover:text-red-400"
+                              <Button size="icon-sm" variant="ghost" className="text-(--text-muted) hover:text-red-400"
                                 onClick={(e) => { e.stopPropagation(); handleDelete(req._id); }}>
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -366,7 +363,7 @@ export function LeavesClient() {
                           animate={{ opacity: 1, height: "auto" }}
                           exit={{ opacity: 0, height: 0 }}
                         >
-                          <td colSpan={7} className="px-6 py-4 bg-[var(--background-subtle)]">
+                          <td colSpan={7} className="px-6 py-4 bg-(--background-subtle)">
                             <AILeaveAssistant
                               leaveRequestId={req._id}
                               userId={req.userId}

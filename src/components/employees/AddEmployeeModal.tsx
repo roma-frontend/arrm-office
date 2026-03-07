@@ -125,19 +125,20 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t('employees.addEmployee')}</DialogTitle>
-          <DialogDescription>{t('employees.enterDetails')}</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh]">
+        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+          <DialogHeader>
+            <DialogTitle>{t('employees.addEmployee')}</DialogTitle>
+            <DialogDescription>{t('employees.enterDetails')}</DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 pr-4">
           {/* Organization (superadmin only) */}
           {isSuperadmin && (
             <div className="space-y-1.5">
               <Label>{t('employees.organization')} *</Label>
               <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
-                <SelectTrigger className={errors.organization ? "border-[var(--destructive)]" : ""}>
+                <SelectTrigger className={errors.organization ? "border-(--destructive)" : ""}>
                   <SelectValue placeholder={t('employees.selectOrganization')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -268,8 +269,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
               {submitting ? t('employees.adding') : t('employees.addEmployee')}
             </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
+        </form>        </div>      </DialogContent>
     </Dialog>
   );
 }

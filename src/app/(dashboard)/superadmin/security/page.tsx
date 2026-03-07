@@ -236,8 +236,8 @@ export default function SecurityDashboard() {
           { label: t('superadmin.security.featuresOn'), value: `${enabledCount}/${FEATURES.length}`, color: "var(--success)" },
         ].map((stat) => (
           <div key={stat.label} className="rounded-lg sm:rounded-xl p-2 sm:p-4 text-center border" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-            <div className="text-lg sm:text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</div>
-            <div className="text-[10px] sm:text-xs mt-0.5 sm:mt-1" style={{ color: "var(--text-muted)" }}>{stat.label}</div>
+            <div className="text-lg sm:text-2xl font-bold truncate" style={{ color: stat.color }}>{stat.value}</div>
+            <div className="text-[9px] sm:text-xs mt-0.5 sm:mt-1 truncate" style={{ color: "var(--text-muted)" }}>{stat.label}</div>
           </div>
         ))}
       </div>

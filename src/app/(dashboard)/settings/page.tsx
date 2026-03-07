@@ -68,6 +68,43 @@ export default function SettingsPage() {
     setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
   }, []);
 
+  // Mouse drag scroll state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, scrollLeft: 0 });
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = tabsScrollRef.current;
+    if (!el) return;
+    // Only start drag if clicking on the scrollable area, not on buttons/tabs
+    if ((e.target as HTMLElement).closest("button, [role='tab']")) return;
+    
+    setIsDragging(true);
+    setDragStart({
+      x: e.pageX - el.offsetLeft,
+      scrollLeft: el.scrollLeft,
+    });
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!isDragging) return;
+      const el = tabsScrollRef.current;
+      if (!el) return;
+
+      const walk = (e.pageX - el.offsetLeft) - dragStart.x;
+      el.scrollLeft = dragStart.scrollLeft - walk;
+    },
+    [isDragging, dragStart]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
   useEffect(() => {
     updateScrollState();
     window.addEventListener("resize", updateScrollState);
@@ -243,9 +280,15 @@ export default function SettingsPage() {
           <div
             ref={tabsScrollRef}
             onScroll={updateScrollState}
-            className="bg-[var(--surface)] p-1.5 rounded-xl border border-[var(--border)] overflow-x-auto scrollbar-hide"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            className={`bg-[var(--surface)] p-1.5 rounded-xl border border-[var(--border)] overflow-x-auto scrollbar-hide ${
+              isDragging ? "cursor-grabbing select-none" : "cursor-grab"
+            }`}
           >
-            <TabsList className="inline-flex w-auto min-w-full gap-1 bg-transparent h-auto">
+            <TabsList className={`inline-flex w-auto min-w-full gap-1 bg-transparent h-auto ${isDragging ? "pointer-events-none" : ""}`}>
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (

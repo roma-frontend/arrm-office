@@ -117,7 +117,7 @@ export function Sidebar() {
     <aside
       className={cn(
         "relative hidden lg:flex flex-col h-screen border-r z-60 shrink-0",
-        collapsed ? "w-[72px]" : "w-60"
+        collapsed ? "w-18" : "w-60"
       )}
       style={{
         background: "var(--sidebar-bg)",
@@ -257,7 +257,7 @@ export function Sidebar() {
                 onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
                   "group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200",
-                  "focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30",
+                  "focus:outline-none focus:ring-2 focus:ring-(--primary)/30",
                   isActive && "shadow-sm"
                 )}
                 style={{
@@ -295,10 +295,10 @@ export function Sidebar() {
                   {/* Badge */}
                   {showBadge && (
                     <span className={cn(
-                      "absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg",
+                      "absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg",
                       item.href === "/chat"
-                        ? "bg-gradient-to-r from-red-500 to-red-600 animate-chat-badge"
-                        : "bg-gradient-to-r from-red-500 to-red-600 animate-pulse"
+                        ? "bg-linear-to-r from-red-500 to-red-600 animate-chat-badge"
+                        : "bg-linear-to-r from-red-500 to-red-600 animate-pulse"
                     )}>
                       {badgeCount > 9 ? "9+" : badgeCount}
                     </span>
@@ -306,13 +306,13 @@ export function Sidebar() {
 
                   {/* AI Badge */}
                   {item.badge === "AI" && (
-                    <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
+                    <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
                       AI
                     </span>
                   )}
                   {/* Security Badge */}
                   {item.badge === "SEC" && (
-                    <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                    <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
                       🛡
                     </span>
                   )}
@@ -344,7 +344,7 @@ export function Sidebar() {
           )}
           style={{ backgroundColor: "var(--background-subtle)" }}
         >
-          <Building2 className="w-4 h-4 flex-shrink-0" style={{ color: "var(--primary)" }} />
+          <Building2 className="w-4 h-4 shrink-0" style={{ color: "var(--primary)" }} />
           <div
             className={cn(
               "min-w-0 flex-1",
@@ -410,6 +410,12 @@ export function MobileSidebar() {
   const sidebarRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => setMounted(true), []);
+
+  // Get user's organization
+  const userOrg = useQuery(
+    api.organizations.getMyOrganization,
+    mounted && user?.id ? { userId: user.id as Id<"users"> } : "skip"
+  );
 
   const mobileNotifications = useQuery(
     api.notifications.getUserNotifications,
@@ -481,7 +487,7 @@ export function MobileSidebar() {
       <aside
         ref={sidebarRef}
         className={cn(
-          "fixed top-0 left-0 bottom-0 z-70 w-[280px] lg:hidden flex flex-col",
+          "fixed top-0 left-0 bottom-0 z-70 w-70 lg:hidden flex flex-col",
           "transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
@@ -647,39 +653,10 @@ export function MobileSidebar() {
           >
             <Building2 className="w-4 h-4 shrink-0" style={{ color: "var(--primary)" }} />
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
-                {t('sidebar.orgName')}
+              <p className="text-[11px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                {userOrg?.name ?? t('sidebar.orgName')}
               </p>
               <p className="text-[9px] truncate" style={{ color: "var(--text-muted)" }}>
-                {t('sidebar.orgSubtitleFull')}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* User Info */}
-        <div
-          className="border-t p-3"
-          style={{
-            borderColor: "var(--sidebar-border)",
-            opacity: mobileOpen ? 1 : 0,
-            transition: "opacity 0.4s ease 0.35s",
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8 ring-2" style={{ borderColor: "var(--primary-light, var(--primary))", opacity: 0.2 }}>
-              {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-              <AvatarFallback 
-                className="text-xs text-white font-bold"
-                style={{
-                  background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)",
-                }}
-              >
-                {user?.name ? getInitials(user.name) : "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>
                 {user?.name ?? "User"}
               </p>
             </div>
