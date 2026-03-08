@@ -239,18 +239,19 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // For superadmin pages: allow if user is authenticated (role check is done client-side)
-    // We trust client-side check because user data comes from server session
+    // For superadmin pages: check role OR known superadmin email
     if (pathname.startsWith('/superadmin')) {
-      // If using NextAuth, check role
+      // If using NextAuth, check role or email
       if (jwtToken) {
-        // If role is not yet loaded (undefined), allow access temporarily
-        // The client-side will do the final check and redirect if needed
-        if (jwtToken.role && jwtToken.role !== 'superadmin') {
-          console.log('[Middleware] Blocking superadmin access for user with role:', jwtToken.role);
+        const isSuperAdminEmail = jwtToken.email?.toString().toLowerCase() === 'romangulanyan@gmail.com';
+        const isSuperAdminRole = jwtToken.role === 'superadmin';
+        
+        // Allow if superadmin by email OR role OR role not yet loaded (undefined)
+        if (!isSuperAdminEmail && !isSuperAdminRole && jwtToken.role) {
+          console.log('[Middleware] Blocking superadmin access for:', jwtToken.email, 'role:', jwtToken.role);
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
-        // If role is undefined or is superadmin, allow access
+        // If role is undefined, email matches, or role is superadmin → allow access
       }
       // If using hr-auth-token, allow (role check on client)
     }
