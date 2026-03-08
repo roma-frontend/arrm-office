@@ -1,11 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useTranslation } from "react-i18next";
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCookieConsent } from "@/store/cookieConsentStore";
-import { motion, AnimatePresence } from "framer-motion";
 import { Cookie, Settings, Shield, BarChart3, Target, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -26,13 +25,8 @@ export default function CookieBanner() {
   }
 
   const bannerContent = (
-    <AnimatePresence>
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed bottom-0 left-0 right-0 z-[120] p-4 sm:p-6"
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[120] p-4 sm:p-6 animate-cookie-banner"
         style={{ pointerEvents: 'none' }}
       >
         <div style={{ pointerEvents: 'auto' }}>
@@ -65,6 +59,7 @@ export default function CookieBanner() {
                       <Link
                         href="/privacy"
                         className="inline-flex items-center font-medium text-[var(--primary)] hover:underline"
+                        aria-label={t("cookies.learnMoreDetailed", { defaultValue: "Learn more about our privacy policy" })}
                       >
                         {t("cookies.learnMore")}
                       </Link>
@@ -134,10 +129,11 @@ export default function CookieBanner() {
           </div>
         </div>
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
   );
 
   return createPortal(bannerContent, document.body);
 }
+
+
 

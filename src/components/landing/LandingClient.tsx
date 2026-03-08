@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useRef } from 'react';
 import Link from 'next/link';
@@ -879,9 +879,9 @@ function Footer() {
           {/* Links columns */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h4 className="font-semibold text-sm uppercase tracking-wider mb-4" style={{ color: 'var(--landing-text-primary)' }}>
+              <h3 className="font-semibold text-sm uppercase tracking-wider mb-4" style={{ color: 'var(--landing-text-primary)' }}>
                 {category === 'product' ? t('landingExtra.footerProduct') : category === 'platform' ? t('landingExtra.footerPlatform') : category === 'account' ? t('landingExtra.footerAccount') : t('landingExtra.footerLegal')}
-              </h4>
+              </h3>
               <ul className="space-y-3">
                 {links.map((link: any) => (
                   <li key={link.nameKey}>
