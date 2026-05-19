@@ -100,17 +100,10 @@ export default function SelectOrganizationPage() {
         isApproved: freshUserData.isApproved,
       });
       const params = new URLSearchParams(window.location.search);
-      const nextUrl = params.get('next');
-      router.push(nextUrl || '/dashboard');
-      return;
+      router.push(params.get('next') || '/dashboard');
     }
-
-    if (user?.organizationId && user?.isApproved) {
-      const params = new URLSearchParams(window.location.search);
-      const nextUrl = params.get('next');
-      router.push(nextUrl || '/dashboard');
-    }
-  }, [user, freshUserData, setUser, router, isPreview]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freshUserData]);
 
   const pendingOrgIds = useMemo(
     () =>
