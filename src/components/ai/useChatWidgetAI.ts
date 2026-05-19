@@ -31,6 +31,15 @@ export function useChatWidgetAI() {
   const user = useAuthStore((s) => s.user);
   const voiceRecogRef = useRef<SpeechRecognition | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const csrfRef = useRef<{ token: string; signature: string } | null>(null);
+
+  // Fetch CSRF token on mount
+  useEffect(() => {
+    fetch('/api/csrf-token')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) csrfRef.current = data; })
+      .catch(() => {});
+  }, []);
 
   // ── Detect language of text (EN / RU / HY) ──────────────────────
   const detectLanguage = useCallback((text: string): 'ru' | 'en' | 'hy' => {
@@ -291,7 +300,10 @@ export function useChatWidgetAI() {
 
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfRef.current ? { 'X-CSRF-Token': csrfRef.current.token, 'X-CSRF-Token-Signature': csrfRef.current.signature } : {}),
+        },
         body: JSON.stringify(body),
       });
 
@@ -555,7 +567,10 @@ export function useChatWidgetAI() {
 
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfRef.current ? { 'X-CSRF-Token': csrfRef.current.token, 'X-CSRF-Token-Signature': csrfRef.current.signature } : {}),
+        },
         body: JSON.stringify({
           messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
           userId: user?.id,
