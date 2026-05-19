@@ -47,8 +47,10 @@ interface JoinRequest {
 }
 
 const PLAN_BADGE: Record<NonNullable<Organization['plan']>, string> = {
-  starter: 'bg-(--badge-secondary-bg) text-(--badge-secondary-text) border-(--badge-secondary-border)',
-  professional: 'bg-(--badge-primary-bg) text-(--badge-primary-text) border-(--badge-primary-border)',
+  starter:
+    'bg-(--badge-secondary-bg) text-(--badge-secondary-text) border-(--badge-secondary-border)',
+  professional:
+    'bg-(--badge-primary-bg) text-(--badge-primary-text) border-(--badge-primary-border)',
   enterprise: 'bg-(--badge-purple-bg) text-(--badge-purple-text) border-(--badge-purple-border)',
 };
 
@@ -87,6 +89,10 @@ export default function SelectOrganizationPage() {
     new URLSearchParams(window.location.search).get('preview') === '1';
 
   // Redirect if user already has an approved organization
+  const shouldRedirect =
+    (user?.organizationId && user?.isApproved) ||
+    (freshUserData?.organizationId && freshUserData?.isApproved);
+
   useEffect(() => {
     if (isPreview) return;
 
@@ -127,6 +133,9 @@ export default function SelectOrganizationPage() {
         (org.country?.toLowerCase().includes(q) ?? false),
     );
   }, [organizations, searchQuery]);
+
+  // Block render while redirecting
+  if (shouldRedirect && !isPreview) return null;
 
   const handleRequestJoin = async (organizationId: Id<'organizations'>, name: string) => {
     if (!user?.id) return;
@@ -302,13 +311,7 @@ function OrgCard({
           {/* Logo */}
           <div className="relative h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-(--primary-hover) to-blue-400 flex items-center justify-center shadow-sm">
             {org.logoUrl ? (
-              <Image
-                src={org.logoUrl}
-                alt={org.name}
-                fill
-                sizes="56px"
-                className="object-cover"
-              />
+              <Image src={org.logoUrl} alt={org.name} fill sizes="56px" className="object-cover" />
             ) : (
               <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                 {initial}
