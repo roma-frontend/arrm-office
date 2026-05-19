@@ -98,7 +98,7 @@ export function ChatWidgetWindow({
   );
   const [showPinned, setShowPinned] = useState(false);
   const slashCommands = filterSlashCommands(input);
-  const contextSuggestions = getContextSuggestions(pathname || '');
+  const contextSuggestions = getContextSuggestions(pathname || '', t);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -199,7 +199,7 @@ export function ChatWidgetWindow({
                   className="space-y-3"
                 >
                   <p className="text-xs text-(--text-muted) text-center mb-1">
-                    {getMoodGreeting(user?.name?.split(' ')[0] || 'there')}
+                    {getMoodGreeting(user?.name?.split(' ')[0] || 'there', t)}
                   </p>
                   <p className="text-[10px] text-(--text-muted)/70 text-center mb-2">
                     💡{' '}

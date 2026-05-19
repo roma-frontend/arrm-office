@@ -21,33 +21,81 @@ export function TypingStages() {
 }
 
 // === MOOD GREETING ===
-export function getMoodGreeting(name: string): string {
+export function getMoodGreeting(name: string, t: (key: string, opts?: any) => string): string {
   const hour = new Date().getHours();
-  if (hour < 6) return `🌙 Still up, ${name}? Let me help you finish faster!`;
-  if (hour < 12) return `☀️ Good morning, ${name}! How can I help today?`;
-  if (hour < 17) return `👋 Hey ${name}! What can I do for you?`;
-  if (hour < 21) return `🌆 Good evening, ${name}! Need anything before wrapping up?`;
-  return `🌙 Working late, ${name}? Let's make it quick!`;
+  if (hour < 6)
+    return t('chatWidget.moodNight', {
+      name,
+      defaultValue: `🌙 Still up, ${name}? Let me help you finish faster!`,
+    });
+  if (hour < 12)
+    return t('chatWidget.moodMorning', {
+      name,
+      defaultValue: `☀️ Good morning, ${name}! How can I help today?`,
+    });
+  if (hour < 17)
+    return t('chatWidget.moodDay', {
+      name,
+      defaultValue: `👋 Hey ${name}! What can I do for you?`,
+    });
+  if (hour < 21)
+    return t('chatWidget.moodEvening', {
+      name,
+      defaultValue: `🌆 Good evening, ${name}! Need anything before wrapping up?`,
+    });
+  return t('chatWidget.moodLate', {
+    name,
+    defaultValue: `🌙 Working late, ${name}? Let's make it quick!`,
+  });
 }
 
 // === CONTEXT-AWARE SUGGESTIONS ===
-export function getContextSuggestions(pathname: string): string[] {
+export function getContextSuggestions(
+  pathname: string,
+  t: (key: string, opts?: any) => string,
+): string[] {
   if (pathname.includes('/leaves'))
-    return ['📋 My leave balance', '📆 Book time off', '👥 Who is on leave?'];
+    return [
+      t('chatWidget.ctx.leaveBalance', { defaultValue: '📋 My leave balance' }),
+      t('chatWidget.ctx.bookTimeOff', { defaultValue: '📆 Book time off' }),
+      t('chatWidget.ctx.whoOnLeave', { defaultValue: '👥 Who is on leave?' }),
+    ];
   if (pathname.includes('/employees'))
-    return ['🔍 Find employee', '➕ Add employee', '📊 Team stats'];
+    return [
+      t('chatWidget.ctx.findEmployee', { defaultValue: '🔍 Find employee' }),
+      t('chatWidget.ctx.addEmployee', { defaultValue: '➕ Add employee' }),
+      t('chatWidget.ctx.teamStats', { defaultValue: '📊 Team stats' }),
+    ];
   if (pathname.includes('/attendance'))
-    return ['⏰ My attendance today', '📊 Monthly report', '🔍 Check anomalies'];
-  if (pathname.includes('/tasks')) return ['📋 My open tasks', '➕ Create task', '📊 Task stats'];
+    return [
+      t('chatWidget.ctx.myAttendance', { defaultValue: '⏰ My attendance today' }),
+      t('chatWidget.ctx.monthlyReport', { defaultValue: '📊 Monthly report' }),
+      t('chatWidget.ctx.checkAnomalies', { defaultValue: '🔍 Check anomalies' }),
+    ];
+  if (pathname.includes('/tasks'))
+    return [
+      t('chatWidget.ctx.myTasks', { defaultValue: '📋 My open tasks' }),
+      t('chatWidget.ctx.createTask', { defaultValue: '➕ Create task' }),
+      t('chatWidget.ctx.taskStats', { defaultValue: '📊 Task stats' }),
+    ];
   if (pathname.includes('/analytics'))
-    return ['📈 Show trends', '👥 Headcount', '📊 Leave patterns'];
+    return [
+      t('chatWidget.ctx.showTrends', { defaultValue: '📈 Show trends' }),
+      t('chatWidget.ctx.headcount', { defaultValue: '👥 Headcount' }),
+      t('chatWidget.ctx.leavePatterns', { defaultValue: '📊 Leave patterns' }),
+    ];
   if (pathname.includes('/drivers'))
-    return ['🚗 Book a driver', '📅 Available drivers', '🗺️ My trips'];
-  if (pathname.includes('/chat'))
-    return ['💬 Unread messages', '👥 Online colleagues', '📎 Shared files'];
-  if (pathname.includes('/settings'))
-    return ['🔒 Security settings', '🌐 Change language', '🔔 Notifications'];
-  if (pathname.includes('/payroll')) return ['💰 My salary', '📊 Payroll report', '📅 Next payday'];
+    return [
+      t('chatWidget.ctx.bookDriver', { defaultValue: '🚗 Book a driver' }),
+      t('chatWidget.ctx.availableDrivers', { defaultValue: '📅 Available drivers' }),
+      t('chatWidget.ctx.myTrips', { defaultValue: '🗺️ My trips' }),
+    ];
+  if (pathname.includes('/payroll'))
+    return [
+      t('chatWidget.ctx.mySalary', { defaultValue: '💰 My salary' }),
+      t('chatWidget.ctx.payrollReport', { defaultValue: '📊 Payroll report' }),
+      t('chatWidget.ctx.nextPayday', { defaultValue: '📅 Next payday' }),
+    ];
   return [];
 }
 
