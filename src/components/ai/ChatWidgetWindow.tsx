@@ -97,7 +97,7 @@ export function ChatWidgetWindow({
     () => new Set(getPinnedMessages().map((p) => p.id)),
   );
   const [showPinned, setShowPinned] = useState(false);
-  const slashCommands = filterSlashCommands(input);
+  const slashCommands = filterSlashCommands(input, t);
   const contextSuggestions = getContextSuggestions(pathname || '', t);
 
   const scrollToBottom = useCallback(() => {

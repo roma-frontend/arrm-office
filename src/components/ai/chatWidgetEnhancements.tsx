@@ -107,22 +107,25 @@ export interface SlashCommand {
   description: string;
 }
 
-export const SLASH_COMMANDS: SlashCommand[] = [
-  { command: '/leave', label: 'Leave', icon: '📆', description: 'Request time off' },
-  { command: '/balance', label: 'Balance', icon: '📋', description: 'Check leave balance' },
-  { command: '/team', label: 'Team', icon: '👥', description: 'Who is on leave' },
-  { command: '/tasks', label: 'Tasks', icon: '✅', description: 'My open tasks' },
-  { command: '/attendance', label: 'Attendance', icon: '⏰', description: "Today's status" },
-  { command: '/driver', label: 'Driver', icon: '🚗', description: 'Book a driver' },
-  { command: '/help', label: 'Help', icon: '❓', description: 'Show all commands' },
-  { command: '/clear', label: 'Clear', icon: '🗑️', description: 'Clear chat history' },
-];
+export function getSlashCommands(t: (key: string, opts?: any) => string): SlashCommand[] {
+  return [
+    { command: '/leave', label: 'Leave', icon: '📆', description: t('chatWidget.slash.leave', { defaultValue: 'Request time off' }) },
+    { command: '/balance', label: 'Balance', icon: '📋', description: t('chatWidget.slash.balance', { defaultValue: 'Check leave balance' }) },
+    { command: '/team', label: 'Team', icon: '👥', description: t('chatWidget.slash.team', { defaultValue: 'Who is on leave' }) },
+    { command: '/tasks', label: 'Tasks', icon: '✅', description: t('chatWidget.slash.tasks', { defaultValue: 'My open tasks' }) },
+    { command: '/attendance', label: 'Attendance', icon: '⏰', description: t('chatWidget.slash.attendance', { defaultValue: "Today's status" }) },
+    { command: '/driver', label: 'Driver', icon: '🚗', description: t('chatWidget.slash.driver', { defaultValue: 'Book a driver' }) },
+    { command: '/help', label: 'Help', icon: '❓', description: t('chatWidget.slash.help', { defaultValue: 'Show all commands' }) },
+    { command: '/clear', label: 'Clear', icon: '🗑️', description: t('chatWidget.slash.clear', { defaultValue: 'Clear chat history' }) },
+  ];
+}
 
-export function filterSlashCommands(input: string): SlashCommand[] {
+export function filterSlashCommands(input: string, t: (key: string, opts?: any) => string): SlashCommand[] {
   if (!input.startsWith('/')) return [];
+  const commands = getSlashCommands(t);
   const query = input.slice(1).toLowerCase();
-  if (!query) return SLASH_COMMANDS;
-  return SLASH_COMMANDS.filter(
+  if (!query) return commands;
+  return commands.filter(
     (c) => c.command.slice(1).startsWith(query) || c.label.toLowerCase().startsWith(query),
   );
 }
