@@ -155,6 +155,17 @@ export default function AIChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Pick up messages from widget handoff
+  useEffect(() => {
+    try {
+      const handoff = sessionStorage.getItem('ai-chat-handoff');
+      if (handoff) {
+        setMessages(JSON.parse(handoff));
+        sessionStorage.removeItem('ai-chat-handoff');
+      }
+    } catch {}
+  }, []);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);

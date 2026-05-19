@@ -607,6 +607,16 @@ export function useChatWidgetAI() {
       const { cleanContent, actions } = parseActions(fullContent);
       const suggestions = getFollowUpSuggestions(cleanContent, user?.role || 'employee', t);
 
+      // Auto-expand to fullscreen if response contains tables or large data
+      const hasTable = /\|.*\|.*\|/m.test(cleanContent) || cleanContent.split('\n').length > 20;
+      if (hasTable) {
+        // Persist messages for fullscreen page to pick up
+        const allMessages = [...messages, { id: (Date.now() + 1).toString(), role: 'assistant' as const, content: cleanContent, actions, suggestions }];
+        try { sessionStorage.setItem('ai-chat-handoff', JSON.stringify(allMessages)); } catch {}
+        router.push('/ai-chat');
+        setIsOpen(false);
+      }
+
       logger.log('🤖 [AI Response] Full content:', fullContent);
       logger.log('🤖 [AI Response] Clean content:', cleanContent);
       logger.log('🤖 [AI Response] Actions:', actions);
