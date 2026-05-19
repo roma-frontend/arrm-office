@@ -950,10 +950,10 @@ export default function AIChatPage() {
                       className={`flex items-center gap-2 mt-1 ${message.role === 'user' ? 'justify-end' : ''}`}
                     >
                       <span className="text-xs text-(--text-muted)">
-                        {message.timestamp.toLocaleTimeString([], {
+                        {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
-                        })}
+                        }) : ''}
                       </span>
 
                       {message.role === 'assistant' && (
