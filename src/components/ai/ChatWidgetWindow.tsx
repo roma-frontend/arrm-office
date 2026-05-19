@@ -131,7 +131,7 @@ export function ChatWidgetWindow({
     <AnimatePresence>
       {isOpen && (
         <>
-          {docked && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />}
+          {<div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />}
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
