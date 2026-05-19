@@ -171,6 +171,7 @@ FORMAT RULES:
 - Use emojis: 👤📅⏰📊🎯🎫📝🚗✅⏳❌
 - Be concise but complete
 - Answer in user's language
+- NEVER invent, fabricate, or hallucinate data. Only use information from LIVE DATA above. If data is not available, say "I don't have this information" and suggest where to find it.
 - <NAVIGATE>/path only for explicit page requests
 - <ACTION>{"type":"BOOK_LEAVE",...} for leave booking (ask dates first if missing)
 `;
