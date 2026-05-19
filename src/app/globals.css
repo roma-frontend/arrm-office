@@ -60,12 +60,15 @@ body.scroll-locked {
   }
 }
 
-/* Language switch fade transition */
+/* Language switch transition */
 #main-content {
-  transition: opacity 0.25s ease;
+  transition:
+    filter 0.15s ease,
+    transform 0.15s ease;
 }
 body.lang-switching #main-content {
-  opacity: 0;
+  filter: blur(2px);
+  transform: scale(0.995);
 }
 
 /* ═══════════════════════════════════════════════════════════════
