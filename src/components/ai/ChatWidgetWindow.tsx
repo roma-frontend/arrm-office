@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import {
   X,
@@ -17,6 +18,7 @@ import {
   Car,
   Maximize2,
   Database,
+  Pin,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,16 @@ import type {
   RestoreBackupAction,
 } from './chatWidgetTypes';
 import { LEAVE_TYPE_LABELS, getInitialSuggestions } from './chatWidgetUtils';
+import {
+  TypingStages,
+  getMoodGreeting,
+  getContextSuggestions,
+  filterSlashCommands,
+  MessageActions,
+  SlashCommandDropdown,
+  getPinnedMessages,
+  togglePinMessage,
+} from './chatWidgetEnhancements';
 
 interface ChatWidgetWindowProps {
   isOpen: boolean;
@@ -80,6 +92,13 @@ export function ChatWidgetWindow({
   i18n,
 }: ChatWidgetWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(
+    () => new Set(getPinnedMessages().map((p) => p.id)),
+  );
+  const [showPinned, setShowPinned] = useState(false);
+  const slashCommands = filterSlashCommands(input);
+  const contextSuggestions = getContextSuggestions(pathname || '');
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -142,6 +161,14 @@ export function ChatWidgetWindow({
               </div>
               <div className="flex items-center gap-1 ml-auto">
                 <button
+                  onClick={() => setShowPinned(!showPinned)}
+                  className={`p-1.5 rounded-lg hover:bg-(--background-subtle) transition-colors ${showPinned ? 'text-[#2563eb]' : ''}`}
+                  aria-label="Pinned messages"
+                  title="Pinned messages"
+                >
+                  <Pin className="w-4 h-4 text-(--text-muted)" />
+                </button>
+                <button
                   onClick={() => {
                     router.push('/ai-chat');
                     setIsOpen(false);
@@ -172,7 +199,7 @@ export function ChatWidgetWindow({
                   className="space-y-3"
                 >
                   <p className="text-xs text-(--text-muted) text-center mb-1">
-                    👋 {t('chatWidget.greeting', { name: user?.name?.split(' ')[0] || 'there' })}
+                    {getMoodGreeting(user?.name?.split(' ')[0] || 'there')}
                   </p>
                   <p className="text-[10px] text-(--text-muted)/70 text-center mb-2">
                     💡{' '}
@@ -192,6 +219,26 @@ export function ChatWidgetWindow({
                       </button>
                     ))}
                   </div>
+                  {/* Context-aware suggestions */}
+                  {contextSuggestions.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-[10px] text-(--text-muted)/60 mb-1">
+                        📍 Based on this page:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {contextSuggestions.map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => handleSuggestion(s)}
+                            disabled={isLoading}
+                            className="px-2 py-1 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/5 hover:bg-[#0ea5e9]/15 text-[10px] text-[#0ea5e9] font-medium transition-all disabled:opacity-50"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -201,7 +248,7 @@ export function ChatWidgetWindow({
                 return (
                   <div key={m.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-[85%] space-y-2 ${isUser ? 'items-end' : 'items-start'} flex flex-col`}
+                      className={`max-w-[85%] space-y-2 ${isUser ? 'items-end' : 'items-start'} flex flex-col group`}
                     >
                       <div
                         className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
@@ -212,6 +259,22 @@ export function ChatWidgetWindow({
                       >
                         {formatMessageContent(m.content)}
                       </div>
+
+                      {/* Reactions, copy, TTS, pin for AI messages */}
+                      {!isUser && (
+                        <MessageActions
+                          content={m.content}
+                          isPinned={pinnedIds.has(m.id)}
+                          onPin={() => {
+                            const pinned = togglePinMessage(m.id, m.content);
+                            setPinnedIds((prev) => {
+                              const s = new Set(prev);
+                              pinned ? s.add(m.id) : s.delete(m.id);
+                              return s;
+                            });
+                          }}
+                        />
+                      )}
 
                       {/* Action cards */}
                       {m.actions && m.actions.length > 0 && (
@@ -467,14 +530,25 @@ export function ChatWidgetWindow({
                 );
               })}
 
-              {/* Loading indicator */}
+              {/* Loading indicator with stages */}
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-(--background-subtle) px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2">
-                    <ShieldLoader size="xs" variant="inline" />
-                    <span className="text-xs text-(--text-muted)">
-                      {t('chatWidget.thinking', { defaultValue: 'Thinking...' })}
-                    </span>
+                    <div className="flex gap-1">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-[#2563eb] animate-bounce"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-[#2563eb] animate-bounce"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-[#2563eb] animate-bounce"
+                        style={{ animationDelay: '300ms' }}
+                      />
+                    </div>
+                    <TypingStages />
                   </div>
                 </div>
               )}
@@ -489,9 +563,39 @@ export function ChatWidgetWindow({
               </div>
             )}
 
+            {/* Pinned messages panel */}
+            {showPinned && (
+              <div className="px-4 py-2 border-t border-(--border) max-h-32 overflow-y-auto bg-(--background-subtle)">
+                <p className="text-[10px] font-semibold text-(--text-muted) mb-1">📌 Pinned</p>
+                {getPinnedMessages().length === 0 ? (
+                  <p className="text-[10px] text-(--text-muted)">No pinned messages yet</p>
+                ) : (
+                  getPinnedMessages().map((p) => (
+                    <div
+                      key={p.id}
+                      className="text-[10px] text-(--text-primary) py-1 border-b border-(--border) last:border-0 line-clamp-2"
+                    >
+                      {p.content.slice(0, 100)}
+                      {p.content.length > 100 ? '...' : ''}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
             {/* Input */}
             <form onSubmit={handleSubmit} className="p-4 border-t border-(--border) shrink-0">
               <div className="relative">
+                {/* Slash command autocomplete */}
+                {slashCommands.length > 0 && (
+                  <SlashCommandDropdown
+                    commands={slashCommands}
+                    onSelect={(cmd) => {
+                      setInput(cmd + ' ');
+                      inputRef.current?.focus();
+                    }}
+                  />
+                )}
                 <input
                   ref={inputRef}
                   value={input}
