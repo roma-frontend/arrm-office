@@ -124,7 +124,7 @@ export function ChatWidgetWindow({
               ...(docked
                 ? {
                     top: `clamp(1rem, calc(${dockedY}% - 200px), calc(100vh - 450px))`,
-                    ...(dockedSide === 'right' ? { right: '0.5rem' } : { left: '0.5rem' }),
+                    ...(dockedSide === 'right' ? { right: '0.5rem' } : { left: '16.5rem' }),
                   }
                 : {}),
             }}
