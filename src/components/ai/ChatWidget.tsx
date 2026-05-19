@@ -50,6 +50,8 @@ export function ChatWidget() {
         isOpen={isOpen}
         setIsOpen={setIsOpen}
         docked={docked}
+        dockedSide={dockedSide}
+        dockedY={dockedY}
         messages={messages}
         setMessages={setMessages}
         input={input}

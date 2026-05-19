@@ -38,6 +38,8 @@ interface ChatWidgetWindowProps {
   isOpen: boolean;
   setIsOpen: (v: boolean) => void;
   docked: boolean;
+  dockedSide?: 'right' | 'left';
+  dockedY?: number;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   input: string;
@@ -59,6 +61,8 @@ export function ChatWidgetWindow({
   isOpen,
   setIsOpen,
   docked,
+  dockedSide = 'right',
+  dockedY = 50,
   messages,
   setMessages,
   input,
@@ -114,8 +118,16 @@ export function ChatWidgetWindow({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="fixed bottom-36 lg:bottom-24 right-2 sm:right-6 z-50 w-[calc(100vw-1rem)] sm:w-[380px] max-h-[calc(100vh-12rem)] lg:max-h-[calc(100vh-8rem)] flex flex-col rounded-2xl border border-(--border) shadow-2xl overflow-hidden"
-            style={{ background: 'var(--card)' }}
+            className={`fixed z-50 w-[calc(100vw-1rem)] sm:w-[380px] max-h-[calc(100vh-12rem)] lg:max-h-[calc(100vh-8rem)] flex flex-col rounded-2xl border border-(--border) shadow-2xl overflow-hidden ${!docked ? 'bottom-36 lg:bottom-24 right-2 sm:right-6' : ''}`}
+            style={{
+              background: 'var(--card)',
+              ...(docked
+                ? {
+                    top: `clamp(1rem, calc(${dockedY}% - 200px), calc(100vh - 450px))`,
+                    ...(dockedSide === 'right' ? { right: '0.5rem' } : { left: '0.5rem' }),
+                  }
+                : {}),
+            }}
           >
             {/* Header */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-(--border) shrink-0 bg-linear-to-r from-[#2563eb]/10 to-[#0ea5e9]/10">
