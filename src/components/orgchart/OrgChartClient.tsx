@@ -157,9 +157,9 @@ function OrgNodeComponent({ data }: { data: OrgNodeData }) {
 }
 
 // ─── Node Types Map ───────────────────────────────────────────
-const nodeTypes = {
+const nodeTypes = Object.freeze({
   orgNode: OrgNodeComponent,
-};
+});
 
 // ─── Main Component ───────────────────────────────────────────
 export default function OrgChartClient() {
@@ -713,7 +713,9 @@ export default function OrgChartClient() {
               <label className="text-sm font-medium">{t('orgChart.parent', 'Parent')}</label>
               <Select
                 value={nodeForm.parentId || '__none__'}
-                onValueChange={(value) => setNodeForm((prev) => ({ ...prev, parentId: value === '__none__' ? '' : value }))}
+                onValueChange={(value) =>
+                  setNodeForm((prev) => ({ ...prev, parentId: value === '__none__' ? '' : value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('placeholders.selectOrg', 'Select organization')} />
@@ -785,7 +787,9 @@ export default function OrgChartClient() {
               <label className="text-sm font-medium">{t('orgChart.parent', 'Parent')}</label>
               <Select
                 value={nodeForm.parentId || '__none__'}
-                onValueChange={(value) => setNodeForm((prev) => ({ ...prev, parentId: value === '__none__' ? '' : value }))}
+                onValueChange={(value) =>
+                  setNodeForm((prev) => ({ ...prev, parentId: value === '__none__' ? '' : value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('placeholders.selectOrg', 'Select organization')} />
