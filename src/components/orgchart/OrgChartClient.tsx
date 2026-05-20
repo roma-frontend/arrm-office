@@ -83,33 +83,33 @@ function OrgNodeComponent({ data }: { data: OrgNodeData }) {
   const getNodeIcon = () => {
     switch (data.type) {
       case 'department':
-        return <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
+        return <Building2 className="h-4 w-4 text-[var(--primary)]" />;
       case 'group':
-        return <Folder className="h-4 w-4 text-purple-600 dark:text-purple-400" />;
+        return <Folder className="h-4 w-4 text-[var(--badge-purple-text)]" />;
       default:
-        return <User className="h-4 w-4 text-green-600 dark:text-green-400" />;
+        return <User className="h-4 w-4 text-[var(--badge-success-text)]" />;
     }
   };
 
   const getNodeColor = () => {
     switch (data.type) {
       case 'department':
-        return 'border-blue-500 bg-blue-50 text-gray-900 dark:bg-[#1a2744] dark:text-gray-50 dark:border-blue-400';
+        return 'border-[var(--primary)]/50 bg-[var(--card)] text-[var(--text-primary)]';
       case 'group':
-        return 'border-purple-500 bg-purple-50 text-gray-900 dark:bg-[#2a1a3e] dark:text-gray-50 dark:border-purple-400';
+        return 'border-[var(--badge-purple-border)] bg-[var(--badge-purple-bg)] text-[var(--text-primary)]';
       default:
-        return 'border-green-500 bg-green-50 text-gray-900 dark:bg-[#1a2e24] dark:text-gray-50 dark:border-green-400';
+        return 'border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] text-[var(--text-primary)]';
     }
   };
 
   const getBadgeColor = () => {
     switch (data.type) {
       case 'department':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/80 dark:text-blue-100';
+        return 'bg-[var(--badge-primary-bg)] text-[var(--badge-primary-text)]';
       case 'group':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/80 dark:text-purple-100';
+        return 'bg-[var(--badge-purple-bg)] text-[var(--badge-purple-text)]';
       default:
-        return 'bg-green-100 text-green-800 dark:bg-green-900/80 dark:text-green-100';
+        return 'bg-[var(--badge-success-bg)] text-[var(--badge-success-text)]';
     }
   };
 
@@ -123,31 +123,33 @@ function OrgNodeComponent({ data }: { data: OrgNodeData }) {
       <div className="p-3">
         <div className="flex items-center gap-2 mb-1">
           {getNodeIcon()}
-          <span className="font-semibold text-sm truncate max-w-32 text-gray-900 dark:text-gray-100">
+          <span className="font-semibold text-sm truncate max-w-32 text-[var(--text-primary)]">
             {data.name}
           </span>
         </div>
         {data.title && (
-          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{data.title}</p>
+          <p className="text-xs text-[var(--text-secondary)] truncate">{data.title}</p>
         )}
         <Badge className={`mt-2 text-xs ${getBadgeColor()}`}>{data.type}</Badge>
 
         {isExpanded && data.children && data.children.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-muted-foreground mb-1">
+          <div className="mt-2 pt-2 border-t border-[var(--border)]">
+            <p className="text-xs text-[var(--text-muted)] mb-1">
               {data.children.length} {t('orgChart.directReports', 'direct reports')}
             </p>
           </div>
         )}
 
         {isExpanded && data.user && (
-          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
+          <div className="mt-2 pt-2 border-t border-[var(--border)] space-y-1">
             {data.user.email && (
-              <p className="text-xs text-muted-foreground truncate">{data.user.email}</p>
+              <p className="text-xs text-[var(--text-muted)] truncate">{data.user.email}</p>
             )}
-            {data.user.phone && <p className="text-xs text-muted-foreground">{data.user.phone}</p>}
+            {data.user.phone && (
+              <p className="text-xs text-[var(--text-muted)]">{data.user.phone}</p>
+            )}
             {data.user.department && (
-              <p className="text-xs text-muted-foreground">{data.user.department}</p>
+              <p className="text-xs text-[var(--text-muted)]">{data.user.department}</p>
             )}
           </div>
         )}
