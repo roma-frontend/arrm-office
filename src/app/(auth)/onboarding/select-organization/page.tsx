@@ -155,10 +155,17 @@ export default function SelectOrganizationPage() {
 
     setIsRequesting(organizationId);
     try {
-      await requestJoin({
+      const result = await requestJoin({
         userId: user.id as Id<'users'>,
         organizationId,
       });
+
+      if (result && (result as any).reason === 'already_in_organization') {
+        toast.info(t('auth.alreadyInOrg', 'You already belong to an organization'));
+        setTimeout(() => router.push('/dashboard'), 600);
+        return;
+      }
+
       toast.success(t('auth.requestSent', 'Request sent!'));
       // Wait a moment so the user sees the toast, then route to pending
       setTimeout(() => router.push('/onboarding/pending'), 600);
@@ -179,6 +186,11 @@ export default function SelectOrganizationPage() {
     if (autoJoinTriggered) return;
     if (!prefilledOrgSlug) return;
     if (!user?.id) return;
+    if (freshUserData?.organizationId && freshUserData?.isApproved) {
+      setAutoJoinTriggered(true);
+      router.push('/dashboard');
+      return;
+    }
     if (!prefilledOrg) return; // org list still loading or slug not found
     if (myRequests === undefined) return; // wait until we know existing requests
     if (pendingOrgIds.has(prefilledOrg._id)) {
@@ -190,7 +202,15 @@ export default function SelectOrganizationPage() {
     setAutoJoinTriggered(true);
     void handleRequestJoin(prefilledOrg._id, prefilledOrg.name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefilledOrgSlug, prefilledOrg, user?.id, myRequests, pendingOrgIds, autoJoinTriggered]);
+  }, [
+    prefilledOrgSlug,
+    prefilledOrg,
+    user?.id,
+    myRequests,
+    pendingOrgIds,
+    autoJoinTriggered,
+    freshUserData,
+  ]);
 
   // Block render while redirecting
   if (shouldRedirect && !isPreview) return null;

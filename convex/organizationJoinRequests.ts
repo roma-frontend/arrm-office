@@ -117,7 +117,13 @@ export const requestJoinOrganization = mutation({
   handler: async (ctx, { userId, organizationId, message }) => {
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
-    if (user.organizationId) throw new Error('User already belongs to an organization');
+    if (user.organizationId) {
+      return {
+        success: false,
+        reason: 'already_in_organization',
+        organizationId: user.organizationId,
+      };
+    }
 
     const org = await ctx.db.get(organizationId);
     if (!org) throw new Error('Organization not found');
