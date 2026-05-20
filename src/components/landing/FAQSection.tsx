@@ -111,7 +111,7 @@ export default function FAQSection() {
   ];
 
   return (
-    <section id="faq" className="relative z-10 px-6 md:px-12 py-20">
+    <section id="faq" className="relative z-10 px-6 md:px-12 py-12 md:py-20">
       <div className="max-w-4xl mx-auto">
         {/* Section header — reveal on scroll */}
         <div

@@ -297,7 +297,7 @@ function ResetPasswordForm() {
           </AnimatePresence>
         </div>
 
-        <div className="text-center mt-4">
+        <div className="text-center my-4">
           <Link
             href="/login"
             className="text-sm hover:underline"

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
@@ -19,6 +19,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import dynamic from 'next/dynamic';
+import { useActiveSection } from '@/hooks/useActiveSection';
 
 const MobileMenu = dynamic(() => import('./MobileMenu'), {
   ssr: false,
@@ -47,12 +48,19 @@ export default function Navbar() {
   const { t } = useTranslation();
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+
+  const pathname = usePathname();
+  const sectionIds = useMemo(
+    () => (pathname === '/' ? ['home', 'pricing', 'testimonials', 'faq'] : []),
+    [pathname],
+  );
+
+  const activeSection = useActiveSection(sectionIds);
 
   useEffect(() => {
     setMounted(true);
@@ -533,7 +541,11 @@ export default function Navbar() {
       </nav>
 
       {isMobileMenuOpen && (
-        <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+        <MobileMenu
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          activeSection={activeSection}
+        />
       )}
     </>
   );

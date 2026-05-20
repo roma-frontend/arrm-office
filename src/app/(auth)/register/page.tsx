@@ -395,7 +395,7 @@ function RegisterPageContent() {
             ) : (
               <>
                 {/* Logo */}
-                <div className="flex flex-col items-center mb-6">
+                <div className="flex flex-col items-center mb-6 mt-14 md:mt-0">
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg btn-gradient">
                     <Building2 className="w-7 h-7 text-white" />
                   </div>
@@ -423,12 +423,13 @@ function RegisterPageContent() {
                               step === s
                                 ? '#2563eb'
                                 : i < ['org', 'details'].indexOf(step)
-                                  ? '#10b981'
-                                  : 'var(--border)',
+                                  ? 'var(--card-border-default)'
+                                  : 'var(--card)',
                             color:
                               step === s || i < ['org', 'details'].indexOf(step)
                                 ? '#fff'
-                                : 'var(--text-muted)',
+                                : 'var(--color-bg-elevated)',
+                            border: step === s ? 'none' : '2px solid var(--border)',
                           }}
                         >
                           {i < ['org', 'details'].indexOf(step) ? '✓' : i + 1}
@@ -659,11 +660,7 @@ function RegisterPageContent() {
                     <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
                   </div>
                   <Link href="/register-org">
-                    <Button
-                      variant="link"
-                      className="text-sm font-semibold hover:underline"
-                      style={{ color: '#10b981' }}
-                    >
+                    <Button variant="link" className="text-sm font-semibold hover:underline">
                       🏢 {t('register.createOrgWithPlan')}
                     </Button>
                   </Link>
@@ -672,7 +669,7 @@ function RegisterPageContent() {
             )}
           </div>
 
-          <div className="text-center mt-4">
+          <div className="text-center my-4">
             <Link
               href="/"
               className="text-sm hover:underline"

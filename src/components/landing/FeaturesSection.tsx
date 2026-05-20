@@ -116,7 +116,11 @@ export default function FeaturesSection() {
   const FEATURES = getFeaturesData(t);
 
   return (
-    <section id="features" className="relative px-6 md:px-12 py-20" aria-label="Platform features">
+    <section
+      id="features"
+      className="relative px-6 md:px-12 py-12 md:py-20"
+      aria-label="Platform features"
+    >
       {/* Section header */}
       <div className="text-center mb-16 section-fade">
         <span className="section-eyebrow">{t('landing.leaveTypes')}</span>
@@ -128,7 +132,7 @@ export default function FeaturesSection() {
           <span className="heading-gradient">{t('landing.perfectlyManaged')}</span>
         </h2>
         <p
-          className="mt-4 max-w-xl mx-auto text-lg leading-loose"
+          className="mt-4 max-w-xl mx-auto text-lg leading-normal md:leading-loose"
           style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
         >
           {t('landingExtra.featuresSubtitle')}

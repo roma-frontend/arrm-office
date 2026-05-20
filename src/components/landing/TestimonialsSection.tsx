@@ -167,7 +167,7 @@ export default function TestimonialsSection() {
   const allTestimonials = [...testimonials, ...testimonials];
 
   return (
-    <section className="relative z-10 px-6 md:px-12 py-20 overflow-hidden">
+    <section className="relative z-10 px-6 md:px-12 py-12 md:py-20 overflow-hidden">
       {/* Section header — reveal on scroll */}
       <div
         ref={ref}
@@ -188,7 +188,7 @@ export default function TestimonialsSection() {
           <span className="heading-gradient">{t('testimonials.headingHighlight')}</span>
         </h2>
         <p
-          className="mt-4 max-w-2xl mx-auto text-lg leading-loose"
+          className="mt-4 max-w-2xl mx-auto text-lg leading-normal md:leading-loose"
           style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
         >
           {t('testimonials.subtitle')}

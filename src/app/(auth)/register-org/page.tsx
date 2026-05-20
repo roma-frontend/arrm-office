@@ -181,7 +181,7 @@ export default function RegisterOrgPage() {
                 </button>
 
                 {!plan.instant && (
-                  <p className="text-xs text-center mt-3" style={{ color: 'var(--text-muted)' }}>
+                  <p className="text-xs text-center my-3" style={{ color: 'var(--text-muted)' }}>
                     {t('auth.approvalWithin24h', 'Approval within 24 hours')}
                   </p>
                 )}

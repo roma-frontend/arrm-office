@@ -29,7 +29,7 @@ export default function CTABanner() {
   const { t } = useTranslation();
 
   return (
-    <section className="relative py-28" aria-label="Call to action">
+    <section className="relative py-12 md:py-20" aria-label="Call to action">
       {/* Static CSS glows — no JS animation needed */}
       <div
         className="absolute -top-24 right-0 w-[600px] h-[600px] rounded-full pointer-events-none orb-pulse-1"
@@ -54,7 +54,7 @@ export default function CTABanner() {
       />
 
       <div className="section-fade relative max-w-5xl mx-auto px-6 md:px-12">
-        <div className="gradient-border-animated relative px-10 py-20 text-center flex flex-col items-center">
+        <div className="gradient-border-animated relative px-6 md:px-10 py-20 text-center flex flex-col items-center">
           {/* Inner background to cover the gradient border */}
           <div
             className="absolute inset-0 rounded-[1.5rem]"
@@ -70,7 +70,7 @@ export default function CTABanner() {
           </div>
 
           <h2
-            className="relative text-4xl md:text-6xl font-black mb-4 leading-tight tracking-tighter"
+            className="relative text-3xl md:text-4xl md:text-6xl font-black mb-4 leading-tight tracking-tighter"
             style={{ color: 'var(--landing-text-primary)' }}
           >
             {t('landingExtra.ctaTitle')}{' '}
@@ -78,7 +78,7 @@ export default function CTABanner() {
           </h2>
 
           <p
-            className="relative text-lg mb-12 max-w-xl mx-auto leading-loose"
+            className="relative text-md md:text-lg mb-12 max-w-xl mx-auto leading-loose"
             style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}
           >
             {t('landingExtra.ctaSubtitle')}
@@ -89,7 +89,7 @@ export default function CTABanner() {
           </div>
 
           {/* Social proof under CTA */}
-          <div className="relative flex items-center justify-center gap-6 mt-10">
+          <div className="relative flex flex-col sm:flex-row items-center justify-center gap-6 mt-10">
             <div className="flex -space-x-3">
               {['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'].map((color, i) => (
                 <div

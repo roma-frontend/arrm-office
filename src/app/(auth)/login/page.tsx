@@ -613,7 +613,7 @@ export default function LoginPage() {
                 }}
               >
                 {/* Logo */}
-                <div className="flex flex-col items-center mb-6">
+                <div className="flex flex-col items-center mb-6 mt-14 md:mt-0">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 shadow-lg btn-gradient">
                     <Building2 className="w-6 h-6 text-white" />
                   </div>
@@ -889,7 +889,7 @@ export default function LoginPage() {
                 )}
 
                 {/* Footer */}
-                <div className="text-center mt-4 space-y-2">
+                <div className="text-center my-4 space-y-2">
                   <p id="join-team-link" className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {mounted ? t('auth.dontHaveAccount') : "Don't have an account?"}{' '}
                     <Link
@@ -911,7 +911,6 @@ export default function LoginPage() {
                     <Button
                       variant="link"
                       className="text-xs font-semibold hover:underline"
-                      style={{ color: '#047857' }}
                       aria-label={
                         mounted ? t('auth.createNewOrganization') : 'Create new organization'
                       }
@@ -923,7 +922,7 @@ export default function LoginPage() {
               </div>
 
               {/* Back to home */}
-              <div className="text-center mt-3">
+              <div className="text-center my-3">
                 <Link
                   href="/"
                   className="text-xs hover:underline"

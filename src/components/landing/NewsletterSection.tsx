@@ -75,7 +75,7 @@ export default function NewsletterSection() {
   };
 
   return (
-    <section className="relative z-10 px-6 md:px-12 py-20">
+    <section className="relative z-10 px-6 md:px-12 py-12 md:py-20">
       <div
         ref={ref}
         className="relative max-w-3xl mx-auto"

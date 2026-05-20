@@ -569,7 +569,7 @@ export default function PricingPreview() {
   const currentPlan = user ? plan : undefined;
 
   return (
-    <section id="pricing" className="relative z-10 px-6 md:px-12 py-24 overflow-hidden">
+    <section id="pricing" className="relative z-10 px-6 md:px-12 py-12 md:py-24 overflow-hidden">
       {/* Background glows */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-indigo-600/8 rounded-full blur-[120px]" />

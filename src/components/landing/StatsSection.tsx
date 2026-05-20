@@ -100,7 +100,11 @@ export default function StatsSection() {
   const STATS = getStatsData(t);
 
   return (
-    <section className="relative px-6 md:px-12 py-20" id="stats" aria-label="Platform statistics">
+    <section
+      className="relative px-6 md:px-12 py-12 md:py-20"
+      id="stats"
+      aria-label="Platform statistics"
+    >
       <div className="text-center mb-12 section-fade">
         <span className="section-eyebrow">{t('landing.byTheNumbers')}</span>
         <h2

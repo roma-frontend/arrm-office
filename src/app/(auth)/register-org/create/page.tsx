@@ -457,7 +457,7 @@ export default function CreateStarterOrgPage() {
           </p>
         </div>
 
-        <div className="text-center mt-4">
+        <div className="text-center my-4">
           <Link
             href="/register-org"
             className="text-sm hover:underline flex items-center justify-center gap-1"

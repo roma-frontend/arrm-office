@@ -79,7 +79,7 @@ export default function Footer() {
         aria-hidden="true"
       />
 
-      <div className="relative max-w-7xl mx-auto px-6 md:px-12 py-20">
+      <div className="relative max-w-7xl mx-auto px-6 md:px-12 py-12 md:py-20">
         {/* Main footer grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-16">
           {/* Brand column */}
