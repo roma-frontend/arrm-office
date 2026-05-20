@@ -1,7 +1,16 @@
 /**
  * Smart Password Validation System
  * Provides real-time password strength analysis with helpful suggestions
+ *
+ * Localization:
+ *   Pass an i18next-style `t` function to `validatePassword(password, t)` to
+ *   receive translated `requirements[].label`, `feedback[].message`, and
+ *   `suggestions[]` strings. Without a translator, Russian fallbacks are
+ *   returned (preserves backwards compatibility with existing tests).
  */
+
+/** Minimal i18next-compatible translator signature. */
+export type Translator = (key: string, defaultValue?: string) => string;
 
 export interface PasswordValidationResult {
   isValid: boolean;
@@ -23,44 +32,98 @@ export interface PasswordRequirement {
   required: boolean;
 }
 
+/** Russian fallback strings used when no translator is provided. */
+const RU_FALLBACK: Record<string, string> = {
+  'auth.passwordValidation.requirements.length': 'Минимум 8 символов',
+  'auth.passwordValidation.requirements.uppercase': 'Хотя бы одна заглавная буква (A-Z)',
+  'auth.passwordValidation.requirements.lowercase': 'Хотя бы одна строчная буква (a-z)',
+  'auth.passwordValidation.requirements.number': 'Хотя бы одна цифра (0-9)',
+  'auth.passwordValidation.requirements.special': 'Специальный символ (!@#$%^&*)',
+  'auth.passwordValidation.requirements.long': '12+ символов для дополнительной безопасности',
+  'auth.passwordValidation.feedback.empty': 'Введите пароль для проверки',
+  'auth.passwordValidation.feedback.excellent': 'Превосходный пароль! Очень безопасный! 🎉',
+  'auth.passwordValidation.feedback.strong': 'Надежный пароль! Хорошая защита.',
+  'auth.passwordValidation.feedback.good': 'Неплохо, но можно лучше.',
+  'auth.passwordValidation.feedback.fair': 'Слабоватый пароль. Усильте его!',
+  'auth.passwordValidation.feedback.weak': 'Очень слабый пароль! Легко взломать.',
+  'auth.passwordValidation.feedback.common': 'Этот пароль слишком распространен! Хакеры его знают.',
+  'auth.passwordValidation.feedback.repeated': 'Избегайте повторяющихся символов (aaa, 111)',
+  'auth.passwordValidation.feedback.sequential': 'Избегайте последовательностей (abc, 123)',
+  'auth.passwordValidation.suggestions.addSpecial':
+    'Добавьте специальные символы для большей надежности',
+  'auth.passwordValidation.suggestions.mixAll': 'Используйте комбинацию букв, цифр и символов',
+  'auth.passwordValidation.suggestions.increaseLength': 'Увеличьте длину до 12+ символов',
+  'auth.passwordValidation.suggestions.minLength': 'Используйте минимум 8 символов',
+  'auth.passwordValidation.suggestions.bothCases': 'Добавьте заглавные и строчные буквы',
+  'auth.passwordValidation.suggestions.digitsAndSpecial': 'Включите цифры и специальные символы',
+  'auth.passwordValidation.suggestions.avoidCommon':
+    'Избегайте популярных паролей типа "password123"',
+  'auth.passwordValidation.suggestions.addUppercase': 'Добавьте заглавную букву',
+  'auth.passwordValidation.suggestions.addNumber': 'Добавьте цифру',
+  'auth.passwordValidation.suggestions.addSpecialShort': 'Добавьте спецсимвол (!@#$%^&*)',
+  'auth.passwordValidation.strength.weak': 'Слабый',
+  'auth.passwordValidation.strength.fair': 'Средний',
+  'auth.passwordValidation.strength.good': 'Хороший',
+  'auth.passwordValidation.strength.strong': 'Надежный',
+  'auth.passwordValidation.strength.excellent': 'Превосходный',
+};
+
+function makeTranslate(t?: Translator) {
+  return (key: string): string => {
+    const fallback = RU_FALLBACK[key] ?? key;
+    if (!t) return fallback;
+    // Pass the RU fallback as i18next defaultValue so a missing key never
+    // shows the raw key to the user.
+    const value = t(key, fallback);
+    return typeof value === 'string' && value.length > 0 ? value : fallback;
+  };
+}
+
 /**
- * Comprehensive password validation with smart feedback
+ * Comprehensive password validation with smart feedback.
+ *
+ * @param password The password to validate.
+ * @param t       Optional i18next `t` function. When provided, all
+ *                user-facing strings (requirements, feedback, suggestions)
+ *                are translated; otherwise Russian fallbacks are used.
  */
-export function validatePassword(password: string): PasswordValidationResult {
+export function validatePassword(password: string, t?: Translator): PasswordValidationResult {
+  const tr = makeTranslate(t);
+
   const requirements: PasswordRequirement[] = [
     {
       id: 'length',
-      label: 'Минимум 8 символов',
+      label: tr('auth.passwordValidation.requirements.length'),
       met: password.length >= 8,
       required: true,
     },
     {
       id: 'uppercase',
-      label: 'Хотя бы одна заглавная буква (A-Z)',
+      label: tr('auth.passwordValidation.requirements.uppercase'),
       met: /[A-Z]/.test(password),
       required: true,
     },
     {
       id: 'lowercase',
-      label: 'Хотя бы одна строчная буква (a-z)',
+      label: tr('auth.passwordValidation.requirements.lowercase'),
       met: /[a-z]/.test(password),
       required: true,
     },
     {
       id: 'number',
-      label: 'Хотя бы одна цифра (0-9)',
+      label: tr('auth.passwordValidation.requirements.number'),
       met: /[0-9]/.test(password),
       required: true,
     },
     {
       id: 'special',
-      label: 'Специальный символ (!@#$%^&*)',
+      label: tr('auth.passwordValidation.requirements.special'),
       met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
       required: false,
     },
     {
       id: 'long',
-      label: '12+ символов для дополнительной безопасности',
+      label: tr('auth.passwordValidation.requirements.long'),
       met: password.length >= 12,
       required: false,
     },
@@ -105,45 +168,45 @@ export function validatePassword(password: string): PasswordValidationResult {
   if (!password) {
     feedback.push({
       type: 'info',
-      message: 'Введите пароль для проверки',
+      message: tr('auth.passwordValidation.feedback.empty'),
       icon: '💡',
     });
   } else if (score >= 90) {
     feedback.push({
       type: 'success',
-      message: 'Превосходный пароль! Очень безопасный! 🎉',
+      message: tr('auth.passwordValidation.feedback.excellent'),
       icon: '✅',
     });
   } else if (score >= 70) {
     feedback.push({
       type: 'success',
-      message: 'Надежный пароль! Хорошая защита.',
+      message: tr('auth.passwordValidation.feedback.strong'),
       icon: '✅',
     });
   } else if (score >= 50) {
     feedback.push({
       type: 'warning',
-      message: 'Неплохо, но можно лучше.',
+      message: tr('auth.passwordValidation.feedback.good'),
       icon: '⚠️',
     });
-    suggestions.push('Добавьте специальные символы для большей надежности');
+    suggestions.push(tr('auth.passwordValidation.suggestions.addSpecial'));
   } else if (score >= 30) {
     feedback.push({
       type: 'warning',
-      message: 'Слабоватый пароль. Усильте его!',
+      message: tr('auth.passwordValidation.feedback.fair'),
       icon: '⚠️',
     });
-    suggestions.push('Используйте комбинацию букв, цифр и символов');
-    suggestions.push('Увеличьте длину до 12+ символов');
+    suggestions.push(tr('auth.passwordValidation.suggestions.mixAll'));
+    suggestions.push(tr('auth.passwordValidation.suggestions.increaseLength'));
   } else {
     feedback.push({
       type: 'error',
-      message: 'Очень слабый пароль! Легко взломать.',
+      message: tr('auth.passwordValidation.feedback.weak'),
       icon: '❌',
     });
-    suggestions.push('Используйте минимум 8 символов');
-    suggestions.push('Добавьте заглавные и строчные буквы');
-    suggestions.push('Включите цифры и специальные символы');
+    suggestions.push(tr('auth.passwordValidation.suggestions.minLength'));
+    suggestions.push(tr('auth.passwordValidation.suggestions.bothCases'));
+    suggestions.push(tr('auth.passwordValidation.suggestions.digitsAndSpecial'));
   }
 
   // Common password detection
@@ -162,17 +225,17 @@ export function validatePassword(password: string): PasswordValidationResult {
   if (commonPasswords.some((common) => password.toLowerCase().includes(common))) {
     feedback.push({
       type: 'error',
-      message: 'Этот пароль слишком распространен! Хакеры его знают.',
+      message: tr('auth.passwordValidation.feedback.common'),
       icon: '🚨',
     });
-    suggestions.push('Избегайте популярных паролей типа "password123"');
+    suggestions.push(tr('auth.passwordValidation.suggestions.avoidCommon'));
   }
 
   // Repeated characters
   if (/(.)\1{2,}/.test(password)) {
     feedback.push({
       type: 'warning',
-      message: 'Избегайте повторяющихся символов (aaa, 111)',
+      message: tr('auth.passwordValidation.feedback.repeated'),
       icon: '🔁',
     });
   }
@@ -181,20 +244,20 @@ export function validatePassword(password: string): PasswordValidationResult {
   if (/abc|bcd|cde|123|234|345|456/i.test(password)) {
     feedback.push({
       type: 'warning',
-      message: 'Избегайте последовательностей (abc, 123)',
+      message: tr('auth.passwordValidation.feedback.sequential'),
       icon: '🔢',
     });
   }
 
   // Add smart suggestions based on what's missing
   if (!requirements.find((r) => r.id === 'uppercase')?.met) {
-    suggestions.push('Добавьте заглавную букву');
+    suggestions.push(tr('auth.passwordValidation.suggestions.addUppercase'));
   }
   if (!requirements.find((r) => r.id === 'number')?.met) {
-    suggestions.push('Добавьте цифру');
+    suggestions.push(tr('auth.passwordValidation.suggestions.addNumber'));
   }
   if (!requirements.find((r) => r.id === 'special')?.met && score < 70) {
-    suggestions.push('Добавьте спецсимвол (!@#$%^&*)');
+    suggestions.push(tr('auth.passwordValidation.suggestions.addSpecialShort'));
   }
 
   return {

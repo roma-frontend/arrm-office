@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { Eye, EyeOff, Lock, Copy, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,7 @@ interface SmartPasswordInputProps {
 export function SmartPasswordInput({
   value,
   onChange,
-  label = 'Пароль',
+  label,
   placeholder = '••••••••',
   required = true,
   showStrength = true,
@@ -32,8 +33,11 @@ export function SmartPasswordInput({
   autoFocus = false,
   forgotPasswordLink,
 }: SmartPasswordInputProps) {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Fall back to the localized "Password" label if the caller didn't supply one.
+  const resolvedLabel = label ?? t('auth.password', 'Пароль');
 
   const handleGeneratePassword = () => {
     const newPassword = generateSecurePassword();
@@ -61,7 +65,7 @@ export function SmartPasswordInput({
           htmlFor="password"
           className="flex items-center gap-1 whitespace-nowrap text-sm font-medium text-(--text-primary)"
         >
-          {label}
+          {resolvedLabel}
           {required && <span className="text-red-500">*</span>}
         </Label>
 
@@ -76,7 +80,7 @@ export function SmartPasswordInput({
             className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium group ml-2"
           >
             <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
-            Сгенерировать
+            {t('auth.passwordInput.generate', 'Сгенерировать')}
           </motion.button>
         )}
       </div>
@@ -112,7 +116,7 @@ export function SmartPasswordInput({
                 onClick={handleCopyPassword}
                 type="button"
                 className="p-1.5 rounded-md hover:bg-(--background-subtle) transition-colors"
-                title="Копировать пароль"
+                title={t('auth.passwordInput.copy', 'Копировать пароль')}
               >
                 {copied ? (
                   <motion.div
@@ -147,7 +151,11 @@ export function SmartPasswordInput({
             onClick={() => setShowPassword(!showPassword)}
             type="button"
             className="p-1.5 rounded-md hover:bg-(--background-subtle) transition-colors"
-            title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+            title={
+              showPassword
+                ? t('auth.passwordInput.hide', 'Скрыть пароль')
+                : t('auth.passwordInput.show', 'Показать пароль')
+            }
           >
             <AnimatePresence mode="wait">
               {showPassword ? (
@@ -191,7 +199,7 @@ export function SmartPasswordInput({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            Пароль скопирован в буфер обмена!
+            {t('auth.passwordInput.copied', 'Пароль скопирован в буфер обмена!')}
           </motion.div>
         )}
       </AnimatePresence>

@@ -502,7 +502,10 @@ function VacancyDetailModal({
       fetch('/api/telegram/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'career', data: { name, email, phone, vacancy: vacancy.title } }),
+        body: JSON.stringify({
+          type: 'career',
+          data: { name, email, phone, vacancy: vacancy.title },
+        }),
       }).catch(() => {});
     } catch (e: any) {
       alert(e.message || 'Error submitting application');
@@ -803,8 +806,8 @@ function VacancyDetailModal({
                 <Link
                   href={
                     user
-                      ? `/onboarding/select-organization?org=${vacancy.org.slug}`
-                      : `/register?next=/onboarding/select-organization?org=${vacancy.org.slug}`
+                      ? `/onboarding/select-organization?org=${encodeURIComponent(vacancy.org.slug)}`
+                      : `/register?org=${encodeURIComponent(vacancy.org.slug)}`
                   }
                   className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-80"
                   style={{

@@ -81,6 +81,16 @@ export default function SelectOrganizationPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRequesting, setIsRequesting] = useState<Id<'organizations'> | null>(null);
 
+  // Pre-selected organization slug from URL (e.g. ?org=acme from a vacancy page).
+  // Read synchronously on first render so we don't flash the org list before
+  // the auto-join handler kicks in.
+  const initialPrefilledSlug =
+    typeof window !== 'undefined'
+      ? (new URLSearchParams(window.location.search).get('org')?.toLowerCase() ?? null)
+      : null;
+  const [prefilledOrgSlug, setPrefilledOrgSlug] = useState<string | null>(initialPrefilledSlug);
+  const [autoJoinTriggered, setAutoJoinTriggered] = useState(false);
+
   // Dev-only preview escape: visit ?preview=1 in development to bypass the redirect
   // and view the page even when authenticated. No effect in production.
   const isPreview =
@@ -134,8 +144,11 @@ export default function SelectOrganizationPage() {
     );
   }, [organizations, searchQuery]);
 
-  // Block render while redirecting
-  if (shouldRedirect && !isPreview) return null;
+  // Resolve org by ?org=<slug> from the active directory
+  const prefilledOrg = useMemo(() => {
+    if (!prefilledOrgSlug || !organizations) return null;
+    return organizations.find((o) => o.slug.toLowerCase() === prefilledOrgSlug) ?? null;
+  }, [organizations, prefilledOrgSlug]);
 
   const handleRequestJoin = async (organizationId: Id<'organizations'>, name: string) => {
     if (!user?.id) return;
@@ -156,6 +169,66 @@ export default function SelectOrganizationPage() {
       setIsRequesting(null);
     }
   };
+
+  // Auto-trigger join request when user landed here with ?org=<slug>.
+  // Only fires once, and only if:
+  //   - we have a valid user
+  //   - the slug resolves to an active org
+  //   - there is no existing pending request for that org
+  useEffect(() => {
+    if (autoJoinTriggered) return;
+    if (!prefilledOrgSlug) return;
+    if (!user?.id) return;
+    if (!prefilledOrg) return; // org list still loading or slug not found
+    if (myRequests === undefined) return; // wait until we know existing requests
+    if (pendingOrgIds.has(prefilledOrg._id)) {
+      // Already requested – just route to pending screen
+      setAutoJoinTriggered(true);
+      router.push('/onboarding/pending');
+      return;
+    }
+    setAutoJoinTriggered(true);
+    void handleRequestJoin(prefilledOrg._id, prefilledOrg.name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefilledOrgSlug, prefilledOrg, user?.id, myRequests, pendingOrgIds, autoJoinTriggered]);
+
+  // Block render while redirecting
+  if (shouldRedirect && !isPreview) return null;
+
+  // If the user arrived with ?org=<slug>, hide the search UI until we either
+  // auto-join them or determine the slug is invalid. This avoids a flash of
+  // the directory list during the redirect.
+  const slugStillResolving =
+    !!prefilledOrgSlug &&
+    (organizations === undefined ||
+      myRequests === undefined ||
+      (prefilledOrg && !autoJoinTriggered));
+
+  if (slugStillResolving || (prefilledOrgSlug && autoJoinTriggered && prefilledOrg)) {
+    return (
+      <div className="min-h-screen bg-(--background) flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="btn-gradient inline-flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg">
+            <Building2 className="h-7 w-7 text-white" />
+          </div>
+          <Loader2 className="h-6 w-6 animate-spin text-(--text-muted)" />
+          <p className="text-sm text-(--text-secondary)">
+            {prefilledOrg
+              ? `${t('auth.joining', 'Joining')} ${prefilledOrg.name}…`
+              : t('auth.loadingOrganization', 'Loading organization…')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // If the slug didn't resolve to an active org, drop it silently and show the
+  // full directory so the user can pick manually.
+  if (prefilledOrgSlug && organizations !== undefined && !prefilledOrg) {
+    // Clear once so further renders show the normal list.
+    // Using setTimeout to avoid setState-in-render warnings.
+    setTimeout(() => setPrefilledOrgSlug(null), 0);
+  }
 
   const isLoading = organizations === undefined;
   const totalCount = organizations?.length ?? 0;

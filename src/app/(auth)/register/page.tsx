@@ -227,11 +227,25 @@ function RegisterPageContent() {
   const router = useRouter();
   const { login } = useAuthStore();
   const [isPending, startTransition] = useTransition();
-  const [step, setStep] = useState<Step>('org');
+  // Read URL params synchronously on first render to avoid a flicker of
+  // the "search org" step when we already know which org to join.
+  const initialUrlParams = (() => {
+    if (typeof window === 'undefined') return { invite: null, orgSlug: null };
+    const params = new URLSearchParams(window.location.search);
+    return {
+      invite: params.get('invite'),
+      orgSlug: params.get('org')?.toLowerCase() ?? null,
+    };
+  })();
+
+  const [step, setStep] = useState<Step>(
+    initialUrlParams.orgSlug || initialUrlParams.invite ? 'details' : 'org',
+  );
   const [_showPassword, _setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<OrgResult | null>(null);
-  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(initialUrlParams.invite);
+  const [prefilledOrgSlug, setPrefilledOrgSlug] = useState<string | null>(initialUrlParams.orgSlug);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -239,15 +253,29 @@ function RegisterPageContent() {
     phone: '',
   });
 
-  // Check for invite token in URL
+  // Resolve org from slug (e.g. when user came from a careers/vacancy page)
+  const prefilledOrg = useQuery(
+    api.organizations.getOrganizationBySlug,
+    prefilledOrgSlug ? { slug: prefilledOrgSlug } : 'skip',
+  ) as OrgResult | null | undefined;
+
+  // When the slug resolves to a real org, auto-select it.
+  // If the slug resolved to null (not found / inactive), fall back to the search step.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('invite');
-    if (token) {
-      // Wrap setState in setTimeout to avoid cascading renders
-      setTimeout(() => setInviteToken(token), 0);
+    if (!prefilledOrgSlug) return;
+    if (prefilledOrg === undefined) return; // still loading
+    if (prefilledOrg && !selectedOrg && !inviteToken) {
+      setSelectedOrg(prefilledOrg);
+      setStep('details');
+    } else if (prefilledOrg === null && !selectedOrg && !inviteToken) {
+      // Slug was invalid — drop the prefill and let the user search manually.
+      setPrefilledOrgSlug(null);
+      setStep('org');
     }
-  }, []);
+  }, [prefilledOrg, prefilledOrgSlug, selectedOrg, inviteToken]);
+
+  // True while we still don't know what to do with ?org=<slug>
+  const isResolvingPrefilledOrg = !!prefilledOrgSlug && prefilledOrg === undefined && !selectedOrg;
 
   const _strength = passwordStrength(formData.password);
 
@@ -352,269 +380,296 @@ function RegisterPageContent() {
             className="rounded-2xl p-8 shadow-2xl border"
             style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
           >
-            {/* Logo */}
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg btn-gradient">
-                <Building2 className="w-7 h-7 text-white" />
+            {isResolvingPrefilledOrg ? (
+              // While we resolve ?org=<slug>, show a quiet loader so the user
+              // doesn't see the "search organization" step flash by.
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg btn-gradient">
+                  <Building2 className="w-7 h-7 text-white" />
+                </div>
+                <ShieldLoader size="sm" variant="inline" />
+                <p className="text-sm text-center" style={{ color: 'var(--text-muted)' }}>
+                  {t('auth.loadingOrganization', 'Loading organization…')}
+                </p>
               </div>
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {step === 'org'
-                  ? t('auth.findYourOrg', 'Find your organization')
-                  : t('auth.createAccount', 'Create account')}
-              </h1>
-              <p className="text-sm mt-1 text-center" style={{ color: 'var(--text-muted)' }}>
-                {step === 'org'
-                  ? t('auth.searchCompany', 'Search for your company to get started')
-                  : `${t('auth.joining', 'Joining')} ${selectedOrg?.name ?? t('auth.yourOrganization', 'your organization')}`}
-              </p>
-            </div>
-
-            {/* Step indicator */}
-            <div className="flex items-center gap-2 mb-6">
-              {(['org', 'details'] as Step[]).map((s, i) => (
-                <React.Fragment key={s}>
-                  <div className="flex items-center gap-1.5">
-                    <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all"
-                      style={{
-                        background:
-                          step === s
-                            ? '#2563eb'
-                            : i < ['org', 'details'].indexOf(step)
-                              ? '#10b981'
-                              : 'var(--border)',
-                        color:
-                          step === s || i < ['org', 'details'].indexOf(step)
-                            ? '#fff'
-                            : 'var(--text-muted)',
-                      }}
-                    >
-                      {i < ['org', 'details'].indexOf(step) ? '✓' : i + 1}
-                    </div>
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: step === s ? 'var(--text-primary)' : 'var(--text-muted)' }}
-                    >
-                      {s === 'org'
-                        ? t('auth.organizationStep', 'Organization')
-                        : t('auth.yourDetails', 'Your details')}
-                    </span>
+            ) : (
+              <>
+                {/* Logo */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg btn-gradient">
+                    <Building2 className="w-7 h-7 text-white" />
                   </div>
-                  {i < 1 && <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />}
-                </React.Fragment>
-              ))}
-            </div>
+                  <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {step === 'org'
+                      ? t('auth.findYourOrg', 'Find your organization')
+                      : t('auth.createAccount', 'Create account')}
+                  </h1>
+                  <p className="text-sm mt-1 text-center" style={{ color: 'var(--text-muted)' }}>
+                    {step === 'org'
+                      ? t('auth.searchCompany', 'Search for your company to get started')
+                      : `${t('auth.joining', 'Joining')} ${selectedOrg?.name ?? t('auth.yourOrganization', 'your organization')}`}
+                  </p>
+                </div>
 
-            {/* ── STEP 1: Organization ── */}
-            <AnimatePresence mode="wait">
-              {step === 'org' && (
-                <motion.div
-                  key="org"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-4"
-                >
-                  {inviteToken ? (
-                    <div
-                      className="flex items-center gap-3 p-3 rounded-xl border"
-                      style={{
-                        background: 'rgba(37,99,235,0.08)',
-                        borderColor: 'rgba(37,99,235,0.3)',
-                      }}
-                    >
-                      <Sparkles className="w-4 h-4 text-blue-500 shrink-0" />
-                      <div>
-                        <p className="text-sm font-semibold text-(--text-primary)">
-                          {t('auth.inviteLinkDetected')}
-                        </p>
-                        <p className="text-xs text-(--text-muted)">{t('auth.invitedToJoin')}</p>
+                {/* Step indicator */}
+                <div className="flex items-center gap-2 mb-6">
+                  {(['org', 'details'] as Step[]).map((s, i) => (
+                    <React.Fragment key={s}>
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                          style={{
+                            background:
+                              step === s
+                                ? '#2563eb'
+                                : i < ['org', 'details'].indexOf(step)
+                                  ? '#10b981'
+                                  : 'var(--border)',
+                            color:
+                              step === s || i < ['org', 'details'].indexOf(step)
+                                ? '#fff'
+                                : 'var(--text-muted)',
+                          }}
+                        >
+                          {i < ['org', 'details'].indexOf(step) ? '✓' : i + 1}
+                        </div>
+                        <span
+                          className="text-xs font-medium"
+                          style={{
+                            color: step === s ? 'var(--text-primary)' : 'var(--text-muted)',
+                          }}
+                        >
+                          {s === 'org'
+                            ? t('auth.organizationStep', 'Organization')
+                            : t('auth.yourDetails', 'Your details')}
+                        </span>
                       </div>
-                    </div>
-                  ) : (
-                    <OrgSearch onSelect={(org) => setSelectedOrg(org)} />
+                      {i < 1 && (
+                        <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+
+                {/* ── STEP 1: Organization ── */}
+                <AnimatePresence mode="wait">
+                  {step === 'org' && (
+                    <motion.div
+                      key="org"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="space-y-4"
+                    >
+                      {inviteToken ? (
+                        <div
+                          className="flex items-center gap-3 p-3 rounded-xl border"
+                          style={{
+                            background: 'rgba(37,99,235,0.08)',
+                            borderColor: 'rgba(37,99,235,0.3)',
+                          }}
+                        >
+                          <Sparkles className="w-4 h-4 text-blue-500 shrink-0" />
+                          <div>
+                            <p className="text-sm font-semibold text-(--text-primary)">
+                              {t('auth.inviteLinkDetected')}
+                            </p>
+                            <p className="text-xs text-(--text-muted)">{t('auth.invitedToJoin')}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <OrgSearch onSelect={(org) => setSelectedOrg(org)} />
+                      )}
+
+                      {/* Error */}
+                      <AnimatePresence>
+                        {error && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="flex items-center gap-2 p-3 rounded-xl text-sm"
+                            style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                          >
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            {error}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <Button
+                        type="button"
+                        onClick={handleOrgNext}
+                        disabled={!selectedOrg && !inviteToken}
+                        className="btn-gradient w-full py-2.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t('auth.continue', 'Continue')}
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </motion.div>
                   )}
 
-                  {/* Error */}
-                  <AnimatePresence>
-                    {error && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="flex items-center gap-2 p-3 rounded-xl text-sm"
-                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                  {/* ── STEP 2: Personal details ── */}
+                  {step === 'details' && (
+                    <motion.form
+                      id="personal-details-form"
+                      key="details"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      onSubmit={handleSubmit}
+                      className="space-y-4"
+                    >
+                      {/* Back */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStep('org');
+                          setError(null);
+                        }}
+                        className="flex items-center gap-1 text-xs text-(--text-muted) hover:text-(--text-primary) transition-colors -mt-1 mb-1"
                       >
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        {error}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <ArrowLeft className="w-3 h-3" />{' '}
+                        {t('auth.backToOrg', 'Back to organization')}
+                      </button>
 
-                  <Button
-                    type="button"
-                    onClick={handleOrgNext}
-                    disabled={!selectedOrg && !inviteToken}
-                    className="btn-gradient w-full py-2.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {t('auth.continue', 'Continue')}
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </motion.div>
-              )}
+                      {/* Name */}
+                      <div className="space-y-1.5">
+                        <Label
+                          className="text-sm font-medium"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {t('auth.fullName')}
+                        </Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
+                          <Input
+                            type="text"
+                            required
+                            value={formData.name}
+                            onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                            placeholder={t('placeholders.johnDoe')}
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
+                            style={{
+                              background: 'var(--input)',
+                              borderColor: 'var(--border)',
+                              color: 'var(--text-primary)',
+                            }}
+                            onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                            onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                          />
+                        </div>
+                      </div>
 
-              {/* ── STEP 2: Personal details ── */}
-              {step === 'details' && (
-                <motion.form
-                  id="personal-details-form"
-                  key="details"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  onSubmit={handleSubmit}
-                  className="space-y-4"
-                >
-                  {/* Back */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep('org');
-                      setError(null);
-                    }}
-                    className="flex items-center gap-1 text-xs text-(--text-muted) hover:text-(--text-primary) transition-colors -mt-1 mb-1"
-                  >
-                    <ArrowLeft className="w-3 h-3" /> {t('auth.backToOrg', 'Back to organization')}
-                  </button>
+                      {/* Email - Smart Input */}
+                      <div id="email-field">
+                        <SmartEmailInput
+                          value={formData.email}
+                          onChange={(val) => setFormData((p) => ({ ...p, email: val }))}
+                          label={t('auth.emailAddress')}
+                          placeholder="you@company.com"
+                        />
+                        {isSuperadmin && (
+                          <p className="text-xs text-blue-500 flex items-center gap-1 px-1 mt-2">
+                            <CheckCircle2 className="w-3 h-3" />{' '}
+                            {t('auth.superadminAccount', 'Superadmin account')}
+                          </p>
+                        )}
+                      </div>
 
-                  {/* Name */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      {t('auth.fullName')}
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-                      <Input
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                        placeholder={t('placeholders.johnDoe')}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                        style={{
-                          background: 'var(--input)',
-                          borderColor: 'var(--border)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                        onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
-                      />
-                    </div>
+                      {/* Phone */}
+                      <div className="space-y-1.5">
+                        <Label
+                          className="text-sm font-medium"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {t('auth.phoneOptional')}
+                        </Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
+                          <Input
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                            placeholder="+374 XX XXX XXX"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
+                            style={{
+                              background: 'var(--input)',
+                              borderColor: 'var(--border)',
+                              color: 'var(--text-primary)',
+                            }}
+                            onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                            onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Password - Smart Input */}
+                      <div id="password-field">
+                        <SmartPasswordInput
+                          value={formData.password}
+                          onChange={(val) => setFormData((p) => ({ ...p, password: val }))}
+                          label={t('auth.password', 'Password')}
+                          placeholder={t('placeholders.minCharacters')}
+                          showStrength={true}
+                          showGenerator={true}
+                        />
+                      </div>
+
+                      {/* Smart Error */}
+                      <AnimatePresence>
+                        {error && <SmartErrorMessage error={parseAuthError(error)} />}
+                      </AnimatePresence>
+
+                      {/* Submit */}
+                      <Button
+                        type="submit"
+                        disabled={isPending}
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-70 btn-gradient"
+                      >
+                        {isPending ? (
+                          <>
+                            <ShieldLoader size="xs" variant="inline" className="mr-2" />{' '}
+                            {t('auth.creatingAccount', 'Creating account…')}
+                          </>
+                        ) : (
+                          t('auth.requestToJoin', 'Request to Join')
+                        )}
+                      </Button>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
+
+                <div className="text-center mt-6 space-y-3">
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    {t('auth.alreadyHaveAccount', 'Already have an account?')}{' '}
+                    <Link
+                      href="/login"
+                      className="font-semibold hover:underline"
+                      style={{ color: '#2563eb' }}
+                    >
+                      {t('auth.signIn', 'Sign in')}
+                    </Link>
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      {t('common.or', 'or')}
+                    </span>
+                    <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
                   </div>
-
-                  {/* Email - Smart Input */}
-                  <div id="email-field">
-                    <SmartEmailInput
-                      value={formData.email}
-                      onChange={(val) => setFormData((p) => ({ ...p, email: val }))}
-                      label={t('auth.emailAddress')}
-                      placeholder="you@company.com"
-                    />
-                    {isSuperadmin && (
-                      <p className="text-xs text-blue-500 flex items-center gap-1 px-1 mt-2">
-                        <CheckCircle2 className="w-3 h-3" />{' '}
-                        {t('auth.superadminAccount', 'Superadmin account')}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      {t('auth.phoneOptional')}
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-                      <Input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
-                        placeholder="+374 XX XXX XXX"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                        style={{
-                          background: 'var(--input)',
-                          borderColor: 'var(--border)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                        onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Password - Smart Input */}
-                  <div id="password-field">
-                    <SmartPasswordInput
-                      value={formData.password}
-                      onChange={(val) => setFormData((p) => ({ ...p, password: val }))}
-                      label={t('auth.password', 'Password')}
-                      placeholder={t('placeholders.minCharacters')}
-                      showStrength={true}
-                      showGenerator={true}
-                    />
-                  </div>
-
-                  {/* Smart Error */}
-                  <AnimatePresence>
-                    {error && <SmartErrorMessage error={parseAuthError(error)} />}
-                  </AnimatePresence>
-
-                  {/* Submit */}
-                  <Button
-                    type="submit"
-                    disabled={isPending}
-                    className="w-full py-2.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-70 btn-gradient"
-                  >
-                    {isPending ? (
-                      <>
-                        <ShieldLoader size="xs" variant="inline" className="mr-2" />{' '}
-                        {t('auth.creatingAccount', 'Creating account…')}
-                      </>
-                    ) : (
-                      t('auth.requestToJoin', 'Request to Join')
-                    )}
-                  </Button>
-                </motion.form>
-              )}
-            </AnimatePresence>
-
-            <div className="text-center mt-6 space-y-3">
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                {t('auth.alreadyHaveAccount', 'Already have an account?')}{' '}
-                <Link
-                  href="/login"
-                  className="font-semibold hover:underline"
-                  style={{ color: '#2563eb' }}
-                >
-                  {t('auth.signIn', 'Sign in')}
-                </Link>
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {t('common.or', 'or')}
-                </span>
-                <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-              </div>
-              <Link href="/register-org">
-                <Button
-                  variant="link"
-                  className="text-sm font-semibold hover:underline"
-                  style={{ color: '#10b981' }}
-                >
-                  🏢 {t('register.createOrgWithPlan')}
-                </Button>
-              </Link>
-            </div>
+                  <Link href="/register-org">
+                    <Button
+                      variant="link"
+                      className="text-sm font-semibold hover:underline"
+                      style={{ color: '#10b981' }}
+                    >
+                      🏢 {t('register.createOrgWithPlan')}
+                    </Button>
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="text-center mt-4">
