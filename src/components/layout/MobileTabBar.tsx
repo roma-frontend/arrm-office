@@ -19,7 +19,10 @@ export function MobileTabBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-(--border) bg-(--card)/80 backdrop-blur-lg"
+      className={cn(
+        pathname === '/ai-chat' ? 'hidden' : 'block',
+        'fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-(--border) bg-(--card)/80 backdrop-blur-lg',
+      )}
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
       <div className="flex items-center justify-around h-14">
