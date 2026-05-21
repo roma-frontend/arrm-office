@@ -276,6 +276,20 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
     };
   }, [isPanelOpen]);
 
+  // Reset body styles on resize to desktop to prevent scroll lock
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.top = '';
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
