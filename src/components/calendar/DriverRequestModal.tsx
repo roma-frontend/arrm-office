@@ -43,7 +43,8 @@ interface DriverRequestModalProps {
 export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverRequestModalProps) {
   const { t } = useTranslation();
   const currentUser = useQuery(api.users.queries.getCurrentUser, { email: undefined });
-  const userId = currentUser?._id as Id<'users'> | undefined;
+  const userId =
+    currentUser?._id && currentUser._id !== '' ? (currentUser._id as Id<'users'>) : null;
   const selectedOrgId = useSelectedOrganization();
   const organizationId = (selectedOrgId ?? currentUser?.organizationId) as
     | Id<'organizations'>

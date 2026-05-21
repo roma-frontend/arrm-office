@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
 
     // Get user data
     const userId = session.userId;
+    if (!userId || userId === '') {
+      return NextResponse.json({ error: 'Invalid user ID' }, { status: 401 });
+    }
 
     // Fetch user's leave data
     const userLeaves = await fetchQuery(api.leaves.getUserLeaves, { userId });

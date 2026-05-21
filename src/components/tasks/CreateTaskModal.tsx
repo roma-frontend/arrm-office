@@ -32,10 +32,15 @@ export function CreateTaskModal({ currentUserId, userRole, onClose }: Props) {
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const employees = useQuery(api.tasks.getUsersForAssignment, { requesterId: currentUserId });
+  const safeUserId = currentUserId && currentUserId !== '' ? currentUserId : null;
+
+  const employees = useQuery(
+    api.tasks.getUsersForAssignment,
+    safeUserId ? { requesterId: safeUserId } : 'skip',
+  );
   const myEmployees = useQuery(
     api.tasks.getMyEmployees,
-    userRole === 'supervisor' ? { supervisorId: currentUserId } : 'skip',
+    userRole === 'supervisor' && safeUserId ? { supervisorId: safeUserId } : 'skip',
   );
 
   const createTask = useMutation(api.tasks.createTask);

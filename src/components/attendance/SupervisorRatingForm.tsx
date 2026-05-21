@@ -90,13 +90,13 @@ export function SupervisorRatingForm({
   };
 
   const handleSubmit = async () => {
-    if (!user?.id) return;
+    if (!user?.id || user.id === '') return;
 
     setIsSubmitting(true);
     try {
       await createRating({
         employeeId,
-        supervisorId: user.id as any,
+        supervisorId: user.id as Id<'users'>,
         qualityOfWork: ratings.qualityOfWork ?? 3,
         efficiency: ratings.efficiency ?? 3,
         teamwork: ratings.teamwork ?? 3,
@@ -108,7 +108,9 @@ export function SupervisorRatingForm({
         generalComments: generalComments || undefined,
       });
 
-      toast.success(t('rating.submittedSuccess', 'Rating submitted for {{name}}!', { name: employeeName }));
+      toast.success(
+        t('rating.submittedSuccess', 'Rating submitted for {{name}}!', { name: employeeName }),
+      );
       onSuccess?.();
       onClose?.();
     } catch (error: any) {
@@ -127,7 +129,9 @@ export function SupervisorRatingForm({
           <div>
             <CardTitle>{t('rating.performanceRating', 'Performance Rating')}</CardTitle>
             <CardDescription>
-              {t('rating.evaluatePerformance', "Evaluate {{name}}'s performance", { name: employeeName })}
+              {t('rating.evaluatePerformance', "Evaluate {{name}}'s performance", {
+                name: employeeName,
+              })}
             </CardDescription>
           </div>
           {onClose && (
@@ -233,7 +237,10 @@ export function SupervisorRatingForm({
           <div className="space-y-2">
             <Label>{t('labels.generalComments')}</Label>
             <Textarea
-              placeholder={t('placeholders.additionalFeedbackNotes', 'Any additional feedback or notes...')}
+              placeholder={t(
+                'placeholders.additionalFeedbackNotes',
+                'Any additional feedback or notes...',
+              )}
               value={generalComments}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setGeneralComments(e.target.value)
@@ -250,12 +257,7 @@ export function SupervisorRatingForm({
               {t('common.cancel', 'Cancel')}
             </Button>
           )}
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="flex-1"
-            variant="info"
-          >
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1" variant="info">
             {isSubmitting ? (
               t('rating.submitting', 'Submitting...')
             ) : (

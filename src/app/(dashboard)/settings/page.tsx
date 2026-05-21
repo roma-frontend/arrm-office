@@ -419,7 +419,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6 mt-0">
-            <SecuritySettings userId={user?.id ?? ''} />
+            {user?.id && user.id !== '' && <SecuritySettings userId={user.id as Id<'users'>} />}
           </TabsContent>
 
           <TabsContent value="advanced-security" className="space-y-6 mt-0">

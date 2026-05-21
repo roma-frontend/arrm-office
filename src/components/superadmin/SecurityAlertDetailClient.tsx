@@ -26,7 +26,8 @@ export default function SecurityAlertDetailClient() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
-  const userId = params.userId as string;
+  const userId = (params.userId as string) || '';
+  const safeUserId = userId && userId !== '' ? (userId as Id<'users'>) : null;
 
   const [suspendDuration, setSuspendDuration] = useState(24);
   const [suspendReason, setSuspendReason] = useState('');
@@ -34,12 +35,12 @@ export default function SecurityAlertDetailClient() {
 
   const suspiciousUser = useQuery(
     api.users.queries.getUserById,
-    user?.id ? { userId: userId as Id<'users'>, requesterId: user.id as Id<'users'> } : 'skip',
+    user?.id && safeUserId ? { userId: safeUserId, requesterId: user.id as Id<'users'> } : 'skip',
   );
 
   const recentAttempts = useQuery(
     api.security.getLoginAttemptsByUser,
-    userId ? { userId: userId as Id<'users'>, limit: 10 } : 'skip',
+    safeUserId ? { userId: safeUserId, limit: 10 } : 'skip',
   );
 
   const suspendUserMutation = useMutation(api.users.admin.suspendUser);
@@ -84,8 +85,9 @@ export default function SecurityAlertDetailClient() {
   }
 
   const handleSuspend = async () => {
+    if (!safeUserId) return;
     if (!suspendReason.trim()) {
-      toast.error(t('toasts.provideReasonForSuspension'));
+      toast.error('Please provide a reason for suspension');
       return;
     }
 
@@ -93,7 +95,7 @@ export default function SecurityAlertDetailClient() {
     try {
       await suspendUserMutation({
         adminId: user!.id as Id<'users'>,
-        userId: userId as Id<'users'>,
+        userId: safeUserId,
         reason: suspendReason,
         duration: suspendDuration,
       });
@@ -109,11 +111,12 @@ export default function SecurityAlertDetailClient() {
   };
 
   const handleUnsuspend = async () => {
+    if (!safeUserId) return;
     setIsProcessing(true);
     try {
       await unsuspendUserMutation({
         adminId: user!.id as Id<'users'>,
-        userId: userId as Id<'users'>,
+        userId: safeUserId,
       });
 
       toast.success(t('toasts.userUnsuspended'));

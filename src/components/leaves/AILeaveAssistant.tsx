@@ -37,7 +37,10 @@ export default function AILeaveAssistant({
   const evaluation = useQuery(api.aiEvaluator.evaluateLeaveRequest, { leaveRequestId });
 
   // Загружаем информацию о заявке на отпуск для проверки конфликтов
-  const leaveRequest = useQuery(api.leaves.getAllLeaves, { requesterId: userId });
+  const leaveRequest = useQuery(
+    api.leaves.getAllLeaves,
+    userId && userId !== '' ? { requesterId: userId } : 'skip',
+  );
   const currentLeave = leaveRequest?.find((l: any) => l._id === leaveRequestId);
 
   // Проверяем конфликты через Conflict Service

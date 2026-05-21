@@ -38,7 +38,7 @@ export default function DashboardClient() {
 
   const selectedOrgId = useSelectedOrganization();
 
-  const userId = user?.id as Id<'users'> | undefined;
+  const userId = user?.id && user.id !== '' ? (user.id as Id<'users'>) : null;
 
   const organizationsList = useQuery(
     api.organizations.getOrganizationsForPicker,

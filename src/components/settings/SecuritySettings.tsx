@@ -11,18 +11,21 @@ import { toast } from 'sonner';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 
+import type { Id } from '@/convex/_generated/dataModel';
+
 interface SecuritySettingsProps {
-  userId: string;
+  userId: Id<'users'>;
 }
 
 export function SecuritySettings({ userId }: SecuritySettingsProps) {
   const { t, i18n } = useTranslation();
   const [showFaceRegistration, setShowFaceRegistration] = useState(false);
+  const safeUserId = userId && userId !== '' ? userId : null;
 
   // Get face descriptor status (requester must be self or superadmin)
   const faceData = useQuery(
     api.faceRecognition.getFaceDescriptor,
-    userId ? { userId: userId as any, requesterId: userId as any } : 'skip',
+    safeUserId ? { userId: safeUserId, requesterId: safeUserId } : 'skip',
   );
   const removeFaceRegistration = useMutation(api.faceRecognition.removeFaceRegistration);
 

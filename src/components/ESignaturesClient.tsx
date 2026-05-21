@@ -1077,7 +1077,7 @@ export function ESignaturesClient() {
   const [detailDocId, setDetailDocId] = useState<Id<'signatureDocuments'> | null>(null);
 
   const organizationId = user?.organizationId as Id<'organizations'> | undefined;
-  const userId = user?.id as Id<'users'> | undefined;
+  const userId = user?.id && user.id !== '' ? (user.id as Id<'users'>) : null;
 
   const documents = useQuery(
     api.signatures.listDocuments,
@@ -1094,7 +1094,7 @@ export function ESignaturesClient() {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'supervisor';
 
-  if (!user || !organizationId) {
+  if (!user || !organizationId || !userId) {
     return <ShieldLoader />;
   }
 

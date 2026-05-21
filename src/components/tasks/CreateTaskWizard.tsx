@@ -47,10 +47,15 @@ export function CreateTaskWizard({
   const { createOptimistic: createTask } = useOptimisticCreateTask();
   const addAttachment = useMutation(api.tasks.addAttachment);
 
-  const employees = useQuery(api.tasks.getUsersForAssignment, { requesterId: currentUserId });
+  const safeUserId = currentUserId && currentUserId !== '' ? currentUserId : null;
+
+  const employees = useQuery(
+    api.tasks.getUsersForAssignment,
+    safeUserId ? { requesterId: safeUserId } : 'skip',
+  );
   const myEmployees = useQuery(
     api.tasks.getMyEmployees,
-    userRole === 'supervisor' ? { supervisorId: currentUserId } : 'skip',
+    userRole === 'supervisor' && safeUserId ? { supervisorId: safeUserId } : 'skip',
   );
 
   const availableEmployees = userRole === 'admin' ? employees : myEmployees;

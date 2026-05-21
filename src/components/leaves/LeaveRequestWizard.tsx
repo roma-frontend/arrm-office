@@ -76,18 +76,22 @@ export function LeaveRequestWizard({
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
   const useOrgFilter = isSuperadmin && selectedOrgId;
+  const safeUserId = userId && userId !== '' ? (userId as Id<'users'>) : null;
   const allUsers = useQuery(
     useOrgFilter ? api.organizations.getOrgMembers : api.users.queries.getAllUsers,
-    userId
+    safeUserId
       ? useOrgFilter
         ? {
             organizationId: selectedOrgId as Id<'organizations'>,
-            superadminUserId: userId as Id<'users'>,
+            superadminUserId: safeUserId,
           }
-        : { requesterId: userId as Id<'users'> }
+        : { requesterId: safeUserId }
       : 'skip',
   );
-  const currentUser = useQuery(api.users.queries.getUserById, { userId });
+  const currentUser = useQuery(
+    api.users.queries.getUserById,
+    safeUserId ? { userId: safeUserId } : 'skip',
+  );
 
   const canSelectEmployee = isSuperadmin ?? false;
 
