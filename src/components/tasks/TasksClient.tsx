@@ -494,7 +494,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     };
   }, []);
 
-  const convexId = userId as Id<'users'>;
+  const convexId = userId && userId !== '' ? (userId as Id<'users'>) : null;
   const canManage = userRole === 'admin' || userRole === 'supervisor';
   const isSuperadmin = userRole === 'superadmin';
   const selectedOrgId = useSelectedOrganization();
