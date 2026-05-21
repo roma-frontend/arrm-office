@@ -523,7 +523,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   );
   const supervisorTasks = useQuery(
     api.tasks.getTasksAssignedBy,
-    userRole === 'supervisor' ? { supervisorId: convexId } : 'skip',
+    userRole === 'supervisor' && convexId ? { supervisorId: convexId } : 'skip',
   );
   const employeeTasks = useQuery(
     api.tasks.getTasksForEmployee,
@@ -766,7 +766,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           onDragEnd={(e: DragEndEvent) => {
             setActiveTask(null);
             const { active, over } = e;
-            if (!over) return;
+            if (!over || !convexId) return;
             const newStatus = over.id as Status;
             const task = tasks.find((t) => t._id === active.id);
             if (!task || task.status === newStatus) return;
@@ -860,12 +860,14 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             <DialogTitle className="text-lg md:text-xl">{t('task.createTask')}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-y-auto">
-            <CreateTaskWizard
-              currentUserId={convexId}
-              userRole={userRole as 'admin' | 'supervisor' | 'employee'}
-              onComplete={() => setShowCreate(false)}
-              onCancel={() => setShowCreate(false)}
-            />
+            {convexId && (
+              <CreateTaskWizard
+                currentUserId={convexId}
+                userRole={userRole as 'admin' | 'supervisor' | 'employee'}
+                onComplete={() => setShowCreate(false)}
+                onCancel={() => setShowCreate(false)}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
