@@ -211,8 +211,140 @@ export function Navbar() {
     return `${mins}m ago`;
   };
 
+  const notifRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(e.target as Node) &&
+        bellRef.current &&
+        !bellRef.current.contains(e.target as Node)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showNotifications]);
+
   return (
     <>
+      {showNotifications && (
+        <div
+          ref={notifRef}
+          className="fixed top-16 right-4 w-[calc(100vw-2rem)] sm:w-80 bg-(--card) border border-(--border) rounded-xl shadow-2xl z-[70] overflow-hidden"
+          style={{
+            animation: 'notif-dropdown 0.15s ease both',
+          }}
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-(--border)">
+            <p className="text-sm font-semibold text-(--text-primary)">
+              {t('notifications.title')}
+            </p>
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <Badge variant="default" className="text-xs px-1.5 py-0 bg-[#2563eb]">
+                  {unreadCount}
+                </Badge>
+              )}
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-xs text-[#2563eb] hover:underline flex items-center gap-1"
+                >
+                  <Check className="w-3 h-3" /> {t('notifications.markAllAsRead')}
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="max-h-72 overflow-y-auto divide-y divide-(--border)">
+            {notifications.length === 0 ? (
+              <div className="px-4 py-6 text-center">
+                <Bell className="w-8 h-8 text-(--text-muted) mx-auto mb-2 opacity-40" />
+                <p className="text-sm text-(--text-muted)">{t('notifications.noNotifications')}</p>
+              </div>
+            ) : (
+              notifications.map(
+                (n: {
+                  _id: Id<'notifications'>;
+                  title: string;
+                  message: string;
+                  isRead: boolean;
+                  type: string;
+                  relatedId?: string;
+                  _creationTime: number;
+                }) => (
+                  <div
+                    key={n._id}
+                    onClick={async () => {
+                      await handleMarkRead(n._id);
+                      // Navigate based on notification type
+                      if (n.type === 'security_alert' && n.relatedId) {
+                        router.push(`/superadmin/security/alert/${n.relatedId}`);
+                      } else if (n.type === 'join_request') {
+                        router.push('/join-requests');
+                      } else if (n.type === 'join_approved') {
+                        router.push('/dashboard');
+                      } else if (n.type === 'leave_request' && n.relatedId) {
+                        router.push('/leaves');
+                      } else if (n.type === 'driver_request') {
+                        router.push('/drivers');
+                      } else if (
+                        n.type === 'driver_request_approved' ||
+                        n.type === 'driver_request_rejected'
+                      ) {
+                        router.push('/drivers');
+                      } else if (n.type === 'employee_added') {
+                        router.push('/employees');
+                      } else if (
+                        n.type === 'system' &&
+                        (n.title?.includes('Task') || n.title?.includes('task'))
+                      ) {
+                        router.push('/tasks');
+                      } else if (
+                        n.type === 'ticket_created' ||
+                        n.type === 'ticket_updated' ||
+                        n.type === 'ticket' ||
+                        (n.type === 'system' && n.relatedId?.startsWith('support_ticket:')) ||
+                        n.message?.toLowerCase().includes('ticket') ||
+                        n.title?.toLowerCase().includes('ticket') ||
+                        n.title?.includes('🎫')
+                      ) {
+                        if (user?.role === 'superadmin') {
+                          router.push('/superadmin/support');
+                        } else {
+                          router.push('/help');
+                        }
+                      }
+                      setShowNotifications(false);
+                    }}
+                    className={`px-4 py-3 hover:bg-(--background-subtle) cursor-pointer transition-colors ${
+                      !n.isRead ? 'bg-[#2563eb]/5 border-l-2 border-[#2563eb]' : ''
+                    }`}
+                  >
+                    <p className="text-sm font-semibold text-(--text-primary) leading-snug">
+                      {n.title}
+                    </p>
+                    <p className="text-xs text-(--text-muted) mt-1">{n.message}</p>
+                    <p className="text-xs text-(--text-muted) mt-1">{timeAgo(n._creationTime)}</p>
+                  </div>
+                ),
+              )
+            )}
+          </div>
+          {notifStatus === 'CanLoadMore' && (
+            <button
+              onClick={() => loadMore(20)}
+              className="w-full py-2 text-xs text-[#2563eb] hover:bg-(--background-subtle) border-t border-(--border)"
+            >
+              {t('notifications.loadMore', { defaultValue: 'Load more' })}
+            </button>
+          )}
+        </div>
+      )}
       <header
         className={`h-16 border-b border-(--border) bg-(--navbar-bg) flex items-center px-4 gap-4 sticky top-0 z-50 transition-[transform,colors] duration-300 ${scrollDirection === 'down' ? 'max-lg:-translate-y-full' : 'translate-y-0'}`}
       >
@@ -246,143 +378,20 @@ export function Navbar() {
         <div className="flex items-center gap-1">
           {/* Notifications */}
           <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative text-(--text-muted) hover:text-(--text-primary)"
-              onClick={() => setShowNotifications(!showNotifications)}
-              aria-label={t('notifications.title', { defaultValue: 'Notifications' })}
-            >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#2563eb] rounded-full animate-pulse" />
-              )}
-            </Button>
-
-            {showNotifications && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)} />
-                {/* CSS transition instead of motion.div — no JS-driven layout recalc */}
-                <div
-                  className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 bg-(--card) border border-(--border) rounded-xl shadow-2xl z-20 overflow-hidden"
-                  style={{
-                    animation: 'notif-dropdown 0.15s ease both',
-                  }}
-                >
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-(--border)">
-                    <p className="text-sm font-semibold text-(--text-primary)">
-                      {t('notifications.title')}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      {unreadCount > 0 && (
-                        <Badge variant="default" className="text-xs px-1.5 py-0 bg-[#2563eb]">
-                          {unreadCount}
-                        </Badge>
-                      )}
-                      {unreadCount > 0 && (
-                        <button
-                          onClick={handleMarkAllRead}
-                          className="text-xs text-[#2563eb] hover:underline flex items-center gap-1"
-                        >
-                          <Check className="w-3 h-3" /> {t('notifications.markAllAsRead')}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-(--border)">
-                    {notifications.length === 0 ? (
-                      <div className="px-4 py-6 text-center">
-                        <Bell className="w-8 h-8 text-(--text-muted) mx-auto mb-2 opacity-40" />
-                        <p className="text-sm text-(--text-muted)">
-                          {t('notifications.noNotifications')}
-                        </p>
-                      </div>
-                    ) : (
-                      notifications.map(
-                        (n: {
-                          _id: Id<'notifications'>;
-                          title: string;
-                          message: string;
-                          isRead: boolean;
-                          type: string;
-                          relatedId?: string;
-                          _creationTime: number;
-                        }) => (
-                          <div
-                            key={n._id}
-                            onClick={async () => {
-                              await handleMarkRead(n._id);
-                              // Navigate based on notification type
-                              if (n.type === 'security_alert' && n.relatedId) {
-                                router.push(`/superadmin/security/alert/${n.relatedId}`);
-                              } else if (n.type === 'join_request') {
-                                // Admin clicked on join request notification — go to join requests page
-                                router.push('/join-requests');
-                              } else if (n.type === 'join_approved') {
-                                // User's join request was approved — go to dashboard
-                                router.push('/dashboard');
-                              } else if (n.type === 'leave_request' && n.relatedId) {
-                                router.push('/leaves');
-                              } else if (n.type === 'driver_request') {
-                                router.push('/drivers');
-                              } else if (
-                                n.type === 'driver_request_approved' ||
-                                n.type === 'driver_request_rejected'
-                              ) {
-                                router.push('/drivers');
-                              } else if (n.type === 'employee_added') {
-                                router.push('/employees');
-                              } else if (
-                                n.type === 'system' &&
-                                (n.title?.includes('Task') || n.title?.includes('task'))
-                              ) {
-                                router.push('/tasks');
-                              } else if (
-                                n.type === 'ticket_created' ||
-                                n.type === 'ticket_updated' ||
-                                n.type === 'ticket' ||
-                                (n.type === 'system' &&
-                                  n.relatedId?.startsWith('support_ticket:')) ||
-                                n.message?.toLowerCase().includes('ticket') ||
-                                n.title?.toLowerCase().includes('ticket') ||
-                                n.title?.includes('🎫')
-                              ) {
-                                // Redirect based on user role
-                                if (user?.role === 'superadmin') {
-                                  router.push('/superadmin/support');
-                                } else {
-                                  router.push('/help');
-                                }
-                              }
-                              setShowNotifications(false);
-                            }}
-                            className={`px-4 py-3 hover:bg-(--background-subtle) cursor-pointer transition-colors ${
-                              !n.isRead ? 'bg-[#2563eb]/5 border-l-2 border-[#2563eb]' : ''
-                            }`}
-                          >
-                            <p className="text-sm font-semibold text-(--text-primary) leading-snug">
-                              {n.title}
-                            </p>
-                            <p className="text-xs text-(--text-muted) mt-1">{n.message}</p>
-                            <p className="text-xs text-(--text-muted) mt-1">
-                              {timeAgo(n._creationTime)}
-                            </p>
-                          </div>
-                        ),
-                      )
-                    )}
-                  </div>
-                  {notifStatus === 'CanLoadMore' && (
-                    <button
-                      onClick={() => loadMore(20)}
-                      className="w-full py-2 text-xs text-[#2563eb] hover:bg-(--background-subtle) border-t border-(--border)"
-                    >
-                      {t('notifications.loadMore', { defaultValue: 'Load more' })}
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
+            <span ref={bellRef}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-(--text-muted) hover:text-(--text-primary)"
+                onClick={() => setShowNotifications(!showNotifications)}
+                aria-label={t('notifications.title', { defaultValue: 'Notifications' })}
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#2563eb] rounded-full animate-pulse" />
+                )}
+              </Button>
+            </span>
           </div>
 
           {/* Language Switcher */}

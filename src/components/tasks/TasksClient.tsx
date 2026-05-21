@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState, useMemo, useRef, useCallback, useTransition, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
@@ -21,6 +22,7 @@ import {
   useSensors,
   useDroppable,
   useDraggable,
+  useDndMonitor,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
@@ -269,6 +271,9 @@ function DraggableTaskCard({ task, onOpen }: { task: any; onOpen: () => void }) 
   const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
+    data: {
+      status: task.status,
+    },
   });
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 };
 
@@ -284,21 +289,26 @@ function DraggableTaskCard({ task, onOpen }: { task: any; onOpen: () => void }) 
         onOpen();
       }}
     >
-      {/* Drag indicator icon - visible on hover */}
-      <div
-        className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-(--background-subtle) opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-        title={t('ariaLabels.dragToMove')}
-      >
-        <svg
-          className="w-3.5 h-3.5 text-(--text-muted)"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-        </svg>
-      </div>
       <TaskCardContent task={task} isDragging={isDragging} />
+
+      {/* Drag overlay - visible on hover */}
+      <div className="absolute inset-0 rounded-2xl bg-(--background)/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center pointer-events-none">
+        <div className="bg-(--card)/90 rounded-xl px-3 py-2 shadow-lg border border-(--border)">
+          <svg
+            className="w-5 h-5 text-(--text-muted)"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+            />
+          </svg>
+        </div>
+      </div>
     </div>
   );
 }
@@ -466,6 +476,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const { t } = useTranslation();
   const router = useRouter();
   const mainRef = useMainRef();
+  const kanbanScrollRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [showCreate, setShowCreate] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
@@ -508,6 +519,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     useSensor(TouchSensor, { activationConstraint: { delay: 1000, tolerance: 5 } }),
   );
   const { updateOptimistic } = useOptimisticTaskStatus();
+  const [optimisticStatuses, setOptimisticStatuses] = useState<Map<string, Status>>(new Map());
 
   // Queries - for admin/superadmin, get all tasks in their organization
   const adminTasks = useQuery(
@@ -539,20 +551,33 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           ? adminTasks
           : employeeTasks;
 
+  // Merge optimistic updates with raw tasks for instant UI feedback
+  const rawTasksWithOptimistic = useMemo(() => {
+    if (!rawTasks) return rawTasks;
+    if (optimisticStatuses.size === 0) return rawTasks;
+    return rawTasks.map((task) => {
+      const optimisticStatus = optimisticStatuses.get(task._id);
+      if (optimisticStatus) {
+        return { ...task, status: optimisticStatus };
+      }
+      return task;
+    });
+  }, [rawTasks, optimisticStatuses]);
+
   // Filter
   const tasks = useMemo(() => {
-    if (!rawTasks) return [];
-    return rawTasks.filter((t) => {
+    if (!rawTasksWithOptimistic) return [];
+    return rawTasksWithOptimistic.filter((t) => {
       const matchPriority = filterPriority === 'all' || t.priority === filterPriority;
       const matchStatus = filterStatus === 'all' || t.status === filterStatus;
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
       return matchPriority && matchStatus && matchSearch;
     });
-  }, [rawTasks, filterPriority, filterStatus, search]);
+  }, [rawTasksWithOptimistic, filterPriority, filterStatus, search]);
 
   // Stats
   const stats = useMemo(() => {
-    const all = rawTasks ?? [];
+    const all = rawTasksWithOptimistic ?? [];
     return {
       total: all.length,
       pending: all.filter((t) => t.status === 'pending').length,
@@ -567,7 +592,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           t.status !== 'cancelled',
       ).length,
     };
-  }, [rawTasks]);
+  }, [rawTasksWithOptimistic]);
 
   const tasksByStatus = useMemo(() => {
     const map: Record<Status, any[]> = {
@@ -759,33 +784,69 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       ) : viewMode === 'kanban' ? (
         <DndContext
           sensors={sensors}
+          measuring={{
+            droppable: {
+              strategy: 'fixed',
+            },
+            draggable: {
+              strategy: 'fixed',
+            },
+          }}
           onDragStart={(e: DragStartEvent) => {
             const task = tasks.find((t) => t._id === e.active.id);
             setActiveTask(task ?? null);
           }}
           onDragEnd={(e: DragEndEvent) => {
-            setActiveTask(null);
             const { active, over } = e;
-            if (!over || !convexId) return;
+            if (!over || !convexId) {
+              setActiveTask(null);
+              return;
+            }
             const newStatus = over.id as Status;
             const task = tasks.find((t) => t._id === active.id);
-            if (!task || task.status === newStatus) return;
-            startTransition(() => {
-              updateOptimistic(task._id as Id<'tasks'>, newStatus, convexId, task.status)
-                .then(() => {
-                  toast.success(
-                    t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
-                    { duration: 2000 },
-                  );
-                })
-                .catch(() => {
-                  toast.error('Failed to update status');
-                });
+            if (!task || task.status === newStatus) {
+              setActiveTask(null);
+              return;
+            }
+
+            // Synchronous state update BEFORE removing overlay
+            flushSync(() => {
+              setOptimisticStatuses((prev) => {
+                const next = new Map(prev);
+                next.set(task._id as string, newStatus);
+                return next;
+              });
             });
+
+            // Now safe to remove overlay - card is already in new column
+            setActiveTask(null);
+
+            // Background server mutation
+            updateOptimistic(task._id as Id<'tasks'>, newStatus, convexId, task.status)
+              .then(() => {
+                toast.success(
+                  t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
+                  { duration: 2000 },
+                );
+                setOptimisticStatuses((prev) => {
+                  const next = new Map(prev);
+                  next.delete(task._id as string);
+                  return next;
+                });
+              })
+              .catch(() => {
+                toast.error('Failed to update status');
+                setOptimisticStatuses((prev) => {
+                  const next = new Map(prev);
+                  next.delete(task._id as string);
+                  return next;
+                });
+              });
           }}
           onDragCancel={() => setActiveTask(null)}
+          dropAnimation={null}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div ref={kanbanScrollRef} className="flex gap-4 overflow-x-auto pb-4">
             {KANBAN_COLUMNS.map((status) => (
               <DroppableKanbanColumn
                 key={status}
@@ -795,14 +856,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               />
             ))}
           </div>
-          {/* Drag overlay — floating card while dragging */}
-          <DragOverlay dropAnimation={{ duration: 200, easing: 'ease' }}>
-            {activeTask ? (
-              <div className="w-[280px] rotate-2">
-                <TaskCardContent task={activeTask} isDragging={true} />
-              </div>
-            ) : null}
-          </DragOverlay>
         </DndContext>
       ) : (
         <div className="bg-(--card) rounded-2xl border border-(--border) shadow-sm overflow-x-auto">
