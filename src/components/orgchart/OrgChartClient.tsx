@@ -41,17 +41,8 @@ import {
   applyEdgeChanges,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {
-  Plus,
-  Search,
-  Network,
-  Users,
-  Building2,
-  User,
-  Folder,
-  Download,
-  RefreshCw,
-} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Plus, Search, Network, Users, Building2, Folder, Download, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ─── Types ────────────────────────────────────────────────────
@@ -63,11 +54,13 @@ interface OrgNodeData extends Record<string, unknown> {
   type: OrgNodeType;
   title?: string;
   children?: OrgNodeData[];
+  avatarUrl?: string;
   user?: {
     email?: string;
     phone?: string;
     department?: string;
     position?: string;
+    avatarUrl?: string;
   } | null;
   label: string;
 }
@@ -80,6 +73,28 @@ function OrgNodeComponent({ data }: { data: OrgNodeData }) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const avatarUrl = data.avatarUrl || data.user?.avatarUrl;
+
+  const renderAvatar = () => {
+    if (data.type !== 'person') return null;
+
+    return (
+      <Avatar className="h-6 w-6 flex-shrink-0">
+        <AvatarImage src={avatarUrl} alt={data.name} />
+        <AvatarFallback className="text-xs">{getInitials(data.name)}</AvatarFallback>
+      </Avatar>
+    );
+  };
+
   const getNodeIcon = () => {
     switch (data.type) {
       case 'department':
@@ -87,7 +102,7 @@ function OrgNodeComponent({ data }: { data: OrgNodeData }) {
       case 'group':
         return <Folder className="h-4 w-4 text-[var(--badge-purple-text)]" />;
       default:
-        return <User className="h-4 w-4 text-[var(--badge-success-text)]" />;
+        return renderAvatar();
     }
   };
 
