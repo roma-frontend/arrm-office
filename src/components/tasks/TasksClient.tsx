@@ -784,14 +784,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       ) : viewMode === 'kanban' ? (
         <DndContext
           sensors={sensors}
-          measuring={{
-            droppable: {
-              strategy: 'fixed',
-            },
-            draggable: {
-              strategy: 'fixed',
-            },
-          }}
           onDragStart={(e: DragStartEvent) => {
             const task = tasks.find((t) => t._id === e.active.id);
             setActiveTask(task ?? null);
@@ -844,7 +836,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               });
           }}
           onDragCancel={() => setActiveTask(null)}
-          dropAnimation={null}
         >
           <div ref={kanbanScrollRef} className="flex gap-4 overflow-x-auto pb-4">
             {KANBAN_COLUMNS.map((status) => (
