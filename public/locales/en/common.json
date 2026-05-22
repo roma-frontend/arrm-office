@@ -922,7 +922,7 @@
       "title": "Assign Supervisor",
       "description": "Manage supervisor assignments",
       "supervisorAssignedSuccess": "Supervisor assigned successfully",
-      "selectEmployee": "Select Employee",
+      "selectEmployee": "Select employee",
       "chooseEmployee": "Choose employee...",
       "noEmployeesFound": "No employees found",
       "currentSupervisor": "Current supervisor:",
@@ -940,5 +940,20 @@
       "title": "Edit Employee",
       "updatedSuccess": "Employee updated successfully"
     }
+  },
+  "idleModal": {
+    "sessionExpiring": "Session Expiring Soon",
+    "sessionExpired": "Session Expired",
+    "expiringMessage": "You have been inactive for a while. Your session will expire in:",
+    "expiringHint": "Extend your session or you will be logged out.",
+    "expiredMessage": "Your session has expired due to inactivity. Please log in again to continue.",
+    "welcomeBack": "Welcome back, {{name}}",
+    "extendSession": "Extend Session",
+    "logoutNow": "Logout Now",
+    "loginAgain": "Log In Again",
+    "securityNote": "For your security, inactive sessions are automatically terminated.",
+    "loggedOut": "Session ended successfully",
+    "logoutFailed": "Failed to end session",
+    "sessionExtended": "Session extended successfully"
   }
 }

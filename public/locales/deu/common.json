@@ -964,6 +964,21 @@
       "updatedSuccess": "Mitarbeiter erfolgreich aktualisiert"
     }
   },
+  "idleModal": {
+    "sessionExpiring": "Sitzung läuft bald ab",
+    "sessionExpired": "Sitzung abgelaufen",
+    "expiringMessage": "Sie waren eine Weile inaktiv. Ihre Sitzung läuft ab in:",
+    "expiringHint": "Verlängern Sie Ihre Sitzung, andernfalls werden Sie abgemeldet.",
+    "expiredMessage": "Ihre Sitzung ist aufgrund von Inaktivität abgelaufen. Bitte melden Sie sich erneut an, um fortzufahren.",
+    "welcomeBack": "Willkommen zurück, {{name}}",
+    "extendSession": "Sitzung verlängern",
+    "logoutNow": "Jetzt abmelden",
+    "loginAgain": "Erneut anmelden",
+    "securityNote": "Zu Ihrer Sicherheit werden inaktive Sitzungen automatisch beendet.",
+    "loggedOut": "Sitzung erfolgreich beendet",
+    "logoutFailed": "Sitzung konnte nicht beendet werden",
+    "sessionExtended": "Sitzung erfolgreich verlängert"
+  },
   "tasks.priority": {
     "high": "Hoch",
     "low": "Niedrig",

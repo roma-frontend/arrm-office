@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Providers } from '@/components/layout/Providers';
+import { IdleTimeoutModal } from '@/components/auth/IdleTimeoutModal';
 
 export const metadata: Metadata = {
   title: {
@@ -16,5 +17,10 @@ export const metadata: Metadata = {
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  return <Providers>{children}</Providers>;
+  return (
+    <Providers>
+      {children}
+      <IdleTimeoutModal />
+    </Providers>
+  );
 }
