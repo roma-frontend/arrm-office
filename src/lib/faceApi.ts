@@ -6,7 +6,10 @@
 (() => {
   const originalWarn = console.warn;
   console.warn = (...args) => {
-    if (typeof args[0] === 'string' && args[0].includes('already registered')) return;
+    if (typeof args[0] === 'string') {
+      if (args[0].includes('already registered')) return;
+      if (args[0].includes('Platform browser has already been set')) return;
+    }
     originalWarn.apply(console, args);
   };
 })();
