@@ -1,5 +1,16 @@
 // lib/faceApi.ts
 // Lazy load @vladmandic/face-api to reduce initial bundle size
+
+// Suppress TensorFlow.js kernel registration warnings (HMR noise in dev)
+// Must run BEFORE any tfjs import to catch all registration messages
+(() => {
+  const originalWarn = console.warn;
+  console.warn = (...args) => {
+    if (typeof args[0] === 'string' && args[0].includes('already registered')) return;
+    originalWarn.apply(console, args);
+  };
+})();
+
 let faceapi: typeof import('@vladmandic/face-api') | null = null;
 let modelsLoaded = false;
 let tfInitialized = false;
@@ -10,13 +21,20 @@ async function initTensorFlow() {
   try {
     const tf = await import('@tensorflow/tfjs');
 
+    // Official way to suppress kernel registration warnings (HMR noise in dev)
+    tf.env().set('DEBUG', false);
+
     // Prefer WebGL when available for better performance (fallback to cpu)
     const hasWebgl = !!tf.findBackend('webgl');
-    await tf.setBackend(hasWebgl ? 'webgl' : 'cpu');
+    const targetBackend = hasWebgl ? 'webgl' : 'cpu';
+
+    // Only set backend if it's not already active
+    if (tf.getBackend() !== targetBackend) {
+      await tf.setBackend(targetBackend);
+    }
     await tf.ready();
 
     tfInitialized = true;
-    console.log(`✅ TensorFlow.js backend initialized: ${hasWebgl ? 'webgl' : 'cpu'}`);
   } catch (error) {
     console.error('❌ Failed to initialize TensorFlow.js:', error);
     throw error;
@@ -37,18 +55,12 @@ export async function loadFaceApiModels() {
   const api = await loadFaceApiLibrary();
   const MODEL_URL = '/models';
 
-  // Load all models in parallel for faster startup
-  const results = await Promise.allSettled([
-    api.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+  // Load all models in parallel (SSD instead of TinyFaceDetector which is missing)
+  await Promise.all([
+    api.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
     api.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
     api.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
   ]);
-
-  // If tiny detector failed, load SSD as fallback
-  if (results[0].status === 'rejected') {
-    console.warn('⚠️ Tiny model not found, loading SSD Mobilenetv1...');
-    await api.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-  }
 
   modelsLoaded = true;
   console.log('✅ Face models loaded');
@@ -63,16 +75,6 @@ export async function detectFace(videoElement: HTMLVideoElement) {
   try {
     if (!faceapi) throw new Error('faceapi not loaded');
 
-    // если tiny загружен — используем tiny options
-    if (api.nets.tinyFaceDetector?.isLoaded) {
-      const options = new api.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
-      return await faceapi
-        .detectSingleFace(videoElement, options)
-        .withFaceLandmarks()
-        .withFaceDescriptor();
-    }
-
-    // иначе SSD
     const options = new api.SsdMobilenetv1Options({ minConfidence: 0.5 });
     return await faceapi
       .detectSingleFace(videoElement, options)

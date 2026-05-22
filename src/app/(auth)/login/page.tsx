@@ -10,8 +10,6 @@ import { Mail, Fingerprint, AlertCircle, Building2, ScanFace, ShieldCheck } from
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { WebAuthnButton } from '@/components/auth/WebAuthnButton';
-import { FaceLogin } from '@/components/auth/FaceLogin';
-import { loadFaceApiModels } from '@/lib/faceApi';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { OAuthSyncLoader } from '@/components/auth/OAuthSyncLoader';
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
@@ -25,6 +23,15 @@ import { SmartPasswordInput } from '@/components/auth/SmartPasswordInput';
 import { SmartErrorMessage, parseAuthError } from '@/components/auth/SmartErrorMessage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import dynamic from 'next/dynamic';
+
+// Lazy load FaceLogin to prevent TensorFlow.js from loading on every page view
+const FaceLogin = dynamic(
+  () => import('@/components/auth/FaceLogin').then((mod) => ({ default: mod.FaceLogin })),
+  {
+    ssr: false,
+  },
+);
 
 function MaintenanceBanner() {
   const { t } = useTranslation();
@@ -300,10 +307,8 @@ export default function LoginPage() {
       .catch(() => {});
   }, []);
 
-  // Preload face recognition models in background (eliminates 10s delay on Face ID tab)
-  useEffect(() => {
-    loadFaceApiModels().catch(() => {});
-  }, []);
+  // Don't preload face models — load lazily when user clicks Face ID tab
+  // This avoids TensorFlow.js kernel registration spam on every page load
 
   // Check if OAuth sync is in progress OR redirecting
   const isOAuthSyncing = (status === 'authenticated' && !isAuthenticated) || isRedirecting;

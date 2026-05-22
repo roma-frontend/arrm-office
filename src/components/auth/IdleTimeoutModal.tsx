@@ -35,11 +35,12 @@ export function IdleTimeoutModal() {
       await fetch('/api/auth/logout', { method: 'POST' });
       authLogout();
       toast.success(t('idleModal.loggedOut', 'Session ended successfully'));
-      router.push('/login');
+      // Full page navigation to escape dashboard provider tree
+      window.location.href = '/login';
     } catch {
       toast.error(t('idleModal.logoutFailed', 'Failed to end session'));
     }
-  }, [authLogout, router, t]);
+  }, [authLogout, t]);
 
   const handleExtendSession = useCallback(async () => {
     try {
@@ -155,7 +156,10 @@ export function IdleTimeoutModal() {
             </>
           ) : (
             <Button
-              onClick={() => router.push('/login')}
+              onClick={() => {
+                setShowModal(false);
+                window.location.href = '/login';
+              }}
               className="w-full btn-gradient text-white font-medium py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
             >
               <LogOut className="w-4 h-4 mr-2" />
