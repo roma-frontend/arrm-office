@@ -16,6 +16,7 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useTranslation } from 'react-i18next';
 import { playChatMessageSound } from '@/lib/notificationSound';
 import { logger } from '@/lib/logger';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 interface Props {
   userId: string;
@@ -51,6 +52,8 @@ export default function ChatClient({
   const [offlineMessages, setOfflineMessages] = useState<
     { conversationId: string; content: string; type?: string }[]
   >([]);
+  const [listCollapsed, setListCollapsed] = useState(false);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const uid = userId as Id<'users'>;
   const orgId = organizationId as Id<'organizations'>;
@@ -81,12 +84,19 @@ export default function ChatClient({
   const toggleArchiveMutation = useMutation(api.chat.mutations.toggleArchive);
   const toggleMuteMutation = useMutation(api.chat.mutations.toggleMute);
 
-  const handleSelectConversation = useCallback((convId: Id<'chatConversations'>) => {
-    setSelectedConvId(convId);
-    setMobileShowChat(true);
-    // slight delay so animation fires after state set
-    setTimeout(() => setChatVisible(true), 10);
-  }, []);
+  const handleSelectConversation = useCallback(
+    (convId: Id<'chatConversations'>) => {
+      setSelectedConvId(convId);
+      // On mobile: only use overlay mode when expanded
+      // When collapsed, sidebar stays visible and chat appears next to it
+      if (!listCollapsed) {
+        setMobileShowChat(true);
+      }
+      // slight delay so animation fires after state set
+      setTimeout(() => setChatVisible(true), 10);
+    },
+    [listCollapsed],
+  );
 
   // When deselecting on mobile
   const handleBack = useCallback(() => {
@@ -232,25 +242,41 @@ export default function ChatClient({
         className="flex flex-1 min-h-0 h-full overflow-hidden sm:rounded-xl border-0 sm:border relative"
         style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
       >
+        {/* ── Overlay when expanded on mobile only ────────────────────────── */}
+        {!listCollapsed && !isDesktop && (
+          <div className="fixed inset-0 z-20 bg-black/50" onClick={() => setListCollapsed(true)} />
+        )}
+
         {/* ── Sidebar: Conversation List ───────────────────────────────── */}
         <div
           className={cn(
-            'flex flex-col border-r shrink-0 transition-all duration-300 ease-in-out',
-            'absolute inset-0 md:relative md:inset-auto',
-            'md:w-72 lg:w-80',
-            'md:opacity-100 md:translate-x-0 md:pointer-events-auto',
-            mobileShowChat
-              ? 'opacity-0 pointer-events-none -translate-x-4'
-              : 'opacity-100 translate-x-0 pointer-events-auto',
-            'z-10 md:z-auto',
+            'flex flex-col border-r shrink-0',
+            listCollapsed
+              ? 'relative z-10'
+              : 'fixed top-16 left-0 right-0 bottom-0 z-[100] w-full md:relative md:top-auto md:left-auto md:right-auto md:bottom-auto md:z-auto md:w-80',
+            // Hide sidebar on mobile only when expanded AND chat is shown
+            !listCollapsed && mobileShowChat ? 'hidden md:flex' : '',
           )}
-          style={{ borderColor: 'var(--border)', background: 'var(--sidebar-bg)' }}
+          style={{
+            width: listCollapsed ? '72px' : undefined,
+            transition: 'width 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+            borderColor: 'var(--border)',
+            background: 'var(--sidebar-bg)',
+          }}
         >
           <ConversationList
             conversations={(conversations ?? []).filter(Boolean) as any}
             selectedId={selectedConvId}
             currentUserId={uid}
-            onSelect={handleSelectConversation}
+            onSelect={(convId) => {
+              handleSelectConversation(convId);
+              // Close sidebar on mobile after selection
+              if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                setListCollapsed(true);
+              }
+            }}
+            collapsed={listCollapsed}
+            onToggleCollapse={() => setListCollapsed((prev) => !prev)}
             onNewConversation={() => {
               const mainEl = mainRef.current;
               if (mainEl) {
@@ -286,19 +312,37 @@ export default function ChatClient({
         <div
           className={cn(
             'flex-1 flex flex-col min-w-0 overflow-x-hidden',
-            'absolute inset-0 md:relative md:inset-auto',
-            'z-20 md:z-auto',
-            mobileShowChat
+            'relative',
+            // Mobile: show chat when collapsed (next to sidebar) OR when mobileShowChat (overlay)
+            listCollapsed || mobileShowChat
               ? 'translate-x-0 opacity-100'
               : 'translate-x-full opacity-0 md:translate-x-0 md:opacity-100',
-            'transition-all duration-300 ease-in-out',
+            'transition-[transform,opacity] duration-500 ease-in-out',
           )}
-          style={{ background: 'var(--background)' }}
+          style={{ background: 'var(--background)', contain: 'layout' }}
         >
+          {/* Open sidebar button - shown when collapsed on desktop */}
+          {listCollapsed && (
+            <button
+              onClick={() => setListCollapsed(false)}
+              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 w-6 h-16 items-center justify-center rounded-r-lg bg-(--sidebar-bg) border border-l-0 border-(--border) text-(--text-muted) hover:text-primary hover:scale-105 transition-all"
+              style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)' }}
+              aria-label="Open sidebar"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          )}
           {selectedConvId ? (
             <div
               className={cn(
-                'flex flex-col h-full transition-all duration-300 ease-out',
+                'flex flex-col h-full transition-all duration-500 ease-out',
                 chatVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
               )}
             >

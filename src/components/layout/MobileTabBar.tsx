@@ -20,7 +20,7 @@ export function MobileTabBar() {
   return (
     <nav
       className={cn(
-        pathname === '/ai-chat' ? 'hidden' : 'block',
+        pathname === '/ai-chat' || pathname === '/chat' ? 'hidden' : 'block',
         'fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-(--border) bg-(--card)/80 backdrop-blur-lg',
       )}
       style={{ paddingBottom: 'var(--safe-bottom)' }}
