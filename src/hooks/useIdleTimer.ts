@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+const IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_IDLE_TIMEOUT || '900', 10) * 1000;
+const WARNING_DURATION =
+  parseInt(process.env.NEXT_PUBLIC_IDLE_WARNING_DURATION || '120', 10) * 1000;
+
 interface UseIdleTimerOptions {
-  /** Time in ms before showing idle warning (default: 15 minutes) */
-  idleTimeout: number;
-  /** Time in ms before auto-logout after warning (default: 2 minutes) */
-  warningDuration: number;
   /** Called when user becomes idle */
   onIdle?: () => void;
   /** Called when user becomes active again */
@@ -13,13 +13,7 @@ interface UseIdleTimerOptions {
   onLogout?: () => void;
 }
 
-export function useIdleTimer({
-  idleTimeout = 15 * 60 * 1000,
-  warningDuration = 2 * 60 * 1000,
-  onIdle,
-  onActive,
-  onLogout,
-}: UseIdleTimerOptions) {
+export function useIdleTimer({ onIdle, onActive, onLogout }: UseIdleTimerOptions) {
   const [isIdle, setIsIdle] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(0);
@@ -48,7 +42,7 @@ export function useIdleTimer({
     idleTimerRef.current = setTimeout(() => {
       setIsIdle(true);
       setShowWarning(true);
-      setCountdownSeconds(Math.floor(warningDuration / 1000));
+      setCountdownSeconds(Math.floor(WARNING_DURATION / 1000));
       onIdle?.();
 
       // Start countdown
@@ -69,9 +63,9 @@ export function useIdleTimer({
           setIsLoggedOut(true);
           onLogout?.();
         }
-      }, warningDuration);
-    }, idleTimeout);
-  }, [idleTimeout, warningDuration, onIdle, onLogout, clearAllTimers]);
+      }, WARNING_DURATION);
+    }, IDLE_TIMEOUT);
+  }, [onIdle, onLogout, clearAllTimers]);
 
   const resetTimer = useCallback(() => {
     if (showWarning) return; // Don't reset if warning is already showing

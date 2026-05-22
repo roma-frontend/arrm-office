@@ -55,9 +55,10 @@ export function IdleTimeoutModal() {
     }
   }, [handleLogout, t]);
 
+  const IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_IDLE_TIMEOUT || '900', 10);
+  const WARNING_DURATION = parseInt(process.env.NEXT_PUBLIC_IDLE_WARNING_DURATION || '120', 10);
+
   const { showWarning, countdownSeconds, extendSession, isLoggedOut } = useIdleTimer({
-    idleTimeout: 15 * 60 * 1000,
-    warningDuration: 2 * 60 * 1000,
     onIdle: handleIdle,
     onActive: handleActive,
     onLogout: handleLogout,
@@ -77,7 +78,7 @@ export function IdleTimeoutModal() {
 
   return (
     <Dialog open={showModal} onOpenChange={(open) => !open && !isCountingDown && extendSession()}>
-      <DialogContent className="sm:max-w-md" aria-describedby="idle-modal-description">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <DialogHeader className="space-y-4">
           <div
             className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center border ${
@@ -97,10 +98,7 @@ export function IdleTimeoutModal() {
               ? t('idleModal.sessionExpiring', 'Session Expiring Soon')
               : t('idleModal.sessionExpired', 'Session Expired')}
           </DialogTitle>
-          <DialogDescription
-            id="idle-modal-description"
-            className="text-center text-(--text-muted) space-y-2"
-          >
+          <div className="text-center text-(--text-muted) space-y-2 text-sm">
             {isCountingDown ? (
               <>
                 <p>
@@ -112,7 +110,7 @@ export function IdleTimeoutModal() {
                 <div className="text-3xl font-mono font-bold text-amber-500 py-2">
                   {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
                 </div>
-                <p className="text-sm text-(--text-muted)">
+                <p className="text-(--text-muted)">
                   {t('idleModal.expiringHint', 'Extend your session or you will be logged out.')}
                 </p>
               </>
@@ -125,7 +123,7 @@ export function IdleTimeoutModal() {
                   )}
                 </p>
                 {user?.name && (
-                  <p className="text-sm text-(--text-secondary)">
+                  <p className="text-(--text-secondary)">
                     {t('idleModal.welcomeBack', 'Welcome back, {{name}}', {
                       name: user.name.split(' ')[0],
                     })}
@@ -133,7 +131,7 @@ export function IdleTimeoutModal() {
                 )}
               </>
             )}
-          </DialogDescription>
+          </div>
         </DialogHeader>
 
         <div className="space-y-3 pt-4">
