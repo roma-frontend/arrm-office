@@ -132,6 +132,43 @@
       "replies": "ответ",
       "repliesPlural": "ответы"
     },
+    "chatBackground": "Фон чата",
+    "bgHint": "Выберите фон для ваших переписок",
+    "bgCategory": {
+      "neutral": "Нейтральные",
+      "warm": "Тёплые",
+      "cool": "Холодные",
+      "nature": "Природа"
+    },
+    "bgName": {
+      "default": "По умолчанию",
+      "subtle-gray": "Серый",
+      "slate": "Сланцевый",
+      "warm-beige": "Бежевый",
+      "soft-cream": "Кремовый",
+      "light-sage": "Шалфей",
+      "pale-blue": "Голубой",
+      "lavender-mist": "Лаванда",
+      "rose-quartz": "Розовый кварц",
+      "sunset-glow": "Закат",
+      "ocean-breeze": "Океан",
+      "forest-mist": "Лесной туман",
+      "twilight": "Сумерки",
+      "golden-hour": "Золотой час",
+      "arctic-dawn": "Арктика",
+      "meadow": "Луг",
+      "blush-pink": "Румянец",
+      "dots-pattern": "Точки",
+      "crosshatch": "Штриховка",
+      "wave-pattern": "Волны",
+      "hexagon": "Шестиугольники",
+      "leaves": "Листья",
+      "flowers": "Цветы",
+      "fish": "Рыбки",
+      "stars": "Звёзды",
+      "hearts": "Сердечки",
+      "bubbles": "Пузырьки"
+    },
     "notification": {
       "attachment": "Вложение"
     }

@@ -132,6 +132,43 @@
       "replies": "Antwort",
       "repliesPlural": "Antworten"
     },
+    "chatBackground": "Chat-Hintergrund",
+    "bgHint": "Wählen Sie einen Hintergrund für Ihre Chats",
+    "bgCategory": {
+      "neutral": "Neutral",
+      "warm": "Warm",
+      "cool": "Kühl",
+      "nature": "Natur"
+    },
+    "bgName": {
+      "default": "Standard",
+      "subtle-gray": "Dezentes Grau",
+      "slate": "Schiefer",
+      "warm-beige": "Warmes Beige",
+      "soft-cream": "Sanftes Creme",
+      "light-sage": "Helles Salbei",
+      "pale-blue": "Blasses Blau",
+      "lavender-mist": "Lavendelnebel",
+      "rose-quartz": "Rosenquarz",
+      "sunset-glow": "Sonnenuntergang",
+      "ocean-breeze": "Ozeanbrise",
+      "forest-mist": "Waldnebel",
+      "twilight": "Dämmerung",
+      "golden-hour": "Goldene Stunde",
+      "arctic-dawn": "Arktischer Morgen",
+      "meadow": "Wiese",
+      "blush-pink": "Zartes Rosa",
+      "dots-pattern": "Punkte",
+      "crosshatch": "Kreuzschraffur",
+      "wave-pattern": "Wellen",
+      "hexagon": "Sechseck",
+      "leaves": "Blätter",
+      "flowers": "Blumen",
+      "fish": "Fische",
+      "stars": "Sterne",
+      "hearts": "Herzen",
+      "bubbles": "Blasen"
+    },
     "notification": {
       "attachment": "Anhang"
     }

@@ -125,6 +125,43 @@
       "replies": "պատասխան",
       "repliesPlural": "պատասխաններ"
     },
+    "chatBackground": "Չատի ֆոն",
+    "bgHint": "Ընտրեք ֆոն ձեր չատի համար",
+    "bgCategory": {
+      "neutral": "Չեզոք",
+      "warm": "Ջերմ",
+      "cool": "Սառը",
+      "nature": "Բնություն"
+    },
+    "bgName": {
+      "default": "Լռելյայն",
+      "subtle-gray": "Մոխրագույն",
+      "slate": "Թերթաքար",
+      "warm-beige": "Բեժ",
+      "soft-cream": "Սերուցքային",
+      "light-sage": "Խոտաբույս",
+      "pale-blue": "Բաց կապույտ",
+      "lavender-mist": "Լվանդա",
+      "rose-quartz": "Վարդագույն քվարց",
+      "sunset-glow": "Մայրամուտ",
+      "ocean-breeze": "Օվկիանոս",
+      "forest-mist": "Անտառի մշուշ",
+      "twilight": "Մթնշաղ",
+      "golden-hour": "Ոսկե ժամ",
+      "arctic-dawn": "Արկտիկա",
+      "meadow": "Մարգագետին",
+      "blush-pink": "Կարմրավուն",
+      "dots-pattern": "Կետեր",
+      "crosshatch": "Խաչաձև",
+      "wave-pattern": "Ալիքներ",
+      "hexagon": "Վեցանկյուն",
+      "leaves": "Տերևներ",
+      "flowers": "Ծաղիկներ",
+      "fish": "Ձկներ",
+      "stars": "Աստղեր",
+      "hearts": "Սրտեր",
+      "bubbles": "Պղպջակներ"
+    },
     "notification": {
       "attachment": "Կցորդ"
     }

@@ -588,7 +588,7 @@ export const MessageBubble = React.memo(function MessageBubble({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all hover:scale-110"
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all hover:box-shadow-lg"
             onClick={() => setLightboxSrc(null)}
           >
             <X className="w-5 h-5" />
@@ -651,7 +651,7 @@ export const MessageBubble = React.memo(function MessageBubble({
       {/* Message row */}
       <div
         className={cn(
-          'relative flex items-end gap-2 my-0.5 group animate-msg-in',
+          'relative flex items-end gap-2.5 my-1 group animate-msg-in',
           isOwn ? 'flex-row-reverse' : 'flex-row',
         )}
         onMouseEnter={() => {
@@ -675,13 +675,13 @@ export const MessageBubble = React.memo(function MessageBubble({
             // Other person's avatar → clickable profile link
             <Link
               href={`/employees/${message.sender._id}`}
-              className="block rounded-full transition-transform duration-200 hover:scale-110 focus:outline-none"
+              className="block rounded-full transition-transform duration-200 hover:scale-105 focus:outline-none"
               title={`View ${message.sender?.name}'s profile`}
               onClick={(e) => e.stopPropagation()}
             >
               <Avatar className="w-7 h-7 ring-2 ring-transparent hover:ring-(--primary) transition-all duration-200">
                 {message.sender?.avatarUrl && <AvatarImage src={message.sender.avatarUrl} />}
-                <AvatarFallback className="btn-gradient text-[10px] font-bold text-white">
+                <AvatarFallback className="btn-gradient text-[11px] font-bold text-white">
                   {getInitials(message.sender?.name ?? '?')}
                 </AvatarFallback>
               </Avatar>
@@ -690,7 +690,7 @@ export const MessageBubble = React.memo(function MessageBubble({
             // Own avatar on the right
             <Avatar className="w-7 h-7">
               {currentUserAvatar && <AvatarImage src={currentUserAvatar} />}
-              <AvatarFallback className="btn-gradient text-[10px] font-bold text-white">
+              <AvatarFallback className="btn-gradient text-[11px] font-bold text-white">
                 {getInitials(currentUserName ?? L.me)}
               </AvatarFallback>
             </Avatar>
@@ -699,7 +699,7 @@ export const MessageBubble = React.memo(function MessageBubble({
           )}
         </div>
 
-        <div className="flex flex-col max-w-[88%] sm:max-w-[78%] md:max-w-[65%]">
+        <div className="flex flex-col max-w-[75%] sm:max-w-[65%] md:max-w-[55%]">
           {showName && (
             <span
               className="text-[11px] font-medium mb-0.5 px-1"
@@ -728,12 +728,12 @@ export const MessageBubble = React.memo(function MessageBubble({
 
           {/* Bubble */}
           <div
-            className="relative rounded-2xl px-3 py-2 text-sm wrap-break-words transition-all duration-200 hover:brightness-105"
+            className="relative rounded-2xl px-3.5 py-2.5 text-[14px] leading-[1.45] wrap-break-words transition-all duration-200 hover:brightness-105"
             style={{
               background: isOwn ? 'var(--primary)' : 'var(--secondary)',
               color: isOwn ? 'white' : 'var(--text-primary)',
-              borderBottomRightRadius: isOwn ? '4px' : undefined,
-              borderBottomLeftRadius: !isOwn ? '4px' : undefined,
+              borderBottomRightRadius: isOwn ? '6px' : undefined,
+              borderBottomLeftRadius: !isOwn ? '6px' : undefined,
             }}
           >
             {editing ? (
@@ -818,7 +818,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                       >
                         {/* Play icon */}
                         <button
-                          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 hover:scale-105 transition-transform"
+                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 hover:scale-105 transition-transform"
                           style={{
                             background: isOwn ? 'rgba(255,255,255,0.2)' : 'var(--primary)',
                             color: 'white',
@@ -877,16 +877,16 @@ export const MessageBubble = React.memo(function MessageBubble({
                           className="rounded-xl max-w-[28vw] xs:max-w-[180px] sm:max-w-50 max-h-50 object-cover cursor-pointer transition-all duration-200 hover:opacity-90 hover:scale-[1.02]"
                           onClick={() => setLightboxSrc(att.url)}
                         />
-                        <a
+                        <Link
                           href={att.url}
                           download={att.name}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-all duration-200 hover:scale-110"
+                          className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-all duration-200 hover:box-shadow-lg"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Download className="w-3.5 h-3.5 text-white" />
-                        </a>
+                        </Link>
                         <p className="text-[9px] xs:text-[10px] mt-0.5 opacity-70 truncate max-w-[28vw] xs:max-w-[180px] sm:max-w-50">
                           {att.name}
                         </p>
@@ -915,7 +915,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                           style={{ height: 140 }}
                           title={att.name}
                         />
-                        <a
+                        <Link
                           href={att.url}
                           download={att.name}
                           target="_blank"
@@ -929,12 +929,12 @@ export const MessageBubble = React.memo(function MessageBubble({
                           }}
                         >
                           <Download className="w-3 h-3" /> {L.download}
-                        </a>
+                        </Link>
                       </div>
                     );
                   }
                   return (
-                    <a
+                    <Link
                       key={i}
                       href={att.url}
                       target="_blank"
@@ -947,7 +947,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                       <span className="shrink-0 opacity-70 text-[9px] xs:text-[10px]">
                         {formatFileSize(att.size)}
                       </span>
-                    </a>
+                    </Link>
                   );
                 })}
               </div>
@@ -1132,7 +1132,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                   <button
                     key={emojiKey}
                     onClick={() => handleReaction(displayEmoji)}
-                    className="flex items-center gap-0.5 sm:px-1.5 px-2 sm:py-0.5 py-1 rounded-full sm:text-xs text-sm border transition-all duration-200 hover:scale-110 min-h-7 sm:min-h-auto"
+                    className="flex items-center gap-0.5 sm:px-1.5 px-2 sm:py-0.5 py-1 rounded-full sm:text-xs text-sm border transition-all duration-200 hover:box-shadow-lg min-h-7 sm:min-h-auto"
                     style={{
                       background: users.includes(currentUserId)
                         ? 'var(--primary)'
@@ -1178,7 +1178,7 @@ export const MessageBubble = React.memo(function MessageBubble({
               <button
                 key={emoji}
                 onClick={() => handleReaction(emoji)}
-                className="w-8 h-8 sm:w-6 sm:h-6 flex items-center justify-center rounded-full text-sm sm:text-xs hover:scale-125 transition-transform duration-150 min-h-9"
+                className="w-7 h-7 flex items-center justify-center rounded-full text-sm sm:text-xs hover:scale-110 transition-transform duration-150"
                 style={{ background: 'var(--background-subtle)' }}
               >
                 {emoji}
@@ -1188,11 +1188,11 @@ export const MessageBubble = React.memo(function MessageBubble({
               onClick={() =>
                 onReply(message._id, message.content, message.sender?.name ?? 'Someone')
               }
-              className="w-8 h-8 sm:w-6 sm:h-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150 min-h-9"
+              className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
               style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}
               title={L.reply}
             >
-              <Reply className="sm:w-3 sm:h-3 w-4 h-4" />
+              <Reply className="w-4 h-4" />
             </button>
             <div className="relative">
               <button
@@ -1211,10 +1211,10 @@ export const MessageBubble = React.memo(function MessageBubble({
                   }
                   setShowMenu((prev) => !prev);
                 }}
-                className="w-8 h-8 sm:w-6 sm:h-6 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150 min-h-9"
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
                 style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}
               >
-                <MoreHorizontal className="sm:w-3 sm:h-3 w-4 h-4" />
+                <MoreHorizontal className="w-4 h-4" />
               </button>
             </div>
           </div>

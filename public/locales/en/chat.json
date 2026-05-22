@@ -125,6 +125,43 @@
       "repliesPlural": "replies"
     },
     "messageEdited": "(edited)",
+    "chatBackground": "Chat Background",
+    "bgHint": "Choose a background for your chat conversations",
+    "bgCategory": {
+      "neutral": "Neutral",
+      "warm": "Warm",
+      "cool": "Cool",
+      "nature": "Nature"
+    },
+    "bgName": {
+      "default": "Default",
+      "subtle-gray": "Subtle Gray",
+      "slate": "Slate",
+      "warm-beige": "Warm Beige",
+      "soft-cream": "Soft Cream",
+      "light-sage": "Light Sage",
+      "pale-blue": "Pale Blue",
+      "lavender-mist": "Lavender Mist",
+      "rose-quartz": "Rose Quartz",
+      "sunset-glow": "Sunset Glow",
+      "ocean-breeze": "Ocean Breeze",
+      "forest-mist": "Forest Mist",
+      "twilight": "Twilight",
+      "golden-hour": "Golden Hour",
+      "arctic-dawn": "Arctic Dawn",
+      "meadow": "Meadow",
+      "blush-pink": "Blush Pink",
+      "dots-pattern": "Dots",
+      "crosshatch": "Crosshatch",
+      "wave-pattern": "Waves",
+      "hexagon": "Hexagon",
+      "leaves": "Leaves",
+      "flowers": "Flowers",
+      "fish": "Fish",
+      "stars": "Stars",
+      "hearts": "Hearts",
+      "bubbles": "Bubbles"
+    },
     "notification": {
       "attachment": "Attachment"
     }

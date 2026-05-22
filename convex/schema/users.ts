@@ -83,6 +83,7 @@ export const users = {
     defaultView: v.optional(v.string()),
     dataRefreshRate: v.optional(v.string()),
     compactMode: v.optional(v.boolean()),
+    chatBackground: v.optional(v.string()),
     dashboardWidgets: v.optional(
       v.object({
         quickStats: v.boolean(),

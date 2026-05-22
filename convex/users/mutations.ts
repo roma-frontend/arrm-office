@@ -672,3 +672,17 @@ export const secureDeleteUser = mutation({
     },
   ),
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UPDATE CHAT BACKGROUND — user's own preference
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateChatBackground = mutation({
+  args: {
+    userId: v.id('users'),
+    backgroundId: v.string(),
+  },
+  handler: async (ctx, { userId, backgroundId }) => {
+    await ctx.db.patch(userId, { chatBackground: backgroundId });
+    return { success: true };
+  },
+});

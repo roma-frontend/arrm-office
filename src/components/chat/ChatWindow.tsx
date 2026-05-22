@@ -21,6 +21,7 @@ import {
   BarChart2,
   Mic,
   ChevronDown,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import Link from 'next/link';
@@ -38,6 +39,9 @@ import { toast } from 'sonner';
 import { getInitials, formatFileSize } from '@/lib/stringUtils';
 import { logger } from '@/lib/logger';
 import { useOptimisticSendMessage } from '@/hooks/useOptimisticActions';
+import { BackgroundPicker } from './BackgroundPicker';
+import { CHAT_BACKGROUNDS, getBackgroundById } from '@/lib/chatBackgrounds';
+import { createPortal } from 'react-dom';
 
 interface Props {
   conversationId: Id<'chatConversations'>;
@@ -96,6 +100,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   const [mentionIndex, setMentionIndex] = useState(0);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [showBgPicker, setShowBgPicker] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesParentRef = useRef<HTMLDivElement>(null);
@@ -640,12 +645,23 @@ export const ChatWindow = React.memo(function ChatWindow({
   const isSystemAnnouncementsChannel = (conv as any)?.name === 'System Announcements';
   const canUserSendMessage = !isSystemAnnouncementsChannel || currentUser?.role === 'superadmin';
 
+  // Resolve chat background
+  const chatBg =
+    getBackgroundById(currentUser?.chatBackground ?? 'default') ?? CHAT_BACKGROUNDS[0]!;
+  const chatBgStyle =
+    chatBg.type === 'pattern'
+      ? { background: `var(--background) ${chatBg.value}`, color: 'var(--text-primary)' }
+      : { background: chatBg.value };
+
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
+    <div
+      className="flex h-full min-h-0 overflow-hidden border-t"
+      style={{ borderColor: 'var(--border)' }}
+    >
       <div className="flex flex-col flex-1 min-w-0 min-h-0 h-full overflow-hidden">
         {/* Header */}
         <div
-          className="flex items-center gap-3 px-4 py-3 border-b shrink-0"
+          className="flex items-center gap-3 px-4 xs:px-5 sm:px-6 py-3.5 border-b shrink-0"
           style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
         >
           <button
@@ -687,10 +703,13 @@ export const ChatWindow = React.memo(function ChatWindow({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+            <h3
+              className="text-[15px] font-semibold truncate"
+              style={{ color: 'var(--text-primary)' }}
+            >
               {displayName}
             </h3>
-            <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
               {conv?.type === 'group'
                 ? `${conv.memberCount ?? members?.length ?? 0} ${t('chat.members')}`
                 : otherUser?.presenceStatus === 'available'
@@ -780,13 +799,29 @@ export const ChatWindow = React.memo(function ChatWindow({
             >
               <Info className="w-4 h-4" />
             </button>
+            <button
+              onClick={() => setShowBgPicker(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--sidebar-item-hover)';
+                e.currentTarget.style.color = 'var(--primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--text-muted)';
+              }}
+              title={t('chat.chatBackground', 'Chat Background')}
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
         {/* Search bar */}
         {showSearch && (
           <div
-            className="px-4 py-2 border-b"
+            className="px-4 xs:px-5 sm:px-6 py-3 border-b"
             style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
           >
             <input
@@ -794,10 +829,10 @@ export const ChatWindow = React.memo(function ChatWindow({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('chat.searchInConversation')}
-              className="w-full px-3 py-1.5 text-sm rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) outline-none"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) outline-none"
             />
             {searchResults && searchResults.length > 0 && (
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
                 {searchResults.length} result{searchResults.length > 1 ? 's' : ''}
               </p>
             )}
@@ -807,10 +842,10 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Pinned messages banner */}
         {pinnedMessages && pinnedMessages.length > 0 && (
           <div
-            className="px-4 py-2 border-b flex items-center gap-2"
+            className="px-4 xs:px-5 sm:px-6 py-2.5 border-b flex items-center gap-2.5"
             style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
           >
-            <Pin className="w-3.5 h-3.5" style={{ color: 'var(--primary)' }} />
+            <Pin className="w-4 h-4" style={{ color: 'var(--primary)' }} />
             <span
               className="text-xs font-medium truncate flex-1"
               style={{ color: 'var(--text-muted)' }}
@@ -823,8 +858,8 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Messages area with virtualization */}
         <div
           ref={messagesParentRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden px-2 xs:px-3 sm:px-4 py-3 xs:py-4 custom-scrollbar"
-          style={{ background: 'var(--background)' }}
+          className="w-full flex-1 overflow-y-auto overflow-x-hidden px-3 xs:px-4 sm:px-6 py-4 xs:py-5 scrollbar-hide"
+          style={chatBgStyle}
         >
           {allMessages === undefined ? (
             <div
@@ -932,7 +967,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Typing indicator */}
         {typingUsers && typingUsers.length > 0 && (
           <div
-            className="px-4 py-2 border-t"
+            className="px-4 xs:px-5 sm:px-6 py-2.5 border-t"
             style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
           >
             <TypingIndicator users={typingUsers} />
@@ -954,7 +989,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Pending file previews */}
         {pendingFiles.length > 0 && (
           <div
-            className="px-2 xs:px-3 sm:px-4 py-2 border-t flex gap-2 flex-wrap"
+            className="px-3 xs:px-4 sm:px-6 py-3 border-t flex gap-3 flex-wrap"
             style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
           >
             {pendingFiles.map((pf, idx) => (
@@ -1029,24 +1064,21 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Reply preview */}
         {replyTo && (
           <div
-            className="px-2 xs:px-3 sm:px-4 py-2 border-t flex items-center gap-2"
+            className="px-3 xs:px-4 sm:px-6 py-3 border-t flex items-center gap-3"
             style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
           >
-            <div className="w-0.5 h-8 rounded-full" style={{ background: 'var(--primary)' }} />
+            <div className="w-1 h-10 rounded-full" style={{ background: 'var(--primary)' }} />
             <div className="flex-1 min-w-0">
-              <p
-                className="text-[10px] xs:text-[11px] font-medium"
-                style={{ color: 'var(--primary)' }}
-              >
+              <p className="text-xs font-medium" style={{ color: 'var(--primary)' }}>
                 {t('chat.replyingTo')} {replyTo.senderName}
               </p>
-              <p className="text-[9px] xs:text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
                 {replyTo.content}
               </p>
             </div>
             <button
               onClick={() => setReplyTo(null)}
-              className="w-5 h-5 flex items-center justify-center rounded-full hover:opacity-70 shrink-0"
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:opacity-70 shrink-0"
             >
               ✕
             </button>
@@ -1056,36 +1088,33 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Poll Creator */}
         {showPollCreator && (
           <div
-            className="px-2 xs:px-3 sm:px-4 py-3 border-t animate-slide-up"
+            className="px-3 xs:px-4 sm:px-6 py-4 border-t animate-slide-up"
             style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <p
-                className="text-[10px] xs:text-xs font-semibold flex items-center gap-1"
+                className="text-xs font-semibold flex items-center gap-1.5"
                 style={{ color: 'var(--text-primary)' }}
               >
-                <BarChart2
-                  className="w-3 xs:w-3.5 h-3 xs:h-3.5"
-                  style={{ color: 'var(--primary)' }}
-                />{' '}
+                <BarChart2 className="w-4 h-4" style={{ color: 'var(--primary)' }} />{' '}
                 {t('chat.createPoll')}
               </p>
               <button
                 onClick={() => setShowPollCreator(false)}
-                className="text-[9px] hover:opacity-70"
+                className="text-xs hover:opacity-70"
                 style={{ color: 'var(--text-muted)' }}
               >
-                <X className="w-3 h-3" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             <input
               value={pollQuestion}
               onChange={(e) => setPollQuestion(e.target.value)}
               placeholder={t('chat.pollQuestion')}
-              className="w-full px-2.5 xs:px-3 py-1.5 text-[10px] xs:text-xs rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) outline-none mb-2"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) outline-none mb-3"
             />
             {pollOptions.map((opt, i) => (
-              <div key={i} className="flex items-center gap-1 mb-1">
+              <div key={i} className="flex items-center gap-2 mb-2">
                 <input
                   value={opt}
                   onChange={(e) => {
@@ -1094,23 +1123,23 @@ export const ChatWindow = React.memo(function ChatWindow({
                     setPollOptions(o);
                   }}
                   placeholder={`${t('chat.option')} ${i + 1}`}
-                  className="flex-1 px-2.5 xs:px-3 py-1.5 text-[10px] xs:text-xs rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) outline-none"
+                  className="flex-1 px-3 py-2 text-xs rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) outline-none"
                 />
                 {pollOptions.length > 2 && (
                   <button
                     onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
-                    className="text-red-400 hover:opacity-70 px-1"
+                    className="text-red-400 hover:opacity-70 px-2"
                   >
                     ✕
                   </button>
                 )}
               </div>
             ))}
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <div className="flex items-center gap-3 mt-3 flex-wrap">
               {pollOptions.length < 5 && (
                 <button
                   onClick={() => setPollOptions([...pollOptions, ''])}
-                  className="text-[10px] xs:text-[11px] hover:opacity-70"
+                  className="text-xs hover:opacity-70"
                   style={{ color: 'var(--primary)' }}
                 >
                   {t('chat.addOption')}
@@ -1119,7 +1148,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               <button
                 onClick={handleSendPoll}
                 disabled={!pollQuestion.trim() || pollOptions.filter(Boolean).length < 2 || sending}
-                className="ml-auto px-2.5 xs:px-3 py-1 rounded-lg text-[10px] xs:text-xs font-medium text-white transition-all hover:opacity-80 disabled:opacity-40 min-h-8 btn-gradient"
+                className="ml-auto px-4 py-2 rounded-lg text-xs font-medium text-white transition-all hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed min-h-9 btn-gradient"
               >
                 {t('chat.sendPoll')}
               </button>
@@ -1130,19 +1159,16 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Scheduled send picker */}
         {showSchedule && (
           <div
-            className="px-2 xs:px-3 sm:px-4 py-2 border-t flex items-center gap-2 animate-slide-up flex-wrap"
+            className="px-3 xs:px-4 sm:px-6 py-3 border-t flex items-center gap-3 animate-slide-up flex-wrap"
             style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
           >
-            <Clock
-              className="w-3 xs:w-3.5 h-3 xs:h-3.5 shrink-0"
-              style={{ color: 'var(--primary)' }}
-            />
+            <Clock className="w-4 h-4 shrink-0" style={{ color: 'var(--primary)' }} />
             <input
               type="datetime-local"
               value={scheduledFor}
               min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
               onChange={(e) => setScheduledFor(e.target.value)}
-              className="flex-1 text-[9px] xs:text-xs px-2 xs:px-2.5 py-1 rounded-lg border outline-none"
+              className="flex-1 text-xs px-3 py-2 rounded-lg border outline-none"
               style={{
                 background: 'var(--background)',
                 borderColor: 'var(--border)',
@@ -1154,7 +1180,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                 setShowSchedule(false);
                 setScheduledFor('');
               }}
-              className="text-[9px] hover:opacity-70"
+              className="text-xs hover:opacity-70"
               style={{ color: 'var(--text-muted)' }}
             >
               ✕
@@ -1163,11 +1189,11 @@ export const ChatWindow = React.memo(function ChatWindow({
         )}
         {scheduledFor && (
           <div
-            className="px-2 xs:px-3 sm:px-4 py-1 flex items-center gap-2 flex-wrap"
+            className="px-3 xs:px-4 sm:px-6 py-2 flex items-center gap-2 flex-wrap"
             style={{ background: 'var(--background-subtle)' }}
           >
-            <Clock className="w-2.5 xs:w-3 h-2.5 xs:h-3" style={{ color: 'var(--primary)' }} />
-            <span className="text-[8px] xs:text-[9px]" style={{ color: 'var(--primary)' }}>
+            <Clock className="w-3 h-3" style={{ color: 'var(--primary)' }} />
+            <span className="text-xs" style={{ color: 'var(--primary)' }}>
               {t('chat.scheduledFor')}{' '}
               {new Date(scheduledFor).toLocaleString(
                 i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US',
@@ -1175,7 +1201,7 @@ export const ChatWindow = React.memo(function ChatWindow({
             </span>
             <button
               onClick={() => setScheduledFor('')}
-              className="ml-auto text-[8px] xs:text-[9px] text-red-400 hover:opacity-70"
+              className="ml-auto text-xs text-red-400 hover:opacity-70"
             >
               {t('chat.cancel')}
             </button>
@@ -1185,24 +1211,24 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Input area */}
         {canUserSendMessage ? (
           <div
-            className="px-2 xs:px-3 sm:px-4 py-3 xs:py-3 border-t shrink-0"
+            className="w-full px-3 xs:px-4 sm:px-6 py-3 xs:py-4 border-t shrink-0"
             style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
           >
             <div
-              className="flex items-center gap-1.5 xs:gap-2 rounded-2xl border px-2 xs:px-3 py-1.5 xs:py-2 transition-all"
+              className="flex items-end gap-2 xs:gap-3 rounded-2xl border px-3 xs:px-4 py-2.5 xs:py-3 transition-all shadow-sm"
               style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
             >
               {/* Attachment */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 hover:opacity-100 relative group/attach shrink-0"
+                className="w-8 xs:w-9 h-8 xs:h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 relative group/attach shrink-0"
                 style={{
-                  color: pendingFiles.length > 0 ? 'var(--primary)' : 'var(--text-disabled)',
+                  color: pendingFiles.length > 0 ? 'var(--primary)' : 'var(--text-muted)',
                 }}
                 title={t('chat.attachFile')}
                 type="button"
               >
-                <Paperclip className="w-4 xs:w-4.5 h-4 xs:h-4.5" />
+                <Paperclip className="w-4.5 xs:w-5 h-4.5 xs:h-5" />
                 {pendingFiles.length > 0 && (
                   <span
                     className="absolute -top-1 -right-1 w-3 h-3 rounded-full text-[7px] xs:text-[8px] font-bold text-white flex items-center justify-center"
@@ -1228,11 +1254,11 @@ export const ChatWindow = React.memo(function ChatWindow({
                   setShowPollCreator(!showPollCreator);
                   setShowSchedule(false);
                 }}
-                className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
-                style={{ color: showPollCreator ? 'var(--primary)' : 'var(--text-disabled)' }}
+                className="w-8 xs:w-9 h-8 xs:h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 shrink-0"
+                style={{ color: showPollCreator ? 'var(--primary)' : 'var(--text-muted)' }}
                 title={t('chat.createPollShort')}
               >
-                <BarChart2 className="w-4 xs:w-4.5 h-4 xs:h-4.5" />
+                <BarChart2 className="w-4.5 xs:w-5 h-4.5 xs:h-5" />
               </button>
 
               {/* Scheduled send */}
@@ -1241,28 +1267,27 @@ export const ChatWindow = React.memo(function ChatWindow({
                   setShowSchedule(!showSchedule);
                   setShowPollCreator(false);
                 }}
-                className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
-                style={{ color: scheduledFor ? 'var(--primary)' : 'var(--text-disabled)' }}
+                className="w-8 xs:w-9 h-8 xs:h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 shrink-0"
+                style={{ color: scheduledFor ? 'var(--primary)' : 'var(--text-muted)' }}
                 title={t('chat.scheduleMessage')}
               >
-                <Clock className="w-4 xs:w-4.5 h-4 xs:h-4.5" />
+                <Clock className="w-4.5 xs:w-5 h-4.5 xs:h-5" />
               </button>
 
               {/* Voice message button */}
               <button
                 onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
-                className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
+                className="w-8 xs:w-9 h-8 xs:h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 shrink-0"
                 style={{
-                  color:
-                    showVoiceRecorder || isRecording ? 'var(--primary)' : 'var(--text-disabled)',
+                  color: showVoiceRecorder || isRecording ? 'var(--primary)' : 'var(--text-muted)',
                 }}
                 title={t('chat.voiceMessage', 'Voice message')}
               >
-                <Mic className="w-4 xs:w-4.5 h-4 xs:h-4.5" />
+                <Mic className="w-4.5 xs:w-5 h-4.5 xs:h-5" />
               </button>
 
               {/* Text input + @mention popup */}
-              <div className="flex-1 relative min-w-0" style={{ height: '20px' }}>
+              <div className="flex-1 relative min-w-0">
                 {/* @mention autocomplete popup */}
                 {mentionQuery !== null && mentionSuggestions.length > 0 && (
                   <div
@@ -1314,7 +1339,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                     pendingFiles.length > 0 ? t('chat.addCaption') : t('chat.messagePlaceholder')
                   }
                   rows={1}
-                  className="w-full resize-none bg-transparent outline-none text-xs xs:text-sm leading-5 self-center"
+                  className="w-full resize-none bg-transparent outline-none text-sm xs:text-[15px] leading-[1.5] self-center"
                   style={{ color: 'var(--text-primary)', maxHeight: '120px' }}
                 />
               </div>
@@ -1323,10 +1348,10 @@ export const ChatWindow = React.memo(function ChatWindow({
               <div className="relative">
                 <button
                   onClick={() => setShowEmoji(!showEmoji)}
-                  className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
-                  style={{ color: showEmoji ? 'var(--primary)' : 'var(--text-disabled)' }}
+                  className="w-8 xs:w-9 h-8 xs:h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 shrink-0"
+                  style={{ color: showEmoji ? 'var(--primary)' : 'var(--text-muted)' }}
                 >
-                  <Smile className="w-4 xs:w-4.5 h-4 xs:h-4.5" />
+                  <Smile className="w-4.5 xs:w-5 h-4.5 xs:h-5" />
                 </button>
                 {showEmoji && (
                   <EmojiPicker onSelect={handleEmojiSelect} onClose={() => setShowEmoji(false)} />
@@ -1350,7 +1375,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               <button
                 onClick={handleSend}
                 disabled={!canSend}
-                className={`w-7 xs:w-8 h-7 xs:h-8 flex items-center justify-center rounded-xl transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${canSend ? 'btn-gradient' : ''}`}
+                className={`w-8 xs:w-9 h-8 xs:h-9 flex items-center justify-center rounded-xl transition-all hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${canSend ? 'btn-gradient' : ''}`}
                 style={{
                   background: canSend ? undefined : 'var(--border)',
                 }}
@@ -1358,10 +1383,10 @@ export const ChatWindow = React.memo(function ChatWindow({
                 {sending ? (
                   <ShieldLoader size="xs" variant="inline" />
                 ) : scheduledFor ? (
-                  <Clock className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-white" />
+                  <Clock className="w-4 xs:w-4.5 h-4 xs:h-4.5 text-white" />
                 ) : (
                   <svg
-                    className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-white"
+                    className="w-4 xs:w-4.5 h-4 xs:h-4.5 text-white"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1376,8 +1401,8 @@ export const ChatWindow = React.memo(function ChatWindow({
               </button>
             </div>
             <p
-              className="text-[11px] sm:text-[12px] mt-1 text-center"
-              style={{ color: 'var(--text-disabled)' }}
+              className="text-xs sm:text-sm mt-2 text-center"
+              style={{ color: 'var(--text-muted)' }}
             >
               {t('chat.enterHint')}
             </p>
@@ -1426,6 +1451,19 @@ export const ChatWindow = React.memo(function ChatWindow({
           onClose={() => setShowInfo(false)}
         />
       )}
+
+      {/* Background Picker Modal — rendered via portal to avoid layout shift */}
+      {showBgPicker &&
+        currentUserId &&
+        createPortal(
+          <BackgroundPicker
+            userId={currentUserId}
+            currentBackground={currentUser?.chatBackground}
+            onSelect={() => setShowBgPicker(false)}
+            onClose={() => setShowBgPicker(false)}
+          />,
+          document.body,
+        )}
     </div>
   );
 });
