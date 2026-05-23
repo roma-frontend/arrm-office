@@ -122,7 +122,9 @@ export function NotificationBanner() {
     <div className="w-full">
       <SmartBanner
         type={bannerType}
-        message={newNotification.title}
+        message={t(`notifications.types.${newNotification.type}`, {
+          defaultValue: newNotification.title,
+        })}
         suggestion={newNotification.message}
         icon={<MessageSquare className="w-5 h-5" />}
         onDismiss={handleDismiss}

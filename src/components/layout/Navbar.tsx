@@ -326,7 +326,7 @@ export function Navbar() {
                     }`}
                   >
                     <p className="text-sm font-semibold text-(--text-primary) leading-snug">
-                      {n.title}
+                      {t(`notifications.types.${n.type}`, { defaultValue: n.title })}
                     </p>
                     <p className="text-xs text-(--text-muted) mt-1">{n.message}</p>
                     <p className="text-xs text-(--text-muted) mt-1">{timeAgo(n._creationTime)}</p>

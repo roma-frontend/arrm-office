@@ -960,5 +960,68 @@
   "pageNotFoundDesc": "Էdelays delays delays delays:",
   "backToDashboard": "Վdelays delays",
   "goHome": "Գdelays delays",
-  "errorDescription": "Անdelays delays delays:"
+  "errorDescription": "Անdelays delays delays:",
+  "notifications": {
+    "types": {
+      "leave_request": "Նоր արձակուրդի հայտ",
+      "leave_approved": "Արձակուրդը հաստատված է",
+      "leave_rejected": "Արձակուրդը մերժված է",
+      "driver_request": "Նոր վարորդի հայտ",
+      "driver_request_approved": "Վարորդի հայտը հաստատված է",
+      "driver_request_rejected": "Վարորդի հայտը մերժված է",
+      "employee_added": "Նոր աշխատակից ավելացված է",
+      "join_request": "Նոր միանման հայտ",
+      "join_approved": "Բարի գալուստ թիմ!",
+      "join_rejected": "Միանման հայտը մերժված է",
+      "security_alert": "Անվտանգության զգուշացում",
+      "status_change": "Կարգավիճակը փոխվել է",
+      "message_mention": "Ձեզ նշվել են",
+      "system": "Համակարգի ծանուցում",
+      "review_deadline": "Ստուգման վերջնաժամկետ",
+      "okr_checkin_reminder": "OKR հիշեցում",
+      "survey_auto_activated": "Հարցումը ակտիվացված է",
+      "survey_auto_closed": "Հարցումը փակված է",
+      "onboarding_task_due": "Օնբորդինգի առաջադրանք",
+      "onboarding_started": "Օնբորդինգը սկսվել է",
+      "onboarding_manager_assigned": "Նշանակված է օնբորդինգի մենեջեր",
+      "onboarding_buddy_assigned": "Նշանակված է наставник",
+      "onboarding_task_overdue": "Օնբորդինգի առաջադրանք ուշացել է"
+    }
+  },
+  "aiChat": {
+    "suggestions": {
+      "employee": [
+        "Քանի։ օր արձակուրդի օր մնացել է?",
+        "Ով է այսօր արձակուրդում?",
+        "Ուզում եմ հիվանդանոց վերցնել",
+        "Իմ առաջադրանքները այսօր",
+        "Բացել չատը",
+        "Իմ հաճախությունը"
+      ],
+      "supervisor": [
+        "Ով է թիմից այսօր աշխատանքին?",
+        "Սպասվող արձակուրդի հայտեր",
+        "Ով է այսօր ուշացել?",
+        "Ստեղծել առաջադրանք թիմի համար",
+        "Թիմի օրացույցը",
+        "Թիմի վիճակագրություն"
+      ],
+      "admin": [
+        "Անալիտիկա",
+        "Աշխատակիցների ցանկ",
+        "Միանման հայտեր",
+        "Արձակուրդների հաշվետվություն",
+        "Նշանակել առաջադրանք",
+        "Այսօրվա հաճախություն"
+      ],
+      "superadmin": [
+        "Բոլոր կազմակերпությունները",
+        "Անվտանգության ստուգում",
+        "Ստրայп բաժանորդագրություններ",
+        "Ուղարկել հայտարարություն",
+        "Պլատֆորմի վիճակագրություն",
+        "Բոլոր օգտագործողները"
+      ]
+    }
+  }
 }

@@ -989,5 +989,68 @@
   "pageNotFoundDesc": "Die Seite existiert nicht oder wurde verschoben.",
   "backToDashboard": "Zurück zum Dashboard",
   "goHome": "Startseite",
-  "errorDescription": "Ein unerwarteter Fehler ist aufgetreten. Ihre Daten sind sicher."
+  "errorDescription": "Ein unerwarteter Fehler ist aufgetreten. Ihre Daten sind sicher.",
+  "notifications": {
+    "types": {
+      "leave_request": "Neuer Urlaubsantrag",
+      "leave_approved": "Urlaub genehmigt",
+      "leave_rejected": "Urlaub abgelehnt",
+      "driver_request": "Neue Fahreranfrage",
+      "driver_request_approved": "Fahreranfrage genehmigt",
+      "driver_request_rejected": "Fahreranfrage abgelehnt",
+      "employee_added": "Neuer Mitarbeiter hinzugefügt",
+      "join_request": "Neue Beitrittsanfrage",
+      "join_approved": "Willkommen im Team!",
+      "join_rejected": "Beitrittsanfrage abgelehnt",
+      "security_alert": "Sicherheitswarnung",
+      "status_change": "Status geändert",
+      "message_mention": "Sie wurden erwähnt",
+      "system": "Systembenachrichtigung",
+      "review_deadline": "Überprüfungsfrist",
+      "okr_checkin_reminder": "OKR Check-in Erinnerung",
+      "survey_auto_activated": "Umfrage aktiviert",
+      "survey_auto_closed": "Umfrage geschlossen",
+      "onboarding_task_due": "Onboarding-Aufgabe fällig",
+      "onboarding_started": "Onboarding gestartet",
+      "onboarding_manager_assigned": "Onboarding-Manager zugewiesen",
+      "onboarding_buddy_assigned": "Buddy zugewiesen",
+      "onboarding_task_overdue": "Onboarding-Aufgabe überfällig"
+    }
+  },
+  "aiChat": {
+    "suggestions": {
+      "employee": [
+        "Wie viele Urlaubstage habe ich noch?",
+        "Wer ist heute im Urlaub?",
+        "Ich möchte Krankmeldung einreichen",
+        "Meine Aufgaben für heute",
+        "Öffne Chat",
+        "Meine Anwesenheit anzeigen"
+      ],
+      "supervisor": [
+        "Wer aus dem Team ist heute da?",
+        "Offene Urlaubsanträge",
+        "Wer kam heute zu spät?",
+        "Aufgabe für das Team erstellen",
+        "Teamkalender anzeigen",
+        "Teamstatistik"
+      ],
+      "admin": [
+        "Analytik anzeigen",
+        "Alle Mitarbeiter auflisten",
+        "Beitrittsanfragen",
+        "Urlaubsbericht",
+        "Aufgabe zuweisen",
+        "Heutige Anwesenheit"
+      ],
+      "superadmin": [
+        "Alle Organisationen",
+        "Sicherheit prüfen",
+        "Stripe-Abonnements",
+        "Ankündigung senden",
+        "Plattformstatistik",
+        "Alle Benutzer"
+      ]
+    }
+  }
 }

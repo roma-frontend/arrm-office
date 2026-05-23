@@ -960,5 +960,68 @@
     "backToDashboard": "Back to Dashboard",
     "goHome": "Go Home",
     "errorDescription": "An unexpected error occurred. Don't worry — your data is safe. Try refreshing or go back to the dashboard."
+  },
+  "notifications": {
+    "types": {
+      "leave_request": "New Leave Request",
+      "leave_approved": "Leave Approved",
+      "leave_rejected": "Leave Rejected",
+      "driver_request": "New Driver Request",
+      "driver_request_approved": "Driver Request Approved",
+      "driver_request_rejected": "Driver Request Declined",
+      "employee_added": "New Employee Added",
+      "join_request": "New Join Request",
+      "join_approved": "Welcome to the Team!",
+      "join_rejected": "Join Request Rejected",
+      "security_alert": "Security Alert",
+      "status_change": "Status Changed",
+      "message_mention": "You were mentioned",
+      "system": "System Notification",
+      "review_deadline": "Review Deadline",
+      "okr_checkin_reminder": "OKR Check-in Reminder",
+      "survey_auto_activated": "Survey Activated",
+      "survey_auto_closed": "Survey Closed",
+      "onboarding_task_due": "Onboarding Task Due",
+      "onboarding_started": "Onboarding Started",
+      "onboarding_manager_assigned": "Onboarding Manager Assigned",
+      "onboarding_buddy_assigned": "Buddy Assigned",
+      "onboarding_task_overdue": "Onboarding Task Overdue"
+    }
+  },
+  "aiChat": {
+    "suggestions": {
+      "employee": [
+        "How many vacation days do I have left?",
+        "Who is on leave today?",
+        "I want to take sick leave",
+        "My tasks for today",
+        "Open chat",
+        "Show my attendance"
+      ],
+      "supervisor": [
+        "Who from the team is at work today?",
+        "Pending leave requests",
+        "Who was late today?",
+        "Create a task for the team",
+        "Show team calendar",
+        "Team statistics"
+      ],
+      "admin": [
+        "Show analytics",
+        "List all employees",
+        "Join requests",
+        "Leave report",
+        "Assign a task",
+        "Today's attendance"
+      ],
+      "superadmin": [
+        "All organizations",
+        "Check security",
+        "Stripe subscriptions",
+        "Send announcement",
+        "Platform statistics",
+        "All users"
+      ]
+    }
   }
 }
