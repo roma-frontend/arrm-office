@@ -33,7 +33,7 @@ const FaceLogin = dynamic(
   },
 );
 
-function MaintenanceBanner() {
+function MaintenanceScreen() {
   const { t } = useTranslation();
 
   return (
@@ -559,7 +559,7 @@ export default function LoginPage() {
 
   // Early return for maintenance mode to prevent any other rendering
   if (showMaintenanceBanner) {
-    return <MaintenanceBanner />;
+    return <MaintenanceScreen />;
   }
 
   return (
