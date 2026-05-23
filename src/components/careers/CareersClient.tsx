@@ -172,7 +172,7 @@ export default function CareersClient() {
               : '...'}
           </div>
           <h1
-            className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight"
+            className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 tracking-tighter"
             style={{ color: 'var(--landing-text-primary)' }}
           >
             {t('careers.heroTitle', 'Find Your Dream Job')}
