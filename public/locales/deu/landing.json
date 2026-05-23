@@ -747,6 +747,12 @@
       "description": "Durchsuchen Sie offene Stellen bei Organisationen, die HR Office nutzen.",
       "ogTitle": "Karriere — HR Office",
       "ogDescription": "Finden Sie offene Stellen und bewerben Sie sich über HR Office."
+    },
+    "home": {
+      "title": "HR Office — All-in-One HR-Management-Plattform",
+      "description": "HR Office ist eine leistungsstarke HR-Plattform mit Echtzeit-Anwesenheit, Urlaubsverwaltung, Aufgabenmanagement, Mitarbeiteranalytik, Gesichtserkennung und KI-Assistent.",
+      "ogTitle": "HR Office — All-in-One HR-Plattform",
+      "ogDescription": "Verwalten Sie Ihre Belegschaft mit KI-Analytik, Anwesenheitserfassung und Aufgabenmanagement."
     }
   }
 }

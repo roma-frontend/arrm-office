@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Sans, Inter, Noto_Sans_Armenian } from 'next/font/google';
 import React, { Suspense } from 'react';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import './globals.css';
 import { validateEnvironment } from '@/lib/env-validation';
 import { AppProviders } from '@/components/AppProviders';
 import PerformanceMonitor from '@/components/PerformanceMonitor';
 import { Analytics } from '@vercel/analytics/next';
+import { getServerTranslation } from '@/lib/i18n/server-translation';
 
 // Validate environment variables at startup
 validateEnvironment();
@@ -57,93 +58,98 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(APP_URL),
-  title: {
-    default: 'HR Office — All-in-One HR Management Platform',
-    template: '%s | HR Office',
-  },
-  description:
-    'HR Office is a powerful all-in-one HR platform with real-time attendance tracking, leave management, task management, employee analytics, face recognition check-in, and AI assistant. Built for modern teams.',
-  keywords: [
-    'HR software',
-    'HR management',
-    'leave management',
-    'attendance tracking',
-    'employee management',
-    'task management',
-    'HR platform',
-    'absence management',
-    'face recognition HR',
-    'AI HR assistant',
-    'workforce management',
-    'employee scheduling',
-    'HR analytics',
-    'team management',
-    'remote work tracking',
-    'performance management',
-  ],
-  authors: [{ name: 'HR Office Team', url: APP_URL }],
-  creator: 'HR Office',
-  publisher: 'HR Office',
-  category: 'Business Software',
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: APP_URL,
-    title: 'HR Office — All-in-One HR Management Platform',
-    description:
-      'Manage your entire workforce with real-time attendance, AI-powered analytics, task management, and smart leave tracking.',
-    siteName: 'HR Office',
-    images: [
-      {
-        url: '/opengraph-image',
-        width: 1200,
-        height: 630,
-        alt: 'HR Office — All-in-One HR Management Platform',
-        type: 'image/png',
-      },
+export async function generateMetadata(): Promise<Metadata> {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get('i18nextLng')?.value || 'en';
+  const { t } = await getServerTranslation('landing', locale);
+
+  const localeMap: Record<string, string> = { en: 'en_US', ru: 'ru_RU', hy: 'hy_AM', deu: 'de_DE' };
+
+  return {
+    metadataBase: new URL(APP_URL),
+    title: {
+      default: t('meta.home.title'),
+      template: '%s | HR Office',
+    },
+    description: t('meta.home.description'),
+    keywords: [
+      'HR software',
+      'HR management',
+      'leave management',
+      'attendance tracking',
+      'employee management',
+      'task management',
+      'HR platform',
+      'absence management',
+      'face recognition HR',
+      'AI HR assistant',
+      'workforce management',
+      'employee scheduling',
+      'HR analytics',
+      'team management',
+      'remote work tracking',
+      'performance management',
     ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'HR Office — All-in-One HR Management Platform',
-    description:
-      'Manage your entire workforce with real-time attendance, AI-powered analytics, and smart task management.',
-    images: ['/opengraph-image'],
-    creator: '@hrofficeapp',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: 'HR Office Team', url: APP_URL }],
+    creator: 'HR Office',
+    publisher: 'HR Office',
+    category: 'Business Software',
+    openGraph: {
+      type: 'website',
+      locale: localeMap[locale] || 'en_US',
+      url: APP_URL,
+      title: t('meta.home.ogTitle'),
+      description: t('meta.home.ogDescription'),
+      siteName: 'HR Office',
+      images: [
+        {
+          url: '/opengraph-image',
+          width: 1200,
+          height: 630,
+          alt: t('meta.home.ogTitle'),
+          type: 'image/png',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('meta.home.ogTitle'),
+      description: t('meta.home.ogDescription'),
+      images: ['/opengraph-image'],
+      creator: '@hrofficeapp',
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
-  },
-  alternates: {
-    canonical: '/',
-    languages: {
-      'en-US': '/en',
-      'ru-RU': '/ru',
-      'hy-AM': '/hy',
+    alternates: {
+      canonical: '/',
+      languages: {
+        'en-US': '/en',
+        'ru-RU': '/ru',
+        'hy-AM': '/hy',
+      },
     },
-  },
-  icons: {
-    icon: [
-      { url: '/favicon-animated.svg?v=3', type: 'image/svg+xml' },
-      { url: '/favicon.svg?v=3', type: 'image/svg+xml' },
-      { url: '/favicon-32x32.svg?v=3', sizes: '32x32', type: 'image/svg+xml' },
-      { url: '/favicon-16x16.svg?v=3', sizes: '16x16', type: 'image/svg+xml' },
-    ],
-    shortcut: '/favicon-animated.svg?v=3',
-    apple: [{ url: '/apple-touch-icon.svg?v=3', sizes: '180x180', type: 'image/svg+xml' }],
-  },
-  manifest: '/manifest.json',
-};
+    icons: {
+      icon: [
+        { url: '/favicon-animated.svg?v=3', type: 'image/svg+xml' },
+        { url: '/favicon.svg?v=3', type: 'image/svg+xml' },
+        { url: '/favicon-32x32.svg?v=3', sizes: '32x32', type: 'image/svg+xml' },
+        { url: '/favicon-16x16.svg?v=3', sizes: '16x16', type: 'image/svg+xml' },
+      ],
+      shortcut: '/favicon-animated.svg?v=3',
+      apple: [{ url: '/apple-touch-icon.svg?v=3', sizes: '180x180', type: 'image/svg+xml' }],
+    },
+    manifest: '/manifest.json',
+  };
+}
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const nonce = (await headers()).get('x-nonce') ?? undefined;

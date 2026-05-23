@@ -748,6 +748,12 @@
       "description": "Browse open positions across organizations using HR Office. Find your next opportunity.",
       "ogTitle": "Careers — HR Office",
       "ogDescription": "Find open positions and apply directly through HR Office."
+    },
+    "home": {
+      "title": "HR Office — All-in-One HR Management Platform",
+      "description": "HR Office is a powerful all-in-one HR platform with real-time attendance tracking, leave management, task management, employee analytics, face recognition check-in, and AI assistant. Built for modern teams.",
+      "ogTitle": "HR Office — All-in-One HR Management Platform",
+      "ogDescription": "Manage your entire workforce with real-time attendance, AI-powered analytics, task management, and smart leave tracking."
     }
   }
 }
