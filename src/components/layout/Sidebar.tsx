@@ -1175,21 +1175,22 @@ export function MobileSidebar() {
           {/* Close Button */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-(--primary)/30 border"
+            className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-(--primary)/30 border"
             style={{
-              backgroundColor: 'var(--sidebar-bg)',
-              borderColor: 'var(--sidebar-border)',
-              color: 'var(--text-muted)',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              borderColor: 'rgba(255, 255, 255, 0.15)',
+              color: '#ffffff',
+              backdropFilter: 'blur(8px)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--sidebar-item-hover)';
-              e.currentTarget.style.borderColor = 'var(--primary)';
-              e.currentTarget.style.color = 'var(--primary)';
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.color = '#ffffff';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--sidebar-bg)';
-              e.currentTarget.style.borderColor = 'var(--sidebar-border)';
-              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.color = '#ffffff';
             }}
             aria-label={t('sidebar.closeSidebar')}
           >

@@ -101,6 +101,8 @@ export default function ChatClient({
   // When deselecting on mobile
   const handleBack = useCallback(() => {
     setChatVisible(false);
+    // Uncollapse sidebar immediately so it's visible when chat fades out
+    setListCollapsed(false);
     setTimeout(() => {
       setMobileShowChat(false);
       setSelectedConvId(null);
@@ -252,7 +254,7 @@ export default function ChatClient({
           className={cn(
             'flex flex-col border-r shrink-0',
             listCollapsed
-              ? 'relative z-10'
+              ? 'relative z-10 hidden md:flex'
               : 'fixed top-16 left-0 right-0 bottom-0 z-[100] w-full md:relative md:top-auto md:left-auto md:right-auto md:bottom-auto md:z-auto md:w-80',
             // Hide sidebar on mobile only when expanded AND chat is shown
             !listCollapsed && mobileShowChat ? 'hidden md:flex' : '',

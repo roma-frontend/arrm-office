@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef } from 'react';
-import { Paperclip, BarChart2, Clock, Mic, Smile } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Paperclip, BarChart2, Clock, Mic, Smile, Plus, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import EmojiPicker from './EmojiPicker';
 import { VoiceMessageRecorder } from './VoiceMessageRecorder';
@@ -69,6 +69,12 @@ export function ChatInput({
   fileInputRef,
 }: ChatInputProps) {
   const { t } = useTranslation();
+  const [showMobileActions, setShowMobileActions] = useState(false);
+
+  const handleMobileAction = (action: () => void) => {
+    action();
+    setShowMobileActions(false);
+  };
 
   return (
     <div
@@ -79,9 +85,10 @@ export function ChatInput({
         className="flex items-center gap-1.5 xs:gap-2 rounded-2xl border px-2 xs:px-3 py-1.5 xs:py-2 transition-all"
         style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
       >
+        {/* Desktop: show all icons */}
         <button
           onClick={onAttachFile}
-          className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 hover:opacity-100 relative group/attach shrink-0"
+          className="hidden xs:flex w-6 xs:w-7 h-6 xs:h-7 items-center justify-center rounded-lg transition-all hover:scale-110 hover:opacity-100 relative group/attach shrink-0"
           style={{
             color: pendingFilesCount > 0 ? 'var(--primary)' : 'var(--text-disabled)',
           }}
@@ -109,7 +116,7 @@ export function ChatInput({
 
         <button
           onClick={onTogglePoll}
-          className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
+          className="hidden xs:flex w-6 xs:w-7 h-6 xs:h-7 items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
           style={{ color: showPollCreator ? 'var(--primary)' : 'var(--text-disabled)' }}
           title={t('chat.createPollShort')}
         >
@@ -118,7 +125,7 @@ export function ChatInput({
 
         <button
           onClick={onToggleSchedule}
-          className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
+          className="hidden xs:flex w-6 xs:w-7 h-6 xs:h-7 items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
           style={{ color: scheduledFor ? 'var(--primary)' : 'var(--text-disabled)' }}
           title={t('chat.scheduleMessage')}
         >
@@ -127,13 +134,24 @@ export function ChatInput({
 
         <button
           onClick={onToggleVoiceRecorder}
-          className="w-6 xs:w-7 h-6 xs:h-7 flex items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
+          className="hidden xs:flex w-6 xs:w-7 h-6 xs:h-7 items-center justify-center rounded-lg transition-all hover:scale-110 shrink-0"
           style={{
             color: showVoiceRecorder ? 'var(--primary)' : 'var(--text-disabled)',
           }}
           title="Voice message"
         >
           <Mic className="w-4 xs:w-4.5 h-4 xs:h-4.5" />
+        </button>
+
+        {/* Mobile: single + button */}
+        <button
+          onClick={() => setShowMobileActions(!showMobileActions)}
+          className="xs:hidden w-6 h-6 flex items-center justify-center rounded-lg transition-all shrink-0"
+          style={{
+            color: showMobileActions ? 'var(--primary)' : 'var(--text-disabled)',
+          }}
+        >
+          {showMobileActions ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
         </button>
 
         <div className="flex-1 relative min-w-0" style={{ height: '20px' }}>
@@ -249,8 +267,57 @@ export function ChatInput({
           )}
         </button>
       </div>
+
+      {/* Mobile actions bottom sheet */}
+      {showMobileActions && (
+        <div
+          className="xs:hidden mt-2 rounded-xl border overflow-hidden animate-slide-up"
+          style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
+        >
+          <div className="grid grid-cols-4 gap-1 p-2">
+            <button
+              onClick={() => handleMobileAction(onAttachFile)}
+              className="flex flex-col items-center gap-1 py-2 rounded-lg transition-all active:scale-95"
+              style={{
+                color: pendingFilesCount > 0 ? 'var(--primary)' : 'var(--text-muted)',
+              }}
+            >
+              <Paperclip className="w-5 h-5" />
+              <span className="text-[10px]">{t('chat.attachFile', 'File')}</span>
+            </button>
+            <button
+              onClick={() => handleMobileAction(onTogglePoll)}
+              className="flex flex-col items-center gap-1 py-2 rounded-lg transition-all active:scale-95"
+              style={{ color: showPollCreator ? 'var(--primary)' : 'var(--text-muted)' }}
+            >
+              <BarChart2 className="w-5 h-5" />
+              <span className="text-[10px]">{t('chat.createPollShort', 'Poll')}</span>
+            </button>
+            <button
+              onClick={() => handleMobileAction(onToggleSchedule)}
+              className="flex flex-col items-center gap-1 py-2 rounded-lg transition-all active:scale-95"
+              style={{ color: scheduledFor ? 'var(--primary)' : 'var(--text-muted)' }}
+            >
+              <Clock className="w-5 h-5" />
+              <span className="text-[10px]">{t('chat.scheduleMessage', 'Schedule')}</span>
+            </button>
+            <button
+              onClick={() => handleMobileAction(onToggleVoiceRecorder)}
+              className="flex flex-col items-center gap-1 py-2 rounded-lg transition-all active:scale-95"
+              style={{
+                color: showVoiceRecorder ? 'var(--primary)' : 'var(--text-muted)',
+              }}
+            >
+              <Mic className="w-5 h-5" />
+              <span className="text-[10px]">{t('chat.voiceMessage', 'Voice')}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hint text - hidden on mobile */}
       <p
-        className="text-[11.5px] sm:text-[12px] mt-1 text-center"
+        className="hidden sm:block text-[11.5px] sm:text-[12px] mt-1 text-center"
         style={{ color: 'var(--text-disabled)' }}
       >
         {t('chat.enterHint')}

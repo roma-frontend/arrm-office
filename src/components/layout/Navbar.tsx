@@ -437,9 +437,9 @@ export function Navbar() {
                 collisionPadding={{ top: 72, bottom: 16, left: 16, right: 16 }}
                 className="w-80 max-h-[calc(100vh-90px)] overflow-y-auto bg-(--card) border-(--border) shadow-xl"
               >
-                {/* Mobile close button */}
+                {/* Close button */}
                 <button
-                  className="sm:hidden absolute top-3 right-3 p-1.5 rounded-lg text-(--text-muted) hover:text-(--text-primary) hover:bg-(--background-subtle) transition-colors"
+                  className="absolute top-3 right-3 p-1.5 rounded-lg text-(--text-muted) hover:text-(--text-primary) hover:bg-(--background-subtle) transition-colors"
                   style={{ zIndex: 999 }}
                   onClick={() => setMenuOpen(false)}
                   aria-label="Close"

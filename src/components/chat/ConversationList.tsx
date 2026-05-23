@@ -281,7 +281,7 @@ export const ConversationList = React.memo(function ConversationList({
           <button
             onClick={onToggleCollapse}
             className={cn(
-              'flex items-center justify-center rounded-lg transition-all hover:scale-105',
+              'hidden md:flex items-center justify-center rounded-lg transition-all hover:scale-105',
               'border border-border bg-background text-text-muted hover:bg-sidebar-item-hover hover:text-primary',
               showCollapse && collapsed ? 'w-10 h-10' : 'w-8 h-8 shrink-0',
             )}
