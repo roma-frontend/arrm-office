@@ -35,7 +35,7 @@ export function DashboardHeader({ selectedOrganization, userRole }: DashboardHea
     <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-6 bg-(--background)/95 backdrop-blur supports-backdrop-filter:bg-(--background)/60 border-b border-(--border)">
       <div className="flex flex-col sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1 text-gradient">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1 text-primary-text">
             {selectedOrganization?.name
               ? `${t('nav.dashboard', { defaultValue: 'Dashboard' })} - ${selectedOrganization.name}`
               : t('nav.dashboard', { defaultValue: 'Dashboard' })}

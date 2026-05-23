@@ -54,7 +54,7 @@ export function OrganizationSelector({ collapsed = false }: OrgSelectorProps) {
   const selectedOrg = orgs.find((org: any) => org._id === selectedOrgId);
 
   return (
-    <div className="px-2 py-3 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
+    <div style={{ borderColor: 'var(--sidebar-border)' }}>
       <div className="relative" ref={ref}>
         <Button
           onClick={() => setIsOpen(!isOpen)}

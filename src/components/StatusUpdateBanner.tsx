@@ -21,8 +21,8 @@ const statusConfig: Record<
     icon: CheckCircle2,
     bg: 'bg-slate-900/5 dark:from-green-950/30 dark:to-emerald-950/30',
     border: 'border-emerald-500/20 dark:border-green-800/50',
-    title: 'text-black dark:text-green-100',
-    subtitle: 'text-black dark:text-green-400',
+    title: 'text-primary-text',
+    subtitle: 'text-primary-text/80',
     iconColor: 'text-emerald-600 dark:text-green-400',
     type: 'success',
   },
@@ -30,8 +30,8 @@ const statusConfig: Record<
     icon: Clock,
     bg: 'bg-slate-900/5 dark:from-yellow-950/30 dark:to-amber-950/30',
     border: 'border-amber-500/25 dark:border-yellow-800/50',
-    title: 'text-black dark:text-yellow-100',
-    subtitle: 'text-black dark:text-yellow-400',
+    title: 'text-primary-text',
+    subtitle: 'text-primary-text/80',
     iconColor: 'text-amber-600 dark:text-yellow-400',
     type: 'warning',
   },
@@ -39,8 +39,8 @@ const statusConfig: Record<
     icon: Phone,
     bg: 'bg-slate-900/5 dark:from-blue-950/30 dark:to-sky-950/30',
     border: 'border-sky-500/25 dark:border-blue-800/50',
-    title: 'text-black dark:text-blue-100',
-    subtitle: 'text-black dark:text-blue-400',
+    title: 'text-primary-text',
+    subtitle: 'text-primary-text/80',
     iconColor: 'text-sky-600 dark:text-blue-400',
     type: 'info',
   },
@@ -48,8 +48,8 @@ const statusConfig: Record<
     icon: AlertTriangle,
     bg: 'bg-slate-900/5 dark:from-orange-950/30 dark:to-amber-950/30',
     border: 'border-orange-500/25 dark:border-orange-800/50',
-    title: 'text-black dark:text-orange-100',
-    subtitle: 'text-black dark:text-orange-400',
+    title: 'text-primary-text',
+    subtitle: 'text-primary-text/80',
     iconColor: 'text-orange-600 dark:text-orange-400',
     type: 'warning',
   },
@@ -57,8 +57,8 @@ const statusConfig: Record<
     icon: Zap,
     bg: 'bg-slate-900/5 dark:from-red-950/30 dark:to-red-950/30',
     border: 'border-rose-500/25 dark:border-red-800/50',
-    title: 'text-black dark:text-red-100',
-    subtitle: 'text-black dark:text-red-400',
+    title: 'text-primary-text',
+    subtitle: 'text-primary-text/80',
     iconColor: 'text-rose-600 dark:text-red-400',
     type: 'error',
   },
@@ -78,9 +78,7 @@ export function StatusUpdateBanner() {
   const hint = t(`status.${notification.statusKey}.notification`, '');
 
   return (
-    <div
-      className={`w-full ${config.bg} border-b ${config.border} shadow-sm dark:bg-linear-to-r`}
-    >
+    <div className={`w-full ${config.bg} border-b ${config.border} shadow-sm dark:bg-linear-to-r`}>
       <div className="max-w-full mx-auto px-4 py-3 flex items-start justify-between gap-3">
         {/* Left: Icon and Message */}
         <div className="flex items-start gap-3 min-w-0 flex-1">
