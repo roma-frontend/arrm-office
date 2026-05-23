@@ -1183,7 +1183,7 @@ export function MobileSidebar() {
           {/* Close Button */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-(--primary)/30 border"
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-(--primary)/30 border"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               borderColor: 'rgba(255, 255, 255, 0.15)',
@@ -1202,7 +1202,7 @@ export function MobileSidebar() {
             }}
             aria-label={t('sidebar.closeSidebar')}
           >
-            <X className="w-4 h-4" />
+            <X className="w-3 h-3" />
           </button>
         </div>
 

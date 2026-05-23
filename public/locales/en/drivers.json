@@ -13,6 +13,9 @@
     "busy": "Busy",
     "availableDrivers": "Available Drivers",
     "availableDriversDesc": "Browse and book drivers",
+    "noDriverCandidates": "No driver candidates available. Please change the data or contact the administrator.",
+    "createDriverFirst": "Create a driver in the employees section with the role 'Driver' before registering them here.",
+    "driverCount": "{{count}} driver",
     "noDriversFound": "No drivers found",
     "driverUnavailable": "Driver is not available",
     "checkAvailability": "Check Availability",
@@ -437,6 +440,7 @@
       "now": "Now"
     },
     "openInMap": "Open in Map",
+    "mapTitle": "Map",
     "selectMapApp": "Select Map App",
     "navigator": {
       "google": "Google Maps",

@@ -437,6 +437,7 @@
       "now": "Now"
     },
     "openInMap": "Open in Map",
+    "mapTitle": "Map",
     "selectMapApp": "Select Map App",
     "navigator": {
       "google": "Google Maps",

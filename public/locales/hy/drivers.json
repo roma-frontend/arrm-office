@@ -19,6 +19,9 @@
     "busy": "Զբաղված",
     "availableDrivers": "Հասանելի վարորդներ",
     "noDriversFound": "Վարորդներ չեն գտնվել",
+    "noDriverCandidates": "Վարորդի թեկնածուներ չեն հասանելի. Խնդրում ենք փոխել տվյալները կամ կապվել ադմինիստրատորի հետ.",
+    "createDriverFirst": "Սկզբում ստեղծեք վարորդ աշխատակիցների բաժնում 'Վարորդ' դերով, նախքան նրանց գրանցելը այստեղ:",
+    "driverCount": "{{count}} վարորդ",
     "driverUnavailable": "Վարորդը հասանելի չէ",
     "checkAvailability": "Ստուգել հասանելիությունը",
     "driverSchedule": "Վարորդի գրաֆիկ",
@@ -431,6 +434,7 @@
       "now": "Հիմա"
     },
     "openInMap": "Բացել քարտեզում",
+    "mapTitle": "Քարտեզ",
     "selectMapApp": "Ընտրեք քարտեզի հավելված",
     "navigator": {
       "google": "Google Maps",

@@ -704,12 +704,12 @@ export const ChatWindow = React.memo(function ChatWindow({
 
           <div className="flex-1 min-w-0">
             <h3
-              className="text-[15px] font-semibold truncate"
+              className="hidden sm:blocktext-[15px] font-semibold truncate"
               style={{ color: 'var(--text-primary)' }}
             >
               {displayName}
             </h3>
-            <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+            <p className="hidden sm:block text-xs truncate" style={{ color: 'var(--text-muted)' }}>
               {conv?.type === 'group'
                 ? `${conv.memberCount ?? members?.length ?? 0} ${t('chat.members')}`
                 : otherUser?.presenceStatus === 'available'

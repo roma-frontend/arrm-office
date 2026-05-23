@@ -17,6 +17,9 @@
     "requestDriverShort": "Anfordern",
     "selectDriver": "Fahrer auswählen",
     "selectDriverDesc": "Wählen Sie einen Fahrer aus, um dessen Fahrplan anzuzeigen und eine Fahrt zu buchen",
+    "noDriverCandidates": "Keine Fahrer-Kandidaten verfügbar. Bitte ändern Sie die Daten oder kontaktieren Sie den Administrator.",
+    "createDriverFirst": "Erstellen Sie zuerst einen Fahrer in den Mitarbeitern mit der Rolle 'Fahrer', um ihn hier zu registrieren.",
+    "driverCount": "{{count}} Fahrer",
     "chooseDriver": "Fahrer auswählen",
     "available": "Verfügbar",
     "busy": "Beschäftigt",
@@ -443,6 +446,7 @@
       "now": "Jetzt"
     },
     "openInMap": "In Karte öffnen",
+    "mapTitle": "Karte",
     "selectMapApp": "App auswählen",
     "navigator": {
       "google": "Google Maps",
