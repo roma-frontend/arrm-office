@@ -6,6 +6,7 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRouter } from 'next/navigation';
+import { useCurrency } from '@/hooks/useCurrency';
 
 // Inline SVG icons to eliminate lucide-react import overhead
 function CheckIcon({
@@ -296,10 +297,12 @@ function PricingCard({
   tier,
   delay,
   currentPlan,
+  displayPrice,
 }: {
   tier: PricingTier;
   delay: number;
   currentPlan?: string;
+  displayPrice: string;
 }) {
   const { ref, style } = useReveal(`${delay}s`);
   const { t } = useTranslation();
@@ -453,7 +456,7 @@ function PricingCard({
                 className="text-3xl font-black leading-none"
                 style={{ color: 'var(--landing-text-primary)' }}
               >
-                {t(tier.priceKey)}
+                {displayPrice}
               </span>
               {tier.priceMonthly !== undefined && (
                 <span
@@ -564,9 +567,16 @@ export default function PricingPreview() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const { plan } = useSubscription();
+  const currency = useCurrency();
 
   // Only show current plan if user is logged in
   const currentPlan = user ? plan : undefined;
+
+  const priceMap: Record<string, string> = {
+    starter: currency.starter.formatted,
+    professional: currency.professional.formatted,
+    enterprise: t('pricing.custom', 'Custom'),
+  };
 
   return (
     <section id="pricing" className="relative z-10 px-6 md:px-12 py-12 md:py-24 overflow-hidden">
@@ -617,7 +627,13 @@ export default function PricingPreview() {
       {/* Cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto items-start pt-6">
         {pricingTiers.map((tier, i) => (
-          <PricingCard key={tier.id} tier={tier} delay={i * 0.12} currentPlan={currentPlan} />
+          <PricingCard
+            key={tier.id}
+            tier={tier}
+            delay={i * 0.12}
+            currentPlan={currentPlan}
+            displayPrice={priceMap[tier.id] ?? '$0'}
+          />
         ))}
       </div>
 

@@ -84,7 +84,11 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-16">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-3 mb-4 group">
+            <Link
+              href="/"
+              className="flex items-center gap-3 mb-4 group"
+              title={t('auth.logoTooltip')}
+            >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center"
                 style={{ background: 'linear-gradient(135deg, #2563eb, #93c5fd)' }}

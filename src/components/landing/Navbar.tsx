@@ -141,7 +141,11 @@ export default function Navbar() {
           }}
         />
 
-        <Link href="/" className="relative flex items-center gap-3 group">
+        <Link
+          href="/"
+          className="relative flex items-center gap-3 group"
+          title={t('auth.logoTooltip')}
+        >
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center logo-spin"
             style={{ background: 'linear-gradient(135deg, #2563eb, #93c5fd)' }}

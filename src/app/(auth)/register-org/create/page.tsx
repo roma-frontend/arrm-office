@@ -26,6 +26,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import bcrypt from 'bcryptjs';
 import { useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const passwordStrength = (pwd: string) => {
   if (pwd.length < 8) return 0;
@@ -57,12 +58,17 @@ export default function CreateStarterOrgPage() {
     country: '',
     industry: '',
   });
+  const currency = useCurrency();
 
   const createStarterOrg = useMutation(api.organizationRequests.createStarterOrganization);
 
   const _plan = searchParams.get('plan');
 
   const strength = passwordStrength(formData.password);
+
+  const starterSubtitle = currency.loading
+    ? `${t('auth.plans.starter.name', 'Starter')} • ${t('registerOrgPage.starterTeam', 'Up to 10 employees')} • ${t('registerOrgPage.instantSetup', 'Instant setup')}`
+    : `${currency.starter.formatted}${t('auth.plans.perMonth', '/мес')} • ${t('registerOrgPage.starterTeam', 'Up to 10 employees')} • ${t('registerOrgPage.instantSetup', 'Instant setup')}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,7 +145,7 @@ export default function CreateStarterOrgPage() {
         >
           {/* Header */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg bg-linear-to-r from-(--primary) to-(--primary-dark,var(--primary)) hover:opacity-90  transition-opacity">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg btn-gradient">
               <Zap className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -147,7 +153,7 @@ export default function CreateStarterOrgPage() {
                 {t('register.createStarterOrg')}
               </h1>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                {t('register.starterOrgSubtitle')}
+                {starterSubtitle}
               </p>
             </div>
           </div>

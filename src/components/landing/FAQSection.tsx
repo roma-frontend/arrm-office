@@ -116,7 +116,7 @@ export default function FAQSection() {
         {/* Section header — reveal on scroll */}
         <div
           ref={ref}
-          className="text-center mb-12"
+          className="text-center my-12"
           style={{
             opacity: visible ? 1 : 0,
             transform: visible ? 'translateY(0)' : 'translateY(30px)',

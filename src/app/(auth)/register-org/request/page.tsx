@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import bcrypt from 'bcryptjs';
 import { useMutation } from 'convex/react';
 import { api } from '../../../../../convex/_generated/api';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const passwordStrength = (pwd: string) => {
   if (pwd.length < 8) return 0;
@@ -61,6 +62,7 @@ export default function RequestOrgPage() {
     teamSize: '',
     description: '',
   });
+  const currency = useCurrency();
 
   const requestOrg = useMutation(api.organizationRequests.requestOrganization);
 
@@ -71,6 +73,9 @@ export default function RequestOrgPage() {
   const accentColor = plan === 'enterprise' ? '#a855f7' : '#2563eb';
   const gradientColor =
     plan === 'enterprise' ? 'from-purple-500 to-pink-500' : 'from-blue-500 to-cyan-500';
+
+  const proPrice =
+    plan === 'professional' ? (currency.loading ? '$79' : currency.professional.formatted) : '';
 
   useEffect(() => {
     if (plan !== 'professional' && plan !== 'enterprise') {
@@ -171,7 +176,7 @@ export default function RequestOrgPage() {
         >
           <div className="flex items-center gap-3 mb-6">
             <div
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center"
+              className="w-10 h-10 sm:w-12 sm:h-12 btn-gradient rounded-xl flex items-center justify-center"
               style={{ background: `linear-gradient(135deg, ${gradientColor})` }}
             >
               <PlanIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -186,7 +191,7 @@ export default function RequestOrgPage() {
               <p className="text-xs sm:text-sm" style={{ color: 'var(--text-muted)' }}>
                 {plan === 'enterprise'
                   ? `${t('registerOrgPage.enterpriseCustom')} • ${t('registerOrgPage.enterpriseTeam')}`
-                  : `${t('registerOrgPage.proPrice')} • ${t('registerOrgPage.proTeam')}`}{' '}
+                  : `${proPrice}${t('auth.plans.perMonth', '/мес')} • ${t('registerOrgPage.proTeam')}`}{' '}
                 • {t('registerOrgPage.approvalNote')}
               </p>
             </div>

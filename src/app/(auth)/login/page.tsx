@@ -584,7 +584,7 @@ export default function LoginPage() {
           )}
 
           <div
-            className="min-h-screen flex items-center justify-center"
+            className="min-h-screen flex items-center justify-center p-8"
             style={{
               display: isOAuthSyncing ? 'none' : 'flex',
               background: 'var(--background)',
@@ -611,24 +611,25 @@ export default function LoginPage() {
               {/* Card */}
               <div
                 id="login-card"
-                className="rounded-2xl p-6 shadow-2xl border"
+                className="rounded-2xl px-6 py-4 shadow-2xl border"
                 style={{
                   background: 'var(--card)',
                   borderColor: 'var(--border)',
                 }}
               >
                 {/* Logo */}
-                <div className="flex flex-col items-center mb-6 mt-14 md:mt-0">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 shadow-lg btn-gradient">
+                <Link
+                  href="/"
+                  className="flex flex-col items-center my-2 md:mt-0 group"
+                  title={mounted ? t('auth.logoTooltip') : 'Go to home page'}
+                >
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 shadow-lg btn-gradient transition-transform group-hover:scale-105">
                     <Building2 className="w-6 h-6 text-white" />
                   </div>
-                  <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                    {mounted ? t('auth.welcomeBack') : 'Welcome Back'}
-                  </h1>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                     {mounted ? t('auth.signInToHROffice') : 'Sign in to HR Office'}
                   </p>
-                </div>
+                </Link>
 
                 {/* 2FA Verification Step */}
                 {twoFactorPending ? (
@@ -894,7 +895,7 @@ export default function LoginPage() {
                 )}
 
                 {/* Footer */}
-                <div className="text-center my-4 space-y-2">
+                <div className="text-center mt-4 space-y-2">
                   <p id="join-team-link" className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {mounted ? t('auth.dontHaveAccount') : "Don't have an account?"}{' '}
                     <Link
@@ -924,17 +925,6 @@ export default function LoginPage() {
                     </Button>
                   </Link>
                 </div>
-              </div>
-
-              {/* Back to home */}
-              <div className="text-center my-3">
-                <Link
-                  href="/"
-                  className="text-xs hover:underline"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  ← {mounted ? t('ui.backToHome') : 'Back to home'}
-                </Link>
               </div>
             </motion.div>
           </div>

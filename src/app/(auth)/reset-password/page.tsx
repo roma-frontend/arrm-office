@@ -96,8 +96,12 @@ function ResetPasswordForm() {
           style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
         >
           {/* Logo */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#2563eb] to-[#0ea5e9] flex items-center justify-center shadow-lg">
+          <Link
+            href="/"
+            className="flex items-center justify-center gap-3 mb-8 group"
+            title={t('auth.logoTooltip')}
+          >
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#2563eb] to-[#0ea5e9] flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -111,7 +115,7 @@ function ResetPasswordForm() {
                 HR Management System
               </p>
             </div>
-          </div>
+          </Link>
 
           <AnimatePresence mode="wait">
             {/* Loading token check */}

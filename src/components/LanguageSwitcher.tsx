@@ -24,8 +24,7 @@ export function LanguageSwitcher() {
   const currentLang = i18n.language || 'en';
 
   const changeLanguage = async (lng: string) => {
-    document.body.classList.add('lang-switching');
-    await new Promise((r) => setTimeout(r, 200));
+    const scrollY = window.scrollY;
 
     if (typeof window !== 'undefined') {
       try {
@@ -34,7 +33,10 @@ export function LanguageSwitcher() {
     }
 
     await i18n.changeLanguage(lng);
-    document.body.classList.remove('lang-switching');
+
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, behavior: 'instant' as ScrollBehavior });
+    });
   };
 
   const availableLanguages = Object.entries(languages).filter(([code]) => code !== currentLang);

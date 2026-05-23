@@ -265,7 +265,7 @@ export default function FeaturesClient() {
       {/* Platform Features */}
       <section className="pb-24">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
+          <div className="text-center my-12">
             <h2
               className="text-3xl md:text-4xl font-black mb-4"
               style={{ color: 'var(--landing-text-primary)' }}

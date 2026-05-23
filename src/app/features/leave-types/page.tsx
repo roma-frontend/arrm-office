@@ -211,7 +211,7 @@ export default function LeaveTypesPage() {
           {t('features.backToHome')}
         </Link>
 
-        <div className="text-center mb-12">
+        <div className="text-center my-12">
           <span
             className="inline-block text-xs font-semibold px-4 py-1.5 rounded-full mb-4"
             style={{ background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}

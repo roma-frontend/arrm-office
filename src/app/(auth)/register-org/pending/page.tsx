@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from '@/lib/cssMotion';
-import { Clock, Mail, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Clock, Mail, CheckCircle2, ArrowRight, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 
@@ -34,6 +34,13 @@ export default function PendingPage() {
           className="rounded-2xl p-8 shadow-2xl border text-center"
           style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
         >
+          {/* Logo */}
+          <Link href="/" className="inline-block mb-6 group" title={t('auth.logoTooltip')}>
+            <div className="w-12 h-12 rounded-xl btn-gradient flex items-center justify-center mx-auto shadow-lg transition-transform group-hover:scale-105">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+          </Link>
+
           {/* Success icon */}
           <motion.div
             initial={{ scale: 0 }}
@@ -147,15 +154,6 @@ export default function PendingPage() {
                 {t('auth.pending.goToLogin', 'Go to Login')}
                 <ArrowRight className="w-4 h-4" />
               </motion.button>
-            </Link>
-
-            <Link href="/">
-              <button
-                className="w-full py-3 rounded-xl font-semibold text-sm border transition-colors hover:bg-opacity-50"
-                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
-              >
-                {t('ui.backToHome')}
-              </button>
             </Link>
           </div>
         </div>

@@ -327,7 +327,7 @@ html {
   /* scroll-behavior: smooth removed — prevents bfcache restoration (back/forward cache) */
   color-scheme: light dark;
   /* overflow-x: hidden removed - it breaks sticky positioning */
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 html.dark {
@@ -721,6 +721,8 @@ body {
   max-width: 100vw;
   overflow-x: hidden;
   /* overflow-x: hidden is safe here - doesn't break sticky since sticky parent is within viewport */
+  /* Reserve scrollbar space to prevent layout shift when scrollbar appears/disappears */
+  scrollbar-gutter: stable;
 }
 
 /* ── Glassmorphism ─────────────────────────────────────────────── */

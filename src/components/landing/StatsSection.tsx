@@ -105,7 +105,7 @@ export default function StatsSection() {
       id="stats"
       aria-label="Platform statistics"
     >
-      <div className="text-center mb-12 section-fade">
+      <div className="text-center my-12 section-fade">
         <span className="section-eyebrow">{t('landing.byTheNumbers')}</span>
         <h2
           className="mt-3 text-3xl md:text-4xl font-black tracking-tighter"

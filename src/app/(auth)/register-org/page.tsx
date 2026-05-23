@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from '@/lib/cssMotion';
 import { Building2, Check, Zap, Crown, ArrowRight } from 'lucide-react';
+import { useCurrency } from '@/hooks/useCurrency';
 
 type Plan = 'starter' | 'professional' | 'enterprise';
 
@@ -13,40 +14,45 @@ export default function RegisterOrgPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const currency = useCurrency();
 
   const plans = [
     {
       id: 'starter' as Plan,
       name: t('auth.plans.starter.name', 'Starter'),
-      price: t('auth.plans.free', 'Free'),
-      description: t('auth.plans.starter.desc', 'Perfect for small teams getting started'),
+      price: currency.loading
+        ? '$29' + t('auth.plans.perMonth', '/mo')
+        : currency.starter.formatted + t('auth.plans.perMonth', '/mo'),
+      description: t('auth.plans.starter.desc', 'Ideal for small teams getting started'),
       icon: Zap,
       color: 'from-green-500 to-emerald-500',
       features: [
         t('auth.plans.starter.employees', 'Up to 10 employees'),
         t('auth.plans.starter.basicLeave', 'Basic leave management'),
-        t('auth.plans.starter.timeTracking', 'Time tracking'),
-        t('auth.plans.starter.employeeProfiles', 'Employee profiles'),
-        t('auth.plans.starter.emailNotifications', 'Email notifications'),
-        t('auth.plans.starter.communitySupport', 'Community support'),
+        t('auth.plans.starter.timeTracking', 'Time tracking & attendance'),
+        t('auth.plans.starter.employeeProfiles', 'Employee profiles & records'),
+        t('auth.plans.starter.emailNotifications', 'Email notifications & alerts'),
+        t('auth.plans.starter.communitySupport', 'Community support forum'),
       ],
       instant: true,
     },
     {
       id: 'professional' as Plan,
       name: t('auth.plans.professional.name', 'Professional'),
-      price: '$79' + t('auth.plans.perMonth', '/mo'),
+      price: currency.loading
+        ? '$79' + t('auth.plans.perMonth', '/mo')
+        : currency.professional.formatted + t('auth.plans.perMonth', '/mo'),
       description: t('auth.plans.professional.desc', 'For growing teams with advanced needs'),
       icon: Building2,
       color: 'from-blue-500 to-cyan-500',
       features: [
         t('auth.plans.professional.employees50', 'Up to 50 employees'),
-        t('auth.plans.professional.everythingStarter', 'Everything in Starter'),
-        t('auth.plans.professional.advancedAnalytics', 'Advanced analytics'),
-        t('auth.plans.professional.customWorkflows', 'Custom workflows'),
+        t('auth.plans.professional.everythingStarter', 'Everything in Starter +'),
+        t('auth.plans.professional.advancedAnalytics', 'AI-powered insights & analytics'),
+        t('auth.plans.professional.customWorkflows', 'Custom reports & dashboards'),
         t('auth.plans.professional.prioritySupport', 'Priority support'),
-        t('auth.plans.professional.apiAccess', 'API access'),
-        t('auth.plans.professional.integrations', 'Integrations'),
+        t('auth.plans.professional.apiAccess', 'Calendar integrations (Google & Outlook)'),
+        t('auth.plans.professional.integrations', 'Custom integrations & webhooks'),
       ],
       instant: false,
       popular: true,
@@ -59,13 +65,14 @@ export default function RegisterOrgPage() {
       icon: Crown,
       color: 'from-purple-500 to-pink-500',
       features: [
-        t('auth.plans.enterprise.employees100', '100+ employees'),
-        t('auth.plans.enterprise.everythingPro', 'Everything in Professional'),
+        t('auth.plans.enterprise.employees100', 'Unlimited employees'),
+        t('auth.plans.enterprise.everythingPro', 'Everything in Professional +'),
         t('auth.plans.enterprise.dedicatedSupport', 'Dedicated support'),
-        t('auth.plans.enterprise.customIntegrations', 'Custom integrations'),
-        t('auth.plans.enterprise.slaGuarantee', 'SLA guarantee'),
-        t('auth.plans.enterprise.advancedSecurity', 'Advanced security'),
-        t('auth.plans.enterprise.trainingOnboarding', 'Training & onboarding'),
+        t('auth.plans.enterprise.customIntegrations', 'Custom integrations & webhooks'),
+        t('auth.plans.enterprise.slaGuarantee', 'SLA agreement & guarantees'),
+        t('auth.plans.enterprise.advancedSecurity', 'Advanced security & compliance'),
+        t('auth.plans.enterprise.trainingOnboarding', 'Priority AI processing'),
+        t('auth.plans.enterprise.automatedBackups', 'Automated employee backups (48h retention)'),
       ],
       instant: false,
     },
@@ -105,7 +112,7 @@ export default function RegisterOrgPage() {
         className="w-full max-w-6xl relative"
       >
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center my-12">
           <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
             {t('auth.chooseYourPlan', 'Choose Your Plan')}
           </h1>
@@ -191,7 +198,7 @@ export default function RegisterOrgPage() {
         </div>
 
         {/* Footer */}
-        <div className="text-center">
+        <div className="text-center p-6">
           <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
             {t('auth.alreadyHaveOrg')}{' '}
             <Link href="/register" className="font-semibold hover:underline text-blue-500">

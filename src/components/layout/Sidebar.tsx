@@ -1158,7 +1158,11 @@ export function MobileSidebar() {
           className="flex items-center justify-between h-16 px-4 border-b"
           style={{ borderColor: 'var(--sidebar-border)' }}
         >
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 cursor-pointer">
+          <Link
+            href="/"
+            className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
+            title={t('auth.logoTooltip')}
+          >
             <div className="btn-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-lg transition-all duration-300">
               <span className="text-white font-bold text-sm">HR</span>
             </div>

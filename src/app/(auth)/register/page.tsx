@@ -383,20 +383,28 @@ function RegisterPageContent() {
             {isResolvingPrefilledOrg ? (
               // While we resolve ?org=<slug>, show a quiet loader so the user
               // doesn't see the "search organization" step flash by.
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg btn-gradient">
+              <Link
+                href="/"
+                className="flex flex-col items-center justify-center py-16 gap-4 group"
+                title={t('auth.logoTooltip')}
+              >
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg btn-gradient transition-transform group-hover:scale-105">
                   <Building2 className="w-7 h-7 text-white" />
                 </div>
                 <ShieldLoader size="sm" variant="inline" />
                 <p className="text-sm text-center" style={{ color: 'var(--text-muted)' }}>
                   {t('auth.loadingOrganization', 'Loading organization…')}
                 </p>
-              </div>
+              </Link>
             ) : (
               <>
                 {/* Logo */}
-                <div className="flex flex-col items-center mb-6 mt-14 md:mt-0">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg btn-gradient">
+                <Link
+                  href="/"
+                  className="flex flex-col items-center mb-6 mt-14 md:mt-0 group"
+                  title={t('auth.logoTooltip')}
+                >
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg btn-gradient transition-transform group-hover:scale-105">
                     <Building2 className="w-7 h-7 text-white" />
                   </div>
                   <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -409,7 +417,7 @@ function RegisterPageContent() {
                       ? t('auth.searchCompany', 'Search for your company to get started')
                       : `${t('auth.joining', 'Joining')} ${selectedOrg?.name ?? t('auth.yourOrganization', 'your organization')}`}
                   </p>
-                </div>
+                </Link>
 
                 {/* Step indicator */}
                 <div className="flex items-center gap-2 mb-6">
@@ -667,16 +675,6 @@ function RegisterPageContent() {
                 </div>
               </>
             )}
-          </div>
-
-          <div className="text-center my-4">
-            <Link
-              href="/"
-              className="text-sm hover:underline"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              ← {t('auth.backToHome', 'Back to home')}
-            </Link>
           </div>
         </motion.div>
       </div>
