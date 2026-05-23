@@ -34,13 +34,11 @@ export function IdleTimeoutModal() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       authLogout();
-      toast.success(t('idleModal.loggedOut', 'Session ended successfully'));
-      // Full page navigation to escape dashboard provider tree
-      window.location.href = '/login';
     } catch {
-      toast.error(t('idleModal.logoutFailed', 'Failed to end session'));
+      // Ignore errors — redirect anyway
     }
-  }, [authLogout, t]);
+    window.location.href = '/login';
+  }, [authLogout]);
 
   const handleExtendSession = useCallback(async () => {
     try {

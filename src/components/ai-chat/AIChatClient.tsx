@@ -875,13 +875,13 @@ export default function AIChatPage() {
         {/* Messages */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-0">
           {messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
+            <div className="h-full flex items-center justify-center overflow-hidden px-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-center max-w-2xl px-4"
+                className="text-center w-full max-w-2xl"
               >
-                <div className="w-16 h-16 rounded-2xl btn-gradient flex items-center justify-center mx-auto mb-6 shadow-lg shadow-(--primary)/20">
+                <div className="hidden md:flex w-16 h-16 rounded-2xl btn-gradient items-center justify-center mx-auto mb-6 shadow-lg shadow-(--primary)/20">
                   <Sparkles className="w-8 h-8 text-white" />
                 </div>
                 <h2 className="text-2xl font-bold text-(--text-primary) mb-2">
@@ -891,17 +891,17 @@ export default function AIChatPage() {
                   {t('aiChat.welcomeSubtitle') || "I'm your AI assistant. How can I help?"}
                 </p>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 my-4">
                   {initialSuggestions.map((suggestion, index) => (
                     <button
                       key={index}
                       onClick={() => handleSuggestion(suggestion.query)}
-                      className="flex flex-col items-center gap-2 p-4 rounded-xl border border-(--border) hover:bg-(--background-subtle) hover:border-(--primary)/30 hover:shadow-lg hover:shadow-(--primary)/10 transition-all group"
+                      className="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border border-(--border) hover:bg-(--background-subtle) hover:border-(--primary)/30 hover:shadow-lg hover:shadow-(--primary)/10 transition-all group min-w-0"
                     >
                       <div className="p-2 rounded-lg bg-(--primary)/10 group-hover:bg-(--primary)/20 transition-colors">
                         {suggestion.icon}
                       </div>
-                      <span className="text-sm font-medium">{suggestion.label}</span>
+                      <span className="text-xs sm:text-sm font-medium text-center break-words">{suggestion.label}</span>
                     </button>
                   ))}
                 </div>

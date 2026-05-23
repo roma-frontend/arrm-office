@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 const IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_IDLE_TIMEOUT || '900', 10) * 1000;
 const WARNING_DURATION =
-  parseInt(process.env.NEXT_PUBLIC_IDLE_WARNING_DURATION || '120', 10) * 1000;
+  parseInt(process.env.NEXT_PUBLIC_IDLE_WARNING_DURATION || '180', 10) * 1000;
 
 interface UseIdleTimerOptions {
   /** Called when user becomes idle */

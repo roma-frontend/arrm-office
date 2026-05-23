@@ -21,6 +21,13 @@ export function useScrollDirection(threshold = 64): ScrollDirection {
 
       requestAnimationFrame(() => {
         const y = window.scrollY;
+        // Ignore iOS rubber-band overscroll (negative or bouncing values)
+        if (y <= 0) {
+          setDirection('up');
+          lastY.current = 0;
+          ticking.current = false;
+          return;
+        }
         if (y < threshold) {
           setDirection('up');
         } else if (y > lastY.current + 5) {

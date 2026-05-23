@@ -1132,9 +1132,15 @@ export function MobileSidebar() {
     <>
       {/* Backdrop */}
       <div
+        role="button"
+        tabIndex={-1}
         onClick={() => setMobileOpen(false)}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          setMobileOpen(false);
+        }}
         className={cn(
-          'fixed inset-0 z-60 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-500',
+          'fixed inset-0 z-60 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-500 cursor-pointer',
           mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
         )}
         aria-hidden="true"

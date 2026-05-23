@@ -360,6 +360,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   const L = UI_LABELS[getLabelLang(lang)];
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
   const [showActions, setShowActions] = useState(false);
+  const [actionBarBelow, setActionBarBelow] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [menuOpenDown, setMenuOpenDown] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{
@@ -650,11 +651,18 @@ export const MessageBubble = React.memo(function MessageBubble({
 
       {/* Message row */}
       <div
+        data-msg-row
         className={cn(
           'relative flex items-end gap-2.5 my-1 group animate-msg-in',
           isOwn ? 'flex-row-reverse' : 'flex-row',
+          showActions ? 'z-10' : 'z-0',
         )}
         onMouseEnter={() => {
+          if (actionBarRef.current) {
+            const rect = actionBarRef.current.closest('[data-msg-row]')?.getBoundingClientRect()
+              ?? actionBarRef.current.getBoundingClientRect();
+            setActionBarBelow(rect.top < 80);
+          }
           setShowActions(true);
           if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
         }}
@@ -1157,10 +1165,14 @@ export const MessageBubble = React.memo(function MessageBubble({
           <div
             ref={actionBarRef}
             className={cn(
-              'absolute bottom-0 translate-y-full pt-1 items-center gap-0.5 z-40',
-              isOwn ? 'right-10' : 'left-10',
-              showActions ? 'flex' : 'hidden',
+              'absolute items-center gap-0.5 z-40',
+              'rounded-full px-1.5 py-1 shadow-lg',
+              'transition-all duration-150',
+              actionBarBelow ? 'top-full mt-1 origin-top' : '-top-9 origin-bottom',
+              isOwn ? 'right-0' : 'left-0',
+              showActions ? 'flex opacity-100 scale-100' : 'hidden opacity-0 scale-95',
             )}
+            style={{ background: 'var(--background-subtle)' }}
             onTouchStart={(e) => e.stopPropagation()}
             onMouseEnter={() => {
               if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);

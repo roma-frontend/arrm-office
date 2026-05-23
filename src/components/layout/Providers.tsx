@@ -83,6 +83,11 @@ const IncomingCallProvider = dynamic(
   { ssr: false, loading: () => null },
 );
 
+const GlobalChatNotifier = dynamic(
+  () => import('@/components/chat/GlobalChatNotifier').then((m) => m.GlobalChatNotifier),
+  { ssr: false, loading: () => null },
+);
+
 const StatusUpdateBanner = dynamic(
   () => import('@/components/StatusUpdateBanner').then((m) => m.StatusUpdateBanner),
   { ssr: false, loading: () => null },
@@ -230,6 +235,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
           {/* Global incoming call detection — works on ALL pages */}
           {hydrated && user && <IncomingCallProvider />}
+          {/* Global chat notification sound + toast — works on ALL pages */}
+          {hydrated && user && <GlobalChatNotifier />}
 
           {/* Productivity Services - only render when mounted to avoid SSR mismatch */}
           {hydrated && user && (

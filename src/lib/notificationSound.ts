@@ -5,6 +5,8 @@
 
 // Shared AudioContext — avoids "suspended" state issues with per-call contexts
 let _sharedCtx: AudioContext | null = null;
+let _unlocked = false;
+
 function getAudioContext(): AudioContext {
   if (!_sharedCtx || _sharedCtx.state === 'closed') {
     _sharedCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -13,6 +15,30 @@ function getAudioContext(): AudioContext {
     _sharedCtx.resume().catch(() => {});
   }
   return _sharedCtx;
+}
+
+// Unlock AudioContext on first user interaction (required for production/mobile)
+if (typeof window !== 'undefined') {
+  const unlock = () => {
+    if (_unlocked) return;
+    _unlocked = true;
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    // Create silent buffer to fully unlock
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+    ['click', 'touchstart', 'keydown'].forEach((e) =>
+      document.removeEventListener(e, unlock, true),
+    );
+  };
+  ['click', 'touchstart', 'keydown'].forEach((e) =>
+    document.addEventListener(e, unlock, { once: false, capture: true }),
+  );
 }
 
 // Create a pleasant notification sound
