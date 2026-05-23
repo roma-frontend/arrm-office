@@ -822,7 +822,7 @@
     "emailInvalid": "Սխալ էլ. փոստի հասցե",
     "joinOrg": "Միանալ այս կազմակերպությանը",
     "viewAll": "Դիտել բոլոր դիրքերը",
-    "positionsCount": "{{count}} դիրք"
+    "positionsCount": "դիրք"
   },
   "offboarding": {
     "title": "Աշխատակիցների դուրսգրում",
