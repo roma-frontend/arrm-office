@@ -147,7 +147,7 @@ export default function Navbar() {
           title={t('auth.logoTooltip')}
         >
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center logo-spin"
+            className="w-11 h-11 rounded-xl flex items-center justify-center logo-spin"
             style={{ background: 'linear-gradient(135deg, #2563eb, #93c5fd)' }}
             aria-hidden="true"
           >
@@ -204,7 +204,7 @@ export default function Navbar() {
           {mounted && (
             <button
               onClick={toggleTheme}
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+              className="w-11 h-11 rounded-xl flex items-center justify-center transition-all hover:scale-110"
               style={{
                 background: 'var(--landing-card-bg)',
                 border: '1px solid var(--landing-card-border)',
@@ -518,7 +518,7 @@ export default function Navbar() {
               </Link>
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="lg:hidden w-10 h-10 rounded-xl transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="lg:hidden w-11 h-11 rounded-xl transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 style={{
                   backgroundColor: 'var(--landing-card-bg)',
                   border: '1px solid var(--landing-card-border)',

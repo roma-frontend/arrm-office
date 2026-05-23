@@ -14,6 +14,14 @@ export function useScrollDirection(threshold = 64): ScrollDirection {
   const lastY = useRef(0);
   const ticking = useRef(false);
 
+  // Reset on mount — ensures navbar shows after navigation
+  useEffect(() => {
+    if (window.scrollY <= threshold) {
+      setDirection('up');
+      lastY.current = window.scrollY;
+    }
+  }, [threshold]);
+
   useEffect(() => {
     const onScroll = () => {
       if (ticking.current) return;

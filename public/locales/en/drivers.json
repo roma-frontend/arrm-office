@@ -18,6 +18,7 @@
     "checkAvailability": "Check Availability",
     "driverSchedule": "Driver Schedule",
     "viewCalendar": "View Calendar",
+    "selectDriverDesc": "Select a driver to view their schedule and book a trip",
     "requestAccess": "Request Access",
     "accessGranted": "Access Granted",
     "accessDenied": "Access Denied",

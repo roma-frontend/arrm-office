@@ -259,9 +259,7 @@ export function RegisterDriverModal({
                     <div className="flex items-center gap-3">
                       <Mail className="w-4 h-4 text-(--primary)" />
                       <div>
-                        <p className="text-xs text-(--text-muted)">
-                          {t('driver.email', 'Email')}
-                        </p>
+                        <p className="text-xs text-(--text-muted)">{t('driver.email', 'Email')}</p>
                         <p className="font-medium">{userEmail}</p>
                       </div>
                     </div>
@@ -299,7 +297,7 @@ export function RegisterDriverModal({
                 <h3 className="text-lg font-semibold">
                   {t('driver.vehicleInfo', 'Vehicle Information')}
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm">{t('driver.make', 'Make')}</Label>
                     <Input
@@ -319,7 +317,7 @@ export function RegisterDriverModal({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm">{t('driver.year', 'Year')}</Label>
                     <Input
@@ -420,7 +418,7 @@ export function RegisterDriverModal({
                 <p className="text-sm text-(--text-muted)">
                   {t('driver.availabilityDesc', 'Select your available days')}
                 </p>
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                   {days.map((day) => (
                     <motion.button
                       key={day}

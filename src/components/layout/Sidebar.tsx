@@ -543,7 +543,7 @@ export function Sidebar() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1135,12 +1135,9 @@ export function MobileSidebar() {
         role="button"
         tabIndex={-1}
         onClick={() => setMobileOpen(false)}
-        onTouchEnd={(e) => {
-          e.preventDefault();
-          setMobileOpen(false);
-        }}
+        onTouchStart={() => setMobileOpen(false)}
         className={cn(
-          'fixed inset-0 z-60 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-500 cursor-pointer',
+          'fixed inset-0 z-[199] bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-500 cursor-pointer',
           mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
         )}
         aria-hidden="true"
@@ -1185,7 +1182,7 @@ export function MobileSidebar() {
           {/* Close Button */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-(--primary)/30 border"
+            className="w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-(--primary)/30 border"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               borderColor: 'rgba(255, 255, 255, 0.15)',
@@ -1240,7 +1237,7 @@ export function MobileSidebar() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-text-muted hover:text-text-primary"
               >
                 <X className="w-4 h-4" />
               </button>

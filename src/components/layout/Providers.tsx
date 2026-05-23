@@ -183,7 +183,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <ReactQueryProvider>
-        <div className="flex h-screen bg-(--background) overflow-hidden">
+        <div className="flex h-dvh bg-(--background) overflow-hidden">
           {/* Desktop Sidebar — ssr:false prevents localStorage persist mismatch */}
           <Sidebar />
 

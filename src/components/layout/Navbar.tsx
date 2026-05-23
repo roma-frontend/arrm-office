@@ -235,7 +235,7 @@ export function Navbar() {
       {showNotifications && (
         <div
           ref={notifRef}
-          className="fixed top-16 right-4 w-[calc(100vw-2rem)] sm:w-80 bg-(--card) border border-(--border) rounded-xl shadow-2xl z-[70] overflow-hidden"
+          className="fixed top-16 right-4 w-[calc(100vw-2rem)] sm:w-80 bg-(--card) border border-(--border) rounded-xl shadow-2xl z-55 overflow-hidden"
           style={{
             animation: 'notif-dropdown 0.15s ease both',
           }}
@@ -353,7 +353,10 @@ export function Navbar() {
           variant="ghost"
           size="icon"
           className="lg:hidden text-(--text-muted) hover:text-(--text-primary)"
-          onClick={() => setMobileOpen(true)}
+          onClick={() => {
+            setShowNotifications(false);
+            setMobileOpen(true);
+          }}
           aria-label={t('nav.openMenu', { defaultValue: 'Open menu' })}
         >
           <Menu className="w-5 h-5" />

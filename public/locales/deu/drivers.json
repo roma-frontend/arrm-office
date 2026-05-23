@@ -16,6 +16,7 @@
     "availability": "Verfügbarkeit",
     "requestDriverShort": "Anfordern",
     "selectDriver": "Fahrer auswählen",
+    "selectDriverDesc": "Wählen Sie einen Fahrer aus, um dessen Fahrplan anzuzeigen und eine Fahrt zu buchen",
     "chooseDriver": "Fahrer auswählen",
     "available": "Verfügbar",
     "busy": "Beschäftigt",

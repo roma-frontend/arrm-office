@@ -666,7 +666,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         >
           <button
             onClick={onBack}
-            className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:opacity-70"
+            className="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg hover:opacity-70"
           >
             <ArrowLeft className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
           </button>
@@ -728,7 +728,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               <>
                 <button
                   onClick={() => handleStartCall('audio')}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:scale-105"
+                  className="w-10 h-10 flex items-center justify-center rounded-lg transition-all hover:scale-105"
                   style={{ color: 'var(--text-muted)' }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'var(--sidebar-item-hover)';
@@ -744,7 +744,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                 </button>
                 <button
                   onClick={() => handleStartCall('video')}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg transition-all hover:scale-105"
+                  className="w-10 h-10 flex items-center justify-center rounded-lg transition-all hover:scale-105"
                   style={{ color: 'var(--text-muted)' }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'var(--sidebar-item-hover)';
@@ -762,7 +762,7 @@ export const ChatWindow = React.memo(function ChatWindow({
             )}
             <button
               onClick={() => setShowSearch(!showSearch)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+              className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
               style={{
                 color: showSearch ? 'var(--primary)' : 'var(--text-muted)',
                 background: showSearch ? 'var(--sidebar-item-active)' : 'transparent',
@@ -785,7 +785,7 @@ export const ChatWindow = React.memo(function ChatWindow({
             </button>
             <button
               onClick={() => setShowInfo(!showInfo)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+              className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
               style={{ color: 'var(--text-muted)' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'var(--sidebar-item-hover)';
@@ -801,7 +801,7 @@ export const ChatWindow = React.memo(function ChatWindow({
             </button>
             <button
               onClick={() => setShowBgPicker(true)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+              className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"
               style={{ color: 'var(--text-muted)' }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'var(--sidebar-item-hover)';
@@ -1048,7 +1048,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                 {/* Remove button */}
                 <button
                   onClick={() => removePendingFile(idx)}
-                  className="absolute -top-1.5 -right-1.5 w-4 xs:w-4.5 h-4 xs:h-4.5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover/pf:opacity-100 transition-opacity"
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover/pf:opacity-100 transition-opacity"
                 >
                   <X className="w-2.5 xs:w-3 h-2.5 xs:h-3" />
                 </button>

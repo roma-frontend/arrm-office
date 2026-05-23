@@ -16,6 +16,7 @@
     "availability": "Доступность",
     "requestDriverShort": "Заказ",
     "selectDriver": "Выбрать водителя",
+    "selectDriverDesc": "Выберите сотрудника с ролью водителя",
     "chooseDriver": "Выбрать водителя",
     "available": "Доступен",
     "busy": "Занят",

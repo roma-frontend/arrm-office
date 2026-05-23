@@ -6,6 +6,8 @@ import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
+import { formatDistanceToNow } from 'date-fns';
+import { enUS, ru, hy } from 'date-fns/locale';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -60,14 +62,9 @@ function formatSalary(salary: { min: number; max: number; currency: string }) {
   return `${fmt(salary.min)} – ${fmt(salary.max)} ${salary.currency}`;
 }
 
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts;
-  const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'Today';
-  if (days === 1) return '1 day ago';
-  if (days < 7) return `${days} days ago`;
-  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-  return `${Math.floor(days / 30)} months ago`;
+function timeAgo(ts: number, lang = 'en'): string {
+  const locale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
+  return formatDistanceToNow(new Date(ts), { addSuffix: true, locale });
 }
 
 const EMPLOYMENT_LABELS: Record<string, string> = {
@@ -330,7 +327,7 @@ export default function CareersClient() {
 
 // ─── Vacancy Card ────────────────────────────────────────────
 function VacancyCard({ vacancy, onClick }: { vacancy: VacancyItem; onClick: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <button
       onClick={onClick}
@@ -424,7 +421,7 @@ function VacancyCard({ vacancy, onClick }: { vacancy: VacancyItem; onClick: () =
               </span>
             )}
             <span className="text-xs ml-auto" style={{ color: 'var(--landing-text-muted)' }}>
-              {timeAgo(vacancy.createdAt)}
+              {timeAgo(vacancy.createdAt, i18n.language)}
             </span>
           </div>
         </div>

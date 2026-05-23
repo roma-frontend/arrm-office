@@ -558,34 +558,44 @@ export default function DriversPage() {
         </div>
       )}
 
-      {showTripDetails && selectedRequest && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+      {showTripDetails &&
+        selectedRequest &&
+        createPortal(
           <div
-            className="w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-            style={{ maxHeight: '85vh' }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            onClick={() => {
+              setShowTripDetails(false);
+              setSelectedRequest(null);
+            }}
           >
-            <TripDetailsModal
-              schedule={{
-                type: 'trip',
-                status: selectedRequest.status,
-                startTime: selectedRequest.startTime || tripModalTime,
-                endTime: selectedRequest.startTime
-                  ? selectedRequest.startTime + 3600000
-                  : tripModalTime + 3600000,
-                tripInfo: selectedRequest.tripInfo || {},
-                userName: selectedRequest.assignedDriver?.userName,
-              }}
-              currentTime={tripModalTime}
-              onClose={() => {
-                setShowTripDetails(false);
-                setSelectedRequest(null);
-              }}
-              userId={userId!}
-              isAdmin={user?.role === 'admin' || user?.role === 'superadmin'}
-            />
-          </div>
-        </div>
-      )}
+            <div
+              className="w-full max-w-3xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+              style={{ maxHeight: '85vh' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <TripDetailsModal
+                schedule={{
+                  type: 'trip',
+                  status: selectedRequest.status,
+                  startTime: selectedRequest.startTime || tripModalTime,
+                  endTime: selectedRequest.startTime
+                    ? selectedRequest.startTime + 3600000
+                    : tripModalTime + 3600000,
+                  tripInfo: selectedRequest.tripInfo || {},
+                  userName: selectedRequest.assignedDriver?.userName,
+                }}
+                currentTime={tripModalTime}
+                onClose={() => {
+                  setShowTripDetails(false);
+                  setSelectedRequest(null);
+                }}
+                userId={userId!}
+                isAdmin={user?.role === 'admin' || user?.role === 'superadmin'}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

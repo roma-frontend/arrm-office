@@ -16,14 +16,16 @@ const tabs = [
 
 export function MobileTabBar() {
   const pathname = usePathname();
+  const isChatPage =
+    pathname === '/ai-chat' || pathname === '/chat' || pathname?.startsWith('/chat/');
 
   return (
     <nav
       className={cn(
-        pathname === '/ai-chat' || pathname === '/chat' ? 'hidden' : 'block',
+        isChatPage ? 'hidden' : 'block',
         'fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-(--border) bg-(--card)/80 backdrop-blur-lg',
       )}
-      style={{ paddingBottom: 'var(--safe-bottom)' }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex items-center justify-around h-14">
         {tabs.map(({ href, icon: Icon, label }) => {
@@ -33,7 +35,7 @@ export function MobileTabBar() {
               key={href}
               href={href}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 w-full h-full',
+                'relative flex flex-col items-center justify-center gap-0.5 w-full h-full',
                 'text-xs transition-colors',
                 isActive ? 'text-(--primary)' : 'text-(--text-muted) active:text-(--text-primary)',
               )}

@@ -180,7 +180,7 @@ export function RequestDriverWizard({
       icon: <Clock className="w-5 h-5" />,
       content: (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <TextInputStep
               stepData={wizardData}
               updateStepData={updateStepData}

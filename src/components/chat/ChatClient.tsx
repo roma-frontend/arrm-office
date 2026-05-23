@@ -327,7 +327,7 @@ export default function ChatClient({
           {listCollapsed && (
             <button
               onClick={() => setListCollapsed(false)}
-              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 w-6 h-16 items-center justify-center rounded-r-lg bg-(--sidebar-bg) border border-l-0 border-(--border) text-(--text-muted) hover:text-primary hover:scale-105 transition-all"
+              className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-16 items-center justify-center rounded-r-lg bg-(--sidebar-bg) border border-l-0 border-(--border) text-(--text-muted) hover:text-primary hover:scale-105 transition-all"
               style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)' }}
               aria-label="Open sidebar"
             >

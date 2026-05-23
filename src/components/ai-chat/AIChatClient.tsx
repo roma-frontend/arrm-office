@@ -667,6 +667,12 @@ export default function AIChatPage() {
       style={{ contain: 'layout' }}
     >
       {/* Sidebar */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <aside
         className={`fixed md:relative z-50 h-full bg-(--card) border-r border-(--border) shrink-0 overflow-hidden ${
           isMobile ? 'w-full' : ''
@@ -901,7 +907,9 @@ export default function AIChatPage() {
                       <div className="p-2 rounded-lg bg-(--primary)/10 group-hover:bg-(--primary)/20 transition-colors">
                         {suggestion.icon}
                       </div>
-                      <span className="text-xs sm:text-sm font-medium text-center break-words">{suggestion.label}</span>
+                      <span className="text-xs sm:text-sm font-medium text-center break-words">
+                        {suggestion.label}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -950,10 +958,12 @@ export default function AIChatPage() {
                       className={`flex items-center gap-2 mt-1 ${message.role === 'user' ? 'justify-end' : ''}`}
                     >
                       <span className="text-xs text-(--text-muted)">
-                        {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        }) : ''}
+                        {message.timestamp
+                          ? new Date(message.timestamp).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : ''}
                       </span>
 
                       {message.role === 'assistant' && (
