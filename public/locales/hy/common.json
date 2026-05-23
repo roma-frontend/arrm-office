@@ -37,7 +37,7 @@
     "cancel": "Չեղարկել",
     "delete": "Ջնջել",
     "view": "Դիտել",
-    "viewProfile": "Դիտել պdelays",
+    "viewProfile": "Դիտել պրոֆիլը",
     "request": "Հայտ",
     "accountInformation": "Հաշվի տեղեկատվություն",
     "memberSince": "Անդամ՝",
@@ -955,5 +955,10 @@
     "loggedOut": "Նիստը հաջողությամբ ավարտվեց",
     "logoutFailed": "Չհաջողվեց ավարտել նիստը",
     "sessionExtended": "Նիստը հաջողությամբ երկարաձգվեց"
-  }
+  },
+  "pageNotFound": "Էdelays չdelays",
+  "pageNotFoundDesc": "Էdelays delays delays delays:",
+  "backToDashboard": "Վdelays delays",
+  "goHome": "Գdelays delays",
+  "errorDescription": "Անdelays delays delays:"
 }

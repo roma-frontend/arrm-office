@@ -9,6 +9,7 @@ import { X, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useOptimisticThreadReply } from '@/hooks/useOptimisticActions';
 
@@ -43,6 +44,7 @@ export function ThreadPanel({
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
@@ -101,10 +103,10 @@ export function ThreadPanel({
       >
         <div>
           <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Thread
+            {t('chat.thread.title')}
           </h3>
           <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-            {allReplies?.length ?? 0} repl{(allReplies?.length ?? 0) !== 1 ? 'ies' : 'y'}
+            {t('chat.thread.repliesCount', { count: allReplies?.length ?? 0 })}
           </p>
         </div>
         <button
@@ -151,7 +153,7 @@ export function ThreadPanel({
                   className="sm:text-[10px] text-xs font-medium sm:mb-0.5 mb-1"
                   style={{ color: 'var(--text-muted)' }}
                 >
-                  {isOwn ? 'You' : r.sender?.name}
+                  {isOwn ? t('chat.thread.you') : r.sender?.name}
                 </span>
                 <div
                   className={`sm:px-3 px-3.5 sm:py-1.5 py-2 rounded-xl sm:text-xs text-sm break-words ${isOwn ? 'btn-gradient' : ''}`}
@@ -190,7 +192,7 @@ export function ThreadPanel({
                 handleSend();
               }
             }}
-            placeholder="Reply in thread…"
+            placeholder={t('chat.thread.replyPlaceholder')}
             className="flex-1 bg-transparent outline-none text-xs"
             style={{ color: 'var(--text-primary)' }}
           />

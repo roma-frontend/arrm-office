@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 export default function DashboardError({
   error,
@@ -11,6 +12,7 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     console.error('Dashboard error:', error);
 
@@ -32,11 +34,8 @@ export default function DashboardError({
       </div>
 
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight">Something went wrong</h2>
-        <p className="text-muted-foreground max-w-md">
-          An unexpected error occurred. Don&apos;t worry — your data is safe. Try refreshing or go
-          back to the dashboard.
-        </p>
+        <h2 className="text-2xl font-semibold tracking-tight">{t('common.somethingWentWrong')}</h2>
+        <p className="text-muted-foreground max-w-md">{t('common.errorDescription')}</p>
         {error.digest && (
           <p className="text-xs text-muted-foreground/60 font-mono">Error ID: {error.digest}</p>
         )}
@@ -48,14 +47,14 @@ export default function DashboardError({
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <RefreshCw className="h-4 w-4" />
-          Try again
+          {t('common.tryAgain')}
         </button>
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Home className="h-4 w-4" />
-          Dashboard
+          {t('common.dashboard')}
         </Link>
       </div>
     </div>

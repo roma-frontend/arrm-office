@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { useTranslation } from 'react-i18next';
 import type { ActiveCall } from './ChatClient';
 
 export type { ActiveCall };
@@ -50,6 +51,7 @@ export function CallModal({
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(call.type === 'video');
   const [speakerOn, setSpeakerOn] = useState(true);
+  const { t } = useTranslation();
   const [callStatus, setCallStatus] = useState<'ringing' | 'connecting' | 'active' | 'ended'>(
     'ringing',
   );
@@ -291,11 +293,10 @@ export function CallModal({
         err instanceof Error &&
         (err.name === 'NotReadableError' || err.name === 'TrackStartError')
       ) {
-        // Device in use - show message and auto-retry
         const message =
           retryCount >= 3
-            ? 'Не удалось получить доступ к камере/микрофону после нескольких попыток. Закройте все другие браузеры/приложения и попробуйте снова.'
-            : `Камера или микрофон уже используются. Закройте другие вкладки браузера (особенно с этим же аккаунтом). Попытка ${retryCount + 1}...`;
+            ? t('chat.call.mediaErrorFinal')
+            : t('chat.call.mediaErrorRetry', { attempt: retryCount + 1 });
 
         setMediaError(message);
 
@@ -319,13 +320,11 @@ export function CallModal({
         err instanceof Error &&
         (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')
       ) {
-        setMediaError(
-          'Доступ к камере/микрофону запрещён. Разрешите доступ в настройках браузера и перезагрузите страницу.',
-        );
+        setMediaError(t('chat.call.mediaPermissionDenied'));
       } else if (err instanceof Error && err.name === 'NotFoundError') {
-        setMediaError('Камера или микрофон не найдены. Проверьте подключение устройств.');
+        setMediaError(t('chat.call.mediaNotFound'));
       } else {
-        setMediaError('Не удалось получить доступ к камере/микрофону. Попробуйте снова.');
+        setMediaError(t('chat.call.mediaGenericError'));
       }
     }
   }, [call, currentUserId, iceServers, retryCount]);
@@ -464,10 +463,10 @@ export function CallModal({
   }, [speakerOn]);
 
   const statusText = {
-    ringing: 'Ringing…',
-    connecting: 'Connecting…',
+    ringing: t('chat.call.ringing'),
+    connecting: t('chat.call.connecting'),
     active: formatDuration(duration),
-    ended: 'Call ended',
+    ended: t('chat.call.ended'),
   }[callStatus];
 
   return (
@@ -501,7 +500,9 @@ export function CallModal({
                       {getInitials(call.remoteUserName ?? '?')}
                     </AvatarFallback>
                   </Avatar>
-                  <p className="text-white font-semibold">{call.remoteUserName ?? 'Connecting…'}</p>
+                  <p className="text-white font-semibold">
+                    {call.remoteUserName ?? t('chat.call.connecting')}
+                  </p>
                 </div>
               </div>
             )}
@@ -564,14 +565,14 @@ export function CallModal({
                   }}
                   className="text-xs px-3 py-1 rounded bg-blue-500/30 text-blue-300 hover:bg-blue-500/50 transition"
                 >
-                  Попробовать снова
+                  {t('chat.call.retry')}
                 </button>
               )}
               <button
                 onClick={handleEnd}
                 className="text-xs px-3 py-1 rounded bg-red-500/30 text-red-300 hover:bg-red-500/50 transition"
               >
-                Закрыть звонок
+                {t('chat.call.closeCall')}
               </button>
             </div>
           </div>
@@ -586,21 +587,21 @@ export function CallModal({
         <div className="flex items-center justify-center gap-4 pb-8 px-6">
           <ControlBtn
             icon={micOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-            label={micOn ? 'Mute' : 'Unmute'}
+            label={micOn ? t('chat.call.mute') : t('chat.call.unmute')}
             onClick={toggleMic}
             active={!micOn}
           />
           {call.type === 'video' && (
             <ControlBtn
               icon={camOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-              label={camOn ? 'Camera off' : 'Camera on'}
+              label={camOn ? t('chat.call.cameraOff') : t('chat.call.cameraOn')}
               onClick={toggleCam}
               active={!camOn}
             />
           )}
           <ControlBtn
             icon={speakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-            label={speakerOn ? 'Mute speaker' : 'Unmute'}
+            label={speakerOn ? t('chat.call.muteSpeaker') : t('chat.call.unmute')}
             onClick={() => setSpeakerOn(!speakerOn)}
             active={!speakerOn}
           />
@@ -608,7 +609,7 @@ export function CallModal({
           <button
             onClick={handleEnd}
             className="w-14 h-14 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 transition-all hover:scale-110 shadow-lg shadow-red-500/30"
-            title="End call"
+            title={t('chat.call.endCall')}
           >
             <PhoneOff className="w-6 h-6 text-white" />
           </button>
@@ -633,7 +634,7 @@ export function CallModal({
         <div className="absolute top-4 right-4">
           <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/10 text-white/70 text-xs">
             {call.type === 'video' ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}
-            {call.type === 'video' ? 'Video' : 'Audio'} call
+            {call.type === 'video' ? t('chat.call.videoCall') : t('chat.call.audioCall')}
           </span>
         </div>
       </div>

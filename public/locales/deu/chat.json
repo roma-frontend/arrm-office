@@ -126,12 +126,47 @@
     },
     "call": {
       "missed": "Verpasst",
-      "declined": "Abgelehnt"
+      "declined": "Abgelehnt",
+      "ringing": "Klingelt",
+      "connecting": "Verbindung wird hergestellt",
+      "ended": "Anruf beendet",
+      "retry": "Erneut versuchen",
+      "closeCall": "Anruf schließen",
+      "endCall": "Anruf beenden",
+      "mute": "Stummschalten",
+      "unmute": "Ton an",
+      "cameraOff": "Kamera aus",
+      "cameraOn": "Kamera an",
+      "muteSpeaker": "Lautsprecher aus",
+      "videoCall": "Videoanruf",
+      "audioCall": "Audioanruf",
+      "incomingVideo": "Eingehender Videoanruf…",
+      "incomingAudio": "Eingehender Audioanruf…",
+      "decline": "Ablehnen",
+      "accept": "Annehmen",
+      "mediaErrorFinal": "Kamera/Mikrofon konnte nach mehreren Versuchen nicht aktiviert werden. Schließen Sie andere Apps und versuchen Sie es erneut.",
+      "mediaErrorRetry": "Kamera oder Mikrofon wird bereits verwendet. Versuch {{attempt}}…",
+      "mediaPermissionDenied": "Zugriff auf Kamera/Mikrofon verweigert. Erlauben Sie den Zugriff in den Browsereinstellungen.",
+      "mediaNotFound": "Keine Kamera oder kein Mikrofon gefunden. Bitte schließen Sie andere Apps, die sie verwenden könnten, und versuchen Sie es erneut.",
+      "mediaGenericError": "Kamera/Mikrofon konnte nicht aktiviert werden. Bitte versuchen Sie es erneut."
     },
     "thread": {
+      "title": "Thread",
       "replies": "Antwort",
-      "repliesPlural": "Antworten"
+      "repliesPlural": "Antworten",
+      "repliesCount": "{{count}} Antwort",
+      "repliesCount_other": "{{count}} Antworten",
+      "you": "Du",
+      "replyPlaceholder": "Im Thread antworten…"
     },
+    "voice": {
+      "cancelRecording": "Aufnahme abbrechen",
+      "stopRecording": "Aufnahme stoppen",
+      "record": "Sprachnachricht aufnehmen",
+      "voiceMessage": "Sprachnachricht"
+    },
+    "newMessages": "{{count}} neue Nachricht",
+    "newMessages_other": "{{count}} neue Nachrichten",
     "chatBackground": "Chat-Hintergrund",
     "bgHint": "Wählen Sie einen Hintergrund für Ihre Chats",
     "bgCategory": {

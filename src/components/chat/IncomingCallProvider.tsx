@@ -10,10 +10,12 @@ import { CallModal } from './CallModal';
 import type { ActiveCall } from './ChatClient';
 import { Phone, Video, PhoneOff } from 'lucide-react';
 import { playChatMessageSound } from '@/lib/notificationSound';
+import { useTranslation } from 'react-i18next';
 
 export function IncomingCallProvider() {
   const { user } = useAuthStore();
   const { selectedOrgId } = useOrgSelectorStore();
+  const { t } = useTranslation();
 
   const uid = user?.id as Id<'users'> | undefined;
   const orgId = user?.organizationId as Id<'organizations'> | undefined;
@@ -116,11 +118,11 @@ export function IncomingCallProvider() {
               <p className="text-white/60 text-sm flex items-center justify-center gap-1 mt-1">
                 {incomingCall.type === 'video' ? (
                   <>
-                    <Video className="w-3.5 h-3.5" /> Входящий видеозвонок…
+                    <Video className="w-3.5 h-3.5" /> {t('chat.call.incomingVideo')}
                   </>
                 ) : (
                   <>
-                    <Phone className="w-3.5 h-3.5" /> Входящий аудиозвонок…
+                    <Phone className="w-3.5 h-3.5" /> {t('chat.call.incomingAudio')}
                   </>
                 )}
               </p>
@@ -136,7 +138,7 @@ export function IncomingCallProvider() {
                   setIncomingCall(null);
                 }}
                 className="w-14 h-14 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 transition-all hover:scale-110 shadow-lg shadow-red-500/30"
-                title="Отклонить"
+                title={t('chat.call.decline')}
               >
                 <PhoneOff className="w-6 h-6 text-white" />
               </button>
@@ -153,7 +155,7 @@ export function IncomingCallProvider() {
                   setIncomingCall(null);
                 }}
                 className="w-14 h-14 rounded-full flex items-center justify-center bg-green-500 hover:bg-green-600 transition-all hover:scale-110 shadow-lg shadow-green-500/30"
-                title="Принять"
+                title={t('chat.call.accept')}
               >
                 <Phone className="w-6 h-6 text-white" />
               </button>

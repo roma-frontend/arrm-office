@@ -954,6 +954,11 @@
     "securityNote": "For your security, inactive sessions are automatically terminated.",
     "loggedOut": "Session ended successfully",
     "logoutFailed": "Failed to end session",
-    "sessionExtended": "Session extended successfully"
+    "sessionExtended": "Session extended successfully",
+    "pageNotFound": "Page not found",
+    "pageNotFoundDesc": "The dashboard page you're looking for doesn't exist or has been moved.",
+    "backToDashboard": "Back to Dashboard",
+    "goHome": "Go Home",
+    "errorDescription": "An unexpected error occurred. Don't worry — your data is safe. Try refreshing or go back to the dashboard."
   }
 }

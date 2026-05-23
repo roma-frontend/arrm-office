@@ -5,12 +5,14 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export function OAuthSyncLoader() {
   const { status } = useSession();
   const { isAuthenticated } = useAuthStore();
   const pathname = usePathname();
   const [isSyncing, setIsSyncing] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Start showing loader when OAuth authenticated but not yet in useAuthStore
@@ -43,7 +45,7 @@ export function OAuthSyncLoader() {
       className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen"
       style={{ background: 'var(--background)' }}
     >
-      <ShieldLoader message="Signing you in with Google..." />
+      <ShieldLoader message={t('auth.signingInWithGoogle')} />
     </div>
   );
 }

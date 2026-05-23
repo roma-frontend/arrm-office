@@ -125,13 +125,54 @@
       "reply": "Ответить"
     },
     "call": {
-      "missed": "Пропущен",
-      "declined": "Отклонён"
+      "missed": "Пропущенный звонок",
+      "declined": "Отклонённый звонок",
+      "ringing": "Звонит…",
+      "connecting": "Подключение…",
+      "ended": "Звонок завершён",
+      "retry": "Попробовать снова",
+      "closeCall": "Закрыть звонок",
+      "endCall": "Завершить звонок",
+      "mute": "Выключить микрофон",
+      "unmute": "Включить микрофон",
+      "cameraOff": "Выключить камеру",
+      "cameraOn": "Включить камеру",
+      "muteSpeaker": "Выключить динамик",
+      "videoCall": "Видеозвонок",
+      "audioCall": "Аудиозвонок",
+      "incomingVideo": "Входящий видеозвонок…",
+      "incomingAudio": "Входящий аудиозвонок…",
+      "decline": "Отклонить",
+      "accept": "Принять",
+      "mediaErrorFinal": "Не удалось получить доступ к камере/микрофону после нескольких попыток. Закройте другие приложения и попробуйте снова.",
+      "mediaErrorRetry": "Камера или микрофон уже используются. Попытка {{attempt}}…",
+      "mediaPermissionDenied": "Доступ к камере/микрофону запрещён. Разрешите доступ в настройках браузера.",
+      "mediaNotFound": "Камера или микрофон не найдены. Проверьте подключение устройств.",
+      "mediaGenericError": "Не удалось получить доступ к камере/микрофону. Попробуйте снова."
     },
     "thread": {
+      "title": "Ответы",
       "replies": "ответ",
-      "repliesPlural": "ответы"
+      "repliesPlural": "ответы",
+      "repliesCount": "{{count}} ответ",
+      "repliesCount_one": "{{count}} ответ",
+      "repliesCount_few": "{{count}} ответа",
+      "repliesCount_many": "{{count}} ответов",
+      "repliesCount_other": "{{count}} ответов",
+      "you": "Вы",
+      "replyPlaceholder": "Ответить в треде…"
     },
+    "voice": {
+      "cancelRecording": "Отменить запись",
+      "stopRecording": "Остановить запись",
+      "record": "Записать голосовое сообщение",
+      "voiceMessage": "Голосовое сообщение"
+    },
+    "newMessages": "{{count}} новое сообщение",
+    "newMessages_one": "{{count}} новое сообщение",
+    "newMessages_few": "{{count}} новых сообщения",
+    "newMessages_many": "{{count}} новых сообщений",
+    "newMessages_other": "{{count}} новых сообщений",
     "chatBackground": "Фон чата",
     "bgHint": "Выберите фон для ваших переписок",
     "bgCategory": {

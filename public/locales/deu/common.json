@@ -984,5 +984,10 @@
     "low": "Niedrig",
     "medium": "Mittel",
     "urgent": "Dringend"
-  }
+  },
+  "pageNotFound": "Seite nicht gefunden",
+  "pageNotFoundDesc": "Die Seite existiert nicht oder wurde verschoben.",
+  "backToDashboard": "Zurück zum Dashboard",
+  "goHome": "Startseite",
+  "errorDescription": "Ein unerwarteter Fehler ist aufgetreten. Ihre Daten sind sicher."
 }

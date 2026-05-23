@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ArrowDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface NewMessagesIndicatorProps {
   count: number;
@@ -9,6 +10,7 @@ interface NewMessagesIndicatorProps {
 }
 
 export function NewMessagesIndicator({ count, onClick }: NewMessagesIndicatorProps) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onClick}
@@ -18,9 +20,7 @@ export function NewMessagesIndicator({ count, onClick }: NewMessagesIndicatorPro
         color: 'var(--text-on-primary)',
       }}
     >
-      <span className="text-xs font-medium">
-        {count} new {count === 1 ? 'message' : 'messages'}
-      </span>
+      <span className="text-xs font-medium">{t('chat.newMessages', { count })}</span>
       <ArrowDown className="w-3.5 h-3.5" />
     </button>
   );

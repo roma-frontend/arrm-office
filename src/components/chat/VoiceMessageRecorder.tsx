@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Mic, Square, Send, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   onRecordingStart: () => void;
@@ -21,6 +22,7 @@ export function VoiceMessageRecorder({
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -159,7 +161,7 @@ export function VoiceMessageRecorder({
           <button
             onClick={cancelRecording}
             className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
-            title="Cancel recording"
+            title={t('chat.voice.cancelRecording')}
           >
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>
@@ -168,7 +170,7 @@ export function VoiceMessageRecorder({
           <button
             onClick={stopRecording}
             className="p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
-            title="Stop recording"
+            title={t('chat.voice.stopRecording')}
           >
             <Square className="w-4 h-4" />
           </button>
@@ -212,12 +214,12 @@ export function VoiceMessageRecorder({
                 : 'hover:bg-red-100 dark:hover:bg-red-900/20',
             )}
             style={{ background: 'transparent' }}
-            title="Record voice message"
+            title={t('chat.voice.record')}
           >
             <Mic className={cn('w-4 h-4', disabled ? '' : 'text-red-500')} />
           </button>
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Voice message
+            {t('chat.voice.voiceMessage')}
           </span>
         </>
       )}
