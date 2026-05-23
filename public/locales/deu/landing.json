@@ -728,5 +728,25 @@
   },
   "lessons": {
     "title": "Lektionen"
+  },
+  "meta": {
+    "features": {
+      "title": "Funktionen — HR Office Module",
+      "description": "Entdecken Sie HR Office Module: Mitarbeiterverwaltung, Urlaubsverfolgung, Anwesenheit mit Gesichtserkennung, Aufgabenverwaltung, KI-Analytik und mehr.",
+      "ogTitle": "Funktionen — HR Office",
+      "ogDescription": "All-in-One HR-Plattform mit 10+ Modulen."
+    },
+    "contact": {
+      "title": "Kontakt — Unternehmensvertrieb",
+      "description": "Kontaktieren Sie HR Office für Enterprise-Pläne, Integrationen und Support.",
+      "ogTitle": "Kontakt — HR Office",
+      "ogDescription": "Kontaktieren Sie uns für Enterprise HR-Lösungen."
+    },
+    "careers": {
+      "title": "Karriere — Offene Stellen",
+      "description": "Durchsuchen Sie offene Stellen bei Organisationen, die HR Office nutzen.",
+      "ogTitle": "Karriere — HR Office",
+      "ogDescription": "Finden Sie offene Stellen und bewerben Sie sich über HR Office."
+    }
   }
 }

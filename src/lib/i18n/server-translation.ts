@@ -34,7 +34,7 @@ export async function getServerTranslation(
   namespace: string = 'common',
   locale: string = 'en',
 ): Promise<ServerTranslation> {
-  const validLocale = ['en', 'hy', 'ru'].includes(locale) ? locale : 'en';
+  const validLocale = ['en', 'hy', 'ru', 'deu'].includes(locale) ? locale : 'en';
   const translations = loadNamespace(validLocale, namespace);
 
   function t(key: TranslationKey, params?: Record<string, string>): string {

@@ -729,5 +729,25 @@
   },
   "lessons": {
     "title": "Lessons"
+  },
+  "meta": {
+    "features": {
+      "title": "Features — HR Office Modules",
+      "description": "Explore HR Office modules: employee management, leave tracking, attendance with face recognition, task management, AI analytics, and more.",
+      "ogTitle": "Features — HR Office",
+      "ogDescription": "All-in-one HR platform with 10+ modules for modern workforce management."
+    },
+    "contact": {
+      "title": "Contact — Enterprise Sales",
+      "description": "Contact HR Office for enterprise plans, custom integrations, and dedicated support.",
+      "ogTitle": "Contact — HR Office",
+      "ogDescription": "Get in touch for enterprise HR solutions."
+    },
+    "careers": {
+      "title": "Careers — Open Positions",
+      "description": "Browse open positions across organizations using HR Office. Find your next opportunity.",
+      "ogTitle": "Careers — HR Office",
+      "ogDescription": "Find open positions and apply directly through HR Office."
+    }
   }
 }
