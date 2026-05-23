@@ -1,7 +1,10 @@
 import { TourStep } from './OnboardingTour';
 
-export function getLoginTourSteps(t: (key: string, fallback: string) => string): TourStep[] {
-  return [
+export function getLoginTourSteps(
+  t: (key: string, fallback: string) => string,
+  loginMode: 'email' | 'face' | 'touch' = 'email',
+): TourStep[] {
+  const common: TourStep[] = [
     {
       target: '#login-card',
       title: t('onboarding.login.welcome.title', '👋 Welcome!'),
@@ -12,16 +15,9 @@ export function getLoginTourSteps(t: (key: string, fallback: string) => string):
       placement: 'center',
       highlight: false,
     },
-    {
-      target: '#biometric-login',
-      title: t('onboarding.login.biometric.title', '🔐 Quick Login'),
-      description: t(
-        'onboarding.login.biometric.desc',
-        'Use fingerprint or Face ID for instant access',
-      ),
-      placement: 'bottom',
-      highlight: true,
-    },
+  ];
+
+  const emailSteps: TourStep[] = [
     {
       target: '#email-login-form',
       title: t('onboarding.login.email.title', '📧 Smart Email Input'),
@@ -52,6 +48,35 @@ export function getLoginTourSteps(t: (key: string, fallback: string) => string):
       placement: 'bottom',
       highlight: true,
     },
+  ];
+
+  const faceSteps: TourStep[] = [
+    {
+      target: '#login-card',
+      title: t('onboarding.login.faceId.title', '📷 Face ID Login'),
+      description: t(
+        'onboarding.login.faceId.desc',
+        'Use your camera for instant face recognition login. Fast and secure!',
+      ),
+      placement: 'bottom',
+      highlight: true,
+    },
+  ];
+
+  const touchSteps: TourStep[] = [
+    {
+      target: '#biometric-login',
+      title: t('onboarding.login.biometric.title', '🔐 Quick Login'),
+      description: t(
+        'onboarding.login.biometric.desc',
+        'Use fingerprint or Touch ID for instant access',
+      ),
+      placement: 'bottom',
+      highlight: true,
+    },
+  ];
+
+  const endSteps: TourStep[] = [
     {
       target: '#join-team-link',
       title: t('onboarding.login.joinTeam.title', '👥 Join a Team'),
@@ -83,4 +108,9 @@ export function getLoginTourSteps(t: (key: string, fallback: string) => string):
       highlight: false,
     },
   ];
+
+  const modeSteps =
+    loginMode === 'face' ? faceSteps : loginMode === 'touch' ? touchSteps : emailSteps;
+
+  return [...common, ...modeSteps, ...endSteps];
 }
