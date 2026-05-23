@@ -531,7 +531,6 @@ export function Navbar() {
                 </DropdownMenuItem>
 
                 {/* Status selector - collapsible */}
-                <DropdownMenuSeparator className="bg-(--border)" />
 
                 {/* Status trigger button */}
                 <div
@@ -595,7 +594,6 @@ export function Navbar() {
                 </div>
 
                 {/* Keyboard Shortcuts hint */}
-                <DropdownMenuSeparator className="bg-(--border)" />
                 <DropdownMenuItem
                   className="text-(--text-primary) cursor-pointer hover:bg-(--background-subtle) focus:bg-(--background-subtle) gap-2"
                   onClick={() => setShowShortcutsModal(true)}

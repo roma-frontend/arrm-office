@@ -384,6 +384,7 @@ export function Sidebar() {
 
   // Get user role with fallback
   const userRole = user?.role ?? 'employee';
+  const isSuperadmin = user?.role === 'superadmin';
 
   const visibleItems = navItems.filter((item, index, arr) => {
     if (isSeparator(item)) {
@@ -525,7 +526,7 @@ export function Sidebar() {
       )}
 
       {/* Organization Selector - Top Position */}
-      <div className="px-2 py-3 border-b border-sidebar-border">
+      <div className={cn(isSuperadmin && 'px-2 py-3 border-b border-sidebar-border')}>
         <OrganizationSelector collapsed={collapsed} />
       </div>
 

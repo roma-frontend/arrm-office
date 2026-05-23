@@ -449,7 +449,6 @@ export default function Navbar() {
                       </motion.div>
                     </AnimatePresence>
                   )}
-                  <DropdownMenuSeparator className="bg-(--border)/50 my-1" />
                   <AnimatePresence mode="popLayout">
                     <motion.div
                       initial={{ opacity: 0, x: -12 }}

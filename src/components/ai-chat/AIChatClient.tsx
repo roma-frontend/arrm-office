@@ -1035,7 +1035,7 @@ export default function AIChatPage() {
 
         {/* Input */}
         <div className="p-4 border-t border-(--border) bg-(--card)/50 backdrop-blur shrink-0">
-          <div className="relative max-w-4xl mx-auto">
+          <div className="relative max-w-4xl h-14 mx-auto">
             <textarea
               ref={textareaRef}
               value={input}

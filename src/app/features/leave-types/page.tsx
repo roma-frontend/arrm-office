@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Sparkles,
 } from 'lucide-react';
+import Footer from '@/components/landing/Footer';
 
 const FEATURES = {
   vacation: {
@@ -301,6 +302,7 @@ export default function LeaveTypesPage() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }
