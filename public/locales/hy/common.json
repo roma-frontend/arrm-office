@@ -1023,5 +1023,20 @@
         "Բոլոր օգտագործողները"
       ]
     }
+  },
+  "aiMessages": {
+    "leaveConflict": "⚠️ Հնարավոր հակասություն {{type}} հայտի հետ ({{start}} → {{end}}):",
+    "insufficientBalance": "❌ Հաշվեկշռի պակաս: {{owner}}-ի հաշվեկշռում {{balance}} օր է մնացել, բայց փորձել է {{days}} օր վերցնել ({{start}} → {{end}}):",
+    "leaveSubmitted": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ ներկայացվել է ({{start}} → {{end}}): {{balanceNote}}",
+    "leaveDeleted": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ ջնջվել է ({{start}} → {{end}}): {{balanceNote}}",
+    "leaveDeletedBalance": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ ջնջվել է ({{start}} → {{end}}): {{balanceNote}}",
+    "leaveNotFound": "❌ Հայտը չի գտնվել (ID: {{id}})",
+    "leaveCannotEdit": "❌ Հայտը չի կարող խմբագրվել (ID: {{id}}) - արդեն հաստատված կամ մերժված է",
+    "leaveUpdated": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ թարմացվել է ({{start}} → {{end}}): {{balanceNote}}",
+    "leaveUpdatedAdmin": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ թարմացվել է ({{start}} → {{end}})՝ հաստատված կարգավիճակով: {{balanceNote}}",
+    "driverSubmitted": "✅ {{owner}}-ի վարորդի հայտը հաջողությամբ ներկայացվել է: {{balanceNote}}",
+    "conflictWarning": "⚠️ Հնարավոր հակասություն հայտնաբերվել է {{type}} հայտի հետ ({{start}} → {{end}}):",
+    "conflictDetected": "❌ Հակասություն հայտնաբերվել է {{type}} հայտի հետ ({{start}} → {{end}}):",
+    "conflictAdvice": "✅ Խորհուրդ է տրվում վերանայել և լուծել հակասությունը՝ հնարավոր է, որ {{owner}}-ի {{type}} հայտը չեղարկվի կամ մերժվի:"
   }
 }

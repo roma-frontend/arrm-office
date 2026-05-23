@@ -3,9 +3,14 @@ import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { api } from '../../../../../convex/_generated/api';
 import type { Id } from '../../../../../convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { cookies } from 'next/headers';
+import { getServerTranslation } from '@/lib/i18n/server-translation';
 
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get('i18nextLng')?.value || 'en';
+    const { t } = await getServerTranslation('common', locale);
     const body = await req.json();
     const leaveId: string = body.leaveId ?? '';
     const requesterId: string = body.requesterId ?? '';
@@ -53,7 +58,7 @@ export const POST = withCsrfProtection(async (req: Request) => {
         .join(', ');
       return NextResponse.json({
         success: false,
-        message: `Leave not found. Available: ${preview}`,
+        message: t('aiMessages.leaveNotFound', { preview }),
       });
     }
 
@@ -83,7 +88,13 @@ export const POST = withCsrfProtection(async (req: Request) => {
 
     return NextResponse.json({
       success: true,
-      message: `✅ ${isAdmin && !isOwner ? `${ownerName}'s` : 'Your'} ${targetLeave.type} leave (${targetLeave.startDate} → ${targetLeave.endDate}) has been deleted.${targetLeave.status === 'approved' ? ' Leave balance restored.' : ''}`,
+      message: t('aiMessages.leaveDeleted', {
+        owner: isAdmin && !isOwner ? ownerName : '',
+        type: targetLeave.type,
+        start: targetLeave.startDate,
+        end: targetLeave.endDate,
+        balanceNote: targetLeave.status === 'approved' ? t('aiMessages.leaveDeletedBalance') : '',
+      }),
     });
   } catch (error: any) {
     return NextResponse.json({

@@ -1023,5 +1023,20 @@
         "All users"
       ]
     }
+  },
+  "aiMessages": {
+    "leaveConflict": "You already have a {{type}} leave ({{start}} → {{end}}) with status: «{{status}}». 💡 Suggested alternative: {{sugStart}} → {{sugEnd}}",
+    "insufficientBalance": "You don't have enough {{type}} leave balance. Available: {{available}} days, requested: {{requested}} days.",
+    "leaveSubmitted": "✅ Your {{type}} leave request for {{days}} day(s) ({{start}} → {{end}}) has been submitted and sent to admin for approval!",
+    "leaveDeleted": "✅ {{owner}} {{type}} leave ({{start}} → {{end}}) has been deleted.{{balanceNote}}",
+    "leaveDeletedBalance": " Leave balance restored.",
+    "leaveNotFound": "Leave not found. Available: {{preview}}",
+    "leaveCannotEdit": "❌ Cannot edit — status: {{status}}. Only pending leaves can be edited.",
+    "leaveUpdated": "✅ Leave request updated!{{adminNote}}",
+    "leaveUpdatedAdmin": " Employee has been notified.",
+    "driverSubmitted": "✅ Driver request submitted!",
+    "conflictWarning": "⚠️ Note: {{warnings}}",
+    "conflictDetected": "🚨 **Conflict detected for your {{type}} leave ({{start}} → {{end}})**:",
+    "conflictAdvice": "Please consider alternative dates or discuss with your manager."
   }
 }

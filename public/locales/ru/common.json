@@ -1051,5 +1051,20 @@
         "Все пользователи"
       ]
     }
+  },
+  "aiMessages": {
+    "leaveConflict": "У вас уже есть отпуск типа {{type}} ({{start}} → {{end}}) со статусом: «{{status}}». 💡 Альтернатива: {{sugStart}} → {{sugEnd}}",
+    "insufficientBalance": "Недостаточно баланса отпуска {{type}}. Доступно: {{available}} дн., запрошено: {{requested}} дн.",
+    "leaveSubmitted": "✅ Заявка на отпуск ({{type}}) на {{days}} дн. ({{start}} → {{end}}) отправлена на одобрение!",
+    "leaveDeleted": "✅ Отпуск {{owner}} ({{type}}, {{start}} → {{end}}) удалён.{{balanceNote}}",
+    "leaveDeletedBalance": " Баланс восстановлен.",
+    "leaveNotFound": "Отпуск не найден. Доступные: {{preview}}",
+    "leaveCannotEdit": "❌ Невозможно редактировать — статус: {{status}}.",
+    "leaveUpdated": "✅ Заявка обновлена!{{adminNote}}",
+    "leaveUpdatedAdmin": " Сотрудник уведомлён.",
+    "driverSubmitted": "✅ Заявка на водителя отправлена!",
+    "conflictWarning": "⚠️ Примечание: {{warnings}}",
+    "conflictDetected": "🚨 **Конфликт для заявки на отпуск ({{type}}, {{start}} → {{end}})**:",
+    "conflictAdvice": "Рассмотрите другие даты или обсудите с руководителем."
   }
 }

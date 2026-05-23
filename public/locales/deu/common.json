@@ -1052,5 +1052,20 @@
         "Alle Benutzer"
       ]
     }
+  },
+  "aiMessages": {
+    "leaveConflict": "Sie haben bereits {{type}}-Urlaub ({{start}} → {{end}}) Status: «{{status}}». 💡 Alternative: {{sugStart}} → {{sugEnd}}",
+    "insufficientBalance": "Nicht genügend {{type}}-Guthaben. Verfügbar: {{available}} Tage, angefragt: {{requested}} Tage.",
+    "leaveSubmitted": "✅ {{type}}-Urlaubsantrag für {{days}} Tag(e) ({{start}} → {{end}}) eingereicht!",
+    "leaveDeleted": "✅ {{owner}} {{type}}-Urlaub ({{start}} → {{end}}) gelöscht.{{balanceNote}}",
+    "leaveDeletedBalance": " Guthaben wiederhergestellt.",
+    "leaveNotFound": "Urlaub nicht gefunden. Verfügbar: {{preview}}",
+    "leaveCannotEdit": "❌ Kann nicht bearbeitet werden — Status: {{status}}.",
+    "leaveUpdated": "✅ Urlaubsantrag aktualisiert!{{adminNote}}",
+    "leaveUpdatedAdmin": " Mitarbeiter benachrichtigt.",
+    "driverSubmitted": "✅ Fahreranfrage eingereicht!",
+    "conflictWarning": "⚠️ Hinweis: {{warnings}}",
+    "conflictDetected": "🚨 **Konflikt für {{type}}-Urlaub ({{start}} → {{end}})**:",
+    "conflictAdvice": "Bitte alternative Termine erwägen."
   }
 }

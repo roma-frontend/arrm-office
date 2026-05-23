@@ -3,9 +3,15 @@ import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { api } from '../../../../../convex/_generated/api';
 import type { Id } from '../../../../../convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { cookies } from 'next/headers';
+import { getServerTranslation } from '@/lib/i18n/server-translation';
 
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get('i18nextLng')?.value || 'en';
+    const { t } = await getServerTranslation('common', locale);
+
     const { leaveId, requesterId, startDate, endDate, days, reason, type } = await req.json();
 
     if (!leaveId || !requesterId) {
@@ -47,7 +53,7 @@ export const POST = withCsrfProtection(async (req: Request) => {
     if (!isAdmin && leave.status !== 'pending') {
       return NextResponse.json({
         success: false,
-        message: `❌ Cannot edit this leave — it's already ${leave.status}. Only pending leaves can be edited by employees. Contact admin for changes.`,
+        message: t('aiMessages.leaveCannotEdit', { status: leave.status }),
       });
     }
 
@@ -63,7 +69,9 @@ export const POST = withCsrfProtection(async (req: Request) => {
 
     return NextResponse.json({
       success: true,
-      message: `✅ Leave request updated successfully! ${isAdmin && !isOwner ? 'Employee has been notified.' : ''}`,
+      message: t('aiMessages.leaveUpdated', {
+        adminNote: isAdmin && !isOwner ? t('aiMessages.leaveUpdatedAdmin') : '',
+      }),
     });
   } catch (error: any) {
     return NextResponse.json({

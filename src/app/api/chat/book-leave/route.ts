@@ -3,11 +3,17 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
 import type { Id } from '../../../../../convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { cookies } from 'next/headers';
+import { getServerTranslation } from '@/lib/i18n/server-translation';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get('i18nextLng')?.value || 'en';
+    const { t } = await getServerTranslation('common', locale);
+
     const { userId, organizationId, type, startDate, endDate, days, reason } = await req.json();
 
     if (!userId || !organizationId || !type || !startDate || !endDate || !days || !reason) {
@@ -35,7 +41,7 @@ export const POST = withCsrfProtection(async (req: Request) => {
         conflict: true,
         hasCriticalConflicts: true,
         conflictCount: conflictResult.conflicts.length,
-        message: buildConflictMessage(criticalConflicts, type, startDate, endDate),
+        message: buildConflictMessage(criticalConflicts, type, startDate, endDate, t),
         conflicts: conflictResult.conflicts,
       });
     }
@@ -64,7 +70,14 @@ export const POST = withCsrfProtection(async (req: Request) => {
       return NextResponse.json({
         success: false,
         conflict: true,
-        message: `You already have a ${personalConflict.type} leave (${personalConflict.startDate} → ${personalConflict.endDate}) with status: "${personalConflict.status}". 💡 Suggested alternative: ${suggestedStart} → ${suggestedEndStr}`,
+        message: t('aiMessages.leaveConflict', {
+          type: personalConflict.type ?? '',
+          start: personalConflict.startDate ?? '',
+          end: personalConflict.endDate ?? '',
+          status: personalConflict.status ?? '',
+          sugStart: suggestedStart ?? '',
+          sugEnd: suggestedEndStr ?? '',
+        }),
       });
     }
 
@@ -80,21 +93,33 @@ export const POST = withCsrfProtection(async (req: Request) => {
       return NextResponse.json({
         success: false,
         conflict: true,
-        message: `You don't have enough paid leave balance. Available: ${user.paidLeaveBalance ?? 0} days, requested: ${days} days.`,
+        message: t('aiMessages.insufficientBalance', {
+          type: 'paid',
+          available: String(user.paidLeaveBalance ?? 0),
+          requested: String(days),
+        }),
       });
     }
     if (type === 'sick' && (user.sickLeaveBalance ?? 0) < days) {
       return NextResponse.json({
         success: false,
         conflict: true,
-        message: `You don't have enough sick leave balance. Available: ${user.sickLeaveBalance ?? 0} days, requested: ${days} days.`,
+        message: t('aiMessages.insufficientBalance', {
+          type: 'sick',
+          available: String(user.sickLeaveBalance ?? 0),
+          requested: String(days),
+        }),
       });
     }
     if (type === 'family' && (user.familyLeaveBalance ?? 0) < days) {
       return NextResponse.json({
         success: false,
         conflict: true,
-        message: `You don't have enough family leave balance. Available: ${user.familyLeaveBalance ?? 0} days, requested: ${days} days.`,
+        message: t('aiMessages.insufficientBalance', {
+          type: 'family',
+          available: String(user.familyLeaveBalance ?? 0),
+          requested: String(days),
+        }),
       });
     }
 
@@ -113,10 +138,17 @@ export const POST = withCsrfProtection(async (req: Request) => {
 
     // Формируем ответ с учётом предупреждений
     const warnings = conflictResult.conflicts.filter((c) => c.severity === 'warning');
-    let message = `✅ Your ${type} leave request for ${days} day(s) (${startDate} → ${endDate}) has been submitted and sent to admin for approval!`;
+    let message = t('aiMessages.leaveSubmitted', {
+      type,
+      days: String(days),
+      start: startDate,
+      end: endDate,
+    });
 
     if (warnings.length > 0) {
-      message += `\n\n⚠️ Note: ${warnings.map((w) => w.message).join(' ')}`;
+      message +=
+        '\n\n' +
+        t('aiMessages.conflictWarning', { warnings: warnings.map((w) => w.message).join(' ') });
     }
 
     return NextResponse.json({
@@ -143,10 +175,12 @@ function buildConflictMessage(
   leaveType: string,
   startDate: string,
   endDate: string,
+  t: (key: string, params?: Record<string, string>) => string,
 ): string {
   if (conflicts.length === 0) return '';
 
-  let message = `🚨 **Conflict detected for your ${leaveType} leave request (${startDate} → ${endDate})**:\n\n`;
+  let message =
+    t('aiMessages.conflictDetected', { type: leaveType, start: startDate, end: endDate }) + '\n\n';
 
   conflicts.forEach((conflict, i) => {
     message += `${i + 1}. **${conflict.title}**\n`;
@@ -154,7 +188,7 @@ function buildConflictMessage(
     message += `   💡 ${conflict.suggestion}\n\n`;
   });
 
-  message += 'Please consider alternative dates or discuss with your manager before proceeding.';
+  message += t('aiMessages.conflictAdvice');
 
   return message;
 }

@@ -4,11 +4,17 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { logger } from '@/lib/logger';
+import { cookies } from 'next/headers';
+import { getServerTranslation } from '@/lib/i18n/server-translation';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
   try {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get('i18nextLng')?.value || 'en';
+    const { t } = await getServerTranslation('common', locale);
+
     const { userId, organizationId, driverId, startTime, endTime, tripInfo } = await req.json();
 
     logger.log('[book-driver] Received request:', {
@@ -90,7 +96,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     logger.log('[book-driver] Request created:', requestId);
 
     return NextResponse.json({
-      message: '✅ Driver request submitted successfully!',
+      message: t('aiMessages.driverSubmitted'),
       success: true,
       requestId,
       hasWarnings: conflictResult.conflicts.filter((c) => c.severity === 'warning').length > 0,
