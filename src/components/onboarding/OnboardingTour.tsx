@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { logger } from '@/lib/logger';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { X, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
@@ -23,6 +24,7 @@ interface OnboardingTourProps {
 }
 
 export function OnboardingTour({ steps, tourId, onComplete, onSkip }: OnboardingTourProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -513,7 +515,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       <ArrowLeft className="w-3 h-3 inline mr-1" />
-                      Back
+                      {t('onboarding.back', 'Back')}
                     </button>
                   )}
                   <motion.button
@@ -525,11 +527,11 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
                     {currentStep === steps.length - 1 ? (
                       <>
                         <CheckCircle className="w-3 h-3" />
-                        Got it!
+                        {t('onboarding.gotIt', 'Got it!')}
                       </>
                     ) : (
                       <>
-                        Next
+                        {t('onboarding.next', 'Next')}
                         <ArrowRight className="w-3 h-3" />
                       </>
                     )}

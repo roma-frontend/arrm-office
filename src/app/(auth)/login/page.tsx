@@ -13,7 +13,7 @@ import { WebAuthnButton } from '@/components/auth/WebAuthnButton';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { OAuthSyncLoader } from '@/components/auth/OAuthSyncLoader';
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
-import { loginTourSteps } from '@/components/onboarding/loginTourSteps';
+import { getLoginTourSteps } from '@/components/onboarding/loginTourSteps';
 import { useSession } from 'next-auth/react';
 import { useKeystrokeDynamics } from '@/hooks/useKeystrokeDynamics';
 import { getDeviceFingerprint } from '@/lib/deviceFingerprint';
@@ -576,7 +576,7 @@ export default function LoginPage() {
           {/* Onboarding Tour */}
           {!isOAuthSyncing && status !== 'authenticated' && (
             <OnboardingTour
-              steps={loginTourSteps}
+              steps={getLoginTourSteps(t)}
               tourId="login-tour"
               onComplete={() => {}}
               onSkip={() => {}}

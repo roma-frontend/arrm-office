@@ -439,7 +439,7 @@ export function Navbar() {
               >
                 {/* Close button */}
                 <button
-                  className="absolute top-3 right-3 p-1.5 rounded-lg text-(--text-muted) hover:text-(--text-primary) hover:bg-(--background-subtle) transition-colors"
+                  className="absolute top-1 right-3 p-1.5 rounded-lg text-(--text-muted) hover:text-(--text-primary) hover:bg-(--background-subtle) transition-colors"
                   style={{ zIndex: 999 }}
                   onClick={() => setMenuOpen(false)}
                   aria-label="Close"
