@@ -141,6 +141,7 @@ export function CreateEventModal({
   const stepIndex = STEPS.indexOf(step);
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
+  const editId = editEvent?.id ?? null;
   React.useEffect(() => {
     if (!open) return;
     if (editEvent) {
@@ -157,7 +158,7 @@ export function CreateEventModal({
       setDate(format(selectedDate, 'yyyy-MM-dd'));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, editId]);
 
   const resetForm = () => {
     setStep('details');
