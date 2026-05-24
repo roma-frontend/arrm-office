@@ -1092,5 +1092,16 @@
     "strengths": "Сильные стороны",
     "areasForImprovement": "Области для улучшения",
     "comments": "Комментарии"
+  },
+  "roles": {
+    "admin": "Админ",
+    "supervisor": "Руководитель",
+    "employee": "Сотрудник",
+    "driver": "Водитель",
+    "superadmin": "Суперадмин"
+  },
+  "employeeTypes": {
+    "staff": "Штатный",
+    "contractor": "Подрядчик"
   }
 }

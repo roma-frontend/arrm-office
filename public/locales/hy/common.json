@@ -1064,5 +1064,16 @@
     "strengths": "Ուdelays delays",
     "areasForImprovement": "Բdelays delays delays",
     "comments": "Մdelays"
+  },
+  "roles": {
+    "admin": "Ադdelays",
+    "supervisor": "Ղdelays",
+    "employee": "Աdelays",
+    "driver": "Վdelays",
+    "superadmin": "Սdelays"
+  },
+  "employeeTypes": {
+    "staff": "Հdelays",
+    "contractor": "Պdelays"
   }
 }

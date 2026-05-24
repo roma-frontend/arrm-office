@@ -147,11 +147,11 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                 </p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   <Badge variant={employee.role === 'admin' ? 'default' : 'secondary'}>
-                    {employee.role}
+                    {t(`roles.${employee.role}`)}
                   </Badge>
-                  <Badge variant="outline">{employee.employeeType}</Badge>
+                  <Badge variant="outline">{t(`employeeTypes.${employee.employeeType}`)}</Badge>
                   <Badge variant={employee.isActive ? 'success' : 'destructive'}>
-                    {employee.isActive ? 'Active' : 'Inactive'}
+                    {employee.isActive ? t('statuses.active') : t('statuses.inactive')}
                   </Badge>
                 </div>
               </div>

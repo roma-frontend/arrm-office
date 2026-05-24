@@ -1064,5 +1064,16 @@
     "strengths": "Strengths",
     "areasForImprovement": "Areas for Improvement",
     "comments": "Comments"
+  },
+  "roles": {
+    "admin": "Admin",
+    "supervisor": "Supervisor",
+    "employee": "Employee",
+    "driver": "Driver",
+    "superadmin": "Superadmin"
+  },
+  "employeeTypes": {
+    "staff": "Staff",
+    "contractor": "Contractor"
   }
 }
