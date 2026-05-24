@@ -1014,6 +1014,14 @@
       "onboarding_manager_assigned": "Назначен менеджер онбординга",
       "onboarding_buddy_assigned": "Назначен наставник",
       "onboarding_task_overdue": "Задача онбординга просрочена"
+    },
+    "messages": {
+      "taskCompleted": "\"{{taskTitle}}\" завершена пользователем {{userName}}",
+      "taskSubmittedForReview": "\"{{taskTitle}}\" отправлена на проверку пользователем {{userName}}",
+      "taskAssigned": "Задача \"{{taskTitle}}\" назначена вам",
+      "leaveRequestNew": "{{userName}} запросил отпуск ({{type}}, {{start}} – {{end}})",
+      "leaveApproved": "Ваш отпуск ({{type}}, {{start}} – {{end}}) одобрен",
+      "leaveRejected": "Ваш отпуск ({{type}}, {{start}} – {{end}}) отклонён"
     }
   },
   "aiChat": {

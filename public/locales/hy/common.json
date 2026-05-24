@@ -956,11 +956,11 @@
     "logoutFailed": "Չհաջողվեց ավարտել նիստը",
     "sessionExtended": "Նիստը հաջողությամբ երկարաձգվեց"
   },
-  "pageNotFound": "Էdelays չdelays",
-  "pageNotFoundDesc": "Էdelays delays delays delays:",
-  "backToDashboard": "Վdelays delays",
-  "goHome": "Գdelays delays",
-  "errorDescription": "Անdelays delays delays:",
+  "pageNotFound": "Էջը չի գտնվել",
+  "pageNotFoundDesc": "Կներեք, էջը չի գտնվել:",
+  "backToDashboard": "Վերադառնալ վահանակ",
+  "goHome": "Գնալ գլխավոր էջ",
+  "errorDescription": "Սխալ տեղի ունեցավ:",
   "notifications": {
     "types": {
       "leave_request": "Նоր արձակուրդի հայտ",
@@ -986,6 +986,14 @@
       "onboarding_manager_assigned": "Նշանակված է օնբորդինգի մենեջեր",
       "onboarding_buddy_assigned": "Նշանակված է наставник",
       "onboarding_task_overdue": "Օնբորդինգի առաջադրանք ուշացել է"
+    },
+    "messages": {
+      "taskCompleted": "\"{{taskTitle}}\" առաջադրանքը ավարտվել է {{userName}}-ի կողմից",
+      "taskSubmittedForReview": "\"{{taskTitle}}\" առաջադրանքը ներկայացվել է վերանայման {{userName}}-ի կողմից",
+      "taskAssigned": "\"{{taskTitle}}\" առաջադրանքը նշանակվել է {{userName}}-ի կողմից",
+      "leaveRequestNew": "{{userName}}-ի {{type}} հայտը ներկայացվել է ({{start}} – {{end}})",
+      "leaveApproved": "{{userName}}-ի {{type}} հայտը հաստատվել է ({{start}} – {{end}})",
+      "leaveRejected": "{{userName}}-ի {{type}} հայտը մերժվել է ({{start}} – {{end}})"
     }
   },
   "aiChat": {

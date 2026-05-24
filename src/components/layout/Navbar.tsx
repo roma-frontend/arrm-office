@@ -38,6 +38,7 @@ interface NotificationItem {
   isRead: boolean;
   type: string;
   relatedId?: string;
+  metadata?: string;
   _creationTime: number;
 }
 
@@ -275,6 +276,7 @@ export function Navbar() {
                   isRead: boolean;
                   type: string;
                   relatedId?: string;
+                  metadata?: string;
                   _creationTime: number;
                 }) => (
                   <div
@@ -328,7 +330,18 @@ export function Navbar() {
                     <p className="text-sm font-semibold text-(--text-primary) leading-snug">
                       {t(`notifications.types.${n.type}`, { defaultValue: n.title })}
                     </p>
-                    <p className="text-xs text-(--text-muted) mt-1">{n.message}</p>
+                    <p className="text-xs text-(--text-muted) mt-1">
+                      {(() => {
+                        if (n.metadata) {
+                          try {
+                            const meta = JSON.parse(n.metadata);
+                            if (meta.messageKey)
+                              return String(t(meta.messageKey, meta.params ?? {}));
+                          } catch {}
+                        }
+                        return n.message;
+                      })()}
+                    </p>
                     <p className="text-xs text-(--text-muted) mt-1">{timeAgo(n._creationTime)}</p>
                   </div>
                 ),

@@ -1015,6 +1015,14 @@
       "onboarding_manager_assigned": "Onboarding-Manager zugewiesen",
       "onboarding_buddy_assigned": "Buddy zugewiesen",
       "onboarding_task_overdue": "Onboarding-Aufgabe überfällig"
+    },
+    "messages": {
+      "taskCompleted": "\"{{taskTitle}}\" wurde von {{userName}} abgeschlossen",
+      "taskSubmittedForReview": "\"{{taskTitle}}\" wurde von {{userName}} zur Überprüfung eingereicht",
+      "taskAssigned": "Aufgabe \"{{taskTitle}}\" wurde Ihnen zugewiesen",
+      "leaveRequestNew": "{{userName}} hat {{type}}-Urlaub beantragt ({{start}} – {{end}})",
+      "leaveApproved": "Ihr {{type}}-Urlaub ({{start}} – {{end}}) wurde genehmigt",
+      "leaveRejected": "Ihr {{type}}-Urlaub ({{start}} – {{end}}) wurde abgelehnt"
     }
   },
   "aiChat": {

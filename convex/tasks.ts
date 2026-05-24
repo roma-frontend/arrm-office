@@ -196,6 +196,13 @@ export const updateTaskStatus = mutation({
           relatedId: args.taskId,
           route: '/tasks',
           createdAt: now,
+          metadata: JSON.stringify({
+            messageKey:
+              args.status === 'completed'
+                ? 'notifications.messages.taskCompleted'
+                : 'notifications.messages.taskSubmittedForReview',
+            params: { taskTitle: task.title, userName: employee?.name ?? 'employee' },
+          }),
         });
       }
     }

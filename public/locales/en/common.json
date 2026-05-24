@@ -986,6 +986,14 @@
       "onboarding_manager_assigned": "Onboarding Manager Assigned",
       "onboarding_buddy_assigned": "Buddy Assigned",
       "onboarding_task_overdue": "Onboarding Task Overdue"
+    },
+    "messages": {
+      "taskCompleted": "\"{{taskTitle}}\" has been completed by {{userName}}",
+      "taskSubmittedForReview": "\"{{taskTitle}}\" has been submitted for review by {{userName}}",
+      "taskAssigned": "Task \"{{taskTitle}}\" has been assigned to you",
+      "leaveRequestNew": "{{userName}} requested {{type}} leave ({{start}} – {{end}})",
+      "leaveApproved": "Your {{type}} leave ({{start}} – {{end}}) has been approved",
+      "leaveRejected": "Your {{type}} leave ({{start}} – {{end}}) has been rejected"
     }
   },
   "aiChat": {
