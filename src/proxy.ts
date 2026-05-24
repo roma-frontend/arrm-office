@@ -262,7 +262,7 @@ function buildCsp(nonce: string, isProduction: boolean): string {
   // Development: keep 'unsafe-eval' + 'unsafe-inline' because React devtools / HMR
   //   rely on them.
   const scriptSrc = isProduction
-    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline'`
+    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' https: 'unsafe-inline'`
     : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:";
 
   // 'unsafe-inline' for style-src is still widely needed (Tailwind runtime utility

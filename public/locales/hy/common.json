@@ -1049,31 +1049,31 @@
     "conflictAdvice": "✅ Խորհուրդ է տրվում վերանայել և լուծել հակասությունը՝ հնարավոր է, որ {{owner}}-ի {{type}} հայտը չեղարկվի կամ մերժվի:"
   },
   "leaveTypes": {
-    "paid": "Վճարоվի արձակուրդ",
+    "paid": "Վճարովի արձակուրդ",
     "unpaid": "Անվճար արձակուրդ",
-    "sick": "Հիվանդանоց",
+    "sick": "Հիվանդանոցից",
     "family": "Ընտանեկան արձակուրդ",
     "doctor": "Բժշկի այց"
   },
   "aiRecommendations": {
     "bestDates": "Լավագույն ամսաթվերը արձակուրդի համար",
-    "askAiToBook": "Խնդրեք AI-ին ամրագրեл այս ամսաթվերից մեկը",
-    "fullWeekNoConflicts": "лիարժակ շաբաթ, կоնֆлիկտнեր չկան"
+    "askAiToBook": "Խնդրեք AI-ին ամրագրել այս ամսաթվերից մեկը",
+    "fullWeekNoConflicts": "լիարժեք շաբաթ, կոնֆլիկտներ չկան"
   },
   "performance": {
-    "strengths": "Ուdelays delays",
-    "areasForImprovement": "Բdelays delays delays",
-    "comments": "Մdelays"
+    "strengths": "Ուժեղ կողմեր",
+    "areasForImprovement": "Բարելավման ոլորտներ",
+    "comments": "Մեկնաբանություններ"
   },
   "roles": {
-    "admin": "Ադdelays",
-    "supervisor": "Ղdelays",
-    "employee": "Աdelays",
-    "driver": "Վdelays",
-    "superadmin": "Սdelays"
+    "admin": "Ադմինիստրատոր",
+    "supervisor": "Հսկիչ",
+    "employee": "Աշխատակից",
+    "driver": "Վարորդ",
+    "superadmin": "Սուպեր ադմինիստրատոր"
   },
   "employeeTypes": {
-    "staff": "Հdelays",
-    "contractor": "Պdelays"
+    "staff": "Հիմնական աշխատակից",
+    "contractor": "Պայմանագրային աշխատակից"
   }
 }

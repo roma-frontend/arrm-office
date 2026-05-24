@@ -63,7 +63,7 @@ export default function DashboardError({
           className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Home className="h-4 w-4" />
-          {tr('dashboard', 'Dashboard')}
+          {tr('nav.dashboard', 'Dashboard')}
         </Link>
       </div>
     </div>
