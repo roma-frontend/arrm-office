@@ -1057,6 +1057,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
         open={showCreateEvent}
         onOpenChange={setShowCreateEvent}
         selectedDate={selectedDay}
+        leaves={leaves}
       />
 
       {/* Modals rendered via portal to escape overflow/contain constraints */}

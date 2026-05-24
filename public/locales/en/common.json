@@ -1194,6 +1194,12 @@
     "fileTooBig": "File exceeds 1 MB limit",
     "save": "Save",
     "cancel": "Cancel",
-    "required": "Required field"
+    "required": "Required field",
+    "attendees": "Attendees",
+    "addAttendees": "Add people",
+    "searchPeople": "Search people...",
+    "noResults": "No results",
+    "conflict": "Busy at this time",
+    "uploading": "Uploading..."
   }
 }

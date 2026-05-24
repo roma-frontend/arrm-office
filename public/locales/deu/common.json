@@ -1227,6 +1227,12 @@
     "fileTooBig": "Datei überschreitet 1 MB Limit",
     "save": "Speichern",
     "cancel": "Abbrechen",
-    "required": "Pflichtfeld"
+    "required": "Pflichtfeld",
+    "attendees": "Teilnehmer",
+    "addAttendees": "Personen hinzufügen",
+    "searchPeople": "Personen suchen...",
+    "noResults": "Keine Ergebnisse",
+    "conflict": "Zu dieser Zeit beschäftigt",
+    "uploading": "Hochladen..."
   }
 }

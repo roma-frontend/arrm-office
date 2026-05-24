@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { motion, AnimatePresence } from '@/lib/cssMotion';
 import {
   Calendar,
   Clock,
@@ -26,20 +31,50 @@ import {
   Paperclip,
   X,
   FileText,
+  Users,
+  AlertTriangle,
+  Loader2,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
+import { uploadTaskAttachment } from '@/actions/cloudinary';
+import { getInitials } from '@/lib/stringUtils';
 
 interface CreateEventModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date | null;
+  leaves?: Array<{ userId: string; startDate: string; endDate: string; status: string }>;
 }
 
-export function CreateEventModal({ open, onOpenChange, selectedDate }: CreateEventModalProps) {
+interface OrgUser {
+  _id: Id<'users'>;
+  name: string;
+  position?: string;
+  department?: string;
+  avatarUrl?: string | null;
+}
+
+const STEPS = ['details', 'people', 'extras'] as const;
+type Step = (typeof STEPS)[number];
+
+export function CreateEventModal({
+  open,
+  onOpenChange,
+  selectedDate,
+  leaves = [],
+}: CreateEventModalProps) {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const selectedOrgId = useSelectedOrganization();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [step, setStep] = useState<Step>('details');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [startTime, setStartTime] = useState('09:00');
@@ -50,15 +85,47 @@ export function CreateEventModal({ open, onOpenChange, selectedDate }: CreateEve
   const [category, setCategory] = useState('meeting');
   const [reminder, setReminder] = useState('15min');
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [attendees, setAttendees] = useState<OrgUser[]>([]);
+  const [attendeeSearch, setAttendeeSearch] = useState('');
+  const [showPeoplePicker, setShowPeoplePicker] = useState(false);
 
-  // Set date from selectedDate when modal opens
+  const organizationId = (selectedOrgId ?? user?.organizationId) as Id<'organizations'> | undefined;
+  const requesterId = user?.id as Id<'users'> | undefined;
+
+  const orgUsers = useQuery(
+    api.users.getUsersByOrganizationId,
+    organizationId && requesterId ? { organizationId, requesterId } : 'skip',
+  ) as OrgUser[] | undefined;
+
+  const filteredUsers = useMemo(() => {
+    if (!orgUsers) return [];
+    const q = attendeeSearch.toLowerCase().trim();
+    const list = q
+      ? orgUsers.filter(
+          (u) => u.name.toLowerCase().includes(q) || (u.position ?? '').toLowerCase().includes(q),
+        )
+      : orgUsers;
+    return list.filter((u) => !attendees.find((a) => a._id === u._id)).slice(0, 8);
+  }, [orgUsers, attendeeSearch, attendees]);
+
+  const getConflict = (userId: string): boolean => {
+    if (!date) return false;
+    return leaves.some(
+      (l) =>
+        l.userId === userId && l.status === 'approved' && l.startDate <= date && l.endDate >= date,
+    );
+  };
+
+  const stepIndex = STEPS.indexOf(step);
+  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+
   React.useEffect(() => {
-    if (open && selectedDate) {
-      setDate(format(selectedDate, 'yyyy-MM-dd'));
-    }
+    if (open && selectedDate) setDate(format(selectedDate, 'yyyy-MM-dd'));
   }, [open, selectedDate]);
 
   const resetForm = () => {
+    setStep('details');
     setTitle('');
     setDate('');
     setStartTime('09:00');
@@ -69,6 +136,10 @@ export function CreateEventModal({ open, onOpenChange, selectedDate }: CreateEve
     setCategory('meeting');
     setReminder('15min');
     setAttachment(null);
+    setAttendees([]);
+    setAttendeeSearch('');
+    setShowPeoplePicker(false);
+    setUploading(false);
   };
 
   const handleClose = (val: boolean) => {
@@ -86,241 +157,509 @@ export function CreateEventModal({ open, onOpenChange, selectedDate }: CreateEve
     setAttachment(file);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) {
       toast.error(t('createMeeting.required'));
+      setStep('details');
       return;
     }
-    // TODO: Save event via API
-    toast.success(t('createMeeting.title'));
-    handleClose(false);
+    setUploading(true);
+    try {
+      let attachmentUrl: string | undefined;
+      if (attachment) {
+        const base64 = await fileToBase64(attachment);
+        attachmentUrl = await uploadTaskAttachment(base64, attachment.name);
+      }
+      toast.success(t('createMeeting.title'));
+      handleClose(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error');
+    } finally {
+      setUploading(false);
+    }
   };
+
+  const nextStep = () => {
+    if (stepIndex < STEPS.length - 1) setStep(STEPS[stepIndex + 1] as Step);
+    else handleSave();
+  };
+  const prevStep = () => {
+    if (stepIndex > 0) setStep(STEPS[stepIndex - 1] as Step);
+  };
+  const canNext = step === 'details' ? title.trim().length > 0 : true;
+
+  const stepLabels = [
+    t('createMeeting.date'),
+    t('createMeeting.attendees'),
+    t('createMeeting.attachment'),
+  ];
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto p-0 gap-0">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-(--card) border-b border-(--border) px-6 py-4">
-          <h2 className="text-xl font-bold text-(--text-primary)">{t('createMeeting.title')}</h2>
+      <DialogContent className="sm:max-w-[640px] max-h-[92vh] overflow-hidden p-0 gap-0 flex flex-col">
+        {/* Header with stepper */}
+        <div className="shrink-0 bg-(--card) border-b border-(--border) px-6 pt-5 pb-4">
+          <h2 className="text-xl font-bold text-(--text-primary) mb-4">
+            {t('createMeeting.title')}
+          </h2>
+          {/* Progress bar */}
+          <div className="relative h-1.5 bg-(--background-subtle) rounded-full overflow-hidden mb-3">
+            <motion.div
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+          {/* Step indicators */}
+          <div className="flex items-center justify-between">
+            {STEPS.map((s, i) => (
+              <button
+                key={s}
+                onClick={() => (i <= stepIndex || canNext) && setStep(s)}
+                className="flex items-center gap-2 group"
+              >
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${i < stepIndex ? 'bg-blue-500 border-blue-500 text-white' : i === stepIndex ? 'border-blue-500 text-blue-500 bg-blue-500/10' : 'border-(--border) text-(--text-muted)'}`}
+                >
+                  {i < stepIndex ? <CheckCircle className="w-4 h-4" /> : i + 1}
+                </div>
+                <span
+                  className={`text-xs font-medium hidden sm:inline ${i === stepIndex ? 'text-blue-500' : 'text-(--text-muted)'}`}
+                >
+                  {stepLabels[i]}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
-          {/* Title */}
-          <div className="space-y-1.5">
-            <Label htmlFor="event-title" className="text-sm font-medium text-(--text-primary)">
-              {t('createMeeting.titlePlaceholder')} *
-            </Label>
-            <Input
-              id="event-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('createMeeting.titlePlaceholder')}
-              className="h-11 text-base border-0 border-b-2 border-(--border) rounded-none px-0 focus-visible:ring-0 focus-visible:border-blue-500 bg-transparent"
-              autoFocus
-            />
-          </div>
-
-          {/* Date & Time Row */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-(--text-muted)">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">{t('createMeeting.date')}</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="h-10"
-              />
-              {!allDay && (
-                <>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Step 1: Details */}
+              {step === 'details' && (
+                <div className="space-y-5">
+                  {/* Title */}
+                  <div>
+                    <Label className="text-sm font-medium text-(--text-primary) mb-1.5 block">
+                      {t('createMeeting.titlePlaceholder')} *
+                    </Label>
                     <Input
-                      type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className="h-10 pl-9"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder={t('createMeeting.titlePlaceholder')}
+                      className="h-12 text-base border-2 border-(--border) focus-visible:border-blue-500 rounded-xl"
+                      autoFocus
                     />
                   </div>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
+                  {/* Date & Time */}
+                  <div className="p-4 rounded-xl border border-(--border) bg-(--background-subtle)/50 space-y-3">
+                    <div className="flex items-center gap-2 text-blue-500">
+                      <Calendar className="w-4 h-4" />
+                      <span className="text-sm font-semibold">{t('createMeeting.date')}</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <Input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="h-10 rounded-lg"
+                      />
+                      {!allDay && (
+                        <>
+                          <div className="relative">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
+                            <Input
+                              type="time"
+                              value={startTime}
+                              onChange={(e) => setStartTime(e.target.value)}
+                              className="h-10 pl-9 rounded-lg"
+                            />
+                          </div>
+                          <div className="relative">
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
+                            <Input
+                              type="time"
+                              value={endTime}
+                              onChange={(e) => setEndTime(e.target.value)}
+                              className="h-10 pl-9 rounded-lg"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch checked={allDay} onCheckedChange={setAllDay} id="all-day" />
+                      <Label
+                        htmlFor="all-day"
+                        className="text-sm text-(--text-muted) cursor-pointer"
+                      >
+                        {t('createMeeting.allDay')}
+                      </Label>
+                    </div>
+                  </div>
+                  {/* Location */}
+                  <div>
+                    <div className="flex items-center gap-2 text-(--text-muted) mb-1.5">
+                      <MapPin className="w-4 h-4" />
+                      <Label className="text-sm font-medium">{t('createMeeting.location')}</Label>
+                    </div>
                     <Input
-                      type="time"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className="h-10 pl-9"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder={t('createMeeting.locationPlaceholder')}
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                </>
-              )}
-            </div>
-            {/* All Day Toggle */}
-            <div className="flex items-center gap-3">
-              <Switch checked={allDay} onCheckedChange={setAllDay} id="all-day" />
-              <Label htmlFor="all-day" className="text-sm text-(--text-muted) cursor-pointer">
-                {t('createMeeting.allDay')}
-              </Label>
-            </div>
-          </div>
-
-          {/* Location */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-(--text-muted)">
-              <MapPin className="w-4 h-4" />
-              <Label className="text-sm font-medium">{t('createMeeting.location')}</Label>
-            </div>
-            <Input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder={t('createMeeting.locationPlaceholder')}
-              className="h-10"
-            />
-          </div>
-
-          {/* Description */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-(--text-muted)">
-              <AlignLeft className="w-4 h-4" />
-              <Label className="text-sm font-medium">{t('createMeeting.description')}</Label>
-            </div>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('createMeeting.descriptionPlaceholder')}
-              className="min-h-[100px] resize-none"
-            />
-          </div>
-
-          {/* Category & Reminder Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Category */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-(--text-muted)">
-                <Tag className="w-4 h-4" />
-                <Label className="text-sm font-medium">{t('createMeeting.category')}</Label>
-              </div>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="meeting">{t('createMeeting.categories.meeting')}</SelectItem>
-                  <SelectItem value="appointment">
-                    {t('createMeeting.categories.appointment')}
-                  </SelectItem>
-                  <SelectItem value="conference">
-                    {t('createMeeting.categories.conference')}
-                  </SelectItem>
-                  <SelectItem value="training">{t('createMeeting.categories.training')}</SelectItem>
-                  <SelectItem value="other">{t('createMeeting.categories.other')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Reminder */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-(--text-muted)">
-                <Bell className="w-4 h-4" />
-                <Label className="text-sm font-medium">{t('createMeeting.reminder')}</Label>
-              </div>
-              <Select value={reminder} onValueChange={setReminder}>
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t('createMeeting.reminders.none')}</SelectItem>
-                  <SelectItem value="5min">{t('createMeeting.reminders.5min')}</SelectItem>
-                  <SelectItem value="15min">{t('createMeeting.reminders.15min')}</SelectItem>
-                  <SelectItem value="30min">{t('createMeeting.reminders.30min')}</SelectItem>
-                  <SelectItem value="1hour">{t('createMeeting.reminders.1hour')}</SelectItem>
-                  <SelectItem value="1day">{t('createMeeting.reminders.1day')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Teams Meeting Toggle (disabled) */}
-          <div className="flex items-center justify-between p-4 rounded-xl border border-(--border) bg-(--background-subtle) opacity-60">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Video className="w-5 h-5 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-(--text-primary)">
-                  {t('createMeeting.teamsMeeting')}
-                </p>
-                <p className="text-xs text-(--text-muted)">{t('createMeeting.teamsMeetingDesc')}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium text-(--text-muted) bg-(--border) px-2 py-0.5 rounded-full">
-                {t('createMeeting.comingSoon')}
-              </span>
-              <Switch disabled checked={false} />
-            </div>
-          </div>
-
-          {/* File Attachment */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-(--text-muted)">
-              <Paperclip className="w-4 h-4" />
-              <Label className="text-sm font-medium">{t('createMeeting.attachment')}</Label>
-              <span className="text-xs text-(--text-muted) ml-auto">
-                {t('createMeeting.maxFileSize')}
-              </span>
-            </div>
-            {attachment ? (
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-(--border) bg-(--background-subtle)">
-                <FileText className="w-5 h-5 text-blue-500 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-(--text-primary) truncate">
-                    {attachment.name}
-                  </p>
-                  <p className="text-xs text-(--text-muted)">
-                    {(attachment.size / 1024).toFixed(1)} KB
-                  </p>
+                  {/* Description */}
+                  <div>
+                    <div className="flex items-center gap-2 text-(--text-muted) mb-1.5">
+                      <AlignLeft className="w-4 h-4" />
+                      <Label className="text-sm font-medium">
+                        {t('createMeeting.description')}
+                      </Label>
+                    </div>
+                    <Textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder={t('createMeeting.descriptionPlaceholder')}
+                      className="min-h-[90px] resize-none rounded-xl"
+                    />
+                  </div>
+                  {/* Category & Reminder */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-(--text-muted) mb-1.5">
+                        <Tag className="w-4 h-4" />
+                        <Label className="text-sm font-medium">{t('createMeeting.category')}</Label>
+                      </div>
+                      <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger className="h-10 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="meeting">
+                            {t('createMeeting.categories.meeting')}
+                          </SelectItem>
+                          <SelectItem value="appointment">
+                            {t('createMeeting.categories.appointment')}
+                          </SelectItem>
+                          <SelectItem value="conference">
+                            {t('createMeeting.categories.conference')}
+                          </SelectItem>
+                          <SelectItem value="training">
+                            {t('createMeeting.categories.training')}
+                          </SelectItem>
+                          <SelectItem value="other">
+                            {t('createMeeting.categories.other')}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 text-(--text-muted) mb-1.5">
+                        <Bell className="w-4 h-4" />
+                        <Label className="text-sm font-medium">{t('createMeeting.reminder')}</Label>
+                      </div>
+                      <Select value={reminder} onValueChange={setReminder}>
+                        <SelectTrigger className="h-10 rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">{t('createMeeting.reminders.none')}</SelectItem>
+                          <SelectItem value="5min">{t('createMeeting.reminders.5min')}</SelectItem>
+                          <SelectItem value="15min">
+                            {t('createMeeting.reminders.15min')}
+                          </SelectItem>
+                          <SelectItem value="30min">
+                            {t('createMeeting.reminders.30min')}
+                          </SelectItem>
+                          <SelectItem value="1hour">
+                            {t('createMeeting.reminders.1hour')}
+                          </SelectItem>
+                          <SelectItem value="1day">{t('createMeeting.reminders.1day')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setAttachment(null)}
-                  className="p-1 rounded-md hover:bg-(--border) transition-colors"
-                >
-                  <X className="w-4 h-4 text-(--text-muted)" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border-2 border-dashed border-(--border) hover:border-blue-400 hover:bg-blue-500/5 transition-colors cursor-pointer"
-              >
-                <Paperclip className="w-4 h-4 text-(--text-muted)" />
-                <span className="text-sm text-(--text-muted)">{t('createMeeting.attachFile')}</span>
-              </button>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              onChange={handleFileChange}
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg"
-            />
-          </div>
+              )}
+
+              {/* Step 2: People */}
+              {step === 'people' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-blue-500 mb-1">
+                    <Users className="w-5 h-5" />
+                    <span className="text-base font-semibold">{t('createMeeting.attendees')}</span>
+                    {attendees.length > 0 && (
+                      <span className="ml-auto text-xs bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full font-medium">
+                        {attendees.length}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Search */}
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
+                    <Input
+                      value={attendeeSearch}
+                      onChange={(e) => {
+                        setAttendeeSearch(e.target.value);
+                        setShowPeoplePicker(true);
+                      }}
+                      onFocus={() => setShowPeoplePicker(true)}
+                      placeholder={t('createMeeting.searchPeople')}
+                      className="h-11 pl-10 rounded-xl text-sm"
+                    />
+                    {showPeoplePicker && (
+                      <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-52 overflow-y-auto rounded-xl border border-(--border) bg-(--card) shadow-2xl">
+                        {filteredUsers.length === 0 ? (
+                          <p className="px-4 py-6 text-sm text-center text-(--text-muted)">
+                            {t('createMeeting.noResults')}
+                          </p>
+                        ) : (
+                          filteredUsers.map((u) => {
+                            const hasConflict = getConflict(u._id);
+                            return (
+                              <button
+                                key={u._id}
+                                onClick={() => {
+                                  setAttendees((p) => [...p, u]);
+                                  setAttendeeSearch('');
+                                  setShowPeoplePicker(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500/5 transition-colors text-left border-b border-(--border) last:border-0"
+                              >
+                                <Avatar className="w-8 h-8 shrink-0">
+                                  <AvatarFallback className="text-[10px] bg-gradient-to-br from-blue-500 to-indigo-500 text-white font-bold">
+                                    {getInitials(u.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-(--text-primary) truncate">
+                                    {u.name}
+                                  </p>
+                                  {u.position && (
+                                    <p className="text-xs text-(--text-muted) truncate">
+                                      {u.position}
+                                    </p>
+                                  )}
+                                </div>
+                                {hasConflict && (
+                                  <span className="flex items-center gap-1 text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full shrink-0">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    {t('createMeeting.conflict')}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Conflict warning */}
+                  {attendees.some((a) => getConflict(a._id)) && (
+                    <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-400/30">
+                      <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                      <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                        {t('createMeeting.conflict')}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Selected attendees */}
+                  {attendees.length > 0 ? (
+                    <div className="space-y-2">
+                      {attendees.map((a) => {
+                        const hasConflict = getConflict(a._id);
+                        return (
+                          <div
+                            key={a._id}
+                            className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${hasConflict ? 'border-amber-400/50 bg-amber-500/5' : 'border-(--border) bg-(--background-subtle)/50 hover:border-blue-300'}`}
+                          >
+                            <Avatar className="w-9 h-9 shrink-0">
+                              <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-indigo-500 text-white font-bold">
+                                {getInitials(a.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-(--text-primary) truncate">
+                                {a.name}
+                              </p>
+                              <p className="text-xs text-(--text-muted) truncate">
+                                {a.position ?? a.department ?? ''}
+                              </p>
+                            </div>
+                            {hasConflict && (
+                              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                            )}
+                            <button
+                              onClick={() => setAttendees((p) => p.filter((x) => x._id !== a._id))}
+                              className="p-1.5 rounded-lg hover:bg-(--border) transition-colors"
+                            >
+                              <X className="w-4 h-4 text-(--text-muted)" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-(--text-muted)">
+                      <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">{t('createMeeting.addAttendees')}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3: Extras */}
+              {step === 'extras' && (
+                <div className="space-y-5">
+                  {/* Teams Meeting */}
+                  <div className="flex items-center justify-between p-5 rounded-xl border border-(--border) bg-gradient-to-r from-purple-500/5 to-indigo-500/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center">
+                        <Video className="w-5 h-5 text-purple-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-(--text-primary)">
+                          {t('createMeeting.teamsMeeting')}
+                        </p>
+                        <p className="text-xs text-(--text-muted)">
+                          {t('createMeeting.teamsMeetingDesc')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-purple-500 bg-purple-500/10 px-2.5 py-1 rounded-full">
+                        {t('createMeeting.comingSoon')}
+                      </span>
+                      <Switch disabled checked={false} />
+                    </div>
+                  </div>
+
+                  {/* File Attachment */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Paperclip className="w-4 h-4 text-blue-500" />
+                      <Label className="text-sm font-semibold text-(--text-primary)">
+                        {t('createMeeting.attachment')}
+                      </Label>
+                      <span className="text-xs text-(--text-muted) ml-auto">
+                        {t('createMeeting.maxFileSize')}
+                      </span>
+                    </div>
+                    {attachment ? (
+                      <div className="flex items-center gap-3 p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-500/5">
+                        <div className="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-(--text-primary) truncate">
+                            {attachment.name}
+                          </p>
+                          <p className="text-xs text-(--text-muted)">
+                            {(attachment.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setAttachment(null)}
+                          className="p-2 rounded-lg hover:bg-(--border) transition-colors"
+                        >
+                          <X className="w-4 h-4 text-(--text-muted)" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex flex-col items-center justify-center gap-2 p-8 rounded-xl border-2 border-dashed border-(--border) hover:border-blue-400 hover:bg-blue-500/5 transition-all cursor-pointer group"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-(--background-subtle) group-hover:bg-blue-500/10 flex items-center justify-center transition-colors">
+                          <Paperclip className="w-5 h-5 text-(--text-muted) group-hover:text-blue-500 transition-colors" />
+                        </div>
+                        <span className="text-sm font-medium text-(--text-muted) group-hover:text-blue-500 transition-colors">
+                          {t('createMeeting.attachFile')}
+                        </span>
+                        <span className="text-xs text-(--text-muted)">
+                          {t('createMeeting.maxFileSize')}
+                        </span>
+                      </button>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg"
+                    />
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-(--card) border-t border-(--border) px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-          <Button variant="outline" onClick={() => handleClose(false)} className="sm:w-auto">
+        <div className="shrink-0 bg-(--card) border-t border-(--border) px-6 py-4 flex items-center justify-between gap-3">
+          <Button
+            variant="outline"
+            onClick={prevStep}
+            disabled={stepIndex === 0 || uploading}
+            className="rounded-xl"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
             {t('createMeeting.cancel')}
           </Button>
-          <Button
-            onClick={handleSave}
-            className="sm:w-auto btn-gradient text-white font-medium shadow-md hover:shadow-lg"
-          >
-            {t('createMeeting.save')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {stepIndex < STEPS.length - 1 && (
+              <Button
+                variant="ghost"
+                onClick={() => handleClose(false)}
+                className="text-(--text-muted)"
+              >
+                {t('createMeeting.cancel')}
+              </Button>
+            )}
+            <Button
+              onClick={nextStep}
+              disabled={!canNext || uploading}
+              className="rounded-xl btn-gradient text-white font-medium shadow-md hover:shadow-lg px-6"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {t('createMeeting.uploading')}
+                </>
+              ) : stepIndex === STEPS.length - 1 ? (
+                t('createMeeting.save')
+              ) : (
+                <>
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
