@@ -13,8 +13,8 @@ export default function DashboardNotFound() {
       </div>
 
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">{t('common.pageNotFound')}</h1>
-        <p className="text-muted-foreground max-w-md">{t('common.pageNotFoundDesc')}</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t('pageNotFound')}</h1>
+        <p className="text-muted-foreground max-w-md">{t('pageNotFoundDesc')}</p>
       </div>
 
       <div className="flex gap-3">
@@ -23,14 +23,14 @@ export default function DashboardNotFound() {
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
           <ArrowLeft className="h-4 w-4" />
-          {t('common.backToDashboard')}
+          {t('backToDashboard')}
         </Link>
         <Link
           href="/"
           className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-medium shadow transition-colors hover:bg-accent"
         >
           <Home className="h-4 w-4" />
-          {t('common.goHome')}
+          {t('goHome')}
         </Link>
       </div>
     </div>
