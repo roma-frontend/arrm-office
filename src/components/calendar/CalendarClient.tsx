@@ -674,7 +674,10 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         leaves={leaves}
                         googleEvents={gEvents}
                         driverEvents={dEvents}
-                        onClick={() => setSelectedDay(date)}
+                        onClick={() => {
+                          setSelectedDay(date);
+                          setShowCreateEvent(true);
+                        }}
                       />
                     );
                   })}
