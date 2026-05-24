@@ -863,10 +863,10 @@ export default function AIChatPage() {
                 </h1>
                 <p className="text-xs text-(--text-muted) truncate">
                   {user?.role === 'superadmin'
-                    ? '👑 Superadmin'
+                    ? `👑 ${t('roles.superadmin')}`
                     : user?.role === 'admin'
-                      ? '🛡️ Admin'
-                      : '👤 Employee'}
+                      ? `🛡️ ${t('roles.admin')}`
+                      : `👤 ${t('roles.employee')}`}
                 </p>
               </div>
             </div>
