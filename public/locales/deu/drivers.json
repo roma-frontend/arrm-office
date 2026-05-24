@@ -119,6 +119,7 @@
     "notes": "Notizen",
     "submitRequest": "Anfrage senden",
     "selectOnMap": "Auf der Karte auswählen",
+    "clickToPickLocation": "Klicken Sie, um den Ort auszuwählen",
     "geocodeError": "Ort auf der Karte konnte nicht gefunden werden",
     "pickup": "Abholung",
     "dropoff": "Zielort",

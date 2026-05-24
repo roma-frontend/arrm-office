@@ -93,6 +93,7 @@
     "notes": "Notes",
     "submitRequest": "Submit Request",
     "selectOnMap": "Select on Map",
+    "clickToPickLocation": "Click to pick location",
     "geocodeError": "Could not find location on map",
     "pickup": "Pickup",
     "dropoff": "Destination",

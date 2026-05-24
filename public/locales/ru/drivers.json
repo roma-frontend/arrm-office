@@ -119,6 +119,7 @@
     "notes": "Заметки",
     "submitRequest": "Отправить запрос",
     "selectOnMap": "Выбрать на карте",
+    "clickToPickLocation": "Нажмите для выбора места",
     "geocodeError": "Не удалось найти место на карте",
     "pickup": "Посадка",
     "dropoff": "Назначение",

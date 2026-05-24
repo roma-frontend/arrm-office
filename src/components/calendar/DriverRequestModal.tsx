@@ -558,7 +558,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                 {t('driver.selectOnMap', 'Select on Map')}
               </Label>
               <Badge variant="secondary" className="text-xs">
-                Click to pick location
+                {t('driver.clickToPickLocation', 'Click to pick location')}
               </Badge>
             </div>
             <div className="rounded-lg overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600">

@@ -95,6 +95,7 @@
     "notes": "Նշումներ",
     "submitRequest": "Ուղարկել հարցում",
     "selectOnMap": "Ընտրել քարտեզի վրա",
+    "clickToPickLocation": "Սեղմեք տեղը ընտրելու համար",
     "geocodeError": "Չհաջողվեց գտնել վայրը քարտեզի վրա",
     "pickup": "Վայրէջք",
     "dropoff": "Նշանակետ",
