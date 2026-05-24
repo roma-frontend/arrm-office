@@ -1189,5 +1189,44 @@
   },
   "quickStats": {
     "active": "aktiv"
+  },
+  "createMeeting": {
+    "title": "Neues Ereignis",
+    "titlePlaceholder": "Titel hinzufügen",
+    "date": "Datum",
+    "startTime": "Startzeit",
+    "endTime": "Endzeit",
+    "allDay": "Ganztägig",
+    "location": "Ort",
+    "locationPlaceholder": "Ort oder Raum hinzufügen",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Details zum Ereignis hinzufügen...",
+    "category": "Kategorie",
+    "categories": {
+      "meeting": "Besprechung",
+      "appointment": "Termin",
+      "conference": "Konferenz",
+      "training": "Schulung",
+      "other": "Sonstiges"
+    },
+    "reminder": "Erinnerung",
+    "reminders": {
+      "none": "Keine",
+      "5min": "5 Minuten vorher",
+      "15min": "15 Minuten vorher",
+      "30min": "30 Minuten vorher",
+      "1hour": "1 Stunde vorher",
+      "1day": "1 Tag vorher"
+    },
+    "teamsMeeting": "Teams-Besprechung",
+    "teamsMeetingDesc": "Online-Meeting-Link hinzufügen",
+    "comingSoon": "Demnächst",
+    "attachment": "Anhang",
+    "attachFile": "Datei anhängen",
+    "maxFileSize": "Max. 1 MB",
+    "fileTooBig": "Datei überschreitet 1 MB Limit",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "required": "Pflichtfeld"
   }
 }

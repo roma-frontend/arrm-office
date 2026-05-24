@@ -51,6 +51,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { LeaveRequestModal } from '@/components/leaves/LeaveRequestModal';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { DriverRequestModal } from './DriverRequestModal';
+import { CreateEventModal } from './CreateEventModal';
 import { getInitials } from '@/lib/stringUtils';
 import { logger } from '@/lib/logger';
 
@@ -300,6 +301,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [mounted, setMounted] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [selectedDriverEvent, setSelectedDriverEvent] = useState<DriverScheduleEvent | null>(null);
   const [selectedGoogleEvent, setSelectedGoogleEvent] = useState<GoogleCalendarEvent | null>(null);
@@ -350,7 +352,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
       selectedDriverEvent ||
       selectedGoogleEvent ||
       showLeaveModal ||
-      showDriverModal;
+      showDriverModal ||
+      showCreateEvent;
     const mainEl = mainRef.current;
     const scrollY = mainEl ? mainEl.scrollTop : window.scrollY;
 
@@ -376,6 +379,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
     selectedGoogleEvent,
     showLeaveModal,
     showDriverModal,
+    showCreateEvent,
     mainRef,
   ]);
 
@@ -570,6 +574,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
             >
               <Plus className="w-4 h-4" />
               {t('calendar.newLeave')}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowCreateEvent(true)}
+              className="flex items-center gap-2 w-full sm:w-auto justify-center"
+            >
+              <Plus className="w-4 h-4" />
+              {t('createMeeting.title')}
             </Button>
           </div>
         </div>
@@ -910,7 +923,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               {evt.driverName}
                             </p>
                             <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">
-                              {evt.type}
+                              {t(`driver.${evt.type}`, { ns: 'drivers', defaultValue: evt.type })}
                             </Badge>
                           </div>
                           <p className="text-[10px] text-(--text-muted) mt-0.5">
@@ -1037,6 +1050,13 @@ export const CalendarClient = React.memo(function CalendarClient() {
         open={showDriverModal}
         onOpenChange={setShowDriverModal}
         selectedDate={selectedDay ?? undefined}
+      />
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        open={showCreateEvent}
+        onOpenChange={setShowCreateEvent}
+        selectedDate={selectedDay}
       />
 
       {/* Modals rendered via portal to escape overflow/contain constraints */}

@@ -1159,6 +1159,45 @@
     "loadingProfile": "Բեռնվում է պրոֆիլը..."
   },
   "quickStats": {
-    "active": "delays"
+    "active": "Ակտիվ"
+  },
+  "createMeeting": {
+    "title": "Նոր իրադարձություն",
+    "titlePlaceholder": "Ավելացնել վերնագիր",
+    "date": "Ամսաթիվ",
+    "startTime": "Սկսելու ժամանակ",
+    "endTime": "Ավարտելու ժամանակ",
+    "allDay": "Ամբողջ օր",
+    "location": "Դիրք",
+    "locationPlaceholder": "Դիրք...",
+    "description": "Նկարագրություն",
+    "descriptionPlaceholder": "Նկարագրություն...",
+    "category": "Կատեգորիա",
+    "categories": {
+      "meeting": "Անցուցիկ",
+      "appointment": "Հանձնաժողով",
+      "conference": "Կոնֆերանս",
+      "training": "Սովորել",
+      "other": "Այլ"
+    },
+    "reminder": "Հիշեցում",
+    "reminders": {
+      "none": "Չկա",
+      "5min": "5 րոպե առաջ",
+      "15min": "15 րոպե առաջ",
+      "30min": "30 րոպե առաջ",
+      "1hour": "1 ժամ առաջ",
+      "1day": "1 օր առաջ"
+    },
+    "teamsMeeting": "Teams հանդիպում",
+    "teamsMeetingDesc": "Հավելել Teams հանդիպում այս իրադարձությանը",
+    "comingSoon": "Շուտով",
+    "attachment": "Կցորդ",
+    "attachFile": "Կցել ֆայլ",
+    "maxFileSize": "Մաքս. ֆայլի չափը: 1 ՄԲ",
+    "fileTooBig": "Ֆայլը չափազանց մեծ է (մաքս. 1 ՄԲ)",
+    "save": "Պահպանել",
+    "cancel": "Չեղարկել",
+    "required": "Պարտադիր դաշտերը նշված են * նշանով"
   }
 }

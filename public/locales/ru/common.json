@@ -1188,5 +1188,44 @@
   },
   "quickStats": {
     "active": "активны"
+  },
+  "createMeeting": {
+    "title": "Новое событие",
+    "titlePlaceholder": "Добавить название",
+    "date": "Дата",
+    "startTime": "Начало",
+    "endTime": "Конец",
+    "allDay": "Весь день",
+    "location": "Место",
+    "locationPlaceholder": "Добавить место или комнату",
+    "description": "Описание",
+    "descriptionPlaceholder": "Добавьте детали события...",
+    "category": "Категория",
+    "categories": {
+      "meeting": "Встреча",
+      "appointment": "Назначение",
+      "conference": "Конференция",
+      "training": "Обучение",
+      "other": "Другое"
+    },
+    "reminder": "Напоминание",
+    "reminders": {
+      "none": "Нет",
+      "5min": "За 5 минут",
+      "15min": "За 15 минут",
+      "30min": "За 30 минут",
+      "1hour": "За 1 час",
+      "1day": "За 1 день"
+    },
+    "teamsMeeting": "Собрание Teams",
+    "teamsMeetingDesc": "Добавить ссылку на онлайн-встречу",
+    "comingSoon": "Скоро",
+    "attachment": "Вложение",
+    "attachFile": "Прикрепить файл",
+    "maxFileSize": "Макс. 1 МБ",
+    "fileTooBig": "Файл превышает лимит 1 МБ",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "required": "Обязательное поле"
   }
 }
