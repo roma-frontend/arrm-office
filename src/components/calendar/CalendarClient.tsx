@@ -339,10 +339,6 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
-  const [customEvents, setCustomEvents] = useState<CalendarEvent[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try { return JSON.parse(localStorage.getItem('hr_calendar_events') || '[]'); } catch { return []; }
-  });
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [selectedDriverEvent, setSelectedDriverEvent] = useState<DriverScheduleEvent | null>(null);
   const [selectedGoogleEvent, setSelectedGoogleEvent] = useState<GoogleCalendarEvent | null>(null);
@@ -472,6 +468,28 @@ export const CalendarClient = React.memo(function CalendarClient() {
         }
       : 'skip',
   ) as DriverScheduleEvent[] | undefined;
+
+  // Calendar events (custom user events)
+  const calendarEventsData = useQuery(
+    api.calendarEvents.getByOrganization,
+    mounted && selectedOrgId
+      ? { organizationId: selectedOrgId as Id<'organizations'> }
+      : 'skip',
+  );
+  const customEvents: CalendarEvent[] = (calendarEventsData ?? []).map((e) => ({
+    id: e._id,
+    title: e.title,
+    date: e.date,
+    startTime: e.startTime,
+    endTime: e.endTime,
+    allDay: e.allDay,
+    location: e.location ?? '',
+    description: e.description ?? '',
+    category: e.category,
+    reminder: e.reminder,
+    attendees: e.attendees ?? [],
+    attachmentUrl: e.attachmentUrl,
+  }));
 
   // Build driver schedule map
   const driverDateMap = useMemo(() => {
@@ -1201,11 +1219,6 @@ export const CalendarClient = React.memo(function CalendarClient() {
         onOpenChange={setShowCreateEvent}
         selectedDate={selectedDay}
         leaves={leaves}
-        onSave={(event) => {
-          const updated = [...customEvents, event];
-          setCustomEvents(updated);
-          localStorage.setItem('hr_calendar_events', JSON.stringify(updated));
-        }}
       />
 
       {/* Modals rendered via portal to escape overflow/contain constraints */}

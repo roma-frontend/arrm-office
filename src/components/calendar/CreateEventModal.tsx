@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -90,6 +90,7 @@ export function CreateEventModal({
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const selectedOrgId = useSelectedOrganization();
+  const createEventMutation = useMutation(api.calendarEvents.create);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>('details');
@@ -192,6 +193,24 @@ export function CreateEventModal({
       // Schedule reminder notification
       if (date && reminder !== 'none') {
         scheduleReminder(title, date, allDay ? '09:00' : startTime, reminder, t);
+      }
+      // Save event to database
+      if (organizationId && requesterId) {
+        await createEventMutation({
+          organizationId,
+          userId: requesterId,
+          title,
+          date,
+          startTime: allDay ? '00:00' : startTime,
+          endTime: allDay ? '23:59' : endTime,
+          allDay,
+          location: location || undefined,
+          description: description || undefined,
+          category,
+          reminder,
+          attendees: attendees.map((a) => a.name),
+          attachmentUrl,
+        });
       }
       // Save event
       const event: CalendarEvent = {

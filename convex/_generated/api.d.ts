@@ -23,6 +23,7 @@ import type * as automationMutations from "../automationMutations.js";
 import type * as automationTest from "../automationTest.js";
 import type * as backups from "../backups.js";
 import type * as birthdays from "../birthdays.js";
+import type * as calendarEvents from "../calendarEvents.js";
 import type * as careers from "../careers.js";
 import type * as chat from "../chat.js";
 import type * as chatAction from "../chatAction.js";
@@ -200,6 +201,7 @@ declare const fullApi: ApiFromModules<{
   automationTest: typeof automationTest;
   backups: typeof backups;
   birthdays: typeof birthdays;
+  calendarEvents: typeof calendarEvents;
   careers: typeof careers;
   chat: typeof chat;
   chatAction: typeof chatAction;

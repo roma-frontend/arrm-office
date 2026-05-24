@@ -31,4 +31,24 @@ export const events = {
     .index('by_date', ['startDate'])
     .index('by_org_date', ['organizationId', 'startDate'])
     .index('by_priority', ['priority']),
+
+  calendarEvents: defineTable({
+    organizationId: v.id('organizations'),
+    createdBy: v.id('users'),
+    title: v.string(),
+    date: v.string(),
+    startTime: v.string(),
+    endTime: v.string(),
+    allDay: v.boolean(),
+    location: v.optional(v.string()),
+    description: v.optional(v.string()),
+    category: v.string(),
+    reminder: v.string(),
+    attendees: v.optional(v.array(v.string())),
+    attachmentUrl: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_org', ['organizationId'])
+    .index('by_org_date', ['organizationId', 'date'])
+    .index('by_user', ['createdBy']),
 };
