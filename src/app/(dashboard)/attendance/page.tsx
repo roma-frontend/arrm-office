@@ -555,7 +555,8 @@ export default function AttendancePage() {
                             </div>
                             <div>
                               <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                                {stats.totalWorkedHours}h
+                                {stats.totalWorkedHours}
+                                {t('time.h')}
                               </p>
                               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                                 {t('attendance.worked')}

@@ -72,7 +72,7 @@
     "present": "Ներկա",
     "punchIn": "Ներկայացման նշում",
     "punchOut": "Հեռացման նշում",
-    "punctuality": "Ժամանակակություն",
+    "punctuality": "Պունկտուալություն",
     "rating": "Գնահատական",
     "recentAttendance": "Վերջին ներկայություններ",
     "regularHours": "Սովորական ժամեր",
@@ -101,7 +101,7 @@
   "attendanceExtra": {
     "daysWorked": "Աշխատանքային օրեր",
     "totalHours": "Ընդհանուր ժամեր",
-    "punctuality": "Ժամանակին գալը",
+    "punctuality": "Պունկտուալություն",
     "hoursShort": "ժ",
     "minutesShort": "րոպե",
     "overtimeShort": "արտաժամ",
