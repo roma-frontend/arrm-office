@@ -1059,5 +1059,10 @@
     "bestDates": "Best Dates for Vacation",
     "askAiToBook": "Ask the AI assistant to book any of these dates",
     "fullWeekNoConflicts": "full week, no team conflicts"
+  },
+  "performance": {
+    "strengths": "Strengths",
+    "areasForImprovement": "Areas for Improvement",
+    "comments": "Comments"
   }
 }

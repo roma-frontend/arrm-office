@@ -1088,5 +1088,10 @@
     "bestDates": "Beste Termine für Urlaub",
     "askAiToBook": "Bitten Sie den KI-Assistenten, einen dieser Termine zu buchen",
     "fullWeekNoConflicts": "volle Woche, keine Teamkonflikte"
+  },
+  "performance": {
+    "strengths": "Stärken",
+    "areasForImprovement": "Verbesserungsbereiche",
+    "comments": "Kommentare"
   }
 }

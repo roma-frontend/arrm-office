@@ -1059,5 +1059,10 @@
     "bestDates": "Լավագույն ամսաթվերը արձակուրդի համար",
     "askAiToBook": "Խնդրեք AI-ին ամրագրեл այս ամսաթվերից մեկը",
     "fullWeekNoConflicts": "лիարժակ շաբաթ, կоնֆлիկտнեր չկան"
+  },
+  "performance": {
+    "strengths": "Ուdelays delays",
+    "areasForImprovement": "Բdelays delays delays",
+    "comments": "Մdelays"
   }
 }

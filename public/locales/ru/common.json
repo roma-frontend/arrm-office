@@ -1087,5 +1087,10 @@
     "bestDates": "Лучшие даты для отпуска",
     "askAiToBook": "Попросите AI-ассистента забронировать любую из этих дат",
     "fullWeekNoConflicts": "полная неделя, нет конфликтов"
+  },
+  "performance": {
+    "strengths": "Сильные стороны",
+    "areasForImprovement": "Области для улучшения",
+    "comments": "Комментарии"
   }
 }

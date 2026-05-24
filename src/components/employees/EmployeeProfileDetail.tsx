@@ -345,7 +345,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
             {latestRating.strengths && (
               <div className="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-950">
                 <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1">
-                  💪 Strengths
+                  💪 {t('performance.strengths')}
                 </p>
                 <p className="text-sm text-green-700 dark:text-green-300">
                   {latestRating.strengths}
@@ -355,7 +355,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
             {latestRating.areasForImprovement && (
               <div className="mt-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
                 <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">
-                  📈 Areas for Improvement
+                  📈 {t('performance.areasForImprovement')}
                 </p>
                 <p className="text-sm text-orange-700 dark:text-orange-300">
                   {latestRating.areasForImprovement}
@@ -364,7 +364,9 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
             )}
             {latestRating.generalComments && (
               <div className="mt-2 p-3 rounded-lg bg-(--background-subtle)">
-                <p className="text-xs font-semibold text-(--text-muted) mb-1">💬 Comments</p>
+                <p className="text-xs font-semibold text-(--text-muted) mb-1">
+                  💬 {t('performance.comments')}
+                </p>
                 <p className="text-sm text-(--text-primary)">{latestRating.generalComments}</p>
               </div>
             )}
