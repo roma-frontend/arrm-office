@@ -1087,6 +1087,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                           toast(evt.title, {
                             description: `${evt.allDay ? t('createMeeting.allDay') : `${evt.startTime} – ${evt.endTime}`}${evt.location ? ` · ${evt.location}` : ''}`,
                             duration: 5000,
+                            classNames: { description: '!text-[var(--text-muted)]' },
                           });
                         }}
                       >
