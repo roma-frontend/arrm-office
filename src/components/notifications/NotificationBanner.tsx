@@ -64,6 +64,7 @@ export function NotificationBanner() {
     message: string;
     type: string;
     route?: string;
+    metadata?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -95,6 +96,7 @@ export function NotificationBanner() {
           message: latest.message,
           type: latest.type,
           route: latest.route || getRouteForType(latest.type),
+          metadata: latest.metadata,
         });
       }
     }
@@ -125,7 +127,15 @@ export function NotificationBanner() {
         message={t(`notifications.types.${newNotification.type}`, {
           defaultValue: newNotification.title,
         })}
-        suggestion={newNotification.message}
+        suggestion={(() => {
+          if (newNotification.metadata) {
+            try {
+              const meta = JSON.parse(newNotification.metadata);
+              if (meta.messageKey) return String(t(meta.messageKey, meta.params ?? {}));
+            } catch {}
+          }
+          return newNotification.message;
+        })()}
         icon={<MessageSquare className="w-5 h-5" />}
         onDismiss={handleDismiss}
         className="rounded-none border-x-0 border-t-0"
