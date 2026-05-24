@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
+import { cookies } from 'next/headers';
+import { getServerTranslation } from '@/lib/i18n/server-translation';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -9,6 +11,10 @@ export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const locale = cookieStore.get('i18nextLng')?.value || 'en';
+    const { t } = await getServerTranslation('common', locale);
+
     const userId = req.nextUrl.searchParams.get('userId');
     if (!userId) return NextResponse.json(null);
 
@@ -150,10 +156,13 @@ export async function GET(req: NextRequest) {
         });
 
         if (!conflict) {
-          const month = checkDate.toLocaleString('en', { month: 'long' });
+          const localeMap: Record<string, string> = { en: 'en', ru: 'ru', hy: 'hy', deu: 'de' };
+          const month = checkDate.toLocaleString(localeMap[locale] || 'en', { month: 'long' });
           const day = checkDate.getDate();
           const endDay = weekEnd.getDate();
-          bestDates.push(`${month} ${day}–${endDay} (full week, no team conflicts)`);
+          bestDates.push(
+            `${month} ${day}–${endDay} (${t('aiRecommendations.fullWeekNoConflicts')})`,
+          );
           foundGoodWeeks++;
         }
       }

@@ -683,7 +683,8 @@
     "status": "Status",
     "userApprovalDetails": "User Approval Details",
     "userApproved": "User Approved",
-    "userRejected": "User Rejected"
+    "userRejected": "User Rejected",
+    "days": "days"
   },
   "commonUI": {
     "loading": "Loading",
@@ -1046,5 +1047,17 @@
     "conflictWarning": "⚠️ Note: {{warnings}}",
     "conflictDetected": "🚨 **Conflict detected for your {{type}} leave ({{start}} → {{end}})**:",
     "conflictAdvice": "Please consider alternative dates or discuss with your manager."
+  },
+  "leaveTypes": {
+    "paid": "Paid Vacation",
+    "unpaid": "Unpaid Leave",
+    "sick": "Sick Leave",
+    "family": "Family Leave",
+    "doctor": "Doctor Visit"
+  },
+  "aiRecommendations": {
+    "bestDates": "Best Dates for Vacation",
+    "askAiToBook": "Ask the AI assistant to book any of these dates",
+    "fullWeekNoConflicts": "full week, no team conflicts"
   }
 }

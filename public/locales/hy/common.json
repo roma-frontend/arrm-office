@@ -683,7 +683,8 @@
     "status": "Status",
     "userApprovalDetails": "User Approval Details",
     "userApproved": "User Approved",
-    "userRejected": "User Rejected"
+    "userRejected": "User Rejected",
+    "days": "օր"
   },
   "commonUI": {
     "loading": "Բեռնվում է",
@@ -1046,5 +1047,17 @@
     "conflictWarning": "⚠️ Հնարավոր հակասություն հայտնաբերվել է {{type}} հայտի հետ ({{start}} → {{end}}):",
     "conflictDetected": "❌ Հակասություն հայտնաբերվել է {{type}} հայտի հետ ({{start}} → {{end}}):",
     "conflictAdvice": "✅ Խորհուրդ է տրվում վերանայել և լուծել հակասությունը՝ հնարավոր է, որ {{owner}}-ի {{type}} հայտը չեղարկվի կամ մերժվի:"
+  },
+  "leaveTypes": {
+    "paid": "Վճարоվի արձակուրդ",
+    "unpaid": "Անվճար արձակուրդ",
+    "sick": "Հիվանդանоց",
+    "family": "Ընտանեկան արձակուրդ",
+    "doctor": "Բժշկի այց"
+  },
+  "aiRecommendations": {
+    "bestDates": "Լավագույն ամսաթվերը արձակուրդի համար",
+    "askAiToBook": "Խնդրեք AI-ին ամրագրեл այս ամսաթվերից մեկը",
+    "fullWeekNoConflicts": "лիարժակ շաբաթ, կоնֆлիկտнեր չկան"
   }
 }

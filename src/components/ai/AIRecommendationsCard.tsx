@@ -173,7 +173,7 @@ export default function AIRecommendationsCard() {
                       <div className="flex items-center gap-2 mb-2">
                         <Calendar className="w-4 h-4 text-green-500" />
                         <p className="text-xs font-semibold text-green-500">
-                          Best Dates for Vacation
+                          {t('aiRecommendations.bestDates')}
                         </p>
                       </div>
                       <ul className="space-y-1">
@@ -188,7 +188,7 @@ export default function AIRecommendationsCard() {
                         ))}
                       </ul>
                       <p className="text-xs text-(--text-muted) mt-2">
-                        💬 Ask the AI assistant to book any of these dates
+                        💬 {t('aiRecommendations.askAiToBook')}
                       </p>
                     </motion.div>
                   )}

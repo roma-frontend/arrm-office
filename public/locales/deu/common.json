@@ -703,7 +703,8 @@
     "status": "Status",
     "userApprovalDetails": "Details zur Benutzergenehmigung",
     "userApproved": "Benutzer genehmigt",
-    "userRejected": "Benutzer abgelehnt"
+    "userRejected": "Benutzer abgelehnt",
+    "days": "Tage"
   },
   "commonUI": {
     "loading": "",
@@ -1075,5 +1076,17 @@
     "conflictWarning": "⚠️ Hinweis: {{warnings}}",
     "conflictDetected": "🚨 **Konflikt für {{type}}-Urlaub ({{start}} → {{end}})**:",
     "conflictAdvice": "Bitte alternative Termine erwägen."
+  },
+  "leaveTypes": {
+    "paid": "Bezahlter Urlaub",
+    "unpaid": "Unbezahlter Urlaub",
+    "sick": "Krankmeldung",
+    "family": "Familienurlaub",
+    "doctor": "Arztbesuch"
+  },
+  "aiRecommendations": {
+    "bestDates": "Beste Termine für Urlaub",
+    "askAiToBook": "Bitten Sie den KI-Assistenten, einen dieser Termine zu buchen",
+    "fullWeekNoConflicts": "volle Woche, keine Teamkonflikte"
   }
 }

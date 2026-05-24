@@ -24,7 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { LEAVE_TYPE_LABELS, type LeaveType, type LeaveStatus } from '@/lib/types';
+import { getLeaveTypeLabel, type LeaveType, type LeaveStatus } from '@/lib/types';
 import { CheckInOutWidget } from '@/components/attendance/CheckInOutWidget';
 import { DashboardBanners } from '@/components/dashboard/DashboardBanners';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -56,6 +56,7 @@ const itemVariants = {
 };
 
 const StatusBadge = memo(({ status }: { status: LeaveStatus }) => {
+  const { t } = useTranslation();
   const variants: Record<LeaveStatus, 'warning' | 'success' | 'destructive'> = {
     pending: 'warning',
     approved: 'success',
@@ -63,7 +64,7 @@ const StatusBadge = memo(({ status }: { status: LeaveStatus }) => {
   };
   return (
     <Badge variant={variants[status]} className="capitalize">
-      {status}
+      {t(`statuses.${status}`)}
     </Badge>
   );
 });
@@ -426,7 +427,7 @@ export function EmployeeDashboard() {
                   >
                     <div className="flex-1">
                       <p className="text-sm font-medium text-(--text-primary)">
-                        {LEAVE_TYPE_LABELS[leave.type as LeaveType]}
+                        {getLeaveTypeLabel(leave.type as LeaveType, t)}
                       </p>
                       <p className="text-xs text-(--text-muted) mt-0.5">
                         {format(new Date(leave.startDate), 'MMM d', { locale: dateFnsLocale })} –{' '}

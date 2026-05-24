@@ -703,7 +703,8 @@
     "status": "Status",
     "userApprovalDetails": "User Approval Details",
     "userApproved": "User Approved",
-    "userRejected": "User Rejected"
+    "userRejected": "User Rejected",
+    "days": "дн."
   },
   "commonUI": {
     "loading": "",
@@ -1074,5 +1075,17 @@
     "conflictWarning": "⚠️ Примечание: {{warnings}}",
     "conflictDetected": "🚨 **Конфликт для заявки на отпуск ({{type}}, {{start}} → {{end}})**:",
     "conflictAdvice": "Рассмотрите другие даты или обсудите с руководителем."
+  },
+  "leaveTypes": {
+    "paid": "Оплачиваемый отпуск",
+    "unpaid": "Неоплачиваемый отпуск",
+    "sick": "Больничный",
+    "family": "Семейный отпуск",
+    "doctor": "Посещение врача"
+  },
+  "aiRecommendations": {
+    "bestDates": "Лучшие даты для отпуска",
+    "askAiToBook": "Попросите AI-ассистента забронировать любую из этих дат",
+    "fullWeekNoConflicts": "полная неделя, нет конфликтов"
   }
 }
