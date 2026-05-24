@@ -571,7 +571,8 @@
     "hoursAgo": "vor {{count}} Std.",
     "selectDateRange": "Wählen Sie einen Datumsbereich",
     "daysAgo": "vor {{count}} T.",
-    "minutesAgo": "vor {{count}} Min."
+    "minutesAgo": "vor {{count}} Min.",
+    "h": "Std"
   },
   "timePeriods": {
     "today": "Heute",

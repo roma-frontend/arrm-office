@@ -16,7 +16,7 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 
 export function AttendanceDashboard() {
   const { user } = useAuthStore();
-  const { t } = useTranslation();
+  const { t } = useTranslation(['modules', 'common']);
   const currentMonth = new Date().toISOString().slice(0, 7); // "2026-02"
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
@@ -52,7 +52,7 @@ export function AttendanceDashboard() {
     },
     {
       label: t('attendanceExtra.totalHours'),
-      value: `${monthlyStats.totalWorkedHours}h`,
+      value: `${monthlyStats.totalWorkedHours}${t('time.h')}`,
       icon: Clock,
       color: 'text-green-500',
       borderColor: 'border-green-500/30',
@@ -67,8 +67,8 @@ export function AttendanceDashboard() {
       iconBg: 'bg-sky-400/10',
     },
     {
-      label: t('attendance.overtime'),
-      value: `${monthlyStats.totalOvertimeHours}h`,
+      label: t('attendanceExtra.overtime'),
+      value: `${monthlyStats.totalOvertimeHours}${t('time.h')}`,
       icon: Award,
       color: 'text-orange-500',
       borderColor: 'border-orange-500/30',

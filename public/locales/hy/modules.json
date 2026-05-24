@@ -66,8 +66,8 @@
     "onLeave": "Արձակուրդում է",
     "onTime": "Ժամանակին",
     "online": "Ցանցում",
-    "overtime": "+{{minutes}}ր գերժամ",
-    "overtimeHours": "Գերժամյա ժամեր",
+    "overtime": "+{{minutes}}ր արտաժամ",
+    "overtimeHours": "Արտժամյա ժամեր",
     "perfect": "✓ Գերազանց",
     "present": "Ներկա",
     "punchIn": "Ներկայացման նշում",
@@ -104,8 +104,9 @@
     "punctuality": "Ժամանակին գալը",
     "hoursShort": "ժ",
     "minutesShort": "րոպե",
-    "overtimeShort": "գերժամ",
-    "lateDays": "Ուշացման օրեր"
+    "overtimeShort": "արտաժամ",
+    "lateDays": "Ուշացման օրեր",
+    "overtime": "Արտաժամեր"
   },
   "attendanceIssues": {
     "title": "Ներկայության խնդիրներ",

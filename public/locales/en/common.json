@@ -565,7 +565,8 @@
     "hoursAgo": "{{count}}h ago",
     "daysAgo": "{{count}}d ago",
     "minutesAgo": "{{count}}m ago",
-    "selectDateRange": "Select date range"
+    "selectDateRange": "Select date range",
+    "h": "h"
   },
   "timePeriods": {
     "today": "Today",

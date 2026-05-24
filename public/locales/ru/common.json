@@ -571,7 +571,8 @@
     "hoursAgo": "{{count}} ч. назад",
     "daysAgo": "{{count}} дн. назад",
     "minutesAgo": "{{count}} мин. назад",
-    "selectDateRange": "Выберите диапазон дат"
+    "selectDateRange": "Выберите диапазон дат",
+    "h": "ч"
   },
   "timePeriods": {
     "today": "Сегодня",

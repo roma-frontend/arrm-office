@@ -105,7 +105,8 @@
     "lateDays": "Late Days",
     "hoursShort": "h",
     "minutesShort": "m",
-    "overtimeShort": "OT"
+    "overtimeShort": "OT",
+    "overtime": "Overtime"
   },
   "attendanceIssues": {
     "title": "Attendance Issues",

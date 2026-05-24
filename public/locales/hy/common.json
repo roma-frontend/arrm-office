@@ -565,7 +565,8 @@
     "hoursAgo": "{{count}} ժ առաջ",
     "selectDateRange": "Ընտրել ամսաթվերի միջակայք",
     "daysAgo": "{{count}} օր առաջ",
-    "minutesAgo": "{{count}} րոպե առաջ"
+    "minutesAgo": "{{count}} րոպե առաջ",
+    "h": "ժ"
   },
   "timePeriods": {
     "today": "Այսօր",
