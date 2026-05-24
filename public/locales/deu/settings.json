@@ -79,7 +79,10 @@
       "disableDesc": "Geben Sie Ihr Passwort zur Bestätigung ein. Dies entfernt den 2FA-Schutz.",
       "enterPassword": "Passwort eingeben",
       "disable2fa": "2FA deaktivieren"
-    }
+    },
+    "syncEmployees": "Mitarbeiter synchronisieren",
+    "syncFailed": "Synchronisierung fehlgeschlagen",
+    "failedToSave": "Speichern fehlgeschlagen"
   },
   "settingsExtended": {
     "appearance": "Erscheinungsbild",

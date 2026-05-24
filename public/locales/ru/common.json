@@ -1104,5 +1104,21 @@
   "employeeTypes": {
     "staff": "Штатный",
     "contractor": "Подрядчик"
+  },
+  "leaves": {
+    "newRequestNotification": "Новая заявка на отпуск! 🏖️",
+    "pendingRequestsCount": "У вас {{count}} ожидающих заявок"
+  },
+  "tasks": {
+    "failedToUpdateStatus": "Не удалось обновить статус",
+    "fileTooLarge": "{{name}} слишком большой (макс. 10МБ)",
+    "failedToUpload": "Не удалось загрузить {{name}}"
+  },
+  "reports": {
+    "exportCsv": "Экспорт CSV"
+  },
+  "profile": {
+    "failedToSave": "Не удалось сохранить профиль",
+    "failedToDeleteAvatar": "Не удалось удалить аватар"
   }
 }

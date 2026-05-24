@@ -79,7 +79,10 @@
       "disableDesc": "Enter your password to confirm. This will remove 2FA protection from your account.",
       "enterPassword": "Enter your password",
       "disable2fa": "Disable 2FA"
-    }
+    },
+    "syncEmployees": "Sync Employees",
+    "syncFailed": "Sync failed",
+    "failedToSave": "Failed to save"
   },
   "settingsExtended": {
     "appearance": "Appearance",

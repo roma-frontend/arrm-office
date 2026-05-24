@@ -140,9 +140,7 @@ export default function SuperadminCreateOrgPage() {
           <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-(--button-danger-bg) text-(--button-danger-text)">
             <ShieldAlert className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-bold text-(--text-primary) mb-2">
-            {t('ui.accessDenied')}
-          </h1>
+          <h1 className="text-2xl font-bold text-(--text-primary) mb-2">{t('ui.accessDenied')}</h1>
           <p className="text-sm text-(--text-secondary)">{t('ui.onlySuperadminCanAccess')}</p>
           <p className="mt-4 text-xs text-(--text-muted)">
             {t('ui.yourEmail')} <span className="font-medium">{user.email}</span> · {t('ui.role')}{' '}
@@ -186,7 +184,7 @@ export default function SuperadminCreateOrgPage() {
     setLoading(true);
 
     try {
-      toast.info(`Creating ${formData.name}…`);
+      toast.info(t('superadmin.creatingOrg', { name: formData.name }));
 
       await createOrg({
         superadminUserId: user.id as never,
@@ -198,8 +196,8 @@ export default function SuperadminCreateOrgPage() {
         industry: formData.industry,
       });
 
-      toast.success(`Organization "${formData.name}" created successfully!`);
-      toast.info(`Admin invitation will be sent to ${formData.adminEmail}`);
+      toast.success(t('superadmin.orgCreated', { name: formData.name }));
+      toast.info(t('superadmin.adminInviteSent', { email: formData.adminEmail }));
 
       setFormData({
         name: '',
@@ -215,7 +213,7 @@ export default function SuperadminCreateOrgPage() {
       // Optionally route back to org list
       // router.push('/superadmin/organizations');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to create organization';
+      const message = error instanceof Error ? error.message : t('superadmin.orgCreateFailed');
       console.error('Full error:', error);
       toast.error(message);
     } finally {
@@ -353,9 +351,7 @@ export default function SuperadminCreateOrgPage() {
                         'relative text-left rounded-xl border bg-(--card) p-4 transition-all',
                         'hover:border-(--primary)/60 hover:shadow-md hover:-translate-y-0.5',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring)',
-                        selected
-                          ? `ring-2 shadow-md ${ringActive}`
-                          : 'border-(--border)',
+                        selected ? `ring-2 shadow-md ${ringActive}` : 'border-(--border)',
                       ].join(' ')}
                     >
                       {badge === 'popular' && (
@@ -625,13 +621,7 @@ function Field({
   );
 }
 
-function InputWithIcon({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function InputWithIcon({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="relative rounded-xl border border-(--input-border) bg-(--input) focus-within:border-(--primary) focus-within:ring-2 focus-within:ring-(--ring) transition">
       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--text-muted)">
@@ -643,7 +633,10 @@ function InputWithIcon({
 }
 
 function PlanBadge({ plan }: { plan: Plan }) {
-  const map: Record<Plan, { label: string; cls: string; Icon: React.ComponentType<{ className?: string }> }> = {
+  const map: Record<
+    Plan,
+    { label: string; cls: string; Icon: React.ComponentType<{ className?: string }> }
+  > = {
     starter: {
       label: 'Starter',
       cls: 'bg-(--badge-secondary-bg) text-(--badge-secondary-text) border-(--badge-secondary-border)',

@@ -237,7 +237,7 @@ export default function SettingsPage() {
       toast.success(t('toasts.settingsSaved'));
     } catch (err) {
       console.error('Failed to save settings:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to save');
+      toast.error(err instanceof Error ? err.message : t('settings.failedToSave'));
     } finally {
       setSaving(false);
     }

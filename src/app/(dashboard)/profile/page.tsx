@@ -146,7 +146,7 @@ export default function ProfilePage() {
       // Don't reload - let Convex revalidate automatically
     } catch (err) {
       console.error('[Profile] Save error:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to save profile');
+      toast.error(err instanceof Error ? err.message : t('profile.failedToSave'));
     } finally {
       setSaving(false);
     }
@@ -171,7 +171,7 @@ export default function ProfilePage() {
       setShowDeleteDialog(false);
     } catch (err) {
       console.error('Delete avatar error:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to delete avatar');
+      toast.error(err instanceof Error ? err.message : t('profile.failedToDeleteAvatar'));
     } finally {
       setDeleting(false);
     }

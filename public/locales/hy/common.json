@@ -1076,5 +1076,21 @@
   "employeeTypes": {
     "staff": "Հիմնական աշխատակից",
     "contractor": "Պայմանագրային աշխատակից"
+  },
+  "leaves": {
+    "newRequestNotification": "Նոր արձակdelays հայdelays! 🏖️",
+    "pendingRequestsCount": "Դուdelays delays {{count}} delays delays"
+  },
+  "tasks": {
+    "failedToUpdateStatus": "Delays delays delays",
+    "fileTooLarge": "{{name}} delays delays",
+    "failedToUpload": "Delays delays {{name}}"
+  },
+  "reports": {
+    "exportCsv": "Delays CSV"
+  },
+  "profile": {
+    "failedToSave": "Delays delays delays",
+    "failedToDeleteAvatar": "Delays delays delays"
   }
 }

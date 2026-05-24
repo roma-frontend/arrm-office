@@ -49,7 +49,7 @@ export function CreateTaskModal({ currentUserId, userRole, onClose }: Props) {
   const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files ?? []).filter((f) => {
       if (f.size > 10 * 1024 * 1024) {
-        toast.error(`${f.name} too large (max 10MB)`);
+        toast.error(t('tasks.fileTooLarge', { name: f.name }));
         return false;
       }
       return true;
@@ -116,7 +116,7 @@ export function CreateTaskModal({ currentUserId, userRole, onClose }: Props) {
             uploaded++;
             setUploadProgress({ uploaded, total: files.length });
           } catch {
-            toast.error(`Failed to upload ${file.name}`);
+            toast.error(t('tasks.failedToUpload', { name: file.name }));
           }
         }
         setUploadProgress(null);

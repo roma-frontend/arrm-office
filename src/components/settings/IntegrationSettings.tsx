@@ -180,7 +180,7 @@ export function IntegrationSettings() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || 'Sync failed');
+        toast.error(data.error || t('settings.syncFailed'));
         return;
       }
 
@@ -340,7 +340,7 @@ export function IntegrationSettings() {
                       ) : (
                         <RefreshCw className="w-3 h-3 mr-1" />
                       )}
-                      Sync Employees
+                      {t('settings.syncEmployees')}
                     </Button>
                     <Button
                       variant="outline"

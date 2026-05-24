@@ -1076,5 +1076,21 @@
   "employeeTypes": {
     "staff": "Staff",
     "contractor": "Contractor"
+  },
+  "leaves": {
+    "newRequestNotification": "New Leave Request! 🏖️",
+    "pendingRequestsCount": "You have {{count}} pending leave request(s)"
+  },
+  "tasks": {
+    "failedToUpdateStatus": "Failed to update status",
+    "fileTooLarge": "{{name}} too large (max 10MB)",
+    "failedToUpload": "Failed to upload {{name}}"
+  },
+  "reports": {
+    "exportCsv": "Export CSV"
+  },
+  "profile": {
+    "failedToSave": "Failed to save profile",
+    "failedToDeleteAvatar": "Failed to delete avatar"
   }
 }

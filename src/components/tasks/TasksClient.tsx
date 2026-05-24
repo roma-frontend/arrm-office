@@ -827,7 +827,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                 });
               })
               .catch(() => {
-                toast.error('Failed to update status');
+                toast.error(t('tasks.failedToUpdateStatus'));
                 setOptimisticStatuses((prev) => {
                   const next = new Map(prev);
                   next.delete(task._id as string);

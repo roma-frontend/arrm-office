@@ -711,7 +711,11 @@
       "system": "System",
       "noChatMessages": "Keine Nachrichten gefunden",
       "loading": ""
-    }
+    },
+    "creatingOrg": "{{name}} wird erstellt…",
+    "orgCreated": "Organisation \"{{name}}\" erstellt!",
+    "adminInviteSent": "Admin-Einladung gesendet an {{email}}",
+    "orgCreateFailed": "Organisation konnte nicht erstellt werden"
   },
   "superadminSecurity": {
     "securityControl": "Sicherheitskontrolle",

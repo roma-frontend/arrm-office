@@ -192,7 +192,7 @@ export default function ReportsPage() {
                 disabled={isLoading}
                 className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
               >
-                <Download className="w-4 h-4" /> Export CSV
+                <Download className="w-4 h-4" /> {t('reports.exportCsv')}
               </Button>
             </div>
           </div>

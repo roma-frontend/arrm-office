@@ -711,7 +711,11 @@
       "system": "Системное",
       "noChatMessages": "Сообщений не найдено",
       "loading": ""
-    }
+    },
+    "creatingOrg": "Создание {{name}}…",
+    "orgCreated": "Организация \"{{name}}\" создана!",
+    "adminInviteSent": "Приглашение отправлено на {{email}}",
+    "orgCreateFailed": "Не удалось создать организацию"
   },
   "superadminSecurity": {
     "securityControl": "Центр управления безопасностью",

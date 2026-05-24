@@ -1105,5 +1105,21 @@
   "employeeTypes": {
     "staff": "Festangestellt",
     "contractor": "Auftragnehmer"
+  },
+  "leaves": {
+    "newRequestNotification": "Neuer Urlaubsantrag! 🏖️",
+    "pendingRequestsCount": "Sie haben {{count}} ausstehende Urlaubsanträge"
+  },
+  "tasks": {
+    "failedToUpdateStatus": "Status konnte nicht aktualisiert werden",
+    "fileTooLarge": "{{name}} zu groß (max. 10MB)",
+    "failedToUpload": "{{name}} konnte nicht hochgeladen werden"
+  },
+  "reports": {
+    "exportCsv": "CSV exportieren"
+  },
+  "profile": {
+    "failedToSave": "Profil konnte nicht gespeichert werden",
+    "failedToDeleteAvatar": "Avatar konnte nicht gelöscht werden"
   }
 }

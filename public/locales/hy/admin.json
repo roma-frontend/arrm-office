@@ -705,7 +705,11 @@
       "system": "Համակարգային",
       "noChatMessages": "Հաղորդագրություններ չգտնվեցին",
       "loading": "Բեռնում..."
-    }
+    },
+    "creatingOrg": "Delays {{name}}…",
+    "orgCreated": "Delays \"{{name}}\" delays!",
+    "adminInviteSent": "Delays delays {{email}}",
+    "orgCreateFailed": "Delays delays delays"
   },
   "superadminSecurity": {
     "securityControl": "Անվտանգության կառավարման կենտրոն",

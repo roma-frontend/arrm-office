@@ -705,7 +705,11 @@
       "system": "System",
       "noChatMessages": "No messages found",
       "loading": "Loading..."
-    }
+    },
+    "creatingOrg": "Creating {{name}}…",
+    "orgCreated": "Organization \"{{name}}\" created!",
+    "adminInviteSent": "Admin invitation sent to {{email}}",
+    "orgCreateFailed": "Failed to create organization"
   },
   "superadminSecurity": {
     "securityControl": "Security Control Center",

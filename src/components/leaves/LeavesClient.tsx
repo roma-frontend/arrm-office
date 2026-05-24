@@ -151,8 +151,8 @@ export function LeavesClient() {
     if (unreadCount > previousUnreadCount && !hasPlayed) {
       sessionStorage.setItem(`leave_sound_${unreadCount}`, '1');
       playNotificationSound('new_request');
-      sendBrowserNotification('New Leave Request! 🏖️', {
-        body: `You have ${unreadCount} pending leave request(s)`,
+      sendBrowserNotification(t('leaves.newRequestNotification'), {
+        body: t('leaves.pendingRequestsCount', { count: unreadCount }),
         soundType: 'new_request',
       });
     }
