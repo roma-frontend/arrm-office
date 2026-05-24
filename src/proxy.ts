@@ -276,7 +276,7 @@ function buildCsp(nonce: string, isProduction: boolean): string {
     styleSrc,
     "img-src 'self' blob: data: https://res.cloudinary.com https://lh3.googleusercontent.com https://*.sentry.io https://vercel.live https://va.vercel-scripts.com https://i.ytimg.com https://*.ytimg.com https://*.tile.openstreetmap.org",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://*.convex.cloud https://*.convex.site https://*.sentry.io https://vercel.live https://*.stripe.com https://*.js.stripe.com https://va.vercel-scripts.com https://vitals.vercel-insights.com wss://*.convex.cloud wss://*.vercel.live",
+    "connect-src 'self' https://*.convex.cloud https://*.convex.site https://*.sentry.io https://vercel.live https://*.stripe.com https://*.js.stripe.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://nominatim.openstreetmap.org wss://*.convex.cloud wss://*.vercel.live",
     "worker-src 'self' blob:",
     "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.js.stripe.com",
     "object-src 'none'",
