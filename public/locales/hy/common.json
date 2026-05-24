@@ -1157,5 +1157,8 @@
   },
   "employees": {
     "loadingProfile": "Բեռնվում է պրոֆիլը..."
+  },
+  "quickStats": {
+    "active": "delays"
   }
 }

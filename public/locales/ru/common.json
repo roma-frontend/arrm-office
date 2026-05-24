@@ -1185,5 +1185,8 @@
   },
   "employees": {
     "loadingProfile": "Загрузка профиля..."
+  },
+  "quickStats": {
+    "active": "активны"
   }
 }

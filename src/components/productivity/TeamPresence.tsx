@@ -71,7 +71,7 @@ export function TeamPresence() {
           </h3>
           <p className="text-[10px] text-(--text-muted) mt-0.5">
             {onlineCount} {onlineCount === 1 ? t('quickStats.member') : t('quickStats.members')}{' '}
-            active
+            {t('quickStats.active')}
           </p>
         </div>
         <Users className="w-4 h-4 text-(--text-muted)" />

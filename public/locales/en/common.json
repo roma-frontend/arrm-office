@@ -1153,5 +1153,8 @@
   },
   "employees": {
     "loadingProfile": "Loading employee profile..."
+  },
+  "quickStats": {
+    "active": "active"
   }
 }
