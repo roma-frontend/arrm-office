@@ -18,9 +18,15 @@ body.scroll-locked {
 
 /* Prevent layout shift when scrollbar appears/disappears — desktop only */
 @media (min-width: 1024px) {
-  .main-scrollable {
+  html {
     scrollbar-gutter: stable;
   }
+}
+
+/* Prevent Radix UI from adding padding-right shift on body */
+body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
 }
 
 /* Hide scrollbar on mobile while keeping scroll functional */

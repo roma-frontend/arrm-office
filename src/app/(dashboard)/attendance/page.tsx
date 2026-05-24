@@ -128,7 +128,10 @@ export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState<Tab>('today');
   const [drawerEmployee, setDrawerEmployee] = useState<EmployeeInfo | null>(null);
   const [empSearch, setEmpSearch] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
   const isSuperadmin = user?.role === 'superadmin';
@@ -193,7 +196,9 @@ export default function AttendancePage() {
   ];
   const monthOptions: string[] = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
-    return d.toISOString().slice(0, 7);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
   });
 
   const filteredEmployees = (allEmployeesOverview ?? []).filter(
@@ -460,7 +465,7 @@ export default function AttendancePage() {
                         const [y, mo] = m.split('-').map(Number) as [number, number];
                         return { value: m, label: `${MONTHS[mo - 1]} ${y}` };
                       })}
-                      triggerClassName="px-3 py-1.5 text-sm rounded-lg focus:outline-none focus:ring-2"
+                      triggerClassName="px-3 py-1.5 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] focus:outline-none focus:ring-2"
                       dropdownClassName="border-[var(--border)] bg-[var(--background)] text-[var(--text-primary)]"
                     />
                   </div>

@@ -92,7 +92,7 @@ export function MyCourses({ myEnrollments, onOpenCourse, onGoToCatalog }: MyCour
       {myEnrollments.map((enrollment) => (
         <Card key={enrollment._id} className="hover:shadow-md transition-shadow">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold">{enrollment.courseTitle}</h3>
                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
@@ -109,8 +109,8 @@ export function MyCourses({ myEnrollments, onOpenCourse, onGoToCatalog }: MyCour
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="text-left sm:text-right">
                   <p className="text-2xl font-bold">{enrollment.progress ?? 0}%</p>
                   <p className="text-sm text-muted-foreground">
                     {t('learning.progress', 'Progress')}

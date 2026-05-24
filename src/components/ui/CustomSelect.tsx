@@ -109,14 +109,14 @@ export function CustomSelect({
   };
 
   return (
-    <div className={cn('relative inline-block', fullWidth && 'w-full', className)}>
+    <div className={cn('min-w-20 relative inline-block', fullWidth && 'w-full', className)}>
       <button
         ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setOpen(!open)}
         className={cn(
-          'flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm outline-none cursor-pointer transition-all',
+          'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm outline-none cursor-pointer transition-all text-[var(--text-primary)]',
           disabled && 'opacity-50 cursor-not-allowed',
           triggerClassName,
         )}

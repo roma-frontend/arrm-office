@@ -942,13 +942,12 @@ export function Sidebar() {
       </nav>
 
       {/* Organization Branding */}
-      <div className="px-3 py-2 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
+      <div className="px-2 py-3 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
         <div
           className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300',
+            'bg-[var(--input)] flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300',
             collapsed && 'justify-center',
           )}
-          style={{ backgroundColor: 'var(--background-subtle)' }}
         >
           <Building2 className="w-4 h-4 shrink-0" style={{ color: 'var(--primary)' }} />
           <div
@@ -1208,7 +1207,7 @@ export function MobileSidebar() {
 
         {/* Organization Selector - Top Position Mobile */}
         <div
-          className="py-3 border-b"
+          className="py-3 px-2 border-b"
           style={{
             borderColor: 'var(--sidebar-border)',
             opacity: mobileOpen ? 1 : 0,
@@ -1531,7 +1530,7 @@ export function MobileSidebar() {
         </nav>
 
         {/* Organization Branding */}
-        <div className="px-3 py-2 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
+        <div className="px-2 py-3 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
           <div
             className="flex items-center gap-2 px-3 py-2 rounded-lg"
             style={{

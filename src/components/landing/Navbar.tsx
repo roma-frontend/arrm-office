@@ -147,7 +147,7 @@ export default function Navbar() {
           title={t('auth.logoTooltip')}
         >
           <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center logo-spin"
+            className="w-10 h-10 rounded-xl flex items-center justify-center logo-spin"
             style={{ background: 'linear-gradient(135deg, #2563eb, #93c5fd)' }}
             aria-hidden="true"
           >
