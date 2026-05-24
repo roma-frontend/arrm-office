@@ -426,7 +426,7 @@ export default function AttendancePage() {
         )}
 
         {/* All Employees Tab */}
-        {isAdminOrSupervisor && activeTab === t('common.allEmployees') && (
+        {isAdminOrSupervisor && activeTab === 'all' && (
           <div>
             <Card>
               <CardHeader>
