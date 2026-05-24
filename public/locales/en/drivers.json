@@ -437,7 +437,11 @@
       "history": "Shift History",
       "noHistory": "No shift history yet",
       "overtime": "Overtime",
-      "now": "Now"
+      "now": "Now",
+      "min": "min",
+      "h": "h",
+      "m": "m",
+      "km": "km"
     },
     "openInMap": "Open in Map",
     "mapTitle": "Map",
@@ -453,7 +457,8 @@
       "navigate": "Navigate",
       "pickupTarget": "Pickup",
       "dropoffTarget": "Dropoff"
-    }
+    },
+    "min": "min"
   },
   "drivers": {
     "notRegistered": "Not Registered",

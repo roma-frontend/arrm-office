@@ -23,7 +23,7 @@ interface DriverStatsCardProps {
 }
 
 export function DriverStatsCard({ driverId, organizationId }: DriverStatsCardProps) {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['drivers', 'common']);
   const [period, setPeriod] = React.useState<'week' | 'month' | 'year'>('month');
 
   const stats = useQuery(api.drivers.requests_queries.getDriverStats, { driverId, period });
@@ -199,7 +199,7 @@ export function DriverStatsCard({ driverId, organizationId }: DriverStatsCardPro
           </CardHeader>
           <CardContent className="px-3 py-2 pb-3">
             <div className="text-xl sm:text-2xl font-bold text-(--text-primary)">
-              {Math.round(stats.totalWorkedHours * 60)} min
+              {Math.round(stats.totalWorkedHours * 60)} {t('driver.min', 'min')}
             </div>
           </CardContent>
         </Card>
@@ -215,7 +215,7 @@ export function DriverStatsCard({ driverId, organizationId }: DriverStatsCardPro
               {stats.totalTrips > 0
                 ? ((stats.totalWorkedHours * 60) / stats.totalTrips).toFixed(0)
                 : 0}{' '}
-              min
+              {t('driver.min', 'min')}
             </div>
           </CardContent>
         </Card>

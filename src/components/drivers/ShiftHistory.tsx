@@ -16,7 +16,7 @@ interface ShiftHistoryProps {
 }
 
 export function ShiftHistory({ driverId }: ShiftHistoryProps) {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['drivers', 'common']);
   const dfLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
   const shifts = useQuery(api.drivers.shifts_mutations.getShiftHistory, { driverId, limit: 10 });
 
@@ -26,7 +26,7 @@ export function ShiftHistory({ driverId }: ShiftHistoryProps) {
     if (!hours) return '-';
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
-    return `${h}h ${m}m`;
+    return `${h}${t('driver.shift.h', 'h')} ${m}${t('driver.shift.m', 'm')}`;
   };
 
   const getStatusBadge = (status: string) => {
@@ -117,7 +117,7 @@ export function ShiftHistory({ driverId }: ShiftHistoryProps) {
                       {t('driver.shift.distance', 'Distance')}
                     </p>
                     <p className="font-medium text-xs sm:text-sm">
-                      {(shift.totalDistance || 0).toFixed(1)} km
+                      {(shift.totalDistance || 0).toFixed(1)} {t('driver.shift.km', 'km')}
                     </p>
                   </div>
                   {shift.overtimeHours && shift.overtimeHours > 0 && (
@@ -126,7 +126,8 @@ export function ShiftHistory({ driverId }: ShiftHistoryProps) {
                         {t('driver.shift.overtime', 'Overtime')}
                       </p>
                       <p className="font-medium text-orange-600 text-xs sm:text-sm">
-                        {shift.overtimeHours.toFixed(1)}h
+                        {shift.overtimeHours.toFixed(1)}
+                        {t('driver.shift.h', 'h')}
                       </p>
                     </div>
                   )}

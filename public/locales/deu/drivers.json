@@ -443,7 +443,11 @@
       "history": "Schichthistorie",
       "noHistory": "Keine Schichthistorie vorhanden",
       "overtime": "Überstunden",
-      "now": "Jetzt"
+      "now": "Jetzt",
+      "min": "Min",
+      "h": "Std",
+      "m": "Min",
+      "km": "km"
     },
     "openInMap": "In Karte öffnen",
     "mapTitle": "Karte",
@@ -459,7 +463,8 @@
       "navigate": "Navigation",
       "pickupTarget": "Abholung",
       "dropoffTarget": "Abgabe"
-    }
+    },
+    "min": "Min"
   },
   "drivers": {
     "notRegistered": "Nicht registriert",
