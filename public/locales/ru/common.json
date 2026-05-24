@@ -1232,6 +1232,9 @@
     "searchPeople": "Поиск людей...",
     "noResults": "Нет результатов",
     "conflict": "Занят в это время",
-    "uploading": "Загрузка..."
+    "uploading": "Загрузка...",
+    "back": "Назад",
+    "next": "Далее",
+    "reminderFired": "Скоро начнётся: {{title}}"
   }
 }

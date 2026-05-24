@@ -998,6 +998,9 @@
     "searchPeople": "Search people...",
     "noResults": "No results",
     "conflict": "Busy at this time",
-    "uploading": "Uploading..."
+    "uploading": "Uploading...",
+    "back": "Back",
+    "next": "Next",
+    "reminderFired": "Event starting soon: {{title}}"
   }
 }

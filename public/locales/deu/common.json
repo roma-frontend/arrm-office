@@ -1233,6 +1233,9 @@
     "searchPeople": "Personen suchen...",
     "noResults": "Keine Ergebnisse",
     "conflict": "Zu dieser Zeit beschäftigt",
-    "uploading": "Hochladen..."
+    "uploading": "Hochladen...",
+    "back": "Zurück",
+    "next": "Weiter",
+    "reminderFired": "Ereignis beginnt bald: {{title}}"
   }
 }

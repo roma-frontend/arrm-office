@@ -44,6 +44,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { uploadTaskAttachment } from '@/actions/cloudinary';
 import { getInitials } from '@/lib/stringUtils';
+import { playNotificationSound, sendBrowserNotification } from '@/lib/notificationSound';
 
 interface CreateEventModalProps {
   open: boolean;
@@ -171,6 +172,10 @@ export function CreateEventModal({
         attachmentUrl = await uploadTaskAttachment(base64, attachment.name);
       }
       toast.success(t('createMeeting.title'));
+      // Schedule reminder notification
+      if (date && reminder !== 'none') {
+        scheduleReminder(title, date, allDay ? '09:00' : startTime, reminder, t);
+      }
       handleClose(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');
@@ -610,45 +615,44 @@ export function CreateEventModal({
 
         {/* Footer */}
         <div className="shrink-0 bg-(--card) border-t border-(--border) px-6 py-4 flex items-center justify-between gap-3">
-          <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={stepIndex === 0 || uploading}
-            className="rounded-xl"
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            {t('createMeeting.cancel')}
-          </Button>
-          <div className="flex items-center gap-2">
-            {stepIndex < STEPS.length - 1 && (
-              <Button
-                variant="ghost"
-                onClick={() => handleClose(false)}
-                className="text-(--text-muted)"
-              >
-                {t('createMeeting.cancel')}
-              </Button>
-            )}
+          {stepIndex > 0 ? (
             <Button
-              onClick={nextStep}
-              disabled={!canNext || uploading}
-              className="rounded-xl btn-gradient text-white font-medium shadow-md hover:shadow-lg px-6"
+              variant="outline"
+              onClick={prevStep}
+              disabled={uploading}
+              className="rounded-xl"
             >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('createMeeting.uploading')}
-                </>
-              ) : stepIndex === STEPS.length - 1 ? (
-                t('createMeeting.save')
-              ) : (
-                <>
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </>
-              )}
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              {t('createMeeting.back')}
             </Button>
-          </div>
+          ) : (
+            <Button
+              variant="ghost"
+              onClick={() => handleClose(false)}
+              className="rounded-xl text-(--text-muted)"
+            >
+              {t('createMeeting.cancel')}
+            </Button>
+          )}
+          <Button
+            onClick={nextStep}
+            disabled={!canNext || uploading}
+            className="rounded-xl btn-gradient text-white font-medium shadow-md hover:shadow-lg px-6"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {t('createMeeting.uploading')}
+              </>
+            ) : stepIndex === STEPS.length - 1 ? (
+              t('createMeeting.save')
+            ) : (
+              <>
+                {t('createMeeting.next')}
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </>
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -662,4 +666,49 @@ function fileToBase64(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+const REMINDER_OFFSETS: Record<string, number> = {
+  '5min': 5 * 60 * 1000,
+  '15min': 15 * 60 * 1000,
+  '30min': 30 * 60 * 1000,
+  '1hour': 60 * 60 * 1000,
+  '1day': 24 * 60 * 60 * 1000,
+};
+
+function scheduleReminder(
+  title: string,
+  date: string,
+  time: string,
+  reminder: string,
+  t: (key: string, opts?: Record<string, string>) => string,
+) {
+  const offset = REMINDER_OFFSETS[reminder];
+  if (!offset) return;
+
+  const eventTime = new Date(`${date}T${time}`).getTime();
+  const fireAt = eventTime - offset;
+  const delay = fireAt - Date.now();
+
+  if (delay <= 0) return; // Already passed
+
+  setTimeout(() => {
+    // Play sound
+    playNotificationSound('new_request');
+    // Show rich toast
+    toast(t('createMeeting.reminderFired', { title }), {
+      icon: '🔔',
+      duration: 8000,
+      style: {
+        background: 'var(--card)',
+        border: '1px solid var(--border)',
+        color: 'var(--text-primary)',
+      },
+    });
+    // Browser notification
+    sendBrowserNotification(t('createMeeting.reminderFired', { title }), {
+      body: `${date} ${time}`,
+      soundType: 'new_request',
+    });
+  }, delay);
 }
