@@ -481,11 +481,9 @@ export const updatePresenceStatus = mutation({
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
-    // Update status
-    await ctx.db.patch(userId, {
-      presenceStatus,
-      updatedAt: Date.now(),
-    });
+    // Update status in both users and userProfiles tables (dual-write)
+    await ctx.db.patch(userId, { presenceStatus, updatedAt: Date.now() });
+    await patchProfile(ctx, userId, { presenceStatus });
 
     // Audit log: presence status updated
     await ctx.db.insert('auditLogs', {
