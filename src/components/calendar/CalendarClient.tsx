@@ -565,6 +565,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
     return driverDateMap.get(format(selectedDay, 'yyyy-MM-dd')) ?? [];
   }, [selectedDay, driverDateMap]);
 
+  const selectedDayCustomEvents = useMemo(() => {
+    if (!selectedDay) return [];
+    return customEventsMap.get(format(selectedDay, 'yyyy-MM-dd')) ?? [];
+  }, [selectedDay, customEventsMap]);
+
   const prevMonth = () => setCurrentMonth((m) => subMonths(m, 1));
   const nextMonth = () => setCurrentMonth((m) => addMonths(m, 1));
   const goToday = () => {
@@ -839,7 +844,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
               <AnimatePresence mode="wait">
                 {selectedDayLeaves.length === 0 &&
                 selectedDayGoogle.length === 0 &&
-                selectedDayDriverEvents.length === 0 ? (
+                selectedDayDriverEvents.length === 0 &&
+                selectedDayCustomEvents.length === 0 ? (
                   <motion.div
                     key="empty"
                     initial={{ opacity: 0 }}
@@ -1044,6 +1050,42 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             <span className="text-[10px] text-(--text-secondary)">
                               {t('driver.driverBookings', 'Driver Booking')}
                             </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {/* Custom calendar events */}
+                    {selectedDayCustomEvents.map((evt, i) => (
+                      <motion.div
+                        key={evt.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          delay: (selectedDayLeaves.length + selectedDayGoogle.length + selectedDayDriverEvents.length + i) * 0.04,
+                        }}
+                        className="flex items-start gap-2.5 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-500/5 cursor-pointer hover:border-blue-400 transition-colors"
+                        onClick={() => {
+                          toast(evt.title, {
+                            description: `${evt.allDay ? t('createMeeting.allDay') : `${evt.startTime} – ${evt.endTime}`}${evt.location ? ` · ${evt.location}` : ''}`,
+                            duration: 5000,
+                          });
+                        }}
+                      >
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500 text-white">
+                          <CalendarPlus className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-(--text-primary) truncate">{evt.title}</p>
+                          <p className="text-[10px] text-(--text-muted) mt-0.5">
+                            {evt.allDay ? t('createMeeting.allDay') : `${evt.startTime} – ${evt.endTime}`}
+                          </p>
+                          {evt.location && (
+                            <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">📍 {evt.location}</p>
+                          )}
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="w-2 h-2 rounded-full shrink-0 bg-blue-500" />
+                            <span className="text-[10px] text-(--text-secondary)">{t('createMeeting.categories.' + evt.category, evt.category)}</span>
                           </div>
                         </div>
                       </motion.div>
