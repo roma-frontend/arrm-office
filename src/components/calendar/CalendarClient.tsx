@@ -760,21 +760,21 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         </ContextMenuTrigger>
                         <ContextMenuContent className="w-52">
                           <ContextMenuItem
-                            onClick={() => { setSelectedDay(date); setShowCreateEvent(true); }}
+                            onSelect={() => { setSelectedDay(date); setShowCreateEvent(true); }}
                             className="gap-2"
                           >
                             <CalendarPlus className="w-4 h-4 text-blue-500" />
                             {t('createMeeting.contextMenu.newEvent')}
                           </ContextMenuItem>
                           <ContextMenuItem
-                            onClick={() => { setSelectedDay(date); setShowLeaveModal(true); }}
+                            onSelect={() => { setSelectedDay(date); setShowLeaveModal(true); }}
                             className="gap-2"
                           >
                             <CalendarDays className="w-4 h-4 text-emerald-500" />
                             {t('createMeeting.contextMenu.newLeave')}
                           </ContextMenuItem>
                           <ContextMenuItem
-                            onClick={() => { setSelectedDay(date); setShowDriverModal(true); }}
+                            onSelect={() => { setSelectedDay(date); setShowDriverModal(true); }}
                             className="gap-2"
                           >
                             <Car className="w-4 h-4 text-orange-500" />
@@ -782,14 +782,14 @@ export const CalendarClient = React.memo(function CalendarClient() {
                           </ContextMenuItem>
                           <ContextMenuSeparator />
                           <ContextMenuItem
-                            onClick={() => setSelectedDay(date)}
+                            onSelect={() => setSelectedDay(date)}
                             className="gap-2"
                           >
                             <Clock className="w-4 h-4 text-(--text-muted)" />
                             {t('createMeeting.contextMenu.viewDay')}
                           </ContextMenuItem>
                           <ContextMenuItem
-                            onClick={() => {
+                            onSelect={() => {
                               navigator.clipboard.writeText(format(date, 'yyyy-MM-dd'));
                               toast.success(t('createMeeting.contextMenu.copyDate'));
                             }}
