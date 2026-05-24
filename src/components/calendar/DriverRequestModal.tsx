@@ -388,7 +388,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
 
         <div className="space-y-6" style={{ overflow: 'visible' }}>
           {/* Select Driver */}
-          <div>
+          <div className="space-y-2">
             <Label>{t('driver.selectDriver', 'Select Driver')}</Label>
             <Select
               value={selectedDriver}
@@ -506,7 +506,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           {/* Trip Details */}
           <div className="space-y-5">
             {/* Pickup */}
-            <div>
+            <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-500" />
                 {t('driver.pickupLocation', 'Pickup Location')}
@@ -528,7 +528,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
             </div>
 
             {/* Dropoff */}
-            <div>
+            <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-red-500" />
                 {t('driver.dropoffLocation', 'Dropoff Location')}
@@ -578,7 +578,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           </div>
 
           {/* Purpose */}
-          <div>
+          <div className="space-y-2">
             <Label>{t('driver.tripPurpose', 'Trip Purpose')}</Label>
             <Input
               value={tripInfo.purpose}
@@ -589,7 +589,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
 
           {/* Time Selection */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
                 {t('driver.startTime', 'Start Time')}
@@ -600,7 +600,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                 onChange={(e) => setStartTime(e.target.value)}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
                 {t('driver.endTime', 'End Time')}
@@ -614,7 +614,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           </div>
 
           {/* Passengers */}
-          <div>
+          <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               {t('driver.passengerCount', 'Passengers')}
@@ -631,7 +631,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           </div>
 
           {/* Notes */}
-          <div>
+          <div className="space-y-2">
             <Label>
               {t('driver.notes', 'Notes')} ({t('optional', 'Optional')})
             </Label>
