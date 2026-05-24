@@ -360,7 +360,16 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
     }
   };
 
-  if (!currentUser) return null;
+  if (!currentUser)
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
