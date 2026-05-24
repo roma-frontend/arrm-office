@@ -142,7 +142,8 @@ export function CreateEventModal({
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
   React.useEffect(() => {
-    if (open && editEvent) {
+    if (!open) return;
+    if (editEvent) {
       setTitle(editEvent.title);
       setDate(editEvent.date);
       setStartTime(editEvent.startTime);
@@ -152,10 +153,11 @@ export function CreateEventModal({
       setDescription(editEvent.description);
       setCategory(editEvent.category);
       setReminder(editEvent.reminder);
-    } else if (open && selectedDate) {
+    } else if (selectedDate) {
       setDate(format(selectedDate, 'yyyy-MM-dd'));
     }
-  }, [open, selectedDate, editEvent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const resetForm = () => {
     setStep('details');
