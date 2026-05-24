@@ -254,7 +254,7 @@ export function LocalizationSettings({
             <Label htmlFor="first-day">{t('labels.firstDayOfWeek')}</Label>
             <Select value={firstDayOfWeek} onValueChange={setFirstDayOfWeek}>
               <SelectTrigger id="first-day">
-                <SelectValue />
+                <SelectValue placeholder={t(`weekdays.${firstDayOfWeek}`)} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="sunday">{t('weekdays.sunday')}</SelectItem>
