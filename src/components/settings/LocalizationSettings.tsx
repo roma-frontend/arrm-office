@@ -132,14 +132,10 @@ export function LocalizationSettings({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="en">{t('localizationSettings.english')}</SelectItem>
-                  <SelectItem value="ru">{t('localizationSettings.russian')}</SelectItem>
-                  <SelectItem value="es">{t('localizationSettings.spanish')}</SelectItem>
-                  <SelectItem value="fr">{t('localizationSettings.french')}</SelectItem>
-                  <SelectItem value="de">{t('localizationSettings.german')}</SelectItem>
-                  <SelectItem value="zh">{t('localizationSettings.chinese')}</SelectItem>
-                  <SelectItem value="ja">{t('localizationSettings.japanese')}</SelectItem>
-                  <SelectItem value="ar">{t('localizationSettings.arabic')}</SelectItem>
+                  <SelectItem value="en">🇬🇧 English</SelectItem>
+                  <SelectItem value="ru">🇷🇺 Русский</SelectItem>
+                  <SelectItem value="hy">🇦🇲 Հայերեն</SelectItem>
+                  <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
                 </SelectContent>
               </Select>
             </div>
