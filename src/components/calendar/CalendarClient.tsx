@@ -760,21 +760,21 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         </ContextMenuTrigger>
                         <ContextMenuContent className="w-52">
                           <ContextMenuItem
-                            onSelect={() => { setSelectedDay(date); setShowCreateEvent(true); }}
+                            onSelect={() => setTimeout(() => { setSelectedDay(date); setShowCreateEvent(true); })}
                             className="gap-2"
                           >
                             <CalendarPlus className="w-4 h-4 text-blue-500" />
                             {t('createMeeting.contextMenu.newEvent')}
                           </ContextMenuItem>
                           <ContextMenuItem
-                            onSelect={() => { setSelectedDay(date); setShowLeaveModal(true); }}
+                            onSelect={() => setTimeout(() => { setSelectedDay(date); setShowLeaveModal(true); })}
                             className="gap-2"
                           >
                             <CalendarDays className="w-4 h-4 text-emerald-500" />
                             {t('createMeeting.contextMenu.newLeave')}
                           </ContextMenuItem>
                           <ContextMenuItem
-                            onSelect={() => { setSelectedDay(date); setShowDriverModal(true); }}
+                            onSelect={() => setTimeout(() => { setSelectedDay(date); setShowDriverModal(true); })}
                             className="gap-2"
                           >
                             <Car className="w-4 h-4 text-orange-500" />
