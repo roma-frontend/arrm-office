@@ -19,19 +19,19 @@ export function AppearanceSettings() {
   const themes = [
     {
       value: 'dark' as const,
-      label: 'Dark',
+      label: t('settings.theme.dark'),
       icon: Moon,
       description: t('settingsExtended.darkThemeDesc'),
     },
     {
       value: 'light' as const,
-      label: 'Light',
+      label: t('settings.theme.light'),
       icon: Sun,
       description: t('settingsExtended.lightThemeDesc'),
     },
     {
       value: 'system' as const,
-      label: 'System',
+      label: t('settings.theme.system'),
       icon: Monitor,
       description: t('settingsExtended.systemThemeDesc'),
     },

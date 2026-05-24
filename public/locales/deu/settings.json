@@ -11,7 +11,11 @@
     "notificationsDesc": "Passen Sie Ihre E-Mail-, Push- und In-App-Benachrichtigungseinstellungen an",
     "preferences": "Einstellungen",
     "language": "Sprache",
-    "theme": "Thema",
+    "theme": {
+      "dark": "Dunkel",
+      "light": "Hell",
+      "system": "System"
+    },
     "timezone": "Zeitzone",
     "changePassword": "Passwort ändern",
     "currentPassword": "Aktuelles Passwort",
@@ -52,7 +56,30 @@
     "reloadingPage": "Seite wird neu geladen...",
     "scrollLeft": "Nach links scrollen",
     "scrollRight": "Nach rechts scrollen",
-    "systemMode": "Systemmodus"
+    "systemMode": "Systemmodus",
+    "2fa": {
+      "enabled": "Aktiviert",
+      "isActive": "Zwei-Faktor-Authentifizierung ist aktiv",
+      "protectedDesc": "Ihr Konto ist mit einer Authenticator-App geschützt",
+      "enable": "Aktivieren",
+      "disable": "Deaktivieren",
+      "settingUp": "2FA wird eingerichtet...",
+      "step1": "Schritt 1: QR-Code scannen",
+      "scanQrDesc": "Scannen Sie diesen QR-Code mit Ihrer Authenticator-App (Google Authenticator, Authy, etc.)",
+      "orEnterManually": "Oder geben Sie diesen Code manuell ein:",
+      "nextVerify": "Weiter: Code überprüfen",
+      "step2": "Schritt 2: Code eingeben",
+      "enterCodeDesc": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein",
+      "verifyEnable": "Überprüfen & Aktivieren",
+      "enabledSuccess": "2FA erfolgreich aktiviert!",
+      "backupCodesDesc": "Bewahren Sie diese Backup-Codes sicher auf. Jeder Code kann nur einmal verwendet werden.",
+      "copied": "Kopiert!",
+      "copyAllCodes": "Alle Codes kopieren",
+      "disableTitle": "Zwei-Faktor-Authentifizierung deaktivieren",
+      "disableDesc": "Geben Sie Ihr Passwort zur Bestätigung ein. Dies entfernt den 2FA-Schutz.",
+      "enterPassword": "Passwort eingeben",
+      "disable2fa": "2FA deaktivieren"
+    }
   },
   "settingsExtended": {
     "appearance": "Erscheinungsbild",

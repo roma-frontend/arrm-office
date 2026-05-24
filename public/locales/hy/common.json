@@ -28,12 +28,12 @@
     "earlyLeave": "Վաղ հեռացում",
     "punctuality": "Ժամանակակություն",
     "active": "Ակտիվ",
-    "done": "Կատարված է",
+    "done": "Ավարտված",
     "driverNotRegistered": "Վարորդը գրանցված չէ",
     "pleaseLogIn": "Խնդրում ենք մուտք գործել",
     "goToLogin": "Անցնել մուտքի էջ",
     "register": "Գրանցվել",
-    "save": "Save Changes",
+    "save": "Պահպանել փոփոխությունները",
     "cancel": "Չեղարկել",
     "delete": "Ջնջել",
     "view": "Դիտել",
@@ -108,7 +108,7 @@
     "close": "Փակել",
     "actions": "Գործողություններ",
     "recorded": "գրանցված",
-    "back": "Հետ",
+    "back": "Ետ",
     "next": "Հաջորդ",
     "employee": "Աշխատակից",
     "optional": "Ոչ պարտադիր",
@@ -1064,7 +1064,7 @@
     "strengths": "Ուժեղ կողմեր",
     "areasForImprovement": "Բարելավման ոլորտներ",
     "comments": "Մեկնաբանություններ",
-    "by": "delays"
+    "by": "միջոցով"
   },
   "roles": {
     "admin": "Ադմինիստրատոր",

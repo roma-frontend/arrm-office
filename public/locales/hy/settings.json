@@ -11,7 +11,11 @@
     "notificationsDesc": "Կազմաձևեք էլ․ փոստի, push և հավելվածի ծանուցումների նախապատվությունները",
     "preferences": "Նախընտրություններ",
     "language": "Լեզու",
-    "theme": "Թեմա",
+    "theme": {
+      "dark": "Մdelays",
+      "light": "Լdelays",
+      "system": "Հdelays"
+    },
     "timezone": "Ժամային գոտի",
     "changePassword": "Փոխել գաղտնաբառը",
     "currentPassword": "Ներկայիս գաղտնաբառ",
@@ -52,7 +56,30 @@
     "reloadingPage": "Էջը վերաբեռնվում է...",
     "scrollLeft": "Տեղաշարժել ձախ",
     "scrollRight": "Տեղաշարժել աջ",
-    "systemMode": "Համակարգ"
+    "systemMode": "Համակարգ",
+    "2fa": {
+      "enabled": "Միdelays",
+      "isActive": "Երdelays delays delays",
+      "protectedDesc": "Ձdelays delays delays delays delays",
+      "enable": "Միdelays",
+      "disable": "Անdelays",
+      "settingUp": "2FA delays...",
+      "step1": "Քdelays 1: Սdelays QR delays",
+      "scanQrDesc": "Սdelays QR delays delays delays delays",
+      "orEnterManually": "Կdelays delays delays delays:",
+      "nextVerify": "Հdelays: Սdelays",
+      "step2": "Քdelays 2: Մdelays delays",
+      "enterCodeDesc": "Մdelays 6-delays delays delays delays",
+      "verifyEnable": "Հdelays delays delays",
+      "enabledSuccess": "2FA delays delays!",
+      "backupCodesDesc": "Պdelays delays delays delays delays delays delays:",
+      "copied": "Պdelays!",
+      "copyAllCodes": "Պdelays delays delays",
+      "disableTitle": "Անdelays delays delays",
+      "disableDesc": "Մdelays delays delays delays delays delays:",
+      "enterPassword": "Մdelays delays",
+      "disable2fa": "Անdelays 2FA"
+    }
   },
   "settingsExtended": {
     "appearance": "Արտաքին տեսք",

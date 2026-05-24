@@ -82,12 +82,12 @@ export function DashboardCustomization({ user, onSettingsChange }: DashboardCust
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="dashboard">📊 Dashboard</SelectItem>
-                <SelectItem value="tasks">✓ Tasks</SelectItem>
-                <SelectItem value="calendar">📅 Calendar</SelectItem>
-                <SelectItem value="leaves">📋 Leaves</SelectItem>
-                <SelectItem value="attendance">⏰ Attendance</SelectItem>
-                <SelectItem value="analytics">📈 Analytics</SelectItem>
+                <SelectItem value="dashboard">📊 {t('nav.dashboard')}</SelectItem>
+                <SelectItem value="tasks">✓ {t('nav.tasks')}</SelectItem>
+                <SelectItem value="calendar">📅 {t('nav.calendar')}</SelectItem>
+                <SelectItem value="leaves">📋 {t('nav.leaves')}</SelectItem>
+                <SelectItem value="attendance">⏰ {t('nav.attendance')}</SelectItem>
+                <SelectItem value="analytics">📈 {t('nav.analytics')}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-(--text-muted)">
@@ -150,9 +150,7 @@ export function DashboardCustomization({ user, onSettingsChange }: DashboardCust
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">{widget.emoji}</span>
                     <div>
-                      <p className="text-sm font-medium text-(--text-primary)">
-                        {widget.name}
-                      </p>
+                      <p className="text-sm font-medium text-(--text-primary)">{widget.name}</p>
                       <p className="text-xs text-(--text-muted) mt-0.5">{widget.desc}</p>
                     </div>
                   </div>

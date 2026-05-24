@@ -11,7 +11,11 @@
     "notificationsDesc": "Configure email, push, and in-app notification preferences",
     "preferences": "Preferences",
     "language": "Language",
-    "theme": "Theme",
+    "theme": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System"
+    },
     "timezone": "Timezone",
     "changePassword": "Change Password",
     "currentPassword": "Current Password",
@@ -52,7 +56,30 @@
     "reloadingPage": "Reloading page...",
     "scrollLeft": "Scroll left",
     "scrollRight": "Scroll right",
-    "systemMode": "System"
+    "systemMode": "System",
+    "2fa": {
+      "enabled": "Enabled",
+      "isActive": "Two-factor authentication is active",
+      "protectedDesc": "Your account is protected with an authenticator app",
+      "enable": "Enable",
+      "disable": "Disable",
+      "settingUp": "Setting up 2FA...",
+      "step1": "Step 1: Scan QR Code",
+      "scanQrDesc": "Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)",
+      "orEnterManually": "Or enter this code manually:",
+      "nextVerify": "Next: Verify Code",
+      "step2": "Step 2: Verify Code",
+      "enterCodeDesc": "Enter the 6-digit code from your authenticator app to verify setup",
+      "verifyEnable": "Verify & Enable",
+      "enabledSuccess": "2FA Enabled Successfully!",
+      "backupCodesDesc": "Save these backup codes in a safe place. Each code can only be used once. If you lose access to your authenticator app, you can use these codes to sign in.",
+      "copied": "Copied!",
+      "copyAllCodes": "Copy All Codes",
+      "disableTitle": "Disable Two-Factor Authentication",
+      "disableDesc": "Enter your password to confirm. This will remove 2FA protection from your account.",
+      "enterPassword": "Enter your password",
+      "disable2fa": "Disable 2FA"
+    }
   },
   "settingsExtended": {
     "appearance": "Appearance",
