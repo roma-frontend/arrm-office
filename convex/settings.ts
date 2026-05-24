@@ -117,6 +117,8 @@ export const updateLocalizationSettings = mutation({
       timeFormat: args.timeFormat,
       firstDayOfWeek: args.firstDayOfWeek,
     });
+    // Also update user record so language is available on user object
+    await ctx.db.patch(args.userId, { language: args.language });
     return { success: true };
   },
 });

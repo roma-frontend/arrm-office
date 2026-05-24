@@ -932,7 +932,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 9999px;
+  /* border-radius: 9999px; */
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -2264,7 +2264,6 @@ html.dark .quick-action-slate:hover {
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background-color: var(--border);
-  border-radius: 20px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {

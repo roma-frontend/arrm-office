@@ -80,8 +80,9 @@ export function LocalizationSettings({
       if (language !== i18n.language) {
         logger.log('[LocalizationSettings] Changing language from', i18n.language, 'to', language);
 
-        // Save to localStorage (I18nProvider will detect and apply it)
+        // Save to localStorage and cookie
         localStorage.setItem('i18nextLng', language);
+        document.cookie = `i18nextLng=${language};path=/;max-age=${365 * 24 * 60 * 60}`;
 
         // Change language immediately
         await i18n.changeLanguage(language);
