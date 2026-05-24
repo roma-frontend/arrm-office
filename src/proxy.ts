@@ -267,13 +267,14 @@ function buildCsp(nonce: string, isProduction: boolean): string {
 
   // 'unsafe-inline' for style-src is still widely needed (Tailwind runtime utility
   // classes can inject inline styles via Radix UI). Accepted trade-off.
-  const styleSrc = "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com";
+  const styleSrc =
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com";
 
   return [
     "default-src 'self'",
     scriptSrc,
     styleSrc,
-    "img-src 'self' blob: data: https://res.cloudinary.com https://lh3.googleusercontent.com https://*.sentry.io https://vercel.live https://va.vercel-scripts.com https://i.ytimg.com https://*.ytimg.com",
+    "img-src 'self' blob: data: https://res.cloudinary.com https://lh3.googleusercontent.com https://*.sentry.io https://vercel.live https://va.vercel-scripts.com https://i.ytimg.com https://*.ytimg.com https://*.tile.openstreetmap.org",
     "font-src 'self' data: https://fonts.gstatic.com",
     "connect-src 'self' https://*.convex.cloud https://*.convex.site https://*.sentry.io https://vercel.live https://*.stripe.com https://*.js.stripe.com https://va.vercel-scripts.com https://vitals.vercel-insights.com wss://*.convex.cloud wss://*.vercel.live",
     "worker-src 'self' blob:",
