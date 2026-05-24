@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import { motion } from '@/lib/cssMotion';
 import type { Id } from '../../../../convex/_generated/dataModel';
+import { format } from 'date-fns';
+import { enUS, ru, hy } from 'date-fns/locale';
 import {
   Save,
   User as UserIcon,
@@ -178,13 +180,9 @@ export default function ProfilePage() {
   };
 
   // Format date
-  const locale = i18n?.language === 'ru' ? 'ru-RU' : i18n?.language === 'hy' ? 'hy-AM' : 'en-US';
+  const dateFnsLocale = i18n?.language === 'ru' ? ru : i18n?.language === 'hy' ? hy : enUS;
   const joinDate = userData?._creationTime
-    ? new Date(userData._creationTime).toLocaleDateString(locale, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+    ? format(new Date(userData._creationTime), 'd MMMM yyyy', { locale: dateFnsLocale })
     : 'N/A';
 
   return (

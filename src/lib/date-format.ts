@@ -1,14 +1,26 @@
 /**
  * Locale-aware date/time formatting utilities
  * Maps i18n language codes to proper locale strings for Intl APIs
+ * Uses date-fns for Armenian locale (hy-AM not supported by all runtimes)
  */
 
-export type SupportedLocale = 'en' | 'ru' | 'hy';
+import { format as dateFnsFormat } from 'date-fns';
+import { enUS, ru, hy } from 'date-fns/locale';
+
+export type SupportedLocale = 'en' | 'ru' | 'hy' | 'deu';
 
 const LOCALE_MAP: Record<SupportedLocale, string> = {
   en: 'en-US',
   ru: 'ru-RU',
   hy: 'hy-AM',
+  deu: 'de-DE',
+};
+
+const DATE_FNS_LOCALE_MAP: Record<string, typeof enUS> = {
+  en: enUS,
+  ru: ru,
+  hy: hy,
+  deu: enUS, // date-fns doesn't have 'de' bundled here, fallback to en
 };
 
 /**
@@ -20,16 +32,30 @@ export function getLocaleString(lang: SupportedLocale | string | undefined): str
 }
 
 /**
- * Format a date using the current locale
+ * Format a date using date-fns (works reliably for all locales including Armenian)
  */
 export function formatDate(
   date: Date | number | string,
   lang: SupportedLocale | string | undefined,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  const locale = getLocaleString(lang);
   const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
-  return d.toLocaleDateString(locale, options);
+  const locale = DATE_FNS_LOCALE_MAP[lang || 'en'] || enUS;
+
+  // Use date-fns for reliable cross-platform formatting
+  if (options?.month === 'long' && options?.day === 'numeric' && options?.year === 'numeric') {
+    return dateFnsFormat(d, 'd MMMM yyyy', { locale });
+  }
+  if (options?.month === 'short' && options?.day === 'numeric') {
+    return dateFnsFormat(d, 'MMM d', { locale });
+  }
+  if (options?.month === 'long' && options?.year === 'numeric') {
+    return dateFnsFormat(d, 'MMMM yyyy', { locale });
+  }
+
+  // Fallback to Intl for other formats
+  const intlLocale = getLocaleString(lang);
+  return d.toLocaleDateString(intlLocale, options);
 }
 
 /**
