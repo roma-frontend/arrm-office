@@ -16,6 +16,8 @@ import {
   Plus,
   ExternalLink,
   Car,
+  CalendarPlus,
+  ClipboardCopy,
 } from 'lucide-react';
 import {
   format,
@@ -37,6 +39,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
@@ -51,9 +60,10 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { LeaveRequestModal } from '@/components/leaves/LeaveRequestModal';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { DriverRequestModal } from './DriverRequestModal';
-import { CreateEventModal } from './CreateEventModal';
+import { CreateEventModal, type CalendarEvent } from './CreateEventModal';
 import { getInitials } from '@/lib/stringUtils';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
 
 type LeaveRequest = {
   _id: string;
@@ -161,7 +171,9 @@ function DayCell({
   leaves,
   googleEvents,
   driverEvents,
+  customEvents,
   onClick,
+  onDoubleClick,
 }: {
   date: Date;
   currentMonth: Date;
@@ -169,7 +181,9 @@ function DayCell({
   leaves: LeaveRequest[];
   googleEvents: GoogleCalendarEvent[];
   driverEvents: DriverScheduleEvent[];
+  customEvents: CalendarEvent[];
   onClick: () => void;
+  onDoubleClick: () => void;
 }) {
   const { t } = useTranslation();
   const isCurrentMonth = isSameMonth(date, currentMonth);
@@ -178,11 +192,13 @@ function DayCell({
   const hasLeaves = leaves.length > 0 && isCurrentMonth;
   const hasGoogle = googleEvents.length > 0 && isCurrentMonth;
   const hasDriver = driverEvents.length > 0 && isCurrentMonth;
-  const totalItems = leaves.length + googleEvents.length + driverEvents.length;
+  const hasCustom = customEvents.length > 0 && isCurrentMonth;
+  const totalItems = leaves.length + googleEvents.length + driverEvents.length + customEvents.length;
 
   return (
     <button
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       className={[
         'relative w-full min-h-10 sm:min-h-22.5 rounded-xl p-1.5 text-left transition-all duration-200 border',
         isSelected
@@ -214,7 +230,7 @@ function DayCell({
       </span>
 
       {/* Event pills */}
-      {(hasLeaves || hasGoogle || hasDriver) && (
+      {(hasLeaves || hasGoogle || hasDriver || hasCustom) && (
         <div className="flex flex-col gap-0.5 mt-0.5">
           {/* Leave pills */}
           {leaves.slice(0, hasGoogle || hasDriver ? 1 : 2).map((l, i) => (
@@ -279,6 +295,27 @@ function DayCell({
               </span>
             </div>
           ))}
+          {/* Custom event pills */}
+          {customEvents.slice(0, 1).map((evt) => (
+            <div
+              key={evt.id}
+              className="flex items-center gap-1 rounded-full px-1.5 py-0.5"
+              style={{
+                background: isSelected ? 'rgba(255,255,255,0.2)' : '#3b82f622',
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: isSelected ? '#fff' : '#3b82f6' }}
+              />
+              <span
+                className="text-[9px] font-medium truncate hidden sm:block"
+                style={{ color: isSelected ? '#fff' : '#3b82f6' }}
+              >
+                {evt.title}
+              </span>
+            </div>
+          ))}
           {totalItems > 2 && (
             <span
               className={`text-[9px] pl-1 ${isSelected ? 'text-white/80' : 'text-(--text-muted)'}`}
@@ -302,6 +339,10 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [customEvents, setCustomEvents] = useState<CalendarEvent[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try { return JSON.parse(localStorage.getItem('hr_calendar_events') || '[]'); } catch { return []; }
+  });
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [selectedDriverEvent, setSelectedDriverEvent] = useState<DriverScheduleEvent | null>(null);
   const [selectedGoogleEvent, setSelectedGoogleEvent] = useState<GoogleCalendarEvent | null>(null);
@@ -486,6 +527,16 @@ export const CalendarClient = React.memo(function CalendarClient() {
     return map;
   }, [googleEvents]);
 
+  // Build custom events map
+  const customEventsMap = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    customEvents.forEach((evt) => {
+      if (!map.has(evt.date)) map.set(evt.date, []);
+      map.get(evt.date)!.push(evt);
+    });
+    return map;
+  }, [customEvents]);
+
   // Build calendar grid
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth));
@@ -665,20 +716,67 @@ export const CalendarClient = React.memo(function CalendarClient() {
                     const leaves = leaveDateMap.get(key) ?? [];
                     const gEvents = googleDateMap.get(key) ?? [];
                     const dEvents = driverDateMap.get(key) ?? [];
+                    const cEvents = customEventsMap.get(key) ?? [];
                     return (
-                      <DayCell
-                        key={i}
-                        date={date}
-                        currentMonth={currentMonth}
-                        selected={selectedDay}
-                        leaves={leaves}
-                        googleEvents={gEvents}
-                        driverEvents={dEvents}
-                        onClick={() => {
-                          setSelectedDay(date);
-                          setShowCreateEvent(true);
-                        }}
-                      />
+                      <ContextMenu key={i}>
+                        <ContextMenuTrigger>
+                          <DayCell
+                            date={date}
+                            currentMonth={currentMonth}
+                            selected={selectedDay}
+                            leaves={leaves}
+                            googleEvents={gEvents}
+                            driverEvents={dEvents}
+                            customEvents={cEvents}
+                            onClick={() => setSelectedDay(date)}
+                            onDoubleClick={() => {
+                              setSelectedDay(date);
+                              setShowCreateEvent(true);
+                            }}
+                          />
+                        </ContextMenuTrigger>
+                        <ContextMenuContent className="w-52">
+                          <ContextMenuItem
+                            onClick={() => { setSelectedDay(date); setShowCreateEvent(true); }}
+                            className="gap-2"
+                          >
+                            <CalendarPlus className="w-4 h-4 text-blue-500" />
+                            {t('createMeeting.contextMenu.newEvent')}
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            onClick={() => { setSelectedDay(date); setShowLeaveModal(true); }}
+                            className="gap-2"
+                          >
+                            <CalendarDays className="w-4 h-4 text-emerald-500" />
+                            {t('createMeeting.contextMenu.newLeave')}
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            onClick={() => { setSelectedDay(date); setShowDriverModal(true); }}
+                            className="gap-2"
+                          >
+                            <Car className="w-4 h-4 text-orange-500" />
+                            {t('createMeeting.contextMenu.bookDriver')}
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem
+                            onClick={() => setSelectedDay(date)}
+                            className="gap-2"
+                          >
+                            <Clock className="w-4 h-4 text-(--text-muted)" />
+                            {t('createMeeting.contextMenu.viewDay')}
+                          </ContextMenuItem>
+                          <ContextMenuItem
+                            onClick={() => {
+                              navigator.clipboard.writeText(format(date, 'yyyy-MM-dd'));
+                              toast.success(t('createMeeting.contextMenu.copyDate'));
+                            }}
+                            className="gap-2"
+                          >
+                            <ClipboardCopy className="w-4 h-4 text-(--text-muted)" />
+                            {t('createMeeting.contextMenu.copyDate')}
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     );
                   })}
                 </div>
@@ -1061,6 +1159,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
         onOpenChange={setShowCreateEvent}
         selectedDate={selectedDay}
         leaves={leaves}
+        onSave={(event) => {
+          const updated = [...customEvents, event];
+          setCustomEvents(updated);
+          localStorage.setItem('hr_calendar_events', JSON.stringify(updated));
+        }}
       />
 
       {/* Modals rendered via portal to escape overflow/contain constraints */}

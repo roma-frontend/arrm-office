@@ -1235,6 +1235,13 @@
     "uploading": "Загрузка...",
     "back": "Назад",
     "next": "Далее",
-    "reminderFired": "Скоро начнётся: {{title}}"
+    "reminderFired": "Скоро начнётся: {{title}}",
+    "contextMenu": {
+      "newEvent": "Новое событие",
+      "newLeave": "Запросить отпуск",
+      "bookDriver": "Забронировать водителя",
+      "viewDay": "Подробности дня",
+      "copyDate": "Копировать дату"
+    }
   }
 }

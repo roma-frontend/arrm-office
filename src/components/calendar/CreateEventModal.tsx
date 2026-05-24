@@ -51,6 +51,22 @@ interface CreateEventModalProps {
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date | null;
   leaves?: Array<{ userId: string; startDate: string; endDate: string; status: string }>;
+  onSave?: (event: CalendarEvent) => void;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  location: string;
+  description: string;
+  category: string;
+  reminder: string;
+  attendees: string[];
+  attachmentUrl?: string;
 }
 
 interface OrgUser {
@@ -69,6 +85,7 @@ export function CreateEventModal({
   onOpenChange,
   selectedDate,
   leaves = [],
+  onSave,
 }: CreateEventModalProps) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
@@ -176,6 +193,22 @@ export function CreateEventModal({
       if (date && reminder !== 'none') {
         scheduleReminder(title, date, allDay ? '09:00' : startTime, reminder, t);
       }
+      // Save event
+      const event: CalendarEvent = {
+        id: `evt_${Date.now()}`,
+        title,
+        date,
+        startTime: allDay ? '00:00' : startTime,
+        endTime: allDay ? '23:59' : endTime,
+        allDay,
+        location,
+        description,
+        category,
+        reminder,
+        attendees: attendees.map((a) => a.name),
+        attachmentUrl,
+      };
+      onSave?.(event);
       handleClose(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error');

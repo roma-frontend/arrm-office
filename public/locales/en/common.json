@@ -1203,6 +1203,13 @@
     "uploading": "Uploading...",
     "back": "Back",
     "next": "Next",
-    "reminderFired": "Event starting soon: {{title}}"
+    "reminderFired": "Event starting soon: {{title}}",
+    "contextMenu": {
+      "newEvent": "New Event",
+      "newLeave": "Request Leave",
+      "bookDriver": "Book Driver",
+      "viewDay": "View Day Details",
+      "copyDate": "Copy Date"
+    }
   }
 }

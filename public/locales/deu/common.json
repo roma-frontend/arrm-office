@@ -1236,6 +1236,13 @@
     "uploading": "Hochladen...",
     "back": "Zurück",
     "next": "Weiter",
-    "reminderFired": "Ereignis beginnt bald: {{title}}"
+    "reminderFired": "Ereignis beginnt bald: {{title}}",
+    "contextMenu": {
+      "newEvent": "Neues Ereignis",
+      "newLeave": "Urlaub beantragen",
+      "bookDriver": "Fahrer buchen",
+      "viewDay": "Tagesdetails",
+      "copyDate": "Datum kopieren"
+    }
   }
 }

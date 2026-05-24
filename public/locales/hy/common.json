@@ -1168,8 +1168,8 @@
     "startTime": "Սկսելու ժամանակ",
     "endTime": "Ավարտելու ժամանակ",
     "allDay": "Ամբողջ օր",
-    "location": "Դիրք",
-    "locationPlaceholder": "Դիրք...",
+    "location": "Տեղակայություն",
+    "locationPlaceholder": "Տեղակայություն...",
     "description": "Նկարագրություն",
     "descriptionPlaceholder": "Նկարագրություն...",
     "category": "Կատեգորիա",
@@ -1207,6 +1207,13 @@
     "uploading": "Բեռնվում է...",
     "back": "Նախորդ",
     "next": "Հաջորդ",
-    "reminderFired": "⏰ Հիշեցումը գործի է դրվել: {{title}}"
+    "reminderFired": "⏰ Հիշեցումը գործի է դրվել: {{title}}",
+    "contextMenu": {
+      "newEvent": "Նոր իրադարձություն",
+      "newLeave": "Նոր արձակուրդ",
+      "bookDriver": "Պատվիրել վարորդ",
+      "viewDay": "Տեսնել օրը",
+      "copyDate": "Կրկնել ամսաթիվը"
+    }
   }
 }
