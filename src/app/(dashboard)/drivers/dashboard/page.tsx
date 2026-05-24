@@ -46,7 +46,7 @@ import {
 } from '@/components/drivers/DriverActions';
 
 export default function DriverDashboardPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['drivers', 'common']);
   const _router = useRouter();
   const user = useAuthStore((state) => state.user);
   const lang = i18n.language || 'en';
