@@ -1063,7 +1063,8 @@
   "performance": {
     "strengths": "Strengths",
     "areasForImprovement": "Areas for Improvement",
-    "comments": "Comments"
+    "comments": "Comments",
+    "by": "by"
   },
   "roles": {
     "admin": "Admin",

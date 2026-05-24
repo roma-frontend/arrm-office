@@ -1092,7 +1092,8 @@
   "performance": {
     "strengths": "Stärken",
     "areasForImprovement": "Verbesserungsbereiche",
-    "comments": "Kommentare"
+    "comments": "Kommentare",
+    "by": "von"
   },
   "roles": {
     "admin": "Admin",

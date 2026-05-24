@@ -1063,7 +1063,8 @@
   "performance": {
     "strengths": "Ուժեղ կողմեր",
     "areasForImprovement": "Բարելավման ոլորտներ",
-    "comments": "Մեկնաբանություններ"
+    "comments": "Մեկնաբանություններ",
+    "by": "delays"
   },
   "roles": {
     "admin": "Ադմինիստրատոր",

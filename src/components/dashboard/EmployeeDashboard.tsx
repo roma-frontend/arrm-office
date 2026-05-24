@@ -222,7 +222,8 @@ export function EmployeeDashboard() {
                     <span className="text-sm font-normal text-(--text-muted)">/5</span>
                   </p>
                   <p className="text-xs text-(--text-muted)">
-                    by {latestRating.supervisor?.name ?? 'Supervisor'} · {latestRating.ratingPeriod}
+                    {t('performance.by')} {latestRating.supervisor?.name ?? t('roles.supervisor')} ·{' '}
+                    {latestRating.ratingPeriod}
                   </p>
                 </div>
               </div>

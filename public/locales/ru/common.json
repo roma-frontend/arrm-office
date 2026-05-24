@@ -1091,7 +1091,8 @@
   "performance": {
     "strengths": "Сильные стороны",
     "areasForImprovement": "Области для улучшения",
-    "comments": "Комментарии"
+    "comments": "Комментарии",
+    "by": "от"
   },
   "roles": {
     "admin": "Админ",
