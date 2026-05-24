@@ -151,7 +151,7 @@ export function WebAuthnButton({ mode, userId, onSuccess, disabled }: WebAuthnBu
       title={mode === 'register' ? 'Register biometric' : 'Sign in with biometric'}
     >
       {loading ? <ShieldLoader size="sm" variant="inline" /> : <Fingerprint className="w-4 h-4" />}
-      {!loading && <span className="text-xs">Touch ID</span>}
+      {!loading && <span className="text-xs">{t('auth.touchId')}</span>}
     </Button>
   );
 }

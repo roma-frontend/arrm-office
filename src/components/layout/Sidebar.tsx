@@ -1549,7 +1549,7 @@ export function MobileSidebar() {
                 {userOrg?.name ?? t('sidebar.orgName')}
               </p>
               <p className="text-[9px] truncate" style={{ color: 'var(--text-muted)' }}>
-                {user?.name ?? 'User'}
+                {user?.name ?? t('common.user')}
               </p>
             </div>
           </div>

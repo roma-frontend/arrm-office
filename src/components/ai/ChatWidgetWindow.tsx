@@ -154,7 +154,9 @@ export function ChatWidgetWindow({
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-(--text-primary)">Shield HR AI</p>
+                <p className="text-sm font-semibold text-(--text-primary)">
+                  {t('aiChat.shieldHrAi')}
+                </p>
                 <p className="text-[10px] text-(--text-muted)">
                   {t('chatWidget.subtitle', { defaultValue: 'Your intelligent HR assistant' })}
                 </p>
@@ -568,7 +570,7 @@ export function ChatWidgetWindow({
               <div className="px-4 py-2 border-t border-(--border) max-h-32 overflow-y-auto bg-(--background-subtle)">
                 <p className="text-[10px] font-semibold text-(--text-muted) mb-1">📌 Pinned</p>
                 {getPinnedMessages().length === 0 ? (
-                  <p className="text-[10px] text-(--text-muted)">No pinned messages yet</p>
+                  <p className="text-[10px] text-(--text-muted)">{t('aiChat.noPinnedMessages')}</p>
                 ) : (
                   getPinnedMessages().map((p) => (
                     <div

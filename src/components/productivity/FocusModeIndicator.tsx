@@ -45,7 +45,7 @@ export default function FocusModeIndicator({
         >
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-linear-to-r from-purple-500 to-pink-500 text-white shadow-lg">
             <Zap className="w-4 h-4 animate-pulse" />
-            <span className="text-sm font-medium">Focus Mode Active</span>
+            <span className="text-sm font-medium">{t('productivity.focusModeActive')}</span>
           </div>
         </motion.div>
       )}

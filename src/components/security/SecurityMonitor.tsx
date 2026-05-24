@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, AlertTriangle, Lock, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ interface SecurityMetrics {
 }
 
 export function SecurityMonitor() {
+  const { t } = useTranslation();
   const [metrics, setMetrics] = useState<SecurityMetrics>({
     blockedIPs: 0,
     rateLimitHits: 0,
@@ -65,9 +67,9 @@ export function SecurityMonitor() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm">
             <Shield className="w-4 h-4 text-blue-500" />
-            Security Monitor
+            {t('security.monitor')}
             <Badge variant="outline" className="ml-auto">
-              Live
+              {t('security.live')}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -76,7 +78,7 @@ export function SecurityMonitor() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-gray-500" />
-              <span className="text-sm">Threat Level</span>
+              <span className="text-sm">{t('security.threatLevel')}</span>
             </div>
             <Badge className={`${anomalyStatus.color} text-white`}>{anomalyStatus.label}</Badge>
           </div>
@@ -85,7 +87,7 @@ export function SecurityMonitor() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-gray-500" />
-              <span className="text-sm">Blocked IPs</span>
+              <span className="text-sm">{t('security.blockedIPs')}</span>
             </div>
             <span className="font-bold text-sm">{metrics.blockedIPs}</span>
           </div>
@@ -94,7 +96,7 @@ export function SecurityMonitor() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-gray-500" />
-              <span className="text-sm">Rate Limit Hits</span>
+              <span className="text-sm">{t('security.rateLimitHits')}</span>
             </div>
             <span className="font-bold text-sm">{metrics.rateLimitHits}</span>
           </div>
@@ -103,7 +105,7 @@ export function SecurityMonitor() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-gray-500" />
-              <span className="text-sm">Failed Logins</span>
+              <span className="text-sm">{t('security.failedLogins')}</span>
             </div>
             <span className="font-bold text-sm">{metrics.failedLogins}</span>
           </div>
@@ -111,7 +113,7 @@ export function SecurityMonitor() {
           {/* Last Incident */}
           {metrics.lastIncident && (
             <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-500">Last Incident</p>
+              <p className="text-xs text-gray-500">{t('security.lastIncident')}</p>
               <p className="text-xs font-medium">{metrics.lastIncident.type}</p>
               <p className="text-xs text-gray-400">
                 {new Date(metrics.lastIncident.timestamp).toLocaleString()}

@@ -794,7 +794,9 @@ export default function LoginPage() {
                         }}
                       >
                         <Fingerprint className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Touch ID</span>
+                        <span className="hidden sm:inline">
+                          {mounted ? t('auth.touchId') : 'Touch ID'}
+                        </span>
                       </Button>
                     </div>
 

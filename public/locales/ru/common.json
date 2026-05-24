@@ -398,7 +398,10 @@
     "taskUpdateFailed": "Ошибка обновления задачи",
     "localStorageSaveFailed": "Ошибка сохранения в localStorage",
     "failedToLoad": "Не удалось загрузить",
-    "tryAgainLater": "Пожалуйста, попробуйте позже. Если проблема не исчезнет, обратитесь в поддержку."
+    "tryAgainLater": "Пожалуйста, попробуйте позже. Если проблема не исчезнет, обратитесь в поддержку.",
+    "errorDetails": "Детали ошибки:",
+    "reloadPage": "Перезагрузить",
+    "contactSupport": "Если проблема сохраняется, обратитесь в поддержку."
   },
   "success": {
     "saved": "Сохранено",
@@ -1066,7 +1069,9 @@
         "Статистика платформы",
         "Все пользователи"
       ]
-    }
+    },
+    "shieldHrAi": "Shield HR AI",
+    "noPinnedMessages": "Нет закреплённых сообщений"
   },
   "aiMessages": {
     "leaveConflict": "У вас уже есть отпуск типа {{type}} ({{start}} → {{end}}) со статусом: «{{status}}». 💡 Альтернатива: {{sugStart}} → {{sugEnd}}",
@@ -1093,7 +1098,9 @@
   "aiRecommendations": {
     "bestDates": "Лучшие даты для отпуска",
     "askAiToBook": "Попросите AI-ассистента забронировать любую из этих дат",
-    "fullWeekNoConflicts": "полная неделя, нет конфликтов"
+    "fullWeekNoConflicts": "полная неделя, нет конфликтов",
+    "analyzing": "Анализ данных...",
+    "attendancePatterns": "Паттерны посещаемости"
   },
   "performance": {
     "strengths": "Сильные стороны",
@@ -1132,5 +1139,28 @@
     "paidLeaveBalance": "Оплачиваемый отпуск: {{count}} дн.",
     "sickLeaveBalance": "Больничный: {{count}} дн.",
     "familyLeaveBalance": "Семейный: {{count}} дн."
+  },
+  "security": {
+    "threatLevel": "Уровень угрозы",
+    "blockedIPs": "Заблокированные IP",
+    "rateLimitHits": "Превышения лимита",
+    "failedLogins": "Неудачные входы",
+    "lastIncident": "Последний инцидент",
+    "monitor": "Монитор безопасности",
+    "live": "Live"
+  },
+  "productivity": {
+    "breakTime": "Время перерыва! ☕",
+    "breakTestMode": "Пора сделать перерыв!",
+    "breakBody": "Вы работаете {{minutes}} минут. Сделайте перерыв на 5 минут!",
+    "focusModeActive": "Режим фокуса"
+  },
+  "analytics": {
+    "vsLastMonth": "к прошлому месяцу"
+  },
+  "auth": {
+    "selectCamera": "Выберите камеру:",
+    "noCameraFound": "Камера не найдена. Подключите камеру.",
+    "touchId": "Touch ID"
   }
 }

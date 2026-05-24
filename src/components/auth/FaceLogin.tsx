@@ -267,7 +267,7 @@ export function FaceLogin() {
           },
         );
       } else if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
-        toast.error('No camera found. Please connect a camera and try again.');
+        toast.error(t('auth.noCameraFound'));
       } else if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') {
         toast.error(
           'Camera is already in use by another application. Please close other apps using the camera.',
@@ -702,7 +702,9 @@ export function FaceLogin() {
         {/* Camera Selection */}
         {!isWebcamActive && cameras.length > 1 && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-(--text-secondary)">Select Camera:</label>
+            <label className="text-sm font-medium text-(--text-secondary)">
+              {t('auth.selectCamera')}
+            </label>
             <CustomSelect
               value={selectedCamera}
               onChange={setSelectedCamera}

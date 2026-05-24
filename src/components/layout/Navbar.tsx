@@ -439,7 +439,7 @@ export function Navbar() {
                   </div>
                   <div className="hidden sm:block text-left">
                     <p className="text-xs font-semibold text-(--text-primary) leading-tight">
-                      {user?.name ?? 'User'}
+                      {user?.name ?? t('common.user')}
                     </p>
                     <p className="text-[10px] text-(--text-muted) capitalize">
                       <PresenceEmoji emoji={presenceCfg.icon} /> {presenceLabel}

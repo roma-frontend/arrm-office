@@ -44,7 +44,7 @@
     "userId": "Օգտատիրոջ ID",
     "activityStats": "Ակտիվության վիճակագրություն",
     "workforceComposition": "Աշխատուժի կազմ",
-    "contractors": "Աշխատակազմ",
+    "contractors": "Պայմանագրային աշխատակիցներ",
     "leavesByDepartment": "Արձակուրդներ ըստ բաժնի",
     "noDepartmentData": "Բաժնի տվյալներ դեռ չ կան",
     "loadingUserData": "Օգտատիրոջ տվյալների բեռնում...",
@@ -390,7 +390,10 @@
     "taskUpdateFailed": "Սխալ առաջադրանքի թարմացման մեջ",
     "localStorageSaveFailed": "Սխալ localStorage-ում պահպանելիս",
     "failedToLoad": "Չհաջողվեց բեռնել",
-    "tryAgainLater": "Խնդրում ենք կրկին փորձել ավելի ուշ։ Եթե խնդիրը շարունակվի, կապվեք աջակցության հետ։"
+    "tryAgainLater": "Խնդրում ենք կրկին փորձել ավելի ուշ։ Եթե խնդիրը շարունակվի, կապվեք աջակցության հետ։",
+    "errorDetails": "Սխալի մանրամասներ: {{details}}",
+    "reloadPage": "Վերաբեռնեք էջը",
+    "contactSupport": "Կապվեք աջակցության հետ"
   },
   "success": {
     "saved": "Հաջողությամբ պահպանվել է",
@@ -559,8 +562,8 @@
     "justNow": "Հենց նոր",
     "hoursAgo": "{{count}} ժ առաջ",
     "selectDateRange": "Ընտրել ամսաթվերի միջակայք",
-    "daysAgo": "{{count}} օdelays delays",
-    "minutesAgo": "{{count}} delays delays"
+    "daysAgo": "{{count}} օր առաջ",
+    "minutesAgo": "{{count}} րոպե առաջ"
   },
   "timePeriods": {
     "today": "Այսօր",
@@ -962,7 +965,7 @@
     "pageNotFoundDesc": "Կներեք, էջը չի գտնվել:",
     "goHome": "Գնալ գլխավոր էջ",
     "errorDescription": "Սխալ տեղի ունեցավ:",
-    "errorReference": "Delays:"
+    "errorReference": "Հղում:"
   },
   "pageNotFound": "Էջը չի գտնվել",
   "pageNotFoundDesc": "Կներեք, էջը չի գտնվել:",
@@ -1038,7 +1041,9 @@
         "Պլատֆորմի վիճակագրություն",
         "Բոլոր օգտագործողները"
       ]
-    }
+    },
+    "shieldHrAi": "Shield HR AI",
+    "noPinnedMessages": "Կցված հաղորդագրություններ չկան"
   },
   "aiMessages": {
     "leaveConflict": "⚠️ Հնարավոր հակասություն {{type}} հայտի հետ ({{start}} → {{end}}):",
@@ -1065,7 +1070,9 @@
   "aiRecommendations": {
     "bestDates": "Լավագույն ամսաթվերը արձակուրդի համար",
     "askAiToBook": "Խնդրեք AI-ին ամրագրել այս ամսաթվերից մեկը",
-    "fullWeekNoConflicts": "լիարժեք շաբաթ, կոնֆլիկտներ չկան"
+    "fullWeekNoConflicts": "լիարժեք շաբաթ, կոնֆլիկտներ չկան",
+    "analyzing": "Վերլուծվում է...",
+    "attendancePatterns": "Հաճախելիության օրինակներ"
   },
   "performance": {
     "strengths": "Ուժեղ կողմեր",
@@ -1101,8 +1108,31 @@
     "failedToDeleteAvatar": "Չհաջողվեց ջնջել ավատարը"
   },
   "dashboard": {
-    "paidLeaveBalance": "Delays: {{count}} delays",
-    "sickLeaveBalance": "Delays: {{count}} delays",
-    "familyLeaveBalance": "Delays: {{count}} delays"
+    "paidLeaveBalance": "Վճարովի արձակուրդի մնացորդը: {{count}} օր",
+    "sickLeaveBalance": "Հիվանդանոցից արձակուրդի մնացորդը: {{count}} օր",
+    "familyLeaveBalance": "Ընտանեկան արձակուրդի մնացորդը: {{count}} օր"
+  },
+  "security": {
+    "threatLevel": "Սպառնալիքի մակարդակ",
+    "blockedIPs": "Արգելված IP-ներ",
+    "rateLimitHits": "Սահմանաչափի հարվածներ",
+    "failedLogins": "Չհաջողված մուտքեր",
+    "lastIncident": "Վերջին դեպքը",
+    "monitor": "Հսկել",
+    "live": "Ուղիղ"
+  },
+  "productivity": {
+    "breakTime": "Դադար ժամանակ! ☕",
+    "breakTestMode": "Դադար փորձարկման ռեժիմում!",
+    "breakBody": "Դադար {{minutes}} րոպե!",
+    "focusModeActive": "Ֆոկուս ռեժիմը ակտիվ է"
+  },
+  "analytics": {
+    "vsLastMonth": "նախորդ ամսվա համեմատ"
+  },
+  "auth": {
+    "selectCamera": "Ընտրեք տեսախցիկը",
+    "noCameraFound": "Տեսախցիկ չի գտնվել",
+    "touchId": "Touch ID"
   }
 }

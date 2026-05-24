@@ -390,7 +390,10 @@
     "faceDetectionFailed": "Error detecting face",
     "sessionStartFailed": "Failed to start session",
     "taskUpdateFailed": "Failed to update task",
-    "localStorageSaveFailed": "Failed to save to localStorage"
+    "localStorageSaveFailed": "Failed to save to localStorage",
+    "errorDetails": "Error Details:",
+    "reloadPage": "Reload Page",
+    "contactSupport": "If the problem persists, please contact support."
   },
   "success": {
     "saved": "Saved successfully",
@@ -1034,7 +1037,9 @@
         "Platform statistics",
         "All users"
       ]
-    }
+    },
+    "shieldHrAi": "Shield HR AI",
+    "noPinnedMessages": "No pinned messages yet"
   },
   "aiMessages": {
     "leaveConflict": "You already have a {{type}} leave ({{start}} → {{end}}) with status: «{{status}}». 💡 Suggested alternative: {{sugStart}} → {{sugEnd}}",
@@ -1061,7 +1066,9 @@
   "aiRecommendations": {
     "bestDates": "Best Dates for Vacation",
     "askAiToBook": "Ask the AI assistant to book any of these dates",
-    "fullWeekNoConflicts": "full week, no team conflicts"
+    "fullWeekNoConflicts": "full week, no team conflicts",
+    "analyzing": "Analyzing your data...",
+    "attendancePatterns": "Attendance Patterns"
   },
   "performance": {
     "strengths": "Strengths",
@@ -1100,5 +1107,28 @@
     "paidLeaveBalance": "Paid leave: {{count}} days",
     "sickLeaveBalance": "Sick leave: {{count}} days",
     "familyLeaveBalance": "Family leave: {{count}} days"
+  },
+  "security": {
+    "threatLevel": "Threat Level",
+    "blockedIPs": "Blocked IPs",
+    "rateLimitHits": "Rate Limit Hits",
+    "failedLogins": "Failed Logins",
+    "lastIncident": "Last Incident",
+    "monitor": "Security Monitor",
+    "live": "Live"
+  },
+  "productivity": {
+    "breakTime": "Time for a Break! ☕",
+    "breakTestMode": "Time to take a quick break!",
+    "breakBody": "You've been working for {{minutes}} minutes. Take 5 minutes to stretch!",
+    "focusModeActive": "Focus Mode Active"
+  },
+  "analytics": {
+    "vsLastMonth": "vs last month"
+  },
+  "auth": {
+    "selectCamera": "Select Camera:",
+    "noCameraFound": "No camera found. Please connect a camera.",
+    "touchId": "Touch ID"
   }
 }

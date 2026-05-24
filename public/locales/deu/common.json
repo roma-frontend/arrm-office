@@ -398,7 +398,10 @@
     "taskUpdateFailed": "Fehler beim Aktualisieren der Aufgabe",
     "localStorageSaveFailed": "Fehler beim Speichern im localStorage",
     "failedToLoad": "Fehler beim Laden",
-    "tryAgainLater": "Bitte versuchen Sie es später erneut. Wenn das Problem weiterhin besteht, wenden Sie sich an den Support."
+    "tryAgainLater": "Bitte versuchen Sie es später erneut. Wenn das Problem weiterhin besteht, wenden Sie sich an den Support.",
+    "errorDetails": "Fehlerdetails:",
+    "reloadPage": "Seite neu laden",
+    "contactSupport": "Wenn das Problem weiterhin besteht, kontaktieren Sie den Support."
   },
   "success": {
     "saved": "Gespeichert",
@@ -1067,7 +1070,9 @@
         "Plattformstatistik",
         "Alle Benutzer"
       ]
-    }
+    },
+    "shieldHrAi": "Shield HR AI",
+    "noPinnedMessages": "Keine angepinnten Nachrichten"
   },
   "aiMessages": {
     "leaveConflict": "Sie haben bereits {{type}}-Urlaub ({{start}} → {{end}}) Status: «{{status}}». 💡 Alternative: {{sugStart}} → {{sugEnd}}",
@@ -1094,7 +1099,9 @@
   "aiRecommendations": {
     "bestDates": "Beste Termine für Urlaub",
     "askAiToBook": "Bitten Sie den KI-Assistenten, einen dieser Termine zu buchen",
-    "fullWeekNoConflicts": "volle Woche, keine Teamkonflikte"
+    "fullWeekNoConflicts": "volle Woche, keine Teamkonflikte",
+    "analyzing": "Daten werden analysiert...",
+    "attendancePatterns": "Anwesenheitsmuster"
   },
   "performance": {
     "strengths": "Stärken",
@@ -1133,5 +1140,28 @@
     "paidLeaveBalance": "Bezahlter Urlaub: {{count}} Tage",
     "sickLeaveBalance": "Krankmeldung: {{count}} Tage",
     "familyLeaveBalance": "Familienurlaub: {{count}} Tage"
+  },
+  "security": {
+    "threatLevel": "Bedrohungsstufe",
+    "blockedIPs": "Blockierte IPs",
+    "rateLimitHits": "Rate-Limit-Treffer",
+    "failedLogins": "Fehlgeschlagene Anmeldungen",
+    "lastIncident": "Letzter Vorfall",
+    "monitor": "Sicherheitsmonitor",
+    "live": "Live"
+  },
+  "productivity": {
+    "breakTime": "Zeit für eine Pause! ☕",
+    "breakTestMode": "Zeit für eine kurze Pause!",
+    "breakBody": "Sie arbeiten seit {{minutes}} Minuten. Machen Sie 5 Minuten Pause!",
+    "focusModeActive": "Fokusmodus aktiv"
+  },
+  "analytics": {
+    "vsLastMonth": "ggü. Vormonat"
+  },
+  "auth": {
+    "selectCamera": "Kamera wählen:",
+    "noCameraFound": "Keine Kamera gefunden. Bitte Kamera anschließen.",
+    "touchId": "Touch ID"
   }
 }

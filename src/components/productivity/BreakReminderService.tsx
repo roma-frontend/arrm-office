@@ -106,11 +106,13 @@ export default function BreakReminderService({
           <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
         </div>
         <div className="flex-1">
-          <p className="font-semibold text-(--foreground) text-base">Time for a Break! ☕</p>
+          <p className="font-semibold text-(--foreground) text-base">
+            {t('productivity.breakTime')}
+          </p>
           <p className="text-sm text-(--text-muted) mt-0.5 leading-relaxed">
             {intervalMinutes === 1
-              ? 'Testing mode: Time to take a quick break!'
-              : `You've been working for ${intervalMinutes} minutes. Take 5 minutes to stretch and recharge!`}
+              ? t('productivity.breakTestMode')
+              : t('productivity.breakBody', { minutes: intervalMinutes })}
           </p>
         </div>
       </div>,
@@ -124,8 +126,8 @@ export default function BreakReminderService({
     // Send push notification for mobile (works even when app is in background)
     if (isPushNotificationSupported()) {
       try {
-        await sendLocalPushNotification('Time for a Break! ☕', {
-          body: `You've been working for ${intervalMinutes} minutes. Take a 5-minute break to stretch and recharge!`,
+        await sendLocalPushNotification(t('productivity.breakTime'), {
+          body: t('productivity.breakBody', { minutes: intervalMinutes }),
           tag: `break-reminder-${Date.now()}`, // Unique tag to ensure it always shows
           requireInteraction: false, // Better for iOS - auto dismiss after some time
           silent: false, // Play sound
