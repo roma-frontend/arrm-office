@@ -362,6 +362,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
   const [showActions, setShowActions] = useState(false);
   const [actionBarBelow, setActionBarBelow] = useState(false);
+  const [actionBarPos, setActionBarPos] = useState<{ top: number; left: number } | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [menuOpenDown, setMenuOpenDown] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{
@@ -659,11 +660,15 @@ export const MessageBubble = React.memo(function MessageBubble({
           showActions ? 'z-10' : 'z-0',
         )}
         onMouseEnter={() => {
-          if (actionBarRef.current) {
-            const rect =
-              actionBarRef.current.closest('[data-msg-row]')?.getBoundingClientRect() ??
-              actionBarRef.current.getBoundingClientRect();
-            setActionBarBelow(rect.top < 80);
+          const rowEl = actionBarRef.current?.closest('[data-msg-row]') as HTMLElement | null;
+          if (rowEl) {
+            const rect = rowEl.getBoundingClientRect();
+            const below = rect.top < 120;
+            setActionBarBelow(below);
+            setActionBarPos({
+              top: below ? rect.bottom + 4 : rect.top - 40,
+              left: isOwn ? rect.right - 320 : rect.left + 40,
+            });
           }
           setShowActions(true);
           if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -1167,76 +1172,76 @@ export const MessageBubble = React.memo(function MessageBubble({
         </div>
 
         {/* Action bar — disabled for service broadcasts unless sender is superadmin */}
-        {(!message.isServiceBroadcast || (message.isServiceBroadcast && isOwn)) && (
-          <div
-            ref={actionBarRef}
-            className={cn(
-              'absolute items-center gap-0.5 z-40',
-              'rounded-full px-1.5 py-1 shadow-lg',
-              'transition-all duration-150',
-              actionBarBelow ? 'top-full mt-1 origin-top' : '-top-9 origin-bottom',
-              isOwn ? 'right-0' : 'left-0',
-              showActions ? 'flex opacity-100 scale-100' : 'hidden opacity-0 scale-95',
-            )}
-            style={{ background: 'var(--background-subtle)' }}
-            onTouchStart={(e) => e.stopPropagation()}
-            onMouseEnter={() => {
-              if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-              setShowActions(true);
-            }}
-            onMouseLeave={() => {
-              // Don't hide if menu is open — let the menu's own handlers control visibility
-              if (showMenu) return;
-              hoverTimeoutRef.current = setTimeout(() => {
-                setShowActions(false);
-              }, 100);
-            }}
-          >
-            {QUICK_EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                onClick={() => handleReaction(emoji)}
-                className="w-7 h-7 flex items-center justify-center rounded-full text-sm sm:text-xs hover:scale-110 transition-transform duration-150"
-                style={{ background: 'var(--background-subtle)' }}
-              >
-                {emoji}
-              </button>
-            ))}
-            <button
-              onClick={() =>
-                onReply(message._id, message.content, message.sender?.name ?? t('common.someone'))
-              }
-              className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
-              style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}
-              title={L.reply}
+        {(!message.isServiceBroadcast || (message.isServiceBroadcast && isOwn)) &&
+          showActions &&
+          actionBarPos &&
+          createPortal(
+            <div
+              ref={actionBarRef}
+              className="fixed flex items-center gap-0.5 z-40 rounded-full px-1.5 py-1 shadow-lg transition-all duration-150"
+              style={{
+                top: actionBarPos.top,
+                left: actionBarPos.left,
+                background: 'var(--background-subtle)',
+              }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onMouseEnter={() => {
+                if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                setShowActions(true);
+              }}
+              onMouseLeave={() => {
+                if (showMenu) return;
+                hoverTimeoutRef.current = setTimeout(() => {
+                  setShowActions(false);
+                }, 100);
+              }}
             >
-              <Reply className="w-4 h-4" />
-            </button>
-            <div className="relative">
+              {QUICK_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReaction(emoji)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full text-sm sm:text-xs hover:scale-110 transition-transform duration-150"
+                  style={{ background: 'var(--background-subtle)' }}
+                >
+                  {emoji}
+                </button>
+              ))}
               <button
-                ref={menuBtnRef}
-                onClick={() => {
-                  if (menuBtnRef.current) {
-                    const rect = menuBtnRef.current.getBoundingClientRect();
-                    const spaceBelow = window.innerHeight - rect.bottom;
-                    const openDown = spaceBelow > 220;
-                    setMenuOpenDown(openDown);
-                    setMenuPosition({
-                      top: openDown ? rect.bottom + 8 : rect.top - 8,
-                      left: isOwn ? undefined : rect.left,
-                      right: isOwn ? window.innerWidth - rect.right - 8 : undefined,
-                    });
-                  }
-                  setShowMenu((prev) => !prev);
-                }}
+                onClick={() =>
+                  onReply(message._id, message.content, message.sender?.name ?? t('common.someone'))
+                }
                 className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
                 style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}
+                title={L.reply}
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <Reply className="w-4 h-4" />
               </button>
-            </div>
-          </div>
-        )}
+              <div className="relative">
+                <button
+                  ref={menuBtnRef}
+                  onClick={() => {
+                    if (menuBtnRef.current) {
+                      const rect = menuBtnRef.current.getBoundingClientRect();
+                      const spaceBelow = window.innerHeight - rect.bottom;
+                      const openDown = spaceBelow > 220;
+                      setMenuOpenDown(openDown);
+                      setMenuPosition({
+                        top: openDown ? rect.bottom + 8 : rect.top - 8,
+                        left: isOwn ? undefined : rect.left,
+                        right: isOwn ? window.innerWidth - rect.right - 8 : undefined,
+                      });
+                    }
+                    setShowMenu((prev) => !prev);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
+                  style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )}
       </div>
 
       {/* Context menu rendered via portal so it isn't clipped by scroll containers */}
