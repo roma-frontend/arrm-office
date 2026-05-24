@@ -378,6 +378,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const actionBarRef = useRef<HTMLDivElement>(null);
+  const msgRowRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const toggleReaction = useMutation(api.chat.mutations.toggleReaction);
@@ -653,6 +654,7 @@ export const MessageBubble = React.memo(function MessageBubble({
 
       {/* Message row */}
       <div
+        ref={msgRowRef}
         data-msg-row
         className={cn(
           'relative flex items-end gap-2.5 my-1 group animate-msg-in',
@@ -660,7 +662,7 @@ export const MessageBubble = React.memo(function MessageBubble({
           showActions ? 'z-10' : 'z-0',
         )}
         onMouseEnter={() => {
-          const rowEl = actionBarRef.current?.closest('[data-msg-row]') as HTMLElement | null;
+          const rowEl = msgRowRef.current;
           if (rowEl) {
             const rect = rowEl.getBoundingClientRect();
             const below = rect.top < 120;
@@ -1178,11 +1180,12 @@ export const MessageBubble = React.memo(function MessageBubble({
           createPortal(
             <div
               ref={actionBarRef}
-              className="fixed flex items-center gap-0.5 z-40 rounded-full px-1.5 py-1 shadow-lg transition-all duration-150"
+              className="fixed flex items-center gap-0.5 z-40 rounded-full px-1.5 py-1 shadow-2xl border transition-all duration-150"
               style={{
                 top: actionBarPos.top,
                 left: actionBarPos.left,
-                background: 'var(--background-subtle)',
+                background: 'var(--background)',
+                borderColor: 'var(--border)',
               }}
               onTouchStart={(e) => e.stopPropagation()}
               onMouseEnter={() => {
@@ -1200,8 +1203,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                 <button
                   key={emoji}
                   onClick={() => handleReaction(emoji)}
-                  className="w-7 h-7 flex items-center justify-center rounded-full text-sm sm:text-xs hover:scale-110 transition-transform duration-150"
-                  style={{ background: 'var(--background-subtle)' }}
+                  className="w-7 h-7 flex items-center justify-center rounded-full text-sm sm:text-xs hover:scale-110 hover:bg-white/10 transition-all duration-150"
                 >
                   {emoji}
                 </button>
@@ -1210,8 +1212,8 @@ export const MessageBubble = React.memo(function MessageBubble({
                 onClick={() =>
                   onReply(message._id, message.content, message.sender?.name ?? t('common.someone'))
                 }
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
-                style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 hover:bg-white/10 transition-all duration-150"
+                style={{ color: 'var(--text-muted)' }}
                 title={L.reply}
               >
                 <Reply className="w-4 h-4" />
@@ -1233,8 +1235,8 @@ export const MessageBubble = React.memo(function MessageBubble({
                     }
                     setShowMenu((prev) => !prev);
                   }}
-                  className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
-                  style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 hover:bg-white/10 transition-all duration-150"
+                  style={{ color: 'var(--text-muted)' }}
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
