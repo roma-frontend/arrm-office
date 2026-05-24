@@ -269,7 +269,7 @@ export function LocalizationSettings({
               <span className="text-2xl">📅</span>
               <div>
                 <p className="text-sm font-medium text-(--text-primary)">
-                  {t('localizationSettings.weekStartsOn')} {firstDayOfWeek}
+                  {t('localizationSettings.weekStartsOn')} {t(`weekdays.${firstDayOfWeek}`)}
                 </p>
                 <p className="text-xs text-(--text-muted) mt-0.5">
                   {t('settingsLocalization.weekStartNote')}
