@@ -265,7 +265,7 @@ export default function DriverDashboardPage() {
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <h3 className="font-semibold text-sm sm:text-base truncate">
-                            {req.requesterName ?? 'Unknown'}
+                            {req.requesterName ?? t('common.unknown')}
                           </h3>
                           <p className="text-xs sm:text-sm text-(--text-muted) truncate">
                             {req.tripInfo.from} → {req.tripInfo.to}

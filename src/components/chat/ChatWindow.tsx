@@ -627,7 +627,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     const sender =
       'sender' in latest ? (latest.sender as { name?: string; avatarUrl?: string } | null) : null;
     if (Notification.permission === 'granted') {
-      new Notification(sender?.name ?? 'New message', {
+      new Notification(sender?.name ?? t('chat.newMessage'), {
         body: latest.content?.slice(0, 80) || '📎 Attachment',
         icon: sender?.avatarUrl ?? '/favicon.ico',
         badge: '/favicon.ico',

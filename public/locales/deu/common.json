@@ -135,7 +135,9 @@
     "yes": "Ja",
     "no": "Nein",
     "exportSVG": "SVG exportieren",
-    "approved": "Genehmigt"
+    "approved": "Genehmigt",
+    "someone": "Jemand",
+    "notAssigned": "Nicht zugewiesen"
   },
   "nav": {
     "home": "Startseite",
@@ -1163,5 +1165,24 @@
     "selectCamera": "Kamera wählen:",
     "noCameraFound": "Keine Kamera gefunden. Bitte Kamera anschließen.",
     "touchId": "Touch ID"
+  },
+  "events": {
+    "eventType": "Ereignistyp",
+    "priorityLevel": "Priorität",
+    "notifyDaysBefore": "Tage vorher benachrichtigen",
+    "description": "Beschreibung",
+    "daysBeforeEvent": "Tage vor dem Ereignis",
+    "eventSummary": "Ereignisübersicht",
+    "conflictAlertDesc": "Urlaubsanträge aus diesen Abteilungen lösen Konfliktwarnungen aus",
+    "creating": "Erstellen...",
+    "createEvent": "Ereignis erstellen",
+    "descriptionPlaceholder": "Kurze Beschreibung...",
+    "fillRequired": "Bitte alle Pflichtfelder ausfüllen"
+  },
+  "chat": {
+    "newMessage": "Neue Nachricht"
+  },
+  "employees": {
+    "loadingProfile": "Profil wird geladen..."
   }
 }

@@ -110,7 +110,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <p className="text-(--text-muted)">Loading employee profile...</p>
+          <p className="text-(--text-muted)">{t('employees.loadingProfile')}</p>
         </CardContent>
       </Card>
     );
@@ -143,7 +143,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
               <div>
                 <CardTitle className="text-2xl">{employee.name}</CardTitle>
                 <p className="text-(--text-muted) text-sm mt-1">
-                  {employee.position || 'Employee'}
+                  {employee.position || t('roles.employee')}
                 </p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   <Badge variant={employee.role === 'admin' ? 'default' : 'secondary'}>

@@ -358,6 +358,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   lang = 'en',
 }: Props) {
   const L = UI_LABELS[getLabelLang(lang)];
+  const { t } = useTranslation();
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
   const [showActions, setShowActions] = useState(false);
   const [actionBarBelow, setActionBarBelow] = useState(false);
@@ -659,8 +660,9 @@ export const MessageBubble = React.memo(function MessageBubble({
         )}
         onMouseEnter={() => {
           if (actionBarRef.current) {
-            const rect = actionBarRef.current.closest('[data-msg-row]')?.getBoundingClientRect()
-              ?? actionBarRef.current.getBoundingClientRect();
+            const rect =
+              actionBarRef.current.closest('[data-msg-row]')?.getBoundingClientRect() ??
+              actionBarRef.current.getBoundingClientRect();
             setActionBarBelow(rect.top < 80);
           }
           setShowActions(true);
@@ -1107,7 +1109,11 @@ export const MessageBubble = React.memo(function MessageBubble({
                 onSelect={(reply) =>
                   onSendMessage
                     ? onSendMessage(reply)
-                    : onReply(message._id, message.content, message.sender?.name ?? 'Someone')
+                    : onReply(
+                        message._id,
+                        message.content,
+                        message.sender?.name ?? t('common.someone'),
+                      )
                 }
               />
             )}
@@ -1198,7 +1204,7 @@ export const MessageBubble = React.memo(function MessageBubble({
             ))}
             <button
               onClick={() =>
-                onReply(message._id, message.content, message.sender?.name ?? 'Someone')
+                onReply(message._id, message.content, message.sender?.name ?? t('common.someone'))
               }
               className="w-7 h-7 flex items-center justify-center rounded-full hover:scale-110 transition-transform duration-150"
               style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}

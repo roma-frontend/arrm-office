@@ -543,7 +543,9 @@ export function CallModal({
                 </>
               )}
             </div>
-            <p className="text-white text-xl font-semibold">{call.remoteUserName ?? 'Unknown'}</p>
+            <p className="text-white text-xl font-semibold">
+              {call.remoteUserName ?? t('common.unknown')}
+            </p>
           </div>
         )}
 

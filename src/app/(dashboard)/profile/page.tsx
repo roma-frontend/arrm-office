@@ -356,7 +356,7 @@ export default function ProfilePage() {
               <div className="relative">
                 <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
                 <Input
-                  value={user?.department ?? 'Not assigned'}
+                  value={user?.department ?? t('common.notAssigned')}
                   disabled
                   className="pl-10 opacity-60"
                 />

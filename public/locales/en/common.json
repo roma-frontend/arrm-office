@@ -134,7 +134,9 @@
     "saving": "Saving...",
     "noResults": "No Results",
     "to": "to",
-    "approved": "Approved"
+    "approved": "Approved",
+    "someone": "Someone",
+    "notAssigned": "Not assigned"
   },
   "nav": {
     "home": "Home",
@@ -1130,5 +1132,24 @@
     "selectCamera": "Select Camera:",
     "noCameraFound": "No camera found. Please connect a camera.",
     "touchId": "Touch ID"
+  },
+  "events": {
+    "eventType": "Event Type",
+    "priorityLevel": "Priority Level",
+    "notifyDaysBefore": "Notify Days Before",
+    "description": "Description",
+    "daysBeforeEvent": "days before the event",
+    "eventSummary": "Event Summary",
+    "conflictAlertDesc": "Leave requests from these departments will trigger conflict alerts",
+    "creating": "Creating...",
+    "createEvent": "Create Event",
+    "descriptionPlaceholder": "Brief description of the event...",
+    "fillRequired": "Please fill all required fields"
+  },
+  "chat": {
+    "newMessage": "New message"
+  },
+  "employees": {
+    "loadingProfile": "Loading employee profile..."
   }
 }

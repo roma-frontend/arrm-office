@@ -30,6 +30,7 @@ import { X, Calendar, Clock, Users, AlertCircle, Briefcase } from 'lucide-react'
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { toast } from 'sonner';
 
 interface CreateEventModalProps {
   open: boolean;
@@ -111,7 +112,7 @@ export function CreateEventModal({
     e.preventDefault();
 
     if (!name || !startDate || !endDate || requiredDepartments.length === 0) {
-      alert('Please fill all required fields');
+      toast.error(t('events.fillRequired'));
       return;
     }
 
@@ -184,11 +185,11 @@ export function CreateEventModal({
             </div>
 
             <div>
-              <Label>Description</Label>
+              <Label>{t('events.description')}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Brief description of the event..."
+                placeholder={t('events.descriptionPlaceholder')}
                 rows={3}
               />
             </div>
@@ -222,7 +223,7 @@ export function CreateEventModal({
 
           {/* Event Type */}
           <div>
-            <Label>Event Type</Label>
+            <Label>{t('events.eventType')}</Label>
             <Select value={eventType} onValueChange={(v) => setEventType(v as any)}>
               <SelectTrigger>
                 <SelectValue />
@@ -239,7 +240,7 @@ export function CreateEventModal({
 
           {/* Priority */}
           <div>
-            <Label>Priority Level</Label>
+            <Label>{t('events.priorityLevel')}</Label>
             <div className="grid grid-cols-3 gap-2 mt-2">
               {PRIORITY_LEVELS.map((level) => (
                 <button
@@ -289,7 +290,7 @@ export function CreateEventModal({
 
           {/* Notifications */}
           <div>
-            <Label>Notify Days Before</Label>
+            <Label>{t('events.notifyDaysBefore')}</Label>
             <div className="flex items-center gap-2 mt-2">
               <Input
                 type="number"
@@ -299,7 +300,7 @@ export function CreateEventModal({
                 onChange={(e) => setNotifyDaysBefore(parseInt(e.target.value) || 3)}
                 className="w-24"
               />
-              <span className="text-sm text-muted-foreground">days before the event</span>
+              <span className="text-sm text-muted-foreground">{t('events.daysBeforeEvent')}</span>
             </div>
           </div>
 
@@ -309,14 +310,12 @@ export function CreateEventModal({
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-semibold text-blue-900">Event Summary</p>
+                  <p className="font-semibold text-blue-900">{t('events.eventSummary')}</p>
                   <p className="text-blue-700 mt-1">
                     <strong>{name}</strong> will require attendance from:{' '}
                     <span className="font-medium">{requiredDepartments.join(', ')}</span>
                   </p>
-                  <p className="text-blue-600 text-xs mt-1">
-                    Leave requests from these departments will trigger conflict alerts
-                  </p>
+                  <p className="text-blue-600 text-xs mt-1">{t('events.conflictAlertDesc')}</p>
                 </div>
               </div>
             </div>
@@ -324,10 +323,10 @@ export function CreateEventModal({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting || requiredDepartments.length === 0}>
-              {isSubmitting ? 'Creating...' : 'Create Event'}
+              {isSubmitting ? t('events.creating') : t('events.createEvent')}
             </Button>
           </DialogFooter>
         </form>

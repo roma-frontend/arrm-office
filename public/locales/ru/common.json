@@ -135,7 +135,9 @@
     "yes": "Да",
     "no": "Нет",
     "exportSVG": "Экспорт SVG",
-    "approved": "Одобрено"
+    "approved": "Одобрено",
+    "someone": "Кто-то",
+    "notAssigned": "Не назначено"
   },
   "nav": {
     "home": "Главная",
@@ -1162,5 +1164,24 @@
     "selectCamera": "Выберите камеру:",
     "noCameraFound": "Камера не найдена. Подключите камеру.",
     "touchId": "Touch ID"
+  },
+  "events": {
+    "eventType": "Тип события",
+    "priorityLevel": "Приоритет",
+    "notifyDaysBefore": "Уведомить за дней до",
+    "description": "Описание",
+    "daysBeforeEvent": "дней до события",
+    "eventSummary": "Сводка события",
+    "conflictAlertDesc": "Заявки на отпуск из этих отделов вызовут предупреждения о конфликтах",
+    "creating": "Создание...",
+    "createEvent": "Создать событие",
+    "descriptionPlaceholder": "Краткое описание события...",
+    "fillRequired": "Заполните все обязательные поля"
+  },
+  "chat": {
+    "newMessage": "Новое сообщение"
+  },
+  "employees": {
+    "loadingProfile": "Загрузка профиля..."
   }
 }

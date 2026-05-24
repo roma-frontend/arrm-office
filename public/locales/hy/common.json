@@ -134,7 +134,9 @@
     "no": "Ոչ",
     "exportSVG": "Արտահանել SVG",
     "to": "մինչև",
-    "approved": "Հաստատված"
+    "approved": "Հաստատված",
+    "someone": "Ինչ-որ մեկը",
+    "notAssigned": "Չի նշանակվել"
   },
   "nav": {
     "home": "Գլխավոր",
@@ -1134,5 +1136,24 @@
     "selectCamera": "Ընտրեք տեսախցիկը",
     "noCameraFound": "Տեսախցիկ չի գտնվել",
     "touchId": "Touch ID"
+  },
+  "events": {
+    "eventType": "Իրադարձության տեսակ",
+    "priorityLevel": "Առաջնահերթության մակարդակ",
+    "notifyDaysBefore": "Ծանուցել օրեր առաջ",
+    "description": "Նկարագրություն",
+    "daysBeforeEvent": "Օրեր մինչև իրադարձությունը",
+    "eventSummary": "Իրադարձության ամփոփում",
+    "conflictAlertDesc": "⚠️ Հնարավոր հակասություն հայտնաբերվել է {{type}} իրադարձության հետ ({{start}} → {{end}}):",
+    "creating": "Ստեղծվում է...",
+    "createEvent": "Ստեղծել իրադարձություն",
+    "descriptionPlaceholder": "Նկարագրություն...",
+    "fillRequired": "Լրացրեք պարտադիր դաշտերը"
+  },
+  "chat": {
+    "newMessage": "Նոր հաղորդագրություն"
+  },
+  "employees": {
+    "loadingProfile": "Բեռնվում է պրոֆիլը..."
   }
 }
