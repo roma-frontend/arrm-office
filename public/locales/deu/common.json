@@ -563,8 +563,10 @@
     "seconds": "Sekunden",
     "ago": "vor",
     "justNow": "Gerade eben",
-    "hoursAgo": "vor {{count}} Stunden",
-    "selectDateRange": "Wählen Sie einen Datumsbereich"
+    "hoursAgo": "vor {{count}} Std.",
+    "selectDateRange": "Wählen Sie einen Datumsbereich",
+    "daysAgo": "vor {{count}} T.",
+    "minutesAgo": "vor {{count}} Min."
   },
   "timePeriods": {
     "today": "Heute",
@@ -978,7 +980,12 @@
     "securityNote": "Zu Ihrer Sicherheit werden inaktive Sitzungen automatisch beendet.",
     "loggedOut": "Sitzung erfolgreich beendet",
     "logoutFailed": "Sitzung konnte nicht beendet werden",
-    "sessionExtended": "Sitzung erfolgreich verlängert"
+    "sessionExtended": "Sitzung erfolgreich verlängert",
+    "pageNotFound": "Seite nicht gefunden",
+    "pageNotFoundDesc": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+    "goHome": "Startseite",
+    "errorDescription": "Ein unerwarteter Fehler ist aufgetreten. Ihre Daten sind sicher.",
+    "errorReference": "Referenz:"
   },
   "tasks.priority": {
     "high": "Hoch",
@@ -1121,5 +1128,10 @@
   "profile": {
     "failedToSave": "Profil konnte nicht gespeichert werden",
     "failedToDeleteAvatar": "Avatar konnte nicht gelöscht werden"
+  },
+  "dashboard": {
+    "paidLeaveBalance": "Bezahlter Urlaub: {{count}} Tage",
+    "sickLeaveBalance": "Krankmeldung: {{count}} Tage",
+    "familyLeaveBalance": "Familienurlaub: {{count}} Tage"
   }
 }

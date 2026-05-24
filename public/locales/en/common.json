@@ -557,7 +557,9 @@
     "seconds": "seconds",
     "ago": "ago",
     "justNow": "Just now",
-    "hoursAgo": "{{count}} hours ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "minutesAgo": "{{count}}m ago",
     "selectDateRange": "Select date range"
   },
   "timePeriods": {
@@ -960,7 +962,8 @@
     "pageNotFoundDesc": "The dashboard page you're looking for doesn't exist or has been moved.",
     "backToDashboard": "Back to Dashboard",
     "goHome": "Go Home",
-    "errorDescription": "An unexpected error occurred. Don't worry — your data is safe. Try refreshing or go back to the dashboard."
+    "errorDescription": "An unexpected error occurred. Don't worry — your data is safe. Try refreshing or go back to the dashboard.",
+    "errorReference": "Reference:"
   },
   "notifications": {
     "types": {
@@ -1092,5 +1095,10 @@
   "profile": {
     "failedToSave": "Failed to save profile",
     "failedToDeleteAvatar": "Failed to delete avatar"
+  },
+  "dashboard": {
+    "paidLeaveBalance": "Paid leave: {{count}} days",
+    "sickLeaveBalance": "Sick leave: {{count}} days",
+    "familyLeaveBalance": "Family leave: {{count}} days"
   }
 }

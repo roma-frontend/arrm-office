@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { ShieldAlert, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 export default function AuthError({
   error,
@@ -11,10 +12,16 @@ export default function AuthError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t, ready } = useTranslation(['common', 'auth']);
+  const tr = (key: string, fallback: string) => {
+    if (!ready) return fallback;
+    const result = t(key);
+    return result === key ? fallback : result;
+  };
+
   useEffect(() => {
     console.error('Auth error:', error);
 
-    // Send to Sentry if available
     if (typeof window !== 'undefined' && (window as any).Sentry) {
       (window as any).Sentry.captureException(error, {
         extra: {
@@ -32,9 +39,14 @@ export default function AuthError({
       </div>
 
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight">Authentication Error</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">
+          {tr('auth:auth.authError', 'Authentication Error')}
+        </h2>
         <p className="text-muted-foreground max-w-md">
-          Something went wrong during authentication. Please try again.
+          {tr(
+            'auth:auth.authErrorDesc',
+            'Something went wrong during authentication. Please try again.',
+          )}
         </p>
       </div>
 
@@ -44,13 +56,13 @@ export default function AuthError({
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
         >
           <RefreshCw className="h-4 w-4" />
-          Try again
+          {tr('commonUI.tryAgain', 'Try again')}
         </button>
         <Link
           href="/login"
           className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent"
         >
-          Back to Login
+          {tr('auth:auth.backToLogin', 'Back to Login')}
         </Link>
       </div>
     </div>

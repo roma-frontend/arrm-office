@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertOctagon, RefreshCw, Home } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function GlobalError({
   error,
@@ -11,10 +12,16 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t, ready } = useTranslation();
+  const tr = (key: string, fallback: string) => {
+    if (!ready) return fallback;
+    const result = t(key);
+    return result === key ? fallback : result;
+  };
+
   useEffect(() => {
     console.error('Global error:', error);
 
-    // Send to Sentry if available
     if (typeof window !== 'undefined' && (window as any).Sentry) {
       (window as any).Sentry.captureException(error, {
         extra: {
@@ -32,13 +39,18 @@ export default function GlobalError({
       </div>
 
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Oops! Something broke</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          {tr('errors.somethingWentWrong', 'Oops! Something broke')}
+        </h1>
         <p className="text-muted-foreground max-w-lg">
-          An unexpected error occurred. Our team has been notified. Please try refreshing the page.
+          {tr(
+            'idleModal.errorDescription',
+            'An unexpected error occurred. Our team has been notified. Please try refreshing the page.',
+          )}
         </p>
         {error.digest && (
           <p className="text-xs text-muted-foreground/50 font-mono mt-4">
-            Reference: {error.digest}
+            {tr('idleModal.errorReference', 'Reference:')} {error.digest}
           </p>
         )}
       </div>
@@ -49,14 +61,14 @@ export default function GlobalError({
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
           <RefreshCw className="h-4 w-4" />
-          Refresh page
+          {tr('commonUI.tryAgain', 'Refresh page')}
         </button>
         <Link
           href="/"
           className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-6 py-3 text-sm font-medium shadow transition-colors hover:bg-accent"
         >
           <Home className="h-4 w-4" />
-          Go home
+          {tr('idleModal.goHome', 'Go home')}
         </Link>
       </div>
     </div>

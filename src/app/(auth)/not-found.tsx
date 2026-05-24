@@ -2,8 +2,16 @@
 
 import Link from 'next/link';
 import { FileQuestion, ArrowLeft, Home } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function AuthNotFound() {
+  const { t, ready } = useTranslation(['common', 'auth']);
+  const tr = (key: string, fallback: string) => {
+    if (!ready) return fallback;
+    const result = t(key);
+    return result === key ? fallback : result;
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
@@ -11,9 +19,14 @@ export default function AuthNotFound() {
       </div>
 
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Page not found</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {tr('idleModal.pageNotFound', 'Page not found')}
+        </h1>
         <p className="text-muted-foreground max-w-md">
-          The authentication page you&apos;re looking for doesn&apos;t exist.
+          {tr(
+            'auth:auth.pageNotFoundDesc',
+            "The authentication page you're looking for doesn't exist.",
+          )}
         </p>
       </div>
 
@@ -23,14 +36,14 @@ export default function AuthNotFound() {
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
           <ArrowLeft className="h-4 w-4" />
-          Go to Login
+          {tr('auth:auth.goToLogin', 'Go to Login')}
         </Link>
         <Link
           href="/"
           className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-medium shadow transition-colors hover:bg-accent"
         >
           <Home className="h-4 w-4" />
-          Go Home
+          {tr('idleModal.goHome', 'Go Home')}
         </Link>
       </div>
     </div>

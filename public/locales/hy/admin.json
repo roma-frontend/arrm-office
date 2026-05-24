@@ -706,10 +706,10 @@
       "noChatMessages": "Հաղորդագրություններ չգտնվեցին",
       "loading": "Բեռնում..."
     },
-    "creatingOrg": "Delays {{name}}…",
-    "orgCreated": "Delays \"{{name}}\" delays!",
-    "adminInviteSent": "Delays delays {{email}}",
-    "orgCreateFailed": "Delays delays delays"
+    "creatingOrg": "Կազմակերպության ստեղծում...",
+    "orgCreated": "Կազմակերպությունը \"{{name}}\" հաջողությամբ ստեղծվել է!",
+    "adminInviteSent": "Ադմինի հրավերը հաջողությամբ ուղարկվել է {{email}}",
+    "orgCreateFailed": "Չհաջողվեց ստեղծել կազմակերպությունը"
   },
   "superadminSecurity": {
     "securityControl": "Անվտանգության կառավարման կենտրոն",

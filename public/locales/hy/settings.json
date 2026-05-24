@@ -80,9 +80,9 @@
       "enterPassword": "Մուտքագրեք գաղտնաբառը",
       "disable2fa": "Անջատել 2FA"
     },
-    "syncEmployees": "Delays delays",
-    "syncFailed": "Delays delays",
-    "failedToSave": "Delays delays"
+    "syncEmployees": "Սինխրոնացնել աշխատակիցները",
+    "syncFailed": "Չհաջողվեց սինխրոնացնել աշխատակիցները",
+    "failedToSave": "Չհաջողվեց պահպանել"
   },
   "settingsExtended": {
     "appearance": "Արտաքին տեսք",

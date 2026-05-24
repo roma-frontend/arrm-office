@@ -557,8 +557,10 @@
     "seconds": "seconds",
     "ago": "ago",
     "justNow": "Just now",
-    "hoursAgo": "{{count}} hours ago",
-    "selectDateRange": "Select date range"
+    "hoursAgo": "{{count}}h ago",
+    "selectDateRange": "Select date range",
+    "daysAgo": "{{count}}d ago",
+    "minutesAgo": "{{count}}m ago"
   },
   "timePeriods": {
     "today": "Today",
@@ -940,5 +942,17 @@
       "title": "Edit Employee",
       "updatedSuccess": "Employee updated successfully"
     }
+  },
+  "idleModal": {
+    "pageNotFound": "Page not found",
+    "pageNotFoundDesc": "The page you are looking for does not exist or has been moved.",
+    "goHome": "Go Home",
+    "errorDescription": "An unexpected error occurred. Our team has been notified. Please try refreshing the page.",
+    "errorReference": "Reference:"
+  },
+  "dashboard": {
+    "paidLeaveBalance": "Paid leave: {{count}} days",
+    "sickLeaveBalance": "Sick leave: {{count}} days",
+    "familyLeaveBalance": "Family leave: {{count}} days"
   }
 }

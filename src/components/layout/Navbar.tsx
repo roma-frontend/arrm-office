@@ -207,9 +207,10 @@ export function Navbar() {
     const mins = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    return `${mins}m ago`;
+    if (days > 0) return t('time.daysAgo', { count: days });
+    if (hours > 0) return t('time.hoursAgo', { count: hours });
+    if (mins > 0) return t('time.minutesAgo', { count: mins });
+    return t('time.justNow');
   };
 
   const notifRef = useRef<HTMLDivElement>(null);

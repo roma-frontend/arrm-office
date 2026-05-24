@@ -558,7 +558,9 @@
     "ago": "առաջ",
     "justNow": "Հենց նոր",
     "hoursAgo": "{{count}} ժ առաջ",
-    "selectDateRange": "Ընտրել ամսաթվերի միջակայք"
+    "selectDateRange": "Ընտրել ամսաթվերի միջակայք",
+    "daysAgo": "{{count}} օdelays delays",
+    "minutesAgo": "{{count}} delays delays"
   },
   "timePeriods": {
     "today": "Այսօր",
@@ -955,7 +957,12 @@
     "securityNote": "Ձեր անվտանգության համար ոչ ակտիվ նիստերն ավտոմատ կերպով դադարեցվում են:",
     "loggedOut": "Նիստը հաջողությամբ ավարտվեց",
     "logoutFailed": "Չհաջողվեց ավարտել նիստը",
-    "sessionExtended": "Նիստը հաջողությամբ երկարաձգվեց"
+    "sessionExtended": "Նիստը հաջողությամբ երկարաձգվեց",
+    "pageNotFound": "Էջը չի գտնվել",
+    "pageNotFoundDesc": "Կներեք, էջը չի գտնվել:",
+    "goHome": "Գնալ գլխավոր էջ",
+    "errorDescription": "Սխալ տեղի ունեցավ:",
+    "errorReference": "Delays:"
   },
   "pageNotFound": "Էջը չի գտնվել",
   "pageNotFoundDesc": "Կներեք, էջը չի գտնվել:",
@@ -1078,19 +1085,24 @@
     "contractor": "Պայմանագրային աշխատակից"
   },
   "leaves": {
-    "newRequestNotification": "Նոր արձակdelays հայdelays! 🏖️",
-    "pendingRequestsCount": "Դուdelays delays {{count}} delays delays"
+    "newRequestNotification": "Նոր արձակուրդի հայտ! 🏖️",
+    "pendingRequestsCount": "Դու ունես {{count}} սպասող հայտ"
   },
   "tasks": {
-    "failedToUpdateStatus": "Delays delays delays",
-    "fileTooLarge": "{{name}} delays delays",
-    "failedToUpload": "Delays delays {{name}}"
+    "failedToUpdateStatus": "Չհաջողվեց թարմացնել կարգավիճակը",
+    "fileTooLarge": "{{name}} ֆայլը չափազանց մեծ է",
+    "failedToUpload": "Չհաջողվեց վերբեռնել {{name}}"
   },
   "reports": {
-    "exportCsv": "Delays CSV"
+    "exportCsv": "Արտահանել CSV"
   },
   "profile": {
-    "failedToSave": "Delays delays delays",
-    "failedToDeleteAvatar": "Delays delays delays"
+    "failedToSave": "Չհաջողվեց պահպանել",
+    "failedToDeleteAvatar": "Չհաջողվեց ջնջել ավատարը"
+  },
+  "dashboard": {
+    "paidLeaveBalance": "Delays: {{count}} delays",
+    "sickLeaveBalance": "Delays: {{count}} delays",
+    "familyLeaveBalance": "Delays: {{count}} delays"
   }
 }

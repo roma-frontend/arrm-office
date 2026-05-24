@@ -564,6 +564,8 @@
     "ago": "назад",
     "justNow": "Только что",
     "hoursAgo": "{{count}} ч. назад",
+    "daysAgo": "{{count}} дн. назад",
+    "minutesAgo": "{{count}} мин. назад",
     "selectDateRange": "Выберите диапазон дат"
   },
   "timePeriods": {
@@ -977,7 +979,12 @@
     "securityNote": "Для вашей безопасности неактивные сессии автоматически завершаются.",
     "loggedOut": "Сессия успешно завершена",
     "logoutFailed": "Не удалось завершить сессию",
-    "sessionExtended": "Сессия успешно продлена"
+    "sessionExtended": "Сессия успешно продлена",
+    "errorReference": "Ссылка:",
+    "pageNotFound": "Страница не найдена",
+    "pageNotFoundDesc": "Страница не существует или была перемещена.",
+    "goHome": "На главную",
+    "errorDescription": "Произошла непредвиденная ошибка. Ваши данные в безопасности."
   },
   "tasks.priority": {
     "high": "Высокий",
@@ -1120,5 +1127,10 @@
   "profile": {
     "failedToSave": "Не удалось сохранить профиль",
     "failedToDeleteAvatar": "Не удалось удалить аватар"
+  },
+  "dashboard": {
+    "paidLeaveBalance": "Оплачиваемый отпуск: {{count}} дн.",
+    "sickLeaveBalance": "Больничный: {{count}} дн.",
+    "familyLeaveBalance": "Семейный: {{count}} дн."
   }
 }
