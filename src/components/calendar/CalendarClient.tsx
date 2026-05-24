@@ -18,6 +18,7 @@ import {
   Car,
   CalendarPlus,
   ClipboardCopy,
+  Trash2,
 } from 'lucide-react';
 import {
   format,
@@ -46,7 +47,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import {
@@ -193,7 +194,8 @@ function DayCell({
   const hasGoogle = googleEvents.length > 0 && isCurrentMonth;
   const hasDriver = driverEvents.length > 0 && isCurrentMonth;
   const hasCustom = customEvents.length > 0 && isCurrentMonth;
-  const totalItems = leaves.length + googleEvents.length + driverEvents.length + customEvents.length;
+  const totalItems =
+    leaves.length + googleEvents.length + driverEvents.length + customEvents.length;
 
   return (
     <button
@@ -339,6 +341,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
+  const deleteEventMutation = useMutation(api.calendarEvents.remove);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [selectedDriverEvent, setSelectedDriverEvent] = useState<DriverScheduleEvent | null>(null);
   const [selectedGoogleEvent, setSelectedGoogleEvent] = useState<GoogleCalendarEvent | null>(null);
@@ -472,9 +476,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
   // Calendar events (custom user events)
   const calendarEventsData = useQuery(
     api.calendarEvents.getByOrganization,
-    mounted && selectedOrgId
-      ? { organizationId: selectedOrgId as Id<'organizations'> }
-      : 'skip',
+    mounted && selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
   );
   const customEvents: CalendarEvent[] = (calendarEventsData ?? []).map((e) => ({
     id: e._id,
@@ -760,31 +762,43 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         </ContextMenuTrigger>
                         <ContextMenuContent className="w-52">
                           <ContextMenuItem
-                            onSelect={() => setTimeout(() => { setSelectedDay(date); setShowCreateEvent(true); })}
+                            onSelect={() =>
+                              setTimeout(() => {
+                                setSelectedDay(date);
+                                setShowCreateEvent(true);
+                              })
+                            }
                             className="gap-2"
                           >
                             <CalendarPlus className="w-4 h-4 text-blue-500" />
                             {t('createMeeting.contextMenu.newEvent')}
                           </ContextMenuItem>
                           <ContextMenuItem
-                            onSelect={() => setTimeout(() => { setSelectedDay(date); setShowLeaveModal(true); })}
+                            onSelect={() =>
+                              setTimeout(() => {
+                                setSelectedDay(date);
+                                setShowLeaveModal(true);
+                              })
+                            }
                             className="gap-2"
                           >
                             <CalendarDays className="w-4 h-4 text-emerald-500" />
                             {t('createMeeting.contextMenu.newLeave')}
                           </ContextMenuItem>
                           <ContextMenuItem
-                            onSelect={() => setTimeout(() => { setSelectedDay(date); setShowDriverModal(true); })}
+                            onSelect={() =>
+                              setTimeout(() => {
+                                setSelectedDay(date);
+                                setShowDriverModal(true);
+                              })
+                            }
                             className="gap-2"
                           >
                             <Car className="w-4 h-4 text-orange-500" />
                             {t('createMeeting.contextMenu.bookDriver')}
                           </ContextMenuItem>
                           <ContextMenuSeparator />
-                          <ContextMenuItem
-                            onSelect={() => setSelectedDay(date)}
-                            className="gap-2"
-                          >
+                          <ContextMenuItem onSelect={() => setSelectedDay(date)} className="gap-2">
                             <Clock className="w-4 h-4 text-(--text-muted)" />
                             {t('createMeeting.contextMenu.viewDay')}
                           </ContextMenuItem>
@@ -1080,33 +1094,52 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{
-                          delay: (selectedDayLeaves.length + selectedDayGoogle.length + selectedDayDriverEvents.length + i) * 0.04,
+                          delay:
+                            (selectedDayLeaves.length +
+                              selectedDayGoogle.length +
+                              selectedDayDriverEvents.length +
+                              i) *
+                            0.04,
                         }}
-                        className="flex items-start gap-2.5 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-500/5 cursor-pointer hover:border-blue-400 transition-colors"
+                        className="flex items-start gap-2.5 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-500/5 cursor-pointer hover:border-blue-400 transition-colors group"
                         onClick={() => {
-                          toast(evt.title, {
-                            description: `${evt.allDay ? t('createMeeting.allDay') : `${evt.startTime} – ${evt.endTime}`}${evt.location ? ` · ${evt.location}` : ''}`,
-                            duration: 5000,
-                            classNames: { description: '!text-[var(--text-muted)]' },
-                          });
+                          setEditEvent(evt);
+                          setShowCreateEvent(true);
                         }}
                       >
                         <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500 text-white">
                           <CalendarPlus className="w-4 h-4" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-(--text-primary) truncate">{evt.title}</p>
+                          <p className="text-xs font-semibold text-(--text-primary) truncate">
+                            {evt.title}
+                          </p>
                           <p className="text-[10px] text-(--text-muted) mt-0.5">
-                            {evt.allDay ? t('createMeeting.allDay') : `${evt.startTime} – ${evt.endTime}`}
+                            {evt.allDay
+                              ? t('createMeeting.allDay')
+                              : `${evt.startTime} – ${evt.endTime}`}
                           </p>
                           {evt.location && (
-                            <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">📍 {evt.location}</p>
+                            <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
+                              📍 {evt.location}
+                            </p>
                           )}
                           <div className="flex items-center gap-1 mt-1">
                             <span className="w-2 h-2 rounded-full shrink-0 bg-blue-500" />
-                            <span className="text-[10px] text-(--text-secondary)">{t('createMeeting.categories.' + evt.category, evt.category)}</span>
+                            <span className="text-[10px] text-(--text-secondary)">
+                              {t('createMeeting.categories.' + evt.category, evt.category)}
+                            </span>
                           </div>
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEventMutation({ id: evt.id as any });
+                          }}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        </button>
                       </motion.div>
                     ))}
                   </motion.div>
@@ -1217,9 +1250,10 @@ export const CalendarClient = React.memo(function CalendarClient() {
       {/* Create Event Modal */}
       <CreateEventModal
         open={showCreateEvent}
-        onOpenChange={setShowCreateEvent}
+        onOpenChange={(v) => { setShowCreateEvent(v); if (!v) setEditEvent(null); }}
         selectedDate={selectedDay}
         leaves={leaves}
+        editEvent={editEvent}
       />
 
       {/* Modals rendered via portal to escape overflow/contain constraints */}

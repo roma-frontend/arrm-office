@@ -52,6 +52,7 @@ interface CreateEventModalProps {
   selectedDate?: Date | null;
   leaves?: Array<{ userId: string; startDate: string; endDate: string; status: string }>;
   onSave?: (event: CalendarEvent) => void;
+  editEvent?: CalendarEvent | null;
 }
 
 export interface CalendarEvent {
@@ -86,6 +87,7 @@ export function CreateEventModal({
   selectedDate,
   leaves = [],
   onSave,
+  editEvent,
 }: CreateEventModalProps) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
@@ -140,8 +142,20 @@ export function CreateEventModal({
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
   React.useEffect(() => {
-    if (open && selectedDate) setDate(format(selectedDate, 'yyyy-MM-dd'));
-  }, [open, selectedDate]);
+    if (open && editEvent) {
+      setTitle(editEvent.title);
+      setDate(editEvent.date);
+      setStartTime(editEvent.startTime);
+      setEndTime(editEvent.endTime);
+      setAllDay(editEvent.allDay);
+      setLocation(editEvent.location);
+      setDescription(editEvent.description);
+      setCategory(editEvent.category);
+      setReminder(editEvent.reminder);
+    } else if (open && selectedDate) {
+      setDate(format(selectedDate, 'yyyy-MM-dd'));
+    }
+  }, [open, selectedDate, editEvent]);
 
   const resetForm = () => {
     setStep('details');
