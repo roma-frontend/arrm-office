@@ -267,7 +267,7 @@ function buildCsp(nonce: string, isProduction: boolean): string {
 
   // 'unsafe-inline' for style-src is still widely needed (Tailwind runtime utility
   // classes can inject inline styles via Radix UI). Accepted trade-off.
-  const styleSrc = "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com";
+  const styleSrc = "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com";
 
   return [
     "default-src 'self'",
