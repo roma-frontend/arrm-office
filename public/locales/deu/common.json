@@ -1075,7 +1075,8 @@
       ]
     },
     "shieldHrAi": "Shield HR AI",
-    "noPinnedMessages": "Keine angepinnten Nachrichten"
+    "noPinnedMessages": "Keine angepinnten Nachrichten",
+    "aiPowered": "KI-gestützt"
   },
   "aiMessages": {
     "leaveConflict": "Sie haben bereits {{type}}-Urlaub ({{start}} → {{end}}) Status: «{{status}}». 💡 Alternative: {{sugStart}} → {{sugEnd}}",

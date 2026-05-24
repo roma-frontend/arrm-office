@@ -1046,7 +1046,8 @@
       ]
     },
     "shieldHrAi": "Shield HR AI",
-    "noPinnedMessages": "Կցված հաղորդագրություններ չկան"
+    "noPinnedMessages": "Կցված հաղորդագրություններ չկան",
+    "aiPowered": "Հիմնված AI-ի վրա"
   },
   "aiMessages": {
     "leaveConflict": "⚠️ Հնարավոր հակասություն {{type}} հայտի հետ ({{start}} → {{end}}):",

@@ -874,7 +874,7 @@ export default function AIChatPage() {
 
           <Badge variant="secondary" className="gap-1 shrink-0">
             <Zap className="w-3 h-3" />
-            AI Powered
+            {t('aiChat.aiPowered')}
           </Badge>
         </header>
 

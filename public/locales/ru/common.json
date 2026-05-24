@@ -1074,7 +1074,8 @@
       ]
     },
     "shieldHrAi": "Shield HR AI",
-    "noPinnedMessages": "Нет закреплённых сообщений"
+    "noPinnedMessages": "Нет закреплённых сообщений",
+    "aiPowered": "На базе ИИ"
   },
   "aiMessages": {
     "leaveConflict": "У вас уже есть отпуск типа {{type}} ({{start}} → {{end}}) со статусом: «{{status}}». 💡 Альтернатива: {{sugStart}} → {{sugEnd}}",
