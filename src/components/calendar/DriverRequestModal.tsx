@@ -386,7 +386,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4" style={{ overflow: 'visible' }}>
+        <div className="space-y-6" style={{ overflow: 'visible' }}>
           {/* Select Driver */}
           <div>
             <Label>{t('driver.selectDriver', 'Select Driver')}</Label>
@@ -504,7 +504,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           )}
 
           {/* Trip Details */}
-          <div className="space-y-3">
+          <div className="space-y-5">
             {/* Pickup */}
             <div>
               <Label className="flex items-center gap-2">
