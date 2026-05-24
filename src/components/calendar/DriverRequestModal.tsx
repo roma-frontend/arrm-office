@@ -562,16 +562,18 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
               </Badge>
             </div>
             <div className="rounded-lg overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600">
-              <DriverMap
-                pickupLocation={tripInfo.from}
-                dropoffLocation={tripInfo.to}
-                pickupCoords={pickupCoords}
-                dropoffCoords={dropoffCoords}
-                height="300px"
-                zoom={13}
-                interactive={true}
-                onLocationSelect={handleLocationSelect}
-              />
+              {open && (
+                <DriverMap
+                  pickupLocation={tripInfo.from}
+                  dropoffLocation={tripInfo.to}
+                  pickupCoords={pickupCoords}
+                  dropoffCoords={dropoffCoords}
+                  height="300px"
+                  zoom={13}
+                  interactive={true}
+                  onLocationSelect={handleLocationSelect}
+                />
+              )}
             </div>
           </div>
 
