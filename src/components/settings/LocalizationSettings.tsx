@@ -76,15 +76,14 @@ export function LocalizationSettings({
         firstDayOfWeek,
       });
 
-      // Change language if it was changed
+      // Always persist language to cookie and localStorage
+      localStorage.setItem('i18nextLng', language);
+      document.cookie = `i18nextLng=${language};path=/;max-age=${365 * 24 * 60 * 60}`;
+
+      // Change language if it differs from current
       if (language !== i18n.language) {
         logger.log('[LocalizationSettings] Changing language from', i18n.language, 'to', language);
 
-        // Save to localStorage and cookie
-        localStorage.setItem('i18nextLng', language);
-        document.cookie = `i18nextLng=${language};path=/;max-age=${365 * 24 * 60 * 60}`;
-
-        // Change language immediately
         await i18n.changeLanguage(language);
 
         toast.success(t('settings.saved'), {
