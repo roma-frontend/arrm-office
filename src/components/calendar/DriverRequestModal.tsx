@@ -14,6 +14,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,7 +43,11 @@ interface DriverRequestModalProps {
 
 export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverRequestModalProps) {
   const { t } = useTranslation();
-  const currentUser = useQuery(api.users.queries.getCurrentUser, { email: undefined });
+  const { user: authUser } = useAuthStore();
+  const currentUser = useQuery(
+    api.users.queries.getCurrentUser,
+    authUser?.id ? { userId: authUser.id as Id<'users'> } : 'skip',
+  );
   const userId =
     currentUser?._id && currentUser._id !== '' ? (currentUser._id as Id<'users'>) : null;
   const selectedOrgId = useSelectedOrganization();
