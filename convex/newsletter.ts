@@ -52,7 +52,7 @@ export const subscribe = mutation({
   args: {
     email: v.string(),
     name: v.optional(v.string()),
-    language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('deu')),
+    language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('de')),
     topics: v.optional(
       v.array(
         v.union(
@@ -112,7 +112,7 @@ export const subscribeTelegram = mutation({
   args: {
     chatId: v.string(),
     name: v.optional(v.string()),
-    language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('deu')),
+    language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('de')),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -395,7 +395,7 @@ export const advanceDrip = internalMutation({
 export const updateLanguage = mutation({
   args: {
     chatId: v.string(),
-    language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('deu')),
+    language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('de')),
   },
   handler: async (ctx, args) => {
     const sub = await ctx.db

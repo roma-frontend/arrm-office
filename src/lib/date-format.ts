@@ -7,20 +7,20 @@
 import { format as dateFnsFormat } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 
-export type SupportedLocale = 'en' | 'ru' | 'hy' | 'deu';
+export type SupportedLocale = 'en' | 'ru' | 'hy' | 'de';
 
 const LOCALE_MAP: Record<SupportedLocale, string> = {
   en: 'en-US',
   ru: 'ru-RU',
   hy: 'hy-AM',
-  deu: 'de-DE',
+  de: 'de-DE',
 };
 
 const DATE_FNS_LOCALE_MAP: Record<string, typeof enUS> = {
   en: enUS,
   ru: ru,
   hy: hy,
-  deu: enUS, // date-fns doesn't have 'de' bundled here, fallback to en
+  de: enUS, // date-fns doesn't have 'de' bundled here, fallback to en
 };
 
 /**

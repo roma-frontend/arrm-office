@@ -37,8 +37,8 @@ const REPLIES = {
   },
 } as Record<string, Record<string, string>>;
 
-function detectLanguage(langCode: string): 'en' | 'ru' | 'hy' | 'deu' {
-  const map: Record<string, 'en' | 'ru' | 'hy' | 'deu'> = { ru: 'ru', hy: 'hy', de: 'deu' };
+function detectLanguage(langCode: string): 'en' | 'ru' | 'hy' | 'de' {
+  const map: Record<string, 'en' | 'ru' | 'hy' | 'de'> = { ru: 'ru', hy: 'hy', de: 'de' };
   return map[langCode.slice(0, 2)] || 'en';
 }
 
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
         reply = r.stopped!;
         break;
       case '/lang': {
-        const validLangs = ['en', 'ru', 'hy', 'deu'];
+        const validLangs = ['en', 'ru', 'hy', 'de'];
         const newLang = arg.toLowerCase();
         if (validLangs.includes(newLang)) {
           await convex.mutation(api.newsletter.updateLanguage, {
@@ -135,7 +135,7 @@ export async function POST(req: Request) {
           });
           reply = r.langUpdated! + newLang;
         } else {
-          reply = 'Available: en, ru, hy, deu\nExample: /lang ru';
+          reply = 'Available: en, ru, hy, de\nExample: /lang ru';
         }
         break;
       }
@@ -173,7 +173,9 @@ export async function POST(req: Request) {
         // Call Convex action - await it (Convex handles the Telegram send internally)
         try {
           await convex.action(api.newsletter.sendTestTelegram, { chatId, language });
-        } catch { /* AI generation can sometimes fail, user already got "generating" msg */ }
+        } catch {
+          /* AI generation can sometimes fail, user already got "generating" msg */
+        }
         return NextResponse.json({ ok: true });
       case '/invite': {
         const sub = await convex.query(api.newsletter.getSubscriberPublic, { chatId });
@@ -203,7 +205,7 @@ You know everything about this bot and the HR Office platform. Answer user quest
 BOT COMMANDS:
 - /start — subscribe to weekly AI-generated HR digest (every Monday)
 - /stop — unsubscribe from newsletter
-- /lang [en|ru|hy|deu] — change newsletter language
+- /lang [en|ru|hy|de] — change newsletter language
 - /topics [hr-tips, leadership, wellness, tech] — choose content topics (comma-separated)
 - /pause [1-4] — pause newsletter for N weeks (e.g. vacation)
 - /digest — get a fresh AI-generated digest right now

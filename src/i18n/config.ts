@@ -67,7 +67,7 @@ export const resources = {
 
 const getInitialLanguage = () => {
   if (typeof document !== 'undefined') {
-    const match = document.cookie.match(/i18nextLng=(en|hy|ru|deu)/);
+    const match = document.cookie.match(/i18nextLng=(en|hy|ru|de)/);
     if (match?.[1]) return match[1];
   }
   return 'en';
@@ -85,7 +85,7 @@ if (!i18n.isInitialized) {
     fallbackNS: [...allNamespaces],
     fallbackLng: 'en',
     lng: getInitialLanguage(),
-    supportedLngs: ['en', 'hy', 'ru', 'deu'],
+    supportedLngs: ['en', 'hy', 'ru', 'de'],
     nonExplicitSupportedLngs: false,
     debug: false,
     interpolation: { escapeValue: false },

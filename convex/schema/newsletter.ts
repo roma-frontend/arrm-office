@@ -5,7 +5,7 @@ export const newsletter = {
   newsletterSubscribers: defineTable({
     email: v.string(),
     name: v.optional(v.string()),
-    language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('deu')),
+    language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('de')),
     topics: v.optional(
       v.array(
         v.union(

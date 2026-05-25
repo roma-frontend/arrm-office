@@ -63,7 +63,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = cookieStore.get('i18nextLng')?.value || 'en';
   const { t } = await getServerTranslation('landing', locale);
 
-  const localeMap: Record<string, string> = { en: 'en_US', ru: 'ru_RU', hy: 'hy_AM', deu: 'de_DE' };
+  const localeMap: Record<string, string> = { en: 'en_US', ru: 'ru_RU', hy: 'hy_AM', de: 'de_DE' };
 
   return {
     metadataBase: new URL(APP_URL),

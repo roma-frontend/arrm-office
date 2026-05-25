@@ -62,6 +62,7 @@ import { LeaveRequestModal } from '@/components/leaves/LeaveRequestModal';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { DriverRequestModal } from './DriverRequestModal';
 import { CreateEventModal, type CalendarEvent } from './CreateEventModal';
+import { DayDetailsModal } from './DayDetailsModal';
 import { getInitials } from '@/lib/stringUtils';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
@@ -341,6 +342,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [showDayDetails, setShowDayDetails] = useState(false);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const deleteEventMutation = useMutation(api.calendarEvents.remove);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
@@ -394,7 +396,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
       selectedGoogleEvent ||
       showLeaveModal ||
       showDriverModal ||
-      showCreateEvent;
+      showCreateEvent ||
+      showDayDetails;
     const mainEl = mainRef.current;
     const scrollY = mainEl ? mainEl.scrollTop : window.scrollY;
 
@@ -421,6 +424,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
     showLeaveModal,
     showDriverModal,
     showCreateEvent,
+    showDayDetails,
     mainRef,
   ]);
 
@@ -798,7 +802,13 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             {t('createMeeting.contextMenu.bookDriver')}
                           </ContextMenuItem>
                           <ContextMenuSeparator />
-                          <ContextMenuItem onSelect={() => setSelectedDay(date)} className="gap-2">
+                          <ContextMenuItem
+                            onSelect={() => {
+                              setSelectedDay(date);
+                              setShowDayDetails(true);
+                            }}
+                            className="gap-2"
+                          >
                             <Clock className="w-4 h-4 text-(--text-muted)" />
                             {t('createMeeting.contextMenu.viewDay')}
                           </ContextMenuItem>
@@ -1250,11 +1260,27 @@ export const CalendarClient = React.memo(function CalendarClient() {
       {/* Create Event Modal */}
       <CreateEventModal
         open={showCreateEvent}
-        onOpenChange={(v) => { setShowCreateEvent(v); if (!v) setEditEvent(null); }}
+        onOpenChange={(v) => {
+          setShowCreateEvent(v);
+          if (!v) setEditEvent(null);
+        }}
         selectedDate={selectedDay}
         leaves={leaves}
         editEvent={editEvent}
       />
+
+      {/* Day Details Modal */}
+      {selectedDay && (
+        <DayDetailsModal
+          open={showDayDetails}
+          date={selectedDay}
+          leaves={selectedDayLeaves}
+          googleEvents={selectedDayGoogle}
+          driverEvents={selectedDayDriverEvents}
+          customEvents={selectedDayCustomEvents}
+          onClose={() => setShowDayDetails(false)}
+        />
+      )}
 
       {/* Modals rendered via portal to escape overflow/contain constraints */}
       {typeof document !== 'undefined' &&

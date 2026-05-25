@@ -1211,5 +1211,14 @@
       "viewDay": "View Day Details",
       "copyDate": "Copy Date"
     }
+  },
+  "dayDetails": {
+    "events": "events",
+    "leaves": "leaves",
+    "noEvents": "No events on this day",
+    "leaveRequests": "Leave Requests",
+    "calendarEvents": "Calendar Events",
+    "googleEvents": "Google Calendar",
+    "driverBookings": "Driver Bookings"
   }
 }

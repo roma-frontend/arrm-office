@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (!conflict) {
-          const localeMap: Record<string, string> = { en: 'en', ru: 'ru', hy: 'hy', deu: 'de' };
+          const localeMap: Record<string, string> = { en: 'en', ru: 'ru', hy: 'hy', de: 'de' };
           const month = checkDate.toLocaleString(localeMap[locale] || 'en', { month: 'long' });
           const day = checkDate.getDate();
           const endDay = weekEnd.getDate();

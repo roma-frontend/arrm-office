@@ -1243,5 +1243,14 @@
       "viewDay": "Подробности дня",
       "copyDate": "Копировать дату"
     }
+  },
+  "dayDetails": {
+    "events": "событий",
+    "leaves": "отпусков",
+    "noEvents": "Нет событий в этот день",
+    "leaveRequests": "Заявки на отпуск",
+    "calendarEvents": "События календаря",
+    "googleEvents": "Google Календарь",
+    "driverBookings": "Бронирования водителей"
   }
 }

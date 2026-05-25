@@ -16,7 +16,7 @@ const languages = {
   en: { name: 'English', flag: '🇬🇧' },
   hy: { name: 'Հայերեն', flag: '🇦🇲' },
   ru: { name: 'Русский', flag: '🇷🇺' },
-  deu: { name: 'Deutsch', flag: '🇩🇪' },
+  de: { name: 'Deutsch', flag: '🇩🇪' },
 };
 
 export function LanguageSwitcher() {

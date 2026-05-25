@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { logger } from '@/lib/logger';
 import '../i18n/config';
 
-const VALID_LANGUAGES = ['en', 'hy', 'ru', 'deu'] as const;
+const VALID_LANGUAGES = ['en', 'hy', 'ru', 'de'] as const;
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 function setLanguageCookie(lang: string) {

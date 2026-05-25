@@ -14,11 +14,11 @@ export default function NewsletterSignup() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const language = (['en', 'ru', 'hy', 'deu'].includes(i18n.language) ? i18n.language : 'en') as
+  const language = (['en', 'ru', 'hy', 'de'].includes(i18n.language) ? i18n.language : 'en') as
     | 'en'
     | 'ru'
     | 'hy'
-    | 'deu';
+    | 'de';
 
   const toggleTopic = (topic: string) => {
     setTopics((prev) =>

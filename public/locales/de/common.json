@@ -1244,5 +1244,14 @@
       "viewDay": "Tagesdetails",
       "copyDate": "Datum kopieren"
     }
+  },
+  "dayDetails": {
+    "events": "Ereignisse",
+    "leaves": "Urlaube",
+    "noEvents": "Keine Ereignisse an diesem Tag",
+    "leaveRequests": "Urlaubsantr\u00e4ge",
+    "calendarEvents": "Kalender-Ereignisse",
+    "googleEvents": "Google Kalender",
+    "driverBookings": "Fahrerbuchungen"
   }
 }

@@ -1215,5 +1215,14 @@
       "viewDay": "Տեսնել օրը",
       "copyDate": "Կրկնել ամսաթիվը"
     }
+  },
+  "dayDetails": {
+    "events": "Իրադարձություններ",
+    "leaves": "Արձակուրդներ",
+    "noEvents": "Այս օրը իրադարձություններ չկան",
+    "leaveRequests": "Արձակուրդի հայտեր",
+    "calendarEvents": "Օրացույցի իրադարձություններ",
+    "googleEvents": "Google Օրացույց",
+    "driverBookings": "Վարորդների պատվերներ"
   }
 }

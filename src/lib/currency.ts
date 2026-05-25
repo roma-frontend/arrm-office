@@ -18,7 +18,7 @@ export const LOCALE_CURRENCY: Record<string, string> = {
   en: 'USD',
   ru: 'RUB',
   hy: 'AMD',
-  deu: 'EUR',
+  de: 'EUR',
 };
 
 const CACHE_KEY = 'currency_rates_cache';
