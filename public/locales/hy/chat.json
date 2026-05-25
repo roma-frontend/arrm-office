@@ -256,7 +256,10 @@
     "whoOnLeaveToday": "Այսօր արձակուրդում այսօր?",
     "subtitle": "Ձեր խելացի HR-օգնականը",
     "smartHint": "Ես ամեն ինչ գիտեմ Shield HR-ի մասին — հարցրեք ինչ ուզեք!",
-    "thinking": "Վերլուծում...",
+    "thinking": "Վերլուծում եմ ձեր հարցը...",
+    "stageThinking": "Վերլուծում...",
+    "stageGenerating": "Գեներացնում...",
+    "basedOnPage": "Այս էջի հիման վրա՝",
     "bookDriver": "Պատվիրել վարորդ",
     "submitting": "Ուղարկում...",
     "openAssistant": "Բացել AI օգնականը",
@@ -309,7 +312,8 @@
       "myTrips": "🗺️ Իմ ուղևորությունները",
       "mySalary": "💰 Իմ աշխատավարձը",
       "payrollReport": "📊 Աշխատավարձի հաշվետվություն",
-      "nextPayday": "📅 Հաջորդ վճարման օրը"
+      "nextPayday": "📅 Հաջորդ վճարման օրը",
+      "viewFullScreen": "Տեսնել ամբողջական պատասխանը"
     }
   },
   "broadcasts": {

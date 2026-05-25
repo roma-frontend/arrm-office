@@ -270,6 +270,9 @@
     "subtitle": "Ваш умный HR-ассистент",
     "smartHint": "Я знаю всё о Shield HR — спрашивайте что угодно!",
     "thinking": "Анализирую...",
+    "stageThinking": "Думаю...",
+    "stageGenerating": "Генерирую...",
+    "basedOnPage": "На основе этой страницы:",
     "bookDriver": "Заказать водителя",
     "submitting": "Отправка...",
     "openAssistant": "Открыть AI ассистента",
@@ -322,7 +325,8 @@
       "mySalary": "💰 Моя зарплата",
       "payrollReport": "📊 Отчёт по зарплате",
       "nextPayday": "📅 Следующая выплата"
-    }
+    },
+    "viewFullScreen": "Показать полный ответ"
   },
   "broadcasts": {
     "title": "Сервисные объявления",

@@ -79,7 +79,8 @@
     "comment": "Комментарий",
     "commentsCount": "комментариев",
     "viewAllComments": "Посмотреть все комментарии",
-    "attachments": "Вложения"
+    "attachments": "Вложения",
+    "allEmployees": "Все сотрудники"
   },
   "taskStatus": {
     "pending": "Ожидает",

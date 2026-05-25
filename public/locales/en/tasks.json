@@ -78,7 +78,8 @@
     "comment": "Comment",
     "commentsCount": "comments",
     "viewAllComments": "View All Comments",
-    "attachments": "Attachments"
+    "attachments": "Attachments",
+    "allEmployees": "All Employees"
   },
   "taskStatus": {
     "pending": "Pending",

@@ -1252,5 +1252,8 @@
     "calendarEvents": "События календаря",
     "googleEvents": "Google Календарь",
     "driverBookings": "Бронирования водителей"
+  },
+  "chatWidget": {
+    "viewFullScreen": "Показать полный ответ"
   }
 }

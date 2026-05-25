@@ -257,6 +257,9 @@
     "subtitle": "Your intelligent HR assistant",
     "smartHint": "I know everything about Shield HR — ask me anything!",
     "thinking": "Analyzing...",
+    "stageThinking": "Thinking...",
+    "stageGenerating": "Generating...",
+    "basedOnPage": "Based on this page:",
     "bookDriver": "Book Driver",
     "submitting": "Submitting...",
     "openAssistant": "Open AI assistant",
@@ -310,7 +313,8 @@
       "mySalary": "💰 My salary",
       "payrollReport": "📊 Payroll report",
       "nextPayday": "📅 Next payday"
-    }
+    },
+    "viewFullScreen": "View full response"
   },
   "broadcasts": {
     "title": "Service Announcements",

@@ -79,7 +79,8 @@
     "comment": "Kommentar",
     "commentsCount": "Kommentare",
     "viewAllComments": "Alle Kommentare anzeigen",
-    "attachments": "Anhänge"
+    "attachments": "Anh\u00e4nge",
+    "allEmployees": "Alle Mitarbeiter"
   },
   "taskStatus": {
     "pending": "Ausstehend",

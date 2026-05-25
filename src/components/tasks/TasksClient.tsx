@@ -482,6 +482,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const [showAssign, setShowAssign] = useState(false);
   const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
+  const [filterEmployee, setFilterEmployee] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [activeTask, setActiveTask] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
@@ -564,6 +565,38 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     });
   }, [rawTasks, optimisticStatuses]);
 
+  // Unique employees from tasks (for admin/supervisor filter)
+  const employees = useMemo(() => {
+    if (!rawTasksWithOptimistic || !canManage) return [];
+    const map = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        avatarUrl?: string | null;
+        department?: string;
+        taskCount: number;
+      }
+    >();
+    rawTasksWithOptimistic.forEach((t) => {
+      const u = (t as any).assignedToUser;
+      if (!u?._id) return;
+      const existing = map.get(u._id);
+      if (existing) {
+        existing.taskCount++;
+      } else {
+        map.set(u._id, {
+          id: u._id,
+          name: u.name || '?',
+          avatarUrl: u.avatarUrl,
+          department: u.department,
+          taskCount: 1,
+        });
+      }
+    });
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [rawTasksWithOptimistic, canManage]);
+
   // Filter
   const tasks = useMemo(() => {
     if (!rawTasksWithOptimistic) return [];
@@ -571,9 +604,11 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       const matchPriority = filterPriority === 'all' || t.priority === filterPriority;
       const matchStatus = filterStatus === 'all' || t.status === filterStatus;
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
-      return matchPriority && matchStatus && matchSearch;
+      const matchEmployee =
+        filterEmployee === 'all' || (t as any).assignedToUser?._id === filterEmployee;
+      return matchPriority && matchStatus && matchSearch && matchEmployee;
     });
-  }, [rawTasksWithOptimistic, filterPriority, filterStatus, search]);
+  }, [rawTasksWithOptimistic, filterPriority, filterStatus, search, filterEmployee]);
 
   // Stats
   const stats = useMemo(() => {
@@ -758,6 +793,20 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shrink-0"
           dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
         />
+
+        {/* Employee filter (admin/supervisor only) */}
+        {canManage && employees.length > 1 && (
+          <CustomSelect
+            value={filterEmployee}
+            onChange={(v) => setFilterEmployee(v)}
+            options={[
+              { value: 'all', label: t('tasksClient.allEmployees', 'All Employees') },
+              ...employees.map((e) => ({ value: e.id, label: `${e.name} (${e.taskCount})` })),
+            ]}
+            triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--primary)/30 bg-(--primary)/5 text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shrink-0"
+            dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
+          />
+        )}
 
         {/* View toggle */}
         <div className="flex items-center bg-(--card) border border-(--border) rounded-xl p-1 ml-auto shrink-0">

@@ -1018,5 +1018,13 @@
     "calendarEvents": "Calendar Events",
     "googleEvents": "Google Calendar",
     "driverBookings": "Driver Bookings"
+  },
+  "aiChat": {
+    "shieldHrAi": "Shield HR AI",
+    "noPinnedMessages": "No pinned messages yet",
+    "aiPowered": "AI Powered"
+  },
+  "chatWidget": {
+    "viewFullScreen": "View full response"
   }
 }

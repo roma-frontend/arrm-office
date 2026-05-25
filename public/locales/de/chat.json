@@ -264,6 +264,9 @@
     "subtitle": "Ihr intelligenter HR-Assistent",
     "smartHint": "Ich weiß alles über Shield HR – fragen Sie mich alles!",
     "thinking": "Analysiere...",
+    "stageThinking": "Denke nach...",
+    "stageGenerating": "Generiere...",
+    "basedOnPage": "Basierend auf dieser Seite:",
     "bookDriver": "Fahrer buchen",
     "submitting": "Sende...",
     "openAssistant": "AI-Assistent öffnen",
@@ -315,7 +318,8 @@
       "mySalary": "💰 Mein Gehalt",
       "payrollReport": "📊 Gehaltsbericht",
       "nextPayday": "📅 Nächster Zahltag"
-    }
+    },
+    "viewFullScreen": "Vollständige Antwort anzeigen"
   },
   "broadcasts": {
     "title": "Serviceankündigungen",

@@ -78,7 +78,8 @@
     "comment": "Մեկնաբանություն",
     "commentsCount": "մեկնաբանություններ",
     "viewAllComments": "Դիտել բոլոր մեկնաբանությունները",
-    "attachments": "Կցորդներ"
+    "attachments": "Կցորդներ",
+    "allEmployees": "Բոլոր աշխատակիցները"
   },
   "taskStatus": {
     "pending": "Սպասման մեջ",

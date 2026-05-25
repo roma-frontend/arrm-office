@@ -1220,5 +1220,8 @@
     "calendarEvents": "Calendar Events",
     "googleEvents": "Google Calendar",
     "driverBookings": "Driver Bookings"
+  },
+  "chatWidget": {
+    "viewFullScreen": "View full response"
   }
 }

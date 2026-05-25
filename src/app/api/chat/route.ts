@@ -76,7 +76,8 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     const detectedIntent = detectIntent(lastUserMessage, userRoleFromAuth);
 
     // Determine what data we need based on intent
-    const needsFullContext = !detectedIntent || !!detectedIntent.action;
+    // Always fetch full context so AI has real data and never hallucinates
+    const needsFullContext = true;
     const needsConflictCheck =
       /хочу отпуск|book leave|request vacation|отпуск с \d|sick leave|больничный|заказать водителя|book driver|водитель/i.test(
         lastUserMessage,
@@ -171,7 +172,8 @@ FORMAT RULES:
 - Use emojis: 👤📅⏰📊🎯🎫📝🚗✅⏳❌
 - Be concise but complete
 - Answer in user's language
-- NEVER invent, fabricate, or hallucinate data. Only use information from LIVE DATA above. If data is not available, say "I don't have this information" and suggest where to find it.
+- CRITICAL: NEVER invent, fabricate, or hallucinate data. ONLY use information from LIVE DATA section above. If the LIVE DATA does not contain the answer, respond: "I don't have this data right now. Please check [relevant page]." Do NOT generate fake names, numbers, dates, or statistics.
+- If LIVE DATA shows "No data" or is empty for a section, tell the user that information is not available — do NOT make up placeholder data.
 - <NAVIGATE>/path only for explicit page requests
 - <ACTION>{"type":"BOOK_LEAVE",...} for leave booking (ask dates first if missing)
 `;

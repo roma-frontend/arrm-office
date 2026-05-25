@@ -695,7 +695,7 @@ function DetailsStep({
       {/* Balance */}
       {currentUser && stepData.type === 'paid' && (
         <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+          <p className="text-sm text-blue-400">
             💡 {t('leaveWizard.currentBalance', 'Your balance')}:{' '}
             {currentUser.paidLeaveBalance ?? 24} {t('leave.days', 'days')}
           </p>

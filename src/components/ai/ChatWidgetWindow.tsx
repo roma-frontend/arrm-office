@@ -225,7 +225,7 @@ export function ChatWidgetWindow({
                   {contextSuggestions.length > 0 && (
                     <div className="mt-2">
                       <p className="text-[10px] text-(--text-muted)/60 mb-1">
-                        📍 Based on this page:
+                        📍 {t('chatWidget.basedOnPage', { defaultValue: 'Based on this page:' })}
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {contextSuggestions.map((s) => (
@@ -259,7 +259,37 @@ export function ChatWidgetWindow({
                             : 'bg-(--background-subtle) text-(--text-primary) rounded-bl-sm'
                         }`}
                       >
-                        {formatMessageContent(m.content)}
+                        {(() => {
+                          const hasTable = m.content.includes('|') && m.content.includes('---');
+                          const isLargeContent = !isUser && (hasTable || m.content.length > 500);
+                          if (isLargeContent) {
+                            const preview = hasTable
+                              ? m.content
+                                  .split('\n')
+                                  .filter((l) => !l.includes('|') && !l.includes('---'))
+                                  .slice(0, 3)
+                                  .join('\n') || m.content.slice(0, 150)
+                              : m.content.slice(0, 300) + '...';
+                            return (
+                              <>
+                                <div>{formatMessageContent(preview)}</div>
+                                <button
+                                  onClick={() => {
+                                    router.push('/ai-chat');
+                                    setIsOpen(false);
+                                  }}
+                                  className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#2563eb] hover:text-[#1d4ed8] transition-colors"
+                                >
+                                  <Maximize2 className="w-3.5 h-3.5" />
+                                  {t('chatWidget.viewFullScreen', {
+                                    defaultValue: 'View full response',
+                                  })}
+                                </button>
+                              </>
+                            );
+                          }
+                          return formatMessageContent(m.content);
+                        })()}
                       </div>
 
                       {/* Reactions, copy, TTS, pin for AI messages */}

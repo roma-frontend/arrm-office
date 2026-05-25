@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Volume2, Copy, ThumbsUp, ThumbsDown, Pin, Check } from 'lucide-react';
 
 // === TYPING STAGES ===
 export function TypingStages() {
-  const stages = ['Analyzing...', 'Thinking...', 'Generating...'];
+  const { t } = useTranslation();
+  const stages = [
+    t('chatWidget.thinking', { defaultValue: 'Analyzing...' }),
+    t('chatWidget.stageThinking', { defaultValue: 'Thinking...' }),
+    t('chatWidget.stageGenerating', { defaultValue: 'Generating...' }),
+  ];
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
@@ -109,18 +115,61 @@ export interface SlashCommand {
 
 export function getSlashCommands(t: (key: string, opts?: any) => string): SlashCommand[] {
   return [
-    { command: '/leave', label: 'Leave', icon: '📆', description: t('chatWidget.slash.leave', { defaultValue: 'Request time off' }) },
-    { command: '/balance', label: 'Balance', icon: '📋', description: t('chatWidget.slash.balance', { defaultValue: 'Check leave balance' }) },
-    { command: '/team', label: 'Team', icon: '👥', description: t('chatWidget.slash.team', { defaultValue: 'Who is on leave' }) },
-    { command: '/tasks', label: 'Tasks', icon: '✅', description: t('chatWidget.slash.tasks', { defaultValue: 'My open tasks' }) },
-    { command: '/attendance', label: 'Attendance', icon: '⏰', description: t('chatWidget.slash.attendance', { defaultValue: "Today's status" }) },
-    { command: '/driver', label: 'Driver', icon: '🚗', description: t('chatWidget.slash.driver', { defaultValue: 'Book a driver' }) },
-    { command: '/help', label: 'Help', icon: '❓', description: t('chatWidget.slash.help', { defaultValue: 'Show all commands' }) },
-    { command: '/clear', label: 'Clear', icon: '🗑️', description: t('chatWidget.slash.clear', { defaultValue: 'Clear chat history' }) },
+    {
+      command: '/leave',
+      label: 'Leave',
+      icon: '📆',
+      description: t('chatWidget.slash.leave', { defaultValue: 'Request time off' }),
+    },
+    {
+      command: '/balance',
+      label: 'Balance',
+      icon: '📋',
+      description: t('chatWidget.slash.balance', { defaultValue: 'Check leave balance' }),
+    },
+    {
+      command: '/team',
+      label: 'Team',
+      icon: '👥',
+      description: t('chatWidget.slash.team', { defaultValue: 'Who is on leave' }),
+    },
+    {
+      command: '/tasks',
+      label: 'Tasks',
+      icon: '✅',
+      description: t('chatWidget.slash.tasks', { defaultValue: 'My open tasks' }),
+    },
+    {
+      command: '/attendance',
+      label: 'Attendance',
+      icon: '⏰',
+      description: t('chatWidget.slash.attendance', { defaultValue: "Today's status" }),
+    },
+    {
+      command: '/driver',
+      label: 'Driver',
+      icon: '🚗',
+      description: t('chatWidget.slash.driver', { defaultValue: 'Book a driver' }),
+    },
+    {
+      command: '/help',
+      label: 'Help',
+      icon: '❓',
+      description: t('chatWidget.slash.help', { defaultValue: 'Show all commands' }),
+    },
+    {
+      command: '/clear',
+      label: 'Clear',
+      icon: '🗑️',
+      description: t('chatWidget.slash.clear', { defaultValue: 'Clear chat history' }),
+    },
   ];
 }
 
-export function filterSlashCommands(input: string, t: (key: string, opts?: any) => string): SlashCommand[] {
+export function filterSlashCommands(
+  input: string,
+  t: (key: string, opts?: any) => string,
+): SlashCommand[] {
   if (!input.startsWith('/')) return [];
   const commands = getSlashCommands(t);
   const query = input.slice(1).toLowerCase();
