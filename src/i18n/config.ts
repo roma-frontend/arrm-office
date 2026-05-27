@@ -3,23 +3,25 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import HttpBackend from 'i18next-http-backend';
 
-// EN namespaces bundled for instant render (no flash of keys)
-import commonEn from './locales/en/common.json';
-import landingEn from './locales/en/landing.json';
-import authEn from './locales/en/auth.json';
-import dashboardEn from './locales/en/dashboard.json';
-import leavesEn from './locales/en/leaves.json';
-import tasksEn from './locales/en/tasks.json';
-import employeesEn from './locales/en/employees.json';
-import chatEn from './locales/en/chat.json';
-import adminEn from './locales/en/admin.json';
-import driversEn from './locales/en/drivers.json';
-import settingsEn from './locales/en/settings.json';
-import modulesEn from './locales/en/modules.json';
-import payrollEn from './locales/en/payroll.json';
-import compensationEn from './locales/en/compensation.json';
-import learningEn from './locales/en/learning.json';
-import expensesEn from './locales/en/expenses.json';
+// EN namespaces bundled for instant render (no flash of keys).
+// Source of truth = public/locales/en/* (also served via HttpBackend at runtime).
+// Importing directly from public/ keeps a single source and prevents drift.
+import commonEn from '../../public/locales/en/common.json';
+import landingEn from '../../public/locales/en/landing.json';
+import authEn from '../../public/locales/en/auth.json';
+import dashboardEn from '../../public/locales/en/dashboard.json';
+import leavesEn from '../../public/locales/en/leaves.json';
+import tasksEn from '../../public/locales/en/tasks.json';
+import employeesEn from '../../public/locales/en/employees.json';
+import chatEn from '../../public/locales/en/chat.json';
+import adminEn from '../../public/locales/en/admin.json';
+import driversEn from '../../public/locales/en/drivers.json';
+import settingsEn from '../../public/locales/en/settings.json';
+import modulesEn from '../../public/locales/en/modules.json';
+import payrollEn from '../../public/locales/en/payroll.json';
+import compensationEn from '../../public/locales/en/compensation.json';
+import learningEn from '../../public/locales/en/learning.json';
+import expensesEn from '../../public/locales/en/expenses.json';
 
 export const allNamespaces = [
   'common',
@@ -100,6 +102,13 @@ if (!i18n.isInitialized) {
     },
     react: { useSuspense: false },
   });
+}
+
+// HMR-safe: always refresh bundled EN resources from the latest imports.
+// Without this, after init() runs once, i18next keeps stale in-memory data
+// even when JSON files change (since the init guard skips re-initialization).
+for (const ns of allNamespaces) {
+  i18n.addResourceBundle('en', ns, resources.en[ns], true, true);
 }
 
 export default i18n;
