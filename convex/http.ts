@@ -46,22 +46,4 @@ http.route({
   }),
 });
 
-http.route({
-  path: '/test/create-automation-data',
-  method: 'GET',
-  handler: httpAction(async () => {
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'HTTP router is working!',
-        instruction: 'Use Convex mutations to create actual data',
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
-  }),
-});
-
 export default http;
