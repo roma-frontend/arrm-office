@@ -1,31 +1,39 @@
 /**
- * Query-safe session validation + per-user rate limiting.
- * Verifies that the requester has an active session before returning user doc.
+ * Caller activity check for trusted-userId Convex callsites.
+ *
+ * SECURITY NOTE — KNOWN GAP, READ BEFORE EDITING
+ * ----------------------------------------------
+ * This helper trusts the client-supplied `requesterId` arg. That is unsafe
+ * by itself: a browser-side caller can pass any user's id and read/mutate
+ * their data, because the current `ConvexProvider` (see `src/lib/convex.tsx`)
+ * is not wrapped in `ConvexProviderWithAuth`, so `ctx.auth.getUserIdentity()`
+ * is always `null` and we cannot independently verify who the caller is.
+ *
+ * Real protection lives at one of two layers:
+ *   1. **Edge / API routes** (`src/proxy.ts`, route handlers under
+ *      `src/app/api/`) verify the `hr-auth-token` JWT before forwarding to
+ *      Convex via `fetchQuery`/`fetchMutation`. Server-side calls are safe.
+ *   2. **Browser → Convex direct calls** are NOT currently protected from
+ *      requesterId spoofing. Closing this gap requires bridging Convex auth
+ *      with the existing JWT (`ConvexProviderWithAuth`), then migrating the
+ *      callsites to `lib/withAuth.ts` which derives the caller from
+ *      identity instead of taking it as an arg.
+ *
+ * The in-memory rate-limiter that used to live here was removed: it was
+ * reset on every serverless cold start (so capped almost nothing) and
+ * served only as security theatre. Real rate-limiting is in `src/proxy.ts`
+ * (Upstash-backed).
+ *
+ * For new code, prefer `lib/withAuth.ts`. For existing code, this function
+ * is the minimum activity check until the migration above is done.
  */
+import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Id, Doc } from '../_generated/dataModel';
 
-// Simple in-memory rate limiter (resets on deploy/restart)
-const queryCounters = new Map<string, { count: number; resetAt: number }>();
-const MAX_QUERIES_PER_MINUTE = 300;
-
-function checkRateLimit(userId: string) {
-  const now = Date.now();
-  const entry = queryCounters.get(userId);
-  if (!entry || entry.resetAt < now) {
-    queryCounters.set(userId, { count: 1, resetAt: now + 60_000 });
-    return;
-  }
-  entry.count++;
-  if (entry.count > MAX_QUERIES_PER_MINUTE) {
-    throw new Error('Rate limit exceeded. Please slow down.');
-  }
-}
-
 export async function requireRequester(
-  ctx: { db: any },
+  ctx: QueryCtx | MutationCtx,
   requesterId: Id<'users'>,
 ): Promise<Doc<'users'>> {
-  checkRateLimit(requesterId);
   const user = await ctx.db.get(requesterId);
   if (!user) throw new Error('User not found');
   if (!user.isActive) throw new Error('Account deactivated');
