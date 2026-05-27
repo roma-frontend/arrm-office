@@ -1,8 +1,3 @@
-// @ts-nocheck — masks real type errors that need a follow-up fix:
-//   * line ~547: `html: Promise<string>` is missing an `await`
-//   * line ~617: `arguments` is not available in arrow function — needs rewrite
-//   * Resend `react`/`html` are mutually exclusive — pick one
-// TODO(types): remove this directive and address the issues above.
 import {
   mutation,
   query,
@@ -14,7 +9,6 @@ import {
 import { internal } from './_generated/api';
 import { v } from 'convex/values';
 import { Resend } from 'resend';
-import { render } from '@react-email/render';
 import { WeeklyDigestEmail } from '../src/emails/WeeklyDigestEmail';
 
 function getResendClient(): Resend | null {
@@ -278,13 +272,11 @@ export const sendWeeklyDigest = internalAction({
             from: 'HR Office <onboarding@resend.dev>',
             to: sub.email,
             subject: content.subject,
-            html: render(
-              WeeklyDigestEmail({
-                name: sub.name || 'HR Professional',
-                content,
-                unsubscribeUrl: `${appUrl}/api/newsletter/unsubscribe?token=${sub.unsubscribeToken}`,
-              }),
-            ),
+            react: WeeklyDigestEmail({
+              name: sub.name || 'HR Professional',
+              content,
+              unsubscribeUrl: `${appUrl}/api/newsletter/unsubscribe?token=${sub.unsubscribeToken}`,
+            }),
           }));
           try {
             await resend.batch.send(emails);
@@ -537,19 +529,15 @@ export const sendTestEmail = action({
     });
     const appUrl = getPublicAppUrl();
 
-    const html = render(
-      WeeklyDigestEmail({
-        name: 'Test User',
-        content,
-        unsubscribeUrl: `${appUrl}/api/newsletter/unsubscribe?token=test`,
-      }),
-    );
-
     await resend.emails.send({
       from: 'HR Office <onboarding@resend.dev>',
       to: args.email,
       subject: content.subject,
-      html,
+      react: WeeklyDigestEmail({
+        name: 'Test User',
+        content,
+        unsubscribeUrl: `${appUrl}/api/newsletter/unsubscribe?token=test`,
+      }),
     });
 
     return { success: true };
@@ -618,8 +606,8 @@ export const createPoll = mutation({
 
 export const sendPollToSubscribers = internalAction({
   args: { pollId: v.id('newsletterPolls') },
-  handler: async (ctx) => {
-    const poll = await ctx.runQuery(internal.newsletter.getPoll, { pollId: arguments[1].pollId });
+  handler: async (ctx, args) => {
+    const poll = await ctx.runQuery(internal.newsletter.getPoll, { pollId: args.pollId });
     if (!poll) return;
 
     const subscribers = await ctx.runQuery(internal.newsletter.getActiveSubscribers, {});
