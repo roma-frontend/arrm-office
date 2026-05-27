@@ -63,8 +63,11 @@ final-check.txt
 build-errors.txt
 build-errors.log
 
-# Scripts directory
-scripts/
+# Scripts directory — ignore one-off / local debug scripts.
+# Tracked tooling is explicitly allowlisted below.
+# (Use scripts/* not scripts/ so negation patterns can take effect.)
+scripts/*
+!scripts/check-locale-parity.mjs
 .vercel
 .env*.local
 
