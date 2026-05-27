@@ -10,27 +10,48 @@ const BCRYPT_ROUNDS = 12;
 /**
  * Hash a password with bcrypt on the server side.
  * The client sends plaintext (or client-hash), we re-hash with bcrypt.
+ *
+ * Uses async `bcrypt.hash` (not `hashSync`) to avoid blocking the event loop
+ * on serverless functions — at 12 rounds, sync hashing pegs the runtime for
+ * ~250ms which kills latency under any concurrent auth load.
  */
 async function hashPassword(plaintext: string): Promise<string> {
-  return bcrypt.hashSync(plaintext, BCRYPT_ROUNDS);
+  return bcrypt.hash(plaintext, BCRYPT_ROUNDS);
 }
 
 /**
+ * Hex-string check used to recognise legacy SHA-256 hashes (64 hex chars).
+ * Anything else hitting the legacy fallback would be a misuse — we refuse it.
+ */
+const SHA256_HEX_RE = /^[a-f0-9]{64}$/i;
+
+/**
  * Compare a plaintext password against a bcrypt hash.
- * Includes fallback for legacy passwords that weren't bcrypt-hashed.
+ *
+ * Uses async `bcrypt.compare` to avoid event-loop blocking.
+ *
+ * Legacy fallback: pre-bcrypt accounts stored a client-side SHA-256 hash.
+ * We accept that ONLY when `hash` actually looks like SHA-256 hex —
+ * arbitrary plaintext-equality is rejected to remove the
+ * "plaintext-leaked-into-hash-field" backdoor risk.
+ *
+ * TODO(security): plan a forced-rotation migration so we can drop the
+ * legacy fallback entirely.
  */
 async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
   // Try bcrypt first (new passwords)
   try {
-    const match = bcrypt.compareSync(plaintext, hash);
+    const match = await bcrypt.compare(plaintext, hash);
     if (match) return true;
   } catch {
-    // bcrypt.compareSync throws if hash is not a valid bcrypt hash (legacy users)
+    // bcrypt.compare throws if `hash` is not a valid bcrypt hash (legacy users)
   }
 
-  // Fallback: direct comparison for legacy passwords (client-side SHA-256 hashes)
-  // These will be upgraded to bcrypt on next successful login
-  return plaintext === hash;
+  // Restricted legacy fallback: only honour SHA-256-shaped hashes.
+  if (SHA256_HEX_RE.test(hash)) {
+    return plaintext === hash;
+  }
+  return false;
 }
 
 // ── Error Handler Helper ─────────────────────────────────────────────────────
