@@ -162,6 +162,8 @@ function isProtectedPath(pathname: string): boolean {
 // RATE LIMITING — IP-only (UA was trivially bypassable)
 // ═══════════════════════════════════════════════════════════════
 interface RateLimitRule {
+  /** Stable identifier so rules with the same maxRequests don't share a bucket */
+  id: string;
   pattern: (pathname: string) => boolean;
   maxRequests: number;
   windowMs: number;
@@ -170,27 +172,32 @@ interface RateLimitRule {
 
 const RATE_LIMIT_RULES: RateLimitRule[] = [
   {
+    id: 'auth-login',
     pattern: (p) => p === '/api/auth/login' || p === '/api/auth/face-login',
     maxRequests: 10,
     windowMs: 15 * 60 * 1000,
     blockDurationMs: 30 * 60 * 1000,
   },
   {
+    id: 'auth-other',
     pattern: (p) => p.startsWith('/api/auth/'),
     maxRequests: 30,
     windowMs: 15 * 60 * 1000,
   },
   {
+    id: 'ai-chat',
     pattern: (p) => p.startsWith('/api/chat/') || p.startsWith('/api/ai-site-editor/'),
     maxRequests: 30,
     windowMs: 15 * 60 * 1000,
   },
   {
+    id: 'stripe',
     pattern: (p) => p.startsWith('/api/stripe/'),
     maxRequests: 20,
     windowMs: 15 * 60 * 1000,
   },
   {
+    id: 'api-default',
     pattern: (p) => p.startsWith('/api/'),
     maxRequests: 100,
     windowMs: 15 * 60 * 1000,
@@ -213,7 +220,7 @@ async function applyRateLimit(
   if (!rule) return null;
 
   const ip = getClientIp(request);
-  const key = `rl:${rule.maxRequests}:${ip}`;
+  const key = `rl:${rule.id}:${ip}`;
   const result = await checkRateLimit(key, rule.maxRequests, rule.windowMs);
 
   if (!result.allowed) {
