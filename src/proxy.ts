@@ -356,14 +356,13 @@ export async function proxy(request: NextRequest) {
   if (isPublicPath(pathname)) {
     const isMaintenance = request.nextUrl.searchParams.get('maintenance') === 'true';
     const authToken = request.cookies.get('hr-auth-token')?.value;
-    const oauthSession = request.cookies.get('oauth-session')?.value;
 
     // Authenticated users who hit login/register pages get redirected —
     // but only if the JWT actually verifies.
     if (
       AUTH_PATHS.some((prefix) => pathname.startsWith(prefix)) &&
       !isMaintenance &&
-      ((await isValidJWT(authToken)) || !!oauthSession)
+      (await isValidJWT(authToken))
     ) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
@@ -373,9 +372,8 @@ export async function proxy(request: NextRequest) {
   // ── 3) Protected paths — require a *valid* JWT
   if (isProtectedPath(pathname)) {
     const authToken = request.cookies.get('hr-auth-token')?.value;
-    const oauthSession = request.cookies.get('oauth-session')?.value;
 
-    const hasValidSession = (await isValidJWT(authToken)) || !!oauthSession;
+    const hasValidSession = await isValidJWT(authToken);
     if (!hasValidSession) {
       // Invalidate any stale cookies so the user doesn't see a login loop
       const loginUrl = new URL('/login', request.url);
