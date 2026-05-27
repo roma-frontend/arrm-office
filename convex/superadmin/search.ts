@@ -1,11 +1,6 @@
-// @ts-nocheck — masks real type errors that need narrowing:
-//   * unionised search results across different tables are accessed
-//     uniformly via `.name`/`.email`/`.avatarUrl`, but some tables lack
-//     those fields. A `type` discriminator + per-branch narrowing is needed.
-// TODO(types): remove this directive once results are narrowed by table.
 import { v } from 'convex/values';
 import { query } from '../_generated/server';
-import { Id } from '../_generated/dataModel';
+import { Id, Doc } from '../_generated/dataModel';
 import { api } from '../_generated/api';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
@@ -103,24 +98,56 @@ export const globalSearch = query({
       )
       .slice(0, limit);
 
-    // OPTIMIZED: Batch load all user IDs needed for enrichment
-    const leaveUserIds = [...new Set(leaveRequests.map((l) => l.userId))];
-    const driverUserIds = [
-      ...new Set(driverRequests.flatMap((d) => [d.requesterId, d.driverId]).filter(Boolean)),
-    ];
-    const taskUserIds = [
-      ...new Set(tasks.flatMap((t) => [t.assignedTo, t.assignedBy]).filter(Boolean)),
-    ];
-    const ticketUserIds = [
-      ...new Set(supportTickets.flatMap((t) => [t.createdBy, t.assignedTo]).filter(Boolean)),
+    // OPTIMIZED: Batch load all user IDs needed for enrichment.
+    // Drivers are a separate table — `driverRequests.driverId` is `Id<'drivers'>`,
+    // not `Id<'users'>` — so we have to look those up via a join (driver.userId).
+    const userIdsFromLeaves = leaveRequests.map((l) => l.userId);
+    const userIdsFromDriverRequests = driverRequests
+      .map((d) => d.requesterId)
+      .filter((id): id is Id<'users'> => Boolean(id));
+    const userIdsFromTasks = tasks
+      .flatMap((t) => [t.assignedTo, t.assignedBy])
+      .filter((id): id is Id<'users'> => Boolean(id));
+    const userIdsFromTickets = supportTickets
+      .flatMap((t) => [t.createdBy, t.assignedTo])
+      .filter((id): id is Id<'users'> => Boolean(id));
+
+    const driverIdsToLoad = [
+      ...new Set(
+        driverRequests.map((d) => d.driverId).filter((id): id is Id<'drivers'> => Boolean(id)),
+      ),
     ];
 
-    const allUserIdsToLoad = [...leaveUserIds, ...driverUserIds, ...taskUserIds, ...ticketUserIds];
-    const uniqueUserIds = [...new Set(allUserIdsToLoad)];
+    // Load drivers first so we can extract their linked userIds.
+    const driverDocs = await Promise.all(driverIdsToLoad.map((id) => ctx.db.get(id)));
+    const driverIdToUserId = new Map<Id<'drivers'>, Id<'users'>>();
+    for (const d of driverDocs) {
+      if (d) driverIdToUserId.set(d._id, d.userId);
+    }
 
-    // Batch load all users at once
-    const allUsers = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
-    const userEnrichmentMap = new Map(allUsers.filter(Boolean).map((u) => [u._id, u]));
+    // Combined unique user-ids to fetch in one batch.
+    const uniqueUserIds = [
+      ...new Set<Id<'users'>>([
+        ...userIdsFromLeaves,
+        ...userIdsFromDriverRequests,
+        ...userIdsFromTasks,
+        ...userIdsFromTickets,
+        ...driverIdToUserId.values(),
+      ]),
+    ];
+
+    const userDocs = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
+    const userMap = new Map<Id<'users'>, Doc<'users'>>();
+    for (const u of userDocs) {
+      if (u) userMap.set(u._id, u);
+    }
+
+    const getDriverName = (driverId: Id<'drivers'> | undefined): string => {
+      if (!driverId) return 'Unknown';
+      const linkedUserId = driverIdToUserId.get(driverId);
+      if (!linkedUserId) return 'Unknown';
+      return userMap.get(linkedUserId)?.name || 'Unknown';
+    };
 
     // Enrich leave requests
     const enrichedLeaves = leaveRequests
@@ -131,7 +158,7 @@ export const globalSearch = query({
       })
       .slice(0, limit)
       .map((leave) => {
-        const user = userEnrichmentMap.get(leave.userId);
+        const user = userMap.get(leave.userId);
         return {
           ...leave,
           userName: user?.name || 'Unknown',
@@ -150,13 +177,12 @@ export const globalSearch = query({
       })
       .slice(0, limit)
       .map((request) => {
-        const requester = userEnrichmentMap.get(request.requesterId);
-        const driver = userEnrichmentMap.get(request.driverId);
+        const requester = userMap.get(request.requesterId);
         return {
           ...request,
           requesterName: requester?.name || 'Unknown',
           requesterEmail: requester?.email || '',
-          driverName: driver?.name || 'Unknown',
+          driverName: getDriverName(request.driverId),
         };
       });
 
@@ -169,8 +195,8 @@ export const globalSearch = query({
       )
       .slice(0, limit)
       .map((task) => {
-        const assignee = task.assignedTo ? userEnrichmentMap.get(task.assignedTo) : null;
-        const creator = userEnrichmentMap.get(task.assignedBy);
+        const assignee = task.assignedTo ? userMap.get(task.assignedTo) : null;
+        const creator = userMap.get(task.assignedBy);
         return {
           ...task,
           assigneeName: assignee?.name || 'Unknown',
@@ -188,8 +214,8 @@ export const globalSearch = query({
       )
       .slice(0, limit)
       .map((ticket) => {
-        const creator = userEnrichmentMap.get(ticket.createdBy);
-        const assignee = ticket.assignedTo ? userEnrichmentMap.get(ticket.assignedTo) : null;
+        const creator = userMap.get(ticket.createdBy);
+        const assignee = ticket.assignedTo ? userMap.get(ticket.assignedTo) : null;
         return {
           ...ticket,
           creatorName: creator?.name || 'Unknown',
