@@ -1,4 +1,8 @@
-// @ts-nocheck - Convex API types cause TS2589 in complex module graphs
+// @ts-nocheck — masks real type errors that need a follow-up fix:
+//   * line ~547: `html: Promise<string>` is missing an `await`
+//   * line ~617: `arguments` is not available in arrow function — needs rewrite
+//   * Resend `react`/`html` are mutually exclusive — pick one
+// TODO(types): remove this directive and address the issues above.
 import {
   mutation,
   query,

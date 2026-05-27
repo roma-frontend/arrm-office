@@ -1,4 +1,8 @@
-// @ts-nocheck - Convex API types cause TS2589 in complex module graphs
+// @ts-nocheck — masks real type errors that need narrowing:
+//   * unionised search results across different tables are accessed
+//     uniformly via `.name`/`.email`/`.avatarUrl`, but some tables lack
+//     those fields. A `type` discriminator + per-branch narrowing is needed.
+// TODO(types): remove this directive once results are narrowed by table.
 import { v } from 'convex/values';
 import { query } from '../_generated/server';
 import { Id } from '../_generated/dataModel';

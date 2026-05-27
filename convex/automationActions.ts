@@ -1,4 +1,3 @@
-// @ts-nocheck - Convex internal API types cause TS2589 in complex module graphs
 /**
  * Automation - Actions (for operations with delays, external APIs, etc.)
  */

@@ -1,4 +1,3 @@
-// @ts-nocheck - Convex API types cause TS2589 in complex module graphs
 import { action } from './_generated/server';
 import { api } from './_generated/api';
 import { v } from 'convex/values';
