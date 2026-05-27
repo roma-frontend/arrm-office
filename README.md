@@ -3,7 +3,7 @@
 # 🏢 HR Office Platform
 
 [![Build](https://img.shields.io/github/actions/workflow/status/roma-frontend/hr-project/ci.yml?branch=main&label=CI%2FCD)](https://github.com/roma-frontend/hr-project/actions)
-[![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/coverage-baseline_10%25-yellow)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)]()
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)]()
 [![Convex](https://img.shields.io/badge/Convex-Real--time_DB-FF6F00)]()
@@ -319,15 +319,25 @@ hr-project/
 
 ## 🧪 Testing
 
-See **[TEST_PLAN.md](./TEST_PLAN.md)** for 82 test cases across 14 modules.
+Current coverage thresholds enforced in CI (`jest.config.js`) are an early-stage
+baseline that is being raised over time, not the long-term target.
 
-| Category               | Target | Gate     |
-| ---------------------- | ------ | -------- |
-| **Statements**         | ≥ 80%  | Required |
-| **Branches**           | ≥ 75%  | Required |
-| **Functions**          | ≥ 80%  | Required |
-| **Lines**              | ≥ 80%  | Required |
-| **E2E Critical Paths** | 100%   | Required |
+| Category               | Current gate | Target |
+| ---------------------- | ------------ | ------ |
+| **Statements**         | ≥ 10%        | ≥ 80%  |
+| **Branches**           | ≥ 5%         | ≥ 75%  |
+| **Functions**          | ≥ 10%        | ≥ 80%  |
+| **Lines**              | ≥ 10%        | ≥ 80%  |
+| **E2E Critical Paths** | 4 specs      | 100%   |
+
+Existing suites:
+
+- **Unit (`src/__tests__/`)** — `jwt-utils`, `passwordValidation`, `security`, `riskScore`,
+  `error-handler`, `error-boundary`, `recruitment-emails`, `armenian-holidays`, `payrollUtils`,
+  `restricted-org`, `stringUtils`, `types` (~255 assertions).
+- **E2E (`e2e/`)** — `auth.spec`, `dashboard.spec`, `leaves.spec`, `tasks.spec` (Playwright).
+
+Add tests alongside features in `src/__tests__/<area>.test.ts` or `e2e/<flow>.spec.ts`.
 
 ---
 
@@ -377,8 +387,9 @@ vercel --prod           # Manual deploy
 ## 🗺 Roadmap
 
 - [x] Employee lifecycle, Face recognition, Leave management, Tasks, Chat, AI, Drivers, Analytics
-- [x] Microsoft 365 integration, Stripe billing, i18n (EN/RU/HY)
-- [ ] Mobile app (React Native), Performance reviews, Payroll, E-signatures, PDF export
+- [x] Microsoft 365 integration, Stripe billing, i18n (EN/RU/HY/DE)
+- [x] Performance reviews, Payroll, E-signatures, PDF export
+- [ ] Mobile app (React Native)
 
 ---
 
