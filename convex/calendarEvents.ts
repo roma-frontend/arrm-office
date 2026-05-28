@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { withAuth } from './lib/withAuth';
 
 export const create = mutation({
   args: {
@@ -17,7 +18,7 @@ export const create = mutation({
     attendees: v.optional(v.array(v.string())),
     attachmentUrl: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return await ctx.db.insert('calendarEvents', {
       organizationId: args.organizationId,
       createdBy: args.userId,
@@ -34,25 +35,25 @@ export const create = mutation({
       attachmentUrl: args.attachmentUrl,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const getByOrganization = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return await ctx.db
       .query('calendarEvents')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .order('desc')
       .take(200);
-  },
+  }),
 });
 
 export const remove = mutation({
   args: { id: v.id('calendarEvents') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await ctx.db.delete(args.id);
-  },
+  }),
 });

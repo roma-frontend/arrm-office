@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
+import { withAuth } from './lib/withAuth';
 
 /**
  * Helper to get current user ID from session token
@@ -26,7 +27,8 @@ export const hasSeenTour = query({
     tourId: v.string(),
     sessionToken: v.optional(v.string()),
   },
-  handler: async (ctx, { tourId, sessionToken }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { tourId, sessionToken } = args;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
     // If not authenticated, check localStorage (handled on client)
@@ -43,7 +45,7 @@ export const hasSeenTour = query({
       .first();
 
     return preference?.value === true;
-  },
+  }),
 });
 
 /**
@@ -54,7 +56,8 @@ export const markTourAsSeen = mutation({
     tourId: v.string(),
     sessionToken: v.optional(v.string()),
   },
-  handler: async (ctx, { tourId, sessionToken }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { tourId, sessionToken } = args;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
     // For non-authenticated users, this will be handled via localStorage on client
@@ -88,7 +91,7 @@ export const markTourAsSeen = mutation({
     }
 
     return { success: true, storage: 'database' };
-  },
+  }),
 });
 
 /**
@@ -98,7 +101,8 @@ export const getAllPreferences = query({
   args: {
     sessionToken: v.string(),
   },
-  handler: async (ctx, { sessionToken }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { sessionToken } = args;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
     if (!userId) {
@@ -111,7 +115,7 @@ export const getAllPreferences = query({
       .take(MAX_PAGE_SIZE);
 
     return preferences;
-  },
+  }),
 });
 
 /**
@@ -123,7 +127,8 @@ export const setPreference = mutation({
     value: v.any(),
     sessionToken: v.string(),
   },
-  handler: async (ctx, { key, value, sessionToken }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { key, value, sessionToken } = args;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
     if (!userId) {
@@ -151,5 +156,5 @@ export const setPreference = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });

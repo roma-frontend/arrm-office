@@ -3,55 +3,61 @@ import { mutation, query } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import { withAuth } from './lib/withAuth';
 
 // ── Get notifications for a user (paginated) ───────────────────────────────
 export const listPaginated = query({
   args: { userId: v.id('users'), paginationOpts: paginationOptsValidator },
-  handler: async (ctx, { userId, paginationOpts }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, paginationOpts } = args;
     return await ctx.db
       .query('notifications')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .order('desc')
       .paginate(paginationOpts);
-  },
+  }),
 });
 
 // ── Get notifications for a user (legacy, kept for badge counts) ────────────
 export const getUserNotifications = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     return await ctx.db
       .query('notifications')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .order('desc')
       .take(50);
-  },
+  }),
 });
 
 // ── Get unread count ───────────────────────────────────────────────────────
 export const getUnreadCount = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     const unread = await ctx.db
       .query('notifications')
       .withIndex('by_user_unread', (q) => q.eq('userId', userId).eq('isRead', false))
       .take(MAX_PAGE_SIZE);
     return Math.min(unread.length, MAX_PAGE_SIZE);
-  },
+  }),
 });
 
 // ── Mark notification as read ──────────────────────────────────────────────
 export const markAsRead = mutation({
   args: { notificationId: v.id('notifications') },
-  handler: async (ctx, { notificationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { notificationId } = args;
     await ctx.db.patch(notificationId, { isRead: true });
-  },
+  }),
 });
 
 // ── Mark all as read ───────────────────────────────────────────────────────
 export const markAllAsRead = mutation({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     // Mark all unread notifications as read (capped for safety)
     const unread = await ctx.db
       .query('notifications')
@@ -61,13 +67,14 @@ export const markAllAsRead = mutation({
       await ctx.db.patch(n._id, { isRead: true });
     }
     return unread.length;
-  },
+  }),
 });
 
 // ── Delete notification ────────────────────────────────────────────────────
 export const deleteNotification = mutation({
   args: { notificationId: v.id('notifications') },
-  handler: async (ctx, { notificationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { notificationId } = args;
     await ctx.db.delete(notificationId);
-  },
+  }),
 });

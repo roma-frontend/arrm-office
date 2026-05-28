@@ -9,13 +9,15 @@ import { query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 /** Get all available drivers - optionally scoped to organization */
 export const getAvailableDrivers = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     let drivers;
     if (organizationId) {
       drivers = await ctx.db
@@ -28,14 +30,14 @@ export const getAvailableDrivers = query({
       // No index for isAvailable alone, scan all and filter
       drivers = await ctx.db
         .query('drivers')
-        .filter((q) => q.eq(q.field('isAvailable'), true))
+        .filter((q: any) => q.eq(q.field('isAvailable'), true))
         .take(MAX_PAGE_SIZE);
     }
 
     // Enrich with user info and filter only users with role 'driver'
     const enriched = await Promise.all(
       drivers.map(async (driver) => {
-        const user = await ctx.db.get(driver.userId);
+        const user = (await ctx.db.get(driver.userId)) as any;
         // Only show if user has role 'driver'
         if (!user || user.role !== 'driver') return null;
 
@@ -50,7 +52,7 @@ export const getAvailableDrivers = query({
     );
 
     return enriched.filter(Boolean) as typeof enriched;
-  },
+  }),
 });
 
 /** Get driver by ID with full info */
@@ -58,11 +60,12 @@ export const getDriverById = query({
   args: {
     driverId: v.id('drivers'),
   },
-  handler: async (ctx, { driverId }) => {
-    const driver = await ctx.db.get(driverId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverId } = args;
+    const driver = (await ctx.db.get(driverId)) as any;
     if (!driver) return null;
 
-    const user = await ctx.db.get(driver.userId);
+    const user = (await ctx.db.get(driver.userId)) as any;
     const profile = await getProfile(ctx, driver.userId);
     return {
       ...driver,
@@ -71,7 +74,7 @@ export const getDriverById = query({
       userPosition: profile?.position ?? user?.position,
       userPhone: profile?.phone ?? user?.phone,
     };
-  },
+  }),
 });
 
 /** Get driver record by userId */
@@ -79,7 +82,8 @@ export const getDriverByUserId = query({
   args: {
     userId: v.id('users'),
   },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     const driver = await ctx.db
       .query('drivers')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -87,7 +91,7 @@ export const getDriverByUserId = query({
 
     if (!driver) return null;
 
-    const user = await ctx.db.get(driver.userId);
+    const user = (await ctx.db.get(driver.userId)) as any;
     const profile = await getProfile(ctx, driver.userId);
     return {
       ...driver,
@@ -96,7 +100,7 @@ export const getDriverByUserId = query({
       userPosition: profile?.position ?? user?.position,
       userPhone: profile?.phone ?? user?.phone,
     };
-  },
+  }),
 });
 
 /** Get driver's schedule for a date range */
@@ -106,11 +110,12 @@ export const getDriverSchedule = query({
     startTime: v.number(),
     endTime: v.number(),
   },
-  handler: async (ctx, { driverId, startTime, endTime }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverId, startTime, endTime } = args;
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(q.gte(q.field('startTime'), startTime), q.lte(q.field('startTime'), endTime)),
       )
       .take(MAX_PAGE_SIZE);
@@ -118,7 +123,7 @@ export const getDriverSchedule = query({
     // Enrich with user info for each schedule
     const enriched = await Promise.all(
       schedules.map(async (schedule) => {
-        const user = schedule.userId ? await ctx.db.get(schedule.userId) : null;
+        const user = schedule.userId ? ((await ctx.db.get(schedule.userId)) as any) : null;
         const profile = schedule.userId ? await getProfile(ctx, schedule.userId) : null;
         return {
           ...schedule,
@@ -129,7 +134,7 @@ export const getDriverSchedule = query({
     );
 
     return enriched;
-  },
+  }),
 });
 
 /** Check if driver is available for a time slot */
@@ -139,12 +144,13 @@ export const isDriverAvailable = query({
     startTime: v.number(),
     endTime: v.number(),
   },
-  handler: async (ctx, { driverId, startTime, endTime }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverId, startTime, endTime } = args;
     // Check for overlapping schedules
     const overlapping = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(
           q.eq(q.field('status'), 'scheduled'),
           q.or(
@@ -165,7 +171,7 @@ export const isDriverAvailable = query({
     }
 
     // Check driver's working hours
-    const driver = await ctx.db.get(driverId);
+    const driver = (await ctx.db.get(driverId)) as any;
     if (!driver) {
       return { available: false, reason: 'driver_not_found' };
     }
@@ -205,7 +211,7 @@ export const isDriverAvailable = query({
     const tripsToday = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(
           q.eq(q.field('type'), 'trip'),
           q.gte(q.field('startTime'), startOfDay.getTime()),
@@ -220,7 +226,7 @@ export const isDriverAvailable = query({
     }
 
     return { available: true };
-  },
+  }),
 });
 
 /** Check if driver is on leave for a given date range */
@@ -230,9 +236,10 @@ export const isDriverOnLeave = query({
     startTime: v.number(),
     endTime: v.number(),
   },
-  handler: async (ctx, { driverId, startTime, endTime }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverId, startTime, endTime } = args;
     // Get the driver's userId
-    const driver = await ctx.db.get(driverId);
+    const driver = (await ctx.db.get(driverId)) as any;
     if (!driver) {
       return { onLeave: false, leave: null };
     }
@@ -248,7 +255,7 @@ export const isDriverOnLeave = query({
     const allLeaves = await ctx.db
       .query('leaveRequests')
       .withIndex('by_user', (q) => q.eq('userId', driver.userId))
-      .filter((q) => q.eq(q.field('status'), 'approved'))
+      .filter((q: any) => q.eq(q.field('status'), 'approved'))
       .take(MAX_PAGE_SIZE);
 
     // Check for overlap in JavaScript
@@ -272,7 +279,7 @@ export const isDriverOnLeave = query({
     }
 
     return { onLeave: false, leave: null };
-  },
+  }),
 });
 
 /** Get alternative available drivers for a time slot (excluding drivers on leave) */
@@ -283,7 +290,8 @@ export const getAlternativeDrivers = query({
     endTime: v.number(),
     excludeDriverId: v.optional(v.id('drivers')),
   },
-  handler: async (ctx, { organizationId, startTime, endTime, excludeDriverId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, startTime, endTime, excludeDriverId } = args;
     // Get all available drivers
     const allDrivers = await ctx.db
       .query('drivers')
@@ -294,7 +302,7 @@ export const getAlternativeDrivers = query({
 
     // Filter out excluded driver
     const drivers = excludeDriverId
-      ? allDrivers.filter((d) => d._id !== excludeDriverId)
+      ? allDrivers.filter((d: any) => d._id !== excludeDriverId)
       : allDrivers;
 
     // Convert startTime to date string for leave comparison
@@ -306,7 +314,7 @@ export const getAlternativeDrivers = query({
     // Enrich with user info and filter
     const enriched = await Promise.all(
       drivers.map(async (driver) => {
-        const user = await ctx.db.get(driver.userId);
+        const user = (await ctx.db.get(driver.userId)) as any;
         // Only show if user has role 'driver'
         if (!user || user.role !== 'driver') return null;
 
@@ -314,7 +322,7 @@ export const getAlternativeDrivers = query({
         const leaveRequests = await ctx.db
           .query('leaveRequests')
           .withIndex('by_user', (q) => q.eq('userId', driver.userId))
-          .filter((q) =>
+          .filter((q: any) =>
             q.and(
               q.eq(q.field('status'), 'approved'),
               q.lte(q.field('startDate'), endDateStr),
@@ -331,7 +339,7 @@ export const getAlternativeDrivers = query({
         const overlapping = await ctx.db
           .query('driverSchedules')
           .withIndex('by_driver_time', (q) => q.eq('driverId', driver._id))
-          .filter((q) =>
+          .filter((q: any) =>
             q.and(
               q.eq(q.field('status'), 'scheduled'),
               q.or(
@@ -359,7 +367,7 @@ export const getAlternativeDrivers = query({
     );
 
     return enriched.filter(Boolean) as typeof enriched;
-  },
+  }),
 });
 
 /** Get all driver schedules for an organization (for general calendar) */
@@ -369,11 +377,12 @@ export const getOrgDriverSchedules = query({
     startTime: v.number(),
     endTime: v.number(),
   },
-  handler: async (ctx, { organizationId, startTime, endTime }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, startTime, endTime } = args;
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(
           q.neq(q.field('status'), 'cancelled'),
           q.gte(q.field('startTime'), startTime),
@@ -384,9 +393,9 @@ export const getOrgDriverSchedules = query({
 
     const enriched = await Promise.all(
       schedules.map(async (schedule) => {
-        const driver = await ctx.db.get(schedule.driverId);
-        const driverUser = driver ? await ctx.db.get(driver.userId) : null;
-        const bookedByUser = schedule.userId ? await ctx.db.get(schedule.userId) : null;
+        const driver = (await ctx.db.get(schedule.driverId)) as any;
+        const driverUser = driver ? ((await ctx.db.get(driver.userId)) as any) : null;
+        const bookedByUser = schedule.userId ? ((await ctx.db.get(schedule.userId)) as any) : null;
         return {
           ...schedule,
           driverName: driverUser?.name ?? 'Unknown',
@@ -397,7 +406,7 @@ export const getOrgDriverSchedules = query({
     );
 
     return enriched;
-  },
+  }),
 });
 
 /** Get available drivers with filters */
@@ -409,7 +418,8 @@ export const getFilteredDrivers = query({
     tripEndTime: v.optional(v.number()),
     sortBy: v.optional(v.union(v.literal('rating'), v.literal('trips'), v.literal('name'))),
   },
-  handler: async (ctx, { organizationId, minCapacity, tripStartTime, tripEndTime, sortBy }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, minCapacity, tripStartTime, tripEndTime, sortBy } = args;
     const drivers = await ctx.db
       .query('drivers')
       .withIndex('by_org_available', (q) =>
@@ -419,7 +429,7 @@ export const getFilteredDrivers = query({
 
     const enriched = await Promise.all(
       drivers.map(async (driver) => {
-        const user = await ctx.db.get(driver.userId);
+        const user = (await ctx.db.get(driver.userId)) as any;
         if (!user || user.role !== 'driver') return null;
 
         // Filter by capacity
@@ -451,7 +461,7 @@ export const getFilteredDrivers = query({
           const overlap = await ctx.db
             .query('driverSchedules')
             .withIndex('by_driver_time', (q) => q.eq('driverId', driver._id))
-            .filter((q) =>
+            .filter((q: any) =>
               q.and(
                 q.eq(q.field('status'), 'scheduled'),
                 q.or(
@@ -501,5 +511,5 @@ export const getFilteredDrivers = query({
     }
 
     return result;
-  },
+  }),
 });

@@ -6,6 +6,7 @@
 
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
+import { withAuth } from '../lib/withAuth';
 
 /** Register as a driver - only organization admins can register drivers, or users can register themselves */
 export const registerAsDriver = mutation({
@@ -27,8 +28,8 @@ export const registerAsDriver = mutation({
     }),
     maxTripsPerDay: v.number(),
   },
-  handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const admin = (await ctx.db.get(args.adminId)) as any;
     if (!admin) {
       throw new Error('Admin not found');
     }
@@ -43,7 +44,7 @@ export const registerAsDriver = mutation({
       );
     }
 
-    const userToRegister = await ctx.db.get(args.userId);
+    const userToRegister = (await ctx.db.get(args.userId)) as any;
     if (!userToRegister || userToRegister.organizationId !== args.organizationId) {
       throw new Error('User does not belong to this organization');
     }
@@ -79,7 +80,7 @@ export const registerAsDriver = mutation({
     });
 
     return driverId;
-  },
+  }),
 });
 
 /** Update driver availability */
@@ -88,13 +89,14 @@ export const updateDriverAvailability = mutation({
     driverId: v.id('drivers'),
     isAvailable: v.boolean(),
   },
-  handler: async (ctx, { driverId, isAvailable }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverId, isAvailable } = args;
     await ctx.db.patch(driverId, {
       isAvailable,
       updatedAt: Date.now(),
     });
     return { success: true };
-  },
+  }),
 });
 
 /** Add driver to favorites */
@@ -104,12 +106,12 @@ export const addFavoriteDriver = mutation({
     userId: v.id('users'),
     driverId: v.id('drivers'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { organizationId, userId, driverId } = args;
     // If org not provided, get from driver record
     let orgId = organizationId;
     if (!orgId) {
-      const driver = await ctx.db.get(driverId);
+      const driver = (await ctx.db.get(driverId)) as any;
       if (driver) {
         orgId = driver.organizationId;
       }
@@ -128,7 +130,7 @@ export const addFavoriteDriver = mutation({
       driverId,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 /** Remove driver from favorites */
@@ -137,7 +139,8 @@ export const removeFavoriteDriver = mutation({
     userId: v.id('users'),
     driverId: v.id('drivers'),
   },
-  handler: async (ctx, { userId, driverId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, driverId } = args;
     const existing = await ctx.db
       .query('favoriteDrivers')
       .withIndex('by_user_driver', (q) => q.eq('userId', userId).eq('driverId', driverId))
@@ -147,5 +150,5 @@ export const removeFavoriteDriver = mutation({
       await ctx.db.delete(existing._id);
     }
     return { success: true };
-  },
+  }),
 });

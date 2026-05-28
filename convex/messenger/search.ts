@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEARCH MESSAGES
@@ -12,7 +13,7 @@ export const searchMessages = query({
     userId: v.id('users'),
     query: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -28,12 +29,12 @@ export const searchMessages = query({
 
     const q = args.query.toLowerCase();
     const matches = messages
-      .filter((m) => !m.isDeleted && m.content.toLowerCase().includes(q))
+      .filter((m: any) => !m.isDeleted && m.content.toLowerCase().includes(q))
       .slice(-20);
 
     return Promise.all(
       matches.map(async (m) => {
-        const sender = await ctx.db.get(m.senderId);
+        const sender = (await ctx.db.get(m.senderId)) as any;
         const senderProfile = await getProfile(ctx, m.senderId);
         return {
           ...m,
@@ -42,5 +43,5 @@ export const searchMessages = query({
         };
       }),
     );
-  },
+  }),
 });

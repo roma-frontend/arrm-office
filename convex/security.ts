@@ -14,7 +14,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits'
  * - admin: sees only their own org
  */
 async function requireAdmin(ctx: any, adminId: Id<'users'>) {
-  const user = await ctx.db.get(adminId);
+  const user = (await ctx.db.get(adminId)) as any;
   if (!user) {
     throw new Error('User not found');
   }
@@ -67,7 +67,7 @@ export const getAllSettings = query({
     const settings = await ctx.db.query('securitySettings').take(SMALL_LIST_CAP);
 
     // Merge with defaults so all features are always present
-    return SECURITY_FEATURES.map((feature) => {
+    return SECURITY_FEATURES.map((feature: any) => {
       const saved = settings.find((s) => s.key === feature.key);
       return {
         key: feature.key,
@@ -83,14 +83,15 @@ export const getAllSettings = query({
 // ── Get single setting ────────────────────────────────────────────────────────
 export const getSetting = query({
   args: { key: v.string() },
-  handler: async (ctx, { key }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { key } = args;
     const setting = await ctx.db
       .query('securitySettings')
       .withIndex('by_key', (q) => q.eq('key', key))
       .unique();
     // Default to enabled if not set
     return setting ? setting.enabled : true;
-  },
+  }),
 });
 
 // ── Toggle security setting ───────────────────────────────────────────────────
@@ -100,7 +101,8 @@ export const toggleSetting = mutation({
     enabled: v.boolean(),
     updatedBy: v.id('users'),
   },
-  handler: async (ctx, { key, enabled, updatedBy }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { key, enabled, updatedBy } = args;
     const existing = await ctx.db
       .query('securitySettings')
       .withIndex('by_key', (q) => q.eq('key', key))
@@ -118,7 +120,7 @@ export const toggleSetting = mutation({
     }
 
     // Log this action in audit logs
-    const user = await ctx.db.get(updatedBy);
+    const user = (await ctx.db.get(updatedBy)) as any;
     if (user) {
       await ctx.db.insert('auditLogs', {
         organizationId: user.organizationId,
@@ -131,7 +133,7 @@ export const toggleSetting = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });
 
 // ── Log a login attempt ───────────────────────────────────────────────────────
@@ -154,7 +156,7 @@ export const logLoginAttempt = mutation({
     riskFactors: v.optional(v.array(v.string())),
     blockedReason: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await ctx.db.insert('loginAttempts', {
       ...args,
       createdAt: Date.now(),
@@ -167,7 +169,7 @@ export const logLoginAttempt = mutation({
       const recentFails = await ctx.db
         .query('loginAttempts')
         .withIndex('by_user', (q) => q.eq('userId', args.userId!))
-        .filter((q) =>
+        .filter((q: any) =>
           q.and(q.eq(q.field('success'), false), q.gte(q.field('createdAt'), fifteenMinAgo)),
         )
         .take(SMALL_LIST_CAP);
@@ -185,7 +187,7 @@ export const logLoginAttempt = mutation({
             faceIdBlockedAt: Date.now(),
           });
           // Notify org admins
-          const user = await ctx.db.get(args.userId);
+          const user = (await ctx.db.get(args.userId)) as any;
           if (user?.organizationId) {
             const admins = await ctx.db
               .query('users')
@@ -211,7 +213,7 @@ export const logLoginAttempt = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });
 
 // ── Register / update device fingerprint ─────────────────────────────────────
@@ -221,7 +223,8 @@ export const registerDevice = mutation({
     fingerprint: v.string(),
     userAgent: v.optional(v.string()),
   },
-  handler: async (ctx, { userId, fingerprint, userAgent }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, fingerprint, userAgent } = args;
     const existing = await ctx.db
       .query('deviceFingerprints')
       .withIndex('by_user_fingerprint', (q) =>
@@ -248,7 +251,7 @@ export const registerDevice = mutation({
       });
       return { isNew: true, isTrusted: false };
     }
-  },
+  }),
 });
 
 // ── Check if device is known ──────────────────────────────────────────────────
@@ -257,7 +260,8 @@ export const checkDevice = query({
     userId: v.id('users'),
     fingerprint: v.string(),
   },
-  handler: async (ctx, { userId, fingerprint }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, fingerprint } = args;
     const device = await ctx.db
       .query('deviceFingerprints')
       .withIndex('by_user_fingerprint', (q) =>
@@ -265,19 +269,20 @@ export const checkDevice = query({
       )
       .unique();
     return device ?? null;
-  },
+  }),
 });
 
 // ── Get all devices for a user ────────────────────────────────────────────────
 export const getUserDevices = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     return await ctx.db
       .query('deviceFingerprints')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .order('desc')
       .take(SMALL_LIST_CAP);
-  },
+  }),
 });
 
 // ── Save / update keystroke profile ──────────────────────────────────────────
@@ -290,7 +295,7 @@ export const saveKeystrokeProfile = mutation({
     stdDevFlight: v.optional(v.number()),
     sampleCount: v.number(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const existing = await ctx.db
       .query('keystrokeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -317,18 +322,19 @@ export const saveKeystrokeProfile = mutation({
       });
     }
     return { success: true };
-  },
+  }),
 });
 
 // ── Get keystroke profile ─────────────────────────────────────────────────────
 export const getKeystrokeProfile = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     return await ctx.db
       .query('keystrokeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique();
-  },
+  }),
 });
 
 // ── Get login attempts stats (for dashboard) ──────────────────────────────────
@@ -337,7 +343,8 @@ export const getLoginStats = query({
     organizationId: v.optional(v.id('organizations')),
     hours: v.optional(v.number()), // last N hours, default 24
   },
-  handler: async (ctx, { organizationId, hours = 24 }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, hours = 24 } = args;
     const since = Date.now() - hours * 60 * 60 * 1000;
 
     let attempts = await ctx.db
@@ -346,13 +353,13 @@ export const getLoginStats = query({
       .take(DEFAULT_LIST_CAP);
 
     if (organizationId) {
-      attempts = attempts.filter((a) => a.organizationId === organizationId);
+      attempts = attempts.filter((a: any) => a.organizationId === organizationId);
     }
 
     const total = attempts.length;
-    const failed = attempts.filter((a) => !a.success).length;
-    const blocked = attempts.filter((a) => a.blockedReason).length;
-    const highRisk = attempts.filter((a) => (a.riskScore ?? 0) >= 60).length;
+    const failed = attempts.filter((a: any) => !a.success).length;
+    const blocked = attempts.filter((a: any) => a.blockedReason).length;
+    const highRisk = attempts.filter((a: any) => (a.riskScore ?? 0) >= 60).length;
     const byMethod = attempts.reduce(
       (acc, a) => {
         acc[a.method] = (acc[a.method] ?? 0) + 1;
@@ -363,12 +370,12 @@ export const getLoginStats = query({
 
     // Recent suspicious (failed + high risk)
     const suspicious = attempts
-      .filter((a) => !a.success || (a.riskScore ?? 0) >= 60)
+      .filter((a: any) => !a.success || (a.riskScore ?? 0) >= 60)
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 20);
 
     return { total, failed, blocked, highRisk, byMethod, suspicious };
-  },
+  }),
 });
 
 // ── Get recent audit logs ─────────────────────────────────────────────────────
@@ -377,7 +384,8 @@ export const getRecentAuditLogs = query({
     adminId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { adminId, limit = 50 }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, limit = 50 } = args;
     const { orgId } = await requireAdmin(ctx, adminId);
 
     let logs;
@@ -392,13 +400,13 @@ export const getRecentAuditLogs = query({
     }
 
     // Enrich with user names - batch load all unique user IDs
-    const uniqueUserIds = [...new Set(logs.map((log) => log.userId).filter(Boolean))];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
+    const uniqueUserIds = [...new Set(logs.map((log: any) => log.userId).filter(Boolean))];
+    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
     );
 
-    const enriched = logs.map((log) => {
+    const enriched = logs.map((log: any) => {
       const user = userMap.get(log.userId);
       return {
         ...log,
@@ -407,7 +415,7 @@ export const getRecentAuditLogs = query({
       };
     });
     return enriched;
-  },
+  }),
 });
 
 /** Paginated audit logs for compliance page */
@@ -416,7 +424,8 @@ export const listAuditLogsPaginated = query({
     adminId: v.id('users'),
     paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { adminId, paginationOpts }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, paginationOpts } = args;
     const { orgId } = await requireAdmin(ctx, adminId);
 
     const result = orgId
@@ -428,20 +437,20 @@ export const listAuditLogsPaginated = query({
       : await ctx.db.query('auditLogs').order('desc').paginate(paginationOpts);
 
     // Enrich page with user names
-    const uniqueUserIds = [...new Set(result.page.map((log) => log.userId).filter(Boolean))];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
+    const uniqueUserIds = [...new Set(result.page.map((log: any) => log.userId).filter(Boolean))];
+    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
     );
 
     return {
       ...result,
-      page: result.page.map((log) => {
+      page: result.page.map((log: any) => {
         const user = userMap.get(log.userId);
         return { ...log, userName: user?.name ?? 'Unknown', userEmail: user?.email ?? '' };
       }),
     };
-  },
+  }),
 });
 
 // ── Unlock a locked account ───────────────────────────────────────────────────
@@ -450,14 +459,15 @@ export const unlockAccount = mutation({
     userId: v.id('users'),
     unlockedBy: v.id('users'),
   },
-  handler: async (ctx, { userId, unlockedBy }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, unlockedBy } = args;
     await ctx.db.patch(userId, {
       faceIdBlocked: false,
       faceIdBlockedAt: undefined,
       faceIdFailedAttempts: 0,
     });
-    const user = await ctx.db.get(userId);
-    const unlocker = await ctx.db.get(unlockedBy);
+    const user = (await ctx.db.get(userId)) as any;
+    const unlocker = (await ctx.db.get(unlockedBy)) as any;
     await ctx.db.insert('auditLogs', {
       organizationId: user?.organizationId,
       userId: unlockedBy,
@@ -467,7 +477,7 @@ export const unlockAccount = mutation({
       createdAt: Date.now(),
     });
     return { success: true };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -487,7 +497,7 @@ export const notifySuperadminSuspiciousActivity = mutation({
     deviceInfo: v.optional(v.string()),
     autoBlock: v.optional(v.boolean()), // if true, automatically suspend the user
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Find superadmin
     const superadmin = await ctx.db
       .query('users')
@@ -500,7 +510,7 @@ export const notifySuperadminSuspiciousActivity = mutation({
     }
 
     // Get the suspicious user
-    const user = await ctx.db.get(args.userId);
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) {
       console.error('User not found for suspicious activity notification');
       return null;
@@ -600,7 +610,7 @@ export const notifySuperadminSuspiciousActivity = mutation({
     );
 
     return { notificationId, autoBlocked: wasAutoBlocked };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -611,13 +621,14 @@ export const getLoginAttemptsByUser = query({
     userId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { userId, limit = 10 }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, limit = 10 } = args;
     return await ctx.db
       .query('loginAttempts')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .order('desc')
       .take(limit);
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -649,7 +660,7 @@ export const secureUnlockAccount = mutation({
   handler: withAuth<MutationCtx, { userId: Id<'users'> }, { success: boolean }>(
     { minimumRole: 'admin' },
     async (ctx, { userId }, caller) => {
-      const user = await ctx.db.get(userId);
+      const user = (await ctx.db.get(userId)) as any;
       if (!user) throw new Error('User not found');
 
       if (caller.role !== 'superadmin' && caller.organizationId !== user.organizationId) {

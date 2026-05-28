@@ -1,6 +1,7 @@
 import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { withAuth } from './lib/withAuth';
 
 // ─── Default offboarding tasks ───────────────────────────────
 const DEFAULT_TASKS = [
@@ -57,7 +58,7 @@ const DEFAULT_TASKS = [
 // ─── Helpers ─────────────────────────────────────────────────
 function computeProgress(tasks: { status: string }[]): number {
   if (tasks.length === 0) return 0;
-  const done = tasks.filter((t) => t.status === 'completed' || t.status === 'skipped').length;
+  const done = tasks.filter((t: any) => t.status === 'completed' || t.status === 'skipped').length;
   return Math.round((done / tasks.length) * 100);
 }
 
@@ -65,7 +66,8 @@ function computeProgress(tasks: { status: string }[]): number {
 
 export const listPrograms = query({
   args: { organizationId: v.id('organizations') },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     const programs = await ctx.db
       .query('offboardingPrograms')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
@@ -78,24 +80,26 @@ export const listPrograms = query({
           .query('offboardingTasks')
           .withIndex('by_program', (q) => q.eq('programId', prog._id))
           .take(SMALL_LIST_CAP);
-        const employee = await ctx.db.get(prog.employeeId);
+        const employee = (await ctx.db.get(prog.employeeId)) as any;
         return {
           ...prog,
           progress: computeProgress(tasks),
           totalTasks: tasks.length,
-          completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
-            .length,
+          completedTasks: tasks.filter(
+            (t: any) => t.status === 'completed' || t.status === 'skipped',
+          ).length,
           employeeName: employee?.name ?? 'Unknown',
         };
       }),
     );
-  },
+  }),
 });
 
 export const getProgram = query({
   args: { programId: v.id('offboardingPrograms') },
-  handler: async (ctx, { programId }) => {
-    const program = await ctx.db.get(programId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { programId } = args;
+    const program = (await ctx.db.get(programId)) as any;
     if (!program) return null;
 
     const tasks = await ctx.db
@@ -103,8 +107,8 @@ export const getProgram = query({
       .withIndex('by_program', (q) => q.eq('programId', programId))
       .take(SMALL_LIST_CAP);
 
-    const employee = await ctx.db.get(program.employeeId);
-    const manager = await ctx.db.get(program.managerId);
+    const employee = (await ctx.db.get(program.employeeId)) as any;
+    const manager = (await ctx.db.get(program.managerId)) as any;
 
     const exitInterview = await ctx.db
       .query('exitInterviews')
@@ -117,7 +121,7 @@ export const getProgram = query({
         .map(async (task) => {
           let assigneeName: string | undefined;
           if (task.assigneeId) {
-            const assignee = await ctx.db.get(task.assigneeId);
+            const assignee = (await ctx.db.get(task.assigneeId)) as any;
             assigneeName = assignee?.name;
           }
           return { ...task, assigneeName };
@@ -128,7 +132,7 @@ export const getProgram = query({
       ...program,
       progress: computeProgress(tasks),
       totalTasks: tasks.length,
-      completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
+      completedTasks: tasks.filter((t: any) => t.status === 'completed' || t.status === 'skipped')
         .length,
       employeeName: employee?.name ?? 'Unknown',
       employeeEmail: employee?.email,
@@ -136,12 +140,13 @@ export const getProgram = query({
       tasks: tasksWithNames,
       exitInterview,
     };
-  },
+  }),
 });
 
 export const getRetentionInsights = query({
   args: { organizationId: v.id('organizations') },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     const programs = await ctx.db
       .query('offboardingPrograms')
       .withIndex('by_org_status', (q) =>
@@ -152,7 +157,7 @@ export const getRetentionInsights = query({
     const exits = await ctx.db
       .query('exitInterviews')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q) => q.eq(q.field('status'), 'completed'))
+      .filter((q: any) => q.eq(q.field('status'), 'completed'))
       .take(DEFAULT_LIST_CAP);
 
     // Reason breakdown
@@ -163,15 +168,17 @@ export const getRetentionInsights = query({
 
     // Average experience
     const scores = exits
-      .filter((e) => e.overallExperience != null)
-      .map((e) => e.overallExperience!);
+      .filter((e: any) => e.overallExperience != null)
+      .map((e: any) => e.overallExperience!);
     const avgExperience = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
     // Would recommend %
-    const recommends = exits.filter((e) => e.wouldRecommend != null);
+    const recommends = exits.filter((e: any) => e.wouldRecommend != null);
     const recommendRate =
       recommends.length > 0
-        ? Math.round((recommends.filter((e) => e.wouldRecommend).length / recommends.length) * 100)
+        ? Math.round(
+            (recommends.filter((e: any) => e.wouldRecommend).length / recommends.length) * 100,
+          )
         : 0;
 
     return {
@@ -181,7 +188,7 @@ export const getRetentionInsights = query({
       recommendRate,
       totalInterviews: exits.length,
     };
-  },
+  }),
 });
 
 // ─── Mutations ───────────────────────────────────────────────
@@ -203,12 +210,12 @@ export const startOffboarding = mutation({
     reasonNote: v.optional(v.string()),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Guard against duplicate
     const existing = await ctx.db
       .query('offboardingPrograms')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
-      .filter((q) => q.eq(q.field('status'), 'active'))
+      .filter((q: any) => q.eq(q.field('status'), 'active'))
       .first();
     if (existing) {
       throw new Error('This employee already has an active offboarding program');
@@ -255,29 +262,31 @@ export const startOffboarding = mutation({
     });
 
     return programId;
-  },
+  }),
 });
 
 export const completeTask = mutation({
   args: { taskId: v.id('offboardingTasks'), completedBy: v.id('users') },
-  handler: async (ctx, { taskId, completedBy }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { taskId, completedBy } = args;
     await ctx.db.patch(taskId, {
       status: 'completed',
       completedBy,
       completedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const skipTask = mutation({
   args: { taskId: v.id('offboardingTasks'), completedBy: v.id('users') },
-  handler: async (ctx, { taskId, completedBy }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { taskId, completedBy } = args;
     await ctx.db.patch(taskId, {
       status: 'skipped',
       completedBy,
       completedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const addTask = mutation({
@@ -304,7 +313,7 @@ export const addTask = mutation({
       v.literal('other'),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const tasks = await ctx.db
       .query('offboardingTasks')
       .withIndex('by_program', (q) => q.eq('programId', args.programId))
@@ -321,7 +330,7 @@ export const addTask = mutation({
       status: 'pending',
       order: tasks.length,
     });
-  },
+  }),
 });
 
 export const submitExitInterview = mutation({
@@ -333,28 +342,31 @@ export const submitExitInterview = mutation({
     feedback: v.optional(v.string()),
     improvements: v.optional(v.string()),
   },
-  handler: async (ctx, { interviewId, ...data }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { interviewId, ...data } = args;
     await ctx.db.patch(interviewId, {
       ...data,
       status: 'completed',
       conductedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const completeProgram = mutation({
   args: { programId: v.id('offboardingPrograms') },
-  handler: async (ctx, { programId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { programId } = args;
     await ctx.db.patch(programId, {
       status: 'completed',
       completedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const cancelProgram = mutation({
   args: { programId: v.id('offboardingPrograms') },
-  handler: async (ctx, { programId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { programId } = args;
     await ctx.db.patch(programId, { status: 'cancelled' });
-  },
+  }),
 });

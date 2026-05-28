@@ -3,6 +3,7 @@ import { query } from '../_generated/server';
 import { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 // ─── USER 360 PROFILE ────────────────────────────────────────────────────────
 /**
@@ -11,8 +12,8 @@ import { getProfile } from '../lib/userProfile';
  */
 export const getUser360 = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Parallel fetch all related data
@@ -36,7 +37,7 @@ export const getUser360 = query({
       // Tasks (assigned to user)
       ctx.db
         .query('tasks')
-        .filter((q) => q.eq(q.field('assignedTo'), args.userId))
+        .filter((q: any) => q.eq(q.field('assignedTo'), args.userId))
         .take(MAX_PAGE_SIZE),
 
       // Driver requests
@@ -55,14 +56,14 @@ export const getUser360 = query({
       // Login attempts (last 20)
       ctx.db
         .query('loginAttempts')
-        .filter((q) => q.eq(q.field('userId'), args.userId))
+        .filter((q: any) => q.eq(q.field('userId'), args.userId))
         .order('desc')
         .take(20),
 
       // Support tickets (created or assigned)
       ctx.db
         .query('supportTickets')
-        .filter((q) =>
+        .filter((q: any) =>
           q.or(q.eq(q.field('createdBy'), args.userId), q.eq(q.field('assignedTo'), args.userId)),
         )
         .take(MAX_PAGE_SIZE),
@@ -70,13 +71,13 @@ export const getUser360 = query({
       // Ticket comments
       ctx.db
         .query('ticketComments')
-        .filter((q) => q.eq(q.field('authorId'), args.userId))
+        .filter((q: any) => q.eq(q.field('authorId'), args.userId))
         .take(MAX_PAGE_SIZE),
 
       // Chat messages (last 100)
       ctx.db
         .query('chatMessages')
-        .filter((q) => q.eq(q.field('senderId'), args.userId))
+        .filter((q: any) => q.eq(q.field('senderId'), args.userId))
         .order('desc')
         .take(100),
 
@@ -87,7 +88,7 @@ export const getUser360 = query({
     // Enrich leaves with reviewer info
     const enrichedLeaves = await Promise.all(
       leaves.map(async (leave) => {
-        const reviewer = leave.reviewedBy ? await ctx.db.get(leave.reviewedBy) : null;
+        const reviewer = leave.reviewedBy ? ((await ctx.db.get(leave.reviewedBy)) as any) : null;
         return {
           ...leave,
           reviewerName: reviewer?.name || null,
@@ -98,7 +99,7 @@ export const getUser360 = query({
     // Enrich tasks with creator info (using assignedBy as creator)
     const enrichedTasks = await Promise.all(
       tasks.map(async (task) => {
-        const creator = await ctx.db.get(task.assignedBy);
+        const creator = (await ctx.db.get(task.assignedBy)) as any;
         return {
           ...task,
           creatorName: creator?.name || null,
@@ -109,8 +110,8 @@ export const getUser360 = query({
     // Enrich driver requests with driver info
     const enrichedDriverRequests = await Promise.all(
       driverRequests.map(async (req) => {
-        const driver = await ctx.db.get(req.driverId);
-        const driverUser = driver ? await ctx.db.get(driver.userId) : null;
+        const driver = (await ctx.db.get(req.driverId)) as any;
+        const driverUser = driver ? ((await ctx.db.get(driver.userId)) as any) : null;
         const driverProfile = driver ? await getProfile(ctx, driver.userId) : null;
         return {
           ...req,
@@ -123,7 +124,7 @@ export const getUser360 = query({
     // Enrich support tickets
     const enrichedTickets = await Promise.all(
       supportTickets.map(async (ticket) => {
-        const assignee = ticket.assignedTo ? await ctx.db.get(ticket.assignedTo) : null;
+        const assignee = ticket.assignedTo ? ((await ctx.db.get(ticket.assignedTo)) as any) : null;
         return {
           ...ticket,
           assigneeName: assignee?.name || null,
@@ -134,16 +135,17 @@ export const getUser360 = query({
     // Calculate statistics
     const stats = {
       totalLeaves: leaves.length,
-      pendingLeaves: leaves.filter((l) => l.status === 'pending').length,
-      approvedLeaves: leaves.filter((l) => l.status === 'approved').length,
+      pendingLeaves: leaves.filter((l: any) => l.status === 'pending').length,
+      approvedLeaves: leaves.filter((l: any) => l.status === 'approved').length,
       totalTasks: tasks.length,
-      completedTasks: tasks.filter((t) => t.status === 'completed').length,
+      completedTasks: tasks.filter((t: any) => t.status === 'completed').length,
       totalDriverRequests: driverRequests.length,
       totalTickets: supportTickets.length,
-      openTickets: supportTickets.filter((t) => t.status !== 'closed' && t.status !== 'resolved')
-        .length,
+      openTickets: supportTickets.filter(
+        (t: any) => t.status !== 'closed' && t.status !== 'resolved',
+      ).length,
       totalLoginAttempts: loginAttempts.length,
-      failedLoginAttempts: loginAttempts.filter((l) => !l.success).length,
+      failedLoginAttempts: loginAttempts.filter((l: any) => !l.success).length,
     };
 
     return {
@@ -159,5 +161,5 @@ export const getUser360 = query({
       chatMessages: chatMessages.sort((a, b) => b.createdAt - a.createdAt),
       stats,
     };
-  },
+  }),
 });

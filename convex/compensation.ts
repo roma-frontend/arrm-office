@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 // ============ QUERIES ============
 
@@ -12,23 +13,26 @@ export const listCompensationRecords = query({
     type: v.optional(v.string()),
     status: v.optional(v.string()),
   },
-  handler: async (ctx, { organizationId, userId, type, status }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId, type, status } = args;
     let records = await ctx.db
       .query('compensationRecords')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (userId) records = records.filter((r) => r.userId === userId);
-    if (type) records = records.filter((r) => r.type === type);
-    if (status) records = records.filter((r) => r.status === status);
+    if (userId) records = records.filter((r: any) => r.userId === userId);
+    if (type) records = records.filter((r: any) => r.type === type);
+    if (status) records = records.filter((r: any) => r.status === status);
 
     // Enrich with user names
     const enriched = await Promise.all(
       records.map(async (record) => {
-        const user = await ctx.db.get(record.userId);
+        const user = (await ctx.db.get(record.userId)) as any;
         const userProfile = await getProfile(ctx, record.userId);
-        const approvedBy = record.approvedBy ? await ctx.db.get(record.approvedBy) : null;
-        const createdBy = await ctx.db.get(record.createdBy);
+        const approvedBy = record.approvedBy
+          ? ((await ctx.db.get(record.approvedBy)) as any)
+          : null;
+        const createdBy = (await ctx.db.get(record.createdBy)) as any;
         return {
           ...record,
           userName: user?.name ?? 'Unknown',
@@ -40,7 +44,7 @@ export const listCompensationRecords = query({
     );
 
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  },
+  }),
 });
 
 export const getCompensationHistory = query({
@@ -48,14 +52,15 @@ export const getCompensationHistory = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const records = await ctx.db
       .query('compensationRecords')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
       .collect();
 
     return records.sort((a, b) => b.effectiveFrom - a.effectiveFrom);
-  },
+  }),
 });
 
 export const listCompensationBands = query({
@@ -64,17 +69,18 @@ export const listCompensationBands = query({
     level: v.optional(v.string()),
     department: v.optional(v.string()),
   },
-  handler: async (ctx, { organizationId, level, department }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, level, department } = args;
     let bands = await ctx.db
       .query('compensationBands')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (level) bands = bands.filter((b) => b.level === level);
-    if (department) bands = bands.filter((b) => b.department === department);
+    if (level) bands = bands.filter((b: any) => b.level === level);
+    if (department) bands = bands.filter((b: any) => b.department === department);
 
     return bands.sort((a, b) => a.minSalary - b.minSalary);
-  },
+  }),
 });
 
 export const listBonusPrograms = query({
@@ -82,16 +88,17 @@ export const listBonusPrograms = query({
     organizationId: v.id('organizations'),
     status: v.optional(v.string()),
   },
-  handler: async (ctx, { organizationId, status }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, status } = args;
     let programs = await ctx.db
       .query('bonusPrograms')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (status) programs = programs.filter((p) => p.status === status);
+    if (status) programs = programs.filter((p: any) => p.status === status);
 
     return programs.sort((a, b) => b.createdAt - a.createdAt);
-  },
+  }),
 });
 
 export const listReviewCycles = query({
@@ -100,25 +107,27 @@ export const listReviewCycles = query({
     year: v.optional(v.number()),
     status: v.optional(v.string()),
   },
-  handler: async (ctx, { organizationId, year, status }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, year, status } = args;
     let cycles = await ctx.db
       .query('compensationReviewCycles')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (year) cycles = cycles.filter((c) => c.year === year);
-    if (status) cycles = cycles.filter((c) => c.status === status);
+    if (year) cycles = cycles.filter((c: any) => c.year === year);
+    if (status) cycles = cycles.filter((c: any) => c.status === status);
 
     return cycles.sort((a, b) => b.year - a.year);
-  },
+  }),
 });
 
 export const getReviewCycleDetails = query({
   args: {
     reviewCycleId: v.id('compensationReviewCycles'),
   },
-  handler: async (ctx, { reviewCycleId }) => {
-    const cycle = await ctx.db.get(reviewCycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { reviewCycleId } = args;
+    const cycle = (await ctx.db.get(reviewCycleId)) as any;
     if (!cycle) return null;
 
     const entries = await ctx.db
@@ -128,9 +137,9 @@ export const getReviewCycleDetails = query({
 
     const enrichedEntries = await Promise.all(
       entries.map(async (entry) => {
-        const user = await ctx.db.get(entry.userId);
+        const user = (await ctx.db.get(entry.userId)) as any;
         const userProfile = await getProfile(ctx, entry.userId);
-        const reviewer = entry.reviewedBy ? await ctx.db.get(entry.reviewedBy) : null;
+        const reviewer = entry.reviewedBy ? ((await ctx.db.get(entry.reviewedBy)) as any) : null;
         return {
           ...entry,
           userName: user?.name ?? 'Unknown',
@@ -144,44 +153,46 @@ export const getReviewCycleDetails = query({
       ...cycle,
       entries: enrichedEntries.sort((a, b) => b.createdAt - a.createdAt),
       totalEntries: entries.length,
-      approvedCount: entries.filter((e) => e.status === 'approved').length,
-      pendingCount: entries.filter((e) => e.status === 'submitted' || e.status === 'under_review')
-        .length,
+      approvedCount: entries.filter((e: any) => e.status === 'approved').length,
+      pendingCount: entries.filter(
+        (e: any) => e.status === 'submitted' || e.status === 'under_review',
+      ).length,
     };
-  },
+  }),
 });
 
 export const getCompensationSummary = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     const records = await ctx.db
       .query('compensationRecords')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const baseRecords = records.filter((r) => r.type === 'base');
+    const baseRecords = records.filter((r: any) => r.type === 'base');
     const totalBase = baseRecords.reduce((sum, r) => sum + r.amount, 0);
     const avgBase = baseRecords.length > 0 ? totalBase / baseRecords.length : 0;
 
-    const bonusRecords = records.filter((r) => r.type === 'bonus');
+    const bonusRecords = records.filter((r: any) => r.type === 'bonus');
     const totalBonus = bonusRecords.reduce((sum, r) => sum + r.amount, 0);
 
     const byType = {
       base: baseRecords.length,
       bonus: bonusRecords.length,
-      raise: records.filter((r) => r.type === 'raise').length,
-      adjustment: records.filter((r) => r.type === 'adjustment').length,
-      allowance: records.filter((r) => r.type === 'allowance').length,
+      raise: records.filter((r: any) => r.type === 'raise').length,
+      adjustment: records.filter((r: any) => r.type === 'adjustment').length,
+      allowance: records.filter((r: any) => r.type === 'allowance').length,
     };
 
     const byStatus = {
-      draft: records.filter((r) => r.status === 'draft').length,
-      pending_approval: records.filter((r) => r.status === 'pending_approval').length,
-      approved: records.filter((r) => r.status === 'approved').length,
-      active: records.filter((r) => r.status === 'active').length,
-      rejected: records.filter((r) => r.status === 'rejected').length,
+      draft: records.filter((r: any) => r.status === 'draft').length,
+      pending_approval: records.filter((r: any) => r.status === 'pending_approval').length,
+      approved: records.filter((r: any) => r.status === 'approved').length,
+      active: records.filter((r: any) => r.status === 'active').length,
+      rejected: records.filter((r: any) => r.status === 'rejected').length,
     };
 
     return {
@@ -192,7 +203,7 @@ export const getCompensationSummary = query({
       byType,
       byStatus,
     };
-  },
+  }),
 });
 
 // ============ MUTATIONS ============
@@ -216,7 +227,7 @@ export const createCompensationRecord = mutation({
     notes: v.optional(v.string()),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { createdBy, ...recordData } = args;
     const now = Date.now();
 
@@ -229,7 +240,7 @@ export const createCompensationRecord = mutation({
     });
 
     return recordId;
-  },
+  }),
 });
 
 export const updateCompensationRecord = mutation({
@@ -250,8 +261,9 @@ export const updateCompensationRecord = mutation({
       ),
     ),
   },
-  handler: async (ctx, { recordId, ...updates }) => {
-    const record = await ctx.db.get(recordId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { recordId, ...updates } = args;
+    const record = (await ctx.db.get(recordId)) as any;
     if (!record) throw new Error('Compensation record not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -262,7 +274,7 @@ export const updateCompensationRecord = mutation({
     if (updates.status !== undefined) patch.status = updates.status;
 
     await ctx.db.patch(recordId, patch);
-  },
+  }),
 });
 
 export const approveCompensationRecord = mutation({
@@ -270,8 +282,9 @@ export const approveCompensationRecord = mutation({
     recordId: v.id('compensationRecords'),
     approvedBy: v.id('users'),
   },
-  handler: async (ctx, { recordId, approvedBy }) => {
-    const record = await ctx.db.get(recordId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { recordId, approvedBy } = args;
+    const record = (await ctx.db.get(recordId)) as any;
     if (!record) throw new Error('Compensation record not found');
     if (record.status !== 'pending_approval') {
       throw new Error('Only pending records can be approved');
@@ -284,7 +297,7 @@ export const approveCompensationRecord = mutation({
       approvedAt: now,
       updatedAt: now,
     });
-  },
+  }),
 });
 
 export const rejectCompensationRecord = mutation({
@@ -292,8 +305,9 @@ export const rejectCompensationRecord = mutation({
     recordId: v.id('compensationRecords'),
     rejectionReason: v.string(),
   },
-  handler: async (ctx, { recordId, rejectionReason }) => {
-    const record = await ctx.db.get(recordId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { recordId, rejectionReason } = args;
+    const record = (await ctx.db.get(recordId)) as any;
     if (!record) throw new Error('Compensation record not found');
     if (record.status !== 'pending_approval') {
       throw new Error('Only pending records can be rejected');
@@ -304,22 +318,23 @@ export const rejectCompensationRecord = mutation({
       rejectionReason,
       updatedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const deleteCompensationRecord = mutation({
   args: {
     recordId: v.id('compensationRecords'),
   },
-  handler: async (ctx, { recordId }) => {
-    const record = await ctx.db.get(recordId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { recordId } = args;
+    const record = (await ctx.db.get(recordId)) as any;
     if (!record) throw new Error('Compensation record not found');
     if (record.status === 'approved' || record.status === 'active') {
       throw new Error('Cannot delete approved or active records');
     }
 
     await ctx.db.delete(recordId);
-  },
+  }),
 });
 
 export const createCompensationBand = mutation({
@@ -336,7 +351,7 @@ export const createCompensationBand = mutation({
     frequency: v.union(v.literal('monthly'), v.literal('yearly')),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { createdBy, ...bandData } = args;
     const now = Date.now();
 
@@ -348,7 +363,7 @@ export const createCompensationBand = mutation({
     });
 
     return bandId;
-  },
+  }),
 });
 
 export const updateCompensationBand = mutation({
@@ -362,8 +377,9 @@ export const updateCompensationBand = mutation({
     maxSalary: v.optional(v.number()),
     medianSalary: v.optional(v.number()),
   },
-  handler: async (ctx, { bandId, ...updates }) => {
-    const band = await ctx.db.get(bandId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { bandId, ...updates } = args;
+    const band = (await ctx.db.get(bandId)) as any;
     if (!band) throw new Error('Compensation band not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -376,19 +392,20 @@ export const updateCompensationBand = mutation({
     if (updates.medianSalary !== undefined) patch.medianSalary = updates.medianSalary;
 
     await ctx.db.patch(bandId, patch);
-  },
+  }),
 });
 
 export const deleteCompensationBand = mutation({
   args: {
     bandId: v.id('compensationBands'),
   },
-  handler: async (ctx, { bandId }) => {
-    const band = await ctx.db.get(bandId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { bandId } = args;
+    const band = (await ctx.db.get(bandId)) as any;
     if (!band) throw new Error('Compensation band not found');
 
     await ctx.db.delete(bandId);
-  },
+  }),
 });
 
 export const createBonusProgram = mutation({
@@ -413,7 +430,7 @@ export const createBonusProgram = mutation({
     periodEnd: v.number(),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { createdBy, ...programData } = args;
     const now = Date.now();
 
@@ -426,7 +443,7 @@ export const createBonusProgram = mutation({
     });
 
     return programId;
-  },
+  }),
 });
 
 export const updateBonusProgram = mutation({
@@ -447,8 +464,9 @@ export const updateBonusProgram = mutation({
     periodStart: v.optional(v.number()),
     periodEnd: v.optional(v.number()),
   },
-  handler: async (ctx, { programId, ...updates }) => {
-    const program = await ctx.db.get(programId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { programId, ...updates } = args;
+    const program = (await ctx.db.get(programId)) as any;
     if (!program) throw new Error('Bonus program not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -461,7 +479,7 @@ export const updateBonusProgram = mutation({
     if (updates.periodEnd !== undefined) patch.periodEnd = updates.periodEnd;
 
     await ctx.db.patch(programId, patch);
-  },
+  }),
 });
 
 export const createReviewCycle = mutation({
@@ -477,7 +495,7 @@ export const createReviewCycle = mutation({
     maxIncreasePercentage: v.optional(v.number()),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { createdBy, ...cycleData } = args;
     const now = Date.now();
 
@@ -490,7 +508,7 @@ export const createReviewCycle = mutation({
     });
 
     return cycleId;
-  },
+  }),
 });
 
 export const updateReviewCycle = mutation({
@@ -512,8 +530,9 @@ export const updateReviewCycle = mutation({
     requireJustification: v.optional(v.boolean()),
     maxIncreasePercentage: v.optional(v.number()),
   },
-  handler: async (ctx, { cycleId, ...updates }) => {
-    const cycle = await ctx.db.get(cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { cycleId, ...updates } = args;
+    const cycle = (await ctx.db.get(cycleId)) as any;
     if (!cycle) throw new Error('Review cycle not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -530,7 +549,7 @@ export const updateReviewCycle = mutation({
       patch.maxIncreasePercentage = updates.maxIncreasePercentage;
 
     await ctx.db.patch(cycleId, patch);
-  },
+  }),
 });
 
 export const createReviewEntry = mutation({
@@ -546,7 +565,7 @@ export const createReviewEntry = mutation({
     justification: v.optional(v.string()),
     performanceRating: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const now = Date.now();
 
     const entryId = await ctx.db.insert('compensationReviewEntries', {
@@ -557,7 +576,7 @@ export const createReviewEntry = mutation({
     });
 
     return entryId;
-  },
+  }),
 });
 
 export const updateReviewEntry = mutation({
@@ -578,8 +597,9 @@ export const updateReviewEntry = mutation({
       ),
     ),
   },
-  handler: async (ctx, { entryId, ...updates }) => {
-    const entry = await ctx.db.get(entryId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { entryId, ...updates } = args;
+    const entry = (await ctx.db.get(entryId)) as any;
     if (!entry) throw new Error('Review entry not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -592,7 +612,7 @@ export const updateReviewEntry = mutation({
     if (updates.status !== undefined) patch.status = updates.status;
 
     await ctx.db.patch(entryId, patch);
-  },
+  }),
 });
 
 export const approveReviewEntry = mutation({
@@ -600,8 +620,9 @@ export const approveReviewEntry = mutation({
     entryId: v.id('compensationReviewEntries'),
     reviewedBy: v.id('users'),
   },
-  handler: async (ctx, { entryId, reviewedBy }) => {
-    const entry = await ctx.db.get(entryId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { entryId, reviewedBy } = args;
+    const entry = (await ctx.db.get(entryId)) as any;
     if (!entry) throw new Error('Review entry not found');
     if (entry.status !== 'submitted' && entry.status !== 'under_review') {
       throw new Error('Only submitted or under review entries can be approved');
@@ -614,20 +635,21 @@ export const approveReviewEntry = mutation({
       reviewedAt: now,
       updatedAt: now,
     });
-  },
+  }),
 });
 
 export const rejectReviewEntry = mutation({
   args: {
     entryId: v.id('compensationReviewEntries'),
   },
-  handler: async (ctx, { entryId }) => {
-    const entry = await ctx.db.get(entryId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { entryId } = args;
+    const entry = (await ctx.db.get(entryId)) as any;
     if (!entry) throw new Error('Review entry not found');
 
     await ctx.db.patch(entryId, {
       status: 'rejected',
       updatedAt: Date.now(),
     });
-  },
+  }),
 });

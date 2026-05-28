@@ -14,6 +14,7 @@ import type { Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MANAGER APPROVAL WORKFLOW
@@ -27,11 +28,12 @@ export const approveRequest = mutation({
     requestId: v.id('driverRequests'),
     managerId: v.id('users'),
   },
-  handler: async (ctx, { requestId, managerId }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId, managerId } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Request not found');
 
-    const manager = await ctx.db.get(managerId);
+    const manager = (await ctx.db.get(managerId)) as any;
     if (!manager) throw new Error('Manager not found');
 
     // Verify manager has approval rights
@@ -78,7 +80,7 @@ export const approveRequest = mutation({
 
     // Sort by priority and availability
     const availableDrivers = drivers
-      .filter((d) => d.isAvailable && d.isOnShift)
+      .filter((d: any) => d.isAvailable && d.isOnShift)
       .sort((a, b) => {
         // Priority: P0 > P1 > P2 > P3
         const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 };
@@ -105,7 +107,7 @@ export const approveRequest = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });
 
 /**
@@ -117,11 +119,12 @@ export const rejectRequest = mutation({
     managerId: v.id('users'),
     reason: v.string(),
   },
-  handler: async (ctx, { requestId, managerId, reason }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId, managerId, reason } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Request not found');
 
-    const manager = await ctx.db.get(managerId);
+    const manager = (await ctx.db.get(managerId)) as any;
     if (!manager) throw new Error('Manager not found');
 
     const managerIsSuperadmin = isSuperadmin(manager);
@@ -154,7 +157,7 @@ export const rejectRequest = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 /**
@@ -164,8 +167,9 @@ export const getPendingApprovals = query({
   args: {
     managerId: v.id('users'),
   },
-  handler: async (ctx, { managerId }) => {
-    const manager = await ctx.db.get(managerId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { managerId } = args;
+    const manager = (await ctx.db.get(managerId)) as any;
     if (!manager) throw new Error('Manager not found');
 
     const managerIsSuperadmin = isSuperadmin(manager);
@@ -182,14 +186,14 @@ export const getPendingApprovals = query({
       .withIndex('by_org_status', (q) =>
         q.eq('organizationId', manager.organizationId!).eq('status', 'pending'),
       )
-      .filter((q) => q.eq(q.field('requiresApproval'), true))
+      .filter((q: any) => q.eq(q.field('requiresApproval'), true))
       .order('desc')
       .take(50);
 
     // Enrich with requester info
     const enriched = await Promise.all(
       requests.map(async (request) => {
-        const requester = await ctx.db.get(request.requesterId);
+        const requester = (await ctx.db.get(request.requesterId)) as any;
         const requesterProfile = await getProfile(ctx, request.requesterId);
         return {
           ...request,
@@ -212,7 +216,7 @@ export const getPendingApprovals = query({
     });
 
     return enriched;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -227,8 +231,9 @@ export const calculateDriverKPI = query({
     driverId: v.id('drivers'),
     days: v.number(), // last N days
   },
-  handler: async (ctx, { driverId, days }) => {
-    const driver = await ctx.db.get(driverId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverId, days } = args;
+    const driver = (await ctx.db.get(driverId)) as any;
     if (!driver) return null;
 
     const now = Date.now();
@@ -238,7 +243,7 @@ export const calculateDriverKPI = query({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(q.eq(q.field('status'), 'completed'), q.gte(q.field('updatedAt'), startDate)),
       )
       .take(DEFAULT_LIST_CAP);
@@ -247,7 +252,7 @@ export const calculateDriverKPI = query({
     const totalTrips = schedules.length;
 
     // On-time rate (trips that started on time)
-    const onTimeTrips = schedules.filter((s) => {
+    const onTimeTrips = schedules.filter((s: any) => {
       const scheduledStart = s.startTime;
       const actualStart = s.arrivedAt || s.createdAt;
       const isOnTime = actualStart <= scheduledStart + 10 * 60 * 1000; // 10 min grace
@@ -257,7 +262,7 @@ export const calculateDriverKPI = query({
     const onTimeRate = totalTrips > 0 ? Math.round((onTimeTrips / totalTrips) * 100) : 100;
 
     // Customer satisfaction (from ratings)
-    const ratedTrips = schedules.filter((s) => s.driverFeedback?.rating);
+    const ratedTrips = schedules.filter((s: any) => s.driverFeedback?.rating);
     const avgRating =
       ratedTrips.length > 0
         ? ratedTrips.reduce((sum, s) => sum + (s.driverFeedback!.rating || 0), 0) /
@@ -268,10 +273,10 @@ export const calculateDriverKPI = query({
     const allSchedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
-      .filter((q) => q.gte(q.field('updatedAt'), startDate))
+      .filter((q: any) => q.gte(q.field('updatedAt'), startDate))
       .take(DEFAULT_LIST_CAP);
 
-    const completedSchedules = allSchedules.filter((s) => s.status === 'completed').length;
+    const completedSchedules = allSchedules.filter((s: any) => s.status === 'completed').length;
     const completionRate =
       allSchedules.length > 0 ? Math.round((completedSchedules / allSchedules.length) * 100) : 100;
 
@@ -283,7 +288,7 @@ export const calculateDriverKPI = query({
       totalTrips,
       totalShifts: 0, // Would need shift tracking
     };
-  },
+  }),
 });
 
 /**
@@ -293,8 +298,9 @@ export const updateDriverKPI = mutation({
   args: {
     driverId: v.id('drivers'),
   },
-  handler: async (ctx, { driverId }) => {
-    const driver = await ctx.db.get(driverId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverId } = args;
+    const driver = (await ctx.db.get(driverId)) as any;
     if (!driver) throw new Error('Driver not found');
 
     // Calculate KPI for last 30 days (inline to avoid circular dependency)
@@ -304,13 +310,13 @@ export const updateDriverKPI = mutation({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(q.eq(q.field('status'), 'completed'), q.gte(q.field('updatedAt'), startDate)),
       )
       .take(DEFAULT_LIST_CAP);
 
     const totalTrips = schedules.length;
-    const onTimeTrips = schedules.filter((s) => {
+    const onTimeTrips = schedules.filter((s: any) => {
       const scheduledStart = s.startTime;
       const actualStart = s.arrivedAt || s.createdAt;
       return actualStart <= scheduledStart + 10 * 60 * 1000;
@@ -318,7 +324,7 @@ export const updateDriverKPI = mutation({
 
     const onTimeRate = totalTrips > 0 ? Math.round((onTimeTrips / totalTrips) * 100) : 100;
 
-    const ratedTrips = schedules.filter((s) => s.driverFeedback?.rating);
+    const ratedTrips = schedules.filter((s: any) => s.driverFeedback?.rating);
     const avgRating =
       ratedTrips.length > 0
         ? ratedTrips.reduce((sum, s) => sum + (s.driverFeedback!.rating || 0), 0) /
@@ -336,7 +342,7 @@ export const updateDriverKPI = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -350,8 +356,9 @@ export const autoAssignDriver = mutation({
   args: {
     requestId: v.id('driverRequests'),
   },
-  handler: async (ctx, { requestId }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Request not found');
 
     // Get available drivers
@@ -361,7 +368,7 @@ export const autoAssignDriver = mutation({
       .take(SMALL_LIST_CAP);
 
     // Filter available and on shift
-    const availableDrivers = drivers.filter((d) => d.isAvailable && d.isOnShift);
+    const availableDrivers = drivers.filter((d: any) => d.isAvailable && d.isOnShift);
 
     if (availableDrivers.length === 0) {
       throw new Error('No available drivers on shift');
@@ -401,7 +408,7 @@ export const autoAssignDriver = mutation({
         ...request.tripInfo,
         passengerPhone:
           (await getProfile(ctx, request.requesterId))?.phone ??
-          (await ctx.db.get(request.requesterId))?.phone,
+          ((await ctx.db.get(request.requesterId)) as any)?.phone,
       },
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -414,8 +421,8 @@ export const autoAssignDriver = mutation({
     });
 
     // Notify requester
-    const requester = await ctx.db.get(request.requesterId);
-    const driverUser = await ctx.db.get(assignedDriver.userId);
+    const requester = (await ctx.db.get(request.requesterId)) as any;
+    const driverUser = (await ctx.db.get(assignedDriver.userId)) as any;
 
     await ctx.db.insert('notifications', {
       organizationId: request.organizationId,
@@ -430,5 +437,5 @@ export const autoAssignDriver = mutation({
     });
 
     return { success: true, driverId: assignedDriver._id };
-  },
+  }),
 });

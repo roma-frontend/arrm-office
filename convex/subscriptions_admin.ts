@@ -2,6 +2,7 @@ import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import { withAuth } from './lib/withAuth';
 
 // SUPERADMIN ONLY: Manually create/update subscription for Enterprise customers
 export const createManualSubscription = mutation({
@@ -11,7 +12,7 @@ export const createManualSubscription = mutation({
     customPrice: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error('Not authenticated');
 
@@ -24,7 +25,7 @@ export const createManualSubscription = mutation({
       throw new Error('Not authorized - superadmin only');
     }
 
-    const organization = await ctx.db.get(args.organizationId);
+    const organization = (await ctx.db.get(args.organizationId)) as any;
     if (!organization) {
       throw new Error('Organization not found');
     }
@@ -65,7 +66,7 @@ export const createManualSubscription = mutation({
       await ctx.db.patch(args.organizationId, { plan: args.plan });
       return { success: true, subscriptionId: id, action: 'created' };
     }
-  },
+  }),
 });
 
 // SUPERADMIN ONLY: List all subscriptions with organization details
@@ -85,7 +86,7 @@ export const listAllWithUsers = query({
 
     const withOrganizations = await Promise.all(
       subscriptions.map(async (sub) => {
-        const org = sub.organizationId ? await ctx.db.get(sub.organizationId) : null;
+        const org = sub.organizationId ? ((await ctx.db.get(sub.organizationId)) as any) : null;
         return { ...sub, organization: org };
       }),
     );

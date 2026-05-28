@@ -8,39 +8,41 @@ import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 export const getConversations = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const conversations = await ctx.db
       .query('aiConversations')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .order('desc')
       .take(DEFAULT_LIST_CAP);
 
-    return conversations.map((conv) => ({
+    return conversations.map((conv: any) => ({
       ...conv,
       messages: [] as Array<{ _id: Id<'aiMessages'>; content: string; role: string }>,
     }));
-  },
+  }),
 });
 
 /** Paginated AI conversations list */
 export const listConversationsPaginated = query({
   args: { userId: v.id('users'), paginationOpts: paginationOptsValidator },
-  handler: async (ctx, { userId, paginationOpts }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, paginationOpts } = args;
     return await ctx.db
       .query('aiConversations')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .order('desc')
       .paginate(paginationOpts);
-  },
+  }),
 });
 
 export const getConversation = query({
   args: { conversationId: v.id('aiConversations') },
-  handler: async (ctx, args) => {
-    const conversation = await ctx.db.get(args.conversationId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const conversation = (await ctx.db.get(args.conversationId)) as any;
     if (!conversation) return null;
 
     const messages = await ctx.db
@@ -53,12 +55,12 @@ export const getConversation = query({
       ...conversation,
       messages,
     };
-  },
+  }),
 });
 
 export const getMessages = query({
   args: { conversationId: v.id('aiConversations') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const messages = await ctx.db
       .query('aiMessages')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
@@ -66,20 +68,20 @@ export const getMessages = query({
       .take(DEFAULT_LIST_CAP);
 
     return messages;
-  },
+  }),
 });
 
 export const getFullContext = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Get user data
-    const user = await ctx.db.get(args.userId);
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) throw new Error('User not found');
 
     const profile = await getProfile(ctx, args.userId);
 
     // Get organization
-    const org = user.organizationId ? await ctx.db.get(user.organizationId) : null;
+    const org = user.organizationId ? ((await ctx.db.get(user.organizationId)) as any) : null;
 
     // Get user's leave requests
     const leaves = await ctx.db
@@ -122,7 +124,7 @@ export const getFullContext = query({
             plan: org.plan,
           }
         : null,
-      leaves: leaves.map((l) => ({
+      leaves: leaves.map((l: any) => ({
         id: l._id,
         type: l.type,
         startDate: l.startDate,
@@ -130,21 +132,21 @@ export const getFullContext = query({
         status: l.status,
         reason: l.reason,
       })),
-      tasks: tasks.map((t) => ({
+      tasks: tasks.map((t: any) => ({
         id: t._id,
         title: t.title,
         status: t.status,
         priority: t.priority,
         dueDate: t.deadline,
       })),
-      teamMembers: teamMembers.map((m) => ({
+      teamMembers: teamMembers.map((m: any) => ({
         id: m._id,
         name: m.name,
         email: m.email,
         role: m.role,
         department: m.department,
       })),
-      attendance: attendance.map((a) => ({
+      attendance: attendance.map((a: any) => ({
         id: a._id,
         date: a.date,
         checkIn: a.checkInTime,
@@ -152,5 +154,5 @@ export const getFullContext = query({
         status: a.status,
       })),
     };
-  },
+  }),
 });

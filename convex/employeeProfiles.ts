@@ -1,12 +1,13 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { SMALL_LIST_CAP, DEFAULT_LIST_CAP } from './lib/limits';
+import { withAuth } from './lib/withAuth';
 
 // ── Get Employee Profile with Extended Data ──────────────────────────────────
 export const getEmployeeProfile = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) return null;
 
     // Get profile data
@@ -34,7 +35,7 @@ export const getEmployeeProfile = query({
       documents,
       metrics: metrics[0] ?? null,
     };
-  },
+  }),
 });
 
 // ── Update Employee Biography ──────────────────────────────────────────────
@@ -49,7 +50,7 @@ export const updateBiography = mutation({
       languages: v.optional(v.array(v.string())),
     }),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const existing = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -69,7 +70,7 @@ export const updateBiography = mutation({
         updatedAt: Date.now(),
       });
     }
-  },
+  }),
 });
 
 // ── Upload Employee Document ──────────────────────────────────────────────
@@ -90,7 +91,7 @@ export const uploadDocument = mutation({
     fileSize: v.number(),
     description: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return await ctx.db.insert('employeeDocuments', {
       userId: args.userId,
       uploaderId: args.uploaderId,
@@ -101,27 +102,27 @@ export const uploadDocument = mutation({
       description: args.description,
       uploadedAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Get Employee Documents ──────────────────────────────────────────────
 export const getDocuments = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return await ctx.db
       .query('employeeDocuments')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .order('desc')
       .take(SMALL_LIST_CAP);
-  },
+  }),
 });
 
 // ── Delete Document ──────────────────────────────────────────────
 export const deleteDocument = mutation({
   args: { documentId: v.id('employeeDocuments') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await ctx.db.delete(args.documentId);
-  },
+  }),
 });
 
 // ── Update Performance Metrics ──────────────────────────────────────────────
@@ -141,14 +142,14 @@ export const updatePerformanceMetrics = mutation({
       conflictIncidents: v.number(),
     }),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return await ctx.db.insert('performanceMetrics', {
       userId: args.userId,
       updatedBy: args.updatedBy,
       ...args.metrics,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Get Performance History ──────────────────────────────────────────────
@@ -157,14 +158,14 @@ export const getPerformanceHistory = query({
     userId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const limit = args.limit ?? 12;
     return await ctx.db
       .query('performanceMetrics')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .order('desc')
       .take(limit);
-  },
+  }),
 });
 
 // ── Update Employee Salary ──────────────────────────────────────────────
@@ -178,7 +179,7 @@ export const updateSalary = mutation({
     hourlyRate: v.optional(v.number()),
     salaryCurrency: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const existing = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -212,13 +213,13 @@ export const updateSalary = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  },
+  }),
 });
 
 // ── Get Salary by User ──────────────────────────────────────────────
 export const getSalary = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const profile = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -233,7 +234,7 @@ export const getSalary = query({
       salaryCurrency: profile.salaryCurrency,
       salaryUpdatedAt: profile.salaryUpdatedAt,
     };
-  },
+  }),
 });
 
 // ── Get Employees by Organization ──────────────────────────────────────────────
@@ -241,12 +242,12 @@ export const getEmployeesByOrganization = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const profiles = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
 
     return profiles;
-  },
+  }),
 });

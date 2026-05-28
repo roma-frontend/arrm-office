@@ -3,6 +3,7 @@ import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin, requireAuthUser } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 // ── Employee limits by plan ──────────────────────────────────────────────────
 const PLAN_EMPLOYEE_LIMITS: Record<string, number> = {
@@ -24,9 +25,9 @@ export const createOrganization = mutation({
     country: v.optional(v.string()),
     industry: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Verify caller is superadmin
-    const caller = await ctx.db.get(args.superadminUserId);
+    const caller = (await ctx.db.get(args.superadminUserId)) as any;
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can create organizations');
     }
@@ -78,7 +79,7 @@ export const createOrganization = mutation({
     });
 
     return { orgId, slug };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ export const listAll = query({
           .take(MAX_PAGE_SIZE);
 
         // Filter out superadmins from employee counts
-        const filteredEmployees = employees.filter((e) => e.role !== 'superadmin');
+        const filteredEmployees = employees.filter((e: any) => e.role !== 'superadmin');
 
         return {
           ...org,
@@ -126,9 +127,9 @@ export const listAll = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllOrganizations = query({
   args: { superadminUserId: v.optional(v.id('users')) },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     if (args.superadminUserId) {
-      const caller = await ctx.db.get(args.superadminUserId);
+      const caller = (await ctx.db.get(args.superadminUserId)) as any;
       if (!caller || !isSuperadmin(caller)) {
         throw new Error('Superadmin only');
       }
@@ -145,20 +146,20 @@ export const getAllOrganizations = query({
           .take(MAX_PAGE_SIZE);
 
         // Filter out superadmins from employee counts
-        const filteredEmployees = employees.filter((e) => e.role !== 'superadmin');
-        const admins = filteredEmployees.filter((u) => u.role === 'admin');
-        const activeCount = filteredEmployees.filter((u) => u.isActive && u.isApproved).length;
+        const filteredEmployees = employees.filter((e: any) => e.role !== 'superadmin');
+        const admins = filteredEmployees.filter((u: any) => u.role === 'admin');
+        const activeCount = filteredEmployees.filter((u: any) => u.isActive && u.isApproved).length;
 
         return {
           ...org,
           totalEmployees: filteredEmployees.length,
           activeEmployees: activeCount,
-          adminNames: admins.map((a) => a.name),
+          adminNames: admins.map((a: any) => a.name),
           memberCount: filteredEmployees.length,
         };
       }),
     );
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,8 +178,9 @@ export const updateOrganization = mutation({
     country: v.optional(v.string()),
     industry: v.optional(v.string()),
   },
-  handler: async (ctx, { superadminUserId, organizationId, ...updates }) => {
-    const caller = await ctx.db.get(superadminUserId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { superadminUserId, organizationId, ...updates } = args;
+    const caller = (await ctx.db.get(superadminUserId)) as any;
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can update organizations');
     }
@@ -201,7 +203,7 @@ export const updateOrganization = mutation({
     });
 
     return organizationId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -213,13 +215,14 @@ export const assignOrgAdmin = mutation({
     userId: v.id('users'),
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, { superadminUserId, userId, organizationId }) => {
-    const caller = await ctx.db.get(superadminUserId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { superadminUserId, userId, organizationId } = args;
+    const caller = (await ctx.db.get(superadminUserId)) as any;
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can assign org admins');
     }
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     await ctx.db.patch(userId, {
@@ -240,7 +243,7 @@ export const assignOrgAdmin = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -252,13 +255,14 @@ export const getOrganizationById = query({
     callerUserId: v.id('users'),
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, { callerUserId, organizationId }) => {
-    const caller = await ctx.db.get(callerUserId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { callerUserId, organizationId } = args;
+    const caller = (await ctx.db.get(callerUserId)) as any;
     if (!caller) {
       throw new Error('User not found');
     }
 
-    const org = await ctx.db.get(organizationId);
+    const org = (await ctx.db.get(organizationId)) as any;
     if (!org) {
       throw new Error('Organization not found');
     }
@@ -278,13 +282,13 @@ export const getOrganizationById = query({
       .take(MAX_PAGE_SIZE);
 
     // Filter out superadmins from employee count
-    const filteredMembers = members.filter((m) => m.role !== 'superadmin');
+    const filteredMembers = members.filter((m: any) => m.role !== 'superadmin');
 
     return {
       ...org,
       employeeCount: filteredMembers.length,
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -297,17 +301,18 @@ export const getOrgMembers = query({
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { superadminUserId, organizationId, cursor, limit }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { superadminUserId, organizationId, cursor, limit } = args;
     const DEFAULT_LIMIT = 50;
     const MAX_LIMIT = 100;
     const effectiveLimit = Math.min(limit || DEFAULT_LIMIT, MAX_LIMIT);
 
-    const caller = await ctx.db.get(superadminUserId);
+    const caller = (await ctx.db.get(superadminUserId)) as any;
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can view org members');
     }
 
-    const org = await ctx.db.get(organizationId);
+    const org = (await ctx.db.get(organizationId)) as any;
     if (!org) throw new Error('Organization not found');
 
     let query = ctx.db
@@ -321,13 +326,13 @@ export const getOrgMembers = query({
     const members = await query.take(effectiveLimit + 1);
 
     // Filter out superadmins (should never be in org, but just in case)
-    const filteredMembers = members.filter((m) => !isSuperadmin(m));
+    const filteredMembers = members.filter((m: any) => !isSuperadmin(m));
 
     // Load profiles in parallel for O(1) lookup
-    const profiles = await Promise.all(filteredMembers.map((m) => getProfile(ctx, m._id)));
+    const profiles = await Promise.all(filteredMembers.map((m: any) => getProfile(ctx, m._id)));
     const profileMap = new Map(filteredMembers.map((m, i) => [m._id, profiles[i]]));
 
-    return filteredMembers.map((m) => {
+    return filteredMembers.map((m: any) => {
       const profile = profileMap.get(m._id);
       return {
         _id: m._id,
@@ -349,7 +354,7 @@ export const getOrgMembers = query({
         familyLeaveBalance: profile?.familyLeaveBalance ?? m.familyLeaveBalance,
       };
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -360,13 +365,14 @@ export const removeOrgAdmin = mutation({
     superadminUserId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { superadminUserId, userId }) => {
-    const caller = await ctx.db.get(superadminUserId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { superadminUserId, userId } = args;
+    const caller = (await ctx.db.get(superadminUserId)) as any;
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can remove org admins');
     }
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
     if (user.role !== 'admin') throw new Error('User is not an admin');
 
@@ -389,7 +395,7 @@ export const removeOrgAdmin = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -397,7 +403,8 @@ export const removeOrgAdmin = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const searchOrganizations = query({
   args: { query: v.string() },
-  handler: async (ctx, { query: searchQuery }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { query: searchQuery } = args;
     if (!searchQuery || searchQuery.trim().length < 2) return [];
 
     const q = searchQuery.toLowerCase().trim();
@@ -414,26 +421,28 @@ export const searchOrganizations = query({
       .withIndex('by_active', (qb) => qb.eq('isActive', true))
       .take(MAX_PAGE_SIZE);
 
-    const byName = all.filter((org) => org.name.toLowerCase().includes(q) || org.slug.includes(q));
+    const byName = all.filter(
+      (org: any) => org.name.toLowerCase().includes(q) || org.slug.includes(q),
+    );
 
     // Merge and deduplicate
     const merged = [...bySlug, ...byName];
     const seen = new Set<string>();
-    const result = merged.filter((org) => {
+    const result = merged.filter((org: any) => {
       if (seen.has(org._id)) return false;
       seen.add(org._id);
       return org.isActive;
     });
 
     // Return only safe public fields
-    return result.slice(0, 5).map((org) => ({
+    return result.slice(0, 5).map((org: any) => ({
       _id: org._id,
       name: org.name,
       slug: org.slug,
       industry: org.industry,
       plan: org.plan,
     }));
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -441,7 +450,8 @@ export const searchOrganizations = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getOrganizationBySlug = query({
   args: { slug: v.string() },
-  handler: async (ctx, { slug }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { slug } = args;
     const org = await ctx.db
       .query('organizations')
       .withIndex('by_slug', (q) => q.eq('slug', slug.toLowerCase()))
@@ -456,7 +466,7 @@ export const getOrganizationBySlug = query({
       industry: org.industry,
       plan: org.plan,
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -468,8 +478,8 @@ export const requestToJoinOrganization = mutation({
     requestedByEmail: v.string(),
     requestedByName: v.string(),
   },
-  handler: async (ctx, args) => {
-    const org = await ctx.db.get(args.organizationId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const org = (await ctx.db.get(args.organizationId)) as any;
     if (!org || !org.isActive) throw new Error('Organization not found or inactive');
 
     // Check for duplicate pending request from same email
@@ -539,7 +549,7 @@ export const requestToJoinOrganization = mutation({
     }
 
     return inviteId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -550,8 +560,9 @@ export const getJoinRequests = query({
     adminId: v.id('users'),
     status: v.optional(v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected'))),
   },
-  handler: async (ctx, { adminId, status }) => {
-    const admin = await ctx.db.get(adminId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, status } = args;
+    const admin = (await ctx.db.get(adminId)) as any;
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       throw new Error('Only org admins can view join requests');
     }
@@ -594,7 +605,7 @@ export const getJoinRequests = query({
     }
 
     return invites;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -609,13 +620,13 @@ export const approveJoinRequest = mutation({
     position: v.optional(v.string()),
     passwordHash: v.string(), // admin sets temp password; user changes on first login
   },
-  handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const admin = (await ctx.db.get(args.adminId)) as any;
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       throw new Error('Only org admins can approve join requests');
     }
 
-    const invite = await ctx.db.get(args.inviteId);
+    const invite = (await ctx.db.get(args.inviteId)) as any;
     if (!invite) throw new Error('Invite not found');
     if (invite.status !== 'pending') throw new Error('This request has already been reviewed');
 
@@ -628,7 +639,7 @@ export const approveJoinRequest = mutation({
     }
 
     // Check employee limit
-    const org = await ctx.db.get(invite.organizationId);
+    const org = (await ctx.db.get(invite.organizationId)) as any;
     if (!org) throw new Error('Organization not found');
 
     const currentCount = await ctx.db
@@ -739,7 +750,7 @@ export const approveJoinRequest = mutation({
     });
 
     return { userId, inviteId: args.inviteId };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -751,13 +762,13 @@ export const rejectJoinRequest = mutation({
     inviteId: v.id('organizationInvites'),
     reason: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const admin = (await ctx.db.get(args.adminId)) as any;
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       throw new Error('Only org admins can reject join requests');
     }
 
-    const invite = await ctx.db.get(args.inviteId);
+    const invite = (await ctx.db.get(args.inviteId)) as any;
     if (!invite) throw new Error('Invite not found');
     if (invite.status !== 'pending') throw new Error('This request has already been reviewed');
 
@@ -791,7 +802,7 @@ export const rejectJoinRequest = mutation({
     });
 
     return args.inviteId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -803,8 +814,8 @@ export const generateInviteToken = mutation({
     inviteEmail: v.optional(v.string()),
     expiryHours: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const admin = (await ctx.db.get(args.adminId)) as any;
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       throw new Error('Only org admins can generate invite links');
     }
@@ -842,7 +853,7 @@ export const generateInviteToken = mutation({
     });
 
     return { token, inviteId, expiresAt: expiry };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -850,7 +861,8 @@ export const generateInviteToken = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const validateInviteToken = query({
   args: { token: v.string() },
-  handler: async (ctx, { token }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { token } = args;
     const invite = await ctx.db
       .query('organizationInvites')
       .withIndex('by_token', (q) => q.eq('inviteToken', token))
@@ -863,7 +875,7 @@ export const validateInviteToken = query({
     }
 
     if (!invite.organizationId) return { valid: false, reason: 'Invite has no organization' };
-    const org = await ctx.db.get(invite.organizationId);
+    const org = (await ctx.db.get(invite.organizationId)) as any;
     if (!org || !org.isActive) return { valid: false, reason: 'Organization inactive' };
 
     return {
@@ -874,7 +886,7 @@ export const validateInviteToken = query({
       prefilledEmail: invite.inviteEmail,
       inviteId: invite._id,
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -882,13 +894,14 @@ export const validateInviteToken = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getMyOrganization = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    const user = await ctx.db.get(userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
+    const user = (await ctx.db.get(userId)) as any;
     if (!user || !user.organizationId) return null;
 
-    const org = await ctx.db.get(user.organizationId);
+    const org = (await ctx.db.get(user.organizationId)) as any;
     return org;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -896,8 +909,9 @@ export const getMyOrganization = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingJoinRequestCount = query({
   args: { adminId: v.id('users') },
-  handler: async (ctx, { adminId }) => {
-    const admin = await ctx.db.get(adminId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId } = args;
+    const admin = (await ctx.db.get(adminId)) as any;
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       return 0;
     }
@@ -913,7 +927,7 @@ export const getPendingJoinRequestCount = query({
       .take(MAX_PAGE_SIZE);
 
     return pending.length;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -925,13 +939,14 @@ export const removeMemberFromOrganization = mutation({
     superadminUserId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { superadminUserId, userId }) => {
-    const caller = await ctx.db.get(superadminUserId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { superadminUserId, userId } = args;
+    const caller = (await ctx.db.get(superadminUserId)) as any;
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can remove members from organizations');
     }
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Protection: cannot remove superadmin themselves
@@ -962,7 +977,7 @@ export const removeMemberFromOrganization = mutation({
     console.log(`[removeMemberFromOrganization] ✅ Removed ${user.email} from organization`);
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -970,8 +985,9 @@ export const removeMemberFromOrganization = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getOrganizationsForPicker = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    const user = await ctx.db.get(userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     if (isSuperadmin(user)) {
@@ -979,13 +995,13 @@ export const getOrganizationsForPicker = query({
         .query('organizations')
         .withIndex('by_active', (q) => q.eq('isActive', true))
         .take(MAX_PAGE_SIZE);
-      return orgs.map((o) => ({ _id: o._id, name: o.name, slug: o.slug }));
+      return orgs.map((o: any) => ({ _id: o._id, name: o.name, slug: o.slug }));
     }
 
     // Regular users: only their own org
     if (!user.organizationId) return [];
-    const org = await ctx.db.get(user.organizationId);
+    const org = (await ctx.db.get(user.organizationId)) as any;
     if (!org) return [];
     return [{ _id: org._id, name: org.name, slug: org.slug }];
-  },
+  }),
 });

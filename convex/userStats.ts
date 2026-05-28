@@ -2,14 +2,16 @@ import { v } from 'convex/values';
 import { query } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 /**
  * Get user statistics - UNIFIED VERSION matching mobile
  */
 export const getUserStats = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    const user = await ctx.db.get(userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) {
       // User not found - return null instead of throwing
       return null;
@@ -20,14 +22,14 @@ export const getUserStats = query({
     // Get user's leaves
     const userLeaves = await ctx.db
       .query('leaveRequests')
-      .filter((q) => q.eq(q.field('userId'), userId))
+      .filter((q: any) => q.eq(q.field('userId'), userId))
       .order('desc')
       .take(MAX_PAGE_SIZE);
 
     // Calculate leave statistics
-    const approved = userLeaves.filter((l) => l.status === 'approved');
-    const pending = userLeaves.filter((l) => l.status === 'pending');
-    const rejected = userLeaves.filter((l) => l.status === 'rejected');
+    const approved = userLeaves.filter((l: any) => l.status === 'approved');
+    const pending = userLeaves.filter((l: any) => l.status === 'pending');
+    const rejected = userLeaves.filter((l: any) => l.status === 'rejected');
 
     const totalDaysUsed = approved.reduce((sum, l) => sum + (l.days ?? 0), 0);
     const totalDaysPending = pending.reduce((sum, l) => sum + (l.days ?? 0), 0);
@@ -35,18 +37,18 @@ export const getUserStats = query({
     // Get user's tasks
     const userTasks = await ctx.db
       .query('tasks')
-      .filter((q) => q.eq(q.field('assignedTo'), userId))
+      .filter((q: any) => q.eq(q.field('assignedTo'), userId))
       .order('desc')
       .take(MAX_PAGE_SIZE);
 
-    const completedTasks = userTasks.filter((t) => t.status === 'completed').length;
+    const completedTasks = userTasks.filter((t: any) => t.status === 'completed').length;
     const totalTasks = userTasks.length;
     const taskCompletionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
     // Get user's messages/activity
     const userMessages = await ctx.db
       .query('chatMessages')
-      .filter((q) => q.eq(q.field('senderId'), userId))
+      .filter((q: any) => q.eq(q.field('senderId'), userId))
       .order('desc')
       .take(MAX_PAGE_SIZE);
 
@@ -70,7 +72,7 @@ export const getUserStats = query({
 
     // Count projects from tasks
     const projects = new Set(
-      userTasks.filter((t) => (t as any).projectId).map((t) => (t as any).projectId),
+      userTasks.filter((t: any) => (t as any).projectId).map((t: any) => (t as any).projectId),
     );
 
     return {
@@ -94,13 +96,15 @@ export const getUserStats = query({
         totalTasks,
         completedTasks,
         completionRate: Math.round(taskCompletionRate),
-        pendingTasks: userTasks.filter((t) => t.status !== 'completed').length,
+        pendingTasks: userTasks.filter((t: any) => t.status !== 'completed').length,
       },
 
       activityStats: {
         totalMessages: userMessages.length,
         lastActive:
-          userMessages.length > 0 ? Math.max(...userMessages.map((m) => m.createdAt ?? 0)) : null,
+          userMessages.length > 0
+            ? Math.max(...userMessages.map((m: any) => m.createdAt ?? 0))
+            : null,
       },
 
       attendanceStats,
@@ -125,5 +129,5 @@ export const getUserStats = query({
             : 0),
       ),
     };
-  },
+  }),
 });

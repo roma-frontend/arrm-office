@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { SMALL_LIST_CAP } from './lib/limits';
+import { withAuth } from './lib/withAuth';
 
 // ── Add Manager Note ──────────────────────────────────────────────
 export const addNote = mutation({
@@ -23,7 +24,7 @@ export const addNote = mutation({
     content: v.string(),
     tags: v.optional(v.array(v.string())),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Simple sentiment analysis based on keywords
     const positiveWords = [
       'excellent',
@@ -54,7 +55,7 @@ export const addNote = mutation({
       tags: args.tags ?? [],
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Get Employee Notes ──────────────────────────────────────────────
@@ -63,8 +64,8 @@ export const getNotes = query({
     employeeId: v.id('users'),
     viewerId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const viewer = await ctx.db.get(args.viewerId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const viewer = (await ctx.db.get(args.viewerId)) as any;
     if (!viewer) return [];
 
     const allNotes = await ctx.db
@@ -74,7 +75,7 @@ export const getNotes = query({
       .take(SMALL_LIST_CAP);
 
     // Filter by visibility
-    const filtered = allNotes.filter((note) => {
+    const filtered = allNotes.filter((note: any) => {
       if (note.visibility === 'employee_visible') return true;
       if (note.visibility === 'hr_only' && viewer.role === 'admin') return true;
       if (
@@ -89,7 +90,7 @@ export const getNotes = query({
     // Get author info
     const notesWithAuthors = await Promise.all(
       filtered.map(async (note) => {
-        const author = await ctx.db.get(note.authorId);
+        const author = (await ctx.db.get(note.authorId)) as any;
         return {
           ...note,
           authorName: author?.name ?? 'Unknown',
@@ -98,7 +99,7 @@ export const getNotes = query({
     );
 
     return notesWithAuthors;
-  },
+  }),
 });
 
 // ── Update Note ──────────────────────────────────────────────
@@ -108,7 +109,7 @@ export const updateNote = mutation({
     content: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const updates: any = {};
 
     if (args.content !== undefined) {
@@ -142,37 +143,37 @@ export const updateNote = mutation({
     }
 
     await ctx.db.patch(args.noteId, updates);
-  },
+  }),
 });
 
 // ── Delete Note ──────────────────────────────────────────────
 export const deleteNote = mutation({
   args: { noteId: v.id('employeeNotes') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await ctx.db.delete(args.noteId);
-  },
+  }),
 });
 
 // ── Get Notes Summary ──────────────────────────────────────────────
 export const getNotesSummary = query({
   args: { employeeId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const notes = await ctx.db
       .query('employeeNotes')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
       .take(SMALL_LIST_CAP);
 
     const total = notes.length;
-    const positive = notes.filter((n) => n.sentiment === 'positive').length;
-    const negative = notes.filter((n) => n.sentiment === 'negative').length;
-    const neutral = notes.filter((n) => n.sentiment === 'neutral').length;
+    const positive = notes.filter((n: any) => n.sentiment === 'positive').length;
+    const negative = notes.filter((n: any) => n.sentiment === 'negative').length;
+    const neutral = notes.filter((n: any) => n.sentiment === 'neutral').length;
 
     const byType = {
-      performance: notes.filter((n) => n.type === 'performance').length,
-      behavior: notes.filter((n) => n.type === 'behavior').length,
-      achievement: notes.filter((n) => n.type === 'achievement').length,
-      concern: notes.filter((n) => n.type === 'concern').length,
-      general: notes.filter((n) => n.type === 'general').length,
+      performance: notes.filter((n: any) => n.type === 'performance').length,
+      behavior: notes.filter((n: any) => n.type === 'behavior').length,
+      achievement: notes.filter((n: any) => n.type === 'achievement').length,
+      concern: notes.filter((n: any) => n.type === 'concern').length,
+      general: notes.filter((n: any) => n.type === 'general').length,
     };
 
     return {
@@ -180,5 +181,5 @@ export const getNotesSummary = query({
       sentiment: { positive, negative, neutral },
       byType,
     };
-  },
+  }),
 });

@@ -10,6 +10,7 @@ import { mutation, query } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -21,10 +22,10 @@ export const getActiveOrganizations = query({
   handler: async (ctx) => {
     const organizations = await ctx.db
       .query('organizations')
-      .filter((q) => q.eq(q.field('isActive'), true))
+      .filter((q: any) => q.eq(q.field('isActive'), true))
       .take(DEFAULT_LIST_CAP);
 
-    return organizations.map((org) => ({
+    return organizations.map((org: any) => ({
       _id: org._id,
       name: org.name,
       slug: org.slug,
@@ -41,23 +42,24 @@ export const getMyJoinRequests = query({
   args: {
     userId: v.id('users'),
   },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     // First get the user to get their email
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user || !user.email) return [];
 
     const requests = await ctx.db
       .query('organizationInvites')
       .withIndex('by_email', (q) => q.eq('requestedByEmail', user.email))
-      .filter((q) => q.eq(q.field('status'), 'pending'))
+      .filter((q: any) => q.eq(q.field('status'), 'pending'))
       .take(SMALL_LIST_CAP);
 
     // Return requests without organizationName to avoid Promise issues
-    return requests.map((req) => ({
+    return requests.map((req: any) => ({
       ...req,
       organizationName: undefined, // Will be fetched separately if needed
     }));
-  },
+  }),
 });
 
 /** Get pending join requests for an organization (for admins) */
@@ -65,7 +67,8 @@ export const getOrgJoinRequests = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     const requests = await ctx.db
       .query('organizationInvites')
       .withIndex('by_org_status', (q) =>
@@ -77,18 +80,18 @@ export const getOrgJoinRequests = query({
     const uniqueUserIds = [
       ...new Set(
         requests
-          .map((req) => req.userId)
+          .map((req: any) => req.userId)
           .filter((id): id is Id<'users'> => id !== undefined && id !== null),
       ),
     ];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
-    const profilesBatch = await Promise.all(uniqueUserIds.map((id) => getProfile(ctx, id)));
+    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
+    const profilesBatch = await Promise.all(uniqueUserIds.map((id: any) => getProfile(ctx, id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
     );
     const profileMap = new Map(uniqueUserIds.map((id, i) => [id, profilesBatch[i]]));
 
-    const enriched = requests.map((req) => {
+    const enriched = requests.map((req: any) => {
       const requester = req.userId ? userMap.get(req.userId) : null;
       const profile = req.userId ? profileMap.get(req.userId) : null;
       return {
@@ -100,7 +103,7 @@ export const getOrgJoinRequests = query({
     });
 
     return enriched;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,8 +117,9 @@ export const requestJoinOrganization = mutation({
     organizationId: v.id('organizations'),
     message: v.optional(v.string()),
   },
-  handler: async (ctx, { userId, organizationId, message }) => {
-    const user = await ctx.db.get(userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, organizationId, message } = args;
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
     if (user.organizationId) {
       return {
@@ -125,14 +129,14 @@ export const requestJoinOrganization = mutation({
       };
     }
 
-    const org = await ctx.db.get(organizationId);
+    const org = (await ctx.db.get(organizationId)) as any;
     if (!org) throw new Error('Organization not found');
 
     // Check if request already exists
     const existing = await ctx.db
       .query('organizationInvites')
       .withIndex('by_email', (q) => q.eq('requestedByEmail', user.email))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(q.eq(q.field('organizationId'), organizationId), q.eq(q.field('status'), 'pending')),
       )
       .first();
@@ -173,7 +177,7 @@ export const requestJoinOrganization = mutation({
     }
 
     return requestId;
-  },
+  }),
 });
 
 /** Approve join request */
@@ -182,12 +186,13 @@ export const approveJoinRequest = mutation({
     inviteId: v.id('organizationInvites'),
     reviewerId: v.id('users'),
   },
-  handler: async (ctx, { inviteId, reviewerId }) => {
-    const invite = await ctx.db.get(inviteId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { inviteId, reviewerId } = args;
+    const invite = (await ctx.db.get(inviteId)) as any;
     if (!invite) throw new Error('Invite not found');
     if (invite.status !== 'pending') throw new Error('Invite is not pending');
 
-    const reviewer = await ctx.db.get(reviewerId);
+    const reviewer = (await ctx.db.get(reviewerId)) as any;
     if (!reviewer || !reviewer.organizationId) throw new Error('Reviewer not found');
     if (reviewer.role !== 'admin' && reviewer.role !== 'superadmin') {
       throw new Error('Only admins can approve join requests');
@@ -199,7 +204,7 @@ export const approveJoinRequest = mutation({
     const userId = invite.userId;
     if (!userId) throw new Error('Invite has no associated user');
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Update user's organization
@@ -219,7 +224,7 @@ export const approveJoinRequest = mutation({
     });
 
     // Notify user
-    const org = await ctx.db.get(invite.organizationId);
+    const org = (await ctx.db.get(invite.organizationId)) as any;
     await ctx.db.insert('notifications', {
       organizationId: invite.organizationId,
       userId,
@@ -233,7 +238,7 @@ export const approveJoinRequest = mutation({
     });
 
     return { success: true, userId, organizationId: invite.organizationId };
-  },
+  }),
 });
 
 /** Reject join request */
@@ -243,12 +248,13 @@ export const rejectJoinRequest = mutation({
     reviewerId: v.id('users'),
     reason: v.optional(v.string()),
   },
-  handler: async (ctx, { inviteId, reviewerId, reason }) => {
-    const invite = await ctx.db.get(inviteId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { inviteId, reviewerId, reason } = args;
+    const invite = (await ctx.db.get(inviteId)) as any;
     if (!invite) throw new Error('Invite not found');
     if (invite.status !== 'pending') throw new Error('Invite is not pending');
 
-    const reviewer = await ctx.db.get(reviewerId);
+    const reviewer = (await ctx.db.get(reviewerId)) as any;
     if (!reviewer || !reviewer.organizationId) throw new Error('Reviewer not found');
     if (reviewer.role !== 'admin' && reviewer.role !== 'superadmin') {
       throw new Error('Only admins can reject join requests');
@@ -268,9 +274,9 @@ export const rejectJoinRequest = mutation({
     // Notify user
     const userId = invite.userId;
     if (userId) {
-      const user = await ctx.db.get(userId);
+      const user = (await ctx.db.get(userId)) as any;
       if (user) {
-        const org = await ctx.db.get(invite.organizationId);
+        const org = (await ctx.db.get(invite.organizationId)) as any;
         await ctx.db.insert('notifications', {
           organizationId: invite.organizationId,
           userId,
@@ -286,5 +292,5 @@ export const rejectJoinRequest = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });

@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 // ── Helper: Calculate response time in hours ──────────────────────────────
 function calculateResponseTime(
@@ -147,7 +148,7 @@ export const updateSLAConfig = mutation({
     notifyOnCritical: v.boolean(),
     notifyOnBreach: v.boolean(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { userId, ...config } = args;
 
     const existing = await ctx.db.query('slaConfig').first();
@@ -166,7 +167,7 @@ export const updateSLAConfig = mutation({
         updatedAt: Date.now(),
       });
     }
-  },
+  }),
 });
 
 // ── Create SLA Metric (when leave request is created) ────────────────────
@@ -174,8 +175,9 @@ export const createSLAMetric = mutation({
   args: {
     leaveRequestId: v.id('leaveRequests'),
   },
-  handler: async (ctx, { leaveRequestId }) => {
-    const leave = await ctx.db.get(leaveRequestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { leaveRequestId } = args;
+    const leave = (await ctx.db.get(leaveRequestId)) as any;
     if (!leave) throw new Error('Leave request not found');
 
     const config = await ctx.db.query('slaConfig').first();
@@ -190,7 +192,7 @@ export const createSLAMetric = mutation({
       criticalTriggered: false,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Update SLA Metric (when leave is approved/rejected) ──────────────────
@@ -198,8 +200,9 @@ export const updateSLAMetric = mutation({
   args: {
     leaveRequestId: v.id('leaveRequests'),
   },
-  handler: async (ctx, { leaveRequestId }) => {
-    const leave = await ctx.db.get(leaveRequestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { leaveRequestId } = args;
+    const leave = (await ctx.db.get(leaveRequestId)) as any;
     if (!leave || !leave.reviewedAt) throw new Error('Leave not reviewed');
 
     const metric = await ctx.db
@@ -231,7 +234,7 @@ export const updateSLAMetric = mutation({
     });
 
     return metric._id;
-  },
+  }),
 });
 
 // ── Get SLA Dashboard Stats ───────────────────────────────────────────────
@@ -241,31 +244,32 @@ export const getSLAStats = query({
     endDate: v.optional(v.number()),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { startDate, endDate, organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { startDate, endDate, organizationId } = args;
     let metrics = await ctx.db.query('slaMetrics').take(XLARGE_LIST_CAP);
 
     // Filter by organization if provided
     if (organizationId) {
-      metrics = metrics.filter((m) => m.organizationId === organizationId);
+      metrics = metrics.filter((m: any) => m.organizationId === organizationId);
     }
 
     // Filter by date range if provided
     if (startDate) {
-      metrics = metrics.filter((m) => m.submittedAt >= startDate);
+      metrics = metrics.filter((m: any) => m.submittedAt >= startDate);
     }
     if (endDate) {
-      metrics = metrics.filter((m) => m.submittedAt <= endDate);
+      metrics = metrics.filter((m: any) => m.submittedAt <= endDate);
     }
     if (endDate) {
-      metrics = metrics.filter((m) => m.submittedAt <= endDate);
+      metrics = metrics.filter((m: any) => m.submittedAt <= endDate);
     }
 
     const total = metrics.length;
-    const pending = metrics.filter((m) => m.status === 'pending').length;
-    const onTime = metrics.filter((m) => m.status === 'on_time').length;
-    const breached = metrics.filter((m) => m.status === 'breached').length;
+    const pending = metrics.filter((m: any) => m.status === 'pending').length;
+    const onTime = metrics.filter((m: any) => m.status === 'on_time').length;
+    const breached = metrics.filter((m: any) => m.status === 'breached').length;
 
-    const completed = metrics.filter((m) => m.responseTimeHours !== undefined);
+    const completed = metrics.filter((m: any) => m.responseTimeHours !== undefined);
     const avgResponseTime =
       completed.length > 0
         ? completed.reduce((sum, m) => sum + (m.responseTimeHours ?? 0), 0) / completed.length
@@ -284,13 +288,13 @@ export const getSLAStats = query({
 
     // Check pending requests for warnings
     const now = Date.now();
-    const warningCount = metrics.filter((m) => {
+    const warningCount = metrics.filter((m: any) => {
       if (m.status !== 'pending') return false;
       const elapsed = (now - m.submittedAt) / (1000 * 60 * 60);
       return elapsed >= (config?.warningThreshold ?? 18);
     }).length;
 
-    const criticalCount = metrics.filter((m) => {
+    const criticalCount = metrics.filter((m: any) => {
       if (m.status !== 'pending') return false;
       const elapsed = (now - m.submittedAt) / (1000 * 60 * 60);
       return elapsed >= (config?.criticalThreshold ?? 22);
@@ -308,7 +312,7 @@ export const getSLAStats = query({
       warningCount,
       criticalCount,
     };
-  },
+  }),
 });
 
 // ── Get Pending Requests with SLA Info ────────────────────────────────────
@@ -316,7 +320,8 @@ export const getPendingWithSLA = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     let pendingLeaves = await ctx.db
       .query('leaveRequests')
       .withIndex('by_status', (q) => q.eq('status', 'pending'))
@@ -324,26 +329,26 @@ export const getPendingWithSLA = query({
 
     // Filter by organization if provided
     if (organizationId) {
-      pendingLeaves = pendingLeaves.filter((l) => l.organizationId === organizationId);
+      pendingLeaves = pendingLeaves.filter((l: any) => l.organizationId === organizationId);
     }
 
     const config = await ctx.db.query('slaConfig').first();
     const now = Date.now();
 
     // Batch-load all unique user IDs upfront to avoid N+1 queries
-    const uniqueUserIds = [...new Set(pendingLeaves.map((l) => l.userId))];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
-    const profilesBatch = await Promise.all(uniqueUserIds.map((id) => getProfile(ctx, id)));
+    const uniqueUserIds = [...new Set(pendingLeaves.map((l: any) => l.userId))];
+    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
+    const profilesBatch = await Promise.all(uniqueUserIds.map((id: any) => getProfile(ctx, id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
     );
     const profileMap = new Map(uniqueUserIds.map((id, i) => [id, profilesBatch[i]]));
 
     // Batch-load all SLA metrics for the pending leaves
     const allMetrics = await ctx.db.query('slaMetrics').take(XLARGE_LIST_CAP);
-    const metricsByLeave = new Map(allMetrics.map((m) => [m.leaveRequestId, m]));
+    const metricsByLeave = new Map(allMetrics.map((m: any) => [m.leaveRequestId, m]));
 
-    return pendingLeaves.map((leave) => {
+    return pendingLeaves.map((leave: any) => {
       const user = userMap.get(leave.userId);
       const profile = profileMap.get(leave.userId);
       const metric = metricsByLeave.get(leave._id);
@@ -379,7 +384,7 @@ export const getPendingWithSLA = query({
         },
       };
     });
-  },
+  }),
 });
 
 // ── Get SLA Trend Data (for charts) ───────────────────────────────────────
@@ -388,17 +393,18 @@ export const getSLATrend = query({
     days: v.number(), // Last N days
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { days, organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { days, organizationId } = args;
     const startDate = Date.now() - days * 24 * 60 * 60 * 1000;
     let metrics = await ctx.db
       .query('slaMetrics')
       .withIndex('by_submitted')
-      .filter((q) => q.gte(q.field('submittedAt'), startDate))
+      .filter((q: any) => q.gte(q.field('submittedAt'), startDate))
       .take(DEFAULT_LIST_CAP);
 
     // Filter by organization if provided
     if (organizationId) {
-      metrics = metrics.filter((m) => m.organizationId === organizationId);
+      metrics = metrics.filter((m: any) => m.organizationId === organizationId);
     }
 
     // Group by day
@@ -429,7 +435,7 @@ export const getSLATrend = query({
 
     // Calculate averages and convert to array
     return Object.values(dailyData)
-      .map((day) => ({
+      .map((day: any) => ({
         date: day.date,
         onTime: day.onTime,
         breached: day.breached,
@@ -441,7 +447,7 @@ export const getSLATrend = query({
             : 100,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
-  },
+  }),
 });
 
 ('// �� Get All SLA Metrics (for dashboard) �����������������������������������');

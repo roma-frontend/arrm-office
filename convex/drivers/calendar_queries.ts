@@ -8,6 +8,7 @@ import { v } from 'convex/values';
 import { query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 /** Check calendar access permission */
 export const checkCalendarAccess = query({
@@ -15,7 +16,8 @@ export const checkCalendarAccess = query({
     ownerId: v.id('users'),
     viewerId: v.id('users'),
   },
-  handler: async (ctx, { ownerId, viewerId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { ownerId, viewerId } = args;
     const access = await ctx.db
       .query('calendarAccess')
       .withIndex('by_owner_viewer', (q) => q.eq('ownerId', ownerId).eq('viewerId', viewerId))
@@ -35,7 +37,7 @@ export const checkCalendarAccess = query({
       level: access.accessLevel,
       grantedAt: access.grantedAt,
     };
-  },
+  }),
 });
 
 /** Get users who have access to my calendar */
@@ -43,17 +45,18 @@ export const getCalendarAccessList = query({
   args: {
     ownerId: v.id('users'),
   },
-  handler: async (ctx, { ownerId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { ownerId } = args;
     const accesses = await ctx.db
       .query('calendarAccess')
       .withIndex('by_owner', (q) => q.eq('ownerId', ownerId))
-      .filter((q) => q.eq(q.field('isActive'), true))
+      .filter((q: any) => q.eq(q.field('isActive'), true))
       .take(MAX_PAGE_SIZE);
 
     // Enrich with viewer info
     const enriched = await Promise.all(
       accesses.map(async (access) => {
-        const viewer = await ctx.db.get(access.viewerId);
+        const viewer = (await ctx.db.get(access.viewerId)) as any;
         const viewerProfile = await getProfile(ctx, access.viewerId);
         return {
           ...access,
@@ -65,7 +68,7 @@ export const getCalendarAccessList = query({
     );
 
     return enriched;
-  },
+  }),
 });
 
 /** Get driver's calendar for viewer (with permission check) */
@@ -76,7 +79,8 @@ export const getDriverCalendarForViewer = query({
     startTime: v.number(),
     endTime: v.number(),
   },
-  handler: async (ctx, { driverUserId, viewerId, startTime, endTime }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverUserId, viewerId, startTime, endTime } = args;
     // Check access permission
     const access = await ctx.db
       .query('calendarAccess')
@@ -106,7 +110,7 @@ export const getDriverCalendarForViewer = query({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driver._id))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(q.gte(q.field('startTime'), startTime), q.lte(q.field('startTime'), endTime)),
       )
       .take(MAX_PAGE_SIZE);
@@ -114,7 +118,7 @@ export const getDriverCalendarForViewer = query({
     // Filter based on access level
     if (access.accessLevel === 'busy_only') {
       return {
-        busySlots: schedules.map((s) => ({
+        busySlots: schedules.map((s: any) => ({
           startTime: s.startTime,
           endTime: s.endTime,
           type: s.type,
@@ -129,5 +133,5 @@ export const getDriverCalendarForViewer = query({
       accessLevel: 'full',
       driver,
     };
-  },
+  }),
 });

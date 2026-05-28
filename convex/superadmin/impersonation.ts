@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
+import { withAuth } from '../lib/withAuth';
 
 // ─── IMPERSONATION ───────────────────────────────────────────────────────────
 /**
@@ -14,18 +15,18 @@ export const startImpersonation = mutation({
     targetUserId: v.id('users'),
     reason: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const now = Date.now();
     const expiresAt = now + 3600000; // 1 hour
 
     // Verify superadmin
-    const superadmin = await ctx.db.get(args.superadminId);
+    const superadmin = (await ctx.db.get(args.superadminId)) as any;
     if (!superadmin || superadmin.role !== 'superadmin') {
       throw new Error('Only superadmin can impersonate users');
     }
 
     // Get target user
-    const targetUser = await ctx.db.get(args.targetUserId);
+    const targetUser = (await ctx.db.get(args.targetUserId)) as any;
     if (!targetUser) {
       throw new Error('Target user not found');
     }
@@ -92,7 +93,7 @@ export const startImpersonation = mutation({
         organizationId: targetUser.organizationId,
       },
     };
-  },
+  }),
 });
 
 /**
@@ -103,8 +104,8 @@ export const endImpersonation = mutation({
     sessionId: v.id('impersonationSessions'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const session = await ctx.db.get(args.sessionId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const session = (await ctx.db.get(args.sessionId)) as any;
     if (!session) {
       throw new Error('Session not found');
     }
@@ -134,7 +135,7 @@ export const endImpersonation = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 /**
@@ -142,18 +143,18 @@ export const endImpersonation = mutation({
  */
 export const getActiveImpersonation = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const sessions = await ctx.db
       .query('impersonationSessions')
       .withIndex('by_active', (q) => q.eq('isActive', true))
-      .filter((q) => q.eq(q.field('targetUserId'), args.userId))
+      .filter((q: any) => q.eq(q.field('targetUserId'), args.userId))
       .take(MAX_PAGE_SIZE);
 
     if (sessions.length === 0) return null;
 
     const session = sessions[0]!;
-    const superadmin = await ctx.db.get(session.superadminId);
-    const targetUser = await ctx.db.get(session.targetUserId);
+    const superadmin = (await ctx.db.get(session.superadminId)) as any;
+    const targetUser = (await ctx.db.get(session.targetUserId)) as any;
 
     return {
       sessionId: session._id,
@@ -170,7 +171,7 @@ export const getActiveImpersonation = query({
       startedAt: session.startedAt,
       expiresAt: session.expiresAt,
     };
-  },
+  }),
 });
 
 /**
@@ -181,11 +182,11 @@ export const getImpersonationHistory = query({
     superadminId: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     let sessions = await ctx.db.query('impersonationSessions').order('desc').take(MAX_PAGE_SIZE);
 
     if (args.superadminId) {
-      sessions = sessions.filter((s) => s.superadminId === args.superadminId);
+      sessions = sessions.filter((s: any) => s.superadminId === args.superadminId);
     }
 
     if (args.limit) {
@@ -195,9 +196,9 @@ export const getImpersonationHistory = query({
     // Enrich with user data
     const enrichedSessions = await Promise.all(
       sessions.map(async (session) => {
-        const superadmin = await ctx.db.get(session.superadminId);
-        const targetUser = await ctx.db.get(session.targetUserId);
-        const org = await ctx.db.get(session.organizationId);
+        const superadmin = (await ctx.db.get(session.superadminId)) as any;
+        const targetUser = (await ctx.db.get(session.targetUserId)) as any;
+        const org = (await ctx.db.get(session.organizationId)) as any;
 
         return {
           ...session,
@@ -212,5 +213,5 @@ export const getImpersonationHistory = query({
     );
 
     return enrichedSessions;
-  },
+  }),
 });

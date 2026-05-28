@@ -58,7 +58,7 @@ export const listCycles = query({
       ),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const q = ctx.db
       .query('reviewCycles')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
@@ -66,17 +66,17 @@ export const listCycles = query({
     const cycles = await q.order('desc').take(DEFAULT_LIST_CAP);
 
     if (args.status) {
-      return cycles.filter((c) => c.status === args.status);
+      return cycles.filter((c: any) => c.status === args.status);
     }
     return cycles;
-  },
+  }),
 });
 
 // ── Get cycle details with stats ─────────────────────────────────────────────
 export const getCycleDetails = query({
   args: { cycleId: v.id('reviewCycles') },
-  handler: async (ctx, args) => {
-    const cycle = await ctx.db.get(args.cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const cycle = (await ctx.db.get(args.cycleId)) as any;
     if (!cycle) return null;
 
     const assignments = await ctx.db
@@ -85,11 +85,11 @@ export const getCycleDetails = query({
       .take(DEFAULT_LIST_CAP);
 
     const total = assignments.length;
-    const submitted = assignments.filter((a) => a.status === 'submitted').length;
-    const pending = assignments.filter((a) => a.status === 'pending').length;
-    const inProgress = assignments.filter((a) => a.status === 'in_progress').length;
+    const submitted = assignments.filter((a: any) => a.status === 'submitted').length;
+    const pending = assignments.filter((a: any) => a.status === 'pending').length;
+    const inProgress = assignments.filter((a: any) => a.status === 'in_progress').length;
 
-    const createdByUser = await ctx.db.get(cycle.createdBy);
+    const createdByUser = (await ctx.db.get(cycle.createdBy)) as any;
 
     return {
       ...cycle,
@@ -97,7 +97,7 @@ export const getCycleDetails = query({
       stats: { total, submitted, pending, inProgress },
       completionRate: total > 0 ? Math.round((submitted / total) * 100) : 0,
     };
-  },
+  }),
 });
 
 // ── Get my pending review assignments ────────────────────────────────────────
@@ -108,21 +108,21 @@ export const getMyAssignments = query({
       v.union(v.literal('pending'), v.literal('in_progress'), v.literal('submitted')),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const assignments = await ctx.db
       .query('reviewAssignments')
       .withIndex('by_reviewer', (q) => q.eq('reviewerId', args.userId))
       .collect();
 
     const filtered = args.status
-      ? assignments.filter((a) => a.status === args.status)
-      : assignments.filter((a) => a.status !== 'cancelled');
+      ? assignments.filter((a: any) => a.status === args.status)
+      : assignments.filter((a: any) => a.status !== 'cancelled');
 
     // Enrich with cycle and reviewee info
     const enriched = await Promise.all(
       filtered.map(async (a) => {
-        const cycle = await ctx.db.get(a.cycleId);
-        const reviewee = await ctx.db.get(a.revieweeId);
+        const cycle = (await ctx.db.get(a.cycleId)) as any;
+        const reviewee = (await ctx.db.get(a.revieweeId)) as any;
         const revieweeProfile = await getProfile(ctx, a.revieweeId);
         return {
           ...a,
@@ -137,8 +137,8 @@ export const getMyAssignments = query({
     );
 
     // Only show assignments for active cycles
-    return enriched.filter((a) => a.cycleStatus === 'active');
-  },
+    return enriched.filter((a: any) => a.cycleStatus === 'active');
+  }),
 });
 
 // ── Get results for a reviewee in a cycle ────────────────────────────────────
@@ -147,8 +147,8 @@ export const getRevieweeResults = query({
     cycleId: v.id('reviewCycles'),
     revieweeId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const cycle = await ctx.db.get(args.cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const cycle = (await ctx.db.get(args.cycleId)) as any;
     if (!cycle) return null;
 
     const responses = await ctx.db
@@ -159,17 +159,17 @@ export const getRevieweeResults = query({
       .collect();
 
     // Group by type
-    const selfReview = responses.find((r) => r.type === 'self');
-    const managerReviews = responses.filter((r) => r.type === 'manager');
-    const peerReviews = responses.filter((r) => r.type === 'peer');
-    const directReportReviews = responses.filter((r) => r.type === 'direct_report');
+    const selfReview = responses.find((r: any) => r.type === 'self');
+    const managerReviews = responses.filter((r: any) => r.type === 'manager');
+    const peerReviews = responses.filter((r: any) => r.type === 'peer');
+    const directReportReviews = responses.filter((r: any) => r.type === 'direct_report');
 
     // Check anonymity threshold for peers
     const peerThreshold = cycle.peerAnonymityThreshold || 2;
     const canShowPeerDetails = peerReviews.length >= peerThreshold;
 
     // Get detailed ratings per competency
-    const allResponseIds = responses.map((r) => r._id);
+    const allResponseIds = responses.map((r: any) => r._id);
     const allRatings = await Promise.all(
       allResponseIds.map(async (responseId) => {
         return ctx.db
@@ -196,19 +196,22 @@ export const getRevieweeResults = query({
       name: data.name,
       average:
         data.scores.length > 0
-          ? Math.round((data.scores.reduce((s, v) => s + v, 0) / data.scores.length) * 10) / 10
+          ? Math.round(
+              (data.scores.reduce((s: any, v: any) => s + v, 0) / data.scores.length) * 10,
+            ) / 10
           : 0,
       count: data.scores.length,
     }));
 
     const overallAvg =
       responses.length > 0
-        ? Math.round((responses.reduce((s, r) => s + r.overallScore, 0) / responses.length) * 10) /
-          10
+        ? Math.round(
+            (responses.reduce((s: any, r: any) => s + r.overallScore, 0) / responses.length) * 10,
+          ) / 10
         : 0;
 
     return {
-      reviewee: await ctx.db.get(args.revieweeId),
+      reviewee: (await ctx.db.get(args.revieweeId)) as any,
       cycle,
       overallScore: overallAvg,
       competencyAverages,
@@ -219,14 +222,14 @@ export const getRevieweeResults = query({
             improvements: selfReview.improvements,
           }
         : null,
-      managerReviews: managerReviews.map((r) => ({
+      managerReviews: managerReviews.map((r: any) => ({
         overallScore: r.overallScore,
         strengths: r.strengths,
         improvements: r.improvements,
         generalComments: r.generalComments,
       })),
       peerReviews: canShowPeerDetails
-        ? peerReviews.map((r) => ({
+        ? peerReviews.map((r: any) => ({
             overallScore: r.overallScore,
             strengths: r.strengths,
             improvements: r.improvements,
@@ -235,21 +238,21 @@ export const getRevieweeResults = query({
         : null,
       peerCount: peerReviews.length,
       peerThreshold,
-      directReportReviews: directReportReviews.map((r) => ({
+      directReportReviews: directReportReviews.map((r: any) => ({
         overallScore: r.overallScore,
         strengths: r.strengths,
         improvements: r.improvements,
       })),
       totalResponses: responses.length,
     };
-  },
+  }),
 });
 
 // ── Get cycle summary (all reviewees with scores) ────────────────────────────
 export const getCycleSummary = query({
   args: { cycleId: v.id('reviewCycles') },
-  handler: async (ctx, args) => {
-    const cycle = await ctx.db.get(args.cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const cycle = (await ctx.db.get(args.cycleId)) as any;
     if (!cycle) return null;
 
     const responses = await ctx.db
@@ -268,11 +271,15 @@ export const getCycleSummary = query({
 
     // Batch-load all unique reviewee IDs upfront
     const uniqueRevieweeIds = Object.keys(byReviewee) as Id<'users'>[];
-    const revieweesBatch = await Promise.all(uniqueRevieweeIds.map((id) => ctx.db.get(id)));
+    const revieweesBatch = await Promise.all(uniqueRevieweeIds.map((id: any) => ctx.db.get(id)));
     const revieweeMap = new Map(
-      revieweesBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
+      revieweesBatch
+        .filter((u): u is NonNullable<typeof u> => u !== null)
+        .map((u: any) => [u._id, u]),
     );
-    const profilesBatch = await Promise.all(uniqueRevieweeIds.map((id) => getProfile(ctx, id)));
+    const profilesBatch = await Promise.all(
+      uniqueRevieweeIds.map((id: any) => getProfile(ctx, id)),
+    );
     const profileMap = new Map(uniqueRevieweeIds.map((id, i) => [id, profilesBatch[i]]));
 
     const summaries = Object.entries(byReviewee).map(([revieweeId, data]) => {
@@ -283,7 +290,8 @@ export const getCycleSummary = query({
         name: user?.name || 'Unknown',
         avatar: (profile?.avatarUrl ?? user?.avatarUrl) || user?.faceImageUrl || '',
         averageScore:
-          Math.round((data.scores.reduce((s, v) => s + v, 0) / data.scores.length) * 10) / 10,
+          Math.round((data.scores.reduce((s: any, v: any) => s + v, 0) / data.scores.length) * 10) /
+          10,
         reviewCount: data.scores.length,
         types: [...new Set(data.types)],
       };
@@ -291,20 +299,20 @@ export const getCycleSummary = query({
 
     return {
       cycle,
-      summaries: summaries.sort((a, b) => b.averageScore - a.averageScore),
+      summaries: summaries.sort((a: any, b: any) => b.averageScore - a.averageScore),
     };
-  },
+  }),
 });
 
 // ── List templates ───────────────────────────────────────────────────────────
 export const listTemplates = query({
   args: { organizationId: v.id('organizations') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return ctx.db
       .query('reviewTemplates')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .collect();
-  },
+  }),
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -328,7 +336,7 @@ export const createTemplate = mutation({
     isDefault: v.boolean(),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // If setting as default, unset others
     if (args.isDefault) {
       const existing = await ctx.db
@@ -351,7 +359,7 @@ export const createTemplate = mutation({
       createdBy: args.createdBy,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Create review cycle (draft) ──────────────────────────────────────────────
@@ -387,11 +395,11 @@ export const createCycle = mutation({
     showPeerIdentity: v.optional(v.boolean()),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Resolve competencies from template or args or defaults
     let competencies = args.competencies || DEFAULT_COMPETENCIES;
     if (args.templateId) {
-      const template = await ctx.db.get(args.templateId);
+      const template = (await ctx.db.get(args.templateId)) as any;
       if (template) {
         competencies = template.competencies;
       }
@@ -415,7 +423,7 @@ export const createCycle = mutation({
       createdBy: args.createdBy,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Launch cycle (auto-assign self + manager, leave peers for manual) ────────
@@ -433,8 +441,8 @@ export const launchCycle = mutation({
       ),
     ),
   },
-  handler: async (ctx, args) => {
-    const cycle = await ctx.db.get(args.cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const cycle = (await ctx.db.get(args.cycleId)) as any;
     if (!cycle) throw new Error('Cycle not found');
     if (cycle.status !== 'draft') throw new Error('Cycle must be in draft status to launch');
 
@@ -460,7 +468,7 @@ export const launchCycle = mutation({
     // Auto-assign manager reviews (supervisor → employee)
     if (cycle.includesManager) {
       for (const userId of args.participants) {
-        const user = await ctx.db.get(userId);
+        const user = (await ctx.db.get(userId)) as any;
         const profile = await getProfile(ctx, userId);
         const supervisorId = profile?.supervisorId ?? user?.supervisorId;
         if (supervisorId) {
@@ -502,7 +510,7 @@ export const launchCycle = mutation({
     });
 
     return args.cycleId;
-  },
+  }),
 });
 
 // ── Add peer assignment (after launch) ───────────────────────────────────────
@@ -512,8 +520,8 @@ export const addPeerAssignment = mutation({
     reviewerId: v.id('users'),
     revieweeId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const cycle = await ctx.db.get(args.cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const cycle = (await ctx.db.get(args.cycleId)) as any;
     if (!cycle) throw new Error('Cycle not found');
     if (cycle.status !== 'active') throw new Error('Cycle is not active');
 
@@ -525,7 +533,9 @@ export const addPeerAssignment = mutation({
       )
       .take(SMALL_LIST_CAP);
 
-    const duplicate = existing.find((a) => a.revieweeId === args.revieweeId && a.type === 'peer');
+    const duplicate = existing.find(
+      (a: any) => a.revieweeId === args.revieweeId && a.type === 'peer',
+    );
     if (duplicate) throw new Error('Assignment already exists');
 
     return ctx.db.insert('reviewAssignments', {
@@ -538,7 +548,7 @@ export const addPeerAssignment = mutation({
       dueDate: cycle.endDate,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Submit review ────────────────────────────────────────────────────────────
@@ -557,22 +567,23 @@ export const submitReview = mutation({
     improvements: v.optional(v.string()),
     generalComments: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const assignment = await ctx.db.get(args.assignmentId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const assignment = (await ctx.db.get(args.assignmentId)) as any;
     if (!assignment) throw new Error('Assignment not found');
     if (assignment.status === 'submitted') throw new Error('Already submitted');
     if (assignment.status === 'cancelled') throw new Error('Assignment was cancelled');
 
-    const cycle = await ctx.db.get(assignment.cycleId);
+    const cycle = (await ctx.db.get(assignment.cycleId)) as any;
     if (!cycle || cycle.status !== 'active') throw new Error('Cycle is not active');
 
     // Validate ratings
-    if (args.ratings.some((r) => r.score < 1 || r.score > 5)) {
+    if (args.ratings.some((r: any) => r.score < 1 || r.score > 5)) {
       throw new Error('All ratings must be between 1 and 5');
     }
 
     const now = Date.now();
-    const overallScore = args.ratings.reduce((sum, r) => sum + r.score, 0) / args.ratings.length;
+    const overallScore =
+      args.ratings.reduce((sum: any, r: any) => sum + r.score, 0) / args.ratings.length;
 
     // Create response
     const responseId = await ctx.db.insert('reviewResponses', {
@@ -635,14 +646,14 @@ export const submitReview = mutation({
     }
 
     return responseId;
-  },
+  }),
 });
 
 // ── Close cycle ──────────────────────────────────────────────────────────────
 export const closeCycle = mutation({
   args: { cycleId: v.id('reviewCycles') },
-  handler: async (ctx, args) => {
-    const cycle = await ctx.db.get(args.cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const cycle = (await ctx.db.get(args.cycleId)) as any;
     if (!cycle) throw new Error('Cycle not found');
 
     // Cancel any pending assignments
@@ -661,14 +672,14 @@ export const closeCycle = mutation({
       status: 'completed',
       closedAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Cancel cycle ─────────────────────────────────────────────────────────────
 export const cancelCycle = mutation({
   args: { cycleId: v.id('reviewCycles') },
-  handler: async (ctx, args) => {
-    const cycle = await ctx.db.get(args.cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const cycle = (await ctx.db.get(args.cycleId)) as any;
     if (!cycle) throw new Error('Cycle not found');
 
     const assignments = await ctx.db
@@ -686,32 +697,32 @@ export const cancelCycle = mutation({
       status: 'cancelled',
       closedAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Delete cycle (only drafts) ───────────────────────────────────────────────
 export const deleteCycle = mutation({
   args: { cycleId: v.id('reviewCycles') },
-  handler: async (ctx, args) => {
-    const cycle = await ctx.db.get(args.cycleId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const cycle = (await ctx.db.get(args.cycleId)) as any;
     if (!cycle) throw new Error('Cycle not found');
     if (cycle.status !== 'draft') throw new Error('Only draft cycles can be deleted');
 
     await ctx.db.delete(args.cycleId);
-  },
+  }),
 });
 
 // ── Get participants for launch preview ──────────────────────────────────────
 export const getEligibleParticipants = query({
   args: { organizationId: v.id('organizations') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Scope by org via by_org index (avoids scanning the global users table).
     const users = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
-    const filtered = users.filter((u) => u.isActive && u.role !== 'superadmin');
-    const profiles = await Promise.all(filtered.map((u) => getProfile(ctx, u._id)));
+    const filtered = users.filter((u: any) => u.isActive && u.role !== 'superadmin');
+    const profiles = await Promise.all(filtered.map((u: any) => getProfile(ctx, u._id)));
     return filtered.map((u, i) => {
       const p = profiles[i];
       return {
@@ -724,7 +735,7 @@ export const getEligibleParticipants = query({
         supervisorId: p?.supervisorId ?? u.supervisorId,
       };
     });
-  },
+  }),
 });
 
 // ── Internal: Check for upcoming review deadlines (cron) ─────────────────────
@@ -753,7 +764,7 @@ export const checkDeadlineNotifications = internalMutation({
           const pendingAssignments = await ctx.db
             .query('reviewAssignments')
             .withIndex('by_cycle', (q) => q.eq('cycleId', cycle._id))
-            .filter((q) =>
+            .filter((q: any) =>
               q.or(q.eq(q.field('status'), 'pending'), q.eq(q.field('status'), 'in_progress')),
             )
             .take(DEFAULT_LIST_CAP);
@@ -763,7 +774,7 @@ export const checkDeadlineNotifications = internalMutation({
             const existingNotifications = await ctx.db
               .query('notifications')
               .withIndex('by_user', (q) => q.eq('userId', assignment.reviewerId))
-              .filter((q) =>
+              .filter((q: any) =>
                 q.and(
                   q.eq(q.field('type'), 'review_deadline'),
                   q.eq(q.field('relatedId'), assignment._id),
@@ -801,7 +812,7 @@ export const secureDeleteCycle = mutation({
   handler: withAuth<MutationCtx, { cycleId: Id<'reviewCycles'> }, void>(
     { minimumRole: 'admin' },
     async (ctx, { cycleId }, caller) => {
-      const cycle = (await ctx.db.get(cycleId)) as any;
+      const cycle = (await ctx.db.get(cycleId)) as any as any;
       if (!cycle) throw new Error('Review cycle not found');
       if (caller.role !== 'superadmin' && caller.organizationId !== cycle.organizationId) {
         throw new Error('Access denied');

@@ -12,7 +12,7 @@ import { DEFAULT_LIST_CAP } from './lib/limits';
 const RESTRICTED_ORG_SLUG = 'adb-arrm';
 
 async function verifyRestrictedOrg(ctx: any, organizationId: string) {
-  const org = await ctx.db.get(organizationId);
+  const org = (await ctx.db.get(organizationId)) as any;
   if (!org) {
     throw new Error('Organization not found');
   }
@@ -37,9 +37,9 @@ export const upsertSharePointUser = mutation({
     location: v.optional(v.string()),
     employeeType: v.union(v.literal('staff'), v.literal('contractor')),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Verify admin
-    const admin = await ctx.db.get(args.adminId);
+    const admin = (await ctx.db.get(args.adminId)) as any;
     if (!admin) throw new Error('Admin not found');
     if (admin.role !== 'admin' && admin.role !== 'superadmin') {
       throw new Error('Only admins can sync SharePoint users');
@@ -98,7 +98,7 @@ export const upsertSharePointUser = mutation({
     });
 
     return { action: 'created' as const, userId };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,9 +110,9 @@ export const deactivateSharePointUsers = mutation({
     organizationId: v.id('organizations'),
     activeEmails: v.array(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Verify admin
-    const admin = await ctx.db.get(args.adminId);
+    const admin = (await ctx.db.get(args.adminId)) as any;
     if (!admin) throw new Error('Admin not found');
     if (admin.role !== 'admin' && admin.role !== 'superadmin') {
       throw new Error('Only admins can deactivate users');
@@ -121,13 +121,13 @@ export const deactivateSharePointUsers = mutation({
     // 🛡️ RESTRICTED ORG CHECK: Only ADB-ARRM can use SharePoint sync
     await verifyRestrictedOrg(ctx, args.organizationId);
 
-    const activeEmailSet = new Set(args.activeEmails.map((e) => e.toLowerCase().trim()));
+    const activeEmailSet = new Set(args.activeEmails.map((e: any) => e.toLowerCase().trim()));
 
     // Get all active users in the org
     const orgUsers = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .filter((q) => q.eq(q.field('isActive'), true))
+      .filter((q: any) => q.eq(q.field('isActive'), true))
       .take(DEFAULT_LIST_CAP);
 
     let deactivated = 0;
@@ -145,7 +145,7 @@ export const deactivateSharePointUsers = mutation({
     }
 
     return { deactivated };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ export const logSync = mutation({
     deactivated: v.number(),
     errors: v.number(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // 🛡️ RESTRICTED ORG CHECK: Only ADB-ARRM can use SharePoint sync
     await verifyRestrictedOrg(ctx, args.organizationId);
 
@@ -173,7 +173,7 @@ export const logSync = mutation({
       errors: args.errors,
       syncedAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -181,7 +181,8 @@ export const logSync = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getLastSync = query({
   args: { organizationId: v.id('organizations') },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     // 🛡️ RESTRICTED ORG CHECK: Only ADB-ARRM can access SharePoint sync logs
     await verifyRestrictedOrg(ctx, organizationId);
 
@@ -192,7 +193,7 @@ export const getLastSync = query({
       .take(1);
 
     return logs[0] || null;
-  },
+  }),
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

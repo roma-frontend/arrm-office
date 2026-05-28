@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 // ============ QUERIES ============
 
@@ -14,7 +15,8 @@ export const listExpenses = query({
     periodStart: v.optional(v.number()),
     periodEnd: v.optional(v.number()),
   },
-  handler: async (ctx, { organizationId, userId, category, status, periodStart, periodEnd }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId, category, status, periodStart, periodEnd } = args;
     // Scope by org via by_org index when possible; else capped full-table read.
     let expenses = organizationId
       ? await ctx.db
@@ -24,19 +26,21 @@ export const listExpenses = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('expenses').order('desc').take(XLARGE_LIST_CAP);
 
-    if (userId) expenses = expenses.filter((e) => e.userId === userId);
-    if (category) expenses = expenses.filter((e) => e.category === category);
-    if (status) expenses = expenses.filter((e) => e.status === status);
-    if (periodStart) expenses = expenses.filter((e) => e.expenseDate >= periodStart);
-    if (periodEnd) expenses = expenses.filter((e) => e.expenseDate <= periodEnd);
+    if (userId) expenses = expenses.filter((e: any) => e.userId === userId);
+    if (category) expenses = expenses.filter((e: any) => e.category === category);
+    if (status) expenses = expenses.filter((e: any) => e.status === status);
+    if (periodStart) expenses = expenses.filter((e: any) => e.expenseDate >= periodStart);
+    if (periodEnd) expenses = expenses.filter((e: any) => e.expenseDate <= periodEnd);
 
     // Enrich with user names
     const enriched = await Promise.all(
       expenses.map(async (expense) => {
-        const user = await ctx.db.get(expense.userId);
+        const user = (await ctx.db.get(expense.userId)) as any;
         const userProfile = await getProfile(ctx, expense.userId);
-        const reviewedBy = expense.reviewedBy ? await ctx.db.get(expense.reviewedBy) : null;
-        const createdBy = await ctx.db.get(expense.createdBy);
+        const reviewedBy = expense.reviewedBy
+          ? ((await ctx.db.get(expense.reviewedBy)) as any)
+          : null;
+        const createdBy = (await ctx.db.get(expense.createdBy)) as any;
         return {
           ...expense,
           userName: user?.name ?? 'Unknown',
@@ -48,7 +52,7 @@ export const listExpenses = query({
     );
 
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  },
+  }),
 });
 
 export const getUserExpenses = query({
@@ -56,28 +60,30 @@ export const getUserExpenses = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const expenses = await ctx.db
       .query('expenses')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
       .collect();
 
     return expenses.sort((a, b) => b.expenseDate - a.expenseDate);
-  },
+  }),
 });
 
 export const getExpenseDetails = query({
   args: {
     expenseId: v.id('expenses'),
   },
-  handler: async (ctx, { expenseId }) => {
-    const expense = await ctx.db.get(expenseId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { expenseId } = args;
+    const expense = (await ctx.db.get(expenseId)) as any;
     if (!expense) return null;
 
-    const user = await ctx.db.get(expense.userId);
+    const user = (await ctx.db.get(expense.userId)) as any;
     const userProfile = await getProfile(ctx, expense.userId);
-    const reviewedBy = expense.reviewedBy ? await ctx.db.get(expense.reviewedBy) : null;
-    const createdBy = await ctx.db.get(expense.createdBy);
+    const reviewedBy = expense.reviewedBy ? ((await ctx.db.get(expense.reviewedBy)) as any) : null;
+    const createdBy = (await ctx.db.get(expense.createdBy)) as any;
 
     return {
       ...expense,
@@ -86,7 +92,7 @@ export const getExpenseDetails = query({
       reviewedByName: reviewedBy?.name,
       createdByName: createdBy?.name ?? 'Unknown',
     };
-  },
+  }),
 });
 
 export const listExpenseCategories = query({
@@ -94,7 +100,8 @@ export const listExpenseCategories = query({
     organizationId: v.optional(v.id('organizations')),
     activeOnly: v.optional(v.boolean()),
   },
-  handler: async (ctx, { organizationId, activeOnly }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, activeOnly } = args;
     // Scope by org via by_org index when possible; else capped full-table read.
     let categories = organizationId
       ? await ctx.db
@@ -104,17 +111,18 @@ export const listExpenseCategories = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('expenseCategories').order('desc').take(XLARGE_LIST_CAP);
 
-    if (activeOnly) categories = categories.filter((c) => c.isActive);
+    if (activeOnly) categories = categories.filter((c: any) => c.isActive);
 
     return categories.sort((a, b) => a.name.localeCompare(b.name));
-  },
+  }),
 });
 
 export const getExpensePolicy = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     // Scope by org via by_org_active index when possible.
     const policies = organizationId
       ? await ctx.db
@@ -129,7 +137,7 @@ export const getExpensePolicy = query({
         );
 
     return policies[0] ?? null;
-  },
+  }),
 });
 
 export const listExpenseReports = query({
@@ -138,7 +146,8 @@ export const listExpenseReports = query({
     userId: v.optional(v.id('users')),
     status: v.optional(v.string()),
   },
-  handler: async (ctx, { organizationId, userId, status }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId, status } = args;
     // Scope by org via by_org index when possible; else capped full-table read.
     let reports = organizationId
       ? await ctx.db
@@ -148,15 +157,17 @@ export const listExpenseReports = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('expenseReports').order('desc').take(XLARGE_LIST_CAP);
 
-    if (userId) reports = reports.filter((r) => r.userId === userId);
-    if (status) reports = reports.filter((r) => r.status === status);
+    if (userId) reports = reports.filter((r: any) => r.userId === userId);
+    if (status) reports = reports.filter((r: any) => r.status === status);
 
     // Enrich with user names
     const enriched = await Promise.all(
       reports.map(async (report) => {
-        const user = await ctx.db.get(report.userId);
+        const user = (await ctx.db.get(report.userId)) as any;
         const userProfile = await getProfile(ctx, report.userId);
-        const reviewedBy = report.reviewedBy ? await ctx.db.get(report.reviewedBy) : null;
+        const reviewedBy = report.reviewedBy
+          ? ((await ctx.db.get(report.reviewedBy)) as any)
+          : null;
         return {
           ...report,
           userName: user?.name ?? 'Unknown',
@@ -167,15 +178,16 @@ export const listExpenseReports = query({
     );
 
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  },
+  }),
 });
 
 export const getExpenseReportDetails = query({
   args: {
     reportId: v.id('expenseReports'),
   },
-  handler: async (ctx, { reportId }) => {
-    const report = await ctx.db.get(reportId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { reportId } = args;
+    const report = (await ctx.db.get(reportId)) as any;
     if (!report) return null;
 
     const items = await ctx.db
@@ -185,14 +197,14 @@ export const getExpenseReportDetails = query({
 
     const expenses = await Promise.all(
       items.map(async (item) => {
-        const expense = await ctx.db.get(item.expenseId);
+        const expense = (await ctx.db.get(item.expenseId)) as any;
         return expense;
       }),
     );
 
-    const user = await ctx.db.get(report.userId);
+    const user = (await ctx.db.get(report.userId)) as any;
     const userProfile = await getProfile(ctx, report.userId);
-    const reviewedBy = report.reviewedBy ? await ctx.db.get(report.reviewedBy) : null;
+    const reviewedBy = report.reviewedBy ? ((await ctx.db.get(report.reviewedBy)) as any) : null;
 
     return {
       ...report,
@@ -201,7 +213,7 @@ export const getExpenseReportDetails = query({
       reviewedByName: reviewedBy?.name,
       expenses: expenses.filter(Boolean),
     };
-  },
+  }),
 });
 
 export const getExpenseSummary = query({
@@ -210,7 +222,8 @@ export const getExpenseSummary = query({
     periodStart: v.optional(v.number()),
     periodEnd: v.optional(v.number()),
   },
-  handler: async (ctx, { organizationId, periodStart, periodEnd }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, periodStart, periodEnd } = args;
     // Scope by org via by_org index when possible; else capped full-table read.
     let expenses = organizationId
       ? await ctx.db
@@ -220,8 +233,8 @@ export const getExpenseSummary = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('expenses').order('desc').take(XLARGE_LIST_CAP);
 
-    if (periodStart) expenses = expenses.filter((e) => e.expenseDate >= periodStart);
-    if (periodEnd) expenses = expenses.filter((e) => e.expenseDate <= periodEnd);
+    if (periodStart) expenses = expenses.filter((e: any) => e.expenseDate >= periodStart);
+    if (periodEnd) expenses = expenses.filter((e: any) => e.expenseDate <= periodEnd);
 
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
     const avgAmount = expenses.length > 0 ? totalAmount / expenses.length : 0;
@@ -235,12 +248,12 @@ export const getExpenseSummary = query({
     );
 
     const byStatus = {
-      draft: expenses.filter((e) => e.status === 'draft').length,
-      submitted: expenses.filter((e) => e.status === 'submitted').length,
-      under_review: expenses.filter((e) => e.status === 'under_review').length,
-      approved: expenses.filter((e) => e.status === 'approved').length,
-      rejected: expenses.filter((e) => e.status === 'rejected').length,
-      reimbursed: expenses.filter((e) => e.status === 'reimbursed').length,
+      draft: expenses.filter((e: any) => e.status === 'draft').length,
+      submitted: expenses.filter((e: any) => e.status === 'submitted').length,
+      under_review: expenses.filter((e: any) => e.status === 'under_review').length,
+      approved: expenses.filter((e: any) => e.status === 'approved').length,
+      rejected: expenses.filter((e: any) => e.status === 'rejected').length,
+      reimbursed: expenses.filter((e: any) => e.status === 'reimbursed').length,
     };
 
     const pendingApproval = expenses.filter(
@@ -255,7 +268,7 @@ export const getExpenseSummary = query({
       byStatus,
       pendingApproval,
     };
-  },
+  }),
 });
 
 // ============ MUTATIONS ============
@@ -285,7 +298,7 @@ export const createExpense = mutation({
     receiptUrl: v.optional(v.string()),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { createdBy, ...expenseData } = args;
     const now = Date.now();
 
@@ -298,7 +311,7 @@ export const createExpense = mutation({
     });
 
     return expenseId;
-  },
+  }),
 });
 
 export const updateExpense = mutation({
@@ -339,8 +352,9 @@ export const updateExpense = mutation({
       v.union(v.literal('payroll'), v.literal('bank_transfer'), v.literal('cash')),
     ),
   },
-  handler: async (ctx, { expenseId, ...updates }) => {
-    const expense = await ctx.db.get(expenseId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { expenseId, ...updates } = args;
+    const expense = (await ctx.db.get(expenseId)) as any;
     if (!expense) throw new Error('Expense not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -356,15 +370,16 @@ export const updateExpense = mutation({
       patch.reimbursementMethod = updates.reimbursementMethod;
 
     await ctx.db.patch(expenseId, patch);
-  },
+  }),
 });
 
 export const submitExpense = mutation({
   args: {
     expenseId: v.id('expenses'),
   },
-  handler: async (ctx, { expenseId }) => {
-    const expense = await ctx.db.get(expenseId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { expenseId } = args;
+    const expense = (await ctx.db.get(expenseId)) as any;
     if (!expense) throw new Error('Expense not found');
     if (expense.status !== 'draft') {
       throw new Error('Only draft expenses can be submitted');
@@ -374,7 +389,7 @@ export const submitExpense = mutation({
       status: 'submitted',
       updatedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const approveExpense = mutation({
@@ -383,8 +398,9 @@ export const approveExpense = mutation({
     reviewedBy: v.id('users'),
     reviewNotes: v.optional(v.string()),
   },
-  handler: async (ctx, { expenseId, reviewedBy, reviewNotes }) => {
-    const expense = await ctx.db.get(expenseId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { expenseId, reviewedBy, reviewNotes } = args;
+    const expense = (await ctx.db.get(expenseId)) as any;
     if (!expense) throw new Error('Expense not found');
     if (expense.status !== 'submitted' && expense.status !== 'under_review') {
       throw new Error('Only submitted or under review expenses can be approved');
@@ -398,7 +414,7 @@ export const approveExpense = mutation({
       reviewNotes: reviewNotes ?? '',
       updatedAt: now,
     });
-  },
+  }),
 });
 
 export const rejectExpense = mutation({
@@ -407,8 +423,9 @@ export const rejectExpense = mutation({
     reviewedBy: v.id('users'),
     reviewNotes: v.string(),
   },
-  handler: async (ctx, { expenseId, reviewedBy, reviewNotes }) => {
-    const expense = await ctx.db.get(expenseId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { expenseId, reviewedBy, reviewNotes } = args;
+    const expense = (await ctx.db.get(expenseId)) as any;
     if (!expense) throw new Error('Expense not found');
     if (expense.status !== 'submitted' && expense.status !== 'under_review') {
       throw new Error('Only submitted or under review expenses can be rejected');
@@ -421,7 +438,7 @@ export const rejectExpense = mutation({
       reviewNotes,
       updatedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const reimburseExpense = mutation({
@@ -433,8 +450,9 @@ export const reimburseExpense = mutation({
       v.literal('cash'),
     ),
   },
-  handler: async (ctx, { expenseId, reimbursementMethod }) => {
-    const expense = await ctx.db.get(expenseId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { expenseId, reimbursementMethod } = args;
+    const expense = (await ctx.db.get(expenseId)) as any;
     if (!expense) throw new Error('Expense not found');
     if (expense.status !== 'approved') {
       throw new Error('Only approved expenses can be reimbursed');
@@ -446,15 +464,16 @@ export const reimburseExpense = mutation({
       reimbursedAt: Date.now(),
       updatedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const deleteExpense = mutation({
   args: {
     expenseId: v.id('expenses'),
   },
-  handler: async (ctx, { expenseId }) => {
-    const expense = await ctx.db.get(expenseId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { expenseId } = args;
+    const expense = (await ctx.db.get(expenseId)) as any;
     if (!expense) throw new Error('Expense not found');
     if (
       expense.status === 'approved' ||
@@ -465,7 +484,7 @@ export const deleteExpense = mutation({
     }
 
     await ctx.db.delete(expenseId);
-  },
+  }),
 });
 
 export const createExpenseCategory = mutation({
@@ -482,7 +501,7 @@ export const createExpenseCategory = mutation({
     isActive: v.boolean(),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { createdBy, ...categoryData } = args;
     const now = Date.now();
 
@@ -494,7 +513,7 @@ export const createExpenseCategory = mutation({
     });
 
     return categoryId;
-  },
+  }),
 });
 
 export const updateExpenseCategory = mutation({
@@ -509,8 +528,9 @@ export const updateExpenseCategory = mutation({
     requiresApproval: v.optional(v.boolean()),
     isActive: v.optional(v.boolean()),
   },
-  handler: async (ctx, { categoryId, ...updates }) => {
-    const category = await ctx.db.get(categoryId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { categoryId, ...updates } = args;
+    const category = (await ctx.db.get(categoryId)) as any;
     if (!category) throw new Error('Expense category not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -524,7 +544,7 @@ export const updateExpenseCategory = mutation({
     if (updates.isActive !== undefined) patch.isActive = updates.isActive;
 
     await ctx.db.patch(categoryId, patch);
-  },
+  }),
 });
 
 export const createExpensePolicy = mutation({
@@ -542,7 +562,7 @@ export const createExpensePolicy = mutation({
     isActive: v.boolean(),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { createdBy, ...policyData } = args;
     const now = Date.now();
 
@@ -554,7 +574,7 @@ export const createExpensePolicy = mutation({
     });
 
     return policyId;
-  },
+  }),
 });
 
 export const updateExpensePolicy = mutation({
@@ -571,8 +591,9 @@ export const updateExpensePolicy = mutation({
     receiptRequiredAbove: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
   },
-  handler: async (ctx, { policyId, ...updates }) => {
-    const policy = await ctx.db.get(policyId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { policyId, ...updates } = args;
+    const policy = (await ctx.db.get(policyId)) as any;
     if (!policy) throw new Error('Expense policy not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -595,7 +616,7 @@ export const updateExpensePolicy = mutation({
     if (updates.isActive !== undefined) patch.isActive = updates.isActive;
 
     await ctx.db.patch(policyId, patch);
-  },
+  }),
 });
 
 export const createExpenseReport = mutation({
@@ -609,7 +630,7 @@ export const createExpenseReport = mutation({
     currency: v.string(),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { createdBy, ...reportData } = args;
     const now = Date.now();
 
@@ -624,7 +645,7 @@ export const createExpenseReport = mutation({
     });
 
     return reportId;
-  },
+  }),
 });
 
 export const addExpenseToReport = mutation({
@@ -633,11 +654,12 @@ export const addExpenseToReport = mutation({
     expenseId: v.id('expenses'),
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, { reportId, expenseId, organizationId }) => {
-    const report = await ctx.db.get(reportId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { reportId, expenseId, organizationId } = args;
+    const report = (await ctx.db.get(reportId)) as any;
     if (!report) throw new Error('Expense report not found');
 
-    const expense = await ctx.db.get(expenseId);
+    const expense = (await ctx.db.get(expenseId)) as any;
     if (!expense) throw new Error('Expense not found');
 
     const now = Date.now();
@@ -656,7 +678,7 @@ export const addExpenseToReport = mutation({
 
     let totalAmount = 0;
     for (const item of items) {
-      const exp = await ctx.db.get(item.expenseId);
+      const exp = (await ctx.db.get(item.expenseId)) as any;
       if (exp) totalAmount += exp.amount;
     }
 
@@ -665,7 +687,7 @@ export const addExpenseToReport = mutation({
       expenseCount: items.length,
       updatedAt: now,
     });
-  },
+  }),
 });
 
 export const removeExpenseFromReport = mutation({
@@ -673,7 +695,8 @@ export const removeExpenseFromReport = mutation({
     reportId: v.id('expenseReports'),
     expenseId: v.id('expenses'),
   },
-  handler: async (ctx, { reportId, expenseId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { reportId, expenseId } = args;
     const items = await ctx.db
       .query('expenseReportItems')
       .withIndex('by_report', (q) => q.eq('reportId', reportId))
@@ -692,7 +715,7 @@ export const removeExpenseFromReport = mutation({
 
     let totalAmount = 0;
     for (const item of remainingItems) {
-      const exp = await ctx.db.get(item.expenseId);
+      const exp = (await ctx.db.get(item.expenseId)) as any;
       if (exp) totalAmount += exp.amount;
     }
 
@@ -701,15 +724,16 @@ export const removeExpenseFromReport = mutation({
       expenseCount: remainingItems.length,
       updatedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const submitExpenseReport = mutation({
   args: {
     reportId: v.id('expenseReports'),
   },
-  handler: async (ctx, { reportId }) => {
-    const report = await ctx.db.get(reportId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { reportId } = args;
+    const report = (await ctx.db.get(reportId)) as any;
     if (!report) throw new Error('Expense report not found');
     if (report.status !== 'draft') {
       throw new Error('Only draft reports can be submitted');
@@ -719,7 +743,7 @@ export const submitExpenseReport = mutation({
       status: 'submitted',
       updatedAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const approveExpenseReport = mutation({
@@ -728,8 +752,9 @@ export const approveExpenseReport = mutation({
     reviewedBy: v.id('users'),
     reviewNotes: v.optional(v.string()),
   },
-  handler: async (ctx, { reportId, reviewedBy, reviewNotes }) => {
-    const report = await ctx.db.get(reportId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { reportId, reviewedBy, reviewNotes } = args;
+    const report = (await ctx.db.get(reportId)) as any;
     if (!report) throw new Error('Expense report not found');
     if (report.status !== 'submitted' && report.status !== 'under_review') {
       throw new Error('Only submitted or under review reports can be approved');
@@ -743,7 +768,7 @@ export const approveExpenseReport = mutation({
       reviewNotes: reviewNotes ?? '',
       updatedAt: now,
     });
-  },
+  }),
 });
 
 export const rejectExpenseReport = mutation({
@@ -752,8 +777,9 @@ export const rejectExpenseReport = mutation({
     reviewedBy: v.id('users'),
     reviewNotes: v.string(),
   },
-  handler: async (ctx, { reportId, reviewedBy, reviewNotes }) => {
-    const report = await ctx.db.get(reportId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { reportId, reviewedBy, reviewNotes } = args;
+    const report = (await ctx.db.get(reportId)) as any;
     if (!report) throw new Error('Expense report not found');
     if (report.status !== 'submitted' && report.status !== 'under_review') {
       throw new Error('Only submitted or under review reports can be rejected');
@@ -766,5 +792,5 @@ export const rejectExpenseReport = mutation({
       reviewNotes,
       updatedAt: Date.now(),
     });
-  },
+  }),
 });

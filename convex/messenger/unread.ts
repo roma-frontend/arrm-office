@@ -1,13 +1,15 @@
 import { v } from 'convex/values';
 import { query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
+import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET UNREAD MESSAGE COUNT — total badge
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUnreadMessageCount = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     const memberships = await ctx.db
       .query('chatMembers')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -19,7 +21,7 @@ export const getUnreadMessageCount = query({
       total += m.unreadCount;
     }
     return total;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,7 +32,8 @@ export const getTotalUnread = query({
     userId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { userId, organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, organizationId } = args;
     const memberships = await ctx.db
       .query('chatMembers')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -42,5 +45,5 @@ export const getTotalUnread = query({
       total += m.unreadCount;
     }
     return total;
-  },
+  }),
 });

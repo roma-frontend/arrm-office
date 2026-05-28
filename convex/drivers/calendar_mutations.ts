@@ -4,6 +4,7 @@
 
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
+import { withAuth } from '../lib/withAuth';
 
 /** Grant calendar access to another user */
 export const grantCalendarAccess = mutation({
@@ -14,7 +15,8 @@ export const grantCalendarAccess = mutation({
     accessLevel: v.union(v.literal('full'), v.literal('busy_only')),
     expiresAt: v.optional(v.number()),
   },
-  handler: async (ctx, { organizationId, ownerId, viewerId, accessLevel, expiresAt }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, ownerId, viewerId, accessLevel, expiresAt } = args;
     const existing = await ctx.db
       .query('calendarAccess')
       .withIndex('by_owner_viewer', (q) => q.eq('ownerId', ownerId).eq('viewerId', viewerId))
@@ -51,7 +53,7 @@ export const grantCalendarAccess = mutation({
     });
 
     return accessId;
-  },
+  }),
 });
 
 /** Revoke calendar access */
@@ -59,12 +61,13 @@ export const revokeCalendarAccess = mutation({
   args: {
     accessId: v.id('calendarAccess'),
   },
-  handler: async (ctx, { accessId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { accessId } = args;
     await ctx.db.patch(accessId, {
       isActive: false,
     });
     return { success: true };
-  },
+  }),
 });
 
 /** Request calendar access from a driver */
@@ -74,7 +77,8 @@ export const requestCalendarAccess = mutation({
     requesterId: v.id('users'),
     driverUserId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, requesterId, driverUserId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, requesterId, driverUserId } = args;
     await ctx.db.insert('notifications', {
       organizationId,
       userId: driverUserId,
@@ -91,5 +95,5 @@ export const requestCalendarAccess = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });

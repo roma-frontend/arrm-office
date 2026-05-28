@@ -13,6 +13,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import type { Id, Doc } from './_generated/dataModel';
 import type { QueryCtx } from './_generated/server';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 // Types for AI responses
 interface DriverAvailability {
@@ -55,7 +56,8 @@ export const queryDriverAvailability = query({
     query: v.string(), // Natural language query
     contextDate: v.optional(v.number()), // Reference date (default: now)
   },
-  handler: async (ctx, { userId, organizationId, query, contextDate }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, organizationId, query, contextDate } = args;
     const now = contextDate || Date.now();
     const queryLower = query.toLowerCase();
 
@@ -79,7 +81,7 @@ export const queryDriverAvailability = query({
     // Enrich drivers with user info and availability
     const enrichedDrivers = await Promise.all(
       drivers.map(async (driver) => {
-        const user = await ctx.db.get(driver.userId);
+        const user = (await ctx.db.get(driver.userId)) as any;
         const userProfile = await getProfile(ctx, driver.userId);
 
         // Check availability for the requested time range
@@ -111,7 +113,7 @@ export const queryDriverAvailability = query({
       response,
       intent,
     };
-  },
+  }),
 });
 
 /**
@@ -124,9 +126,10 @@ export const getDriverScheduleWithSummary = query({
     startTime: v.number(),
     endTime: v.number(),
   },
-  handler: async (ctx, { driverId, userId, startTime, endTime }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { driverId, userId, startTime, endTime } = args;
     // Check calendar access
-    const driver = await ctx.db.get(driverId);
+    const driver = (await ctx.db.get(driverId)) as any;
     if (!driver) throw new Error('Driver not found');
 
     const access = await ctx.db
@@ -145,7 +148,7 @@ export const getDriverScheduleWithSummary = query({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(q.gte(q.field('startTime'), startTime), q.lte(q.field('startTime'), endTime)),
       )
       .take(DEFAULT_LIST_CAP);
@@ -153,7 +156,7 @@ export const getDriverScheduleWithSummary = query({
     // Filter based on access level
     let visibleSchedules = schedules;
     if (!hasFullAccess && hasBusyOnlyAccess) {
-      visibleSchedules = schedules.map((s) => ({
+      visibleSchedules = schedules.map((s: any) => ({
         ...s,
         startTime: s.startTime,
         endTime: s.endTime,
@@ -170,11 +173,11 @@ export const getDriverScheduleWithSummary = query({
       hasFullAccess,
       summary,
       driver: {
-        name: (await ctx.db.get(driver.userId))?.name,
+        name: ((await ctx.db.get(driver.userId)) as any)?.name,
         vehicle: driver.vehicleInfo,
       },
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,7 +250,7 @@ async function checkDriverAvailability(
   const overlapping = await ctx.db
     .query('driverSchedules')
     .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-    .filter((q) =>
+    .filter((q: any) =>
       q.and(
         q.eq(q.field('status'), 'scheduled'),
         q.or(
@@ -291,8 +294,8 @@ function generateAvailabilityResponse(
     };
   }
 
-  const availableDrivers = drivers.filter((d) => d.availability.available);
-  const busyDrivers = drivers.filter((d) => !d.availability.available);
+  const availableDrivers = drivers.filter((d: any) => d.availability.available);
+  const busyDrivers = drivers.filter((d: any) => !d.availability.available);
 
   if (availableDrivers.length === 0) {
     return {
@@ -302,7 +305,7 @@ function generateAvailabilityResponse(
         hy: 'Բոլոր վարորդները զբաղված են: Հաջորդ ազատ ժամանակը:',
       },
       type: 'all_busy',
-      suggestions: busyDrivers.map((d) => ({
+      suggestions: busyDrivers.map((d: any) => ({
         driverId: d._id,
         driverName: d.userName,
         nextAvailable: 'Tomorrow 9:00 AM', // Would calculate from schedule
@@ -317,7 +320,7 @@ function generateAvailabilityResponse(
       hy: `Գտնվել է ${availableDrivers.length} ազատ վարորդ:`,
     },
     type: 'available',
-    availableDrivers: availableDrivers.map((d) => ({
+    availableDrivers: availableDrivers.map((d: any) => ({
       driverId: d._id,
       driverName: d.userName,
       vehicle: `${d.vehicleInfo.model} (${d.vehicleInfo.plateNumber})`,
@@ -335,8 +338,8 @@ function generateScheduleSummary(schedules: Doc<'driverSchedules'>[], hasFullAcc
     return sum + (s.endTime - s.startTime) / (1000 * 60 * 60);
   }, 0);
 
-  const tripCount = schedules.filter((s) => s.type === 'trip').length;
-  const blockedCount = schedules.filter((s) => s.type === 'blocked').length;
+  const tripCount = schedules.filter((s: any) => s.type === 'trip').length;
+  const blockedCount = schedules.filter((s: any) => s.type === 'blocked').length;
 
   const summary = {
     totalHours: Math.round(totalHours * 10) / 10,

@@ -16,7 +16,7 @@ export const getCostAnalysis = query({
     period: v.optional(v.union(v.literal('month'), v.literal('quarter'), v.literal('year'))),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const period = args.period || 'month';
 
     // Calculate date range
@@ -37,7 +37,7 @@ export const getCostAnalysis = query({
     // Get all approved leave requests in the period
     let leaves = await ctx.db
       .query('leaveRequests')
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(q.eq(q.field('status'), 'approved'), q.gte(q.field('createdAt'), startTimestamp)),
       )
       .order('desc')
@@ -45,17 +45,17 @@ export const getCostAnalysis = query({
 
     // Filter by organization if provided
     if (args.organizationId) {
-      leaves = leaves.filter((l) => l.organizationId === args.organizationId);
+      leaves = leaves.filter((l: any) => l.organizationId === args.organizationId);
     }
 
     // Get all users
     const users = (await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE)).filter(
       (u) => u.role !== 'superadmin',
     );
-    const userMap = new Map(users.map((u) => [u._id, u]));
+    const userMap = new Map(users.map((u: any) => [u._id, u]));
 
     // Load profiles in parallel
-    const profiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
+    const profiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
     const profileMap = new Map(users.map((u, i) => [u._id, profiles[i]]));
 
     // Calculate costs by department
@@ -99,7 +99,7 @@ export const getCostAnalysis = query({
       totalDays: leaves.reduce((sum, l) => sum + l.days, 0),
       totalLeaves: leaves.length,
     };
-  },
+  }),
 });
 
 /**
@@ -110,27 +110,30 @@ export const detectConflicts = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     // Get all approved and pending leaves
     let leaves = await ctx.db
       .query('leaveRequests')
-      .filter((q) => q.or(q.eq(q.field('status'), 'approved'), q.eq(q.field('status'), 'pending')))
+      .filter((q: any) =>
+        q.or(q.eq(q.field('status'), 'approved'), q.eq(q.field('status'), 'pending')),
+      )
       .order('desc')
       .take(MAX_PAGE_SIZE);
 
     // Filter by organization if provided
     if (organizationId) {
-      leaves = leaves.filter((l) => l.organizationId === organizationId);
+      leaves = leaves.filter((l: any) => l.organizationId === organizationId);
     }
 
     // Get all users
     const users = (await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE)).filter(
       (u) => u.role !== 'superadmin',
     );
-    const userMap = new Map(users.map((u) => [u._id, u]));
+    const userMap = new Map(users.map((u: any) => [u._id, u]));
 
     // Load profiles in parallel
-    const dcProfiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
+    const dcProfiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
     const dcProfileMap = new Map(users.map((u, i) => [u._id, dcProfiles[i]]));
 
     // Group leaves by department
@@ -156,7 +159,7 @@ export const detectConflicts = query({
 
     // OPTIMIZED: Use interval-based approach for each department
     for (const [dept, deptLeaveList] of deptLeaves.entries()) {
-      const deptUsers = users.filter((u) => {
+      const deptUsers = users.filter((u: any) => {
         const p = dcProfileMap.get(u._id);
         return (p?.department ?? u.department ?? 'Unknown') === dept;
       });
@@ -180,7 +183,7 @@ export const detectConflicts = query({
       events.sort((a, b) => a.date - b.date);
 
       // Process events at each unique date
-      const uniqueDates = [...new Set(events.map((e) => e.date))].sort((a, b) => a - b);
+      const uniqueDates = [...new Set(events.map((e: any) => e.date))].sort((a, b) => a - b);
       const activeEmployees = new Set<string>();
       let eventIndex = 0;
 
@@ -237,7 +240,7 @@ export const detectConflicts = query({
       if (a.severity === b.severity) return a.date.localeCompare(b.date);
       return a.severity === 'critical' ? -1 : 1;
     });
-  },
+  }),
 });
 
 /**
@@ -247,7 +250,8 @@ export const getSmartSuggestions = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     const suggestions: Array<{
       id: string;
       titleKey: string;
@@ -263,22 +267,22 @@ export const getSmartSuggestions = query({
     );
     let leaves = await ctx.db
       .query('leaveRequests')
-      .filter((q) => q.eq(q.field('status'), 'approved'))
+      .filter((q: any) => q.eq(q.field('status'), 'approved'))
       .order('desc')
       .take(MAX_PAGE_SIZE);
 
     // Filter by organization if provided
     if (organizationId) {
-      users = users.filter((u) => u.organizationId === organizationId);
-      leaves = leaves.filter((l) => l.organizationId === organizationId);
+      users = users.filter((u: any) => u.organizationId === organizationId);
+      leaves = leaves.filter((l: any) => l.organizationId === organizationId);
     }
 
     // Load profiles in parallel
-    const ssProfiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
+    const ssProfiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
     const ssProfileMap = new Map(users.map((u, i) => [u._id, ssProfiles[i]]));
 
     // Suggestion 1: Users with high leave balances
-    const highBalanceUsers = users.filter((u) => {
+    const highBalanceUsers = users.filter((u: any) => {
       const p = ssProfileMap.get(u._id);
       const totalBalance =
         (p?.paidLeaveBalance ?? u.paidLeaveBalance) +
@@ -299,7 +303,7 @@ export const getSmartSuggestions = query({
     }
 
     // Suggestion 2: Users with low balances
-    const lowBalanceUsers = users.filter((u) => {
+    const lowBalanceUsers = users.filter((u: any) => {
       const p = ssProfileMap.get(u._id);
       const totalBalance =
         (p?.paidLeaveBalance ?? u.paidLeaveBalance) +
@@ -320,7 +324,7 @@ export const getSmartSuggestions = query({
     }
 
     // Suggestion 3: Departments with no planned leaves
-    const userMap = new Map(users.map((u) => [u._id, u]));
+    const userMap = new Map(users.map((u: any) => [u._id, u]));
     const deptLeaves = new Map<string, number>();
     for (const leave of leaves) {
       const user = userMap.get(leave.userId);
@@ -332,12 +336,12 @@ export const getSmartSuggestions = query({
     }
 
     const allDepts = new Set(
-      users.map((u) => {
+      users.map((u: any) => {
         const p = ssProfileMap.get(u._id);
         return p?.department ?? u.department ?? 'Unknown';
       }),
     );
-    const deptsWithoutLeaves = Array.from(allDepts).filter((d) => !deptLeaves.has(d));
+    const deptsWithoutLeaves = Array.from(allDepts).filter((d: any) => !deptLeaves.has(d));
 
     if (deptsWithoutLeaves.length > 0) {
       suggestions.push({
@@ -351,7 +355,7 @@ export const getSmartSuggestions = query({
     }
 
     // Suggestion 4: Cost optimization
-    const contractorLeaves = leaves.filter((l) => {
+    const contractorLeaves = leaves.filter((l: any) => {
       const user = users.find((u) => u._id === l.userId);
       if (!user) return false;
       const p = ssProfileMap.get(user._id);
@@ -377,7 +381,7 @@ export const getSmartSuggestions = query({
     }
 
     return suggestions;
-  },
+  }),
 });
 
 /**
@@ -389,33 +393,33 @@ export const getCalendarExportData = query({
     endDate: v.optional(v.string()),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Get all approved leaves
     let leaves = await ctx.db
       .query('leaveRequests')
-      .filter((q) => q.eq(q.field('status'), 'approved'))
+      .filter((q: any) => q.eq(q.field('status'), 'approved'))
       .order('desc')
       .take(MAX_PAGE_SIZE);
 
     // Filter by organization if provided
     if (args.organizationId) {
-      leaves = leaves.filter((l) => l.organizationId === args.organizationId);
+      leaves = leaves.filter((l: any) => l.organizationId === args.organizationId);
     }
 
     // Get all users
     const users = (await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE)).filter(
       (u) => u.role !== 'superadmin',
     );
-    const userMap = new Map(users.map((u) => [u._id, u]));
+    const userMap = new Map(users.map((u: any) => [u._id, u]));
 
     // Load profiles in parallel
-    const ceProfiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
+    const ceProfiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
     const ceProfileMap = new Map(users.map((u, i) => [u._id, ceProfiles[i]]));
 
     // Filter by date range if provided
     let filteredLeaves = leaves;
     if (args.startDate || args.endDate) {
-      filteredLeaves = leaves.filter((leave) => {
+      filteredLeaves = leaves.filter((leave: any) => {
         if (args.startDate && leave.endDate < args.startDate) return false;
         if (args.endDate && leave.startDate > args.endDate) return false;
         return true;
@@ -423,7 +427,7 @@ export const getCalendarExportData = query({
     }
 
     // Format for calendar export
-    return filteredLeaves.map((leave) => {
+    return filteredLeaves.map((leave: any) => {
       const user = userMap.get(leave.userId);
       const profile = ceProfileMap.get(leave.userId);
       return {
@@ -437,7 +441,7 @@ export const getCalendarExportData = query({
         type: leave.type,
       };
     });
-  },
+  }),
 });
 
 // ─── SERVICE BROADCASTS ────────────────────────────────────────────────────────
@@ -455,13 +459,13 @@ export const sendServiceBroadcast = mutation({
     icon: v.optional(v.string()), // emoji e.g. "⚠️", "ℹ️", "🔧", "🎉"
     scheduledFor: v.optional(v.number()), // optional timestamp for scheduling
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await requireRole(ctx, args.userId, 'superadmin');
     // Get or create the "System Announcements" group chat for this organization
     let announcementConv = await ctx.db
       .query('chatConversations')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(
           q.eq(q.field('type'), 'group'),
           q.eq(q.field('name'), 'System Announcements'),
@@ -522,7 +526,7 @@ export const sendServiceBroadcast = mutation({
       }
 
       // IMPORTANT: Always add the superadmin who created the channel as owner, even if not approved
-      const superadminUser = await ctx.db.get(args.userId);
+      const superadminUser = (await ctx.db.get(args.userId)) as any;
       if (superadminUser) {
         const superadminAlreadyAdded = users.some(
           (u) => u._id === args.userId && u.isActive && u.isApproved,
@@ -581,7 +585,7 @@ export const sendServiceBroadcast = mutation({
       .take(DEFAULT_LIST_CAP);
 
     console.warn(`[sendServiceBroadcast] Total users in org: ${allUsers.length}`);
-    const activeApprovedUsers = allUsers.filter((u) => u.isActive && u.isApproved);
+    const activeApprovedUsers = allUsers.filter((u: any) => u.isActive && u.isApproved);
     console.warn(`[sendServiceBroadcast] Active & approved users: ${activeApprovedUsers.length}`);
     activeApprovedUsers.forEach((u) =>
       console.warn(`  - ${u.name} (${u.email}) - active:${u.isActive}, approved:${u.isApproved}`),
@@ -592,11 +596,11 @@ export const sendServiceBroadcast = mutation({
       .withIndex('by_conversation', (q) => q.eq('conversationId', announcementConv._id))
       .take(DEFAULT_LIST_CAP);
 
-    const existingMemberIds = new Set(existingMembers.map((m) => m.userId.toString()));
+    const existingMemberIds = new Set(existingMembers.map((m: any) => m.userId.toString()));
     const newMemberIds: Id<'users'>[] = [];
 
     console.warn(
-      `[sendServiceBroadcast] Existing members: ${existingMembers.length}, Active users: ${allUsers.filter((u) => u.isActive && u.isApproved).length}`,
+      `[sendServiceBroadcast] Existing members: ${existingMembers.length}, Active users: ${allUsers.filter((u: any) => u.isActive && u.isApproved).length}`,
     );
 
     // Add active, approved users
@@ -625,7 +629,7 @@ export const sendServiceBroadcast = mutation({
     // IMPORTANT: Always ensure superadmin is a member as owner
     const superadminIdStr = args.userId.toString();
     if (!existingMemberIds.has(superadminIdStr)) {
-      const superadminUser = await ctx.db.get(args.userId);
+      const superadminUser = (await ctx.db.get(args.userId)) as any;
       if (superadminUser) {
         console.warn(
           `[sendServiceBroadcast] Ensuring superadmin is member: ${superadminUser.name}`,
@@ -686,7 +690,7 @@ export const sendServiceBroadcast = mutation({
 
     // Mark as unread for existing members (except the sender)
     // New members already have unreadCount=1 from being added above
-    const newMemberIdSet = new Set(newMemberIds.map((id) => id.toString()));
+    const newMemberIdSet = new Set(newMemberIds.map((id: any) => id.toString()));
 
     for (const member of existingMembers) {
       // Skip new members (they were just added with unreadCount=1)
@@ -710,7 +714,7 @@ export const sendServiceBroadcast = mutation({
       content: args.content,
       issuedAt: now,
     };
-  },
+  }),
 });
 
 // ─── MAINTENANCE MODE ──────────────────────────────────────────────────────────
@@ -730,7 +734,7 @@ export const enableMaintenanceMode = mutation({
     estimatedDuration: v.optional(v.string()),
     icon: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await requireRole(ctx, args.userId, 'superadmin');
 
     const now = Date.now();
@@ -773,7 +777,7 @@ export const enableMaintenanceMode = mutation({
     });
 
     return maintenanceId;
-  },
+  }),
 });
 
 /**
@@ -784,7 +788,7 @@ export const disableMaintenanceMode = mutation({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await requireRole(ctx, args.userId, 'superadmin');
 
     const maintenance = await ctx.db
@@ -802,7 +806,7 @@ export const disableMaintenanceMode = mutation({
     });
 
     return maintenance._id;
-  },
+  }),
 });
 
 /**
@@ -812,12 +816,12 @@ export const getMaintenanceMode = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return await ctx.db
       .query('maintenanceMode')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .first();
-  },
+  }),
 });
 
 /**
@@ -830,7 +834,7 @@ export const assignUserAsOrgAdmin = mutation({
     userEmail: v.string(),
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await requireRole(ctx, args.superadminUserId, 'superadmin');
 
     // Find user by email
@@ -844,7 +848,7 @@ export const assignUserAsOrgAdmin = mutation({
     }
 
     // Verify org exists
-    const org = await ctx.db.get(args.organizationId);
+    const org = (await ctx.db.get(args.organizationId)) as any;
     if (!org) {
       throw new Error('Organization not found');
     }
@@ -862,7 +866,7 @@ export const assignUserAsOrgAdmin = mutation({
       role: 'admin',
       organizationId: args.organizationId,
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -936,16 +940,16 @@ export const getSuperadminDashboard = query({
     });
 
     // Build dashboard data
-    const dashboard = orgs.map((org) => {
+    const dashboard = orgs.map((org: any) => {
       const orgId = org._id.toString();
       const orgUsers = usersByOrg.get(orgId) || [];
       const orgLeaves = leavesByOrg.get(orgId) || [];
       const subscription = subscriptionByOrg.get(orgId);
 
-      const activeUsers = orgUsers.filter((u) => u.isActive && u.isApproved);
-      const pendingUsers = orgUsers.filter((u) => !u.isApproved);
-      const pendingLeaves = orgLeaves.filter((l) => l.status === 'pending');
-      const approvedLeaves = orgLeaves.filter((l) => l.status === 'approved');
+      const activeUsers = orgUsers.filter((u: any) => u.isActive && u.isApproved);
+      const pendingUsers = orgUsers.filter((u: any) => !u.isApproved);
+      const pendingLeaves = orgLeaves.filter((l: any) => l.status === 'pending');
+      const approvedLeaves = orgLeaves.filter((l: any) => l.status === 'approved');
 
       // Calculate revenue based on plan
       const monthlyRevenue =
@@ -981,7 +985,7 @@ export const getSuperadminDashboard = query({
           total: orgLeaves.length,
           pending: pendingLeaves.length,
           approved: approvedLeaves.length,
-          rejected: orgLeaves.filter((l) => l.status === 'rejected').length,
+          rejected: orgLeaves.filter((l: any) => l.status === 'rejected').length,
         },
         subscription: subscription
           ? {
@@ -1004,8 +1008,8 @@ export const getSuperadminDashboard = query({
     // Calculate totals
     const totalStats = {
       organizations: orgs.length,
-      activeOrganizations: orgs.filter((o) => o.isActive).length,
-      totalUsers: allUsers.filter((u) => u.organizationId).length,
+      activeOrganizations: orgs.filter((o: any) => o.isActive).length,
+      totalUsers: allUsers.filter((u: any) => u.organizationId).length,
       totalRevenue: dashboard.reduce((sum, d) => sum + (d.subscription?.monthlyRevenue || 0), 0),
       pendingLeaves: dashboard.reduce((sum, d) => sum + d.leaves.pending, 0),
     };
@@ -1034,7 +1038,7 @@ export const secureAssignUserAsOrgAdmin = mutation({
       .unique();
     if (!user) throw new Error(`User with email ${userEmail} not found`);
 
-    const org = await ctx.db.get(organizationId);
+    const org = (await ctx.db.get(organizationId)) as any;
     if (!org) throw new Error('Organization not found');
 
     await ctx.db.patch(user._id, { organizationId, role: 'admin', updatedAt: Date.now() });
@@ -1069,7 +1073,7 @@ export const secureDisableMaintenanceMode = mutation({
     async (ctx, { organizationId }) => {
       const active = await ctx.db
         .query('maintenanceMode')
-        .filter((q) =>
+        .filter((q: any) =>
           q.and(q.eq(q.field('organizationId'), organizationId), q.eq(q.field('isActive'), true)),
         )
         .first();

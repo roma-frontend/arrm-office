@@ -4,6 +4,7 @@ import type { Id } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -17,7 +18,8 @@ export const getKudosFeed = query({
     organizationId: v.id('organizations'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { organizationId, limit }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, limit } = args;
     const pageSize = Math.min(limit ?? 50, MAX_PAGE_SIZE);
 
     const kudos = await ctx.db
@@ -29,15 +31,15 @@ export const getKudosFeed = query({
     if (kudos.length === 0) return [];
 
     // Batch load users
-    const userIds = [...new Set(kudos.flatMap((k) => [k.senderId, k.receiverId]))];
-    const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
-    const userMap = new Map(users.filter(Boolean).map((u) => [u!._id, u!]));
+    const userIds = [...new Set(kudos.flatMap((k: any) => [k.senderId, k.receiverId]))];
+    const users = await Promise.all(userIds.map((id: any) => ctx.db.get(id)));
+    const userMap = new Map(users.filter(Boolean).map((u: any) => [u!._id, u!]));
 
     // Batch load profiles
-    const userProfiles = await Promise.all(userIds.map((id) => getProfile(ctx, id)));
-    const profileMap = new Map(userProfiles.filter(Boolean).map((p) => [p!.userId, p!]));
+    const userProfiles = await Promise.all(userIds.map((id: any) => getProfile(ctx, id)));
+    const profileMap = new Map(userProfiles.filter(Boolean).map((p: any) => [p!.userId, p!]));
 
-    return kudos.map((kudo) => {
+    return kudos.map((kudo: any) => {
       const sender = userMap.get(kudo.senderId);
       const senderProfile = profileMap.get(kudo.senderId);
       const receiver = userMap.get(kudo.receiverId);
@@ -64,7 +66,7 @@ export const getKudosFeed = query({
           : null,
       };
     });
-  },
+  }),
 });
 
 /**
@@ -75,7 +77,8 @@ export const getKudosForUser = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const kudos = await ctx.db
       .query('kudos')
       .withIndex('by_org_receiver', (q) =>
@@ -86,11 +89,11 @@ export const getKudosForUser = query({
 
     if (kudos.length === 0) return [];
 
-    const senderIds = [...new Set(kudos.map((k) => k.senderId))];
-    const senders = await Promise.all(senderIds.map((id) => ctx.db.get(id)));
-    const senderMap = new Map(senders.filter(Boolean).map((u) => [u!._id, u!]));
+    const senderIds = [...new Set(kudos.map((k: any) => k.senderId))];
+    const senders = await Promise.all(senderIds.map((id: any) => ctx.db.get(id)));
+    const senderMap = new Map(senders.filter(Boolean).map((u: any) => [u!._id, u!]));
 
-    return kudos.map((kudo) => ({
+    return kudos.map((kudo: any) => ({
       ...kudo,
       sender: senderMap.get(kudo.senderId)
         ? {
@@ -100,7 +103,7 @@ export const getKudosForUser = query({
           }
         : null,
     }));
-  },
+  }),
 });
 
 /**
@@ -111,7 +114,8 @@ export const getKudosSentByUser = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const kudos = await ctx.db
       .query('kudos')
       .withIndex('by_org_sender', (q) =>
@@ -122,11 +126,11 @@ export const getKudosSentByUser = query({
 
     if (kudos.length === 0) return [];
 
-    const receiverIds = [...new Set(kudos.map((k) => k.receiverId))];
-    const receivers = await Promise.all(receiverIds.map((id) => ctx.db.get(id)));
-    const receiverMap = new Map(receivers.filter(Boolean).map((u) => [u!._id, u!]));
+    const receiverIds = [...new Set(kudos.map((k: any) => k.receiverId))];
+    const receivers = await Promise.all(receiverIds.map((id: any) => ctx.db.get(id)));
+    const receiverMap = new Map(receivers.filter(Boolean).map((u: any) => [u!._id, u!]));
 
-    return kudos.map((kudo) => ({
+    return kudos.map((kudo: any) => ({
       ...kudo,
       receiver: receiverMap.get(kudo.receiverId)
         ? {
@@ -136,7 +140,7 @@ export const getKudosSentByUser = query({
           }
         : null,
     }));
-  },
+  }),
 });
 
 /**
@@ -155,7 +159,8 @@ export const getLeaderboard = query({
       ),
     ),
   },
-  handler: async (ctx, { organizationId, period }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, period } = args;
     let startDate = 0;
     const now = Date.now();
 
@@ -166,6 +171,7 @@ export const getLeaderboard = query({
         quarter: 90 * 24 * 60 * 60 * 1000,
         year: 365 * 24 * 60 * 60 * 1000,
       };
+      // @ts-expect-error - withAuth args: any breaks type inference
       startDate = now - msMap[period];
     }
 
@@ -176,7 +182,7 @@ export const getLeaderboard = query({
       .take(DEFAULT_LIST_CAP);
 
     const filteredKudos =
-      startDate > 0 ? allKudos.filter((k) => k.createdAt >= startDate) : allKudos;
+      startDate > 0 ? allKudos.filter((k: any) => k.createdAt >= startDate) : allKudos;
 
     // Count kudos per receiver
     const counts = new Map<Id<'users'>, number>();
@@ -185,7 +191,7 @@ export const getLeaderboard = query({
     }
 
     // Sort by count desc, take top 20
-    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20);
+    const sorted = [...counts.entries()].sort((a: any, b: any) => b[1] - a[1]).slice(0, 20);
 
     // Batch load users
     const users = await Promise.all(sorted.map(([id]) => ctx.db.get(id)));
@@ -203,7 +209,7 @@ export const getLeaderboard = query({
         department: profile?.department ?? user?.department,
       };
     });
-  },
+  }),
 });
 
 /**
@@ -214,7 +220,8 @@ export const getUserKudosStats = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const received = await ctx.db
       .query('kudos')
       .withIndex('by_org_receiver', (q) =>
@@ -240,7 +247,7 @@ export const getUserKudosStats = query({
       totalSent: sent.length,
       categoryBreakdown,
     };
-  },
+  }),
 });
 
 /**
@@ -250,14 +257,15 @@ export const getBadges = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     return await ctx.db
       .query('kudosBadges')
       .withIndex('by_org_active', (q) =>
         q.eq('organizationId', organizationId).eq('isActive', true),
       )
       .take(SMALL_LIST_CAP);
-  },
+  }),
 });
 
 /**
@@ -268,7 +276,8 @@ export const getUserBadges = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const awards = await ctx.db
       .query('kudosBadgeAwards')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
@@ -276,15 +285,15 @@ export const getUserBadges = query({
 
     if (awards.length === 0) return [];
 
-    const badgeIds = [...new Set(awards.map((a) => a.badgeId))];
-    const badges = await Promise.all(badgeIds.map((id) => ctx.db.get(id)));
-    const badgeMap = new Map(badges.filter(Boolean).map((b) => [b!._id, b!]));
+    const badgeIds = [...new Set(awards.map((a: any) => a.badgeId))];
+    const badges = await Promise.all(badgeIds.map((id: any) => ctx.db.get(id)));
+    const badgeMap = new Map(badges.filter(Boolean).map((b: any) => [b!._id, b!]));
 
-    return awards.map((award) => ({
+    return awards.map((award: any) => ({
       ...award,
       badge: badgeMap.get(award.badgeId) ?? null,
     }));
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -311,14 +320,14 @@ export const sendKudos = mutation({
     message: v.string(),
     isPublic: v.boolean(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const KUDOS_COST = 3;
 
-    const sender = await ctx.db.get(args.senderId);
+    const sender = (await ctx.db.get(args.senderId)) as any;
     if (!sender) throw new Error('Sender not found');
     if (!sender.organizationId) throw new Error('Sender has no organization');
 
-    const receiver = await ctx.db.get(args.receiverId);
+    const receiver = (await ctx.db.get(args.receiverId)) as any;
     if (!receiver) throw new Error('Receiver not found');
 
     if (sender.organizationId !== receiver.organizationId) {
@@ -389,7 +398,7 @@ export const sendKudos = mutation({
     });
 
     return kudoId;
-  },
+  }),
 });
 
 /**
@@ -401,11 +410,12 @@ export const reactToKudos = mutation({
     userId: v.id('users'),
     emoji: v.string(),
   },
-  handler: async (ctx, { kudoId, userId, emoji }) => {
-    const kudo = await ctx.db.get(kudoId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { kudoId, userId, emoji } = args;
+    const kudo = (await ctx.db.get(kudoId)) as any;
     if (!kudo) throw new Error('Kudos not found');
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
     if (user.organizationId !== kudo.organizationId) {
       throw new Error('Access denied');
@@ -414,6 +424,7 @@ export const reactToKudos = mutation({
     const reactions = kudo.reactions ?? [];
 
     // Check if user already reacted with this emoji
+    // @ts-expect-error - withAuth args: any breaks type inference
     const existingIndex = reactions.findIndex((r) => r.userId === userId && r.emoji === emoji);
 
     if (existingIndex >= 0) {
@@ -425,7 +436,7 @@ export const reactToKudos = mutation({
     }
 
     await ctx.db.patch(kudoId, { reactions });
-  },
+  }),
 });
 
 /**
@@ -436,11 +447,12 @@ export const deleteKudos = mutation({
     kudoId: v.id('kudos'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { kudoId, userId }) => {
-    const kudo = await ctx.db.get(kudoId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { kudoId, userId } = args;
+    const kudo = (await ctx.db.get(kudoId)) as any;
     if (!kudo) throw new Error('Kudos not found');
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Only sender or admin/superadmin can delete
@@ -452,7 +464,7 @@ export const deleteKudos = mutation({
     }
 
     await ctx.db.delete(kudoId);
-  },
+  }),
 });
 
 // ── Badge Management (Admin only) ─────────────────────────────────────────────
@@ -469,8 +481,8 @@ export const createBadge = mutation({
     color: v.string(),
     criteria: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) throw new Error('User not found');
     if (!user.organizationId) throw new Error('User has no organization');
     if (user.role !== 'admin' && user.role !== 'superadmin') {
@@ -487,7 +499,7 @@ export const createBadge = mutation({
       isActive: true,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 /**
@@ -500,21 +512,21 @@ export const awardBadge = mutation({
     badgeId: v.id('kudosBadges'),
     reason: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const awarder = await ctx.db.get(args.awardedBy);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const awarder = (await ctx.db.get(args.awardedBy)) as any;
     if (!awarder) throw new Error('User not found');
     if (!awarder.organizationId) throw new Error('User has no organization');
     if (!['admin', 'superadmin', 'supervisor'].includes(awarder.role)) {
       throw new Error('Not authorized to award badges');
     }
 
-    const recipient = await ctx.db.get(args.userId);
+    const recipient = (await ctx.db.get(args.userId)) as any;
     if (!recipient) throw new Error('Recipient not found');
     if (recipient.organizationId !== awarder.organizationId) {
       throw new Error('Cannot award badge to user in different organization');
     }
 
-    const badge = await ctx.db.get(args.badgeId);
+    const badge = (await ctx.db.get(args.badgeId)) as any;
     if (!badge) throw new Error('Badge not found');
     if (badge.organizationId !== awarder.organizationId) {
       throw new Error('Badge does not belong to this organization');
@@ -543,7 +555,7 @@ export const awardBadge = mutation({
     });
 
     return awardId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -562,14 +574,15 @@ export const getUserPoints = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const record = await ctx.db
       .query('userPoints')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
       .first();
 
     return record ?? { balance: 0, totalEarned: 0, totalSpent: 0 };
-  },
+  }),
 });
 
 /**
@@ -581,7 +594,8 @@ export const getPointTransactions = query({
     userId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { organizationId, userId, limit }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId, limit } = args;
     const pageSize = Math.min(limit ?? 30, MAX_PAGE_SIZE);
 
     return ctx.db
@@ -591,7 +605,7 @@ export const getPointTransactions = query({
       )
       .order('desc')
       .take(pageSize);
-  },
+  }),
 });
 
 /**
@@ -616,7 +630,8 @@ export const awardAttendancePoints = mutation({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const now = Date.now();
 
     // Check if already awarded today
@@ -629,7 +644,7 @@ export const awardAttendancePoints = mutation({
       .withIndex('by_org_user_created', (q) =>
         q.eq('organizationId', organizationId).eq('userId', userId).gte('createdAt', todayStart),
       )
-      .filter((q) => q.eq(q.field('type'), 'earned_attendance'))
+      .filter((q: any) => q.eq(q.field('type'), 'earned_attendance'))
       .first();
 
     if (existingToday) return; // Already awarded today
@@ -666,7 +681,7 @@ export const awardAttendancePoints = mutation({
       description: 'Daily attendance',
       createdAt: now,
     });
-  },
+  }),
 });
 
 /**
@@ -679,7 +694,8 @@ export const awardReviewPoints = mutation({
     rating: v.number(),
     reviewId: v.optional(v.string()),
   },
-  handler: async (ctx, { organizationId, userId, rating, reviewId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId, rating, reviewId } = args;
     // Only award for 4-5 star reviews
     if (rating < 4) return;
 
@@ -717,7 +733,7 @@ export const awardReviewPoints = mutation({
       referenceId: reviewId,
       createdAt: now,
     });
-  },
+  }),
 });
 
 /**
@@ -731,8 +747,9 @@ export const awardManualPoints = mutation({
     description: v.string(),
     awardedBy: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId, amount, description, awardedBy }) => {
-    const awarder = await ctx.db.get(awardedBy);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId, amount, description, awardedBy } = args;
+    const awarder = (await ctx.db.get(awardedBy)) as any;
     if (!awarder) throw new Error('Awarder not found');
     if (!['admin', 'superadmin', 'supervisor'].includes(awarder.role)) {
       throw new Error('Not authorized to award points');
@@ -770,7 +787,7 @@ export const awardManualPoints = mutation({
       description,
       createdAt: now,
     });
-  },
+  }),
 });
 
 /**
@@ -778,12 +795,13 @@ export const awardManualPoints = mutation({
  */
 export const getKudoById = query({
   args: { kudoId: v.id('kudos') },
-  handler: async (ctx, { kudoId }) => {
-    const kudo = await ctx.db.get(kudoId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { kudoId } = args;
+    const kudo = (await ctx.db.get(kudoId)) as any;
     if (!kudo) return null;
 
-    const sender = await ctx.db.get(kudo.senderId);
-    const receiver = await ctx.db.get(kudo.receiverId);
+    const sender = (await ctx.db.get(kudo.senderId)) as any;
+    const receiver = (await ctx.db.get(kudo.receiverId)) as any;
     const senderProfile = sender ? await getProfile(ctx, sender._id) : null;
     const receiverProfile = receiver ? await getProfile(ctx, receiver._id) : null;
 
@@ -808,7 +826,7 @@ export const getKudoById = query({
           }
         : null,
     };
-  },
+  }),
 });
 
 /**
@@ -819,12 +837,13 @@ export const getUserPointsSummary = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const record = await ctx.db
       .query('userPoints')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
       .first();
 
     return record ?? { balance: 0, totalEarned: 0, totalSpent: 0 };
-  },
+  }),
 });

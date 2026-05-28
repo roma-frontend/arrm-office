@@ -4,6 +4,7 @@ import { Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { withAuth } from './lib/withAuth';
 
 // ── Create/Update Supervisor Rating ──────────────────────────────────────
 export const createRating = mutation({
@@ -21,7 +22,7 @@ export const createRating = mutation({
     generalComments: v.optional(v.string()),
     ratingPeriod: v.optional(v.string()), // e.g., "2026-02"
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Validate ratings are between 1-5
     const ratings = [
       args.qualityOfWork,
@@ -64,7 +65,7 @@ export const createRating = mutation({
 
     // Award points for positive review (4-5 stars overall → +3 points)
     if (overallRating >= 4) {
-      const employee = await ctx.db.get(args.employeeId);
+      const employee = (await ctx.db.get(args.employeeId)) as any;
       if (employee?.organizationId) {
         const orgId = employee.organizationId;
         const now = Date.now();
@@ -107,7 +108,7 @@ export const createRating = mutation({
     }
 
     return ratingId;
-  },
+  }),
 });
 
 // ── Get Employee's Ratings History ───────────────────────────────────────
@@ -116,7 +117,7 @@ export const getEmployeeRatings = query({
     employeeId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const ratings = await ctx.db
       .query('supervisorRatings')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
@@ -126,7 +127,7 @@ export const getEmployeeRatings = query({
     // Get supervisor info for each rating
     const withSupervisors = await Promise.all(
       ratings.map(async (rating) => {
-        const supervisor = await ctx.db.get(rating.supervisorId);
+        const supervisor = (await ctx.db.get(rating.supervisorId)) as any;
         return {
           ...rating,
           supervisor,
@@ -135,7 +136,7 @@ export const getEmployeeRatings = query({
     );
 
     return withSupervisors;
-  },
+  }),
 });
 
 // ── Get Latest Rating for Employee ───────────────────────────────────────
@@ -143,7 +144,7 @@ export const getLatestRating = query({
   args: {
     employeeId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const rating = await ctx.db
       .query('supervisorRatings')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
@@ -152,13 +153,13 @@ export const getLatestRating = query({
 
     if (!rating) return null;
 
-    const supervisor = await ctx.db.get(rating.supervisorId);
+    const supervisor = (await ctx.db.get(rating.supervisorId)) as any;
 
     return {
       ...rating,
       supervisor,
     };
-  },
+  }),
 });
 
 // ── Get Average Ratings for Employee ─────────────────────────────────────
@@ -167,7 +168,7 @@ export const getAverageRatings = query({
     employeeId: v.id('users'),
     months: v.optional(v.number()), // Last N months, default 3
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const allRatings = await ctx.db
       .query('supervisorRatings')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
@@ -192,7 +193,7 @@ export const getAverageRatings = query({
     cutoffDate.setMonth(cutoffDate.getMonth() - monthsToInclude);
     const cutoffPeriod = cutoffDate.toISOString().slice(0, 7);
 
-    const recentRatings = allRatings.filter((r) => r.ratingPeriod >= cutoffPeriod);
+    const recentRatings = allRatings.filter((r: any) => r.ratingPeriod >= cutoffPeriod);
     const ratingsToUse = recentRatings.length > 0 ? recentRatings : allRatings;
 
     const count = ratingsToUse.length;
@@ -209,7 +210,7 @@ export const getAverageRatings = query({
     };
 
     return avg;
-  },
+  }),
 });
 
 // ── Get Ratings by Supervisor ────────────────────────────────────────────
@@ -218,7 +219,7 @@ export const getRatingsBySupervisor = query({
     supervisorId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const ratings = await ctx.db
       .query('supervisorRatings')
       .withIndex('by_supervisor', (q) => q.eq('supervisorId', args.supervisorId))
@@ -228,7 +229,7 @@ export const getRatingsBySupervisor = query({
     // Get employee info for each rating
     const withEmployees = await Promise.all(
       ratings.map(async (rating) => {
-        const employee = await ctx.db.get(rating.employeeId);
+        const employee = (await ctx.db.get(rating.employeeId)) as any;
         return {
           ...rating,
           employee,
@@ -237,7 +238,7 @@ export const getRatingsBySupervisor = query({
     );
 
     return withEmployees;
-  },
+  }),
 });
 
 // ── Get Rating Trends (for charts) ───────────────────────────────────────
@@ -246,7 +247,7 @@ export const getRatingTrends = query({
     employeeId: v.id('users'),
     months: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const ratings = await ctx.db
       .query('supervisorRatings')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
@@ -254,7 +255,7 @@ export const getRatingTrends = query({
       .take(args.months || 6);
 
     return ratings.reverse(); // Chronological order for charts
-  },
+  }),
 });
 
 // ── Helper: Update Performance Metrics ───────────────────────────────────
@@ -315,8 +316,8 @@ export const getEmployeesNeedingRating = query({
   args: {
     supervisorId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const supervisor = await ctx.db.get(args.supervisorId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const supervisor = (await ctx.db.get(args.supervisorId)) as any;
     if (!supervisor) throw new Error('Supervisor not found');
 
     const userIsSuperadmin = isSuperadmin(supervisor);
@@ -365,6 +366,6 @@ export const getEmployeesNeedingRating = query({
       }),
     );
 
-    return needsRating.filter((item) => item.needsRating);
-  },
+    return needsRating.filter((item: any) => item.needsRating);
+  }),
 });

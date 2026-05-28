@@ -1,18 +1,20 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { withAuth } from './lib/withAuth';
 
 // ============ QUERIES ============
 
 export const listTemplates = query({
   args: { organizationId: v.id('organizations') },
-  handler: async (ctx, { organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId } = args;
     return await ctx.db
       .query('documentTemplates')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q) => q.neq(q.field('isArchived'), true))
+      .filter((q: any) => q.neq(q.field('isArchived'), true))
       .take(DEFAULT_LIST_CAP);
-  },
+  }),
 });
 
 export const listDocuments = query({
@@ -29,7 +31,8 @@ export const listDocuments = query({
       ),
     ),
   },
-  handler: async (ctx, { organizationId, status }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, status } = args;
     if (status) {
       return await ctx.db
         .query('signatureDocuments')
@@ -44,13 +47,14 @@ export const listDocuments = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .order('desc')
       .take(DEFAULT_LIST_CAP);
-  },
+  }),
 });
 
 export const getDocument = query({
   args: { documentId: v.id('signatureDocuments') },
-  handler: async (ctx, { documentId }) => {
-    const doc = await ctx.db.get(documentId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { documentId } = args;
+    const doc = (await ctx.db.get(documentId)) as any;
     if (!doc) return null;
 
     const requests = await ctx.db
@@ -59,7 +63,7 @@ export const getDocument = query({
       .collect();
 
     return { ...doc, requests };
-  },
+  }),
 });
 
 export const getMyPendingSignatures = query({
@@ -67,7 +71,8 @@ export const getMyPendingSignatures = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     const requests = await ctx.db
       .query('signatureRequests')
       .withIndex('by_signer_status', (q) => q.eq('signerId', userId).eq('status', 'pending'))
@@ -76,24 +81,25 @@ export const getMyPendingSignatures = query({
     // Enrich with document info
     const enriched = await Promise.all(
       requests.map(async (req) => {
-        const doc = await ctx.db.get(req.documentId);
+        const doc = (await ctx.db.get(req.documentId)) as any;
         return { ...req, document: doc };
       }),
     );
 
-    return enriched.filter((r) => r.document && r.document.status !== 'cancelled');
-  },
+    return enriched.filter((r: any) => r.document && r.document.status !== 'cancelled');
+  }),
 });
 
 export const getAuditLog = query({
   args: { documentId: v.id('signatureDocuments') },
-  handler: async (ctx, { documentId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { documentId } = args;
     return await ctx.db
       .query('signatureAuditLog')
       .withIndex('by_document_time', (q) => q.eq('documentId', documentId))
       .order('desc')
       .collect();
-  },
+  }),
 });
 
 export const getStats = query({
@@ -101,7 +107,8 @@ export const getStats = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { organizationId, userId } = args;
     const pending = await ctx.db
       .query('signatureRequests')
       .withIndex('by_signer_status', (q) => q.eq('signerId', userId).eq('status', 'pending'))
@@ -112,7 +119,7 @@ export const getStats = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const completed = allDocs.filter((d) => d.status === 'completed').length;
+    const completed = allDocs.filter((d: any) => d.status === 'completed').length;
     const awaitingOthers = allDocs.filter(
       (d) => d.status === 'pending' || d.status === 'partially_signed',
     ).length;
@@ -122,7 +129,7 @@ export const getStats = query({
       completed,
       awaitingOthers,
     };
-  },
+  }),
 });
 
 // ============ MUTATIONS ============
@@ -151,19 +158,20 @@ export const createTemplate = mutation({
     ),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return await ctx.db.insert('documentTemplates', {
       ...args,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 export const deleteTemplate = mutation({
   args: { templateId: v.id('documentTemplates') },
-  handler: async (ctx, { templateId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { templateId } = args;
     await ctx.db.patch(templateId, { isArchived: true });
-  },
+  }),
 });
 
 export const createDocument = mutation({
@@ -200,7 +208,7 @@ export const createDocument = mutation({
     expiresAt: v.optional(v.number()),
     createdBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { signers, ...docArgs } = args;
     const now = Date.now();
 
@@ -248,7 +256,7 @@ export const createDocument = mutation({
     });
 
     return documentId;
-  },
+  }),
 });
 
 export const signDocument = mutation({
@@ -257,13 +265,14 @@ export const signDocument = mutation({
     signatureData: v.string(),
     userId: v.id('users'),
   },
-  handler: async (ctx, { requestId, signatureData, userId }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId, signatureData, userId } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Signature request not found');
     if (request.signerId !== userId) throw new Error('Not authorized to sign');
     if (request.status !== 'pending') throw new Error('Request already processed');
 
-    const doc = await ctx.db.get(request.documentId);
+    const doc = (await ctx.db.get(request.documentId)) as any;
     if (!doc || doc.status === 'cancelled') throw new Error('Document not available');
 
     // Enforce sequential signing: check that all previous orders are signed
@@ -315,7 +324,7 @@ export const signDocument = mutation({
       action: 'signed',
       timestamp: now,
     });
-  },
+  }),
 });
 
 export const declineDocument = mutation({
@@ -324,8 +333,9 @@ export const declineDocument = mutation({
     reason: v.optional(v.string()),
     userId: v.id('users'),
   },
-  handler: async (ctx, { requestId, reason, userId }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId, reason, userId } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Signature request not found');
     if (request.signerId !== userId) throw new Error('Not authorized');
     if (request.status !== 'pending') throw new Error('Request already processed');
@@ -347,7 +357,7 @@ export const declineDocument = mutation({
       metadata: reason ? JSON.stringify({ reason }) : undefined,
       timestamp: now,
     });
-  },
+  }),
 });
 
 export const cancelDocument = mutation({
@@ -355,8 +365,9 @@ export const cancelDocument = mutation({
     documentId: v.id('signatureDocuments'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { documentId, userId }) => {
-    const doc = await ctx.db.get(documentId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { documentId, userId } = args;
+    const doc = (await ctx.db.get(documentId)) as any;
     if (!doc) throw new Error('Document not found');
     if (doc.createdBy !== userId) throw new Error('Only creator can cancel');
     if (doc.status === 'completed') throw new Error('Cannot cancel completed document');
@@ -385,7 +396,7 @@ export const cancelDocument = mutation({
       action: 'cancelled',
       timestamp: now,
     });
-  },
+  }),
 });
 
 export const sendReminder = mutation({
@@ -393,8 +404,9 @@ export const sendReminder = mutation({
     requestId: v.id('signatureRequests'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { requestId, userId }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId, userId } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('Cannot remind non-pending request');
 
@@ -407,5 +419,5 @@ export const sendReminder = mutation({
       metadata: JSON.stringify({ signerId: request.signerId }),
       timestamp: Date.now(),
     });
-  },
+  }),
 });
