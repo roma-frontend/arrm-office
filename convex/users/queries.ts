@@ -129,29 +129,30 @@ export const getUsersByOrganizationId = query({
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { requesterId, organizationId, cursor, limit }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return [];
     const DEFAULT_LIMIT = 50;
     const MAX_LIMIT = 100;
-    const effectiveLimit = Math.min(limit || DEFAULT_LIMIT, MAX_LIMIT);
-
-    const requester = await requireRequester(ctx, requesterId);
+    const effectiveLimit = Math.min(args.limit || DEFAULT_LIMIT, MAX_LIMIT);
 
     // Superadmin can query any org; regular users can only query their own
-    if (!isSuperadmin(requester) && requester.organizationId !== organizationId) {
+    if (!isSuperadmin(requester) && requester.organizationId !== args.organizationId) {
       throw new Error('Access denied: cross-organization access is not allowed');
     }
 
     let query = ctx.db
       .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')));
 
-    if (cursor) {
-      query = (query as any).startAfter(cursor);
+    if (args.cursor) {
+      query = (query as any).startAfter(args.cursor);
     }
 
     return await query.take(effectiveLimit + 1);
-  },
+  }),
 });
 
 // Alias for mobile compatibility
@@ -339,8 +340,9 @@ export const getUsersByRole = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingApprovalUsers = query({
   args: { adminId: v.id('users') },
-  handler: async (ctx, { adminId }) => {
-    const admin = await requireRequester(ctx, adminId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const admin = caller ?? (args.adminId ? await requireRequester(ctx, args.adminId) : null);
+    if (!admin) return [];
     if (admin.role !== 'admin' && !isSuperadmin(admin)) {
       throw new Error('Only org admins can view pending users');
     }
@@ -359,7 +361,7 @@ export const getPendingApprovalUsers = query({
         q.eq('organizationId', admin.organizationId).eq('isApproved', false),
       )
       .take(MAX_PAGE_SIZE);
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

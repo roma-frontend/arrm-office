@@ -24,7 +24,9 @@ export const getAllLeaves = query({
     requesterId: v.optional(v.id('users')),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { requesterId, organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requesterId = caller?._id ?? args.requesterId;
+    const organizationId = args.organizationId;
     // If organizationId is provided directly, use it
     if (organizationId && !requesterId) {
       const leaves = await ctx.db
@@ -56,7 +58,7 @@ export const getAllLeaves = query({
     }
 
     return enrichLeavesWithUserData(ctx, leaves);
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

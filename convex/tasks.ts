@@ -499,13 +499,11 @@ export const getMyEmployees = query({
 // ── Get all users for assignment (admin/supervisor) ────────────────────────
 export const getUsersForAssignment = query({
   args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, args) => {
-    // Scope reads to the requester's organization via by_org index (avoids
-    // scanning the global users table). Fallback to a capped full-table read
-    // only when requester has no org (superadmin) or no requester was given.
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     let users: any[] = [];
-    if (args.requesterId) {
-      const requester = await requireRequester(ctx, args.requesterId);
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (requester) {
       if (requester?.organizationId) {
         users = await ctx.db
           .query('users')
@@ -545,15 +543,13 @@ export const getUsersForAssignment = query({
         role: u.role,
       };
     });
-  },
+  }),
 });
 
 // ── Get supervisors list ───────────────────────────────────────────────────
 export const getSupervisors = query({
   args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, args) => {
-    console.log('[getSupervisors] args:', args);
-
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     let supervisors = await ctx.db
       .query('users')
       .withIndex('by_role', (q) => q.eq('role', 'supervisor'))
@@ -563,24 +559,13 @@ export const getSupervisors = query({
       .withIndex('by_role', (q) => q.eq('role', 'admin'))
       .collect();
 
-    console.log('[getSupervisors] raw supervisors:', supervisors.length, 'admins:', admins.length);
-
-    // Filter by organization if requesterId provided
-    if (args.requesterId) {
-      const requester = await requireRequester(ctx, args.requesterId);
-      console.log('[getSupervisors] requester:', requester);
-      if (requester && requester.organizationId) {
-        supervisors = supervisors.filter((u) => u.organizationId === requester.organizationId);
-        admins = admins.filter((u) => u.organizationId === requester.organizationId);
-      }
+    // Filter by organization
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (requester && requester.organizationId) {
+      supervisors = supervisors.filter((u) => u.organizationId === requester.organizationId);
+      admins = admins.filter((u) => u.organizationId === requester.organizationId);
     }
-
-    console.log(
-      '[getSupervisors] filtered supervisors:',
-      supervisors.length,
-      'admins:',
-      admins.length,
-    );
 
     const activeSupervisors = [...supervisors, ...admins].filter((u) => u.isActive && u.isApproved);
 
@@ -597,7 +582,7 @@ export const getSupervisors = query({
         avatarUrl: profile?.avatarUrl ?? u.avatarUrl ?? u.faceImageUrl,
       };
     });
-  },
+  }),
 });
 
 // ── Get task comments ──────────────────────────────────────────────────────

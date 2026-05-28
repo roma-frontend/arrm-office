@@ -341,14 +341,15 @@ export const getTeamDocumentOverview = query({
     // that case we return `null` so the UI (which already guards on
     // `teamOverview` being truthy) degrades gracefully instead of crashing
     // the whole page render.
-    const requester = await requireRequester(ctx, args.requesterId);
+    // requireRequester fallback handled by withAuth wrapper above
+    if (!caller) return null;
 
-    const isPlatformSuperadmin = isSuperadmin(requester);
+    const isPlatformSuperadmin = isSuperadmin(caller);
 
-    const isAdmin = isPlatformSuperadmin || requester.role === 'admin';
+    const isAdmin = isPlatformSuperadmin || caller.role === 'admin';
     if (!isAdmin) return null;
 
-    if (!isPlatformSuperadmin && requester.organizationId !== args.organizationId) {
+    if (!isPlatformSuperadmin && caller.organizationId !== args.organizationId) {
       return null;
     }
 
