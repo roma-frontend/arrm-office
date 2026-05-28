@@ -99,10 +99,23 @@ After all handlers use `_caller` from withAuth, remove `requesterId` from:
 ## Step 4: Cleanup
 
 1. Delete `convex/lib/requireRequester.ts`
-2. Remove all `as any` casts added during migration
+2. Remove all `as any` casts added during migration (see Step 5)
 3. Remove `allowUnauthenticated` option from `withAuth` interface
 4. Run `npx convex dev` to regenerate types
 5. Fix any remaining client-side type errors
+
+## Step 5: Remove `as any` casts (969 occurrences)
+
+After Steps 1-4 are done and `args` has proper types again:
+
+1. Remove `args: any` → let Convex infer from validator
+2. Remove `_caller` unused param where not needed
+3. Remove `as any` from `ctx.db.get()` calls — they'll have proper return types
+4. Remove `as any` from `.map()/.filter()` callbacks — they'll infer from array type
+5. Remove `// @ts-expect-error` comments
+
+This is ~2-3 days of manual work across 60+ files. Do it file by file,
+running `npx tsc --noEmit --skipLibCheck` after each to verify.
 
 ## TypeScript issue to be aware of
 
