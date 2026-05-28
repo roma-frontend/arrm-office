@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { mutation, query, internalQuery } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { requireRequester } from './lib/requireRequester';
+import { withAuth } from './lib/withAuth';
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -65,7 +66,7 @@ export const registerFace = mutation({
       throw new Error(`Face descriptor must be ${FACE_DESCRIPTOR_LENGTH}-dim`);
     }
 
-    const user = await ctx.db.get(args.userId);
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) throw new Error('User not found');
 
     const patch: Record<string, unknown> = {
@@ -97,15 +98,17 @@ export const getFaceDescriptor = query({
     userId: v.id('users'),
     requesterId: v.id('users'),
   },
-  handler: async (ctx, { userId, requesterId }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return null;
 
     // Only self or superadmin can read face data
-    const isSelf = requesterId === userId;
+    const isSelf = requester._id === args.userId;
     const isSuperadmin = requester.role === 'superadmin';
     if (!isSelf && !isSuperadmin) return null;
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) return null;
 
     return {
@@ -113,7 +116,7 @@ export const getFaceDescriptor = query({
       faceImageUrl: user.faceImageUrl,
       faceRegisteredAt: user.faceRegisteredAt,
     };
-  },
+  }),
 });
 
 /**

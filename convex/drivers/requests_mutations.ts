@@ -10,6 +10,7 @@ import { MAX_PAGE_SIZE } from '../pagination';
 import { SMALL_LIST_CAP } from '../lib/limits';
 import { isSuperadmin } from '../lib/auth';
 import { requireUser } from '../lib/rbac';
+import { withAuth } from '../lib/withAuth';
 
 /** Request a driver for a trip */
 export const requestDriver = mutation({
@@ -55,7 +56,9 @@ export const requestDriver = mutation({
     businessJustification: v.optional(v.string()),
     requiresApproval: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    // Use verified caller ID if available, fallback to args.requesterId
+    if (caller) args.requesterId = caller._id;
     // Validate startTime < endTime
     if (args.startTime >= args.endTime) {
       throw new Error('Start time must be before end time');
@@ -71,7 +74,7 @@ export const requestDriver = mutation({
     const startDateStr = startDate.toISOString().split('T')[0] || '';
     const endDateStr = endDate.toISOString().split('T')[0] || '';
 
-    const driver = await ctx.db.get(args.driverId);
+    const driver = (await ctx.db.get(args.driverId)) as any;
     let leaveError = null;
 
     if (driver) {
@@ -156,7 +159,7 @@ export const requestDriver = mutation({
     });
 
     // Create notification for driver
-    const driverRecord = await ctx.db.get(args.driverId);
+    const driverRecord = (await ctx.db.get(args.driverId)) as any;
     const priority = args.priority || 'P2';
     if (driverRecord) {
       await ctx.db.insert('notifications', {
@@ -197,7 +200,7 @@ export const requestDriver = mutation({
     }
 
     return { requestId, leaveWarning: null, error: null };
-  },
+  }),
 });
 
 /** Approve or decline driver request */

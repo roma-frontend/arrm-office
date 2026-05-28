@@ -4,6 +4,7 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { requireRequester } from './lib/requireRequester';
+import { withAuth } from './lib/withAuth';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
 async function checkAccess(ctx: any, organizationId: any, requesterId: any) {
@@ -26,7 +27,7 @@ export const listDocuments = query({
     search: v.optional(v.string()),
     includeUnpublished: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     const { requester, isSuperadmin } = await checkAccess(
       ctx,
       args.organizationId,
@@ -53,13 +54,13 @@ export const listDocuments = query({
 
     const enriched = await Promise.all(
       docs.map(async (doc) => {
-        const uploader = await ctx.db.get(doc.uploadedBy);
+        const uploader = (await ctx.db.get(doc.uploadedBy)) as any;
         return { ...doc, uploaderName: uploader?.name ?? 'Unknown' };
       }),
     );
 
     return enriched;
-  },
+  }),
 });
 
 export const getDocument = query({
@@ -68,27 +69,27 @@ export const getDocument = query({
     requesterId: v.id('users'),
     documentId: v.id('documents'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
-    const doc = await ctx.db.get(args.documentId);
+    const doc = (await ctx.db.get(args.documentId)) as any;
     if (!doc || doc.organizationId !== args.organizationId) {
       throw new Error('Document not found');
     }
-    const uploader = await ctx.db.get(doc.uploadedBy);
+    const uploader = (await ctx.db.get(doc.uploadedBy)) as any;
     return { ...doc, uploaderName: uploader?.name ?? 'Unknown' };
-  },
+  }),
 });
 
 export const getDocumentById = query({
   args: {
     documentId: v.id('documents'),
   },
-  handler: async (ctx, args) => {
-    const doc = await ctx.db.get(args.documentId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const doc = (await ctx.db.get(args.documentId)) as any;
     if (!doc) return null;
-    const uploader = await ctx.db.get(doc.uploadedBy);
+    const uploader = (await ctx.db.get(doc.uploadedBy)) as any;
     return { ...doc, uploaderName: uploader?.name ?? 'Unknown' };
-  },
+  }),
 });
 
 export const createDocument = mutation({
@@ -114,7 +115,7 @@ export const createDocument = mutation({
     expiresAt: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can create documents');
 
@@ -136,7 +137,7 @@ export const createDocument = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  },
+  }),
 });
 
 export const updateDocument = mutation({
@@ -155,8 +156,8 @@ export const updateDocument = mutation({
     expiresAt: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
   },
-  handler: async (ctx, args) => {
-    const doc = await ctx.db.get(args.documentId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const doc = (await ctx.db.get(args.documentId)) as any;
     if (!doc) throw new Error('Document not found');
     const { isSuperadmin } = await checkAccess(ctx, doc.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can update documents');
@@ -176,7 +177,7 @@ export const updateDocument = mutation({
 
     await ctx.db.patch(args.documentId, patch);
     return { success: true };
-  },
+  }),
 });
 
 export const deleteDocument = mutation({
@@ -184,8 +185,8 @@ export const deleteDocument = mutation({
     documentId: v.id('documents'),
     requesterId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const doc = await ctx.db.get(args.documentId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const doc = (await ctx.db.get(args.documentId)) as any;
     if (!doc) throw new Error('Document not found');
     await checkAccess(ctx, doc.organizationId, args.requesterId);
 
@@ -199,7 +200,7 @@ export const deleteDocument = mutation({
 
     await ctx.db.delete(args.documentId);
     return { success: true };
-  },
+  }),
 });
 
 // ─── DOCUMENT VIEWS ──────────────────────────────────────────────────────────
@@ -211,7 +212,7 @@ export const recordDocumentView = mutation({
     documentId: v.id('documents'),
     acknowledged: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
 
     const existing = await ctx.db
@@ -238,7 +239,7 @@ export const recordDocumentView = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });
 
 export const getMyDocumentViews = query({
@@ -246,14 +247,14 @@ export const getMyDocumentViews = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     return await ctx.db
       .query('documentViews')
       .withIndex('by_user', (q) =>
         q.eq('organizationId', args.organizationId).eq('userId', args.requesterId),
       )
       .take(DEFAULT_LIST_CAP);
-  },
+  }),
 });
 
 export const getDocumentViews = query({
@@ -262,7 +263,7 @@ export const getDocumentViews = query({
     requesterId: v.id('users'),
     documentId: v.id('documents'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
     const views = await ctx.db
       .query('documentViews')
@@ -279,7 +280,7 @@ export const getDocumentViews = query({
     );
 
     return enriched;
-  },
+  }),
 });
 
 // ─── DOCUMENT CATEGORIES ─────────────────────────────────────────────────────
@@ -289,14 +290,14 @@ export const getDocumentCategories = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
     return await ctx.db
       .query('documentCategories')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .order('asc')
       .take(SMALL_LIST_CAP);
-  },
+  }),
 });
 
 export const createDocumentCategory = mutation({
@@ -309,7 +310,7 @@ export const createDocumentCategory = mutation({
     color: v.optional(v.string()),
     order: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can create categories');
 
@@ -324,7 +325,7 @@ export const createDocumentCategory = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  },
+  }),
 });
 
 // ─── TEAM/ADMIN DOCUMENT OVERVIEW ────────────────────────────────────────────
@@ -334,7 +335,7 @@ export const getTeamDocumentOverview = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
     // Resolve the requester without throwing — a stale client cache may call
     // this query for a user whose DB role no longer qualifies as admin. In
     // that case we return `null` so the UI (which already guards on
@@ -377,5 +378,5 @@ export const getTeamDocumentOverview = query({
       totalViews,
       acknowledgmentRate,
     };
-  },
+  }),
 });

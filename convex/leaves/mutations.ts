@@ -146,11 +146,11 @@ export const approveLeave = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, { leaveId, reviewerId, comment }) => {
-    const leave = await ctx.db.get(leaveId);
+    const leave = (await ctx.db.get(leaveId)) as any;
     if (!leave) throw new Error('Leave request not found');
     if (leave.status !== 'pending') throw new Error('Leave is not pending');
 
-    const reviewer = await ctx.db.get(reviewerId);
+    const reviewer = (await ctx.db.get(reviewerId)) as any;
     if (!reviewer) throw new Error('Reviewer not found');
 
     // Cross-org protection
@@ -188,7 +188,7 @@ export const approveLeave = mutation({
     });
 
     // Deduct balance
-    const user = await ctx.db.get(leave.userId);
+    const user = (await ctx.db.get(leave.userId)) as any;
     if (user) {
       if (leave.type === 'paid') {
         await patchProfile(ctx, leave.userId, {
@@ -259,11 +259,11 @@ export const rejectLeave = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, { leaveId, reviewerId, comment }) => {
-    const leave = await ctx.db.get(leaveId);
+    const leave = (await ctx.db.get(leaveId)) as any;
     if (!leave) throw new Error('Leave request not found');
     if (leave.status !== 'pending') throw new Error('Leave is not pending');
 
-    const reviewer = await ctx.db.get(reviewerId);
+    const reviewer = (await ctx.db.get(reviewerId)) as any;
     if (!reviewer) throw new Error('Reviewer not found');
 
     if (reviewer.organizationId !== leave.organizationId) {
@@ -363,11 +363,12 @@ export const updateLeave = mutation({
       ),
     ),
   },
-  handler: async (ctx, { leaveId, requesterId, ...updates }) => {
-    const leave = await ctx.db.get(leaveId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requesterId = caller?._id ?? args.requesterId;
+    const leave = (await ctx.db.get(args.leaveId)) as any;
     if (!leave) throw new Error('Leave request not found');
 
-    const requester = await ctx.db.get(requesterId);
+    const requester = (await ctx.db.get(requesterId)) as any;
     if (!requester) throw new Error('Requester not found');
 
     // Cross-org protection
@@ -382,7 +383,7 @@ export const updateLeave = mutation({
     if (!isAdmin && leave.status !== 'pending')
       throw new Error('Only pending leaves can be edited');
 
-    await ctx.db.patch(leaveId, { ...updates, updatedAt: Date.now() });
+    await ctx.db.patch(args.leaveId, { ...args, updatedAt: Date.now() });
 
     if (isAdmin && !isOwner) {
       await ctx.db.insert('notifications', {
@@ -392,7 +393,7 @@ export const updateLeave = mutation({
         title: '✏️ Leave Updated',
         message: `Your leave request (${leave.startDate} → ${leave.endDate}) was updated by ${requester.name}.`,
         isRead: false,
-        relatedId: leaveId,
+        relatedId: args.leaveId,
         route: '/leaves',
         createdAt: Date.now(),
       });
@@ -403,18 +404,18 @@ export const updateLeave = mutation({
       organizationId: leave.organizationId,
       userId: requesterId,
       action: 'leave_updated',
-      target: leaveId,
+      target: args.leaveId,
       details: JSON.stringify({
-        updatedFields: Object.keys(updates),
-        type: updates.type || leave.type,
-        startDate: updates.startDate || leave.startDate,
-        endDate: updates.endDate || leave.endDate,
+        updatedFields: Object.keys(args),
+        type: args.type || leave.type,
+        startDate: args.startDate || leave.startDate,
+        endDate: args.endDate || leave.endDate,
       }),
       createdAt: Date.now(),
     });
 
-    return leaveId;
-  },
+    return args.leaveId;
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -425,11 +426,12 @@ export const deleteLeave = mutation({
     leaveId: v.id('leaveRequests'),
     requesterId: v.id('users'),
   },
-  handler: async (ctx, { leaveId, requesterId }) => {
-    const leave = await ctx.db.get(leaveId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requesterId = caller?._id ?? args.requesterId;
+    const leave = (await ctx.db.get(args.leaveId)) as any;
     if (!leave) throw new Error('Leave request not found');
 
-    const requester = await ctx.db.get(requesterId);
+    const requester = (await ctx.db.get(requesterId)) as any;
     if (!requester) throw new Error('Requester not found');
 
     if (requester.organizationId !== leave.organizationId) {
@@ -443,7 +445,7 @@ export const deleteLeave = mutation({
 
     // Restore balance if approved
     if (leave.status === 'approved') {
-      const user = await ctx.db.get(leave.userId);
+      const user = (await ctx.db.get(leave.userId)) as any;
       if (user) {
         if (leave.type === 'paid')
           await patchProfile(ctx, leave.userId, {
@@ -468,7 +470,7 @@ export const deleteLeave = mutation({
         title: '🗑️ Leave Deleted',
         message: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was deleted by ${requester.name}.`,
         isRead: false,
-        relatedId: leaveId,
+        relatedId: args.leaveId,
         route: '/leaves',
         createdAt: Date.now(),
       });
@@ -479,7 +481,7 @@ export const deleteLeave = mutation({
       organizationId: leave.organizationId,
       userId: requesterId,
       action: 'leave_deleted',
-      target: leaveId,
+      target: args.leaveId,
       details: JSON.stringify({
         type: leave.type,
         startDate: leave.startDate,
@@ -490,9 +492,9 @@ export const deleteLeave = mutation({
       createdAt: Date.now(),
     });
 
-    await ctx.db.delete(leaveId);
-    return leaveId;
-  },
+    await ctx.db.delete(args.leaveId);
+    return args.leaveId;
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -503,11 +505,12 @@ export const forceDeleteLeave = mutation({
     leaveId: v.id('leaveRequests'),
     requesterId: v.id('users'),
   },
-  handler: async (ctx, { leaveId, requesterId }) => {
-    const leave = await ctx.db.get(leaveId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requesterId = caller?._id ?? args.requesterId;
+    const leave = (await ctx.db.get(args.leaveId)) as any;
     if (!leave) throw new Error('Leave request not found');
 
-    const requester = await ctx.db.get(requesterId);
+    const requester = (await ctx.db.get(requesterId)) as any;
     if (!requester) throw new Error('Requester not found');
 
     // Only superadmin can force delete
@@ -520,7 +523,7 @@ export const forceDeleteLeave = mutation({
       organizationId: leave.organizationId,
       userId: requesterId,
       action: 'leave_force_deleted',
-      target: leaveId,
+      target: args.leaveId,
       details: JSON.stringify({
         type: leave.type,
         startDate: leave.startDate,
@@ -531,9 +534,9 @@ export const forceDeleteLeave = mutation({
     });
 
     // Delete without any checks or notifications
-    await ctx.db.delete(leaveId);
-    return leaveId;
-  },
+    await ctx.db.delete(args.leaveId);
+    return args.leaveId;
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -542,7 +545,7 @@ export const forceDeleteLeave = mutation({
 export const markLeaveAsRead = mutation({
   args: { leaveId: v.id('leaveRequests') },
   handler: async (ctx, { leaveId }) => {
-    const leave = await ctx.db.get(leaveId);
+    const leave = (await ctx.db.get(leaveId)) as any;
     if (!leave) throw new Error('Leave request not found');
 
     // Audit log: leave marked as read
@@ -615,7 +618,7 @@ export const bulkApproveLeaves = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, { leaveIds, reviewerId, comment }) => {
-    const reviewer = await ctx.db.get(reviewerId);
+    const reviewer = (await ctx.db.get(reviewerId)) as any;
     if (!reviewer) throw new Error('Reviewer not found');
     if (
       reviewer.role !== 'admin' &&
@@ -758,7 +761,7 @@ export const bulkRejectLeaves = mutation({
     comment: v.string(),
   },
   handler: async (ctx, { leaveIds, reviewerId, comment }) => {
-    const reviewer = await ctx.db.get(reviewerId);
+    const reviewer = (await ctx.db.get(reviewerId)) as any;
     if (!reviewer) throw new Error('Reviewer not found');
     if (
       reviewer.role !== 'admin' &&
@@ -774,7 +777,7 @@ export const bulkRejectLeaves = mutation({
 
     for (const leaveId of leaveIds) {
       try {
-        const leave = await ctx.db.get(leaveId);
+        const leave = (await ctx.db.get(leaveId)) as any;
         if (!leave) {
           errors.push(`Leave ${leaveId} not found`);
           continue;
@@ -868,7 +871,7 @@ export const secureApproveLeave = mutation({
     { leaveId: Id<'leaveRequests'>; comment?: string },
     Id<'leaveRequests'>
   >({ minimumRole: 'supervisor' }, async (ctx, { leaveId, comment }, caller) => {
-    const leave = await ctx.db.get(leaveId);
+    const leave = (await ctx.db.get(leaveId)) as any;
     if (!leave) throw new Error('Leave request not found');
     if (leave.status !== 'pending') throw new Error('Leave is not pending');
 
@@ -920,7 +923,7 @@ export const secureRejectLeave = mutation({
     { leaveId: Id<'leaveRequests'>; comment?: string },
     Id<'leaveRequests'>
   >({ minimumRole: 'supervisor' }, async (ctx, { leaveId, comment }, caller) => {
-    const leave = await ctx.db.get(leaveId);
+    const leave = (await ctx.db.get(leaveId)) as any;
     if (!leave) throw new Error('Leave request not found');
     if (leave.status !== 'pending') throw new Error('Leave is not pending');
 
