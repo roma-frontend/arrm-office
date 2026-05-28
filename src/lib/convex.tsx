@@ -1,9 +1,8 @@
 'use client';
 
-import { ConvexProvider, ConvexReactClient } from 'convex/react';
-import { ReactNode } from 'react';
+import { ConvexProviderWithAuth, ConvexReactClient } from 'convex/react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-// Singleton — only created when actually needed
 let convexInstance: ConvexReactClient | null = null;
 
 function getConvexClient() {
@@ -15,14 +14,56 @@ function getConvexClient() {
   return convexInstance;
 }
 
-export function ConvexClientProvider({ children }: { children: ReactNode }) {
-  const client = getConvexClient();
-  return <ConvexProvider client={client}>{children}</ConvexProvider>;
+function useAuthForConvex() {
+  const tokenRef = useRef<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const fetchAccessToken = useCallback(
+    async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
+      if (!forceRefreshToken && tokenRef.current) return tokenRef.current;
+      try {
+        const res = await fetch('/api/auth/convex-token');
+        if (!res.ok) {
+          tokenRef.current = null;
+          setIsAuthenticated(false);
+          return null;
+        }
+        const { token } = await res.json();
+        tokenRef.current = token ?? null;
+        setIsAuthenticated(!!token);
+        return tokenRef.current;
+      } catch {
+        tokenRef.current = null;
+        setIsAuthenticated(false);
+        return null;
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    fetchAccessToken({ forceRefreshToken: true });
+  }, [fetchAccessToken]);
+
+  return useMemo(
+    () => ({
+      isLoading: false,
+      isAuthenticated,
+      fetchAccessToken,
+    }),
+    [isAuthenticated, fetchAccessToken],
+  );
 }
 
-/**
- * Hook to check if Convex is ready.
- */
+export function ConvexClientProvider({ children }: { children: ReactNode }) {
+  const client = getConvexClient();
+  return (
+    <ConvexProviderWithAuth client={client} useAuth={useAuthForConvex}>
+      {children}
+    </ConvexProviderWithAuth>
+  );
+}
+
 export function useConvexAuthReady(): boolean {
   return true;
 }

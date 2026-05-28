@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify, importPKCS8 } from 'jose';
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -7,7 +7,7 @@ const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret || jwtSecret.length < 32) {
   throw new Error(
     'JWT_SECRET environment variable is required and must be at least 32 characters long. ' +
-      'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+      "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
   );
 }
 
@@ -44,4 +44,23 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   } catch {
     return null;
   }
+}
+
+export async function signConvexJWT(
+  payload: JWTPayload,
+  expiresIn: string = '7d',
+): Promise<string> {
+  const rawKey = process.env.CONVEX_AUTH_PRIVATE_KEY;
+  if (!rawKey) throw new Error('CONVEX_AUTH_PRIVATE_KEY is not set');
+  const siteUrl = process.env.CONVEX_SITE_URL || process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
+  if (!siteUrl) throw new Error('CONVEX_SITE_URL is not set');
+  const pk = await importPKCS8(rawKey.replace(/\\n/g, '\n'), 'RS256');
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setIssuer(siteUrl)
+    .setAudience('convex')
+    .setSubject(payload.userId)
+    .setIssuedAt()
+    .setExpirationTime(expiresIn)
+    .sign(pk);
 }

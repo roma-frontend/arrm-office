@@ -31,6 +31,8 @@ interface WithAuthOptions {
   minimumRole?: Role;
   /** If true, user must belong to an organization. */
   requireOrg?: boolean;
+  /** If true, handler receives null caller when not authenticated. */
+  allowUnauthenticated?: boolean;
 }
 
 /**
@@ -39,12 +41,15 @@ interface WithAuthOptions {
  */
 export function withAuth<Ctx extends QueryCtx | MutationCtx, Args extends object, Result>(
   options: WithAuthOptions,
-  handler: (ctx: Ctx, args: Args, caller: AuthenticatedUser) => Promise<Result>,
-) {
+  handler: (ctx: Ctx, args: Args, caller: any) => Promise<Result>,
+): (ctx: Ctx, args: Args) => Promise<Result> {
   return async (ctx: Ctx, args: Args): Promise<Result> => {
     // Step 1: Verify identity from Convex auth (unforgeable)
     const identity = await ctx.auth.getUserIdentity();
     if (!identity?.email) {
+      if (options.allowUnauthenticated) {
+        return handler(ctx, args, null);
+      }
       throw new Error('Not authenticated');
     }
 

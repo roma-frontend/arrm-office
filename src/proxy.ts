@@ -214,6 +214,7 @@ async function applyRateLimit(
   request: NextRequest,
   pathname: string,
 ): Promise<NextResponse | null> {
+  if (process.env.NODE_ENV !== 'production') return null;
   if (AUTHJS_INTERNAL_PATHS.some((p) => pathname.startsWith(p))) return null;
 
   const rule = RATE_LIMIT_RULES.find((r) => r.pattern(pathname));
