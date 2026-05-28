@@ -141,8 +141,8 @@ export default function AutomationClient() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
-          <TabsTrigger value="dashboard">{t('automation.dashboard')}</TabsTrigger>
-          <TabsTrigger value="builder">{t('automation.builder.title')}</TabsTrigger>
+          <TabsTrigger value="dashboard">{t('automation.dashboard') as any}</TabsTrigger>
+          <TabsTrigger value="builder">{t('automation.builder.title') as any}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6 mt-6">
@@ -189,7 +189,7 @@ export default function AutomationClient() {
             <CardContent>
               {activeWorkflows && activeWorkflows.length > 0 ? (
                 <div className="space-y-3">
-                  {activeWorkflows?.map((workflow) => (
+                  {activeWorkflows?.map((workflow: any) => (
                     <div
                       key={workflow._id}
                       className="flex items-center justify-between p-3 rounded-lg border border-(--border)"
@@ -208,10 +208,7 @@ export default function AutomationClient() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() =>
-                          // @ts-expect-error Convex Id type mismatch
-                          toggleWorkflow({ workflowId: workflow._id })
-                        }
+                        onClick={() => toggleWorkflow({ workflowId: workflow._id })}
                       >
                         {workflow.isActive ? (
                           <Pause className="w-4 h-4" />
@@ -241,7 +238,7 @@ export default function AutomationClient() {
             <CardContent>
               {recentTasks && recentTasks.length > 0 ? (
                 <div className="space-y-2">
-                  {recentTasks?.map((task) => (
+                  {recentTasks?.map((task: any) => (
                     <div
                       key={task._id}
                       className="flex items-center justify-between p-2 rounded hover:bg-(--background-subtle)"

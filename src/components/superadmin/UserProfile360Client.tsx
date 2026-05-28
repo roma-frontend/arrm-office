@@ -84,7 +84,7 @@ export default function UserProfile360Page() {
         <div className="mb-4">
           <Button variant="ghost" onClick={() => router.back()} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
-            {t('superadmin.users.back')}
+            {t('superadmin.users.back') as any}
           </Button>
         </div>
 
@@ -99,7 +99,7 @@ export default function UserProfile360Page() {
                     <AvatarFallback className="text-2xl">
                       {user.name
                         .split(' ')
-                        .map((n) => n[0])
+                        .map((n: any) => n[0])
                         .join('')
                         .toUpperCase()}
                     </AvatarFallback>
@@ -116,12 +116,12 @@ export default function UserProfile360Page() {
                       {user.isActive ? (
                         <Badge variant="outline" className="text-green-600 border-green-500/30">
                           <CheckCircle className="w-3 h-3 mr-1" />
-                          {t('superadmin.users.active')}
+                          {t('superadmin.users.active') as any}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-red-600 border-red-500/30">
                           <XCircle className="w-3 h-3 mr-1" />
-                          {t('superadmin.users.inactive')}
+                          {t('superadmin.users.inactive') as any}
                         </Badge>
                       )}
                     </div>
@@ -157,7 +157,7 @@ export default function UserProfile360Page() {
                       {organization && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Building2 className="w-4 h-4" />
-                          {organization.name}
+                          {(organization as any)?.name}
                         </div>
                       )}
                     </div>
@@ -166,11 +166,11 @@ export default function UserProfile360Page() {
                 <div className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white">
                   <Button variant="outline" size="sm" className="gap-2">
                     <MessageSquare className="w-4 h-4" />
-                    {t('superadmin.users.writeMessage')}
+                    {t('superadmin.users.writeMessage') as any}
                   </Button>
                   <Button variant="outline" size="sm" className="gap-2">
                     <Key className="w-4 h-4" />
-                    {t('superadmin.users.impersonate')}
+                    {t('superadmin.users.impersonate') as any}
                   </Button>
                   <Button
                     variant="outline"
@@ -178,7 +178,7 @@ export default function UserProfile360Page() {
                     className="gap-2 text-red-600 hover:text-red-700"
                   >
                     <Ban className="w-4 h-4" />
-                    {t('superadmin.users.blockUser')}
+                    {t('superadmin.users.blockUser') as any}
                   </Button>
                   <Button variant="ghost" size="icon">
                     <MoreVertical className="w-4 h-4" />
@@ -192,49 +192,49 @@ export default function UserProfile360Page() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
           <StatCard
-            title={t('superadmin.leaves')}
+            title={t('superadmin.leaves') as any}
             value={stats.totalLeaves}
             icon={Calendar}
             color="blue"
           />
           <StatCard
-            title={t('superadmin.users.pending')}
+            title={t('superadmin.users.pending') as any}
             value={stats.pendingLeaves}
             icon={Clock}
             color="orange"
           />
           <StatCard
-            title={t('superadmin.users.approved')}
+            title={t('superadmin.users.approved') as any}
             value={stats.approvedLeaves}
             icon={CheckCircle}
             color="green"
           />
           <StatCard
-            title={t('superadmin.tasks')}
+            title={t('superadmin.tasks') as any}
             value={stats.totalTasks}
             icon={Briefcase}
             color="purple"
           />
           <StatCard
-            title={t('superadmin.users.completed')}
+            title={t('superadmin.users.completed') as any}
             value={stats.completedTasks}
             icon={CheckCircle}
             color="green"
           />
           <StatCard
-            title={t('superadmin.rides')}
+            title={t('superadmin.rides') as any}
             value={stats.totalDriverRequests}
             icon={Car}
             color="blue"
           />
           <StatCard
-            title={t('superadmin.tickets')}
+            title={t('superadmin.tickets') as any}
             value={stats.totalTickets}
             icon={Ticket}
             color="purple"
           />
           <StatCard
-            title={t('superadmin.users.logins')}
+            title={t('superadmin.users.logins') as any}
             value={stats.totalLoginAttempts}
             icon={LogIn}
             color="gray"
@@ -299,16 +299,16 @@ export default function UserProfile360Page() {
           <TabsContent value="leaves">
             <Card style={{ background: 'var(--card)' }}>
               <CardHeader>
-                <CardTitle>{t('superadmin.users.leaveRequests')}</CardTitle>
+                <CardTitle>{t('superadmin.users.leaveRequests') as any}</CardTitle>
                 <CardDescription>
-                  {t('superadmin.users.leaveRequestsFound', { count: leaves.length })}
+                  {t('superadmin.users.leaveRequestsFound', { count: leaves.length }) as any}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {leaves.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Calendar className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>{t('superadmin.users.noLeaveRequests')}</p>
+                    <p>{t('superadmin.users.noLeaveRequests') as any}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -354,7 +354,11 @@ export default function UserProfile360Page() {
                             )}
                             {leave.reviewerName && (
                               <div className="mt-1">
-                                {t('superadmin.users.reviewedBy', { name: leave.reviewerName })}
+                                {
+                                  t('superadmin.users.reviewedBy', {
+                                    name: leave.reviewerName,
+                                  }) as any
+                                }
                               </div>
                             )}
                           </div>
@@ -371,16 +375,16 @@ export default function UserProfile360Page() {
           <TabsContent value="tasks">
             <Card style={{ background: 'var(--card)' }}>
               <CardHeader>
-                <CardTitle>{t('superadmin.users.tasksTitle')}</CardTitle>
+                <CardTitle>{t('superadmin.users.tasksTitle') as any}</CardTitle>
                 <CardDescription>
-                  {t('superadmin.users.tasksFound', { count: tasks.length })}
+                  {t('superadmin.users.tasksFound', { count: tasks.length }) as any}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {tasks.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Briefcase className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>{t('superadmin.users.noTasksFound')}</p>
+                    <p>{t('superadmin.users.noTasksFound') as any}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -679,8 +683,8 @@ export default function UserProfile360Page() {
           <TabsContent value="chat">
             <Card style={{ background: 'var(--card)' }}>
               <CardHeader>
-                <CardTitle>{t('superadmin.users.chatMessages')}</CardTitle>
-                <CardDescription>{t('superadmin.users.chatDesc')}</CardDescription>
+                <CardTitle>{t('superadmin.users.chatMessages') as any}</CardTitle>
+                <CardDescription>{t('superadmin.users.chatDesc') as any}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -697,7 +701,7 @@ export default function UserProfile360Page() {
                           </p>
                           {msg.type === 'system' && (
                             <Badge variant="secondary" className="mt-1">
-                              {t('superadmin.users.system')}
+                              {t('superadmin.users.system') as any}
                             </Badge>
                           )}
                         </div>

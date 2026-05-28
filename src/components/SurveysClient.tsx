@@ -128,7 +128,7 @@ function SortableQuestion({
       <TypeIcon className="h-4 w-4 text-muted-foreground shrink-0" />
       <span className="text-sm flex-1 truncate">{question.text}</span>
       <Badge variant="secondary" className="text-[10px]">
-        {t(QUESTION_TYPE_CONFIG[question.type].labelKey)}
+        {t(QUESTION_TYPE_CONFIG[question.type].labelKey) as any}
       </Badge>
       <button
         type="button"
@@ -262,7 +262,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
         title: title.trim(),
         description: description.trim() || undefined,
         isAnonymous,
-        questions: questions.map((q) => ({
+        questions: questions.map((q: any) => ({
           type: q.type,
           text: q.text,
           description: q.description,
@@ -287,7 +287,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
         <DialogHeader className="px-5 pt-5 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5" />
-            {t('surveys.createSurvey')}
+            {t('surveys.createSurvey') as any}
           </DialogTitle>
         </DialogHeader>
 
@@ -349,23 +349,23 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium mb-1.5 block">
-                    {t('surveys.form.title')} *
+                    {t('surveys.form.title') as any} *
                   </label>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder={t('surveys.form.titlePlaceholder')}
+                    placeholder={t('surveys.form.titlePlaceholder') as any}
                     autoFocus
                   />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1.5 block">
-                    {t('surveys.form.description')}
+                    {t('surveys.form.description') as any}
                   </label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t('surveys.form.descriptionPlaceholder')}
+                    placeholder={t('surveys.form.descriptionPlaceholder') as any}
                     rows={3}
                   />
                 </div>
@@ -378,7 +378,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                     className="rounded"
                   />
                   <label htmlFor="anonymous" className="text-sm text-muted-foreground">
-                    {t('surveys.form.anonymous')}
+                    {t('surveys.form.anonymous') as any}
                   </label>
                 </div>
               </div>
@@ -416,7 +416,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                 {/* Add question form */}
                 <div className="border rounded-lg p-3 space-y-3">
                   <p className="text-xs font-medium text-muted-foreground uppercase">
-                    {t('surveys.form.addQuestion')}
+                    {t('surveys.form.addQuestion') as any}
                   </p>
                   {/* Question type */}
                   <div className="flex flex-wrap gap-1">
@@ -435,7 +435,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                           }`}
                         >
                           <config.icon className="h-3 w-3" />
-                          {t(config.labelKey)}
+                          {t(config.labelKey) as any}
                         </button>
                       ),
                     )}
@@ -444,7 +444,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                   <Input
                     value={newQuestion.text}
                     onChange={(e) => setNewQuestion((p) => ({ ...p, text: e.target.value }))}
-                    placeholder={t('surveys.form.questionTextPlaceholder')}
+                    placeholder={t('surveys.form.questionTextPlaceholder') as any}
                     className="text-sm"
                   />
                   {/* Options for multiple choice */}
@@ -463,7 +463,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                         <Input
                           value={newOption}
                           onChange={(e) => setNewOption(e.target.value)}
-                          placeholder={t('surveys.form.addOption')}
+                          placeholder={t('surveys.form.addOption') as any}
                           className="text-sm flex-1"
                           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
                         />
@@ -490,7 +490,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                       className="rounded"
                     />
                     <span className="text-xs text-muted-foreground">
-                      {t('surveys.form.required')}
+                      {t('surveys.form.required') as any}
                     </span>
                   </div>
                   <Button
@@ -501,7 +501,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                     className="w-full"
                   >
                     <Plus className="h-3 w-3 mr-1" />
-                    {t('surveys.form.addQuestionBtn')}
+                    {t('surveys.form.addQuestionBtn') as any}
                   </Button>
                 </div>
               </div>
@@ -512,13 +512,15 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
               <div className="space-y-4">
                 <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">{t('surveys.form.title')}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('surveys.form.title') as any}
+                    </p>
                     <p className="font-medium">{title}</p>
                   </div>
                   {description && (
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        {t('surveys.form.description')}
+                        {t('surveys.form.description') as any}
                       </p>
                       <p className="text-sm">{description}</p>
                     </div>
@@ -528,13 +530,13 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                       {isAnonymous ? t('surveys.anonymous') : t('surveys.named')}
                     </Badge>
                     <Badge variant="secondary">
-                      {questions.length} {t('surveys.questionsCount')}
+                      {questions.length} {t('surveys.questionsCount') as any}
                     </Badge>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">{t('surveys.wizard.questions')}</p>
+                  <p className="text-sm font-medium">{t('surveys.wizard.questions') as any}</p>
                   {questions.map((q, idx) => {
                     const TypeIcon = QUESTION_TYPE_CONFIG[q.type].icon;
                     return (
@@ -581,7 +583,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                 </>
               ) : (
                 <>
-                  {t('common.next')}
+                  {t('common.next') as any}
                   <ChevronRight className="h-4 w-4" />
                 </>
               )}
@@ -625,9 +627,9 @@ function TakeSurveyDialog({
   const handleSubmit = async () => {
     if (!surveyData) return;
 
-    const requiredQuestions = surveyData.questions.filter((q) => q.isRequired);
+    const requiredQuestions = surveyData.questions.filter((q: any) => q.isRequired);
     const missingRequired = requiredQuestions.filter(
-      (q) => !answers[q._id] && answers[q._id] !== 0 && answers[q._id] !== false,
+      (q: any) => !answers[q._id] && answers[q._id] !== 0 && answers[q._id] !== false,
     );
     if (missingRequired.length > 0) {
       toast.error(t('surveys.errors.requiredFields'));
@@ -637,8 +639,8 @@ function TakeSurveyDialog({
     setIsSubmitting(true);
     try {
       const formattedAnswers = surveyData.questions
-        .filter((q) => answers[q._id] !== undefined)
-        .map((q) => {
+        .filter((q: any) => answers[q._id] !== undefined)
+        .map((q: any) => {
           const answer: any = { questionId: q._id };
           const val = answers[q._id];
           switch (q.type) {
@@ -688,7 +690,7 @@ function TakeSurveyDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-6 py-4">
-          {surveyData.questions.map((question, idx) => (
+          {surveyData.questions.map((question: any, idx: any) => (
             <div key={question._id} className="space-y-2">
               <div className="flex items-start gap-2">
                 <span className="text-xs text-muted-foreground font-mono mt-0.5">{idx + 1}.</span>
@@ -706,7 +708,7 @@ function TakeSurveyDialog({
               {/* Rating input */}
               {question.type === 'rating' && (
                 <div className="flex gap-1 ml-5">
-                  {[1, 2, 3, 4, 5].map((val) => (
+                  {[1, 2, 3, 4, 5].map((val: any) => (
                     <button
                       key={val}
                       type="button"
@@ -728,7 +730,7 @@ function TakeSurveyDialog({
               {/* NPS input (0-10) */}
               {question.type === 'nps' && (
                 <div className="flex flex-wrap gap-1 ml-5">
-                  {Array.from({ length: 11 }, (_, i) => i).map((val) => (
+                  {Array.from({ length: 11 }, (_, i) => i).map((val: any) => (
                     <button
                       key={val}
                       type="button"
@@ -748,7 +750,7 @@ function TakeSurveyDialog({
               {/* Multiple choice */}
               {question.type === 'multiple_choice' && question.options && (
                 <div className="space-y-1 ml-5">
-                  {question.options.map((option) => {
+                  {question.options.map((option: any) => {
                     const selected = (answers[question._id] || []).includes(option);
                     return (
                       <button
@@ -785,7 +787,7 @@ function TakeSurveyDialog({
                     }`}
                   >
                     <ThumbsUp className="h-4 w-4" />
-                    {t('surveys.yes')}
+                    {t('surveys.yes') as any}
                   </button>
                   <button
                     type="button"
@@ -797,7 +799,7 @@ function TakeSurveyDialog({
                     }`}
                   >
                     <ThumbsDown className="h-4 w-4" />
-                    {t('surveys.no')}
+                    {t('surveys.no') as any}
                   </button>
                 </div>
               )}
@@ -808,7 +810,7 @@ function TakeSurveyDialog({
                   <Textarea
                     value={answers[question._id] || ''}
                     onChange={(e) => handleAnswer(question._id, e.target.value)}
-                    placeholder={t('surveys.form.typePlaceholder')}
+                    placeholder={t('surveys.form.typePlaceholder') as any}
                     rows={2}
                     className="text-sm"
                   />
@@ -820,7 +822,7 @@ function TakeSurveyDialog({
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="ghost" onClick={onClose} size="sm">
-            {t('common.cancel')}
+            {t('common.cancel') as any}
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting} size="sm" className="gap-1">
             <Send className="h-4 w-4" />
@@ -862,14 +864,14 @@ function SurveyResultsDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            {results.survey.title} — {t('surveys.results')}
+            {results.survey.title} — {t('surveys.results') as any}
           </DialogTitle>
           <div className="flex items-center gap-3 mt-2">
             <Badge variant="default">
-              {results.totalResponses} {t('surveys.responses')}
+              {results.totalResponses} {t('surveys.responses') as any}
             </Badge>
             <Badge variant="secondary">
-              {results.questionResults.length} {t('surveys.questions')}
+              {results.questionResults.length} {t('surveys.questions') as any}
             </Badge>
           </div>
         </DialogHeader>
@@ -958,7 +960,7 @@ function SurveyResultsDialog({
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-green-600 flex items-center gap-1">
                           <ThumbsUp className="h-4 w-4" />
-                          {t('surveys.yes')}
+                          {t('surveys.yes') as any}
                         </span>
                         <span className="text-sm font-bold text-green-600">
                           {qr.totalResponses > 0
@@ -983,7 +985,7 @@ function SurveyResultsDialog({
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-red-600 flex items-center gap-1">
                           <ThumbsDown className="h-4 w-4" />
-                          {t('surveys.no')}
+                          {t('surveys.no') as any}
                         </span>
                         <span className="text-sm font-bold text-red-600">
                           {qr.totalResponses > 0
@@ -1028,7 +1030,7 @@ function SurveyResultsDialog({
                 {/* Response count */}
                 <div className="pt-2 border-t border-border/50">
                   <p className="text-xs text-muted-foreground">
-                    {qr.totalResponses} {t('surveys.responses')}
+                    {qr.totalResponses} {t('surveys.responses') as any}
                   </p>
                 </div>
               </CardContent>
@@ -1117,9 +1119,9 @@ export function SurveysClient() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              {t('surveys.title')}
+              {t('surveys.title') as any}
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">{t('surveys.subtitle')}</p>
+            <p className="text-muted-foreground text-sm mt-1">{t('surveys.subtitle') as any}</p>
           </div>
           {isAdmin && (
             <Button
@@ -1134,7 +1136,7 @@ export function SurveysClient() {
               className="gap-2 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
-              {t('surveys.createSurvey')}
+              {t('surveys.createSurvey') as any}
             </Button>
           )}
         </div>
@@ -1147,25 +1149,25 @@ export function SurveysClient() {
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="all"
           >
-            {t('surveys.filter.all')}
+            {t('surveys.filter.all') as any}
           </TabsTrigger>
           <TabsTrigger
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="active"
           >
-            {t('surveys.filter.active')}
+            {t('surveys.filter.active') as any}
           </TabsTrigger>
           <TabsTrigger
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="draft"
           >
-            {t('surveys.filter.draft')}
+            {t('surveys.filter.draft') as any}
           </TabsTrigger>
           <TabsTrigger
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="closed"
           >
-            {t('surveys.filter.closed')}
+            {t('surveys.filter.closed') as any}
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -1176,7 +1178,7 @@ export function SurveysClient() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <ClipboardList className="h-12 w-12 text-muted-foreground/40 mb-3" />
-              <p className="text-muted-foreground">{t('surveys.empty')}</p>
+              <p className="text-muted-foreground">{t('surveys.empty') as any}</p>
               {isAdmin && (
                 <Button
                   variant="outline"
@@ -1191,7 +1193,7 @@ export function SurveysClient() {
                   }}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  {t('surveys.createFirst')}
+                  {t('surveys.createFirst') as any}
                 </Button>
               )}
             </CardContent>
@@ -1209,11 +1211,11 @@ export function SurveysClient() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-1">
                       <h3 className="font-semibold text-base truncate">{survey.title}</h3>
                       <Badge className={STATUS_COLORS[survey.status] || ''}>
-                        {t(`surveys.status.${survey.status}`)}
+                        {t(`surveys.status.${survey.status}`) as any}
                       </Badge>
                       {survey.isAnonymous && (
                         <Badge variant="outline" className="text-[10px]">
-                          {t('surveys.anonymous')}
+                          {t('surveys.anonymous') as any}
                         </Badge>
                       )}
                     </div>
@@ -1225,11 +1227,11 @@ export function SurveysClient() {
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {survey.responseCount} {t('surveys.responses')}
+                        {survey.responseCount} {t('surveys.responses') as any}
                       </span>
                       {survey.creator && (
                         <span>
-                          {t('surveys.createdBy')} {survey.creator.name}
+                          {t('surveys.createdBy') as any} {survey.creator.name}
                         </span>
                       )}
                     </div>
@@ -1248,7 +1250,7 @@ export function SurveysClient() {
                         className="gap-1"
                       >
                         <Send className="h-3 w-3" />
-                        {t('surveys.take')}
+                        {t('surveys.take') as any}
                       </Button>
                     )}
                     {isAdmin && (
@@ -1260,7 +1262,7 @@ export function SurveysClient() {
                             e.stopPropagation();
                             setViewingResultsId(survey._id);
                           }}
-                          title={t('surveys.viewResults')}
+                          title={t('surveys.viewResults') as any}
                         >
                           <BarChart3 className="h-4 w-4" />
                         </Button>
@@ -1273,7 +1275,7 @@ export function SurveysClient() {
                                 e.stopPropagation();
                                 handlePublish(survey._id);
                               }}
-                              title={t('surveys.publish')}
+                              title={t('surveys.publish') as any}
                             >
                               <Play className="h-4 w-4 text-green-600" />
                             </Button>
@@ -1284,7 +1286,7 @@ export function SurveysClient() {
                                 e.stopPropagation();
                                 handleDelete(survey._id);
                               }}
-                              title={t('surveys.delete')}
+                              title={t('surveys.delete') as any}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -1298,7 +1300,7 @@ export function SurveysClient() {
                               e.stopPropagation();
                               handleClose(survey._id);
                             }}
-                            title={t('surveys.close')}
+                            title={t('surveys.close') as any}
                           >
                             <Square className="h-4 w-4 text-red-600" />
                           </Button>

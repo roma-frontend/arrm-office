@@ -76,9 +76,10 @@ export default function RecognitionDetailClient() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">{t('recognition.kudoDetails')}</h1>
+          <h1 className="text-2xl font-bold">{t('recognition.kudoDetails') as any}</h1>
           <p className="text-muted-foreground">
-            {t('recognition.from')} {kudo.sender.name} {t('recognition.to')} {kudo.receiver.name}
+            {t('recognition.from') as any} {kudo.sender.name} {t('recognition.to') as any}{' '}
+            {kudo.receiver.name}
           </p>
         </div>
       </div>
@@ -93,7 +94,7 @@ export default function RecognitionDetailClient() {
               </Avatar>
               <div>
                 <p className="font-medium">{kudo.sender.name}</p>
-                <p className="text-sm text-muted-foreground">{t('recognition.sender')}</p>
+                <p className="text-sm text-muted-foreground">{t('recognition.sender') as any}</p>
               </div>
             </div>
             <div className="text-right">
@@ -116,12 +117,12 @@ export default function RecognitionDetailClient() {
             </Avatar>
             <div>
               <p className="font-medium">{kudo.receiver.name}</p>
-              <p className="text-sm text-muted-foreground">{t('recognition.receiver')}</p>
+              <p className="text-sm text-muted-foreground">{t('recognition.receiver') as any}</p>
             </div>
           </div>
 
           <div className="border-t pt-4">
-            <h3 className="font-medium mb-2">{t('recognition.form.message')}</h3>
+            <h3 className="font-medium mb-2">{t('recognition.form.message') as any}</h3>
             <p className="text-muted-foreground italic">"{kudo.message}"</p>
           </div>
 
@@ -129,7 +130,7 @@ export default function RecognitionDetailClient() {
             <div className="flex items-center gap-2">
               <Heart className="h-4 w-4 text-red-500" />
               <span className="text-sm">
-                {kudo.reactions?.length || 0} {t('recognition.reactions')}
+                {kudo.reactions?.length || 0} {t('recognition.reactions') as any}
               </span>
             </div>
             <Badge variant={kudo.isPublic ? 'default' : 'secondary'}>
@@ -139,7 +140,7 @@ export default function RecognitionDetailClient() {
 
           {kudo.reactions && kudo.reactions.length > 0 && (
             <div className="border-t pt-4">
-              <h3 className="font-medium mb-3">{t('recognition.reactions')}</h3>
+              <h3 className="font-medium mb-3">{t('recognition.reactions') as any}</h3>
               <div className="flex flex-wrap gap-2">
                 {kudo.reactions.map(
                   (
@@ -160,30 +161,31 @@ export default function RecognitionDetailClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('recognition.context')}</CardTitle>
+          <CardTitle>{t('recognition.context') as any}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">{t('recognition.category')}</p>
+              <p className="text-sm text-muted-foreground">{t('recognition.category') as any}</p>
               <p className="font-medium capitalize">
+                {/* @ts-expect-error i18n type */}
                 {t(`recognitionCategories.${kudo.category}`, kudo.category.replace('_', ' '))}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{t('recognition.visibility')}</p>
+              <p className="text-sm text-muted-foreground">{t('recognition.visibility') as any}</p>
               <p className="font-medium">
                 {kudo.isPublic ? t('recognition.public') : t('recognition.private')}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{t('recognition.date')}</p>
+              <p className="text-sm text-muted-foreground">{t('recognition.date') as any}</p>
               <p className="font-medium">
                 {format(createdAt, 'dd MMM yyyy', { locale: dateLocale })}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">{t('recognition.time')}</p>
+              <p className="text-sm text-muted-foreground">{t('recognition.time') as any}</p>
               <p className="font-medium">{format(createdAt, 'HH:mm', { locale: dateLocale })}</p>
             </div>
           </div>

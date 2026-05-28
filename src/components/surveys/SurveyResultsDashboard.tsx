@@ -75,7 +75,7 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                {t('surveys.average')}: {avg.toFixed(1)} / {maxVal}
+                {t('surveys.average') as any}: {avg.toFixed(1)} / {maxVal}
               </span>
               <span className="font-medium">{pct.toFixed(0)}%</span>
             </div>
@@ -104,9 +104,9 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
       case 'multiple_choice': {
         const counts = result.optionCounts as Record<string, number> | undefined;
         if (!counts || Object.keys(counts).length === 0) {
-          return <p className="text-sm text-muted-foreground">{t('surveys.empty')}</p>;
+          return <p className="text-sm text-muted-foreground">{t('surveys.empty') as any}</p>;
         }
-        const total = Object.values(counts).reduce((s, v) => s + v, 0);
+        const total = Object.values(counts).reduce((s: any, v: any) => s + v, 0);
         return (
           <div className="space-y-2">
             {Object.entries(counts)
@@ -156,7 +156,7 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
       case 'text': {
         const responses = result.textResponses as string[] | undefined;
         if (!responses || responses.length === 0) {
-          return <p className="text-sm text-muted-foreground">{t('surveys.empty')}</p>;
+          return <p className="text-sm text-muted-foreground">{t('surveys.empty') as any}</p>;
         }
         return (
           <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -201,7 +201,7 @@ function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground text-center">{t('surveys.empty')}</p>
+          <p className="text-sm text-muted-foreground text-center">{t('surveys.empty') as any}</p>
         </CardContent>
       </Card>
     );
@@ -212,17 +212,17 @@ function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Users className="h-4 w-4" />
-          {t('surveyResults.title')} — {t('surveyResults.byDepartment')}
+          {t('surveyResults.title') as any} — {t('surveyResults.byDepartment') as any}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {departmentResults.map((dept) => (
+          {departmentResults.map((dept: any) => (
             <div key={dept.department} className="p-3 rounded-lg border bg-card">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-sm">{dept.department}</span>
                 <Badge variant="secondary" className="text-xs">
-                  {dept.responseCount} {t('surveys.responses')}
+                  {dept.responseCount} {t('surveys.responses') as any}
                 </Badge>
               </div>
               <div className="space-y-2">
@@ -257,25 +257,25 @@ function SurveyTrendsChart({ trends }: { trends: any[] }) {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground text-center">{t('surveys.empty')}</p>
+          <p className="text-sm text-muted-foreground text-center">{t('surveys.empty') as any}</p>
         </CardContent>
       </Card>
     );
   }
 
-  const maxResponses = Math.max(...trends.map((t) => t.responseCount), 1);
+  const maxResponses = Math.max(...trends.map((t: any) => t.responseCount), 1);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <TrendingUp className="h-4 w-4" />
-          {t('surveyResults.title')} — {t('surveyResults.trends')}
+          {t('surveyResults.title') as any} — {t('surveyResults.trends') as any}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {trends.map((trend) => {
+          {trends.map((trend: any) => {
             const barWidth = (trend.responseCount / maxResponses) * 100;
             return (
               <div key={trend.surveyId} className="space-y-1">
@@ -330,7 +330,7 @@ function ExportButton({
       const headers = ['Respondent', 'Department', 'Submitted At', ...exportData.questions];
       const rows = exportData.exportData.map((row: any) =>
         headers
-          .map((h) => {
+          .map((h: any) => {
             const val = row[h];
             if (val === undefined || val === null) return '';
             const str = String(val);
@@ -428,9 +428,11 @@ export default function SurveyResultsDashboard() {
             <h1 className="text-2xl font-bold">{survey.title}</h1>
             <div className="flex items-center gap-2 mt-1">
               <StatusBadge status={survey.status} />
-              {survey.isAnonymous && <Badge variant="outline">{t('surveys.anonymous')}</Badge>}
+              {survey.isAnonymous && (
+                <Badge variant="outline">{t('surveys.anonymous') as any}</Badge>
+              )}
               <span className="text-sm text-muted-foreground">
-                {t('surveys.questionsCount')}: {survey.questions?.length ?? 0}
+                {t('surveys.questionsCount') as any}: {survey.questions?.length ?? 0}
               </span>
             </div>
           </div>
@@ -451,7 +453,7 @@ export default function SurveyResultsDashboard() {
               <Users className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-2xl font-bold">{totalResponses}</p>
-                <p className="text-xs text-muted-foreground">{t('surveys.responses')}</p>
+                <p className="text-xs text-muted-foreground">{t('surveys.responses') as any}</p>
               </div>
             </div>
           </CardContent>
@@ -462,7 +464,9 @@ export default function SurveyResultsDashboard() {
               <BarChart3 className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-2xl font-bold">{responseRate.toFixed(0)}%</p>
-                <p className="text-xs text-muted-foreground">{t('surveyResults.responseRate')}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('surveyResults.responseRate') as any}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -473,7 +477,7 @@ export default function SurveyResultsDashboard() {
               <FileText className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-2xl font-bold">{survey.questions?.length ?? 0}</p>
-                <p className="text-xs text-muted-foreground">{t('surveys.questions')}</p>
+                <p className="text-xs text-muted-foreground">{t('surveys.questions') as any}</p>
               </div>
             </div>
           </CardContent>
@@ -488,7 +492,7 @@ export default function SurveyResultsDashboard() {
                     ? format(new Date(survey.createdAt), 'MMM d', { locale: dateLocale })
                     : '—'}
                 </p>
-                <p className="text-xs text-muted-foreground">{t('surveyResults.created')}</p>
+                <p className="text-xs text-muted-foreground">{t('surveyResults.created') as any}</p>
               </div>
             </div>
           </CardContent>
@@ -498,11 +502,11 @@ export default function SurveyResultsDashboard() {
       {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="overview">{t('surveyResults.overview')}</TabsTrigger>
-          <TabsTrigger value="departments">{t('surveyResults.byDepartment')}</TabsTrigger>
-          <TabsTrigger value="trends">{t('surveyResults.trends')}</TabsTrigger>
+          <TabsTrigger value="overview">{t('surveyResults.overview') as any}</TabsTrigger>
+          <TabsTrigger value="departments">{t('surveyResults.byDepartment') as any}</TabsTrigger>
+          <TabsTrigger value="trends">{t('surveyResults.trends') as any}</TabsTrigger>
           {!survey.isAnonymous && (
-            <TabsTrigger value="responses">{t('surveys.responses')}</TabsTrigger>
+            <TabsTrigger value="responses">{t('surveys.responses') as any}</TabsTrigger>
           )}
         </TabsList>
 
@@ -524,7 +528,7 @@ export default function SurveyResultsDashboard() {
 
         {!survey.isAnonymous && (
           <TabsContent value="responses" className="space-y-4 mt-4">
-            {responses?.responses?.map((resp) => (
+            {responses?.responses?.map((resp: any) => (
               <Card key={resp.responseId}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
@@ -552,8 +556,10 @@ export default function SurveyResultsDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {resp.answers.map((answer) => {
-                      const question = survey.questions?.find((q) => q._id === answer.questionId);
+                    {resp.answers.map((answer: any) => {
+                      const question = survey.questions?.find(
+                        (q: any) => q._id === answer.questionId,
+                      );
                       if (!question) return null;
                       return (
                         <div key={answer._id} className="flex items-start gap-2 text-sm">

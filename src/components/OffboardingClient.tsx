@@ -64,8 +64,8 @@ export default function OffboardingClient() {
   const [showWizard, setShowWizard] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<Id<'offboardingPrograms'> | null>(null);
 
-  const activeCount = programs?.filter((p) => p.status === 'active').length ?? 0;
-  const completedCount = programs?.filter((p) => p.status === 'completed').length ?? 0;
+  const activeCount = programs?.filter((p: any) => p.status === 'active').length ?? 0;
+  const completedCount = programs?.filter((p: any) => p.status === 'completed').length ?? 0;
 
   return (
     <div className="">
@@ -73,9 +73,9 @@ export default function OffboardingClient() {
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">{t('offboarding.title', 'Offboarding')}</h1>
+            <h1 className="text-2xl font-bold">{t('offboarding.title', 'Offboarding') as any}</h1>
             <p className="text-sm text-muted-foreground">
-              {t('offboarding.subtitle', 'Manage employee departures and exit workflows')}
+              {t('offboarding.subtitle', 'Manage employee departures and exit workflows') as any}
             </p>
           </div>
           {isAdmin && (
@@ -91,7 +91,7 @@ export default function OffboardingClient() {
               }}
             >
               <UserMinus className="h-4 w-4 mr-1" />
-              {t('offboarding.startOffboarding', 'Start Offboarding')}
+              {t('offboarding.startOffboarding', 'Start Offboarding') as any}
             </Button>
           )}
         </div>
@@ -103,7 +103,7 @@ export default function OffboardingClient() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{activeCount}</p>
             <p className="text-xs text-muted-foreground">
-              {t('offboarding.stats.active', 'Active')}
+              {t('offboarding.stats.active', 'Active') as any}
             </p>
           </CardContent>
         </Card>
@@ -111,7 +111,7 @@ export default function OffboardingClient() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{completedCount}</p>
             <p className="text-xs text-muted-foreground">
-              {t('offboarding.stats.completed', 'Completed')}
+              {t('offboarding.stats.completed', 'Completed') as any}
             </p>
           </CardContent>
         </Card>
@@ -119,7 +119,7 @@ export default function OffboardingClient() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{insights?.avgExperience ?? '—'}</p>
             <p className="text-xs text-muted-foreground">
-              {t('offboarding.stats.avgExperience', 'Avg Experience')}
+              {t('offboarding.stats.avgExperience', 'Avg Experience') as any}
             </p>
           </CardContent>
         </Card>
@@ -127,7 +127,7 @@ export default function OffboardingClient() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{insights?.recommendRate ?? 0}%</p>
             <p className="text-xs text-muted-foreground">
-              {t('offboarding.stats.recommendRate', 'Would Recommend')}
+              {t('offboarding.stats.recommendRate', 'Would Recommend') as any}
             </p>
           </CardContent>
         </Card>
@@ -140,14 +140,14 @@ export default function OffboardingClient() {
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="programs"
           >
-            {t('offboarding.tabs.programs', 'Programs')}
+            {t('offboarding.tabs.programs', 'Programs') as any}
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger
               className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
               value="insights"
             >
-              {t('offboarding.tabs.insights', 'Insights')}
+              {t('offboarding.tabs.insights', 'Insights') as any}
             </TabsTrigger>
           )}
         </TabsList>
@@ -160,12 +160,14 @@ export default function OffboardingClient() {
             <Card>
               <CardContent className="p-8 text-center">
                 <UserMinus className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="font-medium">{t('offboarding.empty', 'No offboarding programs')}</p>
+                <p className="font-medium">
+                  {t('offboarding.empty', 'No offboarding programs') as any}
+                </p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-3">
-              {programs.map((prog) => (
+              {programs.map((prog: any) => (
                 <Card
                   key={prog._id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
@@ -185,14 +187,14 @@ export default function OffboardingClient() {
                                   : 'bg-gray-100 text-gray-600'
                             }
                           >
-                            {t(`offboarding.status.${prog.status}`, prog.status)}
+                            {t(`offboarding.status.${prog.status}`, prog.status) as any}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            {t(`offboarding.reason.${prog.reason}`, prog.reason)}
+                            {t(`offboarding.reason.${prog.reason}`, prog.reason) as any}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {t('offboarding.lastDay', 'Last day')}:{' '}
+                          {t('offboarding.lastDay', 'Last day') as any}:{' '}
                           {new Date(prog.lastDay).toLocaleDateString()}
                         </p>
                       </div>
@@ -229,11 +231,11 @@ export default function OffboardingClient() {
                   <CardContent className="p-5">
                     <h3 className="font-semibold mb-3 flex items-center gap-2">
                       <BarChart3 className="h-4 w-4" />
-                      {t('offboarding.insights.reasons', 'Departure Reasons')}
+                      {t('offboarding.insights.reasons', 'Departure Reasons') as any}
                     </h3>
                     {Object.keys(insights.reasons).length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        {t('offboarding.insights.noData', 'No data yet')}
+                        {t('offboarding.insights.noData', 'No data yet') as any}
                       </p>
                     ) : (
                       <div className="space-y-2">
@@ -242,7 +244,7 @@ export default function OffboardingClient() {
                           .map(([reason, count]) => (
                             <div key={reason} className="flex items-center gap-3">
                               <span className="text-sm w-32 truncate">
-                                {t(`offboarding.reason.${reason}`, reason)}
+                                {t(`offboarding.reason.${reason}`, reason) as any}
                               </span>
                               <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
                                 <div
@@ -264,7 +266,7 @@ export default function OffboardingClient() {
                       <Star className="h-8 w-8 mx-auto text-yellow-500 mb-2" />
                       <p className="text-3xl font-bold">{insights.avgExperience}/5</p>
                       <p className="text-sm text-muted-foreground">
-                        {t('offboarding.insights.avgScore', 'Average Experience Score')}
+                        {t('offboarding.insights.avgScore', 'Average Experience Score') as any}
                       </p>
                     </CardContent>
                   </Card>
@@ -273,7 +275,7 @@ export default function OffboardingClient() {
                       <TrendingDown className="h-8 w-8 mx-auto text-blue-500 mb-2" />
                       <p className="text-3xl font-bold">{insights.totalExits}</p>
                       <p className="text-sm text-muted-foreground">
-                        {t('offboarding.insights.totalExits', 'Total Exits')}
+                        {t('offboarding.insights.totalExits', 'Total Exits') as any}
                       </p>
                     </CardContent>
                   </Card>
@@ -369,7 +371,7 @@ function ProgramDetailDialog({
       <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {program?.employeeName ?? '...'} — {t('offboarding.title', 'Offboarding')}
+            {program?.employeeName ?? '...'} — {t('offboarding.title', 'Offboarding') as any}
           </DialogTitle>
         </DialogHeader>
 
@@ -392,37 +394,37 @@ function ProgramDetailDialog({
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-muted-foreground">
-                  {t('offboarding.reason.label', 'Reason')}:
+                  {t('offboarding.reason.label', 'Reason') as any}:
                 </span>{' '}
-                {t(`offboarding.reason.${program.reason}`, program.reason)}
+                {t(`offboarding.reason.${program.reason}`, program.reason) as any}
               </div>
               <div>
                 <span className="text-muted-foreground">
-                  {t('offboarding.lastDay', 'Last day')}:
+                  {t('offboarding.lastDay', 'Last day') as any}:
                 </span>{' '}
                 {new Date(program.lastDay).toLocaleDateString()}
               </div>
               <div>
                 <span className="text-muted-foreground">
-                  {t('offboarding.manager', 'Manager')}:
+                  {t('offboarding.manager', 'Manager') as any}:
                 </span>{' '}
                 {program.managerName}
               </div>
               <div>
                 <span className="text-muted-foreground">
-                  {t('offboarding.status.label', 'Status')}:
+                  {t('offboarding.status.label', 'Status') as any}:
                 </span>{' '}
-                {t(`offboarding.status.${program.status}`, program.status)}
+                {t(`offboarding.status.${program.status}`, program.status) as any}
               </div>
             </div>
 
             {/* Tasks */}
             <div className="space-y-2 pt-2 border-t">
               <p className="text-sm font-semibold">
-                {t('offboarding.checklist', 'Checklist')} ({program.completedTasks}/
+                {t('offboarding.checklist', 'Checklist') as any} ({program.completedTasks}/
                 {program.totalTasks})
               </p>
-              {program.tasks.map((task) => (
+              {program.tasks.map((task: any) => (
                 <div
                   key={task._id}
                   className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
@@ -441,13 +443,13 @@ function ProgramDetailDialog({
                       {task.title}
                     </p>
                     <span className="text-xs text-muted-foreground">
-                      {t(`offboarding.assigneeType.${task.assigneeType}`, task.assigneeType)}
+                      {t(`offboarding.assigneeType.${task.assigneeType}`, task.assigneeType) as any}
                       {task.assigneeName ? ` • ${task.assigneeName}` : ''}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Badge variant="outline" className="text-[10px]">
-                      {t(`offboarding.category.${task.category}`, task.category)}
+                      {t(`offboarding.category.${task.category}`, task.category) as any}
                     </Badge>
                     {isAdmin && task.status === 'pending' && (
                       <Button
@@ -472,18 +474,18 @@ function ProgramDetailDialog({
               <div className="pt-2 border-t">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold">
-                    {t('offboarding.exitInterview', 'Exit Interview')}
+                    {t('offboarding.exitInterview', 'Exit Interview') as any}
                   </p>
                   {program.exitInterview.status === 'scheduled' && isAdmin && (
                     <Button size="sm" variant="outline" onClick={() => setShowExitForm(true)}>
-                      {t('offboarding.conductInterview', 'Conduct')}
+                      {t('offboarding.conductInterview', 'Conduct') as any}
                     </Button>
                   )}
                 </div>
                 {program.exitInterview.status === 'completed' && (
                   <div className="mt-2 p-3 rounded-lg bg-muted/50 text-sm space-y-1">
                     <p>
-                      {t('offboarding.experience', 'Experience')}:{' '}
+                      {t('offboarding.experience', 'Experience') as any}:{' '}
                       {'⭐'.repeat(program.exitInterview.overallExperience ?? 0)}
                     </p>
                     {program.exitInterview.feedback && (
@@ -498,7 +500,7 @@ function ProgramDetailDialog({
             {showExitForm && (
               <div className="p-4 rounded-lg border space-y-3">
                 <p className="text-sm font-semibold">
-                  {t('offboarding.exitForm.title', 'Exit Interview Form')}
+                  {t('offboarding.exitForm.title', 'Exit Interview Form') as any}
                 </p>
                 <div>
                   <label className="text-xs font-medium">
@@ -517,7 +519,7 @@ function ProgramDetailDialog({
                 </div>
                 <div>
                   <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.recommend', 'Would recommend?')}
+                    {t('offboarding.exitForm.recommend', 'Would recommend?') as any}
                   </label>
                   <Select
                     value={exitForm.recommend ? 'yes' : 'no'}
@@ -527,14 +529,14 @@ function ProgramDetailDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="yes">{t('common.yes', 'Yes')}</SelectItem>
-                      <SelectItem value="no">{t('common.no', 'No')}</SelectItem>
+                      <SelectItem value="yes">{t('common.yes', 'Yes') as any}</SelectItem>
+                      <SelectItem value="no">{t('common.no', 'No') as any}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.reason', 'Primary reason for leaving')}
+                    {t('offboarding.exitForm.reason', 'Primary reason for leaving') as any}
                   </label>
                   <Input
                     value={exitForm.reason}
@@ -544,7 +546,7 @@ function ProgramDetailDialog({
                 </div>
                 <div>
                   <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.feedback', 'Feedback')}
+                    {t('offboarding.exitForm.feedback', 'Feedback') as any}
                   </label>
                   <Textarea
                     value={exitForm.feedback}
@@ -555,7 +557,7 @@ function ProgramDetailDialog({
                 </div>
                 <div>
                   <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.improvements', 'Suggestions for improvement')}
+                    {t('offboarding.exitForm.improvements', 'Suggestions for improvement') as any}
                   </label>
                   <Textarea
                     value={exitForm.improvements}
@@ -566,10 +568,10 @@ function ProgramDetailDialog({
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleSubmitExit}>
-                    {t('offboarding.exitForm.submit', 'Submit')}
+                    {t('offboarding.exitForm.submit', 'Submit') as any}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setShowExitForm(false)}>
-                    {t('common.cancel', 'Cancel')}
+                    {t('common.cancel', 'Cancel') as any}
                   </Button>
                 </div>
               </div>
@@ -579,7 +581,7 @@ function ProgramDetailDialog({
             {isAdmin && program.status === 'active' && program.progress >= 80 && (
               <Button className="w-full" variant="destructive" onClick={handleCompleteProgram}>
                 <CheckCircle2 className="h-4 w-4 mr-1" />
-                {t('offboarding.completeProgram', 'Complete Offboarding')}
+                {t('offboarding.completeProgram', 'Complete Offboarding') as any}
               </Button>
             )}
           </div>
@@ -641,7 +643,7 @@ function StartOffboardingWizard({
         {/* Stepper */}
         <div className="px-5 pt-5 pb-3">
           <DialogHeader>
-            <DialogTitle>{t('offboarding.wizard.title', 'Start Offboarding')}</DialogTitle>
+            <DialogTitle>{t('offboarding.wizard.title', 'Start Offboarding') as any}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-2 mt-4">
             {steps.map((s, i) => (
@@ -668,29 +670,30 @@ function StartOffboardingWizard({
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">
-                  {t('offboarding.fields.employeeId', 'Employee ID')}
+                  {t('offboarding.fields.employeeId', 'Employee ID') as any}
                 </label>
                 <Input
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
-                  placeholder={t(
-                    'offboarding.fields.employeeIdPlaceholder',
-                    'User ID of departing employee',
-                  )}
+                  placeholder={
+                    t(
+                      'offboarding.fields.employeeIdPlaceholder',
+                      'User ID of departing employee',
+                    ) as any
+                  }
                   className="mt-1"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium">
-                  {t('offboarding.fields.managerId', 'Manager ID')}
+                  {t('offboarding.fields.managerId', 'Manager ID') as any}
                 </label>
                 <Input
                   value={managerId}
                   onChange={(e) => setManagerId(e.target.value)}
-                  placeholder={t(
-                    'offboarding.fields.managerIdPlaceholder',
-                    'User ID of their manager',
-                  )}
+                  placeholder={
+                    t('offboarding.fields.managerIdPlaceholder', 'User ID of their manager') as any
+                  }
                   className="mt-1"
                 />
               </div>
@@ -700,7 +703,7 @@ function StartOffboardingWizard({
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">
-                  {t('offboarding.fields.lastDay', 'Last Working Day')}
+                  {t('offboarding.fields.lastDay', 'Last Working Day') as any}
                 </label>
                 <Input
                   type="date"
@@ -711,16 +714,16 @@ function StartOffboardingWizard({
               </div>
               <div>
                 <label className="text-sm font-medium">
-                  {t('offboarding.fields.reason', 'Reason')}
+                  {t('offboarding.fields.reason', 'Reason') as any}
                 </label>
                 <Select value={reason} onValueChange={(v) => setReason(v as typeof reason)}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {REASONS.map((r) => (
+                    {REASONS.map((r: any) => (
                       <SelectItem key={r} value={r}>
-                        {t(`offboarding.reason.${r}`, r)}
+                        {t(`offboarding.reason.${r}`, r) as any}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -735,7 +738,9 @@ function StartOffboardingWizard({
                   onChange={(e) => setReasonNote(e.target.value)}
                   rows={2}
                   className="mt-1"
-                  placeholder={t('offboarding.fields.notePlaceholder', 'Additional context...')}
+                  placeholder={
+                    t('offboarding.fields.notePlaceholder', 'Additional context...') as any
+                  }
                 />
               </div>
             </div>
@@ -743,37 +748,43 @@ function StartOffboardingWizard({
           {step === 2 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                {t('offboarding.wizard.confirm', 'Please confirm the offboarding details:')}
+                {t('offboarding.wizard.confirm', 'Please confirm the offboarding details:') as any}
               </p>
               <div className="p-4 rounded-lg bg-muted/50 space-y-2 text-sm">
                 <p>
                   <span className="font-medium">
-                    {t('offboarding.fields.employeeId', 'Employee')}:
+                    {t('offboarding.fields.employeeId', 'Employee') as any}:
                   </span>{' '}
                   {employeeId.slice(0, 12)}...
                 </p>
                 <p>
                   <span className="font-medium">
-                    {t('offboarding.fields.lastDay', 'Last Day')}:
+                    {t('offboarding.fields.lastDay', 'Last Day') as any}:
                   </span>{' '}
                   {lastDay}
                 </p>
                 <p>
-                  <span className="font-medium">{t('offboarding.fields.reason', 'Reason')}:</span>{' '}
-                  {t(`offboarding.reason.${reason}`, reason)}
+                  <span className="font-medium">
+                    {t('offboarding.fields.reason', 'Reason') as any}:
+                  </span>{' '}
+                  {t(`offboarding.reason.${reason}`, reason) as any}
                 </p>
                 {reasonNote && (
                   <p>
-                    <span className="font-medium">{t('offboarding.fields.note', 'Note')}:</span>{' '}
+                    <span className="font-medium">
+                      {t('offboarding.fields.note', 'Note') as any}:
+                    </span>{' '}
                     {reasonNote}
                   </p>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                {t(
-                  'offboarding.wizard.autoTasks',
-                  'Default checklist tasks will be created automatically.',
-                )}
+                {
+                  t(
+                    'offboarding.wizard.autoTasks',
+                    'Default checklist tasks will be created automatically.',
+                  ) as any
+                }
               </p>
             </div>
           )}
@@ -790,11 +801,11 @@ function StartOffboardingWizard({
               onClick={() => setStep(step + 1)}
               disabled={(step === 0 && (!employeeId || !managerId)) || (step === 1 && !lastDay)}
             >
-              {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
+              {t('common.next', 'Next') as any} <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button variant="destructive" onClick={handleSubmit}>
-              <UserMinus className="h-4 w-4 mr-1" /> {t('offboarding.wizard.start', 'Start')}
+              <UserMinus className="h-4 w-4 mr-1" /> {t('offboarding.wizard.start', 'Start') as any}
             </Button>
           )}
         </div>
