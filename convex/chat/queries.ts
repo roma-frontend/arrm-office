@@ -5,6 +5,7 @@ import type { Id, Doc } from '../_generated/dataModel';
 import { isSuperadmin } from '../lib/auth';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 // ─── CONVERSATIONS ────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ export const getMyConversations = query({
     userId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Step 1: Get all memberships for this user
     const memberships = await ctx.db
       .query('chatMembers')
@@ -29,7 +30,7 @@ export const getMyConversations = query({
       .take(MAX_PAGE_SIZE);
 
     // Step 2: Check if user is a superadmin
-    const user = await ctx.db.get(args.userId);
+    const user = (await ctx.db.get(args.userId)) as any;
     const userIsSuperadmin = user ? isSuperadmin(user) : false;
 
     // Step 3: Batch load all conversations
@@ -191,13 +192,13 @@ export const getMyConversations = query({
       if (!a.isPinned && b.isPinned) return 1;
       return (b.lastMessageAt ?? b.createdAt) - (a.lastMessageAt ?? a.createdAt);
     });
-  },
+  }),
 });
 
 /** Get all members of a conversation */
 export const getConversationMembers = query({
   args: { conversationId: v.id('chatConversations') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const members = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
@@ -208,7 +209,7 @@ export const getConversationMembers = query({
 
     return Promise.all(
       members.map(async (m) => {
-        const user = await ctx.db.get(m.userId);
+        const user = (await ctx.db.get(m.userId)) as any;
         const profile = await getProfile(ctx, m.userId);
         let effectivePresenceStatus =
           profile?.presenceStatus ?? user?.presenceStatus ?? 'available';
@@ -245,7 +246,7 @@ export const getConversationMembers = query({
         };
       }),
     );
-  },
+  }),
 });
 
 /** Get messages for a conversation (paginated, newest last) */
@@ -255,7 +256,7 @@ export const getMessages = query({
     userId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const limit = args.limit ?? 50;
 
     // Verify membership
@@ -283,7 +284,7 @@ export const getMessages = query({
           (msg.deletedForUsers as Id<'users'>[] | undefined) ?? [];
         if (deletedForUsers.includes(args.userId)) return null;
 
-        const sender = await ctx.db.get(msg.senderId);
+        const sender = (await ctx.db.get(msg.senderId)) as any;
         const senderProfile = await getProfile(ctx, msg.senderId);
         return {
           ...msg,
@@ -300,7 +301,7 @@ export const getMessages = query({
     );
 
     return enriched.filter(Boolean).reverse() as typeof enriched;
-  },
+  }),
 });
 
 /** Paginated messages for infinite scroll */
@@ -334,7 +335,7 @@ export const listMessagesPaginated = query({
           (msg.deletedForUsers as Id<'users'>[] | undefined) ?? [];
         if (deletedForUsers.includes(userId)) return null;
 
-        const sender = await ctx.db.get(msg.senderId);
+        const sender = (await ctx.db.get(msg.senderId)) as any;
         const senderProfile = await getProfile(ctx, msg.senderId);
         return {
           ...msg,
@@ -363,7 +364,7 @@ export const getTotalUnread = query({
     userId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const memberships = await ctx.db
       .query('chatMembers')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -377,7 +378,7 @@ export const getTotalUnread = query({
         return true;
       })
       .reduce((sum, m) => sum + (m.unreadCount ?? 0), 0);
-  },
+  }),
 });
 
 export const getTypingUsers = query({
@@ -385,7 +386,7 @@ export const getTypingUsers = query({
     conversationId: v.id('chatConversations'),
     currentUserId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const cutoff = Date.now() - 5000; // 5 seconds TTL
     const typing = await ctx.db
       .query('chatTyping')
@@ -396,11 +397,11 @@ export const getTypingUsers = query({
 
     return Promise.all(
       active.map(async (t) => {
-        const user = await ctx.db.get(t.userId);
+        const user = (await ctx.db.get(t.userId)) as any;
         return { userId: t.userId, name: user?.name ?? 'Someone' };
       }),
     );
-  },
+  }),
 });
 
 /** Search messages in a conversation */
@@ -410,7 +411,7 @@ export const searchMessages = query({
     userId: v.id('users'),
     query: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -426,13 +427,13 @@ export const searchMessages = query({
 
     const q = args.query.toLowerCase();
     return messages.filter((m) => !m.isDeleted && m.content.toLowerCase().includes(q)).slice(-20);
-  },
+  }),
 });
 
 /** Get pinned messages in a conversation */
 export const getPinnedMessages = query({
   args: { conversationId: v.id('chatConversations') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const messages = await ctx.db
       .query('chatMessages')
       .withIndex('by_pinned', (q) =>
@@ -442,7 +443,7 @@ export const getPinnedMessages = query({
 
     return Promise.all(
       messages.map(async (msg) => {
-        const sender = await ctx.db.get(msg.senderId);
+        const sender = (await ctx.db.get(msg.senderId)) as any;
         const senderProfile = await getProfile(ctx, msg.senderId);
         return {
           ...msg,
@@ -452,13 +453,13 @@ export const getPinnedMessages = query({
         };
       }),
     );
-  },
+  }),
 });
 
 /** Get thread replies for a message */
 export const getThreadReplies = query({
   args: { parentMessageId: v.id('chatMessages') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const replies = await ctx.db
       .query('chatMessages')
       .filter((q) => q.eq(q.field('parentMessageId'), args.parentMessageId))
@@ -466,7 +467,7 @@ export const getThreadReplies = query({
       .take(MAX_PAGE_SIZE);
     return Promise.all(
       replies.map(async (r) => {
-        const sender = await ctx.db.get(r.senderId);
+        const sender = (await ctx.db.get(r.senderId)) as any;
         const senderProfile = await getProfile(ctx, r.senderId);
         return {
           ...r,
@@ -480,19 +481,19 @@ export const getThreadReplies = query({
         };
       }),
     );
-  },
+  }),
 });
 
 /** Get scheduled messages for a user */
 export const getScheduledMessages = query({
   args: { conversationId: v.id('chatConversations'), senderId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const msgs = await ctx.db
       .query('chatMessages')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
       .take(MAX_PAGE_SIZE);
     return msgs.filter((m) => m.senderId === args.senderId && m.scheduledFor && !m.isSent);
-  },
+  }),
 });
 
 // ─── CONVERSATION FILTERS ────────────────────────────────────────────────────────────
@@ -503,7 +504,7 @@ export const getUnreadConversations = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -524,7 +525,7 @@ export const getUnreadConversations = query({
     return convs
       .filter((c): c is typeof c & { _id: Id<'chatConversations'> } => c !== null)
       .sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
-  },
+  }),
 });
 
 /** Get only group conversations */
@@ -533,7 +534,7 @@ export const getGroupConversations = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -555,7 +556,7 @@ export const getGroupConversations = query({
         (c): c is typeof c & { _id: Id<'chatConversations'> } => c !== null && c.type === 'group',
       )
       .sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
-  },
+  }),
 });
 
 /** Get pinned conversations */
@@ -564,7 +565,7 @@ export const getPinnedConversations = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -584,7 +585,7 @@ export const getPinnedConversations = query({
     return convs
       .filter((c): c is typeof c & { _id: Id<'chatConversations'> } => c !== null && !!c.isPinned)
       .sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
-  },
+  }),
 });
 
 /** Get archived conversations */
@@ -593,7 +594,7 @@ export const getArchivedConversations = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -613,7 +614,7 @@ export const getArchivedConversations = query({
     return convs
       .filter((c): c is typeof c & { _id: Id<'chatConversations'> } => c !== null)
       .sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
-  },
+  }),
 });
 
 /** Get all org users for new conversation / mention picker */
@@ -622,7 +623,7 @@ export const getOrgUsers = query({
     organizationId: v.id('organizations'),
     currentUserId: v.id('users'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const users = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
@@ -671,7 +672,7 @@ export const getOrgUsers = query({
           };
         }),
     );
-  },
+  }),
 });
 
 /** Get all service broadcasts for an organization */
@@ -679,7 +680,7 @@ export const getServiceBroadcasts = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Get System Announcements conversation
     const systemAnnouncements = await ctx.db
       .query('chatConversations')
@@ -707,7 +708,7 @@ export const getServiceBroadcasts = query({
     // Get sender info for each broadcast
     const enriched = await Promise.all(
       broadcasts.map(async (b) => {
-        const sender = await ctx.db.get(b.senderId);
+        const sender = (await ctx.db.get(b.senderId)) as any;
         return {
           _id: b._id,
           title: b.broadcastTitle || 'Announcement',
@@ -722,7 +723,7 @@ export const getServiceBroadcasts = query({
 
     // Sort by creation date descending (newest first)
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

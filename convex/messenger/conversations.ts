@@ -4,9 +4,10 @@ import type { Id } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 async function getUserOrgId(ctx: QueryCtx, userId: Id<'users'>): Promise<Id<'organizations'>> {
-  const user = await ctx.db.get(userId);
+  const user = (await ctx.db.get(userId)) as any;
   if (!user) throw new Error('User not found');
   if (!user.organizationId) throw new Error('User has no organization');
   return user.organizationId;
@@ -21,8 +22,9 @@ export const getMyConversations = query({
     userId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { userId, organizationId }) => {
-    const user = await ctx.db.get(userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, organizationId } = args;
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) return [];
 
     // For superadmin without org, get all memberships
@@ -35,7 +37,7 @@ export const getMyConversations = query({
       memberships
         .filter((m) => !m.isDeleted)
         .map(async (m) => {
-          const conv = await ctx.db.get(m.conversationId);
+          const conv = (await ctx.db.get(m.conversationId)) as any;
           if (!conv || conv.isDeleted) return null;
 
           // For org-scoped users, only show their org conversations
@@ -50,7 +52,7 @@ export const getMyConversations = query({
               .take(MAX_PAGE_SIZE);
             const otherMember = allMembers.find((mm) => mm.userId !== userId);
             if (otherMember) {
-              const u = await ctx.db.get(otherMember.userId);
+              const u = (await ctx.db.get(otherMember.userId)) as any;
               if (u) {
                 const uProfile = await getProfile(ctx, u._id);
                 otherUser = {
@@ -84,7 +86,7 @@ export const getMyConversations = query({
       if (!a!.isPinned && b!.isPinned) return 1;
       return (b!.lastMessageAt ?? b!.createdAt) - (a!.lastMessageAt ?? a!.createdAt);
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -95,7 +97,8 @@ export const getConversationInfo = query({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { conversationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, userId } = args;
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -104,7 +107,7 @@ export const getConversationInfo = query({
       .first();
     if (!membership) throw new Error('Not a member');
 
-    const conv = await ctx.db.get(conversationId);
+    const conv = (await ctx.db.get(conversationId)) as any;
     if (!conv) throw new Error('Conversation not found');
 
     const members = await ctx.db
@@ -114,7 +117,7 @@ export const getConversationInfo = query({
 
     const enrichedParticipants = await Promise.all(
       members.map(async (m) => {
-        const user = await ctx.db.get(m.userId);
+        const user = (await ctx.db.get(m.userId)) as any;
         const userProfile = await getProfile(ctx, m.userId);
         return {
           ...m,
@@ -137,7 +140,7 @@ export const getConversationInfo = query({
       myRole: membership.role,
       isMuted: membership.isMuted,
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -148,7 +151,8 @@ export const getOrCreatePersonalConversation = mutation({
     userId: v.id('users'),
     otherUserId: v.id('users'),
   },
-  handler: async (ctx, { userId, otherUserId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, otherUserId } = args;
     if (userId === otherUserId) throw new Error('Cannot create conversation with yourself');
 
     const orgId = await getUserOrgId(ctx, userId);
@@ -193,7 +197,7 @@ export const getOrCreatePersonalConversation = mutation({
     });
 
     return convId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -205,7 +209,8 @@ export const createGroupConversation = mutation({
     name: v.string(),
     participantIds: v.array(v.id('users')),
   },
-  handler: async (ctx, { creatorId, name, participantIds }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { creatorId, name, participantIds } = args;
     const orgId = await getUserOrgId(ctx, creatorId);
     const now = Date.now();
 
@@ -230,8 +235,8 @@ export const createGroupConversation = mutation({
     });
 
     // Add participants
-    const uniqueIds = [...new Set(participantIds.filter((id) => id !== creatorId))];
-    for (const uid of uniqueIds) {
+    const uniqueIds = [...new Set(participantIds.filter((id: any) => id !== creatorId))];
+    for (const uid of uniqueIds as any[]) {
       await ctx.db.insert('chatMembers', {
         conversationId: convId,
         userId: uid,
@@ -244,7 +249,7 @@ export const createGroupConversation = mutation({
     }
 
     // System message
-    const creator = await ctx.db.get(creatorId);
+    const creator = (await ctx.db.get(creatorId)) as any;
     await ctx.db.insert('chatMessages', {
       conversationId: convId,
       organizationId: orgId,
@@ -265,7 +270,7 @@ export const createGroupConversation = mutation({
     });
 
     return convId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -277,7 +282,8 @@ export const updateConversation = mutation({
     userId: v.id('users'),
     name: v.optional(v.string()),
   },
-  handler: async (ctx, { conversationId, userId, name }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, userId, name } = args;
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -300,7 +306,7 @@ export const updateConversation = mutation({
       details: JSON.stringify({ name: name || 'metadata' }),
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -311,7 +317,8 @@ export const leaveConversation = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { conversationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, userId } = args;
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -322,8 +329,8 @@ export const leaveConversation = mutation({
 
     await ctx.db.delete(membership._id);
 
-    const conv = await ctx.db.get(conversationId);
-    const user = await ctx.db.get(userId);
+    const conv = (await ctx.db.get(conversationId)) as any;
+    const user = (await ctx.db.get(userId)) as any;
     if (conv) {
       await ctx.db.insert('chatMessages', {
         conversationId,
@@ -344,7 +351,7 @@ export const leaveConversation = mutation({
         createdAt: Date.now(),
       });
     }
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -356,8 +363,9 @@ export const addParticipants = mutation({
     adminUserId: v.id('users'),
     userIds: v.array(v.id('users')),
   },
-  handler: async (ctx, { conversationId, adminUserId, userIds }) => {
-    const conv = await ctx.db.get(conversationId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, adminUserId, userIds } = args;
+    const conv = (await ctx.db.get(conversationId)) as any;
     if (!conv || conv.type !== 'group') throw new Error('Not a group conversation');
 
     const adminM = await ctx.db
@@ -370,11 +378,11 @@ export const addParticipants = mutation({
       throw new Error('Not authorized');
 
     const now = Date.now();
-    const admin = await ctx.db.get(adminUserId);
+    const admin = (await ctx.db.get(adminUserId)) as any;
     const addedNames: string[] = [];
 
     // Batch-load all users upfront to avoid N+1 queries
-    const usersBatch = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+    const usersBatch = await Promise.all(userIds.map((id: any) => ctx.db.get(id)));
     const userMap = new Map(usersBatch.filter(Boolean).map((u: any) => [u._id, u]));
 
     // Batch-check existing memberships
@@ -421,7 +429,7 @@ export const addParticipants = mutation({
         createdAt: now,
       });
     }
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -433,7 +441,8 @@ export const removeParticipant = mutation({
     adminUserId: v.id('users'),
     targetUserId: v.id('users'),
   },
-  handler: async (ctx, { conversationId, adminUserId, targetUserId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, adminUserId, targetUserId } = args;
     const adminM = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -453,9 +462,9 @@ export const removeParticipant = mutation({
 
     await ctx.db.delete(targetM._id);
 
-    const conv = await ctx.db.get(conversationId);
-    const admin = await ctx.db.get(adminUserId);
-    const target = await ctx.db.get(targetUserId);
+    const conv = (await ctx.db.get(conversationId)) as any;
+    const admin = (await ctx.db.get(adminUserId)) as any;
+    const target = (await ctx.db.get(targetUserId)) as any;
     if (conv) {
       await ctx.db.insert('chatMessages', {
         conversationId,
@@ -479,7 +488,7 @@ export const removeParticipant = mutation({
         createdAt: Date.now(),
       });
     }
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -490,7 +499,8 @@ export const toggleMute = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { conversationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, userId } = args;
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -514,7 +524,7 @@ export const toggleMute = mutation({
     });
 
     return !membership.isMuted;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -525,7 +535,8 @@ export const markConversationRead = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { conversationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, userId } = args;
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -564,7 +575,7 @@ export const markConversationRead = mutation({
       updated.push({ userId, readAt: now });
       await ctx.db.patch(msg._id, { readBy: updated });
     }
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -576,7 +587,8 @@ export const pinConversation = mutation({
     userId: v.id('users'),
     pin: v.boolean(),
   },
-  handler: async (ctx, { conversationId, userId, pin }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, userId, pin } = args;
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -596,7 +608,7 @@ export const pinConversation = mutation({
       details: JSON.stringify({ pinned: pin }),
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -608,7 +620,8 @@ export const archiveConversation = mutation({
     userId: v.id('users'),
     archive: v.boolean(),
   },
-  handler: async (ctx, { conversationId, userId, archive }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, userId, archive } = args;
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -628,7 +641,7 @@ export const archiveConversation = mutation({
       details: JSON.stringify({ archived: archive }),
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -639,7 +652,8 @@ export const deleteConversation = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { conversationId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { conversationId, userId } = args;
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -662,5 +676,5 @@ export const deleteConversation = mutation({
       details: JSON.stringify({ softDelete: true }),
       createdAt: Date.now(),
     });
-  },
+  }),
 });

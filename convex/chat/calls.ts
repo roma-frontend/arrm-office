@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
+import { withAuth } from '../lib/withAuth';
 
 // ─── CALLS ────────────────────────────────────────────────────────────────────
 
@@ -14,7 +15,7 @@ export const initiateCall = mutation({
     participantIds: v.array(v.id('users')),
     offer: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const now = Date.now();
     const participantList = [
       {
@@ -22,7 +23,9 @@ export const initiateCall = mutation({
         joinedAt: now,
         offer: args.offer,
       },
-      ...args.participantIds.filter((id) => id !== args.initiatorId).map((id) => ({ userId: id })),
+      ...args.participantIds
+        .filter((id: any) => id !== args.initiatorId)
+        .map((id: any) => ({ userId: id })),
     ];
 
     const callId = await ctx.db.insert('chatCalls', {
@@ -36,7 +39,7 @@ export const initiateCall = mutation({
     });
 
     // Post system message about call
-    const initiator = await ctx.db.get(args.initiatorId);
+    const initiator = (await ctx.db.get(args.initiatorId)) as any;
     await ctx.db.insert('chatMessages', {
       conversationId: args.conversationId,
       organizationId: args.organizationId,
@@ -49,7 +52,7 @@ export const initiateCall = mutation({
     });
 
     return callId;
-  },
+  }),
 });
 
 export const answerCall = mutation({
@@ -58,11 +61,11 @@ export const answerCall = mutation({
     userId: v.id('users'),
     answer: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const call = await ctx.db.get(args.callId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const call = (await ctx.db.get(args.callId)) as any;
     if (!call) throw new Error('Call not found');
 
-    const participants = call.participants.map((p) => {
+    const participants = call.participants.map((p: any) => {
       if (p.userId === args.userId) {
         return { ...p, joinedAt: Date.now(), answer: args.answer };
       }
@@ -85,7 +88,7 @@ export const answerCall = mutation({
     if (callMsg) {
       await ctx.db.patch(callMsg._id, { callStatus: 'answered' });
     }
-  },
+  }),
 });
 
 export const endCall = mutation({
@@ -93,14 +96,14 @@ export const endCall = mutation({
     callId: v.id('chatCalls'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const call = await ctx.db.get(args.callId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const call = (await ctx.db.get(args.callId)) as any;
     if (!call) throw new Error('Call not found');
 
     const now = Date.now();
     const duration = call.startedAt ? Math.floor((now - call.startedAt) / 1000) : 0;
 
-    const participants = call.participants.map((p) => {
+    const participants = call.participants.map((p: any) => {
       if (!p.leftAt) return { ...p, leftAt: now };
       return p;
     });
@@ -111,7 +114,7 @@ export const endCall = mutation({
       duration,
       participants,
     });
-  },
+  }),
 });
 
 export const declineCall = mutation({
@@ -119,8 +122,8 @@ export const declineCall = mutation({
     callId: v.id('chatCalls'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const call = await ctx.db.get(args.callId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const call = (await ctx.db.get(args.callId)) as any;
     if (!call) throw new Error('Call not found');
     await ctx.db.patch(args.callId, { status: 'declined' });
 
@@ -133,7 +136,7 @@ export const declineCall = mutation({
     if (callMsg) {
       await ctx.db.patch(callMsg._id, { callStatus: 'declined' });
     }
-  },
+  }),
 });
 
 /** Store SDP offer for the initiator (does NOT change call status) */
@@ -143,11 +146,11 @@ export const updateOffer = mutation({
     userId: v.id('users'),
     offer: v.string(),
   },
-  handler: async (ctx, args) => {
-    const call = await ctx.db.get(args.callId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const call = (await ctx.db.get(args.callId)) as any;
     if (!call) throw new Error('Call not found');
 
-    const participants = call.participants.map((p) => {
+    const participants = call.participants.map((p: any) => {
       if (p.userId === args.userId) {
         return { ...p, offer: args.offer };
       }
@@ -155,7 +158,7 @@ export const updateOffer = mutation({
     });
 
     await ctx.db.patch(args.callId, { participants });
-  },
+  }),
 });
 
 export const updateIceCandidates = mutation({
@@ -164,11 +167,11 @@ export const updateIceCandidates = mutation({
     userId: v.id('users'),
     candidates: v.array(v.string()),
   },
-  handler: async (ctx, args) => {
-    const call = await ctx.db.get(args.callId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const call = (await ctx.db.get(args.callId)) as any;
     if (!call) throw new Error('Call not found');
 
-    const participants = call.participants.map((p) => {
+    const participants = call.participants.map((p: any) => {
       if (p.userId === args.userId) {
         // Append new candidates to existing array instead of replacing
         const existing = p.iceCandidates ?? [];
@@ -179,12 +182,12 @@ export const updateIceCandidates = mutation({
     });
 
     await ctx.db.patch(args.callId, { participants });
-  },
+  }),
 });
 
 export const getActiveCall = query({
   args: { conversationId: v.id('chatConversations') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Get the most recent call that is still ringing or active
     return ctx.db
       .query('chatCalls')
@@ -192,7 +195,7 @@ export const getActiveCall = query({
       .order('desc')
       .filter((q) => q.or(q.eq(q.field('status'), 'ringing'), q.eq(q.field('status'), 'active')))
       .first();
-  },
+  }),
 });
 
 /** Get all incoming calls for a user (ringing calls where user is not initiator) */
@@ -201,7 +204,7 @@ export const getIncomingCalls = query({
     userId: v.id('users'),
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Find all active/ringing calls in this organization where user is a participant but not initiator
     const calls = await ctx.db
       .query('chatCalls')
@@ -228,5 +231,5 @@ export const getIncomingCalls = query({
     }
 
     return null;
-  },
+  }),
 });

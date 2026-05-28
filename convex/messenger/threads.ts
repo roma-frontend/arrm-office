@@ -3,6 +3,7 @@ import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEND THREAD REPLY
@@ -14,8 +15,8 @@ export const sendThreadReply = mutation({
     senderId: v.id('users'),
     content: v.string(),
   },
-  handler: async (ctx, args) => {
-    const conv = await ctx.db.get(args.conversationId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const conv = (await ctx.db.get(args.conversationId)) as any;
     if (!conv) throw new Error('Conversation not found');
 
     const now = Date.now();
@@ -29,7 +30,7 @@ export const sendThreadReply = mutation({
       createdAt: now,
     });
 
-    const parent = await ctx.db.get(args.parentMessageId);
+    const parent = (await ctx.db.get(args.parentMessageId)) as any;
     if (parent) {
       await ctx.db.patch(args.parentMessageId, {
         threadCount: (parent.threadCount ?? 0) + 1,
@@ -37,7 +38,7 @@ export const sendThreadReply = mutation({
       });
     }
 
-    const sender = await ctx.db.get(args.senderId);
+    const sender = (await ctx.db.get(args.senderId)) as any;
     await ctx.db.patch(args.conversationId, {
       lastMessageAt: now,
       lastMessageText: `${sender?.name ?? 'Someone'}: ${args.content.slice(0, 60)}`,
@@ -46,7 +47,7 @@ export const sendThreadReply = mutation({
     });
 
     return replyId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ export const sendThreadReply = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getThreadReplies = query({
   args: { parentMessageId: v.id('chatMessages') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const replies = await ctx.db
       .query('chatMessages')
       .filter((q) => q.eq(q.field('parentMessageId'), args.parentMessageId))
@@ -65,7 +66,7 @@ export const getThreadReplies = query({
       replies
         .filter((r) => !r.isDeleted)
         .map(async (r) => {
-          const sender = await ctx.db.get(r.senderId);
+          const sender = (await ctx.db.get(r.senderId)) as any;
           const senderProfile = await getProfile(ctx, r.senderId);
           return {
             ...r,
@@ -74,7 +75,7 @@ export const getThreadReplies = query({
           };
         }),
     );
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,13 +87,13 @@ export const pinMessage = mutation({
     userId: v.id('users'),
     pin: v.boolean(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await ctx.db.patch(args.messageId, {
       isPinned: args.pin,
       pinnedBy: args.pin ? args.userId : undefined,
       pinnedAt: args.pin ? Date.now() : undefined,
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -100,7 +101,7 @@ export const pinMessage = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPinnedMessages = query({
   args: { conversationId: v.id('chatConversations') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const messages = await ctx.db
       .query('chatMessages')
       .withIndex('by_pinned', (q) =>
@@ -112,7 +113,7 @@ export const getPinnedMessages = query({
       messages
         .filter((m) => !m.isDeleted)
         .map(async (msg) => {
-          const sender = await ctx.db.get(msg.senderId);
+          const sender = (await ctx.db.get(msg.senderId)) as any;
           const senderProfile = await getProfile(ctx, msg.senderId);
           return {
             ...msg,
@@ -121,5 +122,5 @@ export const getPinnedMessages = query({
           };
         }),
     );
-  },
+  }),
 });

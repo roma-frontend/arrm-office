@@ -4,6 +4,7 @@ import type { Id } from '../_generated/dataModel';
 import { markConversationRead } from './conversations';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET CONVERSATION MESSAGES — uses chatMessages
@@ -35,7 +36,7 @@ export const getConversationMessages = query({
           (m.deletedForUsers as Id<'users'>[] | undefined) ?? [];
         if (deletedForUsers.includes(userId)) return null;
 
-        const sender = await ctx.db.get(m.senderId);
+        const sender = (await ctx.db.get(m.senderId)) as any;
         const senderProfile = await getProfile(ctx, m.senderId);
         return {
           ...m,
@@ -86,7 +87,7 @@ export const sendMessage = mutation({
     ),
     scheduledFor: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -95,7 +96,7 @@ export const sendMessage = mutation({
       .first();
     if (!membership) throw new Error('Not a member');
 
-    const conv = await ctx.db.get(args.conversationId);
+    const conv = (await ctx.db.get(args.conversationId)) as any;
     if (!conv) throw new Error('Conversation not found');
 
     const now = Date.now();
@@ -104,10 +105,10 @@ export const sendMessage = mutation({
     let replyToContent: string | undefined;
     let replyToSenderName: string | undefined;
     if (args.replyToId) {
-      const replyMsg = await ctx.db.get(args.replyToId);
+      const replyMsg = (await ctx.db.get(args.replyToId)) as any;
       if (replyMsg) {
         replyToContent = replyMsg.content.slice(0, 100);
-        const replyUser = await ctx.db.get(replyMsg.senderId);
+        const replyUser = (await ctx.db.get(replyMsg.senderId)) as any;
         replyToSenderName = replyUser?.name;
       }
     }
@@ -166,7 +167,7 @@ export const sendMessage = mutation({
 
     // Mention notifications
     if (args.mentions && args.mentions.length > 0) {
-      const sender = await ctx.db.get(args.senderId);
+      const sender = (await ctx.db.get(args.senderId)) as any;
       for (const mentionedId of args.mentions) {
         if (mentionedId === args.senderId) continue;
         await ctx.db.insert('notifications', {
@@ -184,7 +185,7 @@ export const sendMessage = mutation({
     }
 
     return messageId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,7 +197,7 @@ export const deleteMessage = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, { messageId, userId }) => {
-    const message = await ctx.db.get(messageId);
+    const message = (await ctx.db.get(messageId)) as any;
     if (!message) throw new Error('Message not found');
     if (message.senderId !== userId) throw new Error('Can only delete your own messages');
 
@@ -221,7 +222,7 @@ export const editMessage = mutation({
     content: v.string(),
   },
   handler: async (ctx, { messageId, userId, content }) => {
-    const message = await ctx.db.get(messageId);
+    const message = (await ctx.db.get(messageId)) as any;
     if (!message) throw new Error('Message not found');
     if (message.senderId !== userId) throw new Error('Can only edit your own messages');
 
@@ -246,8 +247,8 @@ export const toggleReaction = mutation({
     userId: v.id('users'),
     emoji: v.string(),
   },
-  handler: async (ctx, args) => {
-    const msg = await ctx.db.get(args.messageId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const msg = (await ctx.db.get(args.messageId)) as any;
     if (!msg) throw new Error('Message not found');
 
     const emojiKey = emojiToKey(args.emoji);
@@ -266,7 +267,7 @@ export const toggleReaction = mutation({
     await ctx.db.patch(args.messageId, {
       reactions: Object.keys(reactions).length > 0 ? reactions : undefined,
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

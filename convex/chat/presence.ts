@@ -3,6 +3,7 @@ import { query } from '../_generated/server';
 import type { Id, Doc } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 interface LeaveQuery {
   order: (direction: 'asc' | 'desc') => { take: (n: number) => Promise<Doc<'leaveRequests'>[]> };
@@ -76,8 +77,8 @@ export async function getUsersWithLeaveStatus(
  */
 export const getUserPresenceStatus = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) return null;
 
     const profile = await getProfile(ctx, args.userId);
@@ -111,5 +112,5 @@ export const getUserPresenceStatus = query({
       department: profile?.department ?? user.department,
       position: profile?.position ?? user.position,
     };
-  },
+  }),
 });
