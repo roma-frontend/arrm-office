@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // ── Helper: Calculate response time in hours ──────────────────────────────
 function calculateResponseTime(
@@ -148,7 +147,7 @@ export const updateSLAConfig = mutation({
     notifyOnCritical: v.boolean(),
     notifyOnBreach: v.boolean(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, ...config } = args;
 
     const existing = await ctx.db.query('slaConfig').first();
@@ -167,7 +166,7 @@ export const updateSLAConfig = mutation({
         updatedAt: Date.now(),
       });
     }
-  }),
+  },
 });
 
 // ── Create SLA Metric (when leave request is created) ────────────────────
@@ -175,9 +174,9 @@ export const createSLAMetric = mutation({
   args: {
     leaveRequestId: v.id('leaveRequests'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { leaveRequestId } = args;
-    const leave = (await ctx.db.get(leaveRequestId)) as any as any as any;
+    const leave = await ctx.db.get(leaveRequestId);
     if (!leave) throw new Error('Leave request not found');
 
     const config = await ctx.db.query('slaConfig').first();
@@ -192,7 +191,7 @@ export const createSLAMetric = mutation({
       criticalTriggered: false,
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ── Update SLA Metric (when leave is approved/rejected) ──────────────────
@@ -200,9 +199,9 @@ export const updateSLAMetric = mutation({
   args: {
     leaveRequestId: v.id('leaveRequests'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { leaveRequestId } = args;
-    const leave = (await ctx.db.get(leaveRequestId)) as any as any as any;
+    const leave = await ctx.db.get(leaveRequestId);
     if (!leave || !leave.reviewedAt) throw new Error('Leave not reviewed');
 
     const metric = await ctx.db
@@ -234,7 +233,7 @@ export const updateSLAMetric = mutation({
     });
 
     return metric._id;
-  }),
+  },
 });
 
 // ── Get SLA Dashboard Stats ───────────────────────────────────────────────
@@ -244,7 +243,7 @@ export const getSLAStats = query({
     endDate: v.optional(v.number()),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { startDate, endDate, organizationId } = args;
     let metrics = await ctx.db.query('slaMetrics').take(XLARGE_LIST_CAP);
 
@@ -313,7 +312,7 @@ export const getSLAStats = query({
       warningCount,
       criticalCount,
     };
-  }),
+  },
 });
 
 // ── Get Pending Requests with SLA Info ────────────────────────────────────
@@ -321,7 +320,7 @@ export const getPendingWithSLA = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     let pendingLeaves = await ctx.db
       .query('leaveRequests')
@@ -385,7 +384,7 @@ export const getPendingWithSLA = query({
         },
       };
     });
-  }),
+  },
 });
 
 // ── Get SLA Trend Data (for charts) ───────────────────────────────────────
@@ -394,7 +393,7 @@ export const getSLATrend = query({
     days: v.number(), // Last N days
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { days, organizationId } = args;
     const startDate = Date.now() - days * 24 * 60 * 60 * 1000;
     let metrics = await ctx.db
@@ -448,7 +447,7 @@ export const getSLATrend = query({
             : 100,
       }))
       .sort((a: any, b: any) => a.date.localeCompare(b.date));
-  }),
+  },
 });
 
 ('// �� Get All SLA Metrics (for dashboard) �����������������������������������');

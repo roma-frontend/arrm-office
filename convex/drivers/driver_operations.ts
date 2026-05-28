@@ -8,7 +8,6 @@ import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
-import { withAuth } from '../lib/withAuth';
 
 /** Block time slot (for driver) */
 export const blockTimeSlot = mutation({
@@ -19,12 +18,12 @@ export const blockTimeSlot = mutation({
     endTime: v.number(),
     reason: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, organizationId, startTime, endTime, reason } = args;
     await ctx.db.insert('driverSchedules', {
       organizationId,
       driverId,
-      userId: ((await ctx.db.get(driverId)) as any)!.userId,
+      userId: (await ctx.db.get(driverId))!.userId,
       startTime,
       endTime,
       type: 'blocked',
@@ -35,7 +34,7 @@ export const blockTimeSlot = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /** Update trip status (in_progress, completed, etc.) */
@@ -45,14 +44,14 @@ export const updateTripStatus = mutation({
     userId: v.id('users'),
     status: v.union(v.literal('in_progress'), v.literal('completed'), v.literal('cancelled')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { scheduleId, userId, status } = args;
-    const schedule = (await ctx.db.get(scheduleId)) as any;
+    const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
     // Verify user is the driver
     if (schedule.driverId) {
-      const driver = (await ctx.db.get(schedule.driverId)) as any;
+      const driver = await ctx.db.get(schedule.driverId);
       if (!driver || driver.userId !== userId) {
         throw new Error('Only the driver can update trip status');
       }
@@ -64,7 +63,7 @@ export const updateTripStatus = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /** Submit driver feedback */
@@ -75,14 +74,14 @@ export const submitDriverFeedback = mutation({
     rating: v.number(),
     comment: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { scheduleId, userId, rating, comment } = args;
-    const schedule = (await ctx.db.get(scheduleId)) as any;
+    const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
     // Verify user is the driver
     if (schedule.driverId) {
-      const driver = (await ctx.db.get(schedule.driverId)) as any;
+      const driver = await ctx.db.get(schedule.driverId);
       if (!driver || driver.userId !== userId) {
         throw new Error('Only the driver can submit feedback');
       }
@@ -103,7 +102,7 @@ export const submitDriverFeedback = mutation({
 
     // Update driver average rating
     if (schedule.driverId) {
-      const driver = (await ctx.db.get(schedule.driverId)) as any;
+      const driver = await ctx.db.get(schedule.driverId);
       if (driver) {
         // NOTE: Capped at DEFAULT_LIST_CAP — average recomputed from recent ratings.
         const allRatings = await ctx.db
@@ -120,7 +119,7 @@ export const submitDriverFeedback = mutation({
     }
 
     return { success: true };
-  }),
+  },
 });
 
 /** Block time off (vacation, sick, etc.) */
@@ -138,9 +137,9 @@ export const blockTimeOff = mutation({
       v.literal('other'),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, organizationId, startTime, endTime, reason, type } = args;
-    const driver = (await ctx.db.get(driverId)) as any;
+    const driver = await ctx.db.get(driverId);
     if (!driver) throw new Error('Driver not found');
 
     await ctx.db.insert('driverSchedules', {
@@ -157,7 +156,7 @@ export const blockTimeOff = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /** Calculate route distance and duration */
@@ -166,7 +165,7 @@ export const calculateRoute = mutation({
     from: v.string(),
     to: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { from, to } = args;
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -185,7 +184,7 @@ export const calculateRoute = mutation({
       distanceKm: 15,
       durationMinutes: 30,
     };
-  }),
+  },
 });
 
 /** Submit passenger rating for driver after completed trip */
@@ -199,7 +198,7 @@ export const submitPassengerRating = mutation({
     rating: v.number(),
     comment: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     if (args.rating < 1 || args.rating > 5) {
       throw new Error('Rating must be between 1 and 5');
     }
@@ -225,7 +224,7 @@ export const submitPassengerRating = mutation({
       createdAt: Date.now(),
     });
 
-    const driver = (await ctx.db.get(args.driverId)) as any;
+    const driver = await ctx.db.get(args.driverId);
     if (driver) {
       // NOTE: Capped at DEFAULT_LIST_CAP — average recomputed from recent ratings.
       const allRatings = await ctx.db
@@ -248,7 +247,7 @@ export const submitPassengerRating = mutation({
     }
 
     return { success: true };
-  }),
+  },
 });
 
 /** Add notes to a driver schedule */
@@ -258,9 +257,9 @@ export const addDriverNotes = mutation({
     userId: v.id('users'),
     notes: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { scheduleId, userId, notes } = args;
-    const schedule = (await ctx.db.get(scheduleId)) as any;
+    const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
     await ctx.db.patch(scheduleId, {
@@ -269,7 +268,7 @@ export const addDriverNotes = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /** Driver marks "I've arrived" — starts wait timer */
@@ -278,12 +277,12 @@ export const markDriverArrived = mutation({
     scheduleId: v.id('driverSchedules'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { scheduleId, userId } = args;
-    const schedule = (await ctx.db.get(scheduleId)) as any;
+    const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
-    const driver = (await ctx.db.get(schedule.driverId)) as any;
+    const driver = await ctx.db.get(schedule.driverId);
     if (!driver || driver.userId !== userId) throw new Error('Only the driver can mark arrival');
 
     await ctx.db.patch(scheduleId, {
@@ -304,7 +303,7 @@ export const markDriverArrived = mutation({
     });
 
     return { success: true, arrivedAt: Date.now() };
-  }),
+  },
 });
 
 /** Driver marks passenger picked up — stops wait timer */
@@ -313,12 +312,12 @@ export const markPassengerPickedUp = mutation({
     scheduleId: v.id('driverSchedules'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { scheduleId, userId } = args;
-    const schedule = (await ctx.db.get(scheduleId)) as any;
+    const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
-    const driver = (await ctx.db.get(schedule.driverId)) as any;
+    const driver = await ctx.db.get(schedule.driverId);
     if (!driver || driver.userId !== userId) throw new Error('Only the driver can mark pickup');
 
     const now = Date.now();
@@ -331,7 +330,7 @@ export const markPassengerPickedUp = mutation({
     });
 
     return { success: true, waitTimeMinutes: waitTime };
-  }),
+  },
 });
 
 /** Driver updates ETA to pickup */
@@ -341,12 +340,12 @@ export const updateETA = mutation({
     userId: v.id('users'),
     etaMinutes: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { scheduleId, userId, etaMinutes } = args;
-    const schedule = (await ctx.db.get(scheduleId)) as any;
+    const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
-    const driver = (await ctx.db.get(schedule.driverId)) as any;
+    const driver = await ctx.db.get(schedule.driverId);
     if (!driver || driver.userId !== userId) throw new Error('Only the driver can update ETA');
 
     await ctx.db.patch(scheduleId, {
@@ -367,5 +366,5 @@ export const updateETA = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });

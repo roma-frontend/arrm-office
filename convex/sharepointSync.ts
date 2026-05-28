@@ -1,8 +1,8 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
-import { withAuth } from './lib/withAuth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -12,7 +12,7 @@ import { DEFAULT_LIST_CAP } from './lib/limits';
 const RESTRICTED_ORG_SLUG = 'adb-arrm';
 
 async function verifyRestrictedOrg(ctx: any, organizationId: string) {
-  const org = (await ctx.db.get(organizationId)) as any as any as any;
+  const org = await ctx.db.get(organizationId);
   if (!org) {
     throw new Error('Organization not found');
   }
@@ -37,9 +37,9 @@ export const upsertSharePointUser = mutation({
     location: v.optional(v.string()),
     employeeType: v.union(v.literal('staff'), v.literal('contractor')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Verify admin
-    const admin = (await ctx.db.get(args.adminId)) as any as any as any;
+    const admin = await ctx.db.get(args.adminId);
     if (!admin) throw new Error('Admin not found');
     if (admin.role !== 'admin' && admin.role !== 'superadmin') {
       throw new Error('Only admins can sync SharePoint users');
@@ -98,7 +98,7 @@ export const upsertSharePointUser = mutation({
     });
 
     return { action: 'created' as const, userId };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,9 +110,9 @@ export const deactivateSharePointUsers = mutation({
     organizationId: v.id('organizations'),
     activeEmails: v.array(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Verify admin
-    const admin = (await ctx.db.get(args.adminId)) as any as any as any;
+    const admin = await ctx.db.get(args.adminId);
     if (!admin) throw new Error('Admin not found');
     if (admin.role !== 'admin' && admin.role !== 'superadmin') {
       throw new Error('Only admins can deactivate users');
@@ -145,7 +145,7 @@ export const deactivateSharePointUsers = mutation({
     }
 
     return { deactivated };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ export const logSync = mutation({
     deactivated: v.number(),
     errors: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // 🛡️ RESTRICTED ORG CHECK: Only ADB-ARRM can use SharePoint sync
     await verifyRestrictedOrg(ctx, args.organizationId);
 
@@ -173,7 +173,7 @@ export const logSync = mutation({
       errors: args.errors,
       syncedAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -181,7 +181,7 @@ export const logSync = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getLastSync = query({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     // 🛡️ RESTRICTED ORG CHECK: Only ADB-ARRM can access SharePoint sync logs
     await verifyRestrictedOrg(ctx, organizationId);
@@ -193,7 +193,7 @@ export const getLastSync = query({
       .take(1);
 
     return logs[0] || null;
-  }),
+  },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -210,21 +210,10 @@ export const secureUpsertSharePointUser = mutation({
     location: v.optional(v.string()),
     employeeType: v.union(v.literal('staff'), v.literal('contractor')),
   },
-  handler: withAuth<
-    MutationCtx,
-    {
-      organizationId: Id<'organizations'>;
-      email: string;
-      name: string;
-      department?: string;
-      position?: string;
-      phone?: string;
-      location?: string;
-      employeeType: 'staff' | 'contractor';
-    },
-    { action: 'created' | 'updated'; userId: Id<'users'> }
-  >({ minimumRole: 'admin' }, async (ctx, args, caller) => {
-    await verifyRestrictedOrg(ctx, args.organizationId as any);
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    await verifyRestrictedOrg(ctx, args.organizationId);
 
     if (caller.role !== 'superadmin' && caller.organizationId !== args.organizationId) {
       throw new Error('Access denied: cross-organization operation');
@@ -270,5 +259,5 @@ export const secureUpsertSharePointUser = mutation({
     });
 
     return { action: 'created' as const, userId };
-  }),
+  },
 });

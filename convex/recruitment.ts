@@ -1,10 +1,11 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { query, mutation, action } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { MutationCtx } from './_generated/server';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
-import { withAuth } from './lib/withAuth';
+
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 
 // ============ QUERIES ============
@@ -14,7 +15,7 @@ export const listVacancies = query({
     organizationId: v.id('organizations'),
     status: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, status } = args;
     let vacancies;
     if (status) {
@@ -41,7 +42,7 @@ export const listVacancies = query({
           .query('applications')
           .withIndex('by_vacancy', (q) => q.eq('vacancyId', vac._id))
           .take(DEFAULT_LIST_CAP);
-        const manager = (await ctx.db.get(vac.hiringManagerId)) as any as any;
+        const manager = await ctx.db.get(vac.hiringManagerId);
         return {
           ...vac,
           managerName: manager?.name ?? 'Unknown',
@@ -59,18 +60,18 @@ export const listVacancies = query({
     );
 
     return enriched;
-  }),
+  },
 });
 
 export const getVacancy = query({
   args: { vacancyId: v.id('vacancies') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { vacancyId } = args;
-    const vac = (await ctx.db.get(vacancyId)) as any as any;
+    const vac = await ctx.db.get(vacancyId);
     if (!vac) return null;
-    const manager = (await ctx.db.get(vac.hiringManagerId)) as any as any;
+    const manager = await ctx.db.get(vac.hiringManagerId);
     return { ...vac, managerName: manager?.name ?? 'Unknown' };
-  }),
+  },
 });
 
 export const listCandidatesByVacancy = query({
@@ -78,7 +79,7 @@ export const listCandidatesByVacancy = query({
     vacancyId: v.id('vacancies'),
     stage: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { vacancyId, stage } = args;
     let apps;
     if (stage) {
@@ -102,7 +103,7 @@ export const listCandidatesByVacancy = query({
 
     const enriched = await Promise.all(
       apps.map(async (app) => {
-        const profile = (await ctx.db.get(app.candidateId)) as any as any;
+        const profile = await ctx.db.get(app.candidateId);
         const scorecards = await ctx.db
           .query('interviewScorecards')
           .withIndex('by_application', (q) => q.eq('applicationId', app._id))
@@ -125,13 +126,13 @@ export const listCandidatesByVacancy = query({
     );
 
     return enriched.sort((a: any, b: any) => b.createdAt - a.createdAt);
-  }),
+  },
 });
 
 /** Paginated applications for a vacancy */
 export const listApplicationsPaginated = query({
   args: { vacancyId: v.id('vacancies'), paginationOpts: paginationOptsValidator },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { vacancyId, paginationOpts } = args;
     const result = await ctx.db
       .query('applications')
@@ -141,24 +142,24 @@ export const listApplicationsPaginated = query({
 
     const enriched = await Promise.all(
       result.page.map(async (app) => {
-        const profile = (await ctx.db.get(app.candidateId)) as any as any;
+        const profile = await ctx.db.get(app.candidateId);
         return { ...app, candidate: profile };
       }),
     );
 
     return { ...result, page: enriched };
-  }),
+  },
 });
 
 export const getCandidate = query({
   args: { applicationId: v.id('applications') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { applicationId } = args;
-    const app = (await ctx.db.get(applicationId)) as any as any;
+    const app = await ctx.db.get(applicationId);
     if (!app) return null;
 
-    const profile = (await ctx.db.get(app.candidateId)) as any as any;
-    const vacancy = (await ctx.db.get(app.vacancyId)) as any as any;
+    const profile = await ctx.db.get(app.candidateId);
+    const vacancy = await ctx.db.get(app.vacancyId);
 
     const interviews = await ctx.db
       .query('interviews')
@@ -167,7 +168,7 @@ export const getCandidate = query({
 
     const enrichedInterviews = await Promise.all(
       interviews.map(async (iv) => {
-        const interviewer = (await ctx.db.get(iv.interviewerId)) as any as any;
+        const interviewer = await ctx.db.get(iv.interviewerId);
         return { ...iv, interviewerName: interviewer?.name ?? 'Unknown' };
       }),
     );
@@ -179,7 +180,7 @@ export const getCandidate = query({
 
     const enrichedScorecards = await Promise.all(
       scorecards.map(async (sc) => {
-        const interviewer = (await ctx.db.get(sc.interviewerId)) as any as any;
+        const interviewer = await ctx.db.get(sc.interviewerId);
         return { ...sc, interviewerName: interviewer?.name ?? 'Unknown' };
       }),
     );
@@ -191,7 +192,7 @@ export const getCandidate = query({
 
     const enrichedEvents = await Promise.all(
       events.map(async (ev) => {
-        const user = (await ctx.db.get(ev.changedBy)) as any as any;
+        const user = await ctx.db.get(ev.changedBy);
         return { ...ev, changedByName: user?.name ?? 'Unknown' };
       }),
     );
@@ -204,7 +205,7 @@ export const getCandidate = query({
       scorecards: enrichedScorecards.sort((a: any, b: any) => b.createdAt - a.createdAt),
       events: enrichedEvents.sort((a: any, b: any) => b.createdAt - a.createdAt),
     };
-  }),
+  },
 });
 
 export const getMyInterviews = query({
@@ -212,7 +213,7 @@ export const getMyInterviews = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const interviews = await ctx.db
       .query('interviews')
@@ -228,9 +229,9 @@ export const getMyInterviews = query({
 
     const enriched = await Promise.all(
       upcoming.map(async (iv) => {
-        const app = (await ctx.db.get(iv.applicationId)) as any as any;
-        const profile = app ? ((await ctx.db.get(app.candidateId)) as any as any) : null;
-        const vacancy = app ? ((await ctx.db.get(app.vacancyId)) as any as any) : null;
+        const app = await ctx.db.get(iv.applicationId);
+        const profile = app ? await ctx.db.get(app.candidateId) : null;
+        const vacancy = app ? await ctx.db.get(app.vacancyId) : null;
         return {
           ...iv,
           candidateName: profile?.name ?? 'Unknown',
@@ -240,12 +241,12 @@ export const getMyInterviews = query({
     );
 
     return enriched.sort((a: any, b: any) => a.scheduledAt - b.scheduledAt);
-  }),
+  },
 });
 
 export const getPipelineStats = query({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const openVacancies = await ctx.db
       .query('vacancies')
@@ -271,7 +272,7 @@ export const getPipelineStats = query({
         rejected: allApps.filter((a: any) => a.stage === 'rejected').length,
       },
     };
-  }),
+  },
 });
 
 // ============ MUTATIONS ============
@@ -294,7 +295,7 @@ export const createVacancy = mutation({
     hiringManagerId: v.id('users'),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     return await ctx.db.insert('vacancies', {
       ...args,
@@ -302,7 +303,7 @@ export const createVacancy = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 export const updateVacancy = mutation({
@@ -327,9 +328,9 @@ export const updateVacancy = mutation({
       v.union(v.literal('draft'), v.literal('open'), v.literal('paused'), v.literal('closed')),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { vacancyId, ...updates } = args;
-    const vac = (await ctx.db.get(vacancyId)) as any as any;
+    const vac = await ctx.db.get(vacancyId);
     if (!vac) throw new Error('Vacancy not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -347,14 +348,14 @@ export const updateVacancy = mutation({
     }
 
     await ctx.db.patch(vacancyId, patch);
-  }),
+  },
 });
 
 export const deleteVacancy = mutation({
   args: { vacancyId: v.id('vacancies') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { vacancyId } = args;
-    const vac = (await ctx.db.get(vacancyId)) as any as any;
+    const vac = await ctx.db.get(vacancyId);
     if (!vac) throw new Error('Vacancy not found');
 
     // Delete all related applications and events
@@ -388,14 +389,14 @@ export const deleteVacancy = mutation({
     }
 
     await ctx.db.delete(vacancyId);
-  }),
+  },
 });
 
 export const deleteCandidate = mutation({
   args: { applicationId: v.id('applications') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { applicationId } = args;
-    const app = (await ctx.db.get(applicationId)) as any as any;
+    const app = await ctx.db.get(applicationId);
     if (!app) throw new Error('Application not found');
 
     // Delete application events
@@ -428,7 +429,7 @@ export const deleteCandidate = mutation({
     if (!otherApps) {
       await ctx.db.delete(app.candidateId);
     }
-  }),
+  },
 });
 
 export const addCandidate = mutation({
@@ -449,7 +450,7 @@ export const addCandidate = mutation({
     referredBy: v.optional(v.id('users')),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const {
       vacancyId,
       name,
@@ -514,7 +515,7 @@ export const addCandidate = mutation({
       .filter((q: any) => q.or(q.eq(q.field('role'), 'admin'), q.eq(q.field('role'), 'superadmin')))
       .take(SMALL_LIST_CAP);
 
-    const vacancy = (await ctx.db.get(vacancyId)) as any as any;
+    const vacancy = await ctx.db.get(vacancyId);
     for (const admin of orgAdmins) {
       if (admin._id === createdBy) continue; // don't notify self
       await ctx.db.insert('notifications', {
@@ -531,7 +532,7 @@ export const addCandidate = mutation({
     }
 
     // 📧 Send application confirmation email
-    const candidate = (await ctx.db.get(candidateId)) as any as any;
+    const candidate = await ctx.db.get(candidateId);
     if (candidate?.email) {
       const applicationDate = new Date(now).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -547,7 +548,7 @@ export const addCandidate = mutation({
     }
 
     return applicationId;
-  }),
+  },
 });
 
 export const moveCandidate = mutation({
@@ -564,9 +565,9 @@ export const moveCandidate = mutation({
     userId: v.id('users'),
     reason: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { applicationId, newStage, userId, reason } = args;
-    const app = (await ctx.db.get(applicationId)) as any as any;
+    const app = await ctx.db.get(applicationId);
     if (!app) throw new Error('Application not found');
 
     const oldStage = app.stage;
@@ -590,8 +591,8 @@ export const moveCandidate = mutation({
     });
 
     // 📧 Send email notifications for stage changes
-    const candidate = (await ctx.db.get(app.candidateId)) as any as any;
-    const vacancy = (await ctx.db.get(app.vacancyId)) as any as any;
+    const candidate = await ctx.db.get(app.candidateId);
+    const vacancy = await ctx.db.get(app.vacancyId);
 
     if (candidate?.email && vacancy) {
       if (newStage === 'offer') {
@@ -630,7 +631,7 @@ export const moveCandidate = mutation({
         });
       }
     }
-  }),
+  },
 });
 
 export const rejectCandidate = mutation({
@@ -639,9 +640,9 @@ export const rejectCandidate = mutation({
     userId: v.id('users'),
     reason: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { applicationId, userId, reason } = args;
-    const app = (await ctx.db.get(applicationId)) as any as any;
+    const app = await ctx.db.get(applicationId);
     if (!app) throw new Error('Application not found');
 
     const now = Date.now();
@@ -662,8 +663,8 @@ export const rejectCandidate = mutation({
     });
 
     // 📧 Send rejection email
-    const candidate = (await ctx.db.get(app.candidateId)) as any as any;
-    const vacancy = (await ctx.db.get(app.vacancyId)) as any as any;
+    const candidate = await ctx.db.get(app.candidateId);
+    const vacancy = await ctx.db.get(app.vacancyId);
 
     if (candidate?.email && vacancy) {
       const rejectionDate = new Date(now).toLocaleDateString('en-US', {
@@ -680,7 +681,7 @@ export const rejectCandidate = mutation({
         encourageReapply: true,
       });
     }
-  }),
+  },
 });
 
 export const scheduleInterview = mutation({
@@ -701,7 +702,7 @@ export const scheduleInterview = mutation({
     meetingLink: v.optional(v.string()),
     additionalNotes: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const interviewId = await ctx.db.insert('interviews', {
       ...args,
       status: 'scheduled',
@@ -709,11 +710,11 @@ export const scheduleInterview = mutation({
     });
 
     // 📧 Send interview invitation email
-    const app = (await ctx.db.get(args.applicationId)) as any as any;
+    const app = await ctx.db.get(args.applicationId);
     if (app) {
-      const candidate = (await ctx.db.get(app.candidateId)) as any as any;
-      const vacancy = (await ctx.db.get(app.vacancyId)) as any as any;
-      const interviewer = (await ctx.db.get(args.interviewerId)) as any as any;
+      const candidate = await ctx.db.get(app.candidateId);
+      const vacancy = await ctx.db.get(app.vacancyId);
+      const interviewer = await ctx.db.get(args.interviewerId);
 
       if (candidate?.email && vacancy) {
         const interviewDate = new Date(args.scheduledAt).toLocaleDateString('en-US', {
@@ -743,7 +744,7 @@ export const scheduleInterview = mutation({
     }
 
     return interviewId;
-  }),
+  },
 });
 
 export const updateInterviewStatus = mutation({
@@ -752,12 +753,12 @@ export const updateInterviewStatus = mutation({
     status: v.union(v.literal('completed'), v.literal('cancelled'), v.literal('no_show')),
     notes: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { interviewId, status, notes } = args;
     const patch: Record<string, unknown> = { status };
     if (notes !== undefined) patch.notes = notes;
     await ctx.db.patch(interviewId, patch);
-  }),
+  },
 });
 
 export const submitScorecard = mutation({
@@ -783,7 +784,7 @@ export const submitScorecard = mutation({
     ),
     summary: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Mark interview as completed if linked
     if (args.interviewId) {
       await ctx.db.patch(args.interviewId, { status: 'completed' });
@@ -793,7 +794,7 @@ export const submitScorecard = mutation({
       ...args,
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const updateCandidateNotes = mutation({
@@ -801,10 +802,10 @@ export const updateCandidateNotes = mutation({
     applicationId: v.id('applications'),
     notes: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { applicationId, notes } = args;
     await ctx.db.patch(applicationId, { notes, updatedAt: Date.now() });
-  }),
+  },
 });
 
 export const hireCandidate = mutation({
@@ -815,9 +816,9 @@ export const hireCandidate = mutation({
     position: v.optional(v.string()),
     department: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { applicationId, userId, startDate, position, department } = args;
-    const app = (await ctx.db.get(applicationId)) as any as any;
+    const app = await ctx.db.get(applicationId);
     if (!app) throw new Error('Application not found');
     if (app.stage === 'hired') throw new Error('Candidate already hired');
 
@@ -846,8 +847,8 @@ export const hireCandidate = mutation({
       .filter((q: any) => q.or(q.eq(q.field('role'), 'admin'), q.eq(q.field('role'), 'superadmin')))
       .take(SMALL_LIST_CAP);
 
-    const candidate = (await ctx.db.get(app.candidateId)) as any as any;
-    const vacancy = (await ctx.db.get(app.vacancyId)) as any as any;
+    const candidate = await ctx.db.get(app.candidateId);
+    const vacancy = await ctx.db.get(app.vacancyId);
 
     for (const admin of orgAdmins) {
       if (admin._id === userId) continue;
@@ -962,7 +963,7 @@ export const hireCandidate = mutation({
     }
 
     return { applicationId, candidateId: app.candidateId };
-  }),
+  },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -971,28 +972,26 @@ export const hireCandidate = mutation({
 
 export const secureDeleteVacancy = mutation({
   args: { vacancyId: v.id('vacancies') },
-  handler: withAuth<MutationCtx, { vacancyId: Id<'vacancies'> }, void>(
-    { minimumRole: 'admin' },
-    async (ctx, { vacancyId }, caller) => {
-      const vacancy = (await ctx.db.get(vacancyId)) as any as any as any;
-      if (!vacancy) throw new Error('Vacancy not found');
-      if (caller.role !== 'superadmin' && caller.organizationId !== vacancy.organizationId) {
-        throw new Error('Access denied');
-      }
-      await ctx.db.delete(vacancyId);
-    },
-  ),
+  handler: async (ctx, { vacancyId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const vacancy = await ctx.db.get(vacancyId);
+    if (!vacancy) throw new Error('Vacancy not found');
+    if (caller.role !== 'superadmin' && caller.organizationId !== vacancy.organizationId) {
+      throw new Error('Access denied');
+    }
+    await ctx.db.delete(vacancyId);
+  },
 });
 
 export const secureDeleteCandidate = mutation({
   args: { applicationId: v.id('applications') },
-  handler: withAuth<MutationCtx, { applicationId: Id<'applications'> }, void>(
-    { minimumRole: 'admin' },
-    async (ctx, { applicationId }, caller) => {
-      const app = (await ctx.db.get(applicationId)) as any as any as any;
-      if (!app) throw new Error('Application not found');
-      if (app.candidateId) await ctx.db.delete(app.candidateId);
-      await ctx.db.delete(applicationId);
-    },
-  ),
+  handler: async (ctx, { applicationId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const app = await ctx.db.get(applicationId);
+    if (!app) throw new Error('Application not found');
+    if (app.candidateId) await ctx.db.delete(app.candidateId);
+    await ctx.db.delete(applicationId);
+  },
 });

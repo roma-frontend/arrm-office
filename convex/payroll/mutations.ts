@@ -1,10 +1,10 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation } from '../_generated/server';
 import type { MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { calculatePayroll } from '../lib/payrollCalculator';
 import { requireOrgAdmin } from '../lib/rbac';
-import { withAuth } from '../lib/withAuth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 
 type RunTotals = {
@@ -78,7 +78,7 @@ export const createPayrollRun = mutation({
     period: v.string(),
     notes: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requesterId, organizationId, period, notes } = args;
     await requireOrgAdmin(ctx, requesterId, organizationId);
 
@@ -117,7 +117,7 @@ export const createPayrollRun = mutation({
     });
 
     return runId;
-  }),
+  },
 });
 
 export const calculatePayrollRun = mutation({
@@ -125,8 +125,8 @@ export const calculatePayrollRun = mutation({
     requesterId: v.id('users'),
     payrollRunId: v.id('payrollRuns'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const run = (await ctx.db.get(args.payrollRunId)) as any as any;
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
       throw new Error('Payroll run not found');
     }
@@ -268,7 +268,7 @@ export const calculatePayrollRun = mutation({
       totalDeductions: round2(totalDeductions),
       totalEmployerCost: round2(totalEmployerCost),
     };
-  }),
+  },
 });
 
 export const approvePayrollRun = mutation({
@@ -276,8 +276,8 @@ export const approvePayrollRun = mutation({
     requesterId: v.id('users'),
     payrollRunId: v.id('payrollRuns'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const run = (await ctx.db.get(args.payrollRunId)) as any as any;
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
       throw new Error('Payroll run not found');
     }
@@ -319,7 +319,7 @@ export const approvePayrollRun = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const markPayrollRunAsPaid = mutation({
@@ -327,8 +327,8 @@ export const markPayrollRunAsPaid = mutation({
     requesterId: v.id('users'),
     payrollRunId: v.id('payrollRuns'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const run = (await ctx.db.get(args.payrollRunId)) as any as any;
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
       throw new Error('Payroll run not found');
     }
@@ -369,7 +369,7 @@ export const markPayrollRunAsPaid = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const cancelPayrollRun = mutation({
@@ -377,8 +377,8 @@ export const cancelPayrollRun = mutation({
     requesterId: v.id('users'),
     payrollRunId: v.id('payrollRuns'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const run = (await ctx.db.get(args.payrollRunId)) as any as any;
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
       throw new Error('Payroll run not found');
     }
@@ -418,7 +418,7 @@ export const cancelPayrollRun = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const generatePayslip = mutation({
@@ -427,8 +427,8 @@ export const generatePayslip = mutation({
     payrollRecordId: v.id('payrollRecords'),
     email: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const record = (await ctx.db.get(args.payrollRecordId)) as any as any;
+  handler: async (ctx, args) => {
+    const record = await ctx.db.get(args.payrollRecordId);
     if (!record) {
       throw new Error('Payroll record not found');
     }
@@ -471,7 +471,7 @@ export const generatePayslip = mutation({
     });
 
     return payslipId;
-  }),
+  },
 });
 
 export const sendPayslip = mutation({
@@ -479,8 +479,8 @@ export const sendPayslip = mutation({
     requesterId: v.id('users'),
     payslipId: v.id('payslips'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const payslip = (await ctx.db.get(args.payslipId)) as any as any;
+  handler: async (ctx, args) => {
+    const payslip = await ctx.db.get(args.payslipId);
     if (!payslip) {
       throw new Error('Payslip not found');
     }
@@ -504,7 +504,7 @@ export const sendPayslip = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const updatePayrollRecord = mutation({
@@ -516,8 +516,8 @@ export const updatePayrollRecord = mutation({
     overtimeHours: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const record = (await ctx.db.get(args.payrollRecordId)) as any as any;
+  handler: async (ctx, args) => {
+    const record = await ctx.db.get(args.payrollRecordId);
     if (!record) {
       throw new Error('Payroll record not found');
     }
@@ -629,7 +629,7 @@ export const updatePayrollRecord = mutation({
     });
 
     return { success: true, changes };
-  }),
+  },
 });
 
 export const deletePayrollRecord = mutation({
@@ -637,8 +637,8 @@ export const deletePayrollRecord = mutation({
     requesterId: v.id('users'),
     payrollRecordId: v.id('payrollRecords'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const record = (await ctx.db.get(args.payrollRecordId)) as any as any;
+  handler: async (ctx, args) => {
+    const record = await ctx.db.get(args.payrollRecordId);
     if (!record) {
       throw new Error('Payroll record not found');
     }
@@ -688,7 +688,7 @@ export const deletePayrollRecord = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const saveSalarySettings = mutation({
@@ -710,7 +710,7 @@ export const saveSalarySettings = mutation({
     paymentMethod: v.optional(v.string()),
     bankName: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await requireOrgAdmin(ctx, args.requesterId, args.organizationId);
 
     if (args.minimumWage !== undefined && args.minimumWage < 0) {
@@ -742,7 +742,7 @@ export const saveSalarySettings = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -751,57 +751,55 @@ export const saveSalarySettings = mutation({
 
 export const secureApprovePayrollRun = mutation({
   args: { runId: v.id('payrollRuns') },
-  handler: withAuth<MutationCtx, { runId: Id<'payrollRuns'> }, void>(
-    { minimumRole: 'admin' },
-    async (ctx, { runId }, caller) => {
-      const run = (await ctx.db.get(runId)) as any as any as any;
-      if (!run) throw new Error('Payroll run not found');
-      if (run.status !== 'calculated') throw new Error('Run must be calculated first');
+  handler: async (ctx, { runId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const run = await ctx.db.get(runId);
+    if (!run) throw new Error('Payroll run not found');
+    if (run.status !== 'calculated') throw new Error('Run must be calculated first');
 
-      if (caller.role !== 'superadmin' && caller.organizationId !== run.organizationId) {
-        throw new Error('Access denied: cross-organization operation');
-      }
+    if (caller.role !== 'superadmin' && caller.organizationId !== run.organizationId) {
+      throw new Error('Access denied: cross-organization operation');
+    }
 
-      await ctx.db.patch(runId, {
-        status: 'approved',
-        approvedBy: caller._id,
-        approvedAt: Date.now(),
-        updatedAt: Date.now(),
-      });
+    await ctx.db.patch(runId, {
+      status: 'approved',
+      approvedBy: caller._id,
+      approvedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
 
-      await ctx.db.insert('auditLogs', {
-        organizationId: run.organizationId,
-        userId: caller._id,
-        action: 'payroll_approved',
-        target: runId,
-        details: JSON.stringify({ period: run.period, totalNet: run.totalNet }),
-        createdAt: Date.now(),
-      });
-    },
-  ),
+    await ctx.db.insert('auditLogs', {
+      organizationId: run.organizationId,
+      userId: caller._id,
+      action: 'payroll_approved',
+      target: runId,
+      details: JSON.stringify({ period: run.period, totalNet: run.totalNet }),
+      createdAt: Date.now(),
+    });
+  },
 });
 
 export const secureDeletePayrollRecord = mutation({
   args: { recordId: v.id('payrollRecords') },
-  handler: withAuth<MutationCtx, { recordId: Id<'payrollRecords'> }, void>(
-    { minimumRole: 'admin' },
-    async (ctx, { recordId }, caller) => {
-      const record = (await ctx.db.get(recordId)) as any as any as any;
-      if (!record) throw new Error('Record not found');
+  handler: async (ctx, { recordId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const record = await ctx.db.get(recordId);
+    if (!record) throw new Error('Record not found');
 
-      if (caller.role !== 'superadmin' && caller.organizationId !== record.organizationId) {
-        throw new Error('Access denied: cross-organization operation');
-      }
+    if (caller.role !== 'superadmin' && caller.organizationId !== record.organizationId) {
+      throw new Error('Access denied: cross-organization operation');
+    }
 
-      await ctx.db.delete(recordId);
+    await ctx.db.delete(recordId);
 
-      await ctx.db.insert('auditLogs', {
-        organizationId: record.organizationId,
-        userId: caller._id,
-        action: 'payroll_record_deleted',
-        target: recordId,
-        createdAt: Date.now(),
-      });
-    },
-  ),
+    await ctx.db.insert('auditLogs', {
+      organizationId: record.organizationId,
+      userId: caller._id,
+      action: 'payroll_record_deleted',
+      target: recordId,
+      createdAt: Date.now(),
+    });
+  },
 });

@@ -13,7 +13,6 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import type { Id, Doc } from './_generated/dataModel';
 import type { QueryCtx } from './_generated/server';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // Types for AI responses
 interface DriverAvailability {
@@ -56,7 +55,7 @@ export const queryDriverAvailability = query({
     query: v.string(), // Natural language query
     contextDate: v.optional(v.number()), // Reference date (default: now)
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, organizationId, query, contextDate } = args;
     const now = contextDate || Date.now();
     const queryLower = query.toLowerCase();
@@ -81,7 +80,7 @@ export const queryDriverAvailability = query({
     // Enrich drivers with user info and availability
     const enrichedDrivers = await Promise.all(
       drivers.map(async (driver) => {
-        const user = (await ctx.db.get(driver.userId)) as any;
+        const user = await ctx.db.get(driver.userId);
         const userProfile = await getProfile(ctx, driver.userId);
 
         // Check availability for the requested time range
@@ -113,7 +112,7 @@ export const queryDriverAvailability = query({
       response,
       intent,
     };
-  }),
+  },
 });
 
 /**
@@ -126,10 +125,10 @@ export const getDriverScheduleWithSummary = query({
     startTime: v.number(),
     endTime: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, userId, startTime, endTime } = args;
     // Check calendar access
-    const driver = (await ctx.db.get(driverId)) as any;
+    const driver = await ctx.db.get(driverId);
     if (!driver) throw new Error('Driver not found');
 
     const access = await ctx.db
@@ -173,11 +172,11 @@ export const getDriverScheduleWithSummary = query({
       hasFullAccess,
       summary,
       driver: {
-        name: ((await ctx.db.get(driver.userId)) as any)?.name,
+        name: (await ctx.db.get(driver.userId))?.name,
         vehicle: driver.vehicleInfo,
       },
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

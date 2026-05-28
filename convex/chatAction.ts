@@ -69,9 +69,9 @@ Department: ${userProfile?.department ?? 'N/A'}
 Position: ${userProfile?.position ?? 'N/A'}
 User ID: ${userProfile?._id ?? userId}
 Today's date: ${today}
-Paid Leave Balance: ${(userProfile as any)?.leaveBalance?.paid ?? (userProfile as any)?.paidLeaveBalance ?? 20} days
-Sick Leave Balance: ${(userProfile as any)?.leaveBalance?.sick ?? (userProfile as any)?.sickLeaveBalance ?? 10} days
-Family Leave Balance: ${(userProfile as any)?.leaveBalance?.family ?? (userProfile as any)?.familyLeaveBalance ?? 5} days
+Paid Leave Balance: ${userProfile?.leaveBalance?.paid ?? userProfile?.paidLeaveBalance ?? 20} days
+Sick Leave Balance: ${userProfile?.leaveBalance?.sick ?? userProfile?.sickLeaveBalance ?? 10} days
+Family Leave Balance: ${userProfile?.leaveBalance?.family ?? userProfile?.familyLeaveBalance ?? 5} days
 
 === YOUR PERSONAL CALENDAR / SCHEDULE ===
 ${
@@ -162,7 +162,7 @@ ${
     .slice(0, 15)
     .map((l) => {
       const u = usersArr.find((usr) => usr._id === l.userId);
-      return `  🏖 ${(l as any).userName ?? u?.name ?? 'Unknown'} (${u?.department ?? ''}) — ${l.type} leave until ${l.endDate}`;
+      return `  🏖 ${l.userName ?? u?.name ?? 'Unknown'} (${u?.department ?? ''}) — ${l.type} leave until ${l.endDate}`;
     })
     .join('\n') || '  No one is on leave today.'
 }
@@ -173,7 +173,7 @@ ${
     .slice(0, 20)
     .map((l) => {
       const u = usersArr.find((usr) => usr._id === l.userId);
-      return `  📅 ${(l as any).userName ?? u?.name ?? 'Unknown'} (${u?.department ?? ''}) — ${l.type} leave ${l.startDate} → ${l.endDate} (${l.days}d)`;
+      return `  📅 ${l.userName ?? u?.name ?? 'Unknown'} (${u?.department ?? ''}) — ${l.type} leave ${l.startDate} → ${l.endDate} (${l.days}d)`;
     })
     .join('\n') || '  No upcoming leaves.'
 }

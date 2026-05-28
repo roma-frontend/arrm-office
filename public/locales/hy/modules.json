@@ -152,7 +152,16 @@
       "year": "Այս տարի",
       "all": "Բոլոր ժամանակները"
     },
-    "category": "Կատեգորիա",
+    "category": {
+      "teamwork": "Թիմային աշխատանք",
+      "innovation": "Նորարարություն",
+      "leadership": "Առաջնորդություն",
+      "dedication": "Նվիրվածություն",
+      "customerFocus": "Հաճախորդների սպասարկում",
+      "mentorship": "Վերապատրաստում",
+      "excellence": "Գերազանցություն",
+      "aboveAndBeyond": "Սահմաններից դուրս"
+    },
     "form": {
       "recipient": "Ստացողը",
       "selectRecipient": "Ընտրել...",

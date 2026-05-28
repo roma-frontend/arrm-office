@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
-import { withAuth } from '../lib/withAuth';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 
 // ─── EMERGENCY DASHBOARD ─────────────────────────────────────────────────────
@@ -83,10 +82,8 @@ export const getEmergencyDashboard = query({
     // Enrich critical tickets
     const enrichedTickets = await Promise.all(
       criticalTickets.map(async (ticket) => {
-        const creator = (await ctx.db.get(ticket.createdBy)) as any as any as any;
-        const org = ticket.organizationId
-          ? ((await ctx.db.get(ticket.organizationId)) as any as any as any)
-          : null;
+        const creator = await ctx.db.get(ticket.createdBy);
+        const org = ticket.organizationId ? await ctx.db.get(ticket.organizationId) : null;
         return {
           ...ticket,
           creatorName: creator?.name || 'Unknown',
@@ -99,7 +96,7 @@ export const getEmergencyDashboard = query({
     // Enrich incidents
     const enrichedIncidents = await Promise.all(
       activeIncidents.map(async (incident) => {
-        const creator = (await ctx.db.get(incident.createdBy)) as any as any as any;
+        const creator = await ctx.db.get(incident.createdBy);
         return {
           ...incident,
           creatorName: creator?.name || 'Unknown',
@@ -186,7 +183,7 @@ export const createIncident = mutation({
     affectedUsers: v.number(),
     affectedOrgs: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
 
     const incidentId = await ctx.db.insert('emergencyIncidents', {
@@ -228,7 +225,7 @@ export const createIncident = mutation({
     }
 
     return incidentId;
-  }),
+  },
 });
 
 // ─── UPDATE INCIDENT STATUS ──────────────────────────────────────────────────
@@ -245,7 +242,7 @@ export const updateIncidentStatus = mutation({
     rootCause: v.optional(v.string()),
     resolution: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
 
     const updates: any = {
@@ -262,5 +259,5 @@ export const updateIncidentStatus = mutation({
     await ctx.db.patch(args.incidentId, updates);
 
     return args.incidentId;
-  }),
+  },
 });

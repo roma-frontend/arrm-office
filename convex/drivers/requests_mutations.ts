@@ -5,12 +5,12 @@
  */
 
 import { v } from 'convex/values';
+import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { SMALL_LIST_CAP } from '../lib/limits';
 import { isSuperadmin } from '../lib/auth';
 import { requireUser } from '../lib/rbac';
-import { withAuth } from '../lib/withAuth';
 
 /** Request a driver for a trip */
 export const requestDriver = mutation({
@@ -56,7 +56,8 @@ export const requestDriver = mutation({
     businessJustification: v.optional(v.string()),
     requiresApproval: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     // Use verified caller ID if available, fallback to args.requesterId
     if (caller) args.requesterId = caller._id;
     // Validate startTime < endTime
@@ -74,7 +75,7 @@ export const requestDriver = mutation({
     const startDateStr = startDate.toISOString().split('T')[0] || '';
     const endDateStr = endDate.toISOString().split('T')[0] || '';
 
-    const driver = (await ctx.db.get(args.driverId)) as any as any;
+    const driver = await ctx.db.get(args.driverId);
     let leaveError = null;
 
     if (driver) {
@@ -159,7 +160,7 @@ export const requestDriver = mutation({
     });
 
     // Create notification for driver
-    const driverRecord = (await ctx.db.get(args.driverId)) as any as any;
+    const driverRecord = await ctx.db.get(args.driverId);
     const priority = args.priority || 'P2';
     if (driverRecord) {
       await ctx.db.insert('notifications', {
@@ -200,7 +201,7 @@ export const requestDriver = mutation({
     }
 
     return { requestId, leaveWarning: null, error: null };
-  }),
+  },
 });
 
 /** Approve or decline driver request */
@@ -212,9 +213,9 @@ export const respondToDriverRequest = mutation({
     approved: v.boolean(),
     declineReason: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId, driverId, userId, approved, declineReason } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
 
     // Verify this is the correct driver
@@ -246,7 +247,7 @@ export const respondToDriverRequest = mutation({
       });
 
       // Update total trips count
-      const driver = (await ctx.db.get(driverId)) as any;
+      const driver = await ctx.db.get(driverId);
       if (driver) {
         await ctx.db.patch(driverId, {
           totalTrips: (driver.totalTrips || 0) + 1,
@@ -286,7 +287,7 @@ export const respondToDriverRequest = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /** Update a driver request */
@@ -307,11 +308,11 @@ export const updateDriverRequest = mutation({
       }),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const request = (await ctx.db.get(args.requestId)) as any;
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
     if (!request) throw new Error('Request not found');
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
     const userIsSuperadmin = isSuperadmin(user);
     const isAdmin = user.role === 'admin';
@@ -344,7 +345,7 @@ export const updateDriverRequest = mutation({
       }
 
       // Decrement total trips
-      const driver = (await ctx.db.get(request.driverId)) as any;
+      const driver = await ctx.db.get(request.driverId);
       if (driver && driver.totalTrips > 0) {
         await ctx.db.patch(request.driverId, {
           totalTrips: driver.totalTrips - 1,
@@ -383,7 +384,7 @@ export const updateDriverRequest = mutation({
 
     // Notify the driver about the updated request
     const driverId = args.driverId || request.driverId;
-    const driverRecord = driverId ? ((await ctx.db.get(driverId)) as any) : null;
+    const driverRecord = driverId ? await ctx.db.get(driverId) : null;
     if (driverRecord) {
       const tripInfo = args.tripInfo || request.tripInfo;
       await ctx.db.insert('notifications', {
@@ -402,7 +403,7 @@ export const updateDriverRequest = mutation({
     }
 
     return { success: true };
-  }),
+  },
 });
 
 /** Cancel a driver request */
@@ -411,9 +412,9 @@ export const cancelDriverRequest = mutation({
     requestId: v.id('driverRequests'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId, userId } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.requesterId !== userId) throw new Error('Unauthorized');
 
@@ -437,7 +438,7 @@ export const cancelDriverRequest = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /** Delete a driver request */
@@ -446,11 +447,11 @@ export const deleteDriverRequest = mutation({
     requestId: v.id('driverRequests'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const request = (await ctx.db.get(args.requestId)) as any;
+  handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
     if (!request) throw new Error('Request not found');
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
     const userIsSuperadmin = isSuperadmin(user);
     const isAdmin = user.role === 'admin';
@@ -500,7 +501,7 @@ export const deleteDriverRequest = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /** Reassign a declined request to a new driver */
@@ -510,9 +511,9 @@ export const reassignDriverRequest = mutation({
     userId: v.id('users'),
     newDriverId: v.id('drivers'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId, userId, newDriverId } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.requesterId !== userId) throw new Error('Unauthorized');
     if (request.status !== 'declined') throw new Error('Only declined requests can be reassigned');
@@ -570,7 +571,7 @@ export const reassignDriverRequest = mutation({
     });
 
     // Notify new driver
-    const driver = (await ctx.db.get(newDriverId)) as any;
+    const driver = await ctx.db.get(newDriverId);
     if (driver) {
       await ctx.db.insert('notifications', {
         organizationId: request.organizationId,
@@ -586,5 +587,5 @@ export const reassignDriverRequest = mutation({
     }
 
     return { success: true };
-  }),
+  },
 });

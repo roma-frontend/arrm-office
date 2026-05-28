@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { SMALL_LIST_CAP } from './lib/limits';
-import { withAuth } from './lib/withAuth';
 
 // ── Add Manager Note ──────────────────────────────────────────────
 export const addNote = mutation({
@@ -24,7 +23,7 @@ export const addNote = mutation({
     content: v.string(),
     tags: v.optional(v.array(v.string())),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Simple sentiment analysis based on keywords
     const positiveWords = [
       'excellent',
@@ -55,7 +54,7 @@ export const addNote = mutation({
       tags: args.tags ?? [],
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ── Get Employee Notes ──────────────────────────────────────────────
@@ -64,8 +63,8 @@ export const getNotes = query({
     employeeId: v.id('users'),
     viewerId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const viewer = (await ctx.db.get(args.viewerId)) as any;
+  handler: async (ctx, args) => {
+    const viewer = await ctx.db.get(args.viewerId);
     if (!viewer) return [];
 
     const allNotes = await ctx.db
@@ -90,7 +89,7 @@ export const getNotes = query({
     // Get author info
     const notesWithAuthors = await Promise.all(
       filtered.map(async (note) => {
-        const author = (await ctx.db.get(note.authorId)) as any;
+        const author = await ctx.db.get(note.authorId);
         return {
           ...note,
           authorName: author?.name ?? 'Unknown',
@@ -99,7 +98,7 @@ export const getNotes = query({
     );
 
     return notesWithAuthors;
-  }),
+  },
 });
 
 // ── Update Note ──────────────────────────────────────────────
@@ -109,7 +108,7 @@ export const updateNote = mutation({
     content: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const updates: any = {};
 
     if (args.content !== undefined) {
@@ -143,21 +142,21 @@ export const updateNote = mutation({
     }
 
     await ctx.db.patch(args.noteId, updates);
-  }),
+  },
 });
 
 // ── Delete Note ──────────────────────────────────────────────
 export const deleteNote = mutation({
   args: { noteId: v.id('employeeNotes') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await ctx.db.delete(args.noteId);
-  }),
+  },
 });
 
 // ── Get Notes Summary ──────────────────────────────────────────────
 export const getNotesSummary = query({
   args: { employeeId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const notes = await ctx.db
       .query('employeeNotes')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
@@ -181,5 +180,5 @@ export const getNotesSummary = query({
       sentiment: { positive, negative, neutral },
       byType,
     };
-  }),
+  },
 });

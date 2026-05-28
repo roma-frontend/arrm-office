@@ -4,7 +4,6 @@ import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { sanitizeText } from '../lib/sanitize';
-import { withAuth } from '../lib/withAuth';
 
 /**
  * Convert emoji to ASCII-safe key format using Unicode code points
@@ -30,7 +29,7 @@ export const getOrCreateDM = mutation({
     currentUserId: v.id('users'),
     targetUserId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const ids = [args.currentUserId, args.targetUserId].sort();
     const dmKey = ids.join('_');
 
@@ -110,7 +109,7 @@ export const getOrCreateDM = mutation({
     });
 
     return convId;
-  }),
+  },
 });
 
 /** Create a group conversation */
@@ -122,7 +121,7 @@ export const createGroup = mutation({
     description: v.optional(v.string()),
     memberIds: v.array(v.id('users')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     const convId = await ctx.db.insert('chatConversations', {
       organizationId: args.organizationId,
@@ -180,7 +179,7 @@ export const createGroup = mutation({
     });
 
     return convId;
-  }),
+  },
 });
 
 /** Update group info */
@@ -191,7 +190,7 @@ export const updateGroup = mutation({
     name: v.optional(v.string()),
     description: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -217,7 +216,7 @@ export const updateGroup = mutation({
       }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /** Add member to group */
@@ -228,7 +227,7 @@ export const addMember = mutation({
     userId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const existing = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -248,7 +247,7 @@ export const addMember = mutation({
       joinedAt: now,
     });
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = await ctx.db.get(args.userId);
     await ctx.db.insert('chatMessages', {
       conversationId: args.conversationId,
       organizationId: args.organizationId,
@@ -267,7 +266,7 @@ export const addMember = mutation({
       details: JSON.stringify({ addedUserId: args.userId, addedUserName: user?.name }),
       createdAt: now,
     });
-  }),
+  },
 });
 
 /** Leave / remove from group */
@@ -276,7 +275,7 @@ export const leaveConversation = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -286,8 +285,8 @@ export const leaveConversation = mutation({
     if (!membership) return;
     await ctx.db.delete(membership._id);
 
-    const user = (await ctx.db.get(args.userId)) as any;
-    const conv = (await ctx.db.get(args.conversationId)) as any;
+    const user = await ctx.db.get(args.userId);
+    const conv = await ctx.db.get(args.conversationId);
     if (conv) {
       await ctx.db.insert('chatMessages', {
         conversationId: args.conversationId,
@@ -308,7 +307,7 @@ export const leaveConversation = mutation({
         createdAt: Date.now(),
       });
     }
-  }),
+  },
 });
 
 // ─── MESSAGES ─────────────────────────────────────────────────────────────────
@@ -355,13 +354,13 @@ export const sendMessage = mutation({
     ),
     audioDuration: v.optional(v.number()), // Duration in seconds for voice messages
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
 
     // Check if trying to send to System Announcements channel
-    const conversation = (await ctx.db.get(args.conversationId)) as any;
+    const conversation = await ctx.db.get(args.conversationId);
     if (conversation?.name === 'System Announcements') {
-      const sender = (await ctx.db.get(args.senderId)) as any;
+      const sender = await ctx.db.get(args.senderId);
       if (!sender || sender.role !== 'superadmin') {
         throw new Error('Only superadmin can send messages to System Announcements channel');
       }
@@ -371,10 +370,10 @@ export const sendMessage = mutation({
     let replyToContent: string | undefined;
     let replyToSenderName: string | undefined;
     if (args.replyToId) {
-      const replyMsg = (await ctx.db.get(args.replyToId)) as any;
+      const replyMsg = await ctx.db.get(args.replyToId);
       if (replyMsg) {
         replyToContent = replyMsg.content.slice(0, 100);
-        const replyUser = (await ctx.db.get(replyMsg.senderId)) as any;
+        const replyUser = await ctx.db.get(replyMsg.senderId);
         replyToSenderName = replyUser?.name;
       }
     }
@@ -444,7 +443,7 @@ export const sendMessage = mutation({
 
     // Send notification for mentions
     if (args.mentionedUserIds && args.mentionedUserIds.length > 0) {
-      const sender = (await ctx.db.get(args.senderId)) as any;
+      const sender = await ctx.db.get(args.senderId);
       for (const mentionedId of args.mentionedUserIds) {
         if (mentionedId === args.senderId) continue;
         await ctx.db.insert('notifications', {
@@ -476,7 +475,7 @@ export const sendMessage = mutation({
     });
 
     return msgId;
-  }),
+  },
 });
 
 /** Edit a message */
@@ -486,8 +485,8 @@ export const editMessage = mutation({
     userId: v.id('users'),
     content: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg || msg.senderId !== args.userId) throw new Error('Not authorized');
     await ctx.db.patch(args.messageId, {
       content: args.content,
@@ -507,7 +506,7 @@ export const editMessage = mutation({
       }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /** Delete a message only for the requesting user (hide from their view). For senders, can also delete for everyone within 5 minutes */
@@ -517,13 +516,13 @@ export const deleteMessage = mutation({
     userId: v.id('users'),
     deleteForEveryone: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg) {
       throw new Error('Message not found');
     }
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = await ctx.db.get(args.userId);
     if (!user) {
       throw new Error('User not found');
     }
@@ -542,7 +541,7 @@ export const deleteMessage = mutation({
 
         // Update conversation's lastMessageText to show deletion or find new last message
         if (msg.conversationId) {
-          const conv = (await ctx.db.get(msg.conversationId)) as any;
+          const conv = await ctx.db.get(msg.conversationId);
           if (conv) {
             const isLastMessage = conv.lastMessageAt === msg.createdAt;
 
@@ -601,7 +600,7 @@ export const deleteMessage = mutation({
 
       // Update conversation's lastMessageText to show deletion or find new last message
       if (msg.conversationId) {
-        const conv = (await ctx.db.get(msg.conversationId)) as any;
+        const conv = await ctx.db.get(msg.conversationId);
         if (conv) {
           const isLastMessage = conv.lastMessageAt === msg.createdAt;
 
@@ -647,7 +646,7 @@ export const deleteMessage = mutation({
 
         // If this was the last message, find new last message
         if (msg.conversationId) {
-          const conv = (await ctx.db.get(msg.conversationId)) as any;
+          const conv = await ctx.db.get(msg.conversationId);
           if (conv && conv.lastMessageAt === msg.createdAt) {
             const allMessages = await ctx.db
               .query('chatMessages')
@@ -695,7 +694,7 @@ export const deleteMessage = mutation({
       }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /** Delete a message only for the requesting user (hide from their view) */
@@ -704,8 +703,8 @@ export const deleteMessageForMe = mutation({
     messageId: v.id('chatMessages'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error('Message not found');
     const existing: Id<'users'>[] = (msg.deletedForUsers as Id<'users'>[] | undefined) ?? [];
     if (!existing.includes(args.userId)) {
@@ -715,7 +714,7 @@ export const deleteMessageForMe = mutation({
 
       // If this was the last message for this conversation, find new last message
       if (msg.conversationId) {
-        const conv = (await ctx.db.get(msg.conversationId)) as any;
+        const conv = await ctx.db.get(msg.conversationId);
         if (conv && conv.lastMessageAt === msg.createdAt) {
           const allMessages = await ctx.db
             .query('chatMessages')
@@ -761,7 +760,7 @@ export const deleteMessageForMe = mutation({
         createdAt: Date.now(),
       });
     }
-  }),
+  },
 });
 
 /** Toggle reaction on a message */
@@ -771,8 +770,8 @@ export const toggleReaction = mutation({
     userId: v.id('users'),
     emoji: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error('Message not found');
 
     // Sanitize emoji: trim whitespace
@@ -837,7 +836,7 @@ export const toggleReaction = mutation({
       details: JSON.stringify({ emoji: sanitizedEmoji, reactionCount: users.length }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /** Pin / unpin a message */
@@ -847,8 +846,8 @@ export const pinMessage = mutation({
     userId: v.id('users'),
     pin: v.boolean(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error('Message not found');
 
     await ctx.db.patch(args.messageId, {
@@ -866,7 +865,7 @@ export const pinMessage = mutation({
       details: JSON.stringify({ pinned: args.pin }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /** Mark conversation as read for a user + stamp readBy on recent messages */
@@ -875,7 +874,7 @@ export const markAsRead = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -915,7 +914,7 @@ export const markAsRead = mutation({
       details: JSON.stringify({ messagesRead: recent.length }),
       createdAt: now,
     });
-  }),
+  },
 });
 
 /** Mark a single sent message as delivered (called after sendMessage on the recipient side) */
@@ -924,8 +923,8 @@ export const markMessageDelivered = mutation({
     messageId: v.id('chatMessages'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg || msg.senderId === args.userId) return;
     const readBy: Array<{ userId: Id<'users'>; readAt: number }> =
       (msg.readBy as Array<{ userId: Id<'users'>; readAt: number }> | undefined) ?? [];
@@ -935,7 +934,7 @@ export const markMessageDelivered = mutation({
     await ctx.db.patch(args.messageId, {
       readBy: [...readBy, { userId: args.userId, readAt: -1 }],
     });
-  }),
+  },
 });
 
 // ─── TYPING INDICATORS ────────────────────────────────────────────────────────
@@ -947,7 +946,7 @@ export const setTyping = mutation({
     organizationId: v.optional(v.id('organizations')),
     isTyping: v.boolean(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const existing = await ctx.db
       .query('chatTyping')
       .withIndex('by_conversation_user', (q) =>
@@ -979,7 +978,7 @@ export const setTyping = mutation({
     } else {
       if (existing) await ctx.db.delete(existing._id);
     }
-  }),
+  },
 });
 
 // ─── POLLS ────────────────────────────────────────────────────────────────────
@@ -991,8 +990,8 @@ export const votePoll = mutation({
     userId: v.id('users'),
     optionId: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg?.poll) throw new Error('No poll found');
     const poll = msg.poll as {
       question: string;
@@ -1018,14 +1017,14 @@ export const votePoll = mutation({
       details: JSON.stringify({ optionId: args.optionId, poll: poll.question }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /** Close a poll */
 export const closePoll = mutation({
   args: { messageId: v.id('chatMessages'), userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg?.poll) throw new Error('No poll');
     if (msg.senderId !== args.userId) throw new Error('Not authorized');
     const poll = msg.poll as {
@@ -1044,7 +1043,7 @@ export const closePoll = mutation({
       details: JSON.stringify({ poll: poll.question }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ─── THREADS ──────────────────────────────────────────────────────────────────
@@ -1058,7 +1057,7 @@ export const sendThreadReply = mutation({
     organizationId: v.optional(v.id('organizations')),
     content: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     const replyId = await ctx.db.insert('chatMessages', {
       conversationId: args.conversationId,
@@ -1070,7 +1069,7 @@ export const sendThreadReply = mutation({
       createdAt: now,
     });
     // Increment thread count on parent
-    const parent = (await ctx.db.get(args.parentMessageId)) as any;
+    const parent = await ctx.db.get(args.parentMessageId);
     if (parent) {
       await ctx.db.patch(args.parentMessageId, {
         threadCount: (parent.threadCount ?? 0) + 1,
@@ -1092,7 +1091,7 @@ export const sendThreadReply = mutation({
     });
 
     return replyId;
-  }),
+  },
 });
 
 // ─── SCHEDULED MESSAGES ───────────────────────────────────────────────────────
@@ -1106,7 +1105,7 @@ export const scheduleMessage = mutation({
     content: v.string(),
     scheduledFor: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const scheduledMsgId = await ctx.db.insert('chatMessages', {
       conversationId: args.conversationId,
       organizationId: args.organizationId,
@@ -1132,14 +1131,14 @@ export const scheduleMessage = mutation({
     });
 
     return scheduledMsgId;
-  }),
+  },
 });
 
 /** Cancel a scheduled message */
 export const cancelScheduledMessage = mutation({
   args: { messageId: v.id('chatMessages'), userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg || msg.senderId !== args.userId) throw new Error('Not authorized');
     await ctx.db.delete(args.messageId);
 
@@ -1152,7 +1151,7 @@ export const cancelScheduledMessage = mutation({
       details: JSON.stringify({ conversationId: msg.conversationId }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /** Update link preview on a message */
@@ -1167,8 +1166,8 @@ export const setLinkPreview = mutation({
       siteName: v.optional(v.string()),
     }),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const msg = (await ctx.db.get(args.messageId)) as any;
+  handler: async (ctx, args) => {
+    const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error('Message not found');
 
     await ctx.db.patch(args.messageId, { linkPreview: args.preview });
@@ -1182,7 +1181,7 @@ export const setLinkPreview = mutation({
       details: JSON.stringify({ url: args.preview.url, title: args.preview.title }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ─── CONVERSATION MANAGEMENT ─────────────────────────────────────────────────────────
@@ -1193,8 +1192,8 @@ export const togglePin = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const conv = (await ctx.db.get(args.conversationId)) as any;
+  handler: async (ctx, args) => {
+    const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
     const member = await ctx.db
@@ -1221,7 +1220,7 @@ export const togglePin = mutation({
     });
 
     return !conv.isPinned;
-  }),
+  },
 });
 
 /** Soft delete a conversation (per-user — only hides it for the requesting user) */
@@ -1230,8 +1229,8 @@ export const deleteConversation = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const conv = (await ctx.db.get(args.conversationId)) as any;
+  handler: async (ctx, args) => {
+    const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
     const member = await ctx.db
@@ -1286,7 +1285,7 @@ export const deleteConversation = mutation({
       details: JSON.stringify({ conversationName: conv.name }),
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /** Restore a deleted conversation (per-user) */
@@ -1295,8 +1294,8 @@ export const restoreConversation = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const conv = (await ctx.db.get(args.conversationId)) as any;
+  handler: async (ctx, args) => {
+    const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
     const member = await ctx.db
@@ -1344,7 +1343,7 @@ export const restoreConversation = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /** Archive or unarchive a conversation (per-user) */
@@ -1353,8 +1352,8 @@ export const toggleArchive = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const conv = (await ctx.db.get(args.conversationId)) as any;
+  handler: async (ctx, args) => {
+    const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
     const member = await ctx.db
@@ -1382,7 +1381,7 @@ export const toggleArchive = mutation({
     });
 
     return newArchived;
-  }),
+  },
 });
 
 /** Toggle mute status for current user */
@@ -1391,8 +1390,8 @@ export const toggleMute = mutation({
     conversationId: v.id('chatConversations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const conv = (await ctx.db.get(args.conversationId)) as any;
+  handler: async (ctx, args) => {
+    const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
     const member = await ctx.db
@@ -1418,7 +1417,7 @@ export const toggleMute = mutation({
     });
 
     return !member.isMuted;
-  }),
+  },
 });
 
 // ─── SERVICE BROADCASTS ────────────────────────────────────────────────────────
@@ -1433,7 +1432,7 @@ export const sendServiceBroadcast = mutation({
     content: v.string(), // the announcement message
     icon: v.optional(v.string()), // emoji or icon, e.g. "⚠️", "ℹ️", "🔧"
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
 
     // Create the service broadcast message
@@ -1488,5 +1487,5 @@ export const sendServiceBroadcast = mutation({
     });
 
     return msgId;
-  }),
+  },
 });

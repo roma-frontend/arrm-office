@@ -3,13 +3,12 @@ import { query } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // ── Calculate Employee Score ──────────────────────────────────────────────
 export const calculateEmployeeScore = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const user = (await ctx.db.get(args.userId)) as any;
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
     if (!user) return null;
 
     const profile = await getProfile(ctx, args.userId);
@@ -89,7 +88,7 @@ export const calculateEmployeeScore = query({
         supervisorRating: supervisorScore,
       },
     };
-  }),
+  },
 });
 
 // ── Evaluate Leave Request ──────────────────────────────────────────────
@@ -97,11 +96,11 @@ export const evaluateLeaveRequest = query({
   args: {
     leaveRequestId: v.id('leaveRequests'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const leave = (await ctx.db.get(args.leaveRequestId)) as any;
+  handler: async (ctx, args) => {
+    const leave = await ctx.db.get(args.leaveRequestId);
     if (!leave) return null;
 
-    const user = (await ctx.db.get(leave.userId)) as any;
+    const user = await ctx.db.get(leave.userId);
     if (!user) return null;
 
     const profile = await getProfile(ctx, leave.userId);
@@ -198,7 +197,7 @@ export const evaluateLeaveRequest = query({
       confidence,
       reasoning: generateReasoning(eligibilityScore, recommendation, factors),
     };
-  }),
+  },
 });
 
 // ── Helper Functions ──────────────────────────────────────────────

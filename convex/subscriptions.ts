@@ -2,7 +2,6 @@ import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
-import { withAuth } from './lib/withAuth';
 
 // ── Upsert subscription after checkout.session.completed ─────────────────────
 export const upsertSubscription = mutation({
@@ -24,7 +23,7 @@ export const upsertSubscription = mutation({
     cancelAtPeriodEnd: v.boolean(),
     trialEnd: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const existing = await ctx.db
       .query('subscriptions')
       .withIndex('by_stripe_subscription', (q) =>
@@ -47,7 +46,7 @@ export const upsertSubscription = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 // ── Update status (for subscription.updated / deleted events) ─────────────────
@@ -65,7 +64,7 @@ export const updateSubscriptionStatus = mutation({
     currentPeriodStart: v.optional(v.number()),
     currentPeriodEnd: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const existing = await ctx.db
       .query('subscriptions')
       .withIndex('by_stripe_subscription', (q) =>
@@ -84,19 +83,19 @@ export const updateSubscriptionStatus = mutation({
     });
 
     return existing._id;
-  }),
+  },
 });
 
 // ── Get subscription by customer ID ──────────────────────────────────────────
 export const getByCustomer = query({
   args: { stripeCustomerId: v.string() },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { stripeCustomerId } = args;
     return ctx.db
       .query('subscriptions')
       .withIndex('by_stripe_customer', (q) => q.eq('stripeCustomerId', stripeCustomerId))
       .first();
-  }),
+  },
 });
 
 // ── Save contact inquiry (Enterprise) ────────────────────────────────────────
@@ -109,12 +108,12 @@ export const saveContactInquiry = mutation({
     message: v.string(),
     plan: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     return await ctx.db.insert('contactInquiries', {
       ...args,
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ── List all inquiries (admin only) ──────────────────────────────────────────
@@ -132,7 +131,7 @@ export const linkSubscriptionToUser = mutation({
     email: v.string(),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { email, userId } = args;
     // Find unlinked subscription by email
     const subscription = await ctx.db
@@ -149,32 +148,32 @@ export const linkSubscriptionToUser = mutation({
     });
 
     return subscription._id;
-  }),
+  },
 });
 
 // ── Get subscription by userId ─────────────────────────────────────────────────
 export const getSubscriptionByUserId = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     return ctx.db
       .query('subscriptions')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .first();
-  }),
+  },
 });
 
 // ── Get subscription by email ──────────────────────────────────────────────────
 export const getSubscriptionByEmail = query({
   args: { email: v.string() },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { email } = args;
     return ctx.db
       .query('subscriptions')
       .withIndex('by_email', (q) => q.eq('email', email))
       .order('desc')
       .first();
-  }),
+  },
 });
 
 // ── List all subscriptions (SUPERADMIN ONLY) ───────────────────────────────────

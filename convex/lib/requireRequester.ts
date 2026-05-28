@@ -16,7 +16,7 @@
  *   2. **Browser → Convex direct calls** are NOT currently protected from
  *      requesterId spoofing. Closing this gap requires bridging Convex auth
  *      with the existing JWT (`ConvexProviderWithAuth`), then migrating the
- *      callsites to `lib/withAuth.ts` which derives the caller from
+ *      callsites to `lib/getAuthCaller.ts` which derives the caller from
  *      identity instead of taking it as an arg.
  *
  * The in-memory rate-limiter that used to live here was removed: it was
@@ -24,7 +24,7 @@
  * served only as security theatre. Real rate-limiting is in `src/proxy.ts`
  * (Upstash-backed).
  *
- * For new code, prefer `lib/withAuth.ts`. For existing code, this function
+ * For new code, prefer `lib/getAuthCaller.ts`. For existing code, this function
  * is the minimum activity check until the migration above is done.
  */
 import type { QueryCtx, MutationCtx } from '../_generated/server';

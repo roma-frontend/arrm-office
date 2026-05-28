@@ -3,10 +3,9 @@ import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
-import { withAuth } from '../lib/withAuth';
 
 async function getUserOrgId(ctx: QueryCtx, userId: Id<'users'>): Promise<Id<'organizations'>> {
-  const user = (await ctx.db.get(userId)) as any;
+  const user = await ctx.db.get(userId);
   if (!user) throw new Error('User not found');
   if (!user.organizationId) throw new Error('User has no organization');
   return user.organizationId;
@@ -21,7 +20,7 @@ export const setTyping = mutation({
     userId: v.id('users'),
     isTyping: v.boolean(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const existing = await ctx.db
       .query('chatTyping')
       .withIndex('by_conversation_user', (q) =>
@@ -44,7 +43,7 @@ export const setTyping = mutation({
     } else {
       if (existing) await ctx.db.delete(existing._id);
     }
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,7 +54,7 @@ export const getTypingUsers = query({
     conversationId: v.id('chatConversations'),
     currentUserId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const cutoff = Date.now() - 5000;
     const typing = await ctx.db
       .query('chatTyping')
@@ -68,9 +67,9 @@ export const getTypingUsers = query({
 
     return Promise.all(
       active.map(async (t) => {
-        const user = (await ctx.db.get(t.userId)) as any;
+        const user = await ctx.db.get(t.userId);
         return { userId: t.userId, name: user?.name ?? 'Someone' };
       }),
     );
-  }),
+  },
 });

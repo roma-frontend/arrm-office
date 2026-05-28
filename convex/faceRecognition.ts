@@ -2,8 +2,8 @@ import { v } from 'convex/values';
 import { mutation, query, internalQuery } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { requireRequester } from './lib/requireRequester';
-import { withAuth } from './lib/withAuth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import { getAuthCaller } from './lib/getAuthCaller';
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -62,12 +62,12 @@ export const registerFace = mutation({
     faceDescriptor: v.array(v.number()),
     faceImageUrl: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     if (args.faceDescriptor.length !== FACE_DESCRIPTOR_LENGTH) {
       throw new Error(`Face descriptor must be ${FACE_DESCRIPTOR_LENGTH}-dim`);
     }
 
-    const user = (await ctx.db.get(args.userId)) as any as any as any;
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
 
     const patch: Record<string, unknown> = {
@@ -87,7 +87,7 @@ export const registerFace = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -99,7 +99,8 @@ export const getFaceDescriptor = query({
     userId: v.id('users'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return null;
@@ -109,7 +110,7 @@ export const getFaceDescriptor = query({
     const isSuperadmin = requester.role === 'superadmin';
     if (!isSelf && !isSuperadmin) return null;
 
-    const user = (await ctx.db.get(args.userId)) as any as any as any;
+    const user = await ctx.db.get(args.userId);
     if (!user) return null;
 
     return {
@@ -117,7 +118,7 @@ export const getFaceDescriptor = query({
       faceImageUrl: user.faceImageUrl,
       faceRegisteredAt: user.faceRegisteredAt,
     };
-  }),
+  },
 });
 
 /**
@@ -129,12 +130,12 @@ export const removeFaceRegistration = mutation({
     userId: v.id('users'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, requesterId } = args;
-    const requester = (await ctx.db.get(requesterId)) as any as any;
+    const requester = await ctx.db.get(requesterId);
     if (!requester) throw new Error('Requester not found');
 
-    const target = (await ctx.db.get(userId)) as any as any;
+    const target = await ctx.db.get(userId);
     if (!target) throw new Error('User not found');
 
     // Self, same-org admin, or superadmin only
@@ -162,7 +163,7 @@ export const removeFaceRegistration = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -186,7 +187,7 @@ export const loginWithFace = mutation({
     ip: v.optional(v.string()),
     userAgent: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     if (args.faceDescriptor.length !== FACE_DESCRIPTOR_LENGTH) {
       throw new Error('Invalid face descriptor');
     }
@@ -294,7 +295,7 @@ export const loginWithFace = mutation({
       expiresAt: now + FACE_LOGIN_TOKEN_TTL_MS,
       email: user.email,
     };
-  }),
+  },
 });
 
 /**

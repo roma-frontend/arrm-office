@@ -14,7 +14,6 @@ import type { Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MANAGER APPROVAL WORKFLOW
@@ -28,12 +27,12 @@ export const approveRequest = mutation({
     requestId: v.id('driverRequests'),
     managerId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId, managerId } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
 
-    const manager = (await ctx.db.get(managerId)) as any;
+    const manager = await ctx.db.get(managerId);
     if (!manager) throw new Error('Manager not found');
 
     // Verify manager has approval rights
@@ -107,7 +106,7 @@ export const approveRequest = mutation({
     }
 
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -119,12 +118,12 @@ export const rejectRequest = mutation({
     managerId: v.id('users'),
     reason: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId, managerId, reason } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
 
-    const manager = (await ctx.db.get(managerId)) as any;
+    const manager = await ctx.db.get(managerId);
     if (!manager) throw new Error('Manager not found');
 
     const managerIsSuperadmin = isSuperadmin(manager);
@@ -157,7 +156,7 @@ export const rejectRequest = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -167,9 +166,9 @@ export const getPendingApprovals = query({
   args: {
     managerId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { managerId } = args;
-    const manager = (await ctx.db.get(managerId)) as any;
+    const manager = await ctx.db.get(managerId);
     if (!manager) throw new Error('Manager not found');
 
     const managerIsSuperadmin = isSuperadmin(manager);
@@ -193,7 +192,7 @@ export const getPendingApprovals = query({
     // Enrich with requester info
     const enriched = await Promise.all(
       requests.map(async (request) => {
-        const requester = (await ctx.db.get(request.requesterId)) as any;
+        const requester = await ctx.db.get(request.requesterId);
         const requesterProfile = await getProfile(ctx, request.requesterId);
         return {
           ...request,
@@ -216,7 +215,7 @@ export const getPendingApprovals = query({
     });
 
     return enriched;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -231,9 +230,9 @@ export const calculateDriverKPI = query({
     driverId: v.id('drivers'),
     days: v.number(), // last N days
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, days } = args;
-    const driver = (await ctx.db.get(driverId)) as any;
+    const driver = await ctx.db.get(driverId);
     if (!driver) return null;
 
     const now = Date.now();
@@ -288,7 +287,7 @@ export const calculateDriverKPI = query({
       totalTrips,
       totalShifts: 0, // Would need shift tracking
     };
-  }),
+  },
 });
 
 /**
@@ -298,9 +297,9 @@ export const updateDriverKPI = mutation({
   args: {
     driverId: v.id('drivers'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId } = args;
-    const driver = (await ctx.db.get(driverId)) as any;
+    const driver = await ctx.db.get(driverId);
     if (!driver) throw new Error('Driver not found');
 
     // Calculate KPI for last 30 days (inline to avoid circular dependency)
@@ -342,7 +341,7 @@ export const updateDriverKPI = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -356,9 +355,9 @@ export const autoAssignDriver = mutation({
   args: {
     requestId: v.id('driverRequests'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
 
     // Get available drivers
@@ -408,7 +407,7 @@ export const autoAssignDriver = mutation({
         ...request.tripInfo,
         passengerPhone:
           (await getProfile(ctx, request.requesterId))?.phone ??
-          ((await ctx.db.get(request.requesterId)) as any)?.phone,
+          (await ctx.db.get(request.requesterId))?.phone,
       },
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -421,8 +420,8 @@ export const autoAssignDriver = mutation({
     });
 
     // Notify requester
-    const requester = (await ctx.db.get(request.requesterId)) as any;
-    const driverUser = (await ctx.db.get(assignedDriver.userId)) as any;
+    const requester = await ctx.db.get(request.requesterId);
+    const driverUser = await ctx.db.get(assignedDriver.userId);
 
     await ctx.db.insert('notifications', {
       organizationId: request.organizationId,
@@ -437,5 +436,5 @@ export const autoAssignDriver = mutation({
     });
 
     return { success: true, driverId: assignedDriver._id };
-  }),
+  },
 });

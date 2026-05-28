@@ -8,7 +8,6 @@ import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
-import { withAuth } from '../lib/withAuth';
 
 /** Create a recurring trip template */
 export const createRecurringTrip = mutation({
@@ -31,7 +30,7 @@ export const createRecurringTrip = mutation({
       endTime: v.string(),
     }),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const id = await ctx.db.insert('recurringTrips', {
       organizationId: args.organizationId,
       userId: args.userId,
@@ -43,13 +42,13 @@ export const createRecurringTrip = mutation({
       updatedAt: Date.now(),
     });
     return id;
-  }),
+  },
 });
 
 /** Get recurring trips for a user */
 export const getRecurringTrips = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     const trips = await ctx.db
       .query('recurringTrips')
@@ -58,8 +57,8 @@ export const getRecurringTrips = query({
 
     const enriched = await Promise.all(
       trips.map(async (trip) => {
-        const driver = (await ctx.db.get(trip.driverId)) as any;
-        const driverUser = driver ? ((await ctx.db.get(driver.userId)) as any) : null;
+        const driver = await ctx.db.get(trip.driverId);
+        const driverUser = driver ? await ctx.db.get(driver.userId) : null;
         return {
           ...trip,
           driverName: driverUser?.name,
@@ -68,7 +67,7 @@ export const getRecurringTrips = query({
       }),
     );
     return enriched;
-  }),
+  },
 });
 
 /** Toggle recurring trip active/inactive */
@@ -78,14 +77,14 @@ export const toggleRecurringTrip = mutation({
     userId: v.id('users'),
     isActive: v.boolean(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { recurringTripId, userId, isActive } = args;
-    const trip = (await ctx.db.get(recurringTripId)) as any;
+    const trip = await ctx.db.get(recurringTripId);
     if (!trip) throw new Error('Recurring trip not found');
     if (trip.userId !== userId) throw new Error('Unauthorized');
     await ctx.db.patch(recurringTripId, { isActive, updatedAt: Date.now() });
     return { success: true };
-  }),
+  },
 });
 
 /** Delete recurring trip */
@@ -94,20 +93,20 @@ export const deleteRecurringTrip = mutation({
     recurringTripId: v.id('recurringTrips'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { recurringTripId, userId } = args;
-    const trip = (await ctx.db.get(recurringTripId)) as any;
+    const trip = await ctx.db.get(recurringTripId);
     if (!trip) throw new Error('Recurring trip not found');
     if (trip.userId !== userId) throw new Error('Unauthorized');
     await ctx.db.delete(recurringTripId);
     return { success: true };
-  }),
+  },
 });
 
 /** Generate today's requests from active recurring trips (called by cron or manually) */
 export const generateRecurringRequests = mutation({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -149,7 +148,7 @@ export const generateRecurringRequests = mutation({
         updatedAt: Date.now(),
       });
 
-      const driver = (await ctx.db.get(trip.driverId)) as any;
+      const driver = await ctx.db.get(trip.driverId);
       if (driver) {
         await ctx.db.insert('notifications', {
           organizationId,
@@ -168,5 +167,5 @@ export const generateRecurringRequests = mutation({
     }
 
     return { generated };
-  }),
+  },
 });

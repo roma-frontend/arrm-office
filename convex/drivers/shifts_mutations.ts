@@ -7,7 +7,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
-import { withAuth } from '../lib/withAuth';
 
 /** Start a new shift for a driver */
 export const startShift = mutation({
@@ -67,7 +66,7 @@ export const endShift = mutation({
     breakTime: v.optional(v.number()),
     driverNotes: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, userId, breakTime, driverNotes } = args;
     const shift = await ctx.db
       .query('driverShifts')
@@ -86,7 +85,7 @@ export const endShift = mutation({
       overtimeHours = (endTime - shift.scheduledEndTime) / (1000 * 60 * 60);
     }
 
-    const driver = (await ctx.db.get(driverId)) as any as any;
+    const driver = await ctx.db.get(driverId);
 
     await ctx.db.patch(shift._id, {
       endTime,
@@ -107,7 +106,7 @@ export const endShift = mutation({
     });
 
     return shift._id;
-  }),
+  },
 });
 
 /** Pause shift (for breaks) */
@@ -116,7 +115,7 @@ export const pauseShift = mutation({
     driverId: v.id('drivers'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, userId } = args;
     const shift = await ctx.db
       .query('driverShifts')
@@ -133,7 +132,7 @@ export const pauseShift = mutation({
     });
 
     return shift._id;
-  }),
+  },
 });
 
 /** Resume paused shift */
@@ -142,7 +141,7 @@ export const resumeShift = mutation({
     driverId: v.id('drivers'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, userId } = args;
     const shift = await ctx.db
       .query('driverShifts')
@@ -159,7 +158,7 @@ export const resumeShift = mutation({
     });
 
     return shift._id;
-  }),
+  },
 });
 
 /** Update shift trip count (called when a trip is completed) */
@@ -169,9 +168,9 @@ export const updateShiftTripCount = mutation({
     distanceKm: v.optional(v.number()),
     durationMinutes: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { shiftId, distanceKm, durationMinutes } = args;
-    const shift = (await ctx.db.get(shiftId)) as any as any;
+    const shift = await ctx.db.get(shiftId);
     if (!shift) throw new Error('Shift not found');
 
     await ctx.db.patch(shiftId, {
@@ -182,7 +181,7 @@ export const updateShiftTripCount = mutation({
     });
 
     return shiftId;
-  }),
+  },
 });
 
 /** Get shift history for a driver */
@@ -191,7 +190,7 @@ export const getShiftHistory = query({
     driverId: v.id('drivers'),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, limit } = args;
     const shifts = await ctx.db
       .query('driverShifts')
@@ -203,7 +202,7 @@ export const getShiftHistory = query({
       ...shift,
       duration: shift.endTime ? (shift.endTime - shift.startTime) / (1000 * 60 * 60) : null,
     }));
-  }),
+  },
 });
 
 /** Get shift statistics for organization */
@@ -212,7 +211,7 @@ export const getShiftStatistics = query({
     organizationId: v.id('organizations'),
     period: v.union(v.literal('week'), v.literal('month'), v.literal('year')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, period } = args;
     const now = Date.now();
     let periodStart: number;
@@ -261,5 +260,5 @@ export const getShiftStatistics = query({
       avgTripsPerShift,
       activeShifts: shifts.filter((s: any) => s.status === 'active').length,
     };
-  }),
+  },
 });

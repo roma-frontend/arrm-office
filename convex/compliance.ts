@@ -1,10 +1,10 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { MutationCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
-import { withAuth } from './lib/withAuth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 
 /**
@@ -14,7 +14,7 @@ import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
  * - admin: sees only their own org
  */
 async function requireAdmin(ctx: any, adminId: Id<'users'>) {
-  const user = (await ctx.db.get(adminId)) as any as any;
+  const user = await ctx.db.get(adminId);
   if (!user) {
     throw new Error('User not found');
   }
@@ -44,10 +44,10 @@ export const createGdprRequest = mutation({
     ),
     details: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const targetUser = (await ctx.db.get(args.userId)) as any as any;
+    const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error('User not found');
     if (!orgId || targetUser.organizationId !== orgId) {
       throw new Error('Can only create GDPR requests for users in your organization');
@@ -73,7 +73,7 @@ export const createGdprRequest = mutation({
     });
 
     return { success: true, requestId };
-  }),
+  },
 });
 
 export const updateGdprRequestStatus = mutation({
@@ -88,10 +88,10 @@ export const updateGdprRequestStatus = mutation({
     ),
     rejectionReason: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const request = (await ctx.db.get(args.requestId)) as any as any;
+    const request = await ctx.db.get(args.requestId);
     if (!request) {
       throw new Error('GDPR request not found');
     }
@@ -125,7 +125,7 @@ export const updateGdprRequestStatus = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const getGdprRequests = query({
@@ -135,7 +135,7 @@ export const getGdprRequests = query({
     status: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { orgId } = await requireAdmin(ctx, args.adminId);
 
     // Scope by org via by_org index when admin is non-superadmin; else capped full-table.
@@ -186,13 +186,13 @@ export const getGdprRequests = query({
         processedByName: processedBy?.name ?? null,
       };
     });
-  }),
+  },
 });
 
 // ── Paginated GDPR Requests ───────────────────────────────────────────────────
 export const listGdprRequestsPaginated = query({
   args: { adminId: v.id('users'), paginationOpts: paginationOptsValidator },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { adminId, paginationOpts } = args;
     const { orgId } = await requireAdmin(ctx, adminId);
 
@@ -228,7 +228,7 @@ export const listGdprRequestsPaginated = query({
         processedByName: r.processedBy ? (userMap.get(r.processedBy)?.name ?? null) : null,
       })),
     };
-  }),
+  },
 });
 
 // ── Consent Management ────────────────────────────────────────────────────────
@@ -243,10 +243,10 @@ export const grantConsent = mutation({
     version: v.optional(v.string()),
     metadata: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const targetUser = (await ctx.db.get(args.userId)) as any as any;
+    const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error('User not found');
     if (orgId && targetUser.organizationId !== orgId) {
       throw new Error('Can only manage consent for users in your organization');
@@ -294,7 +294,7 @@ export const grantConsent = mutation({
     });
 
     return { success: true, consentId };
-  }),
+  },
 });
 
 export const withdrawConsent = mutation({
@@ -303,7 +303,7 @@ export const withdrawConsent = mutation({
     userId: v.id('users'),
     consentType: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
     const existing = await ctx.db
@@ -336,7 +336,7 @@ export const withdrawConsent = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const getUserConsents = query({
@@ -344,7 +344,7 @@ export const getUserConsents = query({
     adminId: v.id('users'),
     userId: v.optional(v.id('users')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { orgId } = await requireAdmin(ctx, args.adminId);
 
     // Scope by org via by_org index when admin is non-superadmin; else capped full-table.
@@ -361,14 +361,14 @@ export const getUserConsents = query({
     }
 
     return consents;
-  }),
+  },
 });
 
 export const getOrgConsentStats = query({
   args: {
     adminId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { orgId } = await requireAdmin(ctx, args.adminId);
     if (!orgId) throw new Error('Admin must belong to an organization');
 
@@ -389,7 +389,7 @@ export const getOrgConsentStats = query({
     }
 
     return stats;
-  }),
+  },
 });
 
 // ── Data Access Logging ───────────────────────────────────────────────────────
@@ -409,10 +409,10 @@ export const logDataAccess = mutation({
     reason: v.optional(v.string()),
     ipAddress: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const targetUser = (await ctx.db.get(args.userId)) as any as any;
+    const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error('User not found');
     if (orgId && targetUser.organizationId !== orgId) {
       throw new Error('Can only log data access for users in your organization');
@@ -440,7 +440,7 @@ export const logDataAccess = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const getDataAccessLogs = query({
@@ -449,7 +449,7 @@ export const getDataAccessLogs = query({
     userId: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { orgId } = await requireAdmin(ctx, args.adminId);
 
     // Scope by org via by_org index when admin is non-superadmin; else capped full-table.
@@ -491,13 +491,13 @@ export const getDataAccessLogs = query({
         accessedByEmail: accessedBy?.email ?? '',
       };
     });
-  }),
+  },
 });
 
 // ── Paginated Data Access Logs ────────────────────────────────────────────────
 export const listDataAccessLogsPaginated = query({
   args: { adminId: v.id('users'), paginationOpts: paginationOptsValidator },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { adminId, paginationOpts } = args;
     const { orgId } = await requireAdmin(ctx, adminId);
 
@@ -532,7 +532,7 @@ export const listDataAccessLogsPaginated = query({
         accessedByEmail: userMap.get(log.accessedBy)?.email ?? '',
       })),
     };
-  }),
+  },
 });
 
 // ── Compliance Policies ───────────────────────────────────────────────────────
@@ -552,7 +552,7 @@ export const createPolicy = mutation({
     content: v.string(),
     version: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
     if (!orgId) throw new Error('Admin must belong to an organization');
 
@@ -581,7 +581,7 @@ export const createPolicy = mutation({
     });
 
     return { success: true, policyId };
-  }),
+  },
 });
 
 export const updatePolicy = mutation({
@@ -595,10 +595,10 @@ export const updatePolicy = mutation({
     isActive: v.optional(v.boolean()),
     effectiveUntil: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const policy = (await ctx.db.get(args.policyId)) as any as any;
+    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw new Error('Policy not found');
     }
@@ -627,7 +627,7 @@ export const updatePolicy = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const getPolicies = query({
@@ -635,7 +635,7 @@ export const getPolicies = query({
     adminId: v.id('users'),
     policyType: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { orgId } = await requireAdmin(ctx, args.adminId);
 
     // Scope by org via by_org index when admin is non-superadmin; else capped full-table.
@@ -676,7 +676,7 @@ export const getPolicies = query({
         updatedByName: updatedBy?.name ?? 'Unknown',
       };
     });
-  }),
+  },
 });
 
 export const deletePolicy = mutation({
@@ -684,10 +684,10 @@ export const deletePolicy = mutation({
     adminId: v.id('users'),
     policyId: v.id('compliancePolicies'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const policy = (await ctx.db.get(args.policyId)) as any as any;
+    const policy = await ctx.db.get(args.policyId);
     if (!policy) {
       throw new Error('Policy not found');
     }
@@ -707,7 +707,7 @@ export const deletePolicy = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 // ── Compliance Dashboard Stats ────────────────────────────────────────────────
@@ -716,7 +716,7 @@ export const getComplianceStats = query({
   args: {
     adminId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { orgId } = await requireAdmin(ctx, args.adminId);
 
     // Scope all counts by org via by_org indexes when admin is non-superadmin;
@@ -772,7 +772,7 @@ export const getComplianceStats = query({
       consentStats,
       policyStats,
     };
-  }),
+  },
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -785,16 +785,10 @@ export const secureUpdateGdprStatus = mutation({
     status: v.union(v.literal('in_progress'), v.literal('completed'), v.literal('rejected')),
     notes: v.optional(v.string()),
   },
-  handler: withAuth<
-    MutationCtx,
-    {
-      requestId: Id<'gdprRequests'>;
-      status: 'in_progress' | 'completed' | 'rejected';
-      notes?: string;
-    },
-    void
-  >({ minimumRole: 'admin' }, async (ctx, { requestId, status, notes }, caller) => {
-    const request = (await ctx.db.get(requestId)) as any as any as any;
+  handler: async (ctx, { requestId, status, notes }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
 
     if (caller.role !== 'superadmin' && caller.organizationId !== request.organizationId) {
@@ -806,33 +800,31 @@ export const secureUpdateGdprStatus = mutation({
       processedBy: caller._id,
       processedAt: Date.now(),
       ...(notes ? { rejectionReason: notes } : {}),
-      updatedAt: Date.now(),
-    } as any);
-  }),
+    });
+  },
 });
 
 export const secureDeletePolicy = mutation({
   args: { policyId: v.id('compliancePolicies') },
-  handler: withAuth<MutationCtx, { policyId: Id<'compliancePolicies'> }, void>(
-    { minimumRole: 'admin' },
-    async (ctx, { policyId }, caller) => {
-      const policy = (await ctx.db.get(policyId)) as any as any as any;
-      if (!policy) throw new Error('Policy not found');
+  handler: async (ctx, { policyId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const policy = await ctx.db.get(policyId);
+    if (!policy) throw new Error('Policy not found');
 
-      if (caller.role !== 'superadmin' && caller.organizationId !== policy.organizationId) {
-        throw new Error('Access denied: cross-organization operation');
-      }
+    if (caller.role !== 'superadmin' && caller.organizationId !== policy.organizationId) {
+      throw new Error('Access denied: cross-organization operation');
+    }
 
-      await ctx.db.delete(policyId);
+    await ctx.db.delete(policyId);
 
-      await ctx.db.insert('auditLogs', {
-        organizationId: policy.organizationId,
-        userId: caller._id,
-        action: 'policy_deleted',
-        target: policyId,
-        details: JSON.stringify({ title: policy.title }),
-        createdAt: Date.now(),
-      });
-    },
-  ),
+    await ctx.db.insert('auditLogs', {
+      organizationId: policy.organizationId,
+      userId: caller._id,
+      action: 'policy_deleted',
+      target: policyId,
+      details: JSON.stringify({ title: policy.title }),
+      createdAt: Date.now(),
+    });
+  },
 });

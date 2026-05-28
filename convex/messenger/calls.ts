@@ -3,7 +3,6 @@ import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import type { Id } from '../_generated/dataModel';
 import { patchProfile } from '../lib/userProfile';
-import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CALLS - Audio/Video calling using WebRTC (similar to web version)
@@ -19,12 +18,12 @@ export const startCall = mutation({
     initiatorId: v.id('users'),
     callType: v.union(v.literal('audio'), v.literal('video')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { conversationId, initiatorId, callType } = args;
-    const conv = (await ctx.db.get(conversationId)) as any;
+    const conv = await ctx.db.get(conversationId);
     if (!conv) throw new Error('Conversation not found');
 
-    const initiator = (await ctx.db.get(initiatorId)) as any;
+    const initiator = await ctx.db.get(initiatorId);
     if (!initiator) throw new Error('Initiator not found');
 
     const now = Date.now();
@@ -43,7 +42,7 @@ export const startCall = mutation({
     await patchProfile(ctx, initiatorId, { presenceStatus: 'in_call' });
 
     return { callId, conversationId };
-  }),
+  },
 });
 
 /**
@@ -54,9 +53,9 @@ export const answerCall = mutation({
     callMessageId: v.id('chatMessages'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { callMessageId, userId } = args;
-    const call = (await ctx.db.get(callMessageId)) as any;
+    const call = await ctx.db.get(callMessageId);
     if (!call) throw new Error('Call not found');
 
     // Update call status to answered
@@ -69,7 +68,7 @@ export const answerCall = mutation({
     await patchProfile(ctx, userId, { presenceStatus: 'in_call' });
 
     return callMessageId;
-  }),
+  },
 });
 
 /**
@@ -81,9 +80,9 @@ export const endCall = mutation({
     userId: v.id('users'),
     duration: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { callMessageId, userId, duration } = args;
-    const call = (await ctx.db.get(callMessageId)) as any;
+    const call = await ctx.db.get(callMessageId);
     if (!call) throw new Error('Call not found');
 
     // Update call with duration
@@ -98,7 +97,7 @@ export const endCall = mutation({
     await patchProfile(ctx, userId, { presenceStatus: 'available' });
 
     return callMessageId;
-  }),
+  },
 });
 
 /**
@@ -109,9 +108,9 @@ export const declineCall = mutation({
     callMessageId: v.id('chatMessages'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { callMessageId, userId } = args;
-    const call = (await ctx.db.get(callMessageId)) as any;
+    const call = await ctx.db.get(callMessageId);
     if (!call) throw new Error('Call not found');
 
     await ctx.db.patch(callMessageId, {
@@ -123,7 +122,7 @@ export const declineCall = mutation({
     await patchProfile(ctx, call.senderId, { presenceStatus: 'available' });
 
     return callMessageId;
-  }),
+  },
 });
 
 /**
@@ -133,7 +132,7 @@ export const getActiveCall = query({
   args: {
     conversationId: v.id('chatConversations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { conversationId } = args;
     const messages = await ctx.db
       .query('chatMessages')
@@ -148,7 +147,7 @@ export const getActiveCall = query({
 
     if (!activeCall) return null;
 
-    const initiator = (await ctx.db.get(activeCall.senderId)) as any;
+    const initiator = await ctx.db.get(activeCall.senderId);
 
     return {
       callId: activeCall._id,
@@ -159,7 +158,7 @@ export const getActiveCall = query({
       status: activeCall.callStatus,
       createdAt: activeCall.createdAt,
     };
-  }),
+  },
 });
 
 /**
@@ -170,7 +169,7 @@ export const getIncomingCalls = query({
     userId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, organizationId } = args;
     // Get all conversations for this user
     const memberships = await ctx.db
@@ -226,5 +225,5 @@ export const getIncomingCalls = query({
     }
 
     return null;
-  }),
+  },
 });

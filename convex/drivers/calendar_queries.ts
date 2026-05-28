@@ -8,7 +8,6 @@ import { v } from 'convex/values';
 import { query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
-import { withAuth } from '../lib/withAuth';
 
 /** Check calendar access permission */
 export const checkCalendarAccess = query({
@@ -16,7 +15,7 @@ export const checkCalendarAccess = query({
     ownerId: v.id('users'),
     viewerId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { ownerId, viewerId } = args;
     const access = await ctx.db
       .query('calendarAccess')
@@ -37,7 +36,7 @@ export const checkCalendarAccess = query({
       level: access.accessLevel,
       grantedAt: access.grantedAt,
     };
-  }),
+  },
 });
 
 /** Get users who have access to my calendar */
@@ -45,7 +44,7 @@ export const getCalendarAccessList = query({
   args: {
     ownerId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { ownerId } = args;
     const accesses = await ctx.db
       .query('calendarAccess')
@@ -56,7 +55,7 @@ export const getCalendarAccessList = query({
     // Enrich with viewer info
     const enriched = await Promise.all(
       accesses.map(async (access) => {
-        const viewer = (await ctx.db.get(access.viewerId)) as any;
+        const viewer = await ctx.db.get(access.viewerId);
         const viewerProfile = await getProfile(ctx, access.viewerId);
         return {
           ...access,
@@ -68,7 +67,7 @@ export const getCalendarAccessList = query({
     );
 
     return enriched;
-  }),
+  },
 });
 
 /** Get driver's calendar for viewer (with permission check) */
@@ -79,7 +78,7 @@ export const getDriverCalendarForViewer = query({
     startTime: v.number(),
     endTime: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverUserId, viewerId, startTime, endTime } = args;
     // Check access permission
     const access = await ctx.db
@@ -133,5 +132,5 @@ export const getDriverCalendarForViewer = query({
       accessLevel: 'full',
       driver,
     };
-  }),
+  },
 });

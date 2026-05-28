@@ -3,13 +3,12 @@
 
 import { mutation } from './_generated/server';
 import { v } from 'convex/values';
-import { withAuth } from './lib/withAuth';
 
 export const updatePlan = mutation({
   args: {
     email: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const email = args.email.toLowerCase().trim();
 
     // Найти пользователя
@@ -27,7 +26,7 @@ export const updatePlan = mutation({
     }
 
     // Найти организацию пользователя
-    const org = (await ctx.db.get(user.organizationId)) as any;
+    const org = await ctx.db.get(user.organizationId);
 
     if (!org) {
       throw new Error(`Organization not found for user ${email}`);
@@ -50,5 +49,5 @@ export const updatePlan = mutation({
         newPlan: 'enterprise',
       },
     };
-  }),
+  },
 });

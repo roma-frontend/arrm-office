@@ -1,6 +1,5 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
-import { withAuth } from './lib/withAuth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 
 // ── Get current month's usage for a user ──────────────────────────────────────
@@ -8,7 +7,7 @@ export const getCurrentMonthUsage = query({
   args: {
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     const now = new Date();
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -38,7 +37,7 @@ export const getCurrentMonthUsage = query({
       fullControlChanges: usage.fullControlChanges,
       totalRequests: usage.totalRequests,
     };
-  }),
+  },
 });
 
 // ── Check if user can make a specific type of edit ───────────────────────────
@@ -54,10 +53,10 @@ export const canMakeEdit = query({
       v.literal('full_control'),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, organizationId, editType } = args;
     // Get organization to check plan
-    const org = (await ctx.db.get(organizationId)) as any;
+    const org = await ctx.db.get(organizationId);
     if (!org) return { allowed: false, reason: 'Organization not found' };
 
     const plan = org.plan;
@@ -128,7 +127,7 @@ export const canMakeEdit = query({
     }
 
     return { allowed: true, reason: null };
-  }),
+  },
 });
 
 // ── Increment usage counter ───────────────────────────────────────────────────
@@ -144,9 +143,9 @@ export const incrementUsage = mutation({
       v.literal('full_control'),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, organizationId, editType } = args;
-    const org = (await ctx.db.get(organizationId)) as any;
+    const org = await ctx.db.get(organizationId);
     if (!org) throw new Error('Organization not found');
 
     const now = new Date();
@@ -194,7 +193,7 @@ export const incrementUsage = mutation({
         updatedAt: Date.now(),
       });
     }
-  }),
+  },
 });
 
 // ── Create a new editing session ──────────────────────────────────────────────
@@ -211,8 +210,8 @@ export const createSession = mutation({
       v.literal('full_control'),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const org = (await ctx.db.get(args.organizationId)) as any;
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
     if (!org) throw new Error('Organization not found');
 
     const limitType =
@@ -232,7 +231,7 @@ export const createSession = mutation({
       rolledBack: false,
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ── Update session with AI response and changes ───────────────────────────────
@@ -253,14 +252,14 @@ export const updateSession = mutation({
     errorMessage: v.optional(v.string()),
     tokensUsed: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { sessionId, ...updates } = args;
     await ctx.db.patch(sessionId, {
       ...updates,
       canRollback: updates.changesMade.length > 0 && updates.status === 'completed',
     });
     return sessionId;
-  }),
+  },
 });
 
 // ── Get user's editing history ────────────────────────────────────────────────
@@ -269,14 +268,14 @@ export const getHistory = query({
     userId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, limit = 50 } = args;
     return await ctx.db
       .query('aiSiteEditorSessions')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .order('desc')
       .take(limit);
-  }),
+  },
 });
 
 // ── Rollback a session ────────────────────────────────────────────────────────
@@ -284,9 +283,9 @@ export const rollbackSession = mutation({
   args: {
     sessionId: v.id('aiSiteEditorSessions'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { sessionId } = args;
-    const session = (await ctx.db.get(sessionId)) as any;
+    const session = await ctx.db.get(sessionId);
     if (!session) throw new Error('Session not found');
     if (!session.canRollback) throw new Error('This session cannot be rolled back');
     if (session.rolledBack) throw new Error('This session has already been rolled back');
@@ -297,7 +296,7 @@ export const rollbackSession = mutation({
     });
 
     return session;
-  }),
+  },
 });
 
 // ── Get organization's usage stats ────────────────────────────────────────────
@@ -305,7 +304,7 @@ export const getOrganizationStats = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const now = new Date();
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -335,5 +334,5 @@ export const getOrganizationStats = query({
     );
 
     return totalStats;
-  }),
+  },
 });

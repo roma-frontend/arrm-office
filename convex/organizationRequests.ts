@@ -1,10 +1,10 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 
 import { SUPERADMIN_EMAIL, isSuperadmin } from './lib/auth';
-import { withAuth } from './lib/withAuth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ export const createStarterOrganization = mutation({
     country: v.optional(v.string()),
     industry: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Normalize slug
     const slug = args.slug
       .toLowerCase()
@@ -94,7 +94,7 @@ export const createStarterOrganization = mutation({
     });
 
     return { organizationId: orgId, userId };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ export const requestOrganization = mutation({
     teamSize: v.optional(v.string()),
     description: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Normalize slug
     const slug = args.slug
       .toLowerCase()
@@ -184,7 +184,7 @@ export const requestOrganization = mutation({
     }
 
     return { requestId };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,9 +195,9 @@ export const getOrganizationRequests = query({
     superadminUserId: v.id('users'),
     status: v.optional(v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected'))),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId, status } = args;
-    const superadmin = (await ctx.db.get(superadminUserId)) as any as any;
+    const superadmin = await ctx.db.get(superadminUserId);
     if (!superadmin || !isSuperadmin(superadmin)) {
       throw new Error('Superadmin only');
     }
@@ -214,7 +214,7 @@ export const getOrganizationRequests = query({
     }
 
     return requests;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -225,14 +225,14 @@ export const approveOrganizationRequest = mutation({
     superadminUserId: v.id('users'),
     requestId: v.id('organizationRequests'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId, requestId } = args;
-    const superadmin = (await ctx.db.get(superadminUserId)) as any as any;
+    const superadmin = await ctx.db.get(superadminUserId);
     if (!superadmin || !isSuperadmin(superadmin)) {
       throw new Error('Only superadmin can approve organization requests');
     }
 
-    const request = (await ctx.db.get(requestId)) as any as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('This request has already been reviewed');
 
@@ -306,7 +306,7 @@ export const approveOrganizationRequest = mutation({
     });
 
     return { organizationId: orgId, userId };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -318,14 +318,14 @@ export const rejectOrganizationRequest = mutation({
     requestId: v.id('organizationRequests'),
     reason: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId, requestId, reason } = args;
-    const superadmin = (await ctx.db.get(superadminUserId)) as any as any;
+    const superadmin = await ctx.db.get(superadminUserId);
     if (!superadmin || !isSuperadmin(superadmin)) {
       throw new Error('Only superadmin can reject organization requests');
     }
 
-    const request = (await ctx.db.get(requestId)) as any as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('This request has already been reviewed');
 
@@ -337,7 +337,7 @@ export const rejectOrganizationRequest = mutation({
     });
 
     return { requestId };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -345,9 +345,9 @@ export const rejectOrganizationRequest = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingRequestCount = query({
   args: { superadminUserId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId } = args;
-    const superadmin = (await ctx.db.get(superadminUserId)) as any as any;
+    const superadmin = await ctx.db.get(superadminUserId);
     if (!superadmin || !isSuperadmin(superadmin)) {
       return 0;
     }
@@ -358,7 +358,7 @@ export const getPendingRequestCount = query({
       .take(SMALL_LIST_CAP);
 
     return pending.length;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -366,12 +366,10 @@ export const getPendingRequestCount = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const secureApproveOrgRequest = mutation({
   args: { requestId: v.id('organizationRequests') },
-  handler: withAuth<
-    MutationCtx,
-    { requestId: Id<'organizationRequests'> },
-    { organizationId: Id<'organizations'>; userId: Id<'users'> }
-  >({ minimumRole: 'superadmin' }, async (ctx, { requestId }, caller) => {
-    const request = (await ctx.db.get(requestId)) as any as any as any;
+  handler: async (ctx, { requestId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('Already reviewed');
 
@@ -427,7 +425,7 @@ export const secureApproveOrgRequest = mutation({
     });
 
     return { organizationId: orgId, userId };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -435,19 +433,18 @@ export const secureApproveOrgRequest = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const secureRejectOrgRequest = mutation({
   args: { requestId: v.id('organizationRequests'), reason: v.optional(v.string()) },
-  handler: withAuth<MutationCtx, { requestId: Id<'organizationRequests'>; reason?: string }, void>(
-    { minimumRole: 'superadmin' },
-    async (ctx, { requestId, reason }, caller) => {
-      const request = (await ctx.db.get(requestId)) as any as any as any;
-      if (!request) throw new Error('Request not found');
-      if (request.status !== 'pending') throw new Error('Already reviewed');
+  handler: async (ctx, { requestId, reason }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const request = await ctx.db.get(requestId);
+    if (!request) throw new Error('Request not found');
+    if (request.status !== 'pending') throw new Error('Already reviewed');
 
-      await ctx.db.patch(requestId, {
-        status: 'rejected',
-        reviewedBy: caller._id,
-        reviewedAt: Date.now(),
-        rejectionReason: reason,
-      });
-    },
-  ),
+    await ctx.db.patch(requestId, {
+      status: 'rejected',
+      reviewedBy: caller._id,
+      reviewedAt: Date.now(),
+      rejectionReason: reason,
+    });
+  },
 });

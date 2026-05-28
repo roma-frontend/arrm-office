@@ -4,7 +4,6 @@ import { Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // Armenia timezone offset: UTC+4
 const ARMENIA_OFFSET_MS = 4 * 60 * 60 * 1000;
@@ -45,7 +44,7 @@ export const checkIn = mutation({
   args: {
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     const today = getTodayDate();
 
@@ -105,7 +104,7 @@ export const checkIn = mutation({
     }
 
     // Award attendance points (+1)
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = await ctx.db.get(args.userId);
     if (user?.organizationId) {
       const orgId = user.organizationId;
       const todayObj = new Date();
@@ -154,7 +153,7 @@ export const checkIn = mutation({
     }
 
     return recordId;
-  }),
+  },
 });
 
 // ── Check Out (Employee leaves work) ─────────────────────────────────────
@@ -163,7 +162,7 @@ export const checkOut = mutation({
     userId: v.id('users'),
     notes: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     const today = getTodayDate();
 
@@ -223,7 +222,7 @@ export const checkOut = mutation({
     });
 
     return record._id;
-  }),
+  },
 });
 
 // ── Get Today's Status ───────────────────────────────────────────────────
@@ -231,7 +230,7 @@ export const getTodayStatus = query({
   args: {
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const today = getTodayDate();
 
     const record = await ctx.db
@@ -240,7 +239,7 @@ export const getTodayStatus = query({
       .first();
 
     return record || null;
-  }),
+  },
 });
 
 // ── Get User's Time Tracking History ─────────────────────────────────────
@@ -249,7 +248,7 @@ export const getUserHistory = query({
     userId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -257,7 +256,7 @@ export const getUserHistory = query({
       .take(args.limit || 30);
 
     return records;
-  }),
+  },
 });
 
 // ── Get All Employees Currently At Work ──────────────────────────────────
@@ -265,8 +264,8 @@ export const getCurrentlyAtWork = query({
   args: {
     adminId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const admin = (await ctx.db.get(args.adminId)) as any;
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
     if (!admin || (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin))) {
       throw new Error('Only admins/supervisors can view attendance');
     }
@@ -285,7 +284,7 @@ export const getCurrentlyAtWork = query({
 
     const withUsers = await Promise.all(
       atWork.map(async (record) => {
-        const user = (await ctx.db.get(record.userId)) as any;
+        const user = await ctx.db.get(record.userId);
         if (!user) return null;
 
         // Skip if org doesn't match
@@ -304,13 +303,13 @@ export const getCurrentlyAtWork = query({
     );
 
     return withUsers.filter(Boolean);
-  }),
+  },
 });
 
 // ── Get Recent Attendance for a user (last N days) ───────────────────────
 export const getRecentAttendance = query({
   args: { userId: v.id('users'), limit: v.optional(v.number()) },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const limit = args.limit ?? 7;
     const records = await ctx.db
       .query('timeTracking')
@@ -318,7 +317,7 @@ export const getRecentAttendance = query({
       .order('desc')
       .take(limit);
     return records;
-  }),
+  },
 });
 
 // ── Get Today's Full Attendance (all who checked in/out) ─────────────────
@@ -326,8 +325,8 @@ export const getTodayAllAttendance = query({
   args: {
     adminId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const admin = (await ctx.db.get(args.adminId)) as any;
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
     if (!admin || (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin))) {
       throw new Error('Only admins/supervisors can view attendance');
     }
@@ -344,7 +343,7 @@ export const getTodayAllAttendance = query({
 
     const withUsers = await Promise.all(
       records.map(async (record) => {
-        const user = (await ctx.db.get(record.userId)) as any;
+        const user = await ctx.db.get(record.userId);
         if (!user) return null;
 
         // Skip if org doesn't match
@@ -368,7 +367,7 @@ export const getTodayAllAttendance = query({
       const order = { checked_in: 0, checked_out: 1, absent: 2 };
       return order[a!.status] - order[b!.status];
     });
-  }),
+  },
 });
 
 // ── Get Today's Attendance Summary ───────────────────────────────────────
@@ -376,8 +375,8 @@ export const getTodayAttendanceSummary = query({
   args: {
     adminId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const admin = (await ctx.db.get(args.adminId)) as any;
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
     if (!admin || (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin))) {
       throw new Error('Only admins/supervisors can view attendance');
     }
@@ -432,7 +431,7 @@ export const getTodayAttendanceSummary = query({
           ? ((filteredRecords.length / activeEmployees.length) * 100).toFixed(1)
           : '0',
     };
-  }),
+  },
 });
 
 // ── Get Monthly Attendance Stats for User ────────────────────────────────
@@ -441,7 +440,7 @@ export const getMonthlyStats = query({
     userId: v.id('users'),
     month: v.string(), // "2026-02"
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -469,7 +468,7 @@ export const getMonthlyStats = query({
       punctualityRate:
         totalDays > 0 ? (((totalDays - lateDays) / totalDays) * 100).toFixed(1) : '100',
     };
-  }),
+  },
 });
 
 // ── Admin: Get all employees with attendance for a date range ─────────────
@@ -478,8 +477,8 @@ export const getAllEmployeesAttendanceOverview = query({
     adminId: v.id('users'),
     month: v.string(), // "2026-02"
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const admin = (await ctx.db.get(args.adminId)) as any;
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
     if (!admin || (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin))) {
       throw new Error('Only admins/supervisors can view attendance');
     }
@@ -523,7 +522,7 @@ export const getAllEmployeesAttendanceOverview = query({
 
         // Get supervisor
         const supervisorId = profile?.supervisorId ?? user.supervisorId;
-        const supervisor = supervisorId ? ((await ctx.db.get(supervisorId)) as any) : null;
+        const supervisor = supervisorId ? await ctx.db.get(supervisorId) : null;
 
         // Last check in
         const lastRecord = records.sort((a, b) => b.checkInTime - a.checkInTime)[0];
@@ -551,7 +550,7 @@ export const getAllEmployeesAttendanceOverview = query({
     );
 
     return results.sort((a, b) => a.user.name.localeCompare(b.user.name));
-  }),
+  },
 });
 
 // ── Admin: Get attendance history for one employee ────────────────────────
@@ -560,7 +559,7 @@ export const getEmployeeAttendanceHistory = query({
     userId: v.id('users'),
     month: v.string(), // "2026-02"
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -569,7 +568,7 @@ export const getEmployeeAttendanceHistory = query({
     return records
       .filter((r: any) => r.date.startsWith(args.month))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }),
+  },
 });
 
 // ── Admin: Mark Employee as Absent ───────────────────────────────────────
@@ -579,7 +578,7 @@ export const markAbsent = mutation({
     date: v.string(),
     notes: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Check if record already exists
     const existing = await ctx.db
       .query('timeTracking')
@@ -618,5 +617,5 @@ export const markAbsent = mutation({
     });
 
     return id;
-  }),
+  },
 });

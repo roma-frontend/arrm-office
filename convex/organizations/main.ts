@@ -3,7 +3,6 @@ import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin, requireAuthUser } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
-import { withAuth } from '../lib/withAuth';
 import { logger } from '@/lib/logger';
 
 // ── Employee limits by plan ──────────────────────────────────────────────────
@@ -26,9 +25,9 @@ export const createOrganization = mutation({
     country: v.optional(v.string()),
     industry: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Verify caller is superadmin
-    const caller = (await ctx.db.get(args.superadminUserId)) as any as any;
+    const caller = await ctx.db.get(args.superadminUserId);
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can create organizations');
     }
@@ -80,7 +79,7 @@ export const createOrganization = mutation({
     });
 
     return { orgId, slug };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,9 +127,9 @@ export const listAll = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllOrganizations = query({
   args: { superadminUserId: v.optional(v.id('users')) },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     if (args.superadminUserId) {
-      const caller = (await ctx.db.get(args.superadminUserId)) as any as any;
+      const caller = await ctx.db.get(args.superadminUserId);
       if (!caller || !isSuperadmin(caller)) {
         throw new Error('Superadmin only');
       }
@@ -160,7 +159,7 @@ export const getAllOrganizations = query({
         };
       }),
     );
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -179,9 +178,9 @@ export const updateOrganization = mutation({
     country: v.optional(v.string()),
     industry: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId, organizationId, ...updates } = args;
-    const caller = (await ctx.db.get(superadminUserId)) as any as any;
+    const caller = await ctx.db.get(superadminUserId);
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can update organizations');
     }
@@ -204,7 +203,7 @@ export const updateOrganization = mutation({
     });
 
     return organizationId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,14 +215,14 @@ export const assignOrgAdmin = mutation({
     userId: v.id('users'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId, userId, organizationId } = args;
-    const caller = (await ctx.db.get(superadminUserId)) as any as any;
+    const caller = await ctx.db.get(superadminUserId);
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can assign org admins');
     }
 
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
     await ctx.db.patch(userId, {
@@ -244,7 +243,7 @@ export const assignOrgAdmin = mutation({
     });
 
     return userId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -256,14 +255,14 @@ export const getOrganizationById = query({
     callerUserId: v.id('users'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { callerUserId, organizationId } = args;
-    const caller = (await ctx.db.get(callerUserId)) as any as any;
+    const caller = await ctx.db.get(callerUserId);
     if (!caller) {
       throw new Error('User not found');
     }
 
-    const org = (await ctx.db.get(organizationId)) as any as any;
+    const org = await ctx.db.get(organizationId);
     if (!org) {
       throw new Error('Organization not found');
     }
@@ -289,7 +288,7 @@ export const getOrganizationById = query({
       ...org,
       employeeCount: filteredMembers.length,
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -302,26 +301,26 @@ export const getOrgMembers = query({
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId, organizationId, cursor, limit } = args;
     const DEFAULT_LIMIT = 50;
     const MAX_LIMIT = 100;
     const effectiveLimit = Math.min(limit || DEFAULT_LIMIT, MAX_LIMIT);
 
-    const caller = (await ctx.db.get(superadminUserId)) as any as any;
+    const caller = await ctx.db.get(superadminUserId);
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can view org members');
     }
 
-    const org = (await ctx.db.get(organizationId)) as any as any;
+    const org = await ctx.db.get(organizationId);
     if (!org) throw new Error('Organization not found');
 
-    let query = ctx.db
+    const query = ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId));
 
     if (cursor) {
-      query = (query as any).startAfter(cursor);
+      // cursor-based pagination not supported in this query
     }
 
     const members = await query.take(effectiveLimit + 1);
@@ -355,7 +354,7 @@ export const getOrgMembers = query({
         familyLeaveBalance: profile?.familyLeaveBalance ?? m.familyLeaveBalance,
       };
     });
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -366,14 +365,14 @@ export const removeOrgAdmin = mutation({
     superadminUserId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId, userId } = args;
-    const caller = (await ctx.db.get(superadminUserId)) as any as any;
+    const caller = await ctx.db.get(superadminUserId);
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can remove org admins');
     }
 
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
     if (user.role !== 'admin') throw new Error('User is not an admin');
 
@@ -396,7 +395,7 @@ export const removeOrgAdmin = mutation({
     });
 
     return userId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -404,7 +403,7 @@ export const removeOrgAdmin = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const searchOrganizations = query({
   args: { query: v.string() },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { query: searchQuery } = args;
     if (!searchQuery || searchQuery.trim().length < 2) return [];
 
@@ -443,7 +442,7 @@ export const searchOrganizations = query({
       industry: org.industry,
       plan: org.plan,
     }));
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -451,7 +450,7 @@ export const searchOrganizations = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getOrganizationBySlug = query({
   args: { slug: v.string() },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { slug } = args;
     const org = await ctx.db
       .query('organizations')
@@ -467,7 +466,7 @@ export const getOrganizationBySlug = query({
       industry: org.industry,
       plan: org.plan,
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -479,8 +478,8 @@ export const requestToJoinOrganization = mutation({
     requestedByEmail: v.string(),
     requestedByName: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const org = (await ctx.db.get(args.organizationId)) as any as any;
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
     if (!org || !org.isActive) throw new Error('Organization not found or inactive');
 
     // Check for duplicate pending request from same email
@@ -550,7 +549,7 @@ export const requestToJoinOrganization = mutation({
     }
 
     return inviteId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -561,9 +560,9 @@ export const getJoinRequests = query({
     adminId: v.id('users'),
     status: v.optional(v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected'))),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { adminId, status } = args;
-    const admin = (await ctx.db.get(adminId)) as any as any;
+    const admin = await ctx.db.get(adminId);
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       throw new Error('Only org admins can view join requests');
     }
@@ -606,7 +605,7 @@ export const getJoinRequests = query({
     }
 
     return invites;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -621,13 +620,13 @@ export const approveJoinRequest = mutation({
     position: v.optional(v.string()),
     passwordHash: v.string(), // admin sets temp password; user changes on first login
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const admin = (await ctx.db.get(args.adminId)) as any as any;
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       throw new Error('Only org admins can approve join requests');
     }
 
-    const invite = (await ctx.db.get(args.inviteId)) as any as any;
+    const invite = await ctx.db.get(args.inviteId);
     if (!invite) throw new Error('Invite not found');
     if (invite.status !== 'pending') throw new Error('This request has already been reviewed');
 
@@ -640,7 +639,7 @@ export const approveJoinRequest = mutation({
     }
 
     // Check employee limit
-    const org = (await ctx.db.get(invite.organizationId)) as any as any;
+    const org = await ctx.db.get(invite.organizationId);
     if (!org) throw new Error('Organization not found');
 
     const currentCount = await ctx.db
@@ -751,7 +750,7 @@ export const approveJoinRequest = mutation({
     });
 
     return { userId, inviteId: args.inviteId };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -763,13 +762,13 @@ export const rejectJoinRequest = mutation({
     inviteId: v.id('organizationInvites'),
     reason: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const admin = (await ctx.db.get(args.adminId)) as any as any;
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       throw new Error('Only org admins can reject join requests');
     }
 
-    const invite = (await ctx.db.get(args.inviteId)) as any as any;
+    const invite = await ctx.db.get(args.inviteId);
     if (!invite) throw new Error('Invite not found');
     if (invite.status !== 'pending') throw new Error('This request has already been reviewed');
 
@@ -803,7 +802,7 @@ export const rejectJoinRequest = mutation({
     });
 
     return args.inviteId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -815,8 +814,8 @@ export const generateInviteToken = mutation({
     inviteEmail: v.optional(v.string()),
     expiryHours: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const admin = (await ctx.db.get(args.adminId)) as any as any;
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.get(args.adminId);
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       throw new Error('Only org admins can generate invite links');
     }
@@ -854,7 +853,7 @@ export const generateInviteToken = mutation({
     });
 
     return { token, inviteId, expiresAt: expiry };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -862,7 +861,7 @@ export const generateInviteToken = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const validateInviteToken = query({
   args: { token: v.string() },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { token } = args;
     const invite = await ctx.db
       .query('organizationInvites')
@@ -876,7 +875,7 @@ export const validateInviteToken = query({
     }
 
     if (!invite.organizationId) return { valid: false, reason: 'Invite has no organization' };
-    const org = (await ctx.db.get(invite.organizationId)) as any as any;
+    const org = await ctx.db.get(invite.organizationId);
     if (!org || !org.isActive) return { valid: false, reason: 'Organization inactive' };
 
     return {
@@ -887,7 +886,7 @@ export const validateInviteToken = query({
       prefilledEmail: invite.inviteEmail,
       inviteId: invite._id,
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -895,14 +894,14 @@ export const validateInviteToken = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getMyOrganization = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
     if (!user || !user.organizationId) return null;
 
-    const org = (await ctx.db.get(user.organizationId)) as any as any;
+    const org = await ctx.db.get(user.organizationId);
     return org;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -910,9 +909,9 @@ export const getMyOrganization = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingJoinRequestCount = query({
   args: { adminId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { adminId } = args;
-    const admin = (await ctx.db.get(adminId)) as any as any;
+    const admin = await ctx.db.get(adminId);
     if (!admin || (admin.role !== 'admin' && !isSuperadmin(admin))) {
       return 0;
     }
@@ -928,7 +927,7 @@ export const getPendingJoinRequestCount = query({
       .take(MAX_PAGE_SIZE);
 
     return pending.length;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -940,14 +939,14 @@ export const removeMemberFromOrganization = mutation({
     superadminUserId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { superadminUserId, userId } = args;
-    const caller = (await ctx.db.get(superadminUserId)) as any as any;
+    const caller = await ctx.db.get(superadminUserId);
     if (!caller || !isSuperadmin(caller)) {
       throw new Error('Only the superadmin can remove members from organizations');
     }
 
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
     // Protection: cannot remove superadmin themselves
@@ -978,7 +977,7 @@ export const removeMemberFromOrganization = mutation({
     logger.log(`[removeMemberFromOrganization] ✅ Removed ${user.email} from organization`);
 
     return userId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -986,9 +985,9 @@ export const removeMemberFromOrganization = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getOrganizationsForPicker = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
     if (isSuperadmin(user)) {
@@ -1001,8 +1000,8 @@ export const getOrganizationsForPicker = query({
 
     // Regular users: only their own org
     if (!user.organizationId) return [];
-    const org = (await ctx.db.get(user.organizationId)) as any as any;
+    const org = await ctx.db.get(user.organizationId);
     if (!org) return [];
     return [{ _id: org._id, name: org.name, slug: org.slug }];
-  }),
+  },
 });

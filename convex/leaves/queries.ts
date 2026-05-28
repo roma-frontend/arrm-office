@@ -1,4 +1,5 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from '../lib/getAuthCaller';
 import { query } from '../_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { Id } from '../_generated/dataModel';
@@ -13,7 +14,6 @@ import { enrichLeavesWithUserData } from './helpers';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 import { requireRequester } from '../lib/requireRequester';
-import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ALL LEAVES — scoped to caller's organization
@@ -24,7 +24,8 @@ export const getAllLeaves = query({
     requesterId: v.optional(v.id('users')),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requesterId = caller?._id ?? args.requesterId;
     const organizationId = args.organizationId;
     // If organizationId is provided directly, use it
@@ -58,7 +59,7 @@ export const getAllLeaves = query({
     }
 
     return enrichLeavesWithUserData(ctx, leaves);
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,7 +71,8 @@ export const listLeavesPaginated = query({
     organizationId: v.optional(v.id('organizations')),
     paginationOpts: paginationOptsValidator,
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -98,7 +100,7 @@ export const listLeavesPaginated = query({
 
     const enriched = await enrichLeavesWithUserData(ctx, result.page);
     return { ...result, page: enriched };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,7 +140,8 @@ export const getUserLeaves = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingLeaves = query({
   args: { requesterId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -162,7 +165,7 @@ export const getPendingLeaves = query({
     }
 
     return enrichLeavesWithUserData(ctx, leaves, false); // Don't need reviewer for pending
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,7 +173,8 @@ export const getPendingLeaves = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getLeaveStats = query({
   args: { requesterId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -196,7 +200,7 @@ export const getLeaveStats = query({
     ).length;
 
     return { total: all.length, pending, approved, rejected, onLeaveToday };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -204,7 +208,8 @@ export const getLeaveStats = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUnreadCount = query({
   args: { requesterId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return 0;
@@ -230,7 +235,7 @@ export const getUnreadCount = query({
     }
 
     return unread;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -241,7 +246,8 @@ export const getLeavesPagederated = query({
     requesterId: v.id('users'),
     ...paginationArgs,
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return { items: [], hasMore: false };
@@ -294,7 +300,7 @@ export const getLeavesPagederated = query({
           ? encodeCursor({ _creationTime: items[items.length - 1]._creationTime })
           : undefined,
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

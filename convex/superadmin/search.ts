@@ -4,7 +4,6 @@ import { Id, Doc } from '../_generated/dataModel';
 import { api } from '../_generated/api';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
-import { withAuth } from '../lib/withAuth';
 
 // Isolate API references at module level
 const superadminApi = api.superadmin;
@@ -16,7 +15,7 @@ export const globalSearch = query({
     limit: v.optional(v.number()),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const searchQuery = args.query.toLowerCase().trim();
     const limit = args.limit || 10;
 
@@ -123,8 +122,8 @@ export const globalSearch = query({
     const driverDocs = await Promise.all(driverIdsToLoad.map((id: any) => ctx.db.get(id)));
     const driverIdToUserId = new Map<Id<'drivers'>, Id<'users'>>();
     for (const d of driverDocs) {
-      // @ts-expect-error - withAuth args: any breaks type inference
-      if (d) driverIdToUserId.set(d._id, d.userId);
+      const driver = d as unknown as { _id: Id<'drivers'>; userId: Id<'users'> };
+      if (driver) driverIdToUserId.set(driver._id, driver.userId);
     }
 
     // Combined unique user-ids to fetch in one batch.
@@ -141,8 +140,7 @@ export const globalSearch = query({
     const userDocs = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
     const userMap = new Map<Id<'users'>, Doc<'users'>>();
     for (const u of userDocs) {
-      // @ts-expect-error - withAuth args: any breaks type inference
-      if (u) userMap.set(u._id, u);
+      if (u) userMap.set((u as unknown as Doc<'users'>)._id, u as unknown as Doc<'users'>);
     }
 
     const getDriverName = (driverId: Id<'drivers'> | undefined): string => {
@@ -242,7 +240,7 @@ export const globalSearch = query({
         enrichedTasks.length +
         enrichedTickets.length,
     };
-  }),
+  },
 });
 
 /**
@@ -304,7 +302,7 @@ export const quickSearch = query({
  */
 export const searchUsersByPrefix = query({
   args: { prefix: v.string(), organizationId: v.optional(v.id('organizations')) },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const prefix = args.prefix.toLowerCase();
 
     if (args.organizationId) {
@@ -345,5 +343,5 @@ export const searchUsersByPrefix = query({
           avatarUrl: u.avatarUrl,
         }));
     }
-  }),
+  },
 });

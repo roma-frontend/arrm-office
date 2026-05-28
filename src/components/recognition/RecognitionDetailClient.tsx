@@ -168,7 +168,7 @@ export default function RecognitionDetailClient() {
             <div>
               <p className="text-sm text-muted-foreground">{t('recognition.category') as any}</p>
               <p className="font-medium capitalize">
-                {/* @ts-expect-error i18n type */}
+                {/* i18n type */}
                 {t(`recognitionCategories.${kudo.category}`, kudo.category.replace('_', ' '))}
               </p>
             </div>

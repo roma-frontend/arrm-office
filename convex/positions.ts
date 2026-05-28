@@ -3,14 +3,13 @@ import { query, mutation } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 export const list = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
     departmentId: v.optional(v.id('departments')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const orgId = args.organizationId;
 
     let positions;
@@ -52,13 +51,13 @@ export const list = query({
         employeeCount,
       };
     });
-  }),
+  },
 });
 
 export const getById = query({
   args: { id: v.id('positions') },
   handler: async (ctx: any, args: any) => {
-    return (await ctx.db.get(args.id)) as any as any as any;
+    return await ctx.db.get(args.id);
   },
 });
 

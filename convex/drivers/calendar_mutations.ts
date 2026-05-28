@@ -4,7 +4,6 @@
 
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
-import { withAuth } from '../lib/withAuth';
 
 /** Grant calendar access to another user */
 export const grantCalendarAccess = mutation({
@@ -15,7 +14,7 @@ export const grantCalendarAccess = mutation({
     accessLevel: v.union(v.literal('full'), v.literal('busy_only')),
     expiresAt: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, ownerId, viewerId, accessLevel, expiresAt } = args;
     const existing = await ctx.db
       .query('calendarAccess')
@@ -53,7 +52,7 @@ export const grantCalendarAccess = mutation({
     });
 
     return accessId;
-  }),
+  },
 });
 
 /** Revoke calendar access */
@@ -61,13 +60,13 @@ export const revokeCalendarAccess = mutation({
   args: {
     accessId: v.id('calendarAccess'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { accessId } = args;
     await ctx.db.patch(accessId, {
       isActive: false,
     });
     return { success: true };
-  }),
+  },
 });
 
 /** Request calendar access from a driver */
@@ -77,7 +76,7 @@ export const requestCalendarAccess = mutation({
     requesterId: v.id('users'),
     driverUserId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, requesterId, driverUserId } = args;
     await ctx.db.insert('notifications', {
       organizationId,
@@ -95,5 +94,5 @@ export const requestCalendarAccess = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });

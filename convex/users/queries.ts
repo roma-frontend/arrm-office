@@ -1,4 +1,5 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from '../lib/getAuthCaller';
 import { query } from '../_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { Id, Doc } from '../_generated/dataModel';
@@ -6,7 +7,6 @@ import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin } from '../lib/auth';
 import { requireRequester } from '../lib/requireRequester';
-import { withAuth } from '../lib/withAuth';
 
 // ── Helper: Get user ID from email or userId ────────────────────────────────
 async function getUserIdIdentityOrEmail(
@@ -48,7 +48,8 @@ export const getAllUsers = query({
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -58,9 +59,9 @@ export const getAllUsers = query({
 
     // Superadmin sees all users across all orgs (with org info)
     if (isSuperadmin(requester)) {
-      let query = ctx.db.query('users').order('desc');
+      const query = ctx.db.query('users').order('desc');
       if (args.cursor) {
-        query = (query as any).startAfter(args.cursor);
+        // cursor-based pagination not supported in this query
       }
       const users = await query.take(effectiveLimit + 1);
       return users.filter((u) => u.role !== 'superadmin');
@@ -71,17 +72,17 @@ export const getAllUsers = query({
       throw new Error('User does not belong to an organization');
     }
 
-    let query = ctx.db
+    const query = ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
       .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')));
 
     if (args.cursor) {
-      query = (query as any).startAfter(args.cursor);
+      // cursor-based pagination not supported in this query
     }
 
     return await query.take(effectiveLimit + 1);
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,7 +94,8 @@ export const listUsersPaginated = query({
     organizationId: v.optional(v.id('organizations')),
     paginationOpts: paginationOptsValidator,
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -116,7 +118,7 @@ export const listUsersPaginated = query({
         .paginate(args.paginationOpts);
     }
     return { page: [], isDone: true, continueCursor: '' };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,7 +131,8 @@ export const getUsersByOrganizationId = query({
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -142,17 +145,17 @@ export const getUsersByOrganizationId = query({
       throw new Error('Access denied: cross-organization access is not allowed');
     }
 
-    let query = ctx.db
+    const query = ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')));
 
     if (args.cursor) {
-      query = (query as any).startAfter(args.cursor);
+      // cursor-based pagination not supported in this query
     }
 
     return await query.take(effectiveLimit + 1);
-  }),
+  },
 });
 
 // Alias for mobile compatibility
@@ -267,7 +270,8 @@ export const getSupervisors = query({
     requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -290,7 +294,7 @@ export const getSupervisors = query({
     return [...supervisors, ...admins]
       .filter((u) => u.isActive)
       .map((u) => ({ _id: u._id, name: u.name, role: u.role, email: u.email }));
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -340,7 +344,8 @@ export const getUsersByRole = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingApprovalUsers = query({
   args: { adminId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const admin = caller ?? (args.adminId ? await requireRequester(ctx, args.adminId) : null);
     if (!admin) return [];
     if (admin.role !== 'admin' && !isSuperadmin(admin)) {
@@ -361,7 +366,7 @@ export const getPendingApprovalUsers = query({
         q.eq('organizationId', admin.organizationId).eq('isApproved', false),
       )
       .take(MAX_PAGE_SIZE);
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -369,7 +374,8 @@ export const getPendingApprovalUsers = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAuditLogs = query({
   args: { adminId: v.optional(v.id('users')) },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const admin = caller ?? (args.adminId ? await requireRequester(ctx, args.adminId) : null);
     if (!admin) return [];
     if (admin.role !== 'admin' && !isSuperadmin(admin)) {
@@ -381,7 +387,7 @@ export const getAuditLogs = query({
       .withIndex('by_org', (q) => q.eq('organizationId', admin.organizationId))
       .order('desc')
       .take(200);
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

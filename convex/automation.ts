@@ -5,7 +5,6 @@
 import { query } from './_generated/server';
 import { v } from 'convex/values';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
-import { withAuth } from './lib/withAuth';
 
 export const getStats = query({
   args: {},
@@ -57,11 +56,11 @@ export const getStats = query({
 
 export const getRecentTasks = query({
   args: { limit: v.optional(v.number()) },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const limit = args?.limit ?? 10;
     const tasks = await ctx.db.query('automationTasks').order('desc').take(limit);
     return tasks;
-  }),
+  },
 });
 
 export const getActiveWorkflows = query({

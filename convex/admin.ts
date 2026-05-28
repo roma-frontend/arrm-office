@@ -1,9 +1,9 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { query, mutation } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { requireRole } from './lib/rbac';
-import { withAuth } from './lib/withAuth';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
@@ -16,7 +16,7 @@ export const getCostAnalysis = query({
     period: v.optional(v.union(v.literal('month'), v.literal('quarter'), v.literal('year'))),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const period = args.period || 'month';
 
     // Calculate date range
@@ -99,7 +99,7 @@ export const getCostAnalysis = query({
       totalDays: leaves.reduce((sum: any, l: any) => sum + l.days, 0),
       totalLeaves: leaves.length,
     };
-  }),
+  },
 });
 
 /**
@@ -110,7 +110,7 @@ export const detectConflicts = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     // Get all approved and pending leaves
     let leaves = await ctx.db
@@ -242,7 +242,7 @@ export const detectConflicts = query({
       if (a.severity === b.severity) return a.date.localeCompare(b.date);
       return a.severity === 'critical' ? -1 : 1;
     });
-  }),
+  },
 });
 
 /**
@@ -252,7 +252,7 @@ export const getSmartSuggestions = query({
   args: {
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const suggestions: Array<{
       id: string;
@@ -383,7 +383,7 @@ export const getSmartSuggestions = query({
     }
 
     return suggestions;
-  }),
+  },
 });
 
 /**
@@ -395,7 +395,7 @@ export const getCalendarExportData = query({
     endDate: v.optional(v.string()),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Get all approved leaves
     let leaves = await ctx.db
       .query('leaveRequests')
@@ -443,7 +443,7 @@ export const getCalendarExportData = query({
         type: leave.type,
       };
     });
-  }),
+  },
 });
 
 // ─── SERVICE BROADCASTS ────────────────────────────────────────────────────────
@@ -461,7 +461,7 @@ export const sendServiceBroadcast = mutation({
     icon: v.optional(v.string()), // emoji e.g. "⚠️", "ℹ️", "🔧", "🎉"
     scheduledFor: v.optional(v.number()), // optional timestamp for scheduling
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await requireRole(ctx, args.userId, 'superadmin');
     // Get or create the "System Announcements" group chat for this organization
     let announcementConv = await ctx.db
@@ -528,7 +528,7 @@ export const sendServiceBroadcast = mutation({
       }
 
       // IMPORTANT: Always add the superadmin who created the channel as owner, even if not approved
-      const superadminUser = (await ctx.db.get(args.userId)) as any as any as any;
+      const superadminUser = await ctx.db.get(args.userId);
       if (superadminUser) {
         const superadminAlreadyAdded = users.some(
           (u) => u._id === args.userId && u.isActive && u.isApproved,
@@ -631,7 +631,7 @@ export const sendServiceBroadcast = mutation({
     // IMPORTANT: Always ensure superadmin is a member as owner
     const superadminIdStr = args.userId.toString();
     if (!existingMemberIds.has(superadminIdStr)) {
-      const superadminUser = (await ctx.db.get(args.userId)) as any as any as any;
+      const superadminUser = await ctx.db.get(args.userId);
       if (superadminUser) {
         console.warn(
           `[sendServiceBroadcast] Ensuring superadmin is member: ${superadminUser.name}`,
@@ -716,7 +716,7 @@ export const sendServiceBroadcast = mutation({
       content: args.content,
       issuedAt: now,
     };
-  }),
+  },
 });
 
 // ─── MAINTENANCE MODE ──────────────────────────────────────────────────────────
@@ -736,7 +736,7 @@ export const enableMaintenanceMode = mutation({
     estimatedDuration: v.optional(v.string()),
     icon: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await requireRole(ctx, args.userId, 'superadmin');
 
     const now = Date.now();
@@ -779,7 +779,7 @@ export const enableMaintenanceMode = mutation({
     });
 
     return maintenanceId;
-  }),
+  },
 });
 
 /**
@@ -790,7 +790,7 @@ export const disableMaintenanceMode = mutation({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await requireRole(ctx, args.userId, 'superadmin');
 
     const maintenance = await ctx.db
@@ -808,7 +808,7 @@ export const disableMaintenanceMode = mutation({
     });
 
     return maintenance._id;
-  }),
+  },
 });
 
 /**
@@ -818,12 +818,12 @@ export const getMaintenanceMode = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     return await ctx.db
       .query('maintenanceMode')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .first();
-  }),
+  },
 });
 
 /**
@@ -836,7 +836,7 @@ export const assignUserAsOrgAdmin = mutation({
     userEmail: v.string(),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await requireRole(ctx, args.superadminUserId, 'superadmin');
 
     // Find user by email
@@ -850,7 +850,7 @@ export const assignUserAsOrgAdmin = mutation({
     }
 
     // Verify org exists
-    const org = (await ctx.db.get(args.organizationId)) as any as any as any;
+    const org = await ctx.db.get(args.organizationId);
     if (!org) {
       throw new Error('Organization not found');
     }
@@ -868,7 +868,7 @@ export const assignUserAsOrgAdmin = mutation({
       role: 'admin',
       organizationId: args.organizationId,
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1032,59 +1032,51 @@ export const getSuperadminDashboard = query({
 
 export const secureAssignUserAsOrgAdmin = mutation({
   args: { userEmail: v.string(), organizationId: v.id('organizations') },
-  handler: withAuth<
-    MutationCtx,
-    { userEmail: string; organizationId: Id<'organizations'> },
-    Id<'users'>
-  >({ minimumRole: 'superadmin' }, async (ctx, { userEmail, organizationId }) => {
+  handler: async (ctx, { userEmail, organizationId }) => {
     const user = await ctx.db
       .query('users')
       .withIndex('by_email', (q) => q.eq('email', userEmail.toLowerCase()))
       .unique();
     if (!user) throw new Error(`User with email ${userEmail} not found`);
 
-    const org = (await ctx.db.get(organizationId)) as any as any as any;
+    const org = await ctx.db.get(organizationId);
     if (!org) throw new Error('Organization not found');
 
     await ctx.db.patch(user._id, { organizationId, role: 'admin', updatedAt: Date.now() });
     return user._id;
-  }),
+  },
 });
 
 export const secureEnableMaintenanceMode = mutation({
   args: { organizationId: v.id('organizations'), reason: v.optional(v.string()) },
-  handler: withAuth<MutationCtx, { organizationId: Id<'organizations'>; reason?: string }, void>(
-    { minimumRole: 'superadmin' },
-    async (ctx, { organizationId, reason }, caller) => {
-      const now = Date.now();
-      await ctx.db.insert('maintenanceMode', {
-        organizationId,
-        isActive: true,
-        title: 'Scheduled Maintenance',
-        message: reason ?? 'System maintenance in progress',
-        startTime: now,
-        enabledBy: caller._id,
-        createdAt: now,
-        updatedAt: now,
-      });
-    },
-  ),
+  handler: async (ctx, { organizationId, reason }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const now = Date.now();
+    await ctx.db.insert('maintenanceMode', {
+      organizationId,
+      isActive: true,
+      title: 'Scheduled Maintenance',
+      message: reason ?? 'System maintenance in progress',
+      startTime: now,
+      enabledBy: caller._id,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
 });
 
 export const secureDisableMaintenanceMode = mutation({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth<MutationCtx, { organizationId: Id<'organizations'> }, void>(
-    { minimumRole: 'superadmin' },
-    async (ctx, { organizationId }) => {
-      const active = await ctx.db
-        .query('maintenanceMode')
-        .filter((q: any) =>
-          q.and(q.eq(q.field('organizationId'), organizationId), q.eq(q.field('isActive'), true)),
-        )
-        .first();
-      if (active) {
-        await ctx.db.patch(active._id, { isActive: false, updatedAt: Date.now() });
-      }
-    },
-  ),
+  handler: async (ctx, { organizationId }) => {
+    const active = await ctx.db
+      .query('maintenanceMode')
+      .filter((q: any) =>
+        q.and(q.eq(q.field('organizationId'), organizationId), q.eq(q.field('isActive'), true)),
+      )
+      .first();
+    if (active) {
+      await ctx.db.patch(active._id, { isActive: false, updatedAt: Date.now() });
+    }
+  },
 });

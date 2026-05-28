@@ -5,7 +5,7 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { getProfile } from './lib/userProfile';
 import { requireRequester } from './lib/requireRequester';
-import { withAuth } from './lib/withAuth';
+import { getAuthCaller } from './lib/getAuthCaller';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ORG CHART — full tree for an organization
@@ -15,26 +15,26 @@ export const getOrgChart = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+  handler: async (ctx, { organizationId, requesterId }) => {
+    const caller = await getAuthCaller(ctx);
+    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
     if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);
-    if (!userIsSuperadmin && requester.organizationId !== args.organizationId) {
+    if (!userIsSuperadmin && requester.organizationId !== organizationId) {
       throw new Error('Access denied');
     }
 
     // Get all nodes for this org
     const nodes = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(MAX_PAGE_SIZE);
 
     // Get all users in org (for enrichment)
     const users = await ctx.db
       .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')))
       .take(MAX_PAGE_SIZE);
 
@@ -66,7 +66,7 @@ export const getOrgChart = query({
     });
 
     return enrichedNodes;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -77,19 +77,19 @@ export const getOrgChartTree = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+  handler: async (ctx, { organizationId, requesterId }) => {
+    const caller = await getAuthCaller(ctx);
+    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
     if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);
-    if (!userIsSuperadmin && requester.organizationId !== args.organizationId) {
+    if (!userIsSuperadmin && requester.organizationId !== organizationId) {
       throw new Error('Access denied');
     }
 
     const nodes = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(MAX_PAGE_SIZE);
 
     // Build tree structure
@@ -120,7 +120,7 @@ export const getOrgChartTree = query({
     roots.forEach(sortChildren);
 
     return roots;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -131,8 +131,9 @@ export const generateOrgChartFromUsers = mutation({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester = caller ?? (await ctx.db.get(args.requesterId));
+  handler: async (ctx, { organizationId, requesterId }) => {
+    const caller = await getAuthCaller(ctx);
+    const requester = caller ?? (await ctx.db.get(requesterId));
     if (!requester) throw new Error('Requester not found');
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -141,21 +142,21 @@ export const generateOrgChartFromUsers = mutation({
       throw new Error('Access denied: only admins can generate org chart');
     }
 
-    if (!userIsSuperadmin && requester.organizationId !== args.organizationId) {
+    if (!userIsSuperadmin && requester.organizationId !== organizationId) {
       throw new Error('Access denied');
     }
 
     // Get all active users in org
     const users = await ctx.db
       .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')))
       .take(MAX_PAGE_SIZE);
 
     // Clear existing nodes
     const existingNodes = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(MAX_PAGE_SIZE);
 
     for (const node of existingNodes) {
@@ -171,9 +172,9 @@ export const generateOrgChartFromUsers = mutation({
     });
 
     // Create root node (company)
-    const org = (await ctx.db.get(args.organizationId)) as any;
+    const org = await ctx.db.get(organizationId);
     const companyId = await ctx.db.insert('orgChartNodes', {
-      organizationId: args.organizationId,
+      organizationId: organizationId,
       name: org?.name || 'Company',
       type: 'department',
       title: org?.name || 'Company',
@@ -186,7 +187,7 @@ export const generateOrgChartFromUsers = mutation({
     let order = 0;
     for (const [deptName, deptUsers] of departments) {
       const deptNodeId = await ctx.db.insert('orgChartNodes', {
-        organizationId: args.organizationId,
+        organizationId: organizationId,
         parentId: companyId,
         name: deptName,
         type: 'department',
@@ -203,7 +204,7 @@ export const generateOrgChartFromUsers = mutation({
       let userOrder = 0;
       for (const user of deptUsers) {
         await ctx.db.insert('orgChartNodes', {
-          organizationId: args.organizationId,
+          organizationId: organizationId,
           parentId: deptNodeId,
           userId: user._id,
           name: user.name,
@@ -222,7 +223,7 @@ export const generateOrgChartFromUsers = mutation({
       nodesCreated: 1 + departments.size + users.length, // company + depts + users
       departments: Array.from(departments.keys()),
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -239,8 +240,16 @@ export const createNode = mutation({
     title: v.optional(v.string()),
     order: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester = caller ?? (await ctx.db.get(args.requesterId));
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    const requester =
+      caller ??
+      ((await ctx.db.get(args.requesterId)) as {
+        _id: any;
+        role: string;
+        organizationId?: any;
+        email?: string;
+      });
     if (!requester) throw new Error('Requester not found');
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -266,7 +275,7 @@ export const createNode = mutation({
     });
 
     return nodeId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -282,8 +291,16 @@ export const updateNode = mutation({
     order: v.optional(v.number()),
     userId: v.optional(v.id('users')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester = caller ?? (await ctx.db.get(args.requesterId));
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    const requester =
+      caller ??
+      ((await ctx.db.get(args.requesterId)) as {
+        _id: any;
+        role: string;
+        organizationId?: any;
+        email?: string;
+      });
     if (!requester) throw new Error('Requester not found');
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -292,7 +309,7 @@ export const updateNode = mutation({
       throw new Error('Access denied');
     }
 
-    const node = (await ctx.db.get(args.nodeId)) as any;
+    const node = await ctx.db.get(args.nodeId);
     if (!node) throw new Error('Node not found');
 
     if (!userIsSuperadmin && requester.organizationId !== node.organizationId) {
@@ -312,7 +329,7 @@ export const updateNode = mutation({
     await ctx.db.patch(args.nodeId, patch);
 
     return { success: true };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -323,8 +340,16 @@ export const deleteNode = mutation({
     nodeId: v.id('orgChartNodes'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester = caller ?? (await ctx.db.get(args.requesterId));
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    const requester =
+      caller ??
+      ((await ctx.db.get(args.requesterId)) as {
+        _id: any;
+        role: string;
+        organizationId?: any;
+        email?: string;
+      });
     if (!requester) throw new Error('Requester not found');
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -333,7 +358,7 @@ export const deleteNode = mutation({
       throw new Error('Access denied');
     }
 
-    const node = (await ctx.db.get(args.nodeId)) as any;
+    const node = await ctx.db.get(args.nodeId);
     if (!node) throw new Error('Node not found');
 
     if (!userIsSuperadmin && requester.organizationId !== node.organizationId) {
@@ -355,7 +380,7 @@ export const deleteNode = mutation({
     await ctx.db.delete(args.nodeId);
 
     return { success: true };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -367,8 +392,16 @@ export const moveNode = mutation({
     newParentId: v.optional(v.id('orgChartNodes')),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester = caller ?? (await ctx.db.get(args.requesterId));
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    const requester =
+      caller ??
+      ((await ctx.db.get(args.requesterId)) as {
+        _id: any;
+        role: string;
+        organizationId?: any;
+        email?: string;
+      });
     if (!requester) throw new Error('Requester not found');
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -377,7 +410,7 @@ export const moveNode = mutation({
       throw new Error('Access denied');
     }
 
-    const node = (await ctx.db.get(args.nodeId)) as any;
+    const node = await ctx.db.get(args.nodeId);
     if (!node) throw new Error('Node not found');
 
     if (!userIsSuperadmin && requester.organizationId !== node.organizationId) {
@@ -386,7 +419,7 @@ export const moveNode = mutation({
 
     // Prevent moving node to its own child (circular reference)
     if (args.newParentId) {
-      const newParent = (await ctx.db.get(args.newParentId)) as any;
+      const newParent = await ctx.db.get(args.newParentId);
       if (!newParent) throw new Error('New parent not found');
 
       // Check if newParent is a descendant of node
@@ -407,7 +440,7 @@ export const moveNode = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 // Helper: check if potentialChild is a descendant of nodeId
@@ -449,8 +482,16 @@ export const saveLayout = mutation({
     name: v.optional(v.string()),
     isDefault: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester = caller ?? (await ctx.db.get(args.requesterId));
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    const requester =
+      caller ??
+      ((await ctx.db.get(args.requesterId)) as {
+        _id: any;
+        role: string;
+        organizationId?: any;
+        email?: string;
+      });
     if (!requester) throw new Error('Requester not found');
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -484,7 +525,7 @@ export const saveLayout = mutation({
     });
 
     return layoutId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -495,8 +536,16 @@ export const fixOrgChartDepartments = mutation({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester = caller ?? (await ctx.db.get(args.requesterId));
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    const requester =
+      caller ??
+      ((await ctx.db.get(args.requesterId)) as {
+        _id: any;
+        role: string;
+        organizationId?: any;
+        email?: string;
+      });
     if (!requester) throw new Error('Requester not found');
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -611,7 +660,7 @@ export const fixOrgChartDepartments = mutation({
     console.log('fixOrgChartDepartments debug:', JSON.stringify(debug, null, 2));
 
     return { success: true, fixedCount, debug };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -622,7 +671,8 @@ export const debugOrgChart = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -684,7 +734,7 @@ export const debugOrgChart = query({
       tree: roots,
       totalNodes: nodes.length,
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -695,7 +745,8 @@ export const getLayouts = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (!requester) return [];
@@ -713,5 +764,5 @@ export const getLayouts = query({
       .take(MAX_PAGE_SIZE);
 
     return layouts;
-  }),
+  },
 });

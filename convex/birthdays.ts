@@ -3,10 +3,10 @@
  */
 
 import { v } from 'convex/values';
+import { api } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // ... остальной код
 
@@ -17,7 +17,7 @@ export const checkBirthdaysToday = mutation({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const today = new Date();
     const currentMonth = today.getMonth() + 1; // 1-12
@@ -94,7 +94,7 @@ export const checkBirthdaysToday = mutation({
         department: u.department,
       })),
     };
-  }),
+  },
 });
 
 /**
@@ -105,7 +105,7 @@ export const checkUpcomingBirthdays = mutation({
     organizationId: v.id('organizations'),
     daysAhead: v.optional(v.number()), // По умолчанию 7 дней
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, daysAhead = 7 } = args;
     const today = new Date();
     const upcomingBirthdays: Array<{
@@ -189,7 +189,7 @@ export const checkUpcomingBirthdays = mutation({
         daysUntil: b.daysUntil,
       })),
     };
-  }),
+  },
 });
 
 /**
@@ -200,7 +200,7 @@ export const getBirthdaysForMonth = query({
     organizationId: v.id('organizations'),
     month: v.optional(v.number()), // 1-12, по умолчанию текущий
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const targetMonth = args.month || new Date().getMonth() + 1;
 
     const users = (
@@ -253,7 +253,7 @@ export const getBirthdaysForMonth = query({
         avatarUrl: profile?.avatarUrl ?? user.avatarUrl,
       };
     });
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -315,15 +315,15 @@ export const scheduledBirthdayCheck = mutation({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args): Promise<any> => {
     const { organizationId } = args;
     // Проверить сегодня
-    const today = await ctx.runMutation('birthdays:checkBirthdaysToday' as any, {
+    const today = await ctx.runMutation(api.birthdays.checkBirthdaysToday, {
       organizationId,
     });
 
     // Проверить предстоящие (через 3 дня для напоминания)
-    const upcoming = await ctx.runMutation('birthdays:checkUpcomingBirthdays' as any, {
+    const upcoming = await ctx.runMutation(api.birthdays.checkUpcomingBirthdays, {
       organizationId,
       daysAhead: 7,
     });
@@ -332,7 +332,7 @@ export const scheduledBirthdayCheck = mutation({
       today,
       upcoming,
     };
-  }),
+  },
 });
 
 /**
@@ -343,7 +343,7 @@ export const setupBirthdayScheduler = mutation({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     // Создать запись о scheduled job
     const jobId = await ctx.db.insert('scheduledJobs', {
@@ -361,5 +361,5 @@ export const setupBirthdayScheduler = mutation({
       message: 'Birthday scheduler setup successfully!',
       schedule: '0 9 * * * (daily at 9:00 AM)',
     };
-  }),
+  },
 });

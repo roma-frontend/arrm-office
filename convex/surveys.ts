@@ -4,7 +4,6 @@ import type { Id } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -19,7 +18,7 @@ export const listSurveys = query({
     status: v.optional(v.union(v.literal('draft'), v.literal('active'), v.literal('closed'))),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, status, limit } = args;
     const pageSize = Math.min(limit ?? 50, MAX_PAGE_SIZE);
 
@@ -52,11 +51,11 @@ export const listSurveys = query({
             name: creatorMap.get(survey.createdBy)!.name,
             avatarUrl:
               creatorProfileMap.get(survey.createdBy)?.avatarUrl ??
-              (creatorMap.get(survey.createdBy) as any)?.avatarUrl,
+              creatorMap.get(survey.createdBy)?.avatarUrl,
           }
         : null,
     }));
-  }),
+  },
 });
 
 /**
@@ -66,9 +65,9 @@ export const getSurveyWithQuestions = query({
   args: {
     surveyId: v.id('surveys'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey) return null;
 
     const questions = await ctx.db
@@ -76,7 +75,7 @@ export const getSurveyWithQuestions = query({
       .withIndex('by_survey_order', (q) => q.eq('surveyId', surveyId))
       .take(DEFAULT_LIST_CAP);
 
-    const creator = (await ctx.db.get(survey.createdBy)) as any;
+    const creator = await ctx.db.get(survey.createdBy);
     const creatorProfile = await getProfile(ctx, survey.createdBy);
 
     return {
@@ -85,11 +84,11 @@ export const getSurveyWithQuestions = query({
       creator: creator
         ? {
             name: creator.name,
-            avatarUrl: creatorProfile?.avatarUrl ?? (creator as any)?.avatarUrl,
+            avatarUrl: creatorProfile?.avatarUrl ?? creator?.avatarUrl,
           }
         : null,
     };
-  }),
+  },
 });
 
 /**
@@ -100,9 +99,9 @@ export const getSurveyResults = query({
     surveyId: v.id('surveys'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) return null;
 
     const questions = await ctx.db
@@ -177,7 +176,7 @@ export const getSurveyResults = query({
       totalResponses: responses.length,
       questionResults,
     };
-  }),
+  },
 });
 
 /**
@@ -188,7 +187,7 @@ export const hasUserResponded = query({
     surveyId: v.id('surveys'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, userId } = args;
     const existing = await ctx.db
       .query('surveyResponses')
@@ -197,7 +196,7 @@ export const hasUserResponded = query({
       )
       .first();
     return !!existing;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -243,7 +242,7 @@ export const createSurvey = mutation({
       }),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
 
     const surveyId = await ctx.db.insert('surveys', {
@@ -279,7 +278,7 @@ export const createSurvey = mutation({
     }
 
     return surveyId;
-  }),
+  },
 });
 
 /**
@@ -290,9 +289,9 @@ export const publishSurvey = mutation({
     surveyId: v.id('surveys'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
       throw new Error('Survey not found');
     }
@@ -305,7 +304,7 @@ export const publishSurvey = mutation({
       startsAt: survey.startsAt ?? Date.now(),
       updatedAt: Date.now(),
     });
-  }),
+  },
 });
 
 /**
@@ -316,9 +315,9 @@ export const closeSurvey = mutation({
     surveyId: v.id('surveys'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
       throw new Error('Survey not found');
     }
@@ -331,7 +330,7 @@ export const closeSurvey = mutation({
       endsAt: Date.now(),
       updatedAt: Date.now(),
     });
-  }),
+  },
 });
 
 /**
@@ -342,9 +341,9 @@ export const deleteSurvey = mutation({
     surveyId: v.id('surveys'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
       throw new Error('Survey not found');
     }
@@ -362,7 +361,7 @@ export const deleteSurvey = mutation({
     }
 
     await ctx.db.delete(surveyId);
-  }),
+  },
 });
 
 /**
@@ -383,8 +382,8 @@ export const submitResponse = mutation({
       }),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const survey = (await ctx.db.get(args.surveyId)) as any;
+  handler: async (ctx, args) => {
+    const survey = await ctx.db.get(args.surveyId);
     if (!survey || survey.organizationId !== args.organizationId) {
       throw new Error('Survey not found');
     }
@@ -440,7 +439,7 @@ export const submitResponse = mutation({
     });
 
     return responseId;
-  }),
+  },
 });
 
 /**
@@ -452,9 +451,9 @@ export const reorderQuestions = mutation({
     organizationId: v.id('organizations'),
     questionIds: v.array(v.id('surveyQuestions')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId, questionIds } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
       throw new Error('Survey not found');
     }
@@ -473,7 +472,7 @@ export const reorderQuestions = mutation({
         await ctx.db.patch(questionId, { order: i });
       }
     }
-  }),
+  },
 });
 
 /**
@@ -488,14 +487,14 @@ export const updateQuestion = mutation({
     isRequired: v.optional(v.boolean()),
     options: v.optional(v.array(v.string())),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { questionId, organizationId, ...updates } = args;
-    const question = (await ctx.db.get(questionId)) as any;
+    const question = await ctx.db.get(questionId);
     if (!question || question.organizationId !== organizationId) {
       throw new Error('Question not found');
     }
 
-    const survey = (await ctx.db.get(question.surveyId)) as any;
+    const survey = await ctx.db.get(question.surveyId);
     if (!survey || survey.status !== 'draft') {
       throw new Error('Can only edit questions in draft surveys');
     }
@@ -509,7 +508,7 @@ export const updateQuestion = mutation({
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(questionId, patch);
     }
-  }),
+  },
 });
 
 /**
@@ -520,14 +519,14 @@ export const deleteQuestion = mutation({
     questionId: v.id('surveyQuestions'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { questionId, organizationId } = args;
-    const question = (await ctx.db.get(questionId)) as any;
+    const question = await ctx.db.get(questionId);
     if (!question || question.organizationId !== organizationId) {
       throw new Error('Question not found');
     }
 
-    const survey = (await ctx.db.get(question.surveyId)) as any;
+    const survey = await ctx.db.get(question.surveyId);
     if (!survey || survey.status !== 'draft') {
       throw new Error('Can only delete questions from draft surveys');
     }
@@ -546,7 +545,7 @@ export const deleteQuestion = mutation({
         await ctx.db.patch(q._id, { order: i });
       }
     }
-  }),
+  },
 });
 
 /**
@@ -573,9 +572,9 @@ export const updateSurvey = mutation({
     startsAt: v.optional(v.number()),
     endsAt: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId, ...updates } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
       throw new Error('Survey not found');
     }
@@ -595,7 +594,7 @@ export const updateSurvey = mutation({
 
     await ctx.db.patch(surveyId, patch);
     return surveyId;
-  }),
+  },
 });
 
 /**
@@ -621,9 +620,9 @@ export const updateSurveyQuestions = mutation({
       }),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId, questions } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
       throw new Error('Survey not found');
     }
@@ -659,7 +658,7 @@ export const updateSurveyQuestions = mutation({
     }
 
     return surveyId;
-  }),
+  },
 });
 
 // ── Internal: Auto-activate surveys when startsAt is reached (cron) ─────────
@@ -756,9 +755,9 @@ export const getSurveyResultsByDepartment = query({
     surveyId: v.id('surveys'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) return null;
 
     const questions = await ctx.db
@@ -776,12 +775,14 @@ export const getSurveyResultsByDepartment = query({
       .map((r: any) => r.respondentId)
       .filter((id): id is Id<'users'> => id !== undefined);
 
-    const users = await Promise.all(respondentIds.map((id: any) => ctx.db.get(id)));
+    const users = (await Promise.all(respondentIds.map((id: any) => ctx.db.get(id)))) as Array<{
+      _id: string;
+      department?: string;
+    } | null>;
     const profiles = await Promise.all(respondentIds.map((id: any) => getProfile(ctx, id)));
     const userDepartmentMap = new Map<string, string>();
     users.forEach((user, i) => {
       if (user) {
-        // @ts-expect-error - withAuth args: any breaks type inference
         const dept = profiles[i]?.department ?? user.department;
         if (dept) {
           userDepartmentMap.set(user._id, dept);
@@ -852,7 +853,7 @@ export const getSurveyResultsByDepartment = query({
       totalResponses: responses.length,
       departmentResults,
     };
-  }),
+  },
 });
 
 /**
@@ -863,7 +864,7 @@ export const getSurveyTrends = query({
     organizationId: v.id('organizations'),
     months: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, months = 6 } = args;
     const cutoffDate = Date.now() - months * 30 * 24 * 60 * 60 * 1000;
 
@@ -891,7 +892,7 @@ export const getSurveyTrends = query({
       totalResponses,
       avgResponseRate,
     };
-  }),
+  },
 });
 
 /**
@@ -903,9 +904,9 @@ export const getSurveyResponses = query({
     organizationId: v.id('organizations'),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId, limit = 50 } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) return null;
     if (survey.isAnonymous)
       return { error: 'Anonymous survey - individual responses not available' };
@@ -918,7 +919,7 @@ export const getSurveyResponses = query({
 
     const responseDetails = await Promise.all(
       responses.map(async (resp) => {
-        const user = resp.respondentId ? ((await ctx.db.get(resp.respondentId)) as any) : null;
+        const user = resp.respondentId ? await ctx.db.get(resp.respondentId) : null;
         const profile = resp.respondentId ? await getProfile(ctx, resp.respondentId) : null;
         const answers = await ctx.db
           .query('surveyAnswers')
@@ -945,7 +946,7 @@ export const getSurveyResponses = query({
       responses: responseDetails,
       totalResponses: responses.length,
     };
-  }),
+  },
 });
 
 /**
@@ -956,9 +957,9 @@ export const getSurveyExportData = query({
     surveyId: v.id('surveys'),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { surveyId, organizationId } = args;
-    const survey = (await ctx.db.get(surveyId)) as any;
+    const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) return null;
 
     const questions = await ctx.db
@@ -973,7 +974,7 @@ export const getSurveyExportData = query({
 
     const exportData = await Promise.all(
       responses.map(async (resp) => {
-        const user = resp.respondentId ? ((await ctx.db.get(resp.respondentId)) as any) : null;
+        const user = resp.respondentId ? await ctx.db.get(resp.respondentId) : null;
         const profile = resp.respondentId ? await getProfile(ctx, resp.respondentId) : null;
         const answers = await ctx.db
           .query('surveyAnswers')
@@ -1007,5 +1008,5 @@ export const getSurveyExportData = query({
       questions: questions.map((q: any) => q.text),
       exportData,
     };
-  }),
+  },
 });

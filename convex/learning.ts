@@ -3,11 +3,10 @@ import { query, mutation } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
-import { withAuth } from './lib/withAuth';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
 async function checkAccess(ctx: any, organizationId: any, requesterId: any) {
-  const requester = (await ctx.db.get(requesterId)) as any;
+  const requester = await ctx.db.get(requesterId);
   if (!requester) throw new Error('Requester not found');
   const userIsSuperadmin = isSuperadmin(requester);
   if (!userIsSuperadmin && requester.organizationId !== organizationId) {
@@ -27,7 +26,7 @@ export const listCourses = query({
     search: v.optional(v.string()),
     includeUnpublished: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requester, isSuperadmin } = await checkAccess(
       ctx,
       args.organizationId,
@@ -61,13 +60,13 @@ export const listCourses = query({
             q.eq('organizationId', args.organizationId).eq('courseId', course._id),
           )
           .take(DEFAULT_LIST_CAP);
-        const creator = (await ctx.db.get(course.createdBy)) as any;
+        const creator = await ctx.db.get(course.createdBy);
         return { ...course, creatorName: creator?.name ?? 'Unknown', lessonCount: lessons.length };
       }),
     );
 
     return enriched;
-  }),
+  },
 });
 
 export const getCourse = query({
@@ -76,14 +75,14 @@ export const getCourse = query({
     requesterId: v.id('users'),
     courseId: v.id('courses'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
-    const course = (await ctx.db.get(args.courseId)) as any;
+    const course = await ctx.db.get(args.courseId);
     if (!course || course.organizationId !== args.organizationId) {
       throw new Error('Course not found');
     }
     return course;
-  }),
+  },
 });
 
 export const getCourseWithLessons = query({
@@ -92,9 +91,9 @@ export const getCourseWithLessons = query({
     requesterId: v.id('users'),
     courseId: v.id('courses'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
-    const course = (await ctx.db.get(args.courseId)) as any;
+    const course = await ctx.db.get(args.courseId);
     if (!course || course.organizationId !== args.organizationId) {
       throw new Error('Course not found');
     }
@@ -107,7 +106,7 @@ export const getCourseWithLessons = query({
       .take(DEFAULT_LIST_CAP);
 
     return { course, lessons };
-  }),
+  },
 });
 
 export const createCourse = mutation({
@@ -123,7 +122,7 @@ export const createCourse = mutation({
     isMandatory: v.optional(v.boolean()),
     tags: v.optional(v.array(v.string())),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can create courses');
 
@@ -143,7 +142,7 @@ export const createCourse = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 export const updateCourse = mutation({
@@ -162,8 +161,8 @@ export const updateCourse = mutation({
     isMandatory: v.optional(v.boolean()),
     tags: v.optional(v.array(v.string())),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const course = (await ctx.db.get(args.courseId)) as any;
+  handler: async (ctx, args) => {
+    const course = await ctx.db.get(args.courseId);
     if (!course) throw new Error('Course not found');
     const { isSuperadmin } = await checkAccess(ctx, course.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can update courses');
@@ -181,7 +180,7 @@ export const updateCourse = mutation({
 
     await ctx.db.patch(args.courseId, patch);
     return { success: true };
-  }),
+  },
 });
 
 export const deleteCourse = mutation({
@@ -189,8 +188,8 @@ export const deleteCourse = mutation({
     courseId: v.id('courses'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const course = (await ctx.db.get(args.courseId)) as any;
+  handler: async (ctx, args) => {
+    const course = await ctx.db.get(args.courseId);
     if (!course) throw new Error('Course not found');
     await checkAccess(ctx, course.organizationId, args.requesterId);
 
@@ -212,7 +211,7 @@ export const deleteCourse = mutation({
 
     await ctx.db.delete(args.courseId);
     return { success: true };
-  }),
+  },
 });
 
 // ─── LESSONS ─────────────────────────────────────────────────────────────────
@@ -236,7 +235,7 @@ export const createLesson = mutation({
     durationMinutes: v.optional(v.number()),
     isPreview: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can create lessons');
 
@@ -255,7 +254,7 @@ export const createLesson = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 export const updateLesson = mutation({
@@ -273,8 +272,8 @@ export const updateLesson = mutation({
     durationMinutes: v.optional(v.number()),
     isPreview: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const lesson = (await ctx.db.get(args.lessonId)) as any;
+  handler: async (ctx, args) => {
+    const lesson = await ctx.db.get(args.lessonId);
     if (!lesson) throw new Error('Lesson not found');
     await checkAccess(ctx, lesson.organizationId, args.requesterId);
 
@@ -290,7 +289,7 @@ export const updateLesson = mutation({
 
     await ctx.db.patch(args.lessonId, patch);
     return { success: true };
-  }),
+  },
 });
 
 export const deleteLesson = mutation({
@@ -298,8 +297,8 @@ export const deleteLesson = mutation({
     lessonId: v.id('lessons'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const lesson = (await ctx.db.get(args.lessonId)) as any;
+  handler: async (ctx, args) => {
+    const lesson = await ctx.db.get(args.lessonId);
     if (!lesson) throw new Error('Lesson not found');
     await checkAccess(ctx, lesson.organizationId, args.requesterId);
 
@@ -312,7 +311,7 @@ export const deleteLesson = mutation({
 
     await ctx.db.delete(args.lessonId);
     return { success: true };
-  }),
+  },
 });
 
 // ─── ENROLLMENTS ─────────────────────────────────────────────────────────────
@@ -322,7 +321,7 @@ export const getMyEnrollments = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const enrollments = await ctx.db
       .query('enrollments')
       .withIndex('by_user', (q) =>
@@ -332,13 +331,13 @@ export const getMyEnrollments = query({
 
     const enriched = await Promise.all(
       enrollments.map(async (enrollment) => {
-        const course = (await ctx.db.get(enrollment.courseId)) as any;
+        const course = await ctx.db.get(enrollment.courseId);
         return { ...enrollment, courseTitle: course?.title ?? 'Unknown Course', course };
       }),
     );
 
     return enriched;
-  }),
+  },
 });
 
 export const getCourseEnrollments = query({
@@ -347,7 +346,7 @@ export const getCourseEnrollments = query({
     requesterId: v.id('users'),
     courseId: v.id('courses'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
     const enrollments = await ctx.db
       .query('enrollments')
@@ -358,13 +357,13 @@ export const getCourseEnrollments = query({
 
     const enriched = await Promise.all(
       enrollments.map(async (enrollment) => {
-        const user = (await ctx.db.get(enrollment.userId)) as any;
+        const user = await ctx.db.get(enrollment.userId);
         return { ...enrollment, userName: user?.name ?? 'Unknown', userEmail: user?.email };
       }),
     );
 
     return enriched;
-  }),
+  },
 });
 
 export const enrollInCourse = mutation({
@@ -374,7 +373,7 @@ export const enrollInCourse = mutation({
     courseId: v.id('courses'),
     enrolledBy: v.optional(v.id('users')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
 
     const existing = await ctx.db
@@ -407,7 +406,7 @@ export const enrollInCourse = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const bulkEnrollUsers = mutation({
@@ -417,7 +416,7 @@ export const bulkEnrollUsers = mutation({
     courseId: v.id('courses'),
     userIds: v.array(v.id('users')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can bulk enroll users');
 
@@ -451,7 +450,7 @@ export const bulkEnrollUsers = mutation({
     }
 
     return { success: true, enrolledCount };
-  }),
+  },
 });
 
 export const updateEnrollmentStatus = mutation({
@@ -466,8 +465,8 @@ export const updateEnrollmentStatus = mutation({
     ),
     progress: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const enrollment = (await ctx.db.get(args.enrollmentId)) as any;
+  handler: async (ctx, args) => {
+    const enrollment = await ctx.db.get(args.enrollmentId);
     if (!enrollment) throw new Error('Enrollment not found');
     await checkAccess(ctx, enrollment.organizationId, args.requesterId);
 
@@ -481,7 +480,7 @@ export const updateEnrollmentStatus = mutation({
 
     await ctx.db.patch(args.enrollmentId, patch);
     return { success: true };
-  }),
+  },
 });
 
 // ─── LESSON PROGRESS ─────────────────────────────────────────────────────────
@@ -492,7 +491,7 @@ export const getLessonProgress = query({
     requesterId: v.id('users'),
     lessonId: v.id('lessons'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     return await ctx.db
       .query('lessonProgress')
       .withIndex('by_user_lesson', (q) =>
@@ -502,7 +501,7 @@ export const getLessonProgress = query({
           .eq('lessonId', args.lessonId),
       )
       .first();
-  }),
+  },
 });
 
 export const updateLessonProgress = mutation({
@@ -515,7 +514,7 @@ export const updateLessonProgress = mutation({
     timeSpentSeconds: v.optional(v.number()),
     lastPosition: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
 
     const existing = await ctx.db
@@ -556,7 +555,7 @@ export const updateLessonProgress = mutation({
     }
 
     return { success: true };
-  }),
+  },
 });
 
 // ─── QUIZZES ─────────────────────────────────────────────────────────────────
@@ -567,9 +566,9 @@ export const getQuiz = query({
     requesterId: v.id('users'),
     quizId: v.id('quizzes'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
-    const quiz = (await ctx.db.get(args.quizId)) as any;
+    const quiz = await ctx.db.get(args.quizId);
     if (!quiz || quiz.organizationId !== args.organizationId) {
       throw new Error('Quiz not found');
     }
@@ -583,7 +582,7 @@ export const getQuiz = query({
       .take(DEFAULT_LIST_CAP);
 
     return { quiz, questions };
-  }),
+  },
 });
 
 export const getQuizByLesson = query({
@@ -592,7 +591,7 @@ export const getQuizByLesson = query({
     requesterId: v.id('users'),
     lessonId: v.id('lessons'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
 
     const quiz = await ctx.db
@@ -613,7 +612,7 @@ export const getQuizByLesson = query({
       .take(DEFAULT_LIST_CAP);
 
     return { quiz, questions };
-  }),
+  },
 });
 
 export const getQuizAttemptsForUser = query({
@@ -622,7 +621,7 @@ export const getQuizAttemptsForUser = query({
     requesterId: v.id('users'),
     quizId: v.id('quizzes'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
 
     return await ctx.db
@@ -635,7 +634,7 @@ export const getQuizAttemptsForUser = query({
       )
       .order('desc')
       .take(DEFAULT_LIST_CAP);
-  }),
+  },
 });
 
 export const createQuiz = mutation({
@@ -650,7 +649,7 @@ export const createQuiz = mutation({
     timeLimitMinutes: v.optional(v.number()),
     maxAttempts: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can create quizzes');
 
@@ -668,7 +667,7 @@ export const createQuiz = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 export const createQuizQuestion = mutation({
@@ -688,7 +687,7 @@ export const createQuizQuestion = mutation({
     explanation: v.optional(v.string()),
     order: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can create quiz questions');
 
@@ -706,7 +705,7 @@ export const createQuizQuestion = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 export const submitQuizAttempt = mutation({
@@ -716,10 +715,10 @@ export const submitQuizAttempt = mutation({
     quizId: v.id('quizzes'),
     answers: v.any(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
 
-    const quiz = (await ctx.db.get(args.quizId)) as any;
+    const quiz = await ctx.db.get(args.quizId);
     if (!quiz) throw new Error('Quiz not found');
 
     const questions = await ctx.db
@@ -780,7 +779,7 @@ export const submitQuizAttempt = mutation({
     });
 
     return { success: true, score, passed, attemptNumber };
-  }),
+  },
 });
 
 // ─── CERTIFICATES ────────────────────────────────────────────────────────────
@@ -790,7 +789,7 @@ export const getMyCertificates = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const certificates = await ctx.db
       .query('certificates')
       .withIndex('by_user', (q) =>
@@ -800,13 +799,13 @@ export const getMyCertificates = query({
 
     const enriched = await Promise.all(
       certificates.map(async (cert) => {
-        const course = (await ctx.db.get(cert.courseId)) as any;
+        const course = await ctx.db.get(cert.courseId);
         return { ...cert, courseTitle: course?.title ?? 'Unknown Course' };
       }),
     );
 
     return enriched;
-  }),
+  },
 });
 
 export const issueCertificate = mutation({
@@ -818,7 +817,7 @@ export const issueCertificate = mutation({
     expiresAt: v.optional(v.number()),
     metadata: v.optional(v.any()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can issue certificates');
 
@@ -851,7 +850,7 @@ export const issueCertificate = mutation({
     });
 
     return { success: true, certificateId };
-  }),
+  },
 });
 
 // ─── COURSE CATEGORIES ───────────────────────────────────────────────────────
@@ -861,14 +860,14 @@ export const getCourseCategories = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await checkAccess(ctx, args.organizationId, args.requesterId);
     return await ctx.db
       .query('courseCategories')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .order('asc')
       .take(DEFAULT_LIST_CAP);
-  }),
+  },
 });
 
 export const createCourseCategory = mutation({
@@ -881,7 +880,7 @@ export const createCourseCategory = mutation({
     color: v.optional(v.string()),
     order: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can create categories');
 
@@ -896,7 +895,7 @@ export const createCourseCategory = mutation({
       createdAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 // ─── TEAM/ADMIN LEARNING OVERVIEW ────────────────────────────────────────────
@@ -906,7 +905,7 @@ export const getTeamLearningOverview = query({
     organizationId: v.id('organizations'),
     requesterId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
     if (!isSuperadmin) throw new Error('Only admins can view team overview');
 
@@ -937,5 +936,5 @@ export const getTeamLearningOverview = query({
       mandatoryCourses,
       completionRate,
     };
-  }),
+  },
 });

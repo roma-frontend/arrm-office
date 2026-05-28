@@ -3,7 +3,6 @@ import { query } from '../_generated/server';
 import { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
-import { withAuth } from '../lib/withAuth';
 
 // ─── USER 360 PROFILE ────────────────────────────────────────────────────────
 /**
@@ -12,8 +11,8 @@ import { withAuth } from '../lib/withAuth';
  */
 export const getUser360 = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const user = (await ctx.db.get(args.userId)) as any;
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
 
     // Parallel fetch all related data
@@ -88,7 +87,7 @@ export const getUser360 = query({
     // Enrich leaves with reviewer info
     const enrichedLeaves = await Promise.all(
       leaves.map(async (leave) => {
-        const reviewer = leave.reviewedBy ? ((await ctx.db.get(leave.reviewedBy)) as any) : null;
+        const reviewer = leave.reviewedBy ? await ctx.db.get(leave.reviewedBy) : null;
         return {
           ...leave,
           reviewerName: reviewer?.name || null,
@@ -99,7 +98,7 @@ export const getUser360 = query({
     // Enrich tasks with creator info (using assignedBy as creator)
     const enrichedTasks = await Promise.all(
       tasks.map(async (task) => {
-        const creator = (await ctx.db.get(task.assignedBy)) as any;
+        const creator = await ctx.db.get(task.assignedBy);
         return {
           ...task,
           creatorName: creator?.name || null,
@@ -110,8 +109,8 @@ export const getUser360 = query({
     // Enrich driver requests with driver info
     const enrichedDriverRequests = await Promise.all(
       driverRequests.map(async (req) => {
-        const driver = (await ctx.db.get(req.driverId)) as any;
-        const driverUser = driver ? ((await ctx.db.get(driver.userId)) as any) : null;
+        const driver = await ctx.db.get(req.driverId);
+        const driverUser = driver ? await ctx.db.get(driver.userId) : null;
         const driverProfile = driver ? await getProfile(ctx, driver.userId) : null;
         return {
           ...req,
@@ -124,7 +123,7 @@ export const getUser360 = query({
     // Enrich support tickets
     const enrichedTickets = await Promise.all(
       supportTickets.map(async (ticket) => {
-        const assignee = ticket.assignedTo ? ((await ctx.db.get(ticket.assignedTo)) as any) : null;
+        const assignee = ticket.assignedTo ? await ctx.db.get(ticket.assignedTo) : null;
         return {
           ...ticket,
           assigneeName: assignee?.name || null,
@@ -161,5 +160,5 @@ export const getUser360 = query({
       chatMessages: chatMessages.sort((a, b) => b.createdAt - a.createdAt),
       stats,
     };
-  }),
+  },
 });

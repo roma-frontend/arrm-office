@@ -4,7 +4,6 @@ import type { Id } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -18,7 +17,7 @@ export const getKudosFeed = query({
     organizationId: v.id('organizations'),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, limit } = args;
     const pageSize = Math.min(limit ?? 50, MAX_PAGE_SIZE);
 
@@ -66,7 +65,7 @@ export const getKudosFeed = query({
           : null,
       };
     });
-  }),
+  },
 });
 
 /**
@@ -77,7 +76,7 @@ export const getKudosForUser = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const kudos = await ctx.db
       .query('kudos')
@@ -103,7 +102,7 @@ export const getKudosForUser = query({
           }
         : null,
     }));
-  }),
+  },
 });
 
 /**
@@ -114,7 +113,7 @@ export const getKudosSentByUser = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const kudos = await ctx.db
       .query('kudos')
@@ -140,7 +139,7 @@ export const getKudosSentByUser = query({
           }
         : null,
     }));
-  }),
+  },
 });
 
 /**
@@ -159,7 +158,7 @@ export const getLeaderboard = query({
       ),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, period } = args;
     let startDate = 0;
     const now = Date.now();
@@ -171,8 +170,7 @@ export const getLeaderboard = query({
         quarter: 90 * 24 * 60 * 60 * 1000,
         year: 365 * 24 * 60 * 60 * 1000,
       };
-      // @ts-expect-error - withAuth args: any breaks type inference
-      startDate = now - msMap[period];
+      startDate = now - msMap[period as keyof typeof msMap];
     }
 
     const allKudos = await ctx.db
@@ -209,7 +207,7 @@ export const getLeaderboard = query({
         department: profile?.department ?? user?.department,
       };
     });
-  }),
+  },
 });
 
 /**
@@ -220,7 +218,7 @@ export const getUserKudosStats = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const received = await ctx.db
       .query('kudos')
@@ -247,7 +245,7 @@ export const getUserKudosStats = query({
       totalSent: sent.length,
       categoryBreakdown,
     };
-  }),
+  },
 });
 
 /**
@@ -257,7 +255,7 @@ export const getBadges = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     return await ctx.db
       .query('kudosBadges')
@@ -265,7 +263,7 @@ export const getBadges = query({
         q.eq('organizationId', organizationId).eq('isActive', true),
       )
       .take(SMALL_LIST_CAP);
-  }),
+  },
 });
 
 /**
@@ -276,7 +274,7 @@ export const getUserBadges = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const awards = await ctx.db
       .query('kudosBadgeAwards')
@@ -293,7 +291,7 @@ export const getUserBadges = query({
       ...award,
       badge: badgeMap.get(award.badgeId) ?? null,
     }));
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -320,14 +318,14 @@ export const sendKudos = mutation({
     message: v.string(),
     isPublic: v.boolean(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const KUDOS_COST = 3;
 
-    const sender = (await ctx.db.get(args.senderId)) as any as any;
+    const sender = await ctx.db.get(args.senderId);
     if (!sender) throw new Error('Sender not found');
     if (!sender.organizationId) throw new Error('Sender has no organization');
 
-    const receiver = (await ctx.db.get(args.receiverId)) as any as any;
+    const receiver = await ctx.db.get(args.receiverId);
     if (!receiver) throw new Error('Receiver not found');
 
     if (sender.organizationId !== receiver.organizationId) {
@@ -398,7 +396,7 @@ export const sendKudos = mutation({
     });
 
     return kudoId;
-  }),
+  },
 });
 
 /**
@@ -410,12 +408,12 @@ export const reactToKudos = mutation({
     userId: v.id('users'),
     emoji: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { kudoId, userId, emoji } = args;
-    const kudo = (await ctx.db.get(kudoId)) as any as any;
+    const kudo = await ctx.db.get(kudoId);
     if (!kudo) throw new Error('Kudos not found');
 
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
     if (user.organizationId !== kudo.organizationId) {
       throw new Error('Access denied');
@@ -424,8 +422,7 @@ export const reactToKudos = mutation({
     const reactions = kudo.reactions ?? [];
 
     // Check if user already reacted with this emoji
-    // @ts-expect-error - withAuth args: any breaks type inference
-    const existingIndex = reactions.findIndex((r) => r.userId === userId && r.emoji === emoji);
+    const existingIndex = reactions.findIndex((r: any) => r.userId === userId && r.emoji === emoji);
 
     if (existingIndex >= 0) {
       // Remove reaction (toggle)
@@ -436,7 +433,7 @@ export const reactToKudos = mutation({
     }
 
     await ctx.db.patch(kudoId, { reactions });
-  }),
+  },
 });
 
 /**
@@ -447,12 +444,12 @@ export const deleteKudos = mutation({
     kudoId: v.id('kudos'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { kudoId, userId } = args;
-    const kudo = (await ctx.db.get(kudoId)) as any as any;
+    const kudo = await ctx.db.get(kudoId);
     if (!kudo) throw new Error('Kudos not found');
 
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
     // Only sender or admin/superadmin can delete
@@ -464,7 +461,7 @@ export const deleteKudos = mutation({
     }
 
     await ctx.db.delete(kudoId);
-  }),
+  },
 });
 
 // ── Badge Management (Admin only) ─────────────────────────────────────────────
@@ -481,8 +478,8 @@ export const createBadge = mutation({
     color: v.string(),
     criteria: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const user = (await ctx.db.get(args.userId)) as any as any;
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
     if (!user.organizationId) throw new Error('User has no organization');
     if (user.role !== 'admin' && user.role !== 'superadmin') {
@@ -499,7 +496,7 @@ export const createBadge = mutation({
       isActive: true,
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 /**
@@ -512,21 +509,21 @@ export const awardBadge = mutation({
     badgeId: v.id('kudosBadges'),
     reason: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const awarder = (await ctx.db.get(args.awardedBy)) as any as any;
+  handler: async (ctx, args) => {
+    const awarder = await ctx.db.get(args.awardedBy);
     if (!awarder) throw new Error('User not found');
     if (!awarder.organizationId) throw new Error('User has no organization');
     if (!['admin', 'superadmin', 'supervisor'].includes(awarder.role)) {
       throw new Error('Not authorized to award badges');
     }
 
-    const recipient = (await ctx.db.get(args.userId)) as any as any;
+    const recipient = await ctx.db.get(args.userId);
     if (!recipient) throw new Error('Recipient not found');
     if (recipient.organizationId !== awarder.organizationId) {
       throw new Error('Cannot award badge to user in different organization');
     }
 
-    const badge = (await ctx.db.get(args.badgeId)) as any as any;
+    const badge = await ctx.db.get(args.badgeId);
     if (!badge) throw new Error('Badge not found');
     if (badge.organizationId !== awarder.organizationId) {
       throw new Error('Badge does not belong to this organization');
@@ -555,7 +552,7 @@ export const awardBadge = mutation({
     });
 
     return awardId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -574,7 +571,7 @@ export const getUserPoints = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const record = await ctx.db
       .query('userPoints')
@@ -582,7 +579,7 @@ export const getUserPoints = query({
       .first();
 
     return record ?? { balance: 0, totalEarned: 0, totalSpent: 0 };
-  }),
+  },
 });
 
 /**
@@ -594,7 +591,7 @@ export const getPointTransactions = query({
     userId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId, limit } = args;
     const pageSize = Math.min(limit ?? 30, MAX_PAGE_SIZE);
 
@@ -605,7 +602,7 @@ export const getPointTransactions = query({
       )
       .order('desc')
       .take(pageSize);
-  }),
+  },
 });
 
 /**
@@ -630,7 +627,7 @@ export const awardAttendancePoints = mutation({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const now = Date.now();
 
@@ -681,7 +678,7 @@ export const awardAttendancePoints = mutation({
       description: 'Daily attendance',
       createdAt: now,
     });
-  }),
+  },
 });
 
 /**
@@ -694,7 +691,7 @@ export const awardReviewPoints = mutation({
     rating: v.number(),
     reviewId: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId, rating, reviewId } = args;
     // Only award for 4-5 star reviews
     if (rating < 4) return;
@@ -733,7 +730,7 @@ export const awardReviewPoints = mutation({
       referenceId: reviewId,
       createdAt: now,
     });
-  }),
+  },
 });
 
 /**
@@ -747,9 +744,9 @@ export const awardManualPoints = mutation({
     description: v.string(),
     awardedBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId, amount, description, awardedBy } = args;
-    const awarder = (await ctx.db.get(awardedBy)) as any as any;
+    const awarder = await ctx.db.get(awardedBy);
     if (!awarder) throw new Error('Awarder not found');
     if (!['admin', 'superadmin', 'supervisor'].includes(awarder.role)) {
       throw new Error('Not authorized to award points');
@@ -787,7 +784,7 @@ export const awardManualPoints = mutation({
       description,
       createdAt: now,
     });
-  }),
+  },
 });
 
 /**
@@ -795,13 +792,13 @@ export const awardManualPoints = mutation({
  */
 export const getKudoById = query({
   args: { kudoId: v.id('kudos') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { kudoId } = args;
-    const kudo = (await ctx.db.get(kudoId)) as any as any;
+    const kudo = await ctx.db.get(kudoId);
     if (!kudo) return null;
 
-    const sender = (await ctx.db.get(kudo.senderId)) as any as any;
-    const receiver = (await ctx.db.get(kudo.receiverId)) as any as any;
+    const sender = await ctx.db.get(kudo.senderId);
+    const receiver = await ctx.db.get(kudo.receiverId);
     const senderProfile = sender ? await getProfile(ctx, sender._id) : null;
     const receiverProfile = receiver ? await getProfile(ctx, receiver._id) : null;
 
@@ -826,7 +823,7 @@ export const getKudoById = query({
           }
         : null,
     };
-  }),
+  },
 });
 
 /**
@@ -837,7 +834,7 @@ export const getUserPointsSummary = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const record = await ctx.db
       .query('userPoints')
@@ -845,5 +842,5 @@ export const getUserPointsSummary = query({
       .first();
 
     return record ?? { balance: 0, totalEarned: 0, totalSpent: 0 };
-  }),
+  },
 });

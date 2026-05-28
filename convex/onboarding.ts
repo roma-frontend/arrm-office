@@ -3,7 +3,7 @@ import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { internal, api } from './_generated/api';
 import { v } from 'convex/values';
-import { withAuth } from './lib/withAuth';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -17,18 +17,18 @@ function computeProgress(tasks: { status: string }[]): number {
 
 export const listTemplates = query({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     return await ctx.db
       .query('onboardingTemplates')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
-  }),
+  },
 });
 
 export const listPrograms = query({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const programs = await ctx.db
       .query('onboardingPrograms')
@@ -42,8 +42,8 @@ export const listPrograms = query({
           .query('onboardingTasks')
           .withIndex('by_program', (q) => q.eq('programId', prog._id))
           .take(DEFAULT_LIST_CAP);
-        const employee = (await ctx.db.get(prog.employeeId)) as any as any;
-        const buddy = prog.buddyId ? ((await ctx.db.get(prog.buddyId)) as any as any) : null;
+        const employee = (await ctx.db.get(prog.employeeId)) as { name?: string } | null;
+        const buddy = prog.buddyId ? await ctx.db.get(prog.buddyId) : null;
         return {
           ...prog,
           progress: computeProgress(tasks),
@@ -57,14 +57,14 @@ export const listPrograms = query({
       }),
     );
     return result;
-  }),
+  },
 });
 
 export const getProgram = query({
   args: { programId: v.id('onboardingPrograms') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { programId } = args;
-    const program = (await ctx.db.get(programId)) as any as any;
+    const program = await ctx.db.get(programId);
     if (!program) return null;
 
     const tasks = await ctx.db
@@ -72,9 +72,9 @@ export const getProgram = query({
       .withIndex('by_program', (q) => q.eq('programId', programId))
       .take(DEFAULT_LIST_CAP);
 
-    const employee = (await ctx.db.get(program.employeeId)) as any as any;
-    const buddy = program.buddyId ? ((await ctx.db.get(program.buddyId)) as any as any) : null;
-    const manager = (await ctx.db.get(program.managerId)) as any as any;
+    const employee = await ctx.db.get(program.employeeId);
+    const buddy = program.buddyId ? await ctx.db.get(program.buddyId) : null;
+    const manager = await ctx.db.get(program.managerId);
 
     // Resolve assignee names
     const tasksWithNames = await Promise.all(
@@ -83,7 +83,7 @@ export const getProgram = query({
         .map(async (task) => {
           let assigneeName: string | undefined;
           if (task.assigneeId) {
-            const assignee = (await ctx.db.get(task.assigneeId)) as any as any;
+            const assignee = await ctx.db.get(task.assigneeId);
             assigneeName = assignee?.name;
           }
           return { ...task, assigneeName };
@@ -102,12 +102,12 @@ export const getProgram = query({
       managerName: manager?.name ?? 'Unknown',
       tasks: tasksWithNames,
     };
-  }),
+  },
 });
 
 export const getMyOnboarding = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     const program = await ctx.db
       .query('onboardingPrograms')
@@ -122,8 +122,8 @@ export const getMyOnboarding = query({
       .withIndex('by_program', (q) => q.eq('programId', program._id))
       .take(DEFAULT_LIST_CAP);
 
-    const buddy = program.buddyId ? ((await ctx.db.get(program.buddyId)) as any as any) : null;
-    const manager = (await ctx.db.get(program.managerId)) as any as any;
+    const buddy = program.buddyId ? await ctx.db.get(program.buddyId) : null;
+    const manager = await ctx.db.get(program.managerId);
 
     return {
       ...program,
@@ -135,12 +135,12 @@ export const getMyOnboarding = query({
       managerName: manager?.name ?? 'Unknown',
       tasks: tasks.sort((a: any, b: any) => a.order - b.order),
     };
-  }),
+  },
 });
 
 export const getMyMenteePrograms = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     const asBuddy = await ctx.db
       .query('onboardingPrograms')
@@ -163,7 +163,7 @@ export const getMyMenteePrograms = query({
           .query('onboardingTasks')
           .withIndex('by_program', (q) => q.eq('programId', prog._id))
           .take(DEFAULT_LIST_CAP);
-        const employee = (await ctx.db.get(prog.employeeId)) as any as any;
+        const employee = (await ctx.db.get(prog.employeeId)) as { name?: string } | null;
         return {
           ...prog,
           progress: computeProgress(tasks),
@@ -175,7 +175,7 @@ export const getMyMenteePrograms = query({
         };
       }),
     );
-  }),
+  },
 });
 
 // ─── Mutations ───────────────────────────────────────────────
@@ -212,7 +212,7 @@ export const createTemplate = mutation({
     ),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     return await ctx.db.insert('onboardingTemplates', {
       organizationId: args.organizationId,
       name: args.name,
@@ -225,7 +225,7 @@ export const createTemplate = mutation({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const updateTemplate = mutation({
@@ -262,7 +262,7 @@ export const updateTemplate = mutation({
       ),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { templateId, ...fields } = args;
     const update: Record<string, unknown> = { updatedAt: Date.now() };
     if (fields.name !== undefined) update.name = fields.name;
@@ -272,15 +272,15 @@ export const updateTemplate = mutation({
     if (fields.isActive !== undefined) update.isActive = fields.isActive;
     if (fields.tasks !== undefined) update.tasks = fields.tasks;
     await ctx.db.patch(templateId, update);
-  }),
+  },
 });
 
 export const deleteTemplate = mutation({
   args: { templateId: v.id('onboardingTemplates') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { templateId } = args;
     await ctx.db.delete(templateId);
-  }),
+  },
 });
 
 export const startOnboarding = mutation({
@@ -293,7 +293,7 @@ export const startOnboarding = mutation({
     managerId: v.id('users'),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Guard against duplicate active programs
     const existing = await ctx.db
       .query('onboardingPrograms')
@@ -318,7 +318,7 @@ export const startOnboarding = mutation({
 
     // Spawn tasks from template
     if (args.templateId) {
-      const template = (await ctx.db.get(args.templateId)) as any as any;
+      const template = await ctx.db.get(args.templateId);
       if (template) {
         for (let i = 0; i < template.tasks.length; i++) {
           const t = template.tasks[i]!;
@@ -375,7 +375,7 @@ export const startOnboarding = mutation({
     });
 
     return programId;
-  }),
+  },
 });
 
 export const addTask = mutation({
@@ -403,7 +403,7 @@ export const addTask = mutation({
     dayOffset: v.number(),
     dueDate: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const tasks = await ctx.db
       .query('onboardingTasks')
       .withIndex('by_program', (q) => q.eq('programId', args.programId))
@@ -422,14 +422,14 @@ export const addTask = mutation({
       status: 'pending',
       order: tasks.length,
     });
-  }),
+  },
 });
 
 export const completeTask = mutation({
   args: { taskId: v.id('onboardingTasks'), completedBy: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { taskId, completedBy } = args;
-    const task = (await ctx.db.get(taskId)) as any as any;
+    const task = await ctx.db.get(taskId);
     if (!task) throw new Error('Task not found');
     if (task.status === 'completed') return;
 
@@ -441,7 +441,7 @@ export const completeTask = mutation({
 
     // Sync to main tasks table if linked
     if (task.taskId) {
-      const mainTask = (await ctx.db.get(task.taskId)) as any as any;
+      const mainTask = await ctx.db.get(task.taskId);
       if (mainTask) {
         await ctx.db.patch(task.taskId, {
           status: 'completed',
@@ -450,14 +450,14 @@ export const completeTask = mutation({
         });
       }
     }
-  }),
+  },
 });
 
 export const skipTask = mutation({
   args: { taskId: v.id('onboardingTasks'), completedBy: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { taskId, completedBy } = args;
-    const task = (await ctx.db.get(taskId)) as any as any;
+    const task = await ctx.db.get(taskId);
     if (!task) throw new Error('Task not found');
 
     await ctx.db.patch(taskId, {
@@ -468,7 +468,7 @@ export const skipTask = mutation({
 
     // Sync to main tasks table if linked
     if (task.taskId) {
-      const mainTask = (await ctx.db.get(task.taskId)) as any as any;
+      const mainTask = await ctx.db.get(task.taskId);
       if (mainTask) {
         await ctx.db.patch(task.taskId, {
           status: 'cancelled',
@@ -476,12 +476,12 @@ export const skipTask = mutation({
         });
       }
     }
-  }),
+  },
 });
 
 export const assignBuddy = mutation({
   args: { programId: v.id('onboardingPrograms'), buddyId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { programId, buddyId } = args;
     await ctx.db.patch(programId, { buddyId });
     // Update buddy-assigned tasks
@@ -493,26 +493,26 @@ export const assignBuddy = mutation({
     for (const task of tasks) {
       await ctx.db.patch(task._id, { assigneeId: buddyId });
     }
-  }),
+  },
 });
 
 export const completeProgram = mutation({
   args: { programId: v.id('onboardingPrograms') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { programId } = args;
     await ctx.db.patch(programId, {
       status: 'completed',
       completedAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const cancelProgram = mutation({
   args: { programId: v.id('onboardingPrograms') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { programId } = args;
     await ctx.db.patch(programId, { status: 'cancelled' });
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -568,10 +568,8 @@ export const activateOnboardingTasks = internalMutation({
             .first();
 
           if (!existingNotif) {
-            const assignee = task.assigneeId
-              ? ((await ctx.db.get(task.assigneeId)) as any as any)
-              : null;
-            const employee = (await ctx.db.get(program.employeeId)) as any as any;
+            const assignee = task.assigneeId ? await ctx.db.get(task.assigneeId) : null;
+            const employee = await ctx.db.get(program.employeeId);
 
             await ctx.db.insert('notifications', {
               organizationId: org._id,
@@ -605,11 +603,11 @@ export const sendOnboardingStartNotifications = internalMutation({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const org = (await ctx.db.get(args.organizationId)) as any as any;
-    const employee = (await ctx.db.get(args.employeeId)) as any as any;
-    const manager = (await ctx.db.get(args.managerId)) as any as any;
-    const buddy = args.buddyId ? ((await ctx.db.get(args.buddyId)) as any as any) : null;
-    const creator = (await ctx.db.get(args.createdBy)) as any as any;
+    const org = await ctx.db.get(args.organizationId);
+    const employee = await ctx.db.get(args.employeeId);
+    const manager = await ctx.db.get(args.managerId);
+    const buddy = args.buddyId ? await ctx.db.get(args.buddyId) : null;
+    const creator = await ctx.db.get(args.createdBy);
 
     const orgName = org?.name ?? 'your organization';
     const creatorName = creator?.name ?? 'HR';
@@ -730,15 +728,14 @@ export const sendOnboardingOverdueReminders = internalMutation({
 // ═══════════════════════════════════════════════════════════════════════════════
 export const secureDeleteTemplate = mutation({
   args: { templateId: v.id('onboardingTemplates') },
-  handler: withAuth<MutationCtx, { templateId: Id<'onboardingTemplates'> }, void>(
-    { minimumRole: 'admin' },
-    async (ctx, { templateId }, caller) => {
-      const template = (await ctx.db.get(templateId)) as any as any as any;
-      if (!template) throw new Error('Template not found');
-      if (caller.role !== 'superadmin' && caller.organizationId !== template.organizationId) {
-        throw new Error('Access denied');
-      }
-      await ctx.db.delete(templateId);
-    },
-  ),
+  handler: async (ctx, { templateId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const template = await ctx.db.get(templateId);
+    if (!template) throw new Error('Template not found');
+    if (caller.role !== 'superadmin' && caller.organizationId !== template.organizationId) {
+      throw new Error('Access denied');
+    }
+    await ctx.db.delete(templateId);
+  },
 });

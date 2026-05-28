@@ -152,8 +152,7 @@
       "year": "This Year",
       "all": "All Time"
     },
-    "category": "Category",
-    "categories": {
+    "category": {
       "teamwork": "Teamwork",
       "innovation": "Innovation",
       "leadership": "Leadership",

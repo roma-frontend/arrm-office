@@ -2,16 +2,15 @@ import { v } from 'convex/values';
 import { query } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 /**
  * Get user statistics - UNIFIED VERSION matching mobile
  */
 export const getUserStats = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
-    const user = (await ctx.db.get(userId)) as any;
+    const user = await ctx.db.get(userId);
     if (!user) {
       // User not found - return null instead of throwing
       return null;
@@ -65,23 +64,23 @@ export const getUserStats = query({
 
     // Calculate leave balances
     const leaveBalances = {
-      paid: profile?.paidLeaveBalance ?? (user as any).paidLeaveBalance ?? 20,
-      sick: profile?.sickLeaveBalance ?? (user as any).sickLeaveBalance ?? 10,
-      family: profile?.familyLeaveBalance ?? (user as any).familyLeaveBalance ?? 5,
+      paid: profile?.paidLeaveBalance ?? user.paidLeaveBalance ?? 20,
+      sick: profile?.sickLeaveBalance ?? user.sickLeaveBalance ?? 10,
+      family: profile?.familyLeaveBalance ?? user.familyLeaveBalance ?? 5,
     };
 
     // Count projects from tasks
     const projects = new Set(
-      userTasks.filter((t: any) => (t as any).projectId).map((t: any) => (t as any).projectId),
+      userTasks.filter((t: any) => t.projectId).map((t: any) => t.projectId),
     );
 
     return {
       userId: user._id,
       userName: user.name,
       department: profile?.department ?? user.department,
-      position: profile?.position ?? (user as any).position ?? 'N/A',
+      position: profile?.position ?? user.position ?? 'N/A',
       avatar: profile?.avatarUrl ?? user.avatarUrl,
-      joinDate: (user as any).createdAt,
+      joinDate: user.createdAt,
 
       leaveStats: {
         totalDaysUsed,
@@ -110,9 +109,7 @@ export const getUserStats = query({
       attendanceStats,
 
       // Legacy fields for backward compatibility
-      daysActive: Math.floor(
-        (Date.now() - ((user as any).createdAt ?? Date.now())) / (1000 * 60 * 60 * 24),
-      ),
+      daysActive: Math.floor((Date.now() - (user.createdAt ?? Date.now())) / (1000 * 60 * 60 * 24)),
       tasksCompleted: completedTasks,
       leavesTaken: approved.length,
       projects: projects.size,
@@ -129,5 +126,5 @@ export const getUserStats = query({
             : 0),
       ),
     };
-  }),
+  },
 });

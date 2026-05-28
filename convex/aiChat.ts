@@ -8,11 +8,10 @@ import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 export const getConversations = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const conversations = await ctx.db
       .query('aiConversations')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -23,26 +22,26 @@ export const getConversations = query({
       ...conv,
       messages: [] as Array<{ _id: Id<'aiMessages'>; content: string; role: string }>,
     }));
-  }),
+  },
 });
 
 /** Paginated AI conversations list */
 export const listConversationsPaginated = query({
   args: { userId: v.id('users'), paginationOpts: paginationOptsValidator },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, paginationOpts } = args;
     return await ctx.db
       .query('aiConversations')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .order('desc')
       .paginate(paginationOpts);
-  }),
+  },
 });
 
 export const getConversation = query({
   args: { conversationId: v.id('aiConversations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const conversation = (await ctx.db.get(args.conversationId)) as any;
+  handler: async (ctx, args) => {
+    const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return null;
 
     const messages = await ctx.db
@@ -55,12 +54,12 @@ export const getConversation = query({
       ...conversation,
       messages,
     };
-  }),
+  },
 });
 
 export const getMessages = query({
   args: { conversationId: v.id('aiConversations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const messages = await ctx.db
       .query('aiMessages')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
@@ -68,20 +67,20 @@ export const getMessages = query({
       .take(DEFAULT_LIST_CAP);
 
     return messages;
-  }),
+  },
 });
 
 export const getFullContext = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Get user data
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
 
     const profile = await getProfile(ctx, args.userId);
 
     // Get organization
-    const org = user.organizationId ? ((await ctx.db.get(user.organizationId)) as any) : null;
+    const org = user.organizationId ? await ctx.db.get(user.organizationId) : null;
 
     // Get user's leave requests
     const leaves = await ctx.db
@@ -154,5 +153,5 @@ export const getFullContext = query({
         status: a.status,
       })),
     };
-  }),
+  },
 });

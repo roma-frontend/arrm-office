@@ -9,7 +9,6 @@ import { Id } from './_generated/dataModel';
 import { getTranslation, getUserLocale } from './translations';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 import { logger } from '@/lib/logger';
 
 // ─── CREATE TICKET ───────────────────────────────────────────────────────────
@@ -37,7 +36,7 @@ export const createTicket = mutation({
     relatedDriverRequestId: v.optional(v.id('driverRequests')),
     relatedTaskId: v.optional(v.id('tasks')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
 
     // Generate ticket number: SUP-YYYYMMDD-XXXX
@@ -57,8 +56,7 @@ export const createTicket = mutation({
       medium: 24,
       low: 48,
     };
-    // @ts-expect-error - withAuth args: any breaks type inference
-    const slaDeadline = now + slaHours[args.priority] * 60 * 60 * 1000;
+    const slaDeadline = now + slaHours[args.priority as keyof typeof slaHours] * 60 * 60 * 1000;
 
     const ticketId = await ctx.db.insert('supportTickets', {
       organizationId: args.organizationId,
@@ -130,7 +128,7 @@ export const createTicket = mutation({
     });
 
     return { ticketId, ticketNumber };
-  }),
+  },
 });
 
 // ─── GET ALL TICKETS ─────────────────────────────────────────────────────────
@@ -153,7 +151,7 @@ export const getAllTickets = query({
     limit: v.optional(v.number()),
     cursor: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Superadmin cross-tenant view — capped at XLARGE.
     let tickets = await ctx.db.query('supportTickets').take(XLARGE_LIST_CAP);
 
@@ -173,8 +171,8 @@ export const getAllTickets = query({
 
     // Sort by priority (critical first) then by createdAt (newest first)
     const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-    tickets.sort((a: any, b: any) => {
-      const priorityDiff = (priorityOrder as any)[a.priority] - (priorityOrder as any)[b.priority];
+    tickets.sort((a, b) => {
+      const priorityDiff = (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4);
       if (priorityDiff !== 0) return priorityDiff;
       return b.createdAt - a.createdAt;
     });
@@ -190,13 +188,9 @@ export const getAllTickets = query({
     // Enrich with user data
     const enrichedTickets = await Promise.all(
       tickets.map(async (ticket) => {
-        const creator = (await ctx.db.get(ticket.createdBy)) as any as any;
-        const assignee = ticket.assignedTo
-          ? ((await ctx.db.get(ticket.assignedTo)) as any as any)
-          : null;
-        const org = ticket.organizationId
-          ? ((await ctx.db.get(ticket.organizationId)) as any as any)
-          : null;
+        const creator = await ctx.db.get(ticket.createdBy);
+        const assignee = ticket.assignedTo ? await ctx.db.get(ticket.assignedTo) : null;
+        const org = ticket.organizationId ? await ctx.db.get(ticket.organizationId) : null;
         const creatorProfile = await getProfile(ctx, ticket.createdBy);
         const assigneeProfile = ticket.assignedTo ? await getProfile(ctx, ticket.assignedTo) : null;
 
@@ -222,23 +216,19 @@ export const getAllTickets = query({
     );
 
     return enrichedTickets;
-  }),
+  },
 });
 
 // ─── GET TICKET BY ID ────────────────────────────────────────────────────────
 export const getTicketById = query({
   args: { ticketId: v.id('supportTickets') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const ticket = (await ctx.db.get(args.ticketId)) as any as any;
+  handler: async (ctx, args) => {
+    const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) return null;
 
-    const creator = (await ctx.db.get(ticket.createdBy)) as any as any;
-    const assignee = ticket.assignedTo
-      ? ((await ctx.db.get(ticket.assignedTo)) as any as any)
-      : null;
-    const org = ticket.organizationId
-      ? ((await ctx.db.get(ticket.organizationId)) as any as any)
-      : null;
+    const creator = await ctx.db.get(ticket.createdBy);
+    const assignee = ticket.assignedTo ? await ctx.db.get(ticket.assignedTo) : null;
+    const org = ticket.organizationId ? await ctx.db.get(ticket.organizationId) : null;
     const creatorProfile = await getProfile(ctx, ticket.createdBy);
     const assigneeProfile = ticket.assignedTo ? await getProfile(ctx, ticket.assignedTo) : null;
     const comments = await ctx.db
@@ -248,7 +238,7 @@ export const getTicketById = query({
 
     const enrichedComments = await Promise.all(
       comments.map(async (comment) => {
-        const author = (await ctx.db.get(comment.authorId)) as any as any;
+        const author = await ctx.db.get(comment.authorId);
         const authorProfile = await getProfile(ctx, comment.authorId);
         return {
           ...comment,
@@ -269,7 +259,7 @@ export const getTicketById = query({
       organizationName: org?.name || null,
       comments: enrichedComments.sort((a: any, b: any) => a.createdAt - b.createdAt),
     };
-  }),
+  },
 });
 
 // ─── GET TICKETS DASHBOARD STATS ─────────────────────────────────────────────
@@ -340,8 +330,8 @@ export const updateTicketStatus = mutation({
     ),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const ticket = (await ctx.db.get(args.ticketId)) as any as any;
+  handler: async (ctx, args) => {
+    const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
 
     const now = Date.now();
@@ -396,7 +386,7 @@ export const updateTicketStatus = mutation({
     });
 
     return args.ticketId;
-  }),
+  },
 });
 
 // ─── ASSIGN TICKET ───────────────────────────────────────────────────────────
@@ -406,8 +396,8 @@ export const assignTicket = mutation({
     assignedTo: v.optional(v.id('users')),
     userId: v.id('users'), // Who is making the assignment
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const ticket = (await ctx.db.get(args.ticketId)) as any as any;
+  handler: async (ctx, args) => {
+    const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
 
     await ctx.db.patch(args.ticketId, {
@@ -441,7 +431,7 @@ export const assignTicket = mutation({
     });
 
     return args.ticketId;
-  }),
+  },
 });
 
 // ─── ADD TICKET COMMENT ──────────────────────────────────────────────────────
@@ -452,8 +442,8 @@ export const addTicketComment = mutation({
     message: v.string(),
     isInternal: v.boolean(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const ticket = (await ctx.db.get(args.ticketId)) as any as any;
+  handler: async (ctx, args) => {
+    const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
 
     const now = Date.now();
@@ -502,7 +492,7 @@ export const addTicketComment = mutation({
     });
 
     return commentId;
-  }),
+  },
 });
 
 // ─── RESOLVE TICKET ──────────────────────────────────────────────────────────
@@ -512,8 +502,8 @@ export const resolveTicket = mutation({
     resolution: v.string(),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const ticket = (await ctx.db.get(args.ticketId)) as any as any;
+  handler: async (ctx, args) => {
+    const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
 
     const now = Date.now();
@@ -550,7 +540,7 @@ export const resolveTicket = mutation({
     });
 
     return args.ticketId;
-  }),
+  },
 });
 
 // ─── BULK UPDATE TICKETS ─────────────────────────────────────────────────────
@@ -569,16 +559,15 @@ export const bulkUpdateTickets = mutation({
     assignedTo: v.optional(v.optional(v.id('users'))),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     let success = 0;
     let failed = 0;
     let firstTicketOrgId: Id<'organizations'> | undefined;
 
     const results = await Promise.allSettled(
-      // @ts-expect-error - withAuth args: any breaks type inference
       args.ticketIds.map(async (ticketId) => {
-        const ticket = (await ctx.db.get(ticketId)) as any as any;
+        const ticket = await ctx.db.get(ticketId);
         if (!ticket) throw new Error('Ticket not found');
 
         if (!firstTicketOrgId) {
@@ -614,13 +603,13 @@ export const bulkUpdateTickets = mutation({
     }
 
     return { success, failed };
-  }),
+  },
 });
 
 // ─── GET MY TICKETS ──────────────────────────────────────────────────────────
 export const getMyTickets = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Capped at XLARGE. TODO: add by_creator/by_assignee index for proper scoped query.
     const tickets = await ctx.db.query('supportTickets').take(XLARGE_LIST_CAP);
 
@@ -635,7 +624,7 @@ export const getMyTickets = query({
     // Enrich with basic data
     return await Promise.all(
       myTickets.map(async (ticket) => {
-        const creator = (await ctx.db.get(ticket.createdBy)) as any as any;
+        const creator = await ctx.db.get(ticket.createdBy);
         return {
           ...ticket,
           creatorName: creator?.name || 'Unknown',
@@ -644,7 +633,7 @@ export const getMyTickets = query({
         };
       }),
     );
-  }),
+  },
 });
 
 // ─── CREATE TICKET CHAT ──────────────────────────────────────────────────────
@@ -653,12 +642,12 @@ export const createTicketChat = mutation({
     ticketId: v.id('supportTickets'),
     superadminId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     logger.log(
       `[createTicketChat] START - ticketId: ${args.ticketId}, superadminId: ${args.superadminId}`,
     );
 
-    const ticket = (await ctx.db.get(args.ticketId)) as any as any;
+    const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) {
       logger.error(`[createTicketChat] Ticket not found: ${args.ticketId}`);
       throw new Error('Ticket not found');
@@ -666,7 +655,7 @@ export const createTicketChat = mutation({
     logger.log(`[createTicketChat] Ticket found: ${ticket._id}, chatId: ${ticket.chatId}`);
 
     // Verify user is superadmin
-    const superadmin = (await ctx.db.get(args.superadminId)) as any as any;
+    const superadmin = await ctx.db.get(args.superadminId);
     logger.log(
       `[createTicketChat] Superadmin: ${superadmin?._id}, role: ${superadmin?.role}, orgId: ${superadmin?.organizationId}`,
     );
@@ -685,13 +674,11 @@ export const createTicketChat = mutation({
     const now = Date.now();
 
     // Get organization
-    const org = ticket.organizationId
-      ? ((await ctx.db.get(ticket.organizationId)) as any as any)
-      : null;
+    const org = ticket.organizationId ? await ctx.db.get(ticket.organizationId) : null;
     const orgName = org?.name || 'Organization';
 
     // Get ticket creator to determine organization
-    const creator = (await ctx.db.get(ticket.createdBy)) as any as any;
+    const creator = await ctx.db.get(ticket.createdBy);
     const creatorName = creator?.name || 'Unknown';
 
     // Determine organization ID for chat
@@ -855,7 +842,7 @@ export const createTicketChat = mutation({
     });
 
     return { chatId, chatName };
-  }),
+  },
 });
 
 // ─── ACTIVATE TICKET CHAT ────────────────────────────────────────────────────
@@ -865,14 +852,14 @@ export const activateTicketChat = mutation({
     superadminId: v.id('users'),
     message: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const ticket = (await ctx.db.get(args.ticketId)) as any as any;
+  handler: async (ctx, args) => {
+    const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
     if (!ticket.chatId) throw new Error('Chat not created yet');
     if (ticket.chatActivated) throw new Error('Chat already activated');
 
     // Verify user is superadmin
-    const superadmin = (await ctx.db.get(args.superadminId)) as any as any;
+    const superadmin = await ctx.db.get(args.superadminId);
     if (!superadmin || superadmin.role !== 'superadmin') {
       throw new Error('Only superadmins can activate ticket chats');
     }
@@ -880,7 +867,7 @@ export const activateTicketChat = mutation({
     const now = Date.now();
 
     // Determine org ID - use ticket's org, or creator's org as fallback
-    const creator = (await ctx.db.get(ticket.createdBy)) as any as any;
+    const creator = await ctx.db.get(ticket.createdBy);
     const chatOrgId = ticket.organizationId || creator?.organizationId || superadmin.organizationId;
     logger.log(
       `[activateTicketChat] Ticket orgId: ${ticket.organizationId}, Creator orgId: ${creator?.organizationId}, Superadmin orgId: ${superadmin.organizationId}, Using: ${chatOrgId || 'undefined'}`,
@@ -954,14 +941,14 @@ export const activateTicketChat = mutation({
     });
 
     return { messageId, chatId };
-  }),
+  },
 });
 
 // ─── GET TICKET CHAT STATUS ──────────────────────────────────────────────────
 export const getTicketChatStatus = query({
   args: { ticketId: v.id('supportTickets') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const ticket = (await ctx.db.get(args.ticketId)) as any as any;
+  handler: async (ctx, args) => {
+    const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) return null;
 
     return {
@@ -969,5 +956,5 @@ export const getTicketChatStatus = query({
       chatActivated: ticket.chatActivated || false,
       hasChat: !!ticket.chatId,
     };
-  }),
+  },
 });

@@ -11,7 +11,6 @@ import { mutation, query } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 import { logger } from '@/lib/logger';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,9 +43,9 @@ export const createCompanyEvent = mutation({
     priority: v.optional(v.union(v.literal('high'), v.literal('medium'), v.literal('low'))),
     notifyDaysBefore: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Verify user is admin/manager
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
 
     const isAdmin = user.role === 'admin' || user.role === 'superadmin';
@@ -93,7 +92,7 @@ export const createCompanyEvent = mutation({
     }
 
     return eventId;
-  }),
+  },
 });
 
 /**
@@ -113,11 +112,11 @@ export const updateCompanyEvent = mutation({
       v.union(v.literal('high'), v.literal('medium'), v.literal('low'), v.literal('')),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const event = (await ctx.db.get(args.eventId)) as any;
+  handler: async (ctx, args) => {
+    const event = await ctx.db.get(args.eventId);
     if (!event) throw new Error('Event not found');
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
 
     const isAdmin = user.role === 'admin' || user.role === 'superadmin';
@@ -150,7 +149,7 @@ export const updateCompanyEvent = mutation({
       });
 
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -161,12 +160,12 @@ export const deleteCompanyEvent = mutation({
     eventId: v.id('companyEvents'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { eventId, userId } = args;
-    const event = (await ctx.db.get(eventId)) as any;
+    const event = await ctx.db.get(eventId);
     if (!event) throw new Error('Event not found');
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
     const isAdmin = user.role === 'admin' || user.role === 'superadmin';
@@ -186,7 +185,7 @@ export const deleteCompanyEvent = mutation({
 
     await ctx.db.delete(eventId);
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -198,7 +197,7 @@ export const getCompanyEvents = query({
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     let events;
 
     if (args.startDate && args.endDate) {
@@ -240,7 +239,7 @@ export const getCompanyEvents = query({
     });
 
     return enriched;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,9 +257,9 @@ export const checkLeaveConflictsManual = mutation({
     endDate: v.number(),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { leaveRequestId, userId, startDate, endDate, organizationId } = args;
-    const user = (await ctx.db.get(userId)) as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
     // Get department from user profile
@@ -317,7 +316,7 @@ export const checkLeaveConflictsManual = mutation({
     }
 
     return { conflictsFound: conflictsCreated };
-  }),
+  },
 });
 
 /**
@@ -331,9 +330,9 @@ export const checkLeaveConflicts = mutation({
     startDate: v.number(),
     endDate: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { leaveRequestId, userId, startDate, endDate } = args;
-    const user = (await ctx.db.get(userId)) as any;
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
     const profile = await getProfile(ctx, userId);
@@ -406,7 +405,7 @@ export const checkLeaveConflicts = mutation({
     }
 
     return { conflictsFound: overlappingEvents.length };
-  }),
+  },
 });
 
 /**
@@ -417,7 +416,7 @@ export const getLeaveConflictAlerts = query({
     organizationId: v.id('organizations'),
     isReviewed: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     let alerts = await ctx.db
       .query('leaveConflictAlerts')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
@@ -452,7 +451,7 @@ export const getLeaveConflictAlerts = query({
     );
 
     return enriched;
-  }),
+  },
 });
 
 /**
@@ -465,12 +464,12 @@ export const reviewConflictAlert = mutation({
     isApproved: v.boolean(), // Approve leave despite conflict
     reviewNotes: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { alertId, adminId, isApproved, reviewNotes } = args;
-    const alert = (await ctx.db.get(alertId)) as any;
+    const alert = await ctx.db.get(alertId);
     if (!alert) throw new Error('Alert not found');
 
-    const admin = (await ctx.db.get(adminId)) as any;
+    const admin = await ctx.db.get(adminId);
     if (!admin) throw new Error('Admin not found');
 
     await ctx.db.patch(alertId, {
@@ -498,7 +497,7 @@ export const reviewConflictAlert = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -508,18 +507,18 @@ export const getEventById = query({
   args: {
     eventId: v.id('companyEvents'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { eventId } = args;
-    const event = (await ctx.db.get(eventId)) as any;
+    const event = await ctx.db.get(eventId);
     if (!event) return null;
 
-    const creator = (await ctx.db.get(event.createdBy)) as any;
+    const creator = await ctx.db.get(event.createdBy);
 
     return {
       ...event,
       creatorName: creator?.name,
     };
-  }),
+  },
 });
 
 /**
@@ -530,9 +529,9 @@ export const getEventAttendanceStatus = query({
     organizationId: v.id('organizations'),
     eventId: v.id('companyEvents'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, eventId } = args;
-    const event = (await ctx.db.get(eventId)) as any;
+    const event = await ctx.db.get(eventId);
     if (!event) return null;
 
     // Get all users from required departments
@@ -582,5 +581,5 @@ export const getEventAttendanceStatus = query({
       hasConflicts: attendanceStatus.filter((s: any) => s.hasConflict).length,
       attendanceStatus,
     };
-  }),
+  },
 });

@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { query, mutation, internalMutation } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // Helper: compute KR completion percentage respecting direction
 function computeKRProgress(
@@ -59,7 +58,7 @@ export const listObjectives = query({
     ownerId: v.optional(v.id('users')),
     status: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, periodYear, periodType, level, ownerId, status } = args;
     let objectives = await ctx.db
       .query('objectives')
@@ -75,7 +74,7 @@ export const listObjectives = query({
     // Fetch owner names
     const enriched = await Promise.all(
       objectives.map(async (obj) => {
-        const owner = (await ctx.db.get(obj.ownerId)) as any;
+        const owner = await ctx.db.get(obj.ownerId);
         const ownerProfile = await getProfile(ctx, obj.ownerId);
         const krs = await ctx.db
           .query('keyResults')
@@ -92,17 +91,17 @@ export const listObjectives = query({
     );
 
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  }),
+  },
 });
 
 export const getObjective = query({
   args: { objectiveId: v.id('objectives') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { objectiveId } = args;
-    const obj = (await ctx.db.get(objectiveId)) as any;
+    const obj = await ctx.db.get(objectiveId);
     if (!obj) return null;
 
-    const owner = (await ctx.db.get(obj.ownerId)) as any;
+    const owner = await ctx.db.get(obj.ownerId);
     const ownerProfile = await getProfile(ctx, obj.ownerId);
     const krs = await ctx.db
       .query('keyResults')
@@ -115,7 +114,7 @@ export const getObjective = query({
           .query('goalCheckins')
           .withIndex('by_kr', (q) => q.eq('keyResultId', kr._id))
           .take(DEFAULT_LIST_CAP);
-        const krOwner = (await ctx.db.get(kr.ownerId)) as any;
+        const krOwner = await ctx.db.get(kr.ownerId);
         return {
           ...kr,
           ownerName: krOwner?.name ?? 'Unknown',
@@ -144,7 +143,7 @@ export const getObjective = query({
       keyResults: krsWithCheckins,
       children,
     };
-  }),
+  },
 });
 
 export const getMyObjectives = query({
@@ -152,7 +151,7 @@ export const getMyObjectives = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const objectives = await ctx.db
       .query('objectives')
@@ -172,7 +171,7 @@ export const getMyObjectives = query({
     );
 
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  }),
+  },
 });
 
 export const getTeamProgress = query({
@@ -181,7 +180,7 @@ export const getTeamProgress = query({
     periodYear: v.number(),
     periodType: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, periodYear, periodType } = args;
     let objectives = await ctx.db
       .query('objectives')
@@ -216,12 +215,12 @@ export const getTeamProgress = query({
         individual: objectives.filter((o: any) => o.level === 'individual').length,
       },
     };
-  }),
+  },
 });
 
 export const getCheckinHistory = query({
   args: { keyResultId: v.id('keyResults') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { keyResultId } = args;
     const checkins = await ctx.db
       .query('goalCheckins')
@@ -230,13 +229,13 @@ export const getCheckinHistory = query({
 
     const enriched = await Promise.all(
       checkins.map(async (c) => {
-        const user = (await ctx.db.get(c.userId)) as any;
+        const user = await ctx.db.get(c.userId);
         return { ...c, userName: user?.name ?? 'Unknown' };
       }),
     );
 
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  }),
+  },
 });
 
 // ============ MUTATIONS ============
@@ -282,12 +281,12 @@ export const createObjective = mutation({
       }),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { keyResults, ...objectiveData } = args;
 
     // Validate parent objective belongs to same org
     if (objectiveData.parentObjectiveId) {
-      const parent = (await ctx.db.get(objectiveData.parentObjectiveId)) as any;
+      const parent = await ctx.db.get(objectiveData.parentObjectiveId);
       if (!parent || parent.organizationId !== objectiveData.organizationId) {
         throw new Error('Invalid parent objective');
       }
@@ -331,7 +330,7 @@ export const createObjective = mutation({
     }
 
     return objectiveId;
-  }),
+  },
 });
 
 export const updateObjective = mutation({
@@ -348,9 +347,9 @@ export const updateObjective = mutation({
       ),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { objectiveId, ...updates } = args;
-    const obj = (await ctx.db.get(objectiveId)) as any;
+    const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -359,14 +358,14 @@ export const updateObjective = mutation({
     if (updates.status !== undefined) patch.status = updates.status;
 
     await ctx.db.patch(objectiveId, patch);
-  }),
+  },
 });
 
 export const deleteObjective = mutation({
   args: { objectiveId: v.id('objectives') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { objectiveId } = args;
-    const obj = (await ctx.db.get(objectiveId)) as any;
+    const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');
 
     // Check no children aligned
@@ -396,7 +395,7 @@ export const deleteObjective = mutation({
     }
 
     await ctx.db.delete(objectiveId);
-  }),
+  },
 });
 
 export const addKeyResult = mutation({
@@ -417,9 +416,9 @@ export const addKeyResult = mutation({
     weight: v.number(),
     ownerId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { objectiveId, ...krData } = args;
-    const obj = (await ctx.db.get(objectiveId)) as any;
+    const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');
     if (obj.status === 'completed' || obj.status === 'cancelled') {
       throw new Error('Cannot add KR to closed objective');
@@ -444,7 +443,7 @@ export const addKeyResult = mutation({
     });
 
     return krId;
-  }),
+  },
 });
 
 export const updateKeyResult = mutation({
@@ -455,9 +454,9 @@ export const updateKeyResult = mutation({
     targetValue: v.optional(v.number()),
     weight: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { keyResultId, ...updates } = args;
-    const kr = (await ctx.db.get(keyResultId)) as any;
+    const kr = await ctx.db.get(keyResultId);
     if (!kr) throw new Error('Key Result not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -467,14 +466,14 @@ export const updateKeyResult = mutation({
     if (updates.weight !== undefined) patch.weight = updates.weight;
 
     await ctx.db.patch(keyResultId, patch);
-  }),
+  },
 });
 
 export const deleteKeyResult = mutation({
   args: { keyResultId: v.id('keyResults') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { keyResultId } = args;
-    const kr = (await ctx.db.get(keyResultId)) as any;
+    const kr = await ctx.db.get(keyResultId);
     if (!kr) throw new Error('Key Result not found');
 
     // Delete check-ins (cascade)
@@ -495,7 +494,7 @@ export const deleteKeyResult = mutation({
       .take(SMALL_LIST_CAP);
     const newProgress = computeObjectiveProgress(remainingKRs);
     await ctx.db.patch(kr.objectiveId, { progress: newProgress, updatedAt: Date.now() });
-  }),
+  },
 });
 
 export const checkin = mutation({
@@ -506,12 +505,12 @@ export const checkin = mutation({
     note: v.optional(v.string()),
     confidence: v.union(v.literal('high'), v.literal('medium'), v.literal('low')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { keyResultId, userId, newValue, note, confidence } = args;
-    const kr = (await ctx.db.get(keyResultId)) as any;
+    const kr = await ctx.db.get(keyResultId);
     if (!kr) throw new Error('Key Result not found');
 
-    const obj = (await ctx.db.get(kr.objectiveId)) as any;
+    const obj = await ctx.db.get(kr.objectiveId);
     if (!obj) throw new Error('Objective not found');
 
     // Block check-ins on closed objectives
@@ -559,31 +558,31 @@ export const checkin = mutation({
     await ctx.db.patch(kr.objectiveId, { progress: newProgress, updatedAt: now });
 
     return { newProgress };
-  }),
+  },
 });
 
 export const completeObjective = mutation({
   args: { objectiveId: v.id('objectives') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { objectiveId } = args;
-    const obj = (await ctx.db.get(objectiveId)) as any;
+    const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');
     if (obj.status !== 'active') throw new Error('Only active objectives can be completed');
 
     await ctx.db.patch(objectiveId, { status: 'completed', updatedAt: Date.now() });
-  }),
+  },
 });
 
 export const cancelObjective = mutation({
   args: { objectiveId: v.id('objectives') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { objectiveId } = args;
-    const obj = (await ctx.db.get(objectiveId)) as any;
+    const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');
     if (obj.status === 'completed') throw new Error('Cannot cancel a completed objective');
 
     await ctx.db.patch(objectiveId, { status: 'cancelled', updatedAt: Date.now() });
-  }),
+  },
 });
 
 // ── Internal: Send weekly check-in reminders (cron) ─────────────────────────

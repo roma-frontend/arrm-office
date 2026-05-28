@@ -1,7 +1,6 @@
 import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
-import { withAuth } from './lib/withAuth';
 
 // ─── Default offboarding tasks ───────────────────────────────
 const DEFAULT_TASKS = [
@@ -66,7 +65,7 @@ function computeProgress(tasks: { status: string }[]): number {
 
 export const listPrograms = query({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const programs = await ctx.db
       .query('offboardingPrograms')
@@ -80,7 +79,7 @@ export const listPrograms = query({
           .query('offboardingTasks')
           .withIndex('by_program', (q) => q.eq('programId', prog._id))
           .take(SMALL_LIST_CAP);
-        const employee = (await ctx.db.get(prog.employeeId)) as any;
+        const employee = await ctx.db.get(prog.employeeId);
         return {
           ...prog,
           progress: computeProgress(tasks),
@@ -92,14 +91,14 @@ export const listPrograms = query({
         };
       }),
     );
-  }),
+  },
 });
 
 export const getProgram = query({
   args: { programId: v.id('offboardingPrograms') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { programId } = args;
-    const program = (await ctx.db.get(programId)) as any;
+    const program = await ctx.db.get(programId);
     if (!program) return null;
 
     const tasks = await ctx.db
@@ -107,8 +106,8 @@ export const getProgram = query({
       .withIndex('by_program', (q) => q.eq('programId', programId))
       .take(SMALL_LIST_CAP);
 
-    const employee = (await ctx.db.get(program.employeeId)) as any;
-    const manager = (await ctx.db.get(program.managerId)) as any;
+    const employee = await ctx.db.get(program.employeeId);
+    const manager = await ctx.db.get(program.managerId);
 
     const exitInterview = await ctx.db
       .query('exitInterviews')
@@ -121,7 +120,7 @@ export const getProgram = query({
         .map(async (task) => {
           let assigneeName: string | undefined;
           if (task.assigneeId) {
-            const assignee = (await ctx.db.get(task.assigneeId)) as any;
+            const assignee = await ctx.db.get(task.assigneeId);
             assigneeName = assignee?.name;
           }
           return { ...task, assigneeName };
@@ -140,12 +139,12 @@ export const getProgram = query({
       tasks: tasksWithNames,
       exitInterview,
     };
-  }),
+  },
 });
 
 export const getRetentionInsights = query({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const programs = await ctx.db
       .query('offboardingPrograms')
@@ -188,7 +187,7 @@ export const getRetentionInsights = query({
       recommendRate,
       totalInterviews: exits.length,
     };
-  }),
+  },
 });
 
 // ─── Mutations ───────────────────────────────────────────────
@@ -210,7 +209,7 @@ export const startOffboarding = mutation({
     reasonNote: v.optional(v.string()),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Guard against duplicate
     const existing = await ctx.db
       .query('offboardingPrograms')
@@ -262,31 +261,31 @@ export const startOffboarding = mutation({
     });
 
     return programId;
-  }),
+  },
 });
 
 export const completeTask = mutation({
   args: { taskId: v.id('offboardingTasks'), completedBy: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { taskId, completedBy } = args;
     await ctx.db.patch(taskId, {
       status: 'completed',
       completedBy,
       completedAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const skipTask = mutation({
   args: { taskId: v.id('offboardingTasks'), completedBy: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { taskId, completedBy } = args;
     await ctx.db.patch(taskId, {
       status: 'skipped',
       completedBy,
       completedAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const addTask = mutation({
@@ -313,7 +312,7 @@ export const addTask = mutation({
       v.literal('other'),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const tasks = await ctx.db
       .query('offboardingTasks')
       .withIndex('by_program', (q) => q.eq('programId', args.programId))
@@ -330,7 +329,7 @@ export const addTask = mutation({
       status: 'pending',
       order: tasks.length,
     });
-  }),
+  },
 });
 
 export const submitExitInterview = mutation({
@@ -342,31 +341,31 @@ export const submitExitInterview = mutation({
     feedback: v.optional(v.string()),
     improvements: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { interviewId, ...data } = args;
     await ctx.db.patch(interviewId, {
       ...data,
       status: 'completed',
       conductedAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const completeProgram = mutation({
   args: { programId: v.id('offboardingPrograms') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { programId } = args;
     await ctx.db.patch(programId, {
       status: 'completed',
       completedAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const cancelProgram = mutation({
   args: { programId: v.id('offboardingPrograms') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { programId } = args;
     await ctx.db.patch(programId, { status: 'cancelled' });
-  }),
+  },
 });

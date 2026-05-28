@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { withAuth } from './lib/withAuth';
 
 // ============ QUERIES ============
 
@@ -13,7 +12,7 @@ export const listCompensationRecords = query({
     type: v.optional(v.string()),
     status: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId, type, status } = args;
     let records = await ctx.db
       .query('compensationRecords')
@@ -27,12 +26,10 @@ export const listCompensationRecords = query({
     // Enrich with user names
     const enriched = await Promise.all(
       records.map(async (record) => {
-        const user = (await ctx.db.get(record.userId)) as any;
+        const user = await ctx.db.get(record.userId);
         const userProfile = await getProfile(ctx, record.userId);
-        const approvedBy = record.approvedBy
-          ? ((await ctx.db.get(record.approvedBy)) as any)
-          : null;
-        const createdBy = (await ctx.db.get(record.createdBy)) as any;
+        const approvedBy = record.approvedBy ? await ctx.db.get(record.approvedBy) : null;
+        const createdBy = await ctx.db.get(record.createdBy);
         return {
           ...record,
           userName: user?.name ?? 'Unknown',
@@ -44,7 +41,7 @@ export const listCompensationRecords = query({
     );
 
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  }),
+  },
 });
 
 export const getCompensationHistory = query({
@@ -52,7 +49,7 @@ export const getCompensationHistory = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const records = await ctx.db
       .query('compensationRecords')
@@ -60,7 +57,7 @@ export const getCompensationHistory = query({
       .take(DEFAULT_LIST_CAP);
 
     return records.sort((a, b) => b.effectiveFrom - a.effectiveFrom);
-  }),
+  },
 });
 
 export const listCompensationBands = query({
@@ -69,7 +66,7 @@ export const listCompensationBands = query({
     level: v.optional(v.string()),
     department: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, level, department } = args;
     let bands = await ctx.db
       .query('compensationBands')
@@ -80,7 +77,7 @@ export const listCompensationBands = query({
     if (department) bands = bands.filter((b: any) => b.department === department);
 
     return bands.sort((a, b) => a.minSalary - b.minSalary);
-  }),
+  },
 });
 
 export const listBonusPrograms = query({
@@ -88,7 +85,7 @@ export const listBonusPrograms = query({
     organizationId: v.id('organizations'),
     status: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, status } = args;
     let programs = await ctx.db
       .query('bonusPrograms')
@@ -98,7 +95,7 @@ export const listBonusPrograms = query({
     if (status) programs = programs.filter((p: any) => p.status === status);
 
     return programs.sort((a, b) => b.createdAt - a.createdAt);
-  }),
+  },
 });
 
 export const listReviewCycles = query({
@@ -107,7 +104,7 @@ export const listReviewCycles = query({
     year: v.optional(v.number()),
     status: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, year, status } = args;
     let cycles = await ctx.db
       .query('compensationReviewCycles')
@@ -118,16 +115,16 @@ export const listReviewCycles = query({
     if (status) cycles = cycles.filter((c: any) => c.status === status);
 
     return cycles.sort((a, b) => b.year - a.year);
-  }),
+  },
 });
 
 export const getReviewCycleDetails = query({
   args: {
     reviewCycleId: v.id('compensationReviewCycles'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { reviewCycleId } = args;
-    const cycle = (await ctx.db.get(reviewCycleId)) as any;
+    const cycle = await ctx.db.get(reviewCycleId);
     if (!cycle) return null;
 
     const entries = await ctx.db
@@ -137,9 +134,9 @@ export const getReviewCycleDetails = query({
 
     const enrichedEntries = await Promise.all(
       entries.map(async (entry) => {
-        const user = (await ctx.db.get(entry.userId)) as any;
+        const user = await ctx.db.get(entry.userId);
         const userProfile = await getProfile(ctx, entry.userId);
-        const reviewer = entry.reviewedBy ? ((await ctx.db.get(entry.reviewedBy)) as any) : null;
+        const reviewer = entry.reviewedBy ? await ctx.db.get(entry.reviewedBy) : null;
         return {
           ...entry,
           userName: user?.name ?? 'Unknown',
@@ -158,14 +155,14 @@ export const getReviewCycleDetails = query({
         (e: any) => e.status === 'submitted' || e.status === 'under_review',
       ).length,
     };
-  }),
+  },
 });
 
 export const getCompensationSummary = query({
   args: {
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     const records = await ctx.db
       .query('compensationRecords')
@@ -203,7 +200,7 @@ export const getCompensationSummary = query({
       byType,
       byStatus,
     };
-  }),
+  },
 });
 
 // ============ MUTATIONS ============
@@ -227,7 +224,7 @@ export const createCompensationRecord = mutation({
     notes: v.optional(v.string()),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { createdBy, ...recordData } = args;
     const now = Date.now();
 
@@ -240,7 +237,7 @@ export const createCompensationRecord = mutation({
     });
 
     return recordId;
-  }),
+  },
 });
 
 export const updateCompensationRecord = mutation({
@@ -261,9 +258,9 @@ export const updateCompensationRecord = mutation({
       ),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { recordId, ...updates } = args;
-    const record = (await ctx.db.get(recordId)) as any;
+    const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -274,7 +271,7 @@ export const updateCompensationRecord = mutation({
     if (updates.status !== undefined) patch.status = updates.status;
 
     await ctx.db.patch(recordId, patch);
-  }),
+  },
 });
 
 export const approveCompensationRecord = mutation({
@@ -282,9 +279,9 @@ export const approveCompensationRecord = mutation({
     recordId: v.id('compensationRecords'),
     approvedBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { recordId, approvedBy } = args;
-    const record = (await ctx.db.get(recordId)) as any;
+    const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
     if (record.status !== 'pending_approval') {
       throw new Error('Only pending records can be approved');
@@ -297,7 +294,7 @@ export const approveCompensationRecord = mutation({
       approvedAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 export const rejectCompensationRecord = mutation({
@@ -305,9 +302,9 @@ export const rejectCompensationRecord = mutation({
     recordId: v.id('compensationRecords'),
     rejectionReason: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { recordId, rejectionReason } = args;
-    const record = (await ctx.db.get(recordId)) as any;
+    const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
     if (record.status !== 'pending_approval') {
       throw new Error('Only pending records can be rejected');
@@ -318,23 +315,23 @@ export const rejectCompensationRecord = mutation({
       rejectionReason,
       updatedAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const deleteCompensationRecord = mutation({
   args: {
     recordId: v.id('compensationRecords'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { recordId } = args;
-    const record = (await ctx.db.get(recordId)) as any;
+    const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
     if (record.status === 'approved' || record.status === 'active') {
       throw new Error('Cannot delete approved or active records');
     }
 
     await ctx.db.delete(recordId);
-  }),
+  },
 });
 
 export const createCompensationBand = mutation({
@@ -351,7 +348,7 @@ export const createCompensationBand = mutation({
     frequency: v.union(v.literal('monthly'), v.literal('yearly')),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { createdBy, ...bandData } = args;
     const now = Date.now();
 
@@ -363,7 +360,7 @@ export const createCompensationBand = mutation({
     });
 
     return bandId;
-  }),
+  },
 });
 
 export const updateCompensationBand = mutation({
@@ -377,9 +374,9 @@ export const updateCompensationBand = mutation({
     maxSalary: v.optional(v.number()),
     medianSalary: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { bandId, ...updates } = args;
-    const band = (await ctx.db.get(bandId)) as any;
+    const band = await ctx.db.get(bandId);
     if (!band) throw new Error('Compensation band not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -392,20 +389,20 @@ export const updateCompensationBand = mutation({
     if (updates.medianSalary !== undefined) patch.medianSalary = updates.medianSalary;
 
     await ctx.db.patch(bandId, patch);
-  }),
+  },
 });
 
 export const deleteCompensationBand = mutation({
   args: {
     bandId: v.id('compensationBands'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { bandId } = args;
-    const band = (await ctx.db.get(bandId)) as any;
+    const band = await ctx.db.get(bandId);
     if (!band) throw new Error('Compensation band not found');
 
     await ctx.db.delete(bandId);
-  }),
+  },
 });
 
 export const createBonusProgram = mutation({
@@ -430,7 +427,7 @@ export const createBonusProgram = mutation({
     periodEnd: v.number(),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { createdBy, ...programData } = args;
     const now = Date.now();
 
@@ -443,7 +440,7 @@ export const createBonusProgram = mutation({
     });
 
     return programId;
-  }),
+  },
 });
 
 export const updateBonusProgram = mutation({
@@ -464,9 +461,9 @@ export const updateBonusProgram = mutation({
     periodStart: v.optional(v.number()),
     periodEnd: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { programId, ...updates } = args;
-    const program = (await ctx.db.get(programId)) as any;
+    const program = await ctx.db.get(programId);
     if (!program) throw new Error('Bonus program not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -479,7 +476,7 @@ export const updateBonusProgram = mutation({
     if (updates.periodEnd !== undefined) patch.periodEnd = updates.periodEnd;
 
     await ctx.db.patch(programId, patch);
-  }),
+  },
 });
 
 export const createReviewCycle = mutation({
@@ -495,7 +492,7 @@ export const createReviewCycle = mutation({
     maxIncreasePercentage: v.optional(v.number()),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { createdBy, ...cycleData } = args;
     const now = Date.now();
 
@@ -508,7 +505,7 @@ export const createReviewCycle = mutation({
     });
 
     return cycleId;
-  }),
+  },
 });
 
 export const updateReviewCycle = mutation({
@@ -530,9 +527,9 @@ export const updateReviewCycle = mutation({
     requireJustification: v.optional(v.boolean()),
     maxIncreasePercentage: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { cycleId, ...updates } = args;
-    const cycle = (await ctx.db.get(cycleId)) as any;
+    const cycle = await ctx.db.get(cycleId);
     if (!cycle) throw new Error('Review cycle not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -549,7 +546,7 @@ export const updateReviewCycle = mutation({
       patch.maxIncreasePercentage = updates.maxIncreasePercentage;
 
     await ctx.db.patch(cycleId, patch);
-  }),
+  },
 });
 
 export const createReviewEntry = mutation({
@@ -565,7 +562,7 @@ export const createReviewEntry = mutation({
     justification: v.optional(v.string()),
     performanceRating: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
 
     const entryId = await ctx.db.insert('compensationReviewEntries', {
@@ -576,7 +573,7 @@ export const createReviewEntry = mutation({
     });
 
     return entryId;
-  }),
+  },
 });
 
 export const updateReviewEntry = mutation({
@@ -597,9 +594,9 @@ export const updateReviewEntry = mutation({
       ),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { entryId, ...updates } = args;
-    const entry = (await ctx.db.get(entryId)) as any;
+    const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -612,7 +609,7 @@ export const updateReviewEntry = mutation({
     if (updates.status !== undefined) patch.status = updates.status;
 
     await ctx.db.patch(entryId, patch);
-  }),
+  },
 });
 
 export const approveReviewEntry = mutation({
@@ -620,9 +617,9 @@ export const approveReviewEntry = mutation({
     entryId: v.id('compensationReviewEntries'),
     reviewedBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { entryId, reviewedBy } = args;
-    const entry = (await ctx.db.get(entryId)) as any;
+    const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');
     if (entry.status !== 'submitted' && entry.status !== 'under_review') {
       throw new Error('Only submitted or under review entries can be approved');
@@ -635,21 +632,21 @@ export const approveReviewEntry = mutation({
       reviewedAt: now,
       updatedAt: now,
     });
-  }),
+  },
 });
 
 export const rejectReviewEntry = mutation({
   args: {
     entryId: v.id('compensationReviewEntries'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { entryId } = args;
-    const entry = (await ctx.db.get(entryId)) as any;
+    const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');
 
     await ctx.db.patch(entryId, {
       status: 'rejected',
       updatedAt: Date.now(),
     });
-  }),
+  },
 });

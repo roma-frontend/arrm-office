@@ -6,7 +6,6 @@
 
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import { withAuth } from './lib/withAuth';
 
 // Helper: get or create userSettings doc for a user
 async function getOrCreateSettings(ctx: any, userId: any) {
@@ -17,7 +16,7 @@ async function getOrCreateSettings(ctx: any, userId: any) {
   if (existing) return existing;
 
   // Fallback: read from users table (pre-migration) and create settings doc
-  const user = (await ctx.db.get(userId)) as any;
+  const user = await ctx.db.get(userId);
   if (!user) throw new Error('User not found');
 
   const settingsId = await ctx.db.insert('userSettings', {
@@ -43,7 +42,7 @@ async function getOrCreateSettings(ctx: any, userId: any) {
     dailyTaskGoal: user.dailyTaskGoal,
   });
 
-  return (await ctx.db.get(settingsId)) as any;
+  return await ctx.db.get(settingsId);
 }
 
 /**
@@ -51,7 +50,7 @@ async function getOrCreateSettings(ctx: any, userId: any) {
  */
 export const getUserSettings = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     const settings = await getOrCreateSettings(ctx, userId);
     return {
@@ -65,7 +64,7 @@ export const getUserSettings = query({
       emailNotifications: settings.emailNotifications ?? true,
       pushNotifications: settings.pushNotifications ?? false,
     };
-  }),
+  },
 });
 
 /**
@@ -84,7 +83,7 @@ export const updateUserSettings = mutation({
     emailNotifications: v.optional(v.boolean()),
     pushNotifications: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const settings = await getOrCreateSettings(ctx, args.userId);
     const { userId, ...updates } = args;
     const patch: Record<string, unknown> = {};
@@ -95,7 +94,7 @@ export const updateUserSettings = mutation({
       await ctx.db.patch(settings._id, patch);
     }
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -110,7 +109,7 @@ export const updateLocalizationSettings = mutation({
     timeFormat: v.string(),
     firstDayOfWeek: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const settings = await getOrCreateSettings(ctx, args.userId);
     await ctx.db.patch(settings._id, {
       language: args.language,
@@ -122,7 +121,7 @@ export const updateLocalizationSettings = mutation({
     // Also update user record so language is available on user object
     await ctx.db.patch(args.userId, { language: args.language });
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -135,7 +134,7 @@ export const updateNotificationSettings = mutation({
     emailNotifications: v.boolean(),
     pushNotifications: v.boolean(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const settings = await getOrCreateSettings(ctx, args.userId);
     await ctx.db.patch(settings._id, {
       notificationsEnabled: args.notificationsEnabled,
@@ -143,7 +142,7 @@ export const updateNotificationSettings = mutation({
       pushNotifications: args.pushNotifications,
     });
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -154,11 +153,11 @@ export const updateThemeSettings = mutation({
     userId: v.id('users'),
     theme: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const settings = await getOrCreateSettings(ctx, args.userId);
     await ctx.db.patch(settings._id, { theme: args.theme });
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -169,7 +168,7 @@ export const updateSessionProfile = mutation({
     userId: v.id('users'),
     profile: v.any(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const settings = await getOrCreateSettings(ctx, args.userId);
     const patch: Record<string, unknown> = {};
     if (args.profile.language !== undefined) patch.language = args.profile.language;
@@ -182,7 +181,7 @@ export const updateSessionProfile = mutation({
       await ctx.db.patch(settings._id, patch);
     }
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -190,8 +189,8 @@ export const updateSessionProfile = mutation({
  */
 export const getOrganizationSettings = query({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const org = (await ctx.db.get(args.organizationId)) as any;
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.organizationId);
     if (!org) throw new Error('Organization not found');
     return {
       organizationId: org._id,
@@ -200,5 +199,5 @@ export const getOrganizationSettings = query({
       payrollCycle: org.payrollCycle ?? 'monthly',
       overtimeMultiplier: org.overtimeMultiplier ?? 1.5,
     };
-  }),
+  },
 });

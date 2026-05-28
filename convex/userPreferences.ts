@@ -1,18 +1,21 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import type { QueryCtx, MutationCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
-import { withAuth } from './lib/withAuth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 
 /**
  * Helper to get current user ID from session token
  */
-async function getCurrentUserId(ctx: any, sessionToken?: string): Promise<string | null> {
+async function getCurrentUserId(
+  ctx: QueryCtx | MutationCtx,
+  sessionToken?: string,
+): Promise<Id<'users'> | null> {
   if (!sessionToken) return null;
 
-  // NOTE: Using .take(DEFAULT_LIST_CAP) here because we need to find user by session token across all users (auth helper)
   const users = await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE);
-  const user = users.find((u: any) => u.sessionToken === sessionToken);
+  const user = users.find((u) => u.sessionToken === sessionToken);
 
   if (!user) return null;
   if (user.sessionExpiry && user.sessionExpiry < Date.now()) return null;
@@ -28,7 +31,7 @@ export const hasSeenTour = query({
     tourId: v.string(),
     sessionToken: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { tourId, sessionToken } = args;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
@@ -40,13 +43,11 @@ export const hasSeenTour = query({
 
     const preference = await ctx.db
       .query('userPreferences')
-      .withIndex('by_user_and_key', (q) =>
-        q.eq('userId', userId as any).eq('key', `tour_seen_${tourId}`),
-      )
+      .withIndex('by_user_and_key', (q) => q.eq('userId', userId).eq('key', `tour_seen_${tourId}`))
       .first();
 
     return preference?.value === true;
-  }),
+  },
 });
 
 /**
@@ -57,7 +58,7 @@ export const markTourAsSeen = mutation({
     tourId: v.string(),
     sessionToken: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { tourId, sessionToken } = args;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
@@ -69,9 +70,7 @@ export const markTourAsSeen = mutation({
     // Check if preference already exists
     const existing = await ctx.db
       .query('userPreferences')
-      .withIndex('by_user_and_key', (q) =>
-        q.eq('userId', userId as any).eq('key', `tour_seen_${tourId}`),
-      )
+      .withIndex('by_user_and_key', (q) => q.eq('userId', userId).eq('key', `tour_seen_${tourId}`))
       .first();
 
     if (existing) {
@@ -83,7 +82,7 @@ export const markTourAsSeen = mutation({
     } else {
       // Create new preference
       await ctx.db.insert('userPreferences', {
-        userId: userId as any,
+        userId: userId,
         key: `tour_seen_${tourId}`,
         value: true,
         createdAt: Date.now(),
@@ -92,7 +91,7 @@ export const markTourAsSeen = mutation({
     }
 
     return { success: true, storage: 'database' };
-  }),
+  },
 });
 
 /**
@@ -102,7 +101,7 @@ export const getAllPreferences = query({
   args: {
     sessionToken: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { sessionToken } = args;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
@@ -112,11 +111,11 @@ export const getAllPreferences = query({
 
     const preferences = await ctx.db
       .query('userPreferences')
-      .withIndex('by_user', (q) => q.eq('userId', userId as any))
+      .withIndex('by_user', (q) => q.eq('userId', userId))
       .take(MAX_PAGE_SIZE);
 
     return preferences;
-  }),
+  },
 });
 
 /**
@@ -128,7 +127,7 @@ export const setPreference = mutation({
     value: v.any(),
     sessionToken: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { key, value, sessionToken } = args;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
@@ -138,7 +137,7 @@ export const setPreference = mutation({
 
     const existing = await ctx.db
       .query('userPreferences')
-      .withIndex('by_user_and_key', (q) => q.eq('userId', userId as any).eq('key', key))
+      .withIndex('by_user_and_key', (q) => q.eq('userId', userId).eq('key', key))
       .first();
 
     if (existing) {
@@ -148,7 +147,7 @@ export const setPreference = mutation({
       });
     } else {
       await ctx.db.insert('userPreferences', {
-        userId: userId as any,
+        userId: userId,
         key,
         value,
         createdAt: Date.now(),
@@ -157,5 +156,5 @@ export const setPreference = mutation({
     }
 
     return { success: true };
-  }),
+  },
 });

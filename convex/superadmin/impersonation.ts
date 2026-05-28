@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
-import { withAuth } from '../lib/withAuth';
 
 // ─── IMPERSONATION ───────────────────────────────────────────────────────────
 /**
@@ -15,18 +14,18 @@ export const startImpersonation = mutation({
     targetUserId: v.id('users'),
     reason: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     const expiresAt = now + 3600000; // 1 hour
 
     // Verify superadmin
-    const superadmin = (await ctx.db.get(args.superadminId)) as any;
+    const superadmin = await ctx.db.get(args.superadminId);
     if (!superadmin || superadmin.role !== 'superadmin') {
       throw new Error('Only superadmin can impersonate users');
     }
 
     // Get target user
-    const targetUser = (await ctx.db.get(args.targetUserId)) as any;
+    const targetUser = await ctx.db.get(args.targetUserId);
     if (!targetUser) {
       throw new Error('Target user not found');
     }
@@ -93,7 +92,7 @@ export const startImpersonation = mutation({
         organizationId: targetUser.organizationId,
       },
     };
-  }),
+  },
 });
 
 /**
@@ -104,8 +103,8 @@ export const endImpersonation = mutation({
     sessionId: v.id('impersonationSessions'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const session = (await ctx.db.get(args.sessionId)) as any;
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId);
     if (!session) {
       throw new Error('Session not found');
     }
@@ -135,7 +134,7 @@ export const endImpersonation = mutation({
     });
 
     return { success: true };
-  }),
+  },
 });
 
 /**
@@ -143,7 +142,7 @@ export const endImpersonation = mutation({
  */
 export const getActiveImpersonation = query({
   args: { userId: v.id('users') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const sessions = await ctx.db
       .query('impersonationSessions')
       .withIndex('by_active', (q) => q.eq('isActive', true))
@@ -153,8 +152,8 @@ export const getActiveImpersonation = query({
     if (sessions.length === 0) return null;
 
     const session = sessions[0]!;
-    const superadmin = (await ctx.db.get(session.superadminId)) as any;
-    const targetUser = (await ctx.db.get(session.targetUserId)) as any;
+    const superadmin = await ctx.db.get(session.superadminId);
+    const targetUser = await ctx.db.get(session.targetUserId);
 
     return {
       sessionId: session._id,
@@ -171,7 +170,7 @@ export const getActiveImpersonation = query({
       startedAt: session.startedAt,
       expiresAt: session.expiresAt,
     };
-  }),
+  },
 });
 
 /**
@@ -182,7 +181,7 @@ export const getImpersonationHistory = query({
     superadminId: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     let sessions = await ctx.db.query('impersonationSessions').order('desc').take(MAX_PAGE_SIZE);
 
     if (args.superadminId) {
@@ -196,9 +195,9 @@ export const getImpersonationHistory = query({
     // Enrich with user data
     const enrichedSessions = await Promise.all(
       sessions.map(async (session) => {
-        const superadmin = (await ctx.db.get(session.superadminId)) as any;
-        const targetUser = (await ctx.db.get(session.targetUserId)) as any;
-        const org = (await ctx.db.get(session.organizationId)) as any;
+        const superadmin = await ctx.db.get(session.superadminId);
+        const targetUser = await ctx.db.get(session.targetUserId);
+        const org = await ctx.db.get(session.organizationId);
 
         return {
           ...session,
@@ -213,5 +212,5 @@ export const getImpersonationHistory = query({
     );
 
     return enrichedSessions;
-  }),
+  },
 });

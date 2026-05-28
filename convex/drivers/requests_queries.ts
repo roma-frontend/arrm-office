@@ -10,7 +10,6 @@ import { paginationOptsValidator } from 'convex/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getProfile } from '../lib/userProfile';
-import { withAuth } from '../lib/withAuth';
 
 /** Get pending driver requests for a driver */
 export const getDriverRequests = query({
@@ -25,7 +24,7 @@ export const getDriverRequests = query({
       ),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, status } = args;
     let requests;
 
@@ -45,7 +44,7 @@ export const getDriverRequests = query({
     // Enrich with requester info
     const enriched = await Promise.all(
       requests.map(async (request) => {
-        const requester = (await ctx.db.get(request.requesterId)) as any;
+        const requester = await ctx.db.get(request.requesterId);
         const requesterProfile = await getProfile(ctx, request.requesterId);
         return {
           ...request,
@@ -58,7 +57,7 @@ export const getDriverRequests = query({
     );
 
     return enriched;
-  }),
+  },
 });
 
 /** Get my driver requests (for employees) */
@@ -66,7 +65,7 @@ export const getMyRequests = query({
   args: {
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     const requests = await ctx.db
       .query('driverRequests')
@@ -77,8 +76,8 @@ export const getMyRequests = query({
     // Enrich with driver info and schedule status
     const enriched = await Promise.all(
       requests.map(async (request) => {
-        const driver = (await ctx.db.get(request.driverId)) as any;
-        const driverUser = driver ? ((await ctx.db.get(driver.userId)) as any) : null;
+        const driver = await ctx.db.get(request.driverId);
+        const driverUser = driver ? await ctx.db.get(driver.userId) : null;
         const driverProfile = driver ? await getProfile(ctx, driver.userId) : null;
 
         // Check if there's a completed schedule for this request
@@ -107,13 +106,13 @@ export const getMyRequests = query({
     );
 
     return enriched;
-  }),
+  },
 });
 
 /** Paginated driver requests history for a user */
 export const listMyRequestsPaginated = query({
   args: { userId: v.id('users'), paginationOpts: paginationOptsValidator },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, paginationOpts } = args;
     const result = await ctx.db
       .query('driverRequests')
@@ -123,8 +122,8 @@ export const listMyRequestsPaginated = query({
 
     const enriched = await Promise.all(
       result.page.map(async (request) => {
-        const driver = (await ctx.db.get(request.driverId)) as any;
-        const driverUser = driver ? ((await ctx.db.get(driver.userId)) as any) : null;
+        const driver = await ctx.db.get(request.driverId);
+        const driverUser = driver ? await ctx.db.get(driver.userId) : null;
         const driverProfile = driver ? await getProfile(ctx, driver.userId) : null;
         return {
           ...request,
@@ -136,7 +135,7 @@ export const listMyRequestsPaginated = query({
     );
 
     return { ...result, page: enriched };
-  }),
+  },
 });
 
 /** Get completed trip history for a user */
@@ -145,7 +144,7 @@ export const getCompletedTrips = query({
     userId: v.id('users'),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, limit: take } = args;
     const requests = await ctx.db
       .query('driverRequests')
@@ -253,7 +252,7 @@ export const getCompletedTrips = query({
     }
 
     return completedRequests;
-  }),
+  },
 });
 
 /** Check if passenger has rated a trip */
@@ -262,7 +261,7 @@ export const hasPassengerRated = query({
     scheduleId: v.id('driverSchedules'),
     passengerId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { scheduleId, passengerId } = args;
     const existing = await ctx.db
       .query('passengerRatings')
@@ -270,7 +269,7 @@ export const hasPassengerRated = query({
       .filter((q: any) => q.eq(q.field('passengerId'), passengerId))
       .first();
     return !!existing;
-  }),
+  },
 });
 
 /** Get recurring trips for a user */
@@ -279,7 +278,7 @@ export const getRecurringTrips = query({
     userId: v.id('users'),
     activeOnly: v.optional(v.boolean()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId, activeOnly } = args;
     let trips = await ctx.db
       .query('recurringTrips')
@@ -330,7 +329,7 @@ export const getRecurringTrips = query({
     });
 
     return enriched;
-  }),
+  },
 });
 
 /** Get favorite drivers for a user */
@@ -338,7 +337,7 @@ export const getFavoriteDrivers = query({
   args: {
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     const favorites = await ctx.db
       .query('favoriteDrivers')
@@ -397,7 +396,7 @@ export const getFavoriteDrivers = query({
     });
 
     return enriched.filter(Boolean);
-  }),
+  },
 });
 
 /** Get ETA for a schedule */
@@ -405,9 +404,9 @@ export const getScheduleETA = query({
   args: {
     scheduleId: v.id('driverSchedules'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { scheduleId } = args;
-    const schedule = (await ctx.db.get(scheduleId)) as any;
+    const schedule = await ctx.db.get(scheduleId);
     if (!schedule) return null;
 
     // Calculate ETA based on current time and schedule
@@ -420,7 +419,7 @@ export const getScheduleETA = query({
       etaMinutes,
       estimatedArrival: now + etaMinutes * 60000,
     };
-  }),
+  },
 });
 
 /** Get driver statistics */
@@ -429,9 +428,9 @@ export const getDriverStats = query({
     driverId: v.id('drivers'),
     period: v.optional(v.union(v.literal('week'), v.literal('month'), v.literal('year'))),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, period } = args;
-    const driver = (await ctx.db.get(driverId)) as any;
+    const driver = await ctx.db.get(driverId);
     if (!driver) return null;
 
     // Calculate time range
@@ -476,7 +475,7 @@ export const getDriverStats = query({
       rating: driver.rating ?? 5.0,
       isAvailable: driver.isAvailable,
     };
-  }),
+  },
 });
 
 /** Get current shift for driver */
@@ -484,7 +483,7 @@ export const getCurrentShift = query({
   args: {
     driverId: v.id('drivers'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId } = args;
     const shift = await ctx.db
       .query('driverShifts')
@@ -493,7 +492,7 @@ export const getCurrentShift = query({
       .first();
 
     return shift;
-  }),
+  },
 });
 
 /** Get shift history for driver */
@@ -502,7 +501,7 @@ export const getShiftHistory = query({
     driverId: v.id('drivers'),
     limit: v.optional(v.number()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { driverId, limit } = args;
     const shifts = await ctx.db
       .query('driverShifts')
@@ -511,7 +510,7 @@ export const getShiftHistory = query({
       .take(limit ?? 20);
 
     return shifts;
-  }),
+  },
 });
 
 /** Get shift statistics for organization */
@@ -520,7 +519,7 @@ export const getShiftStatistics = query({
     organizationId: v.id('organizations'),
     period: v.optional(v.union(v.literal('week'), v.literal('month'))),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, period } = args;
     const now = Date.now();
     const startTime =
@@ -542,5 +541,5 @@ export const getShiftStatistics = query({
       totalTrips,
       averageTripsPerShift: totalShifts > 0 ? totalTrips / totalShifts : 0,
     };
-  }),
+  },
 });

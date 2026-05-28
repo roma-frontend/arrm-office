@@ -1,17 +1,17 @@
 import { v } from 'convex/values';
+import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation } from '../_generated/server';
 import type { MutationCtx } from '../_generated/server';
 import type { Id, Doc } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
-import { withAuth } from '../lib/withAuth';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 
 // ── Security helpers ──────────────────────────────────────────────────────────
 /** Verify caller has admin/superadmin role and return their organizationId */
 async function requireAdmin(ctx: QueryCtx, adminId: Id<'users'>) {
-  const admin = (await ctx.db.get(adminId)) as any as any as Doc<'users'> | null;
+  const admin = (await ctx.db.get(adminId)) as Doc<'users'> | null;
   if (!admin) throw new Error('Admin not found');
   if (admin.role !== 'admin' && admin.role !== 'superadmin') {
     throw new Error('Only org admins can perform this action');
@@ -29,8 +29,8 @@ export const logAudit = mutation({
     target: v.optional(v.string()),
     details: v.optional(v.string()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const user = (await ctx.db.get(args.userId)) as any as any;
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
 
     await ctx.db.insert('auditLogs', {
@@ -41,7 +41,7 @@ export const logAudit = mutation({
       details: args.details,
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ export const seedAdmin = mutation({
     passwordHash: v.string(),
     organizationId: v.id('organizations'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { name, email, passwordHash, organizationId } = args;
     const existing = await ctx.db
       .query('users')
@@ -80,7 +80,7 @@ export const seedAdmin = mutation({
       familyLeaveBalance: 5,
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,10 +93,10 @@ export const suspendUser = mutation({
     reason: v.string(),
     duration: v.optional(v.number()), // in hours, default 24
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { adminId, userId, reason, duration = 24 } = args;
     const admin = await requireAdmin(ctx, adminId);
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
 
     if (!user) {
       throw new Error('User not found');
@@ -143,7 +143,7 @@ export const suspendUser = mutation({
     });
 
     return { userId, suspendedUntil };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,10 +154,10 @@ export const unsuspendUser = mutation({
     adminId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { adminId, userId } = args;
     const admin = await requireAdmin(ctx, adminId);
-    const user = (await ctx.db.get(userId)) as any as any;
+    const user = await ctx.db.get(userId);
 
     if (!user) {
       throw new Error('User not found');
@@ -202,7 +202,7 @@ export const unsuspendUser = mutation({
     });
 
     return userId;
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -301,12 +301,10 @@ export const migrateFaceToAvatar = mutation({
 
 export const secureSuspendUser = mutation({
   args: { userId: v.id('users'), reason: v.string(), duration: v.optional(v.number()) },
-  handler: withAuth<
-    MutationCtx,
-    { userId: Id<'users'>; reason: string; duration?: number },
-    { userId: Id<'users'>; suspendedUntil: number }
-  >({ minimumRole: 'admin' }, async (ctx, { userId, reason, duration = 24 }, caller) => {
-    const user = (await ctx.db.get(userId)) as any as any;
+  handler: async (ctx, { userId, reason, duration = 24 }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
     if (caller.role !== 'superadmin' && caller.organizationId !== user.organizationId) {
@@ -332,39 +330,38 @@ export const secureSuspendUser = mutation({
     });
 
     return { userId, suspendedUntil };
-  }),
+  },
 });
 
 export const secureUnsuspendUser = mutation({
   args: { userId: v.id('users') },
-  handler: withAuth<MutationCtx, { userId: Id<'users'> }, Id<'users'>>(
-    { minimumRole: 'admin' },
-    async (ctx, { userId }, caller) => {
-      const user = (await ctx.db.get(userId)) as any as any;
-      if (!user) throw new Error('User not found');
+  handler: async (ctx, { userId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error('User not found');
 
-      if (caller.role !== 'superadmin' && caller.organizationId !== user.organizationId) {
-        throw new Error('Access denied: cross-organization operation');
-      }
+    if (caller.role !== 'superadmin' && caller.organizationId !== user.organizationId) {
+      throw new Error('Access denied: cross-organization operation');
+    }
 
-      await ctx.db.patch(userId, {
-        isSuspended: false,
-        suspendedUntil: undefined,
-        suspendedReason: undefined,
-        suspendedBy: undefined,
-        suspendedAt: undefined,
-      });
+    await ctx.db.patch(userId, {
+      isSuspended: false,
+      suspendedUntil: undefined,
+      suspendedReason: undefined,
+      suspendedBy: undefined,
+      suspendedAt: undefined,
+    });
 
-      await ctx.db.insert('auditLogs', {
-        organizationId: user.organizationId,
-        userId: caller._id,
-        action: 'user_unsuspended',
-        target: user.email,
-        details: `Unsuspended by ${caller.name}`,
-        createdAt: Date.now(),
-      });
+    await ctx.db.insert('auditLogs', {
+      organizationId: user.organizationId,
+      userId: caller._id,
+      action: 'user_unsuspended',
+      target: user.email,
+      details: `Unsuspended by ${caller.name}`,
+      createdAt: Date.now(),
+    });
 
-      return userId;
-    },
-  ),
+    return userId;
+  },
 });

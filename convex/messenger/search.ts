@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
-import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEARCH MESSAGES
@@ -13,7 +12,7 @@ export const searchMessages = query({
     userId: v.id('users'),
     query: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -34,7 +33,7 @@ export const searchMessages = query({
 
     return Promise.all(
       matches.map(async (m) => {
-        const sender = (await ctx.db.get(m.senderId)) as any;
+        const sender = await ctx.db.get(m.senderId);
         const senderProfile = await getProfile(ctx, m.senderId);
         return {
           ...m,
@@ -43,5 +42,5 @@ export const searchMessages = query({
         };
       }),
     );
-  }),
+  },
 });

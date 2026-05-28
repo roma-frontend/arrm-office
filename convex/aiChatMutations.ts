@@ -5,14 +5,13 @@
 import { mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { SMALL_LIST_CAP } from './lib/limits';
-import { withAuth } from './lib/withAuth';
 
 export const createConversation = mutation({
   args: {
     userId: v.id('users'),
     title: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const conversationId = await ctx.db.insert('aiConversations', {
       userId: args.userId,
       title: args.title,
@@ -21,7 +20,7 @@ export const createConversation = mutation({
     });
 
     return { conversationId };
-  }),
+  },
 });
 
 export const updateConversationTitle = mutation({
@@ -29,19 +28,19 @@ export const updateConversationTitle = mutation({
     conversationId: v.id('aiConversations'),
     title: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await ctx.db.patch(args.conversationId, {
       title: args.title,
       updatedAt: Date.now(),
     });
 
     return { success: true };
-  }),
+  },
 });
 
 export const deleteConversation = mutation({
   args: { conversationId: v.id('aiConversations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Delete all messages first
     const messages = await ctx.db
       .query('aiMessages')
@@ -56,7 +55,7 @@ export const deleteConversation = mutation({
     await ctx.db.delete(args.conversationId);
 
     return { success: true };
-  }),
+  },
 });
 
 export const addMessage = mutation({
@@ -65,7 +64,7 @@ export const addMessage = mutation({
     role: v.union(v.literal('user'), v.literal('assistant')),
     content: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const messageId = await ctx.db.insert('aiMessages', {
       conversationId: args.conversationId,
       role: args.role,
@@ -79,15 +78,15 @@ export const addMessage = mutation({
     });
 
     return { messageId };
-  }),
+  },
 });
 
 export const deleteMessage = mutation({
   args: { messageId: v.id('aiMessages') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     await ctx.db.delete(args.messageId);
     return { success: true };
-  }),
+  },
 });
 
 export const autoRenameConversation = mutation({
@@ -95,7 +94,7 @@ export const autoRenameConversation = mutation({
     conversationId: v.id('aiConversations'),
     firstMessage: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     // Generate a short title from the first message (max 50 chars)
     const title = args.firstMessage.slice(0, 50).trim();
 
@@ -105,7 +104,7 @@ export const autoRenameConversation = mutation({
     });
 
     return { success: true, title };
-  }),
+  },
 });
 
 export const createLeaveRequest = mutation({
@@ -123,7 +122,7 @@ export const createLeaveRequest = mutation({
     endDate: v.string(),
     reason: v.string(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     const days =
       Math.ceil(
@@ -149,7 +148,7 @@ export const createLeaveRequest = mutation({
     });
 
     return { leaveId, success: true };
-  }),
+  },
 });
 
 export const createTask = mutation({
@@ -162,7 +161,7 @@ export const createTask = mutation({
     deadline: v.optional(v.number()),
     priority: v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
 
     const taskId = await ctx.db.insert('tasks', {
@@ -179,5 +178,5 @@ export const createTask = mutation({
     });
 
     return { taskId, success: true };
-  }),
+  },
 });

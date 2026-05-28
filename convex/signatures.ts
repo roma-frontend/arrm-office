@@ -1,20 +1,19 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
-import { withAuth } from './lib/withAuth';
 
 // ============ QUERIES ============
 
 export const listTemplates = query({
   args: { organizationId: v.id('organizations') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId } = args;
     return await ctx.db
       .query('documentTemplates')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .filter((q: any) => q.neq(q.field('isArchived'), true))
       .take(DEFAULT_LIST_CAP);
-  }),
+  },
 });
 
 export const listDocuments = query({
@@ -31,7 +30,7 @@ export const listDocuments = query({
       ),
     ),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, status } = args;
     if (status) {
       return await ctx.db
@@ -47,14 +46,14 @@ export const listDocuments = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .order('desc')
       .take(DEFAULT_LIST_CAP);
-  }),
+  },
 });
 
 export const getDocument = query({
   args: { documentId: v.id('signatureDocuments') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { documentId } = args;
-    const doc = (await ctx.db.get(documentId)) as any;
+    const doc = await ctx.db.get(documentId);
     if (!doc) return null;
 
     const requests = await ctx.db
@@ -63,7 +62,7 @@ export const getDocument = query({
       .take(DEFAULT_LIST_CAP);
 
     return { ...doc, requests };
-  }),
+  },
 });
 
 export const getMyPendingSignatures = query({
@@ -71,7 +70,7 @@ export const getMyPendingSignatures = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { userId } = args;
     const requests = await ctx.db
       .query('signatureRequests')
@@ -81,25 +80,25 @@ export const getMyPendingSignatures = query({
     // Enrich with document info
     const enriched = await Promise.all(
       requests.map(async (req) => {
-        const doc = (await ctx.db.get(req.documentId)) as any;
+        const doc = await ctx.db.get(req.documentId);
         return { ...req, document: doc };
       }),
     );
 
     return enriched.filter((r: any) => r.document && r.document.status !== 'cancelled');
-  }),
+  },
 });
 
 export const getAuditLog = query({
   args: { documentId: v.id('signatureDocuments') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { documentId } = args;
     return await ctx.db
       .query('signatureAuditLog')
       .withIndex('by_document_time', (q) => q.eq('documentId', documentId))
       .order('desc')
       .take(DEFAULT_LIST_CAP);
-  }),
+  },
 });
 
 export const getStats = query({
@@ -107,7 +106,7 @@ export const getStats = query({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { organizationId, userId } = args;
     const pending = await ctx.db
       .query('signatureRequests')
@@ -129,7 +128,7 @@ export const getStats = query({
       completed,
       awaitingOthers,
     };
-  }),
+  },
 });
 
 // ============ MUTATIONS ============
@@ -158,20 +157,20 @@ export const createTemplate = mutation({
     ),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     return await ctx.db.insert('documentTemplates', {
       ...args,
       createdAt: Date.now(),
     });
-  }),
+  },
 });
 
 export const deleteTemplate = mutation({
   args: { templateId: v.id('documentTemplates') },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { templateId } = args;
     await ctx.db.patch(templateId, { isArchived: true });
-  }),
+  },
 });
 
 export const createDocument = mutation({
@@ -208,7 +207,7 @@ export const createDocument = mutation({
     expiresAt: v.optional(v.number()),
     createdBy: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { signers, ...docArgs } = args;
     const now = Date.now();
 
@@ -256,7 +255,7 @@ export const createDocument = mutation({
     });
 
     return documentId;
-  }),
+  },
 });
 
 export const signDocument = mutation({
@@ -265,14 +264,14 @@ export const signDocument = mutation({
     signatureData: v.string(),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId, signatureData, userId } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Signature request not found');
     if (request.signerId !== userId) throw new Error('Not authorized to sign');
     if (request.status !== 'pending') throw new Error('Request already processed');
 
-    const doc = (await ctx.db.get(request.documentId)) as any;
+    const doc = await ctx.db.get(request.documentId);
     if (!doc || doc.status === 'cancelled') throw new Error('Document not available');
 
     // Enforce sequential signing: check that all previous orders are signed
@@ -324,7 +323,7 @@ export const signDocument = mutation({
       action: 'signed',
       timestamp: now,
     });
-  }),
+  },
 });
 
 export const declineDocument = mutation({
@@ -333,9 +332,9 @@ export const declineDocument = mutation({
     reason: v.optional(v.string()),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId, reason, userId } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Signature request not found');
     if (request.signerId !== userId) throw new Error('Not authorized');
     if (request.status !== 'pending') throw new Error('Request already processed');
@@ -357,7 +356,7 @@ export const declineDocument = mutation({
       metadata: reason ? JSON.stringify({ reason }) : undefined,
       timestamp: now,
     });
-  }),
+  },
 });
 
 export const cancelDocument = mutation({
@@ -365,9 +364,9 @@ export const cancelDocument = mutation({
     documentId: v.id('signatureDocuments'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { documentId, userId } = args;
-    const doc = (await ctx.db.get(documentId)) as any;
+    const doc = await ctx.db.get(documentId);
     if (!doc) throw new Error('Document not found');
     if (doc.createdBy !== userId) throw new Error('Only creator can cancel');
     if (doc.status === 'completed') throw new Error('Cannot cancel completed document');
@@ -396,7 +395,7 @@ export const cancelDocument = mutation({
       action: 'cancelled',
       timestamp: now,
     });
-  }),
+  },
 });
 
 export const sendReminder = mutation({
@@ -404,9 +403,9 @@ export const sendReminder = mutation({
     requestId: v.id('signatureRequests'),
     userId: v.id('users'),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const { requestId, userId } = args;
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('Cannot remind non-pending request');
 
@@ -419,5 +418,5 @@ export const sendReminder = mutation({
       metadata: JSON.stringify({ signerId: request.signerId }),
       timestamp: Date.now(),
     });
-  }),
+  },
 });

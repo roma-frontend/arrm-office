@@ -14,11 +14,11 @@
  */
 
 import { v } from 'convex/values';
+import { api } from '../_generated/api';
 import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
-import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -77,7 +77,7 @@ export const detectAllConflicts = query({
     userId: v.optional(v.id('users')),
     conflictTypes: v.optional(v.array(v.string())),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const conflicts: Conflict[] = [];
 
     // Определяем, какие типы конфликтов проверять
@@ -119,7 +119,7 @@ export const detectAllConflicts = query({
       if (b.severity === 'critical' && a.severity !== 'critical') return 1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
-  }),
+  },
 });
 
 /**
@@ -140,12 +140,12 @@ export const checkConflictsForRequest = query({
     endDate: v.number(),
     metadata: v.optional(v.any()),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+  handler: async (ctx, args) => {
     const conflicts: Conflict[] = [];
 
     if (args.requestType === 'leave') {
       // Проверка конфликтов отпуска
-      const user = (await ctx.db.get(args.userId)) as any;
+      const user = await ctx.db.get(args.userId);
       if (!user) return { conflicts: [], hasCritical: false };
 
       const profile = await getProfile(ctx, args.userId);
@@ -278,7 +278,7 @@ export const checkConflictsForRequest = query({
       conflicts,
       hasCritical: conflicts.some((c: any) => c.severity === 'critical'),
     };
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -401,7 +401,7 @@ async function detectDepartmentConflicts(
   const deptUserIds = new Map<string, Id<'users'>[]>();
   for (const user of users) {
     const p = profileMap.get(user._id);
-    const dept = (p?.department ?? (user as any).department) || 'Unknown';
+    const dept = (p?.department ?? user.department) || 'Unknown';
     deptUserCounts.set(dept, (deptUserCounts.get(dept) || 0) + 1);
     if (!deptUserIds.has(dept)) deptUserIds.set(dept, []);
     deptUserIds.get(dept)!.push(user._id);
@@ -421,7 +421,7 @@ async function detectDepartmentConflicts(
     const user = userMap.get(leave.userId) as UserDoc | undefined;
     if (!user) continue;
     const p = profileMap.get(leave.userId);
-    const dept = (p?.department ?? (user as any).department) || 'Unknown';
+    const dept = (p?.department ?? user.department) || 'Unknown';
 
     events.push({ date: leaveStart, type: 'start', dept, userId: leave.userId });
     events.push({ date: leaveEnd + 86400000, type: 'end', dept, userId: leave.userId }); // +1 day to make end inclusive
@@ -660,8 +660,8 @@ export const getConflictSummaryForAI = query({
     startDate: v.number(),
     endDate: v.number(),
   },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const conflicts = await ctx.runQuery('conflicts:detectAllConflicts' as any, {
+  handler: async (ctx, args): Promise<any> => {
+    const conflicts = await ctx.runQuery(api.conflicts.detectAllConflicts, {
       organizationId: args.organizationId,
       startDate: args.startDate,
       endDate: args.endDate,
@@ -684,5 +684,5 @@ export const getConflictSummaryForAI = query({
       })),
       hasBlockingConflicts: critical.length > 0,
     };
-  }),
+  },
 });
