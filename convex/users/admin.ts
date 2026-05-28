@@ -6,6 +6,7 @@ import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
 import { withAuth } from '../lib/withAuth';
+import { DEFAULT_LIST_CAP } from '../lib/limits';
 
 // ── Security helpers ──────────────────────────────────────────────────────────
 /** Verify caller has admin/superadmin role and return their organizationId */
@@ -211,7 +212,7 @@ export const autoUnsuspendExpired = mutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    // NOTE: Using .take(500) here because we must check ALL users for expired suspensions (scheduled maintenance task)
+    // NOTE: Using .take(DEFAULT_LIST_CAP) here because we must check ALL users for expired suspensions (scheduled maintenance task)
     const allUsers = await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE);
 
     let count = 0;
@@ -281,7 +282,7 @@ export const upgradeSuperadminRole = mutation({
 export const migrateFaceToAvatar = mutation({
   args: {},
   handler: async (ctx) => {
-    // NOTE: Using .take(500) here because we must migrate ALL users' face images to avatars (one-time migration task)
+    // NOTE: Using .take(DEFAULT_LIST_CAP) here because we must migrate ALL users' face images to avatars (one-time migration task)
     const users = await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE);
     let count = 0;
     for (const user of users) {

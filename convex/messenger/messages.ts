@@ -5,6 +5,7 @@ import { markConversationRead } from './conversations';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
 import { withAuth } from '../lib/withAuth';
+import { DEFAULT_LIST_CAP } from '../lib/limits';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET CONVERSATION MESSAGES — uses chatMessages
@@ -138,11 +139,11 @@ export const sendMessage = mutation({
     });
 
     // Increment unread for other members + stamp readBy delivered
-    // NOTE: Using .take(500) here because we must update unread counts for ALL members of the conversation
+    // NOTE: Using .take(DEFAULT_LIST_CAP) here because we must update unread counts for ALL members of the conversation
     const members = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const recipientIds = members
       .filter((m) => m.userId !== args.senderId)

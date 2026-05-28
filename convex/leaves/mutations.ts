@@ -6,6 +6,7 @@ import { isSuperadmin, isSuperadminEmail } from '../lib/auth';
 import { withAuth } from '../lib/withAuth';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { patchProfile } from '../lib/userProfile';
+import { DEFAULT_LIST_CAP } from '../lib/limits';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE LEAVE REQUEST
@@ -52,13 +53,13 @@ export const createLeave = mutation({
     // 2. Future: scheduled job to check conflicts
 
     // Notify admins within same org only
-    // NOTE: Using .take(500) here because we must notify ALL admins of a new leave request; truncating would miss recipients
+    // NOTE: Using .take(DEFAULT_LIST_CAP) here because we must notify ALL admins of a new leave request; truncating would miss recipients
     const admins = await ctx.db
       .query('users')
       .withIndex('by_org_role', (q) =>
         q.eq('organizationId', user.organizationId).eq('role', 'admin'),
       )
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     // ═══════════════════════════════════════════════════════════════
     // АВТО-ОТВЕТ СОТРУДНИКУ — Заявка получена

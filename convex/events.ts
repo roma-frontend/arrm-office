@@ -557,7 +557,7 @@ export const getEventAttendanceStatus = query({
         const leaveRequests = await ctx.db
           .query('leaveRequests')
           .withIndex('by_user', (q) => q.eq('userId', user._id))
-          .take(500);
+          .take(DEFAULT_LIST_CAP);
 
         const hasApprovedLeave = leaveRequests.some((leave) => {
           const leaveStart = new Date(leave.startDate).getTime();

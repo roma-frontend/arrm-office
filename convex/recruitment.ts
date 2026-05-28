@@ -40,7 +40,7 @@ export const listVacancies = query({
         const apps = await ctx.db
           .query('applications')
           .withIndex('by_vacancy', (q) => q.eq('vacancyId', vac._id))
-          .take(500);
+          .take(DEFAULT_LIST_CAP);
         const manager = (await ctx.db.get(vac.hiringManagerId)) as any as any;
         return {
           ...vac,
@@ -92,12 +92,12 @@ export const listCandidatesByVacancy = query({
               stage as 'applied' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected',
             ),
         )
-        .take(500);
+        .take(DEFAULT_LIST_CAP);
     } else {
       apps = await ctx.db
         .query('applications')
         .withIndex('by_vacancy', (q) => q.eq('vacancyId', vacancyId))
-        .take(500);
+        .take(DEFAULT_LIST_CAP);
     }
 
     const enriched = await Promise.all(
@@ -106,7 +106,7 @@ export const listCandidatesByVacancy = query({
         const scorecards = await ctx.db
           .query('interviewScorecards')
           .withIndex('by_application', (q) => q.eq('applicationId', app._id))
-          .take(500);
+          .take(DEFAULT_LIST_CAP);
         const avgScore =
           scorecards.length > 0
             ? Math.round(
@@ -163,7 +163,7 @@ export const getCandidate = query({
     const interviews = await ctx.db
       .query('interviews')
       .withIndex('by_application', (q) => q.eq('applicationId', applicationId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const enrichedInterviews = await Promise.all(
       interviews.map(async (iv) => {
@@ -175,7 +175,7 @@ export const getCandidate = query({
     const scorecards = await ctx.db
       .query('interviewScorecards')
       .withIndex('by_application', (q) => q.eq('applicationId', applicationId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const enrichedScorecards = await Promise.all(
       scorecards.map(async (sc) => {
@@ -187,7 +187,7 @@ export const getCandidate = query({
     const events = await ctx.db
       .query('applicationEvents')
       .withIndex('by_application', (q) => q.eq('applicationId', applicationId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const enrichedEvents = await Promise.all(
       events.map(async (ev) => {
@@ -217,7 +217,7 @@ export const getMyInterviews = query({
     const interviews = await ctx.db
       .query('interviews')
       .withIndex('by_interviewer', (q) => q.eq('interviewerId', userId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const upcoming = interviews.filter(
       (iv) =>
@@ -252,7 +252,7 @@ export const getPipelineStats = query({
       .withIndex('by_org_status', (q) =>
         q.eq('organizationId', organizationId).eq('status', 'open'),
       )
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const allApps = await ctx.db
       .query('applications')

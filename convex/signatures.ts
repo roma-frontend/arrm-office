@@ -60,7 +60,7 @@ export const getDocument = query({
     const requests = await ctx.db
       .query('signatureRequests')
       .withIndex('by_document_order', (q) => q.eq('documentId', documentId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     return { ...doc, requests };
   }),
@@ -76,7 +76,7 @@ export const getMyPendingSignatures = query({
     const requests = await ctx.db
       .query('signatureRequests')
       .withIndex('by_signer_status', (q) => q.eq('signerId', userId).eq('status', 'pending'))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     // Enrich with document info
     const enriched = await Promise.all(
@@ -98,7 +98,7 @@ export const getAuditLog = query({
       .query('signatureAuditLog')
       .withIndex('by_document_time', (q) => q.eq('documentId', documentId))
       .order('desc')
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
   }),
 });
 
@@ -112,7 +112,7 @@ export const getStats = query({
     const pending = await ctx.db
       .query('signatureRequests')
       .withIndex('by_signer_status', (q) => q.eq('signerId', userId).eq('status', 'pending'))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const allDocs = await ctx.db
       .query('signatureDocuments')
@@ -279,7 +279,7 @@ export const signDocument = mutation({
     const allRequests = await ctx.db
       .query('signatureRequests')
       .withIndex('by_document', (q) => q.eq('documentId', request.documentId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const previousUnsigned = allRequests.filter(
       (r) => r.order < request.order && r.status === 'pending',

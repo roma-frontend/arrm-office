@@ -3,6 +3,7 @@ import { mutation, query, internalQuery } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { requireRequester } from './lib/requireRequester';
 import { withAuth } from './lib/withAuth';
+import { DEFAULT_LIST_CAP } from './lib/limits';
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -331,7 +332,7 @@ export const pruneExpiredFaceTokens = internalQuery({
     const expired = await ctx.db
       .query('faceLoginTokens')
       .withIndex('by_expires', (q) => q.lt('expiresAt', now))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
     return expired.map((t: any) => t._id);
   },
 });

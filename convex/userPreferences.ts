@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { withAuth } from './lib/withAuth';
+import { DEFAULT_LIST_CAP } from './lib/limits';
 
 /**
  * Helper to get current user ID from session token
@@ -9,7 +10,7 @@ import { withAuth } from './lib/withAuth';
 async function getCurrentUserId(ctx: any, sessionToken?: string): Promise<string | null> {
   if (!sessionToken) return null;
 
-  // NOTE: Using .take(500) here because we need to find user by session token across all users (auth helper)
+  // NOTE: Using .take(DEFAULT_LIST_CAP) here because we need to find user by session token across all users (auth helper)
   const users = await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE);
   const user = users.find((u: any) => u.sessionToken === sessionToken);
 

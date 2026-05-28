@@ -172,7 +172,7 @@ export const getPayrollRuns = query({
         const records = await ctx.db
           .query('payrollRecords')
           .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', run._id))
-          .take(500);
+          .take(DEFAULT_LIST_CAP);
 
         return {
           ...run,
@@ -203,7 +203,7 @@ export const getPayrollRunById = query({
     const records = await ctx.db
       .query('payrollRecords')
       .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', run._id))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const enrichedRecords = await Promise.all(
       records.map(async (record) => {

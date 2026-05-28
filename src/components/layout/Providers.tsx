@@ -145,6 +145,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       hydrated &&
       user &&
       !user.organizationId &&
+      (user.role === 'employee' || user.role === 'driver') &&
       !isAuthOnboardingPage &&
       !redirectedRef.current
     ) {

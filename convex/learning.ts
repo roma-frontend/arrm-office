@@ -60,7 +60,7 @@ export const listCourses = query({
           .withIndex('by_course', (q) =>
             q.eq('organizationId', args.organizationId).eq('courseId', course._id),
           )
-          .take(500);
+          .take(DEFAULT_LIST_CAP);
         const creator = (await ctx.db.get(course.createdBy)) as any;
         return { ...course, creatorName: creator?.name ?? 'Unknown', lessonCount: lessons.length };
       }),
@@ -104,7 +104,7 @@ export const getCourseWithLessons = query({
         q.eq('organizationId', args.organizationId).eq('courseId', course._id),
       )
       .order('asc')
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     return { course, lessons };
   }),
@@ -328,7 +328,7 @@ export const getMyEnrollments = query({
       .withIndex('by_user', (q) =>
         q.eq('organizationId', args.organizationId).eq('userId', args.requesterId),
       )
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const enriched = await Promise.all(
       enrollments.map(async (enrollment) => {
@@ -580,7 +580,7 @@ export const getQuiz = query({
         q.eq('organizationId', args.organizationId).eq('quizId', quiz._id),
       )
       .order('asc')
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     return { quiz, questions };
   }),
@@ -610,7 +610,7 @@ export const getQuizByLesson = query({
         q.eq('organizationId', args.organizationId).eq('quizId', quiz._id),
       )
       .order('asc')
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     return { quiz, questions };
   }),
@@ -634,7 +634,7 @@ export const getQuizAttemptsForUser = query({
           .eq('quizId', args.quizId),
       )
       .order('desc')
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
   }),
 });
 
@@ -796,7 +796,7 @@ export const getMyCertificates = query({
       .withIndex('by_user', (q) =>
         q.eq('organizationId', args.organizationId).eq('userId', args.requesterId),
       )
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const enriched = await Promise.all(
       certificates.map(async (cert) => {
@@ -867,7 +867,7 @@ export const getCourseCategories = query({
       .query('courseCategories')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .order('asc')
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
   }),
 });
 

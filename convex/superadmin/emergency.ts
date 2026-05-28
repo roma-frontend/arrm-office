@@ -3,6 +3,7 @@ import { query, mutation } from '../_generated/server';
 import { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { withAuth } from '../lib/withAuth';
+import { DEFAULT_LIST_CAP } from '../lib/limits';
 
 // ─── EMERGENCY DASHBOARD ─────────────────────────────────────────────────────
 /**
@@ -206,11 +207,11 @@ export const createIncident = mutation({
     });
 
     // Notify all superadmins
-    // NOTE: Using .take(500) here because we must notify ALL superadmins of an emergency incident; truncating would miss critical recipients
+    // NOTE: Using .take(DEFAULT_LIST_CAP) here because we must notify ALL superadmins of an emergency incident; truncating would miss critical recipients
     const superadmins = await ctx.db
       .query('users')
       .withIndex('by_role', (q) => q.eq('role', 'superadmin'))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     for (const admin of superadmins) {
       await ctx.db.insert('notifications', {

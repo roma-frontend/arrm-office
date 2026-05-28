@@ -455,7 +455,7 @@ export const getSLATrend = query({
 ('export const getAllSLAMetrics = query({');
 ('  args: {},');
 ('  handler: async (ctx) => {');
-('    const metrics = await ctx.db.query("slaMetrics").take(500);');
+('    const metrics = await ctx.db.query("slaMetrics").take(DEFAULT_LIST_CAP);');
 ('    return metrics;');
 ('  },');
 ('});');

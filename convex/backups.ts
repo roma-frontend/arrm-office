@@ -199,7 +199,7 @@ export const getUserBackups = query({
       .withIndex('by_org_user', (q) =>
         q.eq('organizationId', args.organizationId).eq('userId', args.userId),
       )
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     return backups
       .filter((b: any) => b.expiresAt > now)

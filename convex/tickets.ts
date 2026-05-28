@@ -203,7 +203,7 @@ export const getAllTickets = query({
         const comments = await ctx.db
           .query('ticketComments')
           .withIndex('by_ticket', (q) => q.eq('ticketId', ticket._id))
-          .take(500);
+          .take(DEFAULT_LIST_CAP);
 
         return {
           ...ticket,
@@ -243,7 +243,7 @@ export const getTicketById = query({
     const comments = await ctx.db
       .query('ticketComments')
       .withIndex('by_ticket', (q) => q.eq('ticketId', ticket._id))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const enrichedComments = await Promise.all(
       comments.map(async (comment) => {

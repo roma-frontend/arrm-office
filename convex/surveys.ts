@@ -74,7 +74,7 @@ export const getSurveyWithQuestions = query({
     const questions = await ctx.db
       .query('surveyQuestions')
       .withIndex('by_survey_order', (q) => q.eq('surveyId', surveyId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const creator = (await ctx.db.get(survey.createdBy)) as any;
     const creatorProfile = await getProfile(ctx, survey.createdBy);
@@ -108,7 +108,7 @@ export const getSurveyResults = query({
     const questions = await ctx.db
       .query('surveyQuestions')
       .withIndex('by_survey_order', (q) => q.eq('surveyId', surveyId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const responses = await ctx.db
       .query('surveyResponses')
@@ -462,7 +462,7 @@ export const reorderQuestions = mutation({
     const questions = await ctx.db
       .query('surveyQuestions')
       .withIndex('by_survey', (q) => q.eq('surveyId', surveyId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const questionMap = new Map(questions.map((q: any) => [q._id, q]));
 
@@ -536,7 +536,7 @@ export const deleteQuestion = mutation({
     const remainingQuestions = await ctx.db
       .query('surveyQuestions')
       .withIndex('by_survey', (q) => q.eq('surveyId', question.surveyId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     await ctx.db.delete(questionId);
 
@@ -764,7 +764,7 @@ export const getSurveyResultsByDepartment = query({
     const questions = await ctx.db
       .query('surveyQuestions')
       .withIndex('by_survey_order', (q) => q.eq('surveyId', surveyId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const responses = await ctx.db
       .query('surveyResponses')
@@ -923,7 +923,7 @@ export const getSurveyResponses = query({
         const answers = await ctx.db
           .query('surveyAnswers')
           .withIndex('by_response', (q) => q.eq('responseId', resp._id))
-          .take(500);
+          .take(DEFAULT_LIST_CAP);
 
         return {
           responseId: resp._id,
@@ -964,7 +964,7 @@ export const getSurveyExportData = query({
     const questions = await ctx.db
       .query('surveyQuestions')
       .withIndex('by_survey_order', (q) => q.eq('surveyId', surveyId))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const responses = await ctx.db
       .query('surveyResponses')
@@ -978,7 +978,7 @@ export const getSurveyExportData = query({
         const answers = await ctx.db
           .query('surveyAnswers')
           .withIndex('by_response', (q) => q.eq('responseId', resp._id))
-          .take(500);
+          .take(DEFAULT_LIST_CAP);
 
         const answerMap: Record<string, any> = {};
         answers.forEach((ans: any) => {

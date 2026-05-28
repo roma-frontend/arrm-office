@@ -10,6 +10,7 @@ import { internal } from './_generated/api';
 import { v } from 'convex/values';
 import { Resend } from 'resend';
 import { WeeklyDigestEmail } from '../src/emails/WeeklyDigestEmail';
+import { DEFAULT_LIST_CAP } from './lib/limits';
 
 function getResendClient(): Resend | null {
   const key = process.env.RESEND_API_KEY;
@@ -164,7 +165,7 @@ export const getActiveSubscribers = internalQuery({
     const subs = await ctx.db
       .query('newsletterSubscribers')
       .withIndex('by_active', (q) => q.eq('unsubscribed', false))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
     // Filter out paused subscribers
     return subs.filter((s) => !s.pausedUntil || s.pausedUntil < now);
   },
@@ -366,7 +367,7 @@ export const getDripEligible = internalQuery({
     const subs = await ctx.db
       .query('newsletterSubscribers')
       .withIndex('by_active', (q) => q.eq('unsubscribed', false))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     // Drip schedule: day 0, day 2, day 4, day 6
     return subs.filter((s) => {

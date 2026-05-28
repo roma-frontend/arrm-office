@@ -1,6 +1,7 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { withAuth } from './lib/withAuth';
+import { DEFAULT_LIST_CAP } from './lib/limits';
 
 // ── Get current month's usage for a user ──────────────────────────────────────
 export const getCurrentMonthUsage = query({
@@ -312,7 +313,7 @@ export const getOrganizationStats = query({
     const usageRecords = await ctx.db
       .query('aiSiteEditorUsage')
       .withIndex('by_org_month', (q) => q.eq('organizationId', organizationId).eq('month', month))
-      .take(500);
+      .take(DEFAULT_LIST_CAP);
 
     const totalStats = usageRecords.reduce(
       (acc, record) => ({
