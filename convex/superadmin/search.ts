@@ -107,10 +107,10 @@ export const globalSearch = query({
       .map((d: any) => d.requesterId)
       .filter((id): id is Id<'users'> => Boolean(id));
     const userIdsFromTasks = tasks
-      .flatMap((t) => [t.assignedTo, t.assignedBy])
+      .flatMap((t: any) => [t.assignedTo, t.assignedBy])
       .filter((id): id is Id<'users'> => Boolean(id));
     const userIdsFromTickets = supportTickets
-      .flatMap((t) => [t.createdBy, t.assignedTo])
+      .flatMap((t: any) => [t.createdBy, t.assignedTo])
       .filter((id): id is Id<'users'> => Boolean(id));
 
     const driverIdsToLoad = [

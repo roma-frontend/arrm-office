@@ -33,14 +33,14 @@ export const createEmployeeBackup = mutation({
     const now = Date.now();
     const expiresAt = now + BACKUP_RETENTION_HOURS * 60 * 60 * 1000;
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = (await ctx.db.get(args.userId)) as any as any;
     if (!user) return { success: false, reason: 'user_not_found' };
 
     if (user.organizationId?.toString() !== args.organizationId.toString()) {
       return { success: false, reason: 'user_not_in_org' };
     }
 
-    const org = (await ctx.db.get(args.organizationId)) as any;
+    const org = (await ctx.db.get(args.organizationId)) as any as any;
     if (!org) {
       return { success: false, reason: 'org_not_found' };
     }
@@ -77,10 +77,10 @@ export const createEmployeeBackupInternal = internalMutation({
     const now = Date.now();
     const expiresAt = now + BACKUP_RETENTION_HOURS * 60 * 60 * 1000;
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = (await ctx.db.get(args.userId)) as any as any;
     if (!user) return;
 
-    const org = (await ctx.db.get(args.organizationId)) as any;
+    const org = (await ctx.db.get(args.organizationId)) as any as any;
     if (!org) return;
 
     const snapshot = await buildEmployeeSnapshot(ctx, args.organizationId, args.userId);
@@ -109,7 +109,7 @@ export const createOrgBackups = mutation({
     organizationId: v.id('organizations'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const org = (await ctx.db.get(args.organizationId)) as any;
+    const org = (await ctx.db.get(args.organizationId)) as any as any;
     if (!org) {
       return { success: false, reason: 'org_not_found' };
     }
@@ -166,7 +166,7 @@ export const getOrgBackups = query({
 
     const result = [];
     for (const [userId, userBackups] of groupedByUser.entries()) {
-      const latest = userBackups.reduce((a, b) => (a.createdAt > b.createdAt ? a : b));
+      const latest = userBackups.reduce((a: any, b: any) => (a.createdAt > b.createdAt ? a : b));
       result.push({
         userId,
         userName: latest.userName,
@@ -177,7 +177,7 @@ export const getOrgBackups = query({
       });
     }
 
-    result.sort((a, b) => b.latestBackup - a.latestBackup);
+    result.sort((a: any, b: any) => b.latestBackup - a.latestBackup);
 
     return result;
   }),
@@ -203,7 +203,7 @@ export const getUserBackups = query({
 
     return backups
       .filter((b: any) => b.expiresAt > now)
-      .sort((a, b) => b.createdAt - a.createdAt)
+      .sort((a: any, b: any) => b.createdAt - a.createdAt)
       .map((b: any) => ({
         id: b._id,
         createdAt: b.createdAt,
@@ -223,7 +223,7 @@ export const getBackupDetails = query({
     backupId: v.id('employeeBackups'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const backup = (await ctx.db.get(args.backupId)) as any;
+    const backup = (await ctx.db.get(args.backupId)) as any as any;
     if (!backup) return null;
 
     return {
@@ -262,7 +262,7 @@ export const restoreEmployeeBackup = mutation({
       throw new Error('Only superadmins can restore backups');
     }
 
-    const backup = (await ctx.db.get(args.backupId)) as any;
+    const backup = (await ctx.db.get(args.backupId)) as any as any;
     if (!backup) {
       throw new Error('Backup not found');
     }
@@ -337,7 +337,7 @@ export const createOrgBackupsInternal = internalMutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
-    const org = (await ctx.db.get(args.organizationId)) as any;
+    const org = (await ctx.db.get(args.organizationId)) as any as any;
     if (!org) return;
 
     const employees = await ctx.db
@@ -406,7 +406,7 @@ export const getBackupStats = query({
     const allBackups = await ctx.db.query('employeeBackups').take(XLARGE_LIST_CAP);
 
     const activeBackups = allBackups.filter((b: any) => b.expiresAt > now);
-    const totalSize = activeBackups.reduce((sum, b) => sum + b.snapshotSize, 0);
+    const totalSize = activeBackups.reduce((sum: any, b: any) => sum + b.snapshotSize, 0);
     const uniqueOrgs = new Set(activeBackups.map((b: any) => b.organizationId.toString())).size;
 
     return {
@@ -425,7 +425,7 @@ export const hasBackupAccess = query({
     organizationId: v.id('organizations'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const org = (await ctx.db.get(args.organizationId)) as any;
+    const org = (await ctx.db.get(args.organizationId)) as any as any;
     return !!org;
   }),
 });
@@ -439,7 +439,7 @@ async function buildEmployeeSnapshot(
   organizationId: Id<'organizations'>,
   userId: Id<'users'>,
 ) {
-  const user = (await ctx.db.get(userId)) as any;
+  const user = (await ctx.db.get(userId)) as any as any;
 
   const employeeProfile = await ctx.db
     .query('employeeProfiles')
@@ -591,7 +591,7 @@ async function restoreEmployeeData(ctx: any, userId: Id<'users'>, snapshot: any)
   const { user, employeeProfile, leaves, tasks, createdTasks, events, ...rest } = snapshot;
 
   if (user) {
-    const existingUser = (await ctx.db.get(userId)) as any;
+    const existingUser = (await ctx.db.get(userId)) as any as any;
     if (existingUser) {
       const { _id, _creationTime, ...updatableFields } = user;
       await ctx.db.patch(userId, updatableFields);
@@ -622,7 +622,7 @@ export const secureCreateOrgBackups = mutation({
       if (caller.role !== 'superadmin' && caller.organizationId !== organizationId) {
         throw new Error('Access denied: cross-organization operation');
       }
-      const org = (await ctx.db.get(organizationId)) as any;
+      const org = (await ctx.db.get(organizationId)) as any as any;
       if (!org) return { success: false };
 
       const employees = await ctx.db

@@ -25,7 +25,7 @@ export const createManualSubscription = mutation({
       throw new Error('Not authorized - superadmin only');
     }
 
-    const organization = (await ctx.db.get(args.organizationId)) as any;
+    const organization = (await ctx.db.get(args.organizationId)) as any as any;
     if (!organization) {
       throw new Error('Organization not found');
     }
@@ -86,7 +86,9 @@ export const listAllWithUsers = query({
 
     const withOrganizations = await Promise.all(
       subscriptions.map(async (sub) => {
-        const org = sub.organizationId ? ((await ctx.db.get(sub.organizationId)) as any) : null;
+        const org = sub.organizationId
+          ? ((await ctx.db.get(sub.organizationId)) as any as any)
+          : null;
         return { ...sub, organization: org };
       }),
     );

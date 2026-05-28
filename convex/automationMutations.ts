@@ -51,7 +51,7 @@ export const completeAutomationTask = internalMutation({
 export const toggleWorkflow = mutation({
   args: { workflowId: v.id('automationWorkflows') },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const workflow = (await ctx.db.get(args.workflowId)) as any;
+    const workflow = (await ctx.db.get(args.workflowId)) as any as any;
     if (!workflow) {
       throw new Error('Workflow not found');
     }

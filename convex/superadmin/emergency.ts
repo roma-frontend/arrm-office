@@ -82,9 +82,9 @@ export const getEmergencyDashboard = query({
     // Enrich critical tickets
     const enrichedTickets = await Promise.all(
       criticalTickets.map(async (ticket) => {
-        const creator = (await ctx.db.get(ticket.createdBy)) as any;
+        const creator = (await ctx.db.get(ticket.createdBy)) as any as any;
         const org = ticket.organizationId
-          ? ((await ctx.db.get(ticket.organizationId)) as any)
+          ? ((await ctx.db.get(ticket.organizationId)) as any as any)
           : null;
         return {
           ...ticket,
@@ -98,7 +98,7 @@ export const getEmergencyDashboard = query({
     // Enrich incidents
     const enrichedIncidents = await Promise.all(
       activeIncidents.map(async (incident) => {
-        const creator = (await ctx.db.get(incident.createdBy)) as any;
+        const creator = (await ctx.db.get(incident.createdBy)) as any as any;
         return {
           ...incident,
           creatorName: creator?.name || 'Unknown',

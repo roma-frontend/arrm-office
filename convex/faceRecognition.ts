@@ -44,7 +44,7 @@ function generateToken(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
+    .map((b: any) => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
@@ -61,12 +61,12 @@ export const registerFace = mutation({
     faceDescriptor: v.array(v.number()),
     faceImageUrl: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     if (args.faceDescriptor.length !== FACE_DESCRIPTOR_LENGTH) {
       throw new Error(`Face descriptor must be ${FACE_DESCRIPTOR_LENGTH}-dim`);
     }
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = (await ctx.db.get(args.userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     const patch: Record<string, unknown> = {
@@ -86,7 +86,7 @@ export const registerFace = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 /**
@@ -108,7 +108,7 @@ export const getFaceDescriptor = query({
     const isSuperadmin = requester.role === 'superadmin';
     if (!isSelf && !isSuperadmin) return null;
 
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = (await ctx.db.get(args.userId)) as any as any;
     if (!user) return null;
 
     return {
@@ -128,11 +128,12 @@ export const removeFaceRegistration = mutation({
     userId: v.id('users'),
     requesterId: v.id('users'),
   },
-  handler: async (ctx, { userId, requesterId }) => {
-    const requester = await ctx.db.get(requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, requesterId } = args;
+    const requester = (await ctx.db.get(requesterId)) as any;
     if (!requester) throw new Error('Requester not found');
 
-    const target = await ctx.db.get(userId);
+    const target = (await ctx.db.get(userId)) as any;
     if (!target) throw new Error('User not found');
 
     // Self, same-org admin, or superadmin only
@@ -160,7 +161,7 @@ export const removeFaceRegistration = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -184,7 +185,7 @@ export const loginWithFace = mutation({
     ip: v.optional(v.string()),
     userAgent: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     if (args.faceDescriptor.length !== FACE_DESCRIPTOR_LENGTH) {
       throw new Error('Invalid face descriptor');
     }
@@ -292,7 +293,7 @@ export const loginWithFace = mutation({
       expiresAt: now + FACE_LOGIN_TOKEN_TTL_MS,
       email: user.email,
     };
-  },
+  }),
 });
 
 /**
@@ -331,6 +332,6 @@ export const pruneExpiredFaceTokens = internalQuery({
       .query('faceLoginTokens')
       .withIndex('by_expires', (q) => q.lt('expiresAt', now))
       .take(500);
-    return expired.map((t) => t._id);
+    return expired.map((t: any) => t._id);
   },
 });

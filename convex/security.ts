@@ -14,7 +14,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits'
  * - admin: sees only their own org
  */
 async function requireAdmin(ctx: any, adminId: Id<'users'>) {
-  const user = (await ctx.db.get(adminId)) as any;
+  const user = (await ctx.db.get(adminId)) as any as any;
   if (!user) {
     throw new Error('User not found');
   }
@@ -68,7 +68,7 @@ export const getAllSettings = query({
 
     // Merge with defaults so all features are always present
     return SECURITY_FEATURES.map((feature: any) => {
-      const saved = settings.find((s) => s.key === feature.key);
+      const saved = settings.find((s: any) => s.key === feature.key);
       return {
         key: feature.key,
         description: feature.description,
@@ -120,7 +120,7 @@ export const toggleSetting = mutation({
     }
 
     // Log this action in audit logs
-    const user = (await ctx.db.get(updatedBy)) as any;
+    const user = (await ctx.db.get(updatedBy)) as any as any;
     if (user) {
       await ctx.db.insert('auditLogs', {
         organizationId: user.organizationId,
@@ -187,7 +187,7 @@ export const logLoginAttempt = mutation({
             faceIdBlockedAt: Date.now(),
           });
           // Notify org admins
-          const user = (await ctx.db.get(args.userId)) as any;
+          const user = (await ctx.db.get(args.userId)) as any as any;
           if (user?.organizationId) {
             const admins = await ctx.db
               .query('users')
@@ -371,7 +371,7 @@ export const getLoginStats = query({
     // Recent suspicious (failed + high risk)
     const suspicious = attempts
       .filter((a: any) => !a.success || (a.riskScore ?? 0) >= 60)
-      .sort((a, b) => b.createdAt - a.createdAt)
+      .sort((a: any, b: any) => b.createdAt - a.createdAt)
       .slice(0, 20);
 
     return { total, failed, blocked, highRisk, byMethod, suspicious };
@@ -466,8 +466,8 @@ export const unlockAccount = mutation({
       faceIdBlockedAt: undefined,
       faceIdFailedAttempts: 0,
     });
-    const user = (await ctx.db.get(userId)) as any;
-    const unlocker = (await ctx.db.get(unlockedBy)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
+    const unlocker = (await ctx.db.get(unlockedBy)) as any as any;
     await ctx.db.insert('auditLogs', {
       organizationId: user?.organizationId,
       userId: unlockedBy,
@@ -510,7 +510,7 @@ export const notifySuperadminSuspiciousActivity = mutation({
     }
 
     // Get the suspicious user
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = (await ctx.db.get(args.userId)) as any as any;
     if (!user) {
       console.error('User not found for suspicious activity notification');
       return null;
@@ -647,7 +647,7 @@ export const getSuspendedUsers = query({
     );
 
     // Sort by most recently suspended
-    return suspendedUsers.sort((a, b) => (b.suspendedAt || 0) - (a.suspendedAt || 0));
+    return suspendedUsers.sort((a: any, b: any) => (b.suspendedAt || 0) - (a.suspendedAt || 0));
   },
 });
 
@@ -660,7 +660,7 @@ export const secureUnlockAccount = mutation({
   handler: withAuth<MutationCtx, { userId: Id<'users'> }, { success: boolean }>(
     { minimumRole: 'admin' },
     async (ctx, { userId }, caller) => {
-      const user = (await ctx.db.get(userId)) as any;
+      const user = (await ctx.db.get(userId)) as any as any;
       if (!user) throw new Error('User not found');
 
       if (caller.role !== 'superadmin' && caller.organizationId !== user.organizationId) {

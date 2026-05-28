@@ -18,18 +18,18 @@ async function enrichTasksWithUserData(ctx: any, tasks: any[]) {
   if (tasks.length === 0) return [];
 
   // Collect all unique user IDs
-  const assignedToIds = [...new Set(tasks.map((t) => t.assignedTo))];
-  const assignedByIds = [...new Set(tasks.map((t) => t.assignedBy))];
+  const assignedToIds = [...new Set(tasks.map((t: any) => t.assignedTo))];
+  const assignedByIds = [...new Set(tasks.map((t: any) => t.assignedBy))];
   const allUserIds = [...new Set([...assignedToIds, ...assignedByIds])];
 
   // Batch load all users
   const users = await Promise.all(allUserIds.map((id: Id<'users'>) => ctx.db.get(id)));
-  const userMap = new Map(users.map((u) => [u?._id, u]));
+  const userMap = new Map(users.map((u: any) => [u?._id, u]));
 
   // Batch load comments per-task via by_task index (avoids scanning the whole
   // taskComments table just to filter by taskId). Caps at SMALL_LIST_CAP per task.
   const commentsPerTask: any[][] = await Promise.all(
-    tasks.map((t) =>
+    tasks.map((t: any) =>
       ctx.db
         .query('taskComments')
         .withIndex('by_task', (q: any) => q.eq('taskId', t._id))
@@ -51,10 +51,10 @@ async function enrichTasksWithUserData(ctx: any, tasks: any[]) {
 
   // Batch load profiles for all users
   const profiles = await Promise.all(allUserIds.map((id: Id<'users'>) => getProfile(ctx, id)));
-  const profileMap = new Map(profiles.filter(Boolean).map((p) => [p!.userId, p!]));
+  const profileMap = new Map(profiles.filter(Boolean).map((p: any) => [p!.userId, p!]));
 
   // Enrich tasks
-  return tasks.map((task) => {
+  return tasks.map((task: any) => {
     const assignedTo = userMap.get(task.assignedTo);
     const assignedBy = userMap.get(task.assignedBy);
     const taskComments = commentsByTask.get(task._id) || [];
@@ -81,7 +81,7 @@ async function enrichTasksWithUserData(ctx: any, tasks: any[]) {
               assignedByProfile?.avatarUrl ?? assignedBy.avatarUrl ?? assignedBy.faceImageUrl,
           }
         : null,
-      comments: taskComments.map((c) => ({
+      comments: taskComments.map((c: any) => ({
         ...c,
         author: commentAuthorMap.get(c.authorId),
       })),
@@ -106,8 +106,8 @@ export const createTask = mutation({
     deadline: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
   },
-  handler: async (ctx, args) => {
-    const assigner = await ctx.db.get(args.assignedBy);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const assigner = (await ctx.db.get(args.assignedBy)) as any;
     const organizationId = assigner?.organizationId;
 
     const now = Date.now();
@@ -155,7 +155,7 @@ export const createTask = mutation({
     });
 
     return taskId;
-  },
+  }),
 });
 
 // ── Update Task Status (employee can update) ───────────────────────────────
@@ -171,8 +171,8 @@ export const updateTaskStatus = mutation({
     ),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const task = (await ctx.db.get(args.taskId)) as any;
     if (!task) throw new Error('Task not found');
 
     const now = Date.now();
@@ -184,8 +184,8 @@ export const updateTaskStatus = mutation({
 
     // Notify supervisor when task goes to review or completed (skip superadmin)
     if (args.status === 'review' || args.status === 'completed') {
-      const employee = await ctx.db.get(args.userId);
-      const supervisor = await ctx.db.get(task.assignedBy);
+      const employee = (await ctx.db.get(args.userId)) as any;
+      const supervisor = (await ctx.db.get(task.assignedBy)) as any;
       if (supervisor?.role !== 'superadmin') {
         await ctx.db.insert('notifications', {
           userId: task.assignedBy,
@@ -220,7 +220,7 @@ export const updateTaskStatus = mutation({
       }),
       createdAt: now,
     });
-  },
+  }),
 });
 
 // ── Update Task (supervisor/admin) ─────────────────────────────────────────
@@ -244,13 +244,13 @@ export const updateTask = mutation({
       ),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { taskId, ...updates } = args;
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     await ctx.db.patch(taskId, { ...filtered, updatedAt: Date.now() });
 
     // Audit log: task updated
-    const taskForUpdate = await ctx.db.get(taskId);
+    const taskForUpdate = (await ctx.db.get(taskId)) as any;
     if (taskForUpdate?.organizationId && taskForUpdate?.assignedBy) {
       await ctx.db.insert('auditLogs', {
         organizationId: taskForUpdate.organizationId,
@@ -265,14 +265,14 @@ export const updateTask = mutation({
         createdAt: Date.now(),
       });
     }
-  },
+  }),
 });
 
 // ── Delete Task ────────────────────────────────────────────────────────────
 export const deleteTask = mutation({
   args: { taskId: v.id('tasks') },
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const task = (await ctx.db.get(args.taskId)) as any;
     if (!task) throw new Error('Task not found');
 
     // Delete comments first (capped: if a task has >SMALL_LIST_CAP comments,
@@ -293,7 +293,7 @@ export const deleteTask = mutation({
       details: JSON.stringify({ title: task.title, status: task.status }),
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Add Comment ────────────────────────────────────────────────────────────
@@ -303,8 +303,8 @@ export const addComment = mutation({
     authorId: v.id('users'),
     content: v.string(),
   },
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const task = (await ctx.db.get(args.taskId)) as any;
     if (!task) throw new Error('Task not found');
 
     const now = Date.now();
@@ -325,7 +325,7 @@ export const addComment = mutation({
       details: JSON.stringify({ content: args.content.slice(0, 100) }),
       createdAt: now,
     });
-  },
+  }),
 });
 
 // ── Assign Supervisor to Employee ──────────────────────────────────────────
@@ -334,8 +334,8 @@ export const assignSupervisor = mutation({
     employeeId: v.id('users'),
     supervisorId: v.optional(v.id('users')),
   },
-  handler: async (ctx, args) => {
-    const empForSupervisor = await ctx.db.get(args.employeeId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const empForSupervisor = (await ctx.db.get(args.employeeId)) as any;
     await ctx.db.patch(args.employeeId, {
       supervisorId: args.supervisorId,
     });
@@ -349,15 +349,15 @@ export const assignSupervisor = mutation({
       details: JSON.stringify({ employeeId: args.employeeId, supervisorId: args.supervisorId }),
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Get Tasks for Employee ─────────────────────────────────────────────────
 // OPTIMIZED: Batch loading eliminates N+1 queries
 export const getTasksForEmployee = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
-    const employee = await ctx.db.get(args.userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const employee = (await ctx.db.get(args.userId)) as any;
     if (!employee) throw new Error('Employee not found');
 
     const userIsSuperadmin = isSuperadmin(employee);
@@ -377,15 +377,15 @@ export const getTasksForEmployee = query({
     }
 
     return enrichTasksWithUserData(ctx, orgTasks);
-  },
+  }),
 });
 
 // ── Get Tasks assigned by supervisor ──────────────────────────────────────
 // OPTIMIZED: Batch loading eliminates N+1 queries
 export const getTasksAssignedBy = query({
   args: { supervisorId: v.id('users') },
-  handler: async (ctx, args) => {
-    const supervisor = await ctx.db.get(args.supervisorId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const supervisor = (await ctx.db.get(args.supervisorId)) as any;
     if (!supervisor) throw new Error('Supervisor not found');
 
     const userIsSuperadmin = isSuperadmin(supervisor);
@@ -405,7 +405,7 @@ export const getTasksAssignedBy = query({
     }
 
     return enrichTasksWithUserData(ctx, orgTasks);
-  },
+  }),
 });
 
 // ── Get All Tasks (admin) ──────────────────────────────────────────────────
@@ -436,12 +436,12 @@ export const getAllTasks = query({
     if (userIsSuperadmin) {
       // For superadmin: filter by selectedOrganizationId if provided
       if (args.selectedOrganizationId) {
-        orgTasks = tasks.filter((task) => task.organizationId === args.selectedOrganizationId);
+        orgTasks = tasks.filter((task: any) => task.organizationId === args.selectedOrganizationId);
       }
       // If no selectedOrganizationId, superadmin sees all tasks (no filter)
     } else {
       // For regular admin: filter by their organization
-      orgTasks = tasks.filter((task) => task.organizationId === requester.organizationId);
+      orgTasks = tasks.filter((task: any) => task.organizationId === requester.organizationId);
     }
 
     return enrichTasksWithUserData(ctx, orgTasks);
@@ -452,19 +452,19 @@ export const getAllTasks = query({
 // OPTIMIZED: Batch loading eliminates N+1 queries
 export const getTeamTasks = query({
   args: { supervisorId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Get all employees under this supervisor
     const employees = await ctx.db
       .query('users')
       .withIndex('by_supervisor', (q) => q.eq('supervisorId', args.supervisorId))
       .collect();
 
-    const employeeIds = employees.map((e) => e._id);
+    const employeeIds = employees.map((e: any) => e._id);
 
     // Fetch tasks per employee via by_assigned_to index (no full-table scan).
     // Caps at SMALL_LIST_CAP per employee; team size is bounded by supervisor.
     const tasksPerEmployee = await Promise.all(
-      employeeIds.map((id) =>
+      employeeIds.map((id: any) =>
         ctx.db
           .query('tasks')
           .withIndex('by_assigned_to', (q) => q.eq('assignedTo', id))
@@ -474,18 +474,18 @@ export const getTeamTasks = query({
     const teamTasks = tasksPerEmployee.flat();
 
     return enrichTasksWithUserData(ctx, teamTasks);
-  },
+  }),
 });
 
 // ── Get Employees under supervisor ────────────────────────────────────────
 export const getMyEmployees = query({
   args: { supervisorId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const employees = await ctx.db
       .query('users')
       .withIndex('by_supervisor', (q) => q.eq('supervisorId', args.supervisorId))
       .collect();
-    const empProfiles = await Promise.all(employees.map((e) => getProfile(ctx, e._id)));
+    const empProfiles = await Promise.all(employees.map((e: any) => getProfile(ctx, e._id)));
     return employees.map((e, i) => {
       const profile = empProfiles[i];
       return {
@@ -493,7 +493,7 @@ export const getMyEmployees = query({
         avatarUrl: profile?.avatarUrl ?? e.avatarUrl ?? e.faceImageUrl,
       };
     });
-  },
+  }),
 });
 
 // ── Get all users for assignment (admin/supervisor) ────────────────────────
@@ -515,7 +515,7 @@ export const getUsersForAssignment = query({
     } else {
       users = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
     }
-    users = users.filter((u) => u.role !== 'superadmin');
+    users = users.filter((u: any) => u.role !== 'superadmin');
 
     // Return all active users (employees, supervisors, admins, AND drivers)
     // Anyone in the organization can be assigned a task
@@ -529,7 +529,7 @@ export const getUsersForAssignment = query({
           u.role === 'driver'),
     );
 
-    const userProfiles = await Promise.all(activeUsers.map((u) => getProfile(ctx, u._id)));
+    const userProfiles = await Promise.all(activeUsers.map((u: any) => getProfile(ctx, u._id)));
 
     return activeUsers.map((u, i) => {
       const profile = userProfiles[i];
@@ -563,13 +563,17 @@ export const getSupervisors = query({
     const requester =
       caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (requester && requester.organizationId) {
-      supervisors = supervisors.filter((u) => u.organizationId === requester.organizationId);
-      admins = admins.filter((u) => u.organizationId === requester.organizationId);
+      supervisors = supervisors.filter((u: any) => u.organizationId === requester.organizationId);
+      admins = admins.filter((u: any) => u.organizationId === requester.organizationId);
     }
 
-    const activeSupervisors = [...supervisors, ...admins].filter((u) => u.isActive && u.isApproved);
+    const activeSupervisors = [...supervisors, ...admins].filter(
+      (u: any) => u.isActive && u.isApproved,
+    );
 
-    const supProfiles = await Promise.all(activeSupervisors.map((u) => getProfile(ctx, u._id)));
+    const supProfiles = await Promise.all(
+      activeSupervisors.map((u: any) => getProfile(ctx, u._id)),
+    );
 
     return activeSupervisors.map((u, i) => {
       const profile = supProfiles[i];
@@ -596,8 +600,8 @@ export const addAttachment = mutation({
     size: v.number(),
     uploadedBy: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const task = (await ctx.db.get(args.taskId)) as any;
     if (!task) throw new Error('Task not found');
     const attachments = task.attachments ?? [];
     await ctx.db.patch(args.taskId, {
@@ -624,7 +628,7 @@ export const addAttachment = mutation({
       details: JSON.stringify({ name: args.name, type: args.type, size: args.size }),
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ── Remove Attachment ──────────────────────────────────────────────────────
@@ -633,8 +637,8 @@ export const removeAttachment = mutation({
     taskId: v.id('tasks'),
     url: v.string(),
   },
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const task = (await ctx.db.get(args.taskId)) as any;
     if (!task) throw new Error('Task not found');
     const attachments = (task.attachments ?? []).filter((a: any) => a.url !== args.url);
     await ctx.db.patch(args.taskId, { attachments, updatedAt: Date.now() });
@@ -650,14 +654,14 @@ export const removeAttachment = mutation({
         createdAt: Date.now(),
       });
     }
-  },
+  }),
 });
 
 // ── Get Task Comments ──────────────────────────────────────────────────────
 // OPTIMIZED: Batch loading for comments with authors
 export const getTaskComments = query({
   args: { taskId: v.id('tasks') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const comments = await ctx.db
       .query('taskComments')
       .withIndex('by_task', (q) => q.eq('taskId', args.taskId))
@@ -665,47 +669,49 @@ export const getTaskComments = query({
       .collect();
 
     // Batch load all authors
-    const authorIds = [...new Set(comments.map((c) => c.authorId))];
+    const authorIds = [...new Set(comments.map((c: any) => c.authorId))];
     const authors = await Promise.all(authorIds.map((id: Id<'users'>) => ctx.db.get(id)));
-    const authorMap = new Map(authors.map((a) => [a?._id, a]));
+    const authorMap = new Map(authors.map((a: any) => [a?._id, a]));
 
-    return comments.map((c) => ({
+    return comments.map((c: any) => ({
       ...c,
       author: authorMap.get(c.authorId),
     }));
-  },
+  }),
 });
 
 /** Paginated task comments */
 export const listCommentsPaginated = query({
   args: { taskId: v.id('tasks'), paginationOpts: paginationOptsValidator },
-  handler: async (ctx, { taskId, paginationOpts }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { taskId, paginationOpts } = args;
     const result = await ctx.db
       .query('taskComments')
       .withIndex('by_task', (q) => q.eq('taskId', taskId))
       .order('desc')
       .paginate(paginationOpts);
 
-    const authorIds = [...new Set(result.page.map((c) => c.authorId))];
+    const authorIds = [...new Set(result.page.map((c: any) => c.authorId))];
     const authors = await Promise.all(authorIds.map((id: Id<'users'>) => ctx.db.get(id)));
-    const authorMap = new Map(authors.map((a) => [a?._id, a]));
+    const authorMap = new Map(authors.map((a: any) => [a?._id, a]));
 
     return {
       ...result,
-      page: result.page.map((c) => ({ ...c, author: authorMap.get(c.authorId) })),
+      page: result.page.map((c: any) => ({ ...c, author: authorMap.get(c.authorId) })),
     };
-  },
+  }),
 });
 
 // ── Migration: Backfill organizationId on existing tasks ───────────────────
 export const backfillTaskOrg = mutation({
   args: { taskId: v.id('tasks'), organizationId: v.optional(v.id('organizations')) },
-  handler: async (ctx, { taskId, organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { taskId, organizationId } = args;
     await ctx.db.patch(taskId, { organizationId });
 
     // Note: This is a migration function, no meaningful userId available for audit
     // Skipping audit log for this administrative operation
-  },
+  }),
 });
 
 // ── Get ALL tasks raw (for migration only) ────────────────────────────────
@@ -719,13 +725,13 @@ export const getAllTasksRaw = query({
 // ── Get single task by ID ─────────────────────────────────────────────────
 export const getTask = query({
   args: { taskId: v.id('tasks') },
-  handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const task = (await ctx.db.get(args.taskId)) as any;
     if (!task) return null;
 
     // Load assigned user
-    const assignedTo = await ctx.db.get(task.assignedTo);
-    const assignedBy = await ctx.db.get(task.assignedBy);
+    const assignedTo = (await ctx.db.get(task.assignedTo)) as any;
+    const assignedBy = (await ctx.db.get(task.assignedBy)) as any;
 
     // Load profiles
     const assignedToProfile = assignedTo ? await getProfile(ctx, assignedTo._id) : null;
@@ -737,9 +743,11 @@ export const getTask = query({
       .withIndex('by_task', (q) => q.eq('taskId', args.taskId))
       .collect();
 
-    const commentAuthorIds = [...new Set(comments.map((c) => c.authorId))];
-    const commentAuthors = await Promise.all(commentAuthorIds.map((id) => ctx.db.get(id as any)));
-    const commentAuthorMap = new Map(commentAuthors.map((a) => [a?._id, a]));
+    const commentAuthorIds = [...new Set(comments.map((c: any) => c.authorId))];
+    const commentAuthors = await Promise.all(
+      commentAuthorIds.map((id: any) => ctx.db.get(id as any)),
+    );
+    const commentAuthorMap = new Map(commentAuthors.map((a: any) => [a?._id, a]));
 
     return {
       ...task,
@@ -761,13 +769,13 @@ export const getTask = query({
               assignedByProfile?.avatarUrl ?? assignedBy.avatarUrl ?? assignedBy.faceImageUrl,
           }
         : null,
-      comments: comments.map((c) => ({
+      comments: comments.map((c: any) => ({
         ...c,
         author: commentAuthorMap.get(c.authorId),
       })),
       commentCount: comments.length,
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -778,7 +786,7 @@ export const secureDeleteTask = mutation({
   handler: withAuth<MutationCtx, { taskId: Id<'tasks'> }, void>(
     { minimumRole: 'supervisor' },
     async (ctx, { taskId }, caller) => {
-      const task = await ctx.db.get(taskId);
+      const task = (await ctx.db.get(taskId)) as any;
       if (!task) throw new Error('Task not found');
 
       // Cross-org protection
@@ -813,7 +821,7 @@ export const secureReassignTask = mutation({
   handler: withAuth<MutationCtx, { taskId: Id<'tasks'>; newAssigneeId: Id<'users'> }, void>(
     { minimumRole: 'supervisor' },
     async (ctx, { taskId, newAssigneeId }, caller) => {
-      const task = await ctx.db.get(taskId);
+      const task = (await ctx.db.get(taskId)) as any;
       if (!task) throw new Error('Task not found');
 
       if (caller.role !== 'superadmin' && caller.organizationId !== task.organizationId) {

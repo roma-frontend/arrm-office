@@ -96,7 +96,7 @@ export const getCostAnalysis = query({
         cost,
         percentage: totalCost > 0 ? (cost / totalCost) * 100 : 0,
       })),
-      totalDays: leaves.reduce((sum, l) => sum + l.days, 0),
+      totalDays: leaves.reduce((sum: any, l: any) => sum + l.days, 0),
       totalLeaves: leaves.length,
     };
   }),
@@ -180,10 +180,12 @@ export const detectConflicts = query({
       }
 
       // Sort events by date
-      events.sort((a, b) => a.date - b.date);
+      events.sort((a: any, b: any) => a.date - b.date);
 
       // Process events at each unique date
-      const uniqueDates = [...new Set(events.map((e: any) => e.date))].sort((a, b) => a - b);
+      const uniqueDates = [...new Set(events.map((e: any) => e.date))].sort(
+        (a: any, b: any) => a - b,
+      );
       const activeEmployees = new Set<string>();
       let eventIndex = 0;
 
@@ -236,7 +238,7 @@ export const detectConflicts = query({
       }
     }
 
-    return conflicts.sort((a, b) => {
+    return conflicts.sort((a: any, b: any) => {
       if (a.severity === b.severity) return a.date.localeCompare(b.date);
       return a.severity === 'critical' ? -1 : 1;
     });
@@ -356,14 +358,14 @@ export const getSmartSuggestions = query({
 
     // Suggestion 4: Cost optimization
     const contractorLeaves = leaves.filter((l: any) => {
-      const user = users.find((u) => u._id === l.userId);
+      const user = users.find((u: any) => u._id === l.userId);
       if (!user) return false;
       const p = ssProfileMap.get(user._id);
       return (p?.employeeType ?? user?.employeeType) === 'contractor';
     });
 
     if (contractorLeaves.length > 0) {
-      const totalDays = contractorLeaves.reduce((sum, l) => sum + l.days, 0);
+      const totalDays = contractorLeaves.reduce((sum: any, l: any) => sum + l.days, 0);
       const estimatedCost = totalDays * 150; // $150/day for contractors
 
       suggestions.push({
@@ -526,7 +528,7 @@ export const sendServiceBroadcast = mutation({
       }
 
       // IMPORTANT: Always add the superadmin who created the channel as owner, even if not approved
-      const superadminUser = (await ctx.db.get(args.userId)) as any;
+      const superadminUser = (await ctx.db.get(args.userId)) as any as any;
       if (superadminUser) {
         const superadminAlreadyAdded = users.some(
           (u) => u._id === args.userId && u.isActive && u.isApproved,
@@ -587,7 +589,7 @@ export const sendServiceBroadcast = mutation({
     console.warn(`[sendServiceBroadcast] Total users in org: ${allUsers.length}`);
     const activeApprovedUsers = allUsers.filter((u: any) => u.isActive && u.isApproved);
     console.warn(`[sendServiceBroadcast] Active & approved users: ${activeApprovedUsers.length}`);
-    activeApprovedUsers.forEach((u) =>
+    activeApprovedUsers.forEach((u: any) =>
       console.warn(`  - ${u.name} (${u.email}) - active:${u.isActive}, approved:${u.isApproved}`),
     );
 
@@ -629,7 +631,7 @@ export const sendServiceBroadcast = mutation({
     // IMPORTANT: Always ensure superadmin is a member as owner
     const superadminIdStr = args.userId.toString();
     if (!existingMemberIds.has(superadminIdStr)) {
-      const superadminUser = (await ctx.db.get(args.userId)) as any;
+      const superadminUser = (await ctx.db.get(args.userId)) as any as any;
       if (superadminUser) {
         console.warn(
           `[sendServiceBroadcast] Ensuring superadmin is member: ${superadminUser.name}`,
@@ -848,7 +850,7 @@ export const assignUserAsOrgAdmin = mutation({
     }
 
     // Verify org exists
-    const org = (await ctx.db.get(args.organizationId)) as any;
+    const org = (await ctx.db.get(args.organizationId)) as any as any;
     if (!org) {
       throw new Error('Organization not found');
     }
@@ -914,7 +916,7 @@ export const getSuperadminDashboard = query({
       }
     >();
 
-    allUsers.forEach((user) => {
+    allUsers.forEach((user: any) => {
       // Skip superadmins from organization counts
       if (user.role === 'superadmin') return;
 
@@ -923,13 +925,13 @@ export const getSuperadminDashboard = query({
       usersByOrg.get(orgId)!.push(user);
     });
 
-    allLeaves.forEach((leave) => {
+    allLeaves.forEach((leave: any) => {
       const orgId = leave.organizationId?.toString() || 'no-org';
       if (!leavesByOrg.has(orgId)) leavesByOrg.set(orgId, []);
       leavesByOrg.get(orgId)!.push(leave);
     });
 
-    allSubscriptions.forEach((sub) => {
+    allSubscriptions.forEach((sub: any) => {
       if (!sub.organizationId) return; // Skip subscriptions without organization
       subscriptionByOrg.set(sub.organizationId.toString(), {
         plan: sub.plan,
@@ -999,7 +1001,7 @@ export const getSuperadminDashboard = query({
     });
 
     // Sort by revenue (highest first)
-    dashboard.sort((a, b) => {
+    dashboard.sort((a: any, b: any) => {
       const aRevenue = a.subscription?.monthlyRevenue || 0;
       const bRevenue = b.subscription?.monthlyRevenue || 0;
       return bRevenue - aRevenue;
@@ -1010,8 +1012,11 @@ export const getSuperadminDashboard = query({
       organizations: orgs.length,
       activeOrganizations: orgs.filter((o: any) => o.isActive).length,
       totalUsers: allUsers.filter((u: any) => u.organizationId).length,
-      totalRevenue: dashboard.reduce((sum, d) => sum + (d.subscription?.monthlyRevenue || 0), 0),
-      pendingLeaves: dashboard.reduce((sum, d) => sum + d.leaves.pending, 0),
+      totalRevenue: dashboard.reduce(
+        (sum: any, d: any) => sum + (d.subscription?.monthlyRevenue || 0),
+        0,
+      ),
+      pendingLeaves: dashboard.reduce((sum: any, d: any) => sum + d.leaves.pending, 0),
     };
 
     return {
@@ -1038,7 +1043,7 @@ export const secureAssignUserAsOrgAdmin = mutation({
       .unique();
     if (!user) throw new Error(`User with email ${userEmail} not found`);
 
-    const org = (await ctx.db.get(organizationId)) as any;
+    const org = (await ctx.db.get(organizationId)) as any as any;
     if (!org) throw new Error('Organization not found');
 
     await ctx.db.patch(user._id, { organizationId, role: 'admin', updatedAt: Date.now() });

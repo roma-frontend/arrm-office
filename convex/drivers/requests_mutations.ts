@@ -74,14 +74,14 @@ export const requestDriver = mutation({
     const startDateStr = startDate.toISOString().split('T')[0] || '';
     const endDateStr = endDate.toISOString().split('T')[0] || '';
 
-    const driver = (await ctx.db.get(args.driverId)) as any;
+    const driver = (await ctx.db.get(args.driverId)) as any as any;
     let leaveError = null;
 
     if (driver) {
       const leaveRequests = await ctx.db
         .query('leaveRequests')
         .withIndex('by_user', (q) => q.eq('userId', driver.userId))
-        .filter((q) =>
+        .filter((q: any) =>
           q.and(
             q.eq(q.field('status'), 'approved'),
             q.lte(q.field('startDate'), endDateStr),
@@ -106,7 +106,7 @@ export const requestDriver = mutation({
     const availability = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', args.driverId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(
           q.eq(q.field('status'), 'scheduled'),
           q.or(
@@ -159,7 +159,7 @@ export const requestDriver = mutation({
     });
 
     // Create notification for driver
-    const driverRecord = (await ctx.db.get(args.driverId)) as any;
+    const driverRecord = (await ctx.db.get(args.driverId)) as any as any;
     const priority = args.priority || 'P2';
     if (driverRecord) {
       await ctx.db.insert('notifications', {
@@ -212,8 +212,9 @@ export const respondToDriverRequest = mutation({
     approved: v.boolean(),
     declineReason: v.optional(v.string()),
   },
-  handler: async (ctx, { requestId, driverId, userId, approved, declineReason }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId, driverId, userId, approved, declineReason } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Request not found');
 
     // Verify this is the correct driver
@@ -245,7 +246,7 @@ export const respondToDriverRequest = mutation({
       });
 
       // Update total trips count
-      const driver = await ctx.db.get(driverId);
+      const driver = (await ctx.db.get(driverId)) as any;
       if (driver) {
         await ctx.db.patch(driverId, {
           totalTrips: (driver.totalTrips || 0) + 1,
@@ -285,7 +286,7 @@ export const respondToDriverRequest = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 /** Update a driver request */
@@ -306,11 +307,11 @@ export const updateDriverRequest = mutation({
       }),
     ),
   },
-  handler: async (ctx, args) => {
-    const request = await ctx.db.get(args.requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const request = (await ctx.db.get(args.requestId)) as any;
     if (!request) throw new Error('Request not found');
 
-    const user = await ctx.db.get(args.userId);
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) throw new Error('User not found');
     const userIsSuperadmin = isSuperadmin(user);
     const isAdmin = user.role === 'admin';
@@ -330,7 +331,7 @@ export const updateDriverRequest = mutation({
       const schedule = await ctx.db
         .query('driverSchedules')
         .withIndex('by_driver', (q) => q.eq('driverId', request.driverId))
-        .filter((q) =>
+        .filter((q: any) =>
           q.and(
             q.eq(q.field('userId'), request.requesterId),
             q.eq(q.field('startTime'), request.startTime),
@@ -343,7 +344,7 @@ export const updateDriverRequest = mutation({
       }
 
       // Decrement total trips
-      const driver = await ctx.db.get(request.driverId);
+      const driver = (await ctx.db.get(request.driverId)) as any;
       if (driver && driver.totalTrips > 0) {
         await ctx.db.patch(request.driverId, {
           totalTrips: driver.totalTrips - 1,
@@ -382,7 +383,7 @@ export const updateDriverRequest = mutation({
 
     // Notify the driver about the updated request
     const driverId = args.driverId || request.driverId;
-    const driverRecord = driverId ? await ctx.db.get(driverId) : null;
+    const driverRecord = driverId ? ((await ctx.db.get(driverId)) as any) : null;
     if (driverRecord) {
       const tripInfo = args.tripInfo || request.tripInfo;
       await ctx.db.insert('notifications', {
@@ -401,7 +402,7 @@ export const updateDriverRequest = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });
 
 /** Cancel a driver request */
@@ -410,8 +411,9 @@ export const cancelDriverRequest = mutation({
     requestId: v.id('driverRequests'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { requestId, userId }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId, userId } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Request not found');
     if (request.requesterId !== userId) throw new Error('Unauthorized');
 
@@ -435,7 +437,7 @@ export const cancelDriverRequest = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 /** Delete a driver request */
@@ -444,11 +446,11 @@ export const deleteDriverRequest = mutation({
     requestId: v.id('driverRequests'),
     userId: v.id('users'),
   },
-  handler: async (ctx, args) => {
-    const request = await ctx.db.get(args.requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const request = (await ctx.db.get(args.requestId)) as any;
     if (!request) throw new Error('Request not found');
 
-    const user = await ctx.db.get(args.userId);
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) throw new Error('User not found');
     const userIsSuperadmin = isSuperadmin(user);
     const isAdmin = user.role === 'admin';
@@ -462,7 +464,7 @@ export const deleteDriverRequest = mutation({
       const schedule = await ctx.db
         .query('driverSchedules')
         .withIndex('by_driver', (q) => q.eq('driverId', request.driverId))
-        .filter((q) =>
+        .filter((q: any) =>
           q.and(
             q.eq(q.field('userId'), request.requesterId),
             q.eq(q.field('startTime'), request.startTime),
@@ -498,7 +500,7 @@ export const deleteDriverRequest = mutation({
     });
 
     return { success: true };
-  },
+  }),
 });
 
 /** Reassign a declined request to a new driver */
@@ -508,8 +510,9 @@ export const reassignDriverRequest = mutation({
     userId: v.id('users'),
     newDriverId: v.id('drivers'),
   },
-  handler: async (ctx, { requestId, userId, newDriverId }) => {
-    const request = await ctx.db.get(requestId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { requestId, userId, newDriverId } = args;
+    const request = (await ctx.db.get(requestId)) as any;
     if (!request) throw new Error('Request not found');
     if (request.requesterId !== userId) throw new Error('Unauthorized');
     if (request.status !== 'declined') throw new Error('Only declined requests can be reassigned');
@@ -518,7 +521,7 @@ export const reassignDriverRequest = mutation({
     const overlap = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', newDriverId))
-      .filter((q) =>
+      .filter((q: any) =>
         q.and(
           q.eq(q.field('status'), 'scheduled'),
           q.or(
@@ -567,7 +570,7 @@ export const reassignDriverRequest = mutation({
     });
 
     // Notify new driver
-    const driver = await ctx.db.get(newDriverId);
+    const driver = (await ctx.db.get(newDriverId)) as any;
     if (driver) {
       await ctx.db.insert('notifications', {
         organizationId: request.organizationId,
@@ -583,5 +586,5 @@ export const reassignDriverRequest = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });

@@ -177,7 +177,7 @@ export const createSLAMetric = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { leaveRequestId } = args;
-    const leave = (await ctx.db.get(leaveRequestId)) as any;
+    const leave = (await ctx.db.get(leaveRequestId)) as any as any;
     if (!leave) throw new Error('Leave request not found');
 
     const config = await ctx.db.query('slaConfig').first();
@@ -202,7 +202,7 @@ export const updateSLAMetric = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { leaveRequestId } = args;
-    const leave = (await ctx.db.get(leaveRequestId)) as any;
+    const leave = (await ctx.db.get(leaveRequestId)) as any as any;
     if (!leave || !leave.reviewedAt) throw new Error('Leave not reviewed');
 
     const metric = await ctx.db
@@ -272,12 +272,13 @@ export const getSLAStats = query({
     const completed = metrics.filter((m: any) => m.responseTimeHours !== undefined);
     const avgResponseTime =
       completed.length > 0
-        ? completed.reduce((sum, m) => sum + (m.responseTimeHours ?? 0), 0) / completed.length
+        ? completed.reduce((sum: any, m: any) => sum + (m.responseTimeHours ?? 0), 0) /
+          completed.length
         : 0;
 
     const avgSLAScore =
       completed.length > 0
-        ? completed.reduce((sum, m) => sum + (m.slaScore ?? 0), 0) / completed.length
+        ? completed.reduce((sum: any, m: any) => sum + (m.slaScore ?? 0), 0) / completed.length
         : 0;
 
     const complianceRate = total > 0 ? (onTime / (onTime + breached)) * 100 : 100;
@@ -413,7 +414,7 @@ export const getSLATrend = query({
       { date: string; onTime: number; breached: number; avgResponseTime: number; count: number }
     > = {};
 
-    metrics.forEach((metric) => {
+    metrics.forEach((metric: any) => {
       const date = new Date(metric.submittedAt).toISOString().split('T')[0] || '';
       if (!date) return;
 
@@ -446,7 +447,7 @@ export const getSLATrend = query({
             ? Math.round((day.onTime / (day.onTime + day.breached)) * 100)
             : 100,
       }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .sort((a: any, b: any) => a.date.localeCompare(b.date));
   }),
 });
 
