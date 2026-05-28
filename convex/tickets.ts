@@ -10,6 +10,7 @@ import { getTranslation, getUserLocale } from './translations';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { withAuth } from './lib/withAuth';
+import { logger } from '@/lib/logger';
 
 // ─── CREATE TICKET ───────────────────────────────────────────────────────────
 export const createTicket = mutation({
@@ -653,31 +654,31 @@ export const createTicketChat = mutation({
     superadminId: v.id('users'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    console.log(
+    logger.log(
       `[createTicketChat] START - ticketId: ${args.ticketId}, superadminId: ${args.superadminId}`,
     );
 
     const ticket = (await ctx.db.get(args.ticketId)) as any as any;
     if (!ticket) {
-      console.error(`[createTicketChat] Ticket not found: ${args.ticketId}`);
+      logger.error(`[createTicketChat] Ticket not found: ${args.ticketId}`);
       throw new Error('Ticket not found');
     }
-    console.log(`[createTicketChat] Ticket found: ${ticket._id}, chatId: ${ticket.chatId}`);
+    logger.log(`[createTicketChat] Ticket found: ${ticket._id}, chatId: ${ticket.chatId}`);
 
     // Verify user is superadmin
     const superadmin = (await ctx.db.get(args.superadminId)) as any as any;
-    console.log(
+    logger.log(
       `[createTicketChat] Superadmin: ${superadmin?._id}, role: ${superadmin?.role}, orgId: ${superadmin?.organizationId}`,
     );
 
     if (!superadmin || superadmin.role !== 'superadmin') {
-      console.error(`[createTicketChat] User is not superadmin: role=${superadmin?.role}`);
+      logger.error(`[createTicketChat] User is not superadmin: role=${superadmin?.role}`);
       throw new Error('Only superadmins can create ticket chats');
     }
 
     // Check if chat already exists
     if (ticket.chatId) {
-      console.error(`[createTicketChat] Chat already exists: ${ticket.chatId}`);
+      logger.error(`[createTicketChat] Chat already exists: ${ticket.chatId}`);
       throw new Error('Chat already exists for this ticket');
     }
 
@@ -696,7 +697,7 @@ export const createTicketChat = mutation({
     // Determine organization ID for chat
     // Priority: ticket's org > creator's org > superadmin's org
     const chatOrgId = ticket.organizationId || creator?.organizationId || superadmin.organizationId;
-    console.log(
+    logger.log(
       `[createTicketChat] Ticket orgId: ${ticket.organizationId}, Creator orgId: ${creator?.organizationId}, Superadmin orgId: ${superadmin.organizationId}, Using: ${chatOrgId || 'undefined'}`,
     );
 
@@ -713,7 +714,7 @@ export const createTicketChat = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    console.log(
+    logger.log(
       `[createTicketChat] Created conversation ${chatId} with orgId: ${chatOrgId || 'undefined'}`,
     );
 
@@ -733,7 +734,7 @@ export const createTicketChat = mutation({
         isDeleted: false,
         deletedAt: undefined,
       });
-      console.log(
+      logger.log(
         `[createTicketChat] Superadmin ${args.superadminId} already exists, updated membership`,
       );
     } else {
@@ -746,7 +747,7 @@ export const createTicketChat = mutation({
         isMuted: false,
         joinedAt: now,
       });
-      console.log(
+      logger.log(
         `[createTicketChat] Added superadmin ${args.superadminId} as owner of chat ${chatId}`,
       );
     }
@@ -767,7 +768,7 @@ export const createTicketChat = mutation({
         isDeleted: false,
         deletedAt: undefined,
       });
-      console.log(
+      logger.log(
         `[createTicketChat] Ticket creator ${ticket.createdBy} already exists, updated membership`,
       );
     } else {
@@ -780,7 +781,7 @@ export const createTicketChat = mutation({
         isMuted: false,
         joinedAt: now,
       });
-      console.log(
+      logger.log(
         `[createTicketChat] Added ticket creator ${ticket.createdBy} as member of chat ${chatId}`,
       );
     }
@@ -803,7 +804,7 @@ export const createTicketChat = mutation({
           isDeleted: false,
           deletedAt: undefined,
         });
-        console.log(`[createTicketChat] Assignee ${assigneeId} already exists, updated membership`);
+        logger.log(`[createTicketChat] Assignee ${assigneeId} already exists, updated membership`);
       } else {
         await ctx.db.insert('chatMembers', {
           conversationId: chatId,
@@ -814,7 +815,7 @@ export const createTicketChat = mutation({
           isMuted: false,
           joinedAt: now,
         });
-        console.log(`[createTicketChat] Added assignee ${assigneeId} as member of chat ${chatId}`);
+        logger.log(`[createTicketChat] Added assignee ${assigneeId} as member of chat ${chatId}`);
       }
     }
 
@@ -839,7 +840,7 @@ export const createTicketChat = mutation({
       updatedAt: now,
     });
 
-    console.log(
+    logger.log(
       `[createTicketChat] Completed! chatId=${chatId}, orgId=${chatOrgId}, memberships added for superadmin, creator${ticket.assignedTo ? ', and assignee' : ''}`,
     );
 
@@ -881,7 +882,7 @@ export const activateTicketChat = mutation({
     // Determine org ID - use ticket's org, or creator's org as fallback
     const creator = (await ctx.db.get(ticket.createdBy)) as any as any;
     const chatOrgId = ticket.organizationId || creator?.organizationId || superadmin.organizationId;
-    console.log(
+    logger.log(
       `[activateTicketChat] Ticket orgId: ${ticket.organizationId}, Creator orgId: ${creator?.organizationId}, Superadmin orgId: ${superadmin.organizationId}, Using: ${chatOrgId || 'undefined'}`,
     );
 

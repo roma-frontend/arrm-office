@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useRouter } from 'next/navigation';
+import { logger } from '../logger';
 
 interface WithOnboardingCheckProps {
   children: React.ReactNode;
@@ -20,7 +21,7 @@ export function withOnboardingCheck<P extends object>(WrappedComponent: React.Co
     if (user && needsOnboarding && !isOnboardingPage) {
       // Redirect immediately
       if (typeof window !== 'undefined') {
-        console.log('[withOnboardingCheck] 🚨 Redirecting to onboarding');
+        logger.log('[withOnboardingCheck] 🚨 Redirecting to onboarding');
         router.push('/onboarding/select-organization');
       }
 

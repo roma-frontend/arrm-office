@@ -12,6 +12,7 @@ import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { withAuth } from './lib/withAuth';
+import { logger } from '@/lib/logger';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPANY EVENTS MANAGEMENT
@@ -266,7 +267,7 @@ export const checkLeaveConflictsManual = mutation({
     const profile = await getProfile(ctx, userId);
     const userDepartment = profile?.department ?? user.department ?? '';
 
-    console.log(`[Conflict Check] User: ${user.name}, Department: ${userDepartment}`);
+    logger.log(`[Conflict Check] User: ${user.name}, Department: ${userDepartment}`);
 
     // Find overlapping company events
     const events = await ctx.db

@@ -32,7 +32,7 @@ self.addEventListener('fetch', (event) => {
 
 // Push notification event
 self.addEventListener('push', (event) => {
-  console.log('Push notification received:', event);
+  logger.log('Push notification received:', event);
   
   let notificationData = {
     title: 'Time for a Break! ☕',
@@ -66,7 +66,7 @@ self.addEventListener('push', (event) => {
       const data = event.data.json();
       notificationData = { ...notificationData, ...data };
     } catch (e) {
-      console.error('Failed to parse push data:', e);
+      logger.error('Failed to parse push data:', e);
     }
   }
 
@@ -77,7 +77,7 @@ self.addEventListener('push', (event) => {
 
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
+  logger.log('Notification clicked:', event);
   
   event.notification.close();
 
@@ -117,6 +117,6 @@ self.addEventListener('notificationclick', (event) => {
 // Background sync for offline support (optional)
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-notifications') {
-    console.log('Background sync triggered');
+    logger.log('Background sync triggered');
   }
 });

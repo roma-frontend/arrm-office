@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { detectIntent, type UserRole } from '@/lib/aiAssistant';
+import { logger } from '@/lib/logger';
 
 interface VoiceNavigationOptions {
   enabled?: boolean;
@@ -25,7 +26,7 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
 
   const navigate = useCallback(
     (route: string) => {
-      console.log('🎯 Voice navigation:', route);
+      logger.log('🎯 Voice navigation:', route);
       router.push(route);
     },
     [router],
@@ -35,14 +36,14 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
     (command: string) => {
       if (!user) return;
 
-      console.log('🎤 Voice command:', command);
+      logger.log('🎤 Voice command:', command);
       setTranscript(command);
 
       // Detect intent based on user role
       const intent = detectIntent(command, user.role as UserRole);
 
       if (intent?.action) {
-        console.log('✅ Intent detected:', intent.name, '→', intent.action);
+        logger.log('✅ Intent detected:', intent.name, '→', intent.action);
         navigate(intent.action);
 
         // Provide voice feedback
@@ -54,7 +55,7 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
           window.speechSynthesis.speak(utterance);
         }
       } else {
-        console.log('❌ No matching intent for:', command);
+        logger.log('❌ No matching intent for:', command);
       }
     },
     [user, language, navigate],
@@ -62,7 +63,7 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
 
   const startListening = useCallback(() => {
     if (!enabled || (!window.SpeechRecognition && !window.webkitSpeechRecognition)) {
-      console.warn('Speech recognition not supported');
+      logger.warn('Speech recognition not supported');
       return;
     }
 
@@ -75,7 +76,7 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
 
     recognition.addEventListener('start', () => {
       setIsListening(true);
-      console.log('🎤 Voice recognition started');
+      logger.log('🎤 Voice recognition started');
     });
 
     recognition.onresult = (event: any) => {
@@ -85,20 +86,20 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
     };
 
     recognition.onerror = (event: any) => {
-      console.error('❌ Voice recognition error:', event.error);
+      logger.error('❌ Voice recognition error:', event.error);
       setIsListening(false);
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      console.log('🛑 Voice recognition stopped');
+      logger.log('🛑 Voice recognition stopped');
     };
 
     try {
       recognition.start();
       recognitionRef.current = recognition;
     } catch (error) {
-      console.error('Failed to start recognition:', error);
+      logger.error('Failed to start recognition:', error);
     }
   }, [enabled, language, continuous, processVoiceCommand]);
 

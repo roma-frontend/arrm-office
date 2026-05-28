@@ -173,6 +173,13 @@ export function PomodoroTimer() {
 
   const progress = ((DURATIONS[mode] - timeLeft) / DURATIONS[mode]) * 100;
 
+  if (activeSession === undefined)
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+
   return (
     <div className="px-2 py-4">
       <div className="mb-3 px-2">

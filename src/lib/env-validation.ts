@@ -3,6 +3,8 @@
  * Validates all required environment variables at app startup
  */
 
+import { logger } from './logger';
+
 interface EnvConfig {
   required: string[];
   optional: string[];
@@ -41,7 +43,7 @@ export function validateEnvironment(): void {
 
   if (missing.length > 0) {
     const message = `Missing required environment variables: ${missing.join(', ')}`;
-    console.error('❌ Environment Validation Failed:', message);
+    logger.error('❌ Environment Validation Failed:', message);
     throw new Error(message);
   }
 
@@ -53,10 +55,10 @@ export function validateEnvironment(): void {
   });
 
   if (warnings.length > 0) {
-    warnings.forEach((w) => console.warn(w));
+    warnings.forEach((w) => logger.warn(w));
   }
 
-  console.log('✅ Environment validation passed');
+  logger.log('✅ Environment validation passed');
 }
 
 /**

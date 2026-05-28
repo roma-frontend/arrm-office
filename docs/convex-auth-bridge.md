@@ -141,7 +141,7 @@ email in every Convex query/mutation. No callsite migrations yet.
 
 5. **Smoke-test on staging.** Add a temporary log in any Convex query:
    ```ts
-   console.log('[auth-bridge]', await ctx.auth.getUserIdentity());
+   logger.log('[auth-bridge]', await ctx.auth.getUserIdentity());
    ```
    Confirm it returns `{ email, sub, ... }` for a logged-in user.
 
@@ -428,7 +428,7 @@ export function useConvexAuthReady(): boolean {
 
 ### 5. Smoke-test query (temporary, delete after Phase 1 verification)
 
-Add to any existing Convex query file, call it from the browser console:
+Add to any existing Convex query file, call it from the browser logger:
 
 ```ts
 // convex/debug.ts  ← delete this file after Phase 1 is verified
@@ -441,11 +441,11 @@ export const whoAmI = query({
 ```
 
 ```ts
-// Browser console (after login):
+// Browser logger (after login):
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 const identity = useQuery(api.debug.whoAmI);
-console.log(identity); // should print { email, sub, ... }
+logger.log(identity); // should print { email, sub, ... }
 ```
 
 ---

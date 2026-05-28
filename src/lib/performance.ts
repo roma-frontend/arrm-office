@@ -3,11 +3,13 @@
  * Отслеживание производительности приложения
  */
 
+import { logger } from './logger';
+
 // ===== WEB VITALS MONITORING =====
 export function reportWebVitals(metric: any) {
   // Логирование метрик производительности
   if (process.env.NODE_ENV === 'development') {
-    console.log('📊 Web Vitals:', {
+    logger.log('📊 Web Vitals:', {
       name: metric.name,
       value: metric.value,
       rating: metric.rating,
@@ -44,7 +46,7 @@ export const perf = {
 
         const measure = performance.getEntriesByName(name)[0];
         if (measure && process.env.NODE_ENV === 'development') {
-          console.log(`⏱️ ${name}: ${measure.duration.toFixed(2)}ms`);
+          logger.log(`⏱️ ${name}: ${measure.duration.toFixed(2)}ms`);
         }
 
         // Очистка marks
@@ -54,7 +56,7 @@ export const perf = {
 
         return measure?.duration || 0;
       } catch (e) {
-        console.warn(`Performance measurement failed for ${name}:`, e);
+        logger.warn(`Performance measurement failed for ${name}:`, e);
         return 0;
       }
     }
@@ -188,7 +190,7 @@ export function logBundleSize() {
       .filter((r) => r.name.endsWith('.css'))
       .reduce((sum, r) => sum + (r.transferSize || 0), 0);
 
-    console.log('📦 Bundle Sizes:', {
+    logger.log('📦 Bundle Sizes:', {
       js: `${(jsSize / 1024).toFixed(2)} KB`,
       css: `${(cssSize / 1024).toFixed(2)} KB`,
       total: `${((jsSize + cssSize) / 1024).toFixed(2)} KB`,

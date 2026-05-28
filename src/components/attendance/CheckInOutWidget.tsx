@@ -66,6 +66,13 @@ export function CheckInOutWidget() {
     return `${hours}${t('attendanceExtra.hoursShort')} ${mins}${t('attendanceExtra.minutesShort')}`;
   };
 
+  if (todayStatus === undefined)
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="btn-gradient text-white font-medium shadow-md hover:shadow-lg">

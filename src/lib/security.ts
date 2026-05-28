@@ -4,6 +4,7 @@
  */
 
 import { randomBytes, createHash, createHmac, timingSafeEqual } from 'crypto';
+import { logger } from './logger';
 
 // ═══════════════════════════════════════════════════════════════
 // CSRF PROTECTION
@@ -370,7 +371,7 @@ export function logSecurityEvent(event: SecurityEvent): void {
   };
 
   // В продакшене отправляйте в систему мониторинга (Sentry, LogRocket, etc.)
-  console.log(`🔒 [SECURITY] ${event.type}:`, logEntry);
+  logger.log(`🔒 [SECURITY] ${event.type}:`, logEntry);
 
   // Критические события
   if (
@@ -380,7 +381,7 @@ export function logSecurityEvent(event: SecurityEvent): void {
       SecurityEventType.ACCOUNT_LOCKED,
     ].includes(event.type)
   ) {
-    console.error(`🚨 [CRITICAL SECURITY EVENT]`, logEntry);
+    logger.error(`🚨 [CRITICAL SECURITY EVENT]`, logEntry);
     // TODO: Отправить алерт администратору
   }
 }

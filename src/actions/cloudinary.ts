@@ -1,5 +1,6 @@
 'use server';
 
+import { logger } from '@/lib/logger';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary
@@ -31,7 +32,7 @@ export async function uploadTaskAttachment(base64File: string, fileName: string)
     });
     return result.secure_url;
   } catch (error) {
-    console.error('❌ Attachment upload error:', error);
+    logger.error('❌ Attachment upload error:', error);
     throw new Error(error instanceof Error ? error.message : 'Upload failed');
   }
 }
@@ -40,11 +41,11 @@ export async function uploadAvatarToCloudinary(
   base64Image: string,
   userId: string,
 ): Promise<string> {
-  console.log('☁️ Cloudinary signed upload starting...');
-  console.log('👤 User ID:', userId);
+  logger.log('☁️ Cloudinary signed upload starting...');
+  logger.log('👤 User ID:', userId);
 
   try {
-    console.log('📤 Uploading to Cloudinary with SDK...');
+    logger.log('📤 Uploading to Cloudinary with SDK...');
 
     // Validate file size (1MB limit for free tier)
     const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB in bytes
@@ -66,12 +67,12 @@ export async function uploadAvatarToCloudinary(
       ],
     });
 
-    console.log('✅ Upload successful!');
-    console.log('🔗 URL:', result.secure_url);
+    logger.log('✅ Upload successful!');
+    logger.log('🔗 URL:', result.secure_url);
 
     return result.secure_url;
   } catch (error) {
-    console.error('❌ Upload error:', error);
+    logger.error('❌ Upload error:', error);
     throw new Error(error instanceof Error ? error.message : 'Upload failed');
   }
 }
@@ -81,10 +82,10 @@ export async function uploadChatAttachment(
   fileName: string,
   mimeType: string,
 ): Promise<{ url: string; name: string; type: string }> {
-  console.log('🎤 Voice message upload starting...');
-  console.log('📄 File name:', fileName);
-  console.log('📄 MIME type:', mimeType);
-  console.log('📄 Base64 size:', base64File.length);
+  logger.log('🎤 Voice message upload starting...');
+  logger.log('📄 File name:', fileName);
+  logger.log('📄 MIME type:', mimeType);
+  logger.log('📄 Base64 size:', base64File.length);
 
   // Validate environment variables
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -92,7 +93,7 @@ export async function uploadChatAttachment(
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
   if (!cloudName || !apiKey || !apiSecret) {
-    console.error('❌ Missing Cloudinary credentials:', {
+    logger.error('❌ Missing Cloudinary credentials:', {
       cloudName: !!cloudName,
       apiKey: !!apiKey,
       apiSecret: !!apiSecret,
@@ -121,10 +122,10 @@ export async function uploadChatAttachment(
   let uploadData = base64File;
   if (!base64File.startsWith('data:')) {
     uploadData = `data:${mimeType};base64,${base64File}`;
-    console.log('📝 Added data URL prefix');
+    logger.log('📝 Added data URL prefix');
   }
 
-  console.log('📤 Uploading to Cloudinary...', {
+  logger.log('📤 Uploading to Cloudinary...', {
     publicId,
     resourceType,
     folder: 'hr-office/chat-attachments',
@@ -155,11 +156,11 @@ export async function uploadChatAttachment(
         : {}),
     });
 
-    console.log('✅ Voice message uploaded successfully:', result.secure_url);
+    logger.log('✅ Voice message uploaded successfully:', result.secure_url);
     return { url: result.secure_url, name: fileName, type: mimeType };
   } catch (error: any) {
-    console.error('❌ Voice message upload failed:', error);
-    console.error('❌ Error details:', {
+    logger.error('❌ Voice message upload failed:', error);
+    logger.error('❌ Error details:', {
       message: error?.message,
       error: error?.error,
       status: error?.status,
@@ -171,22 +172,22 @@ export async function uploadChatAttachment(
 }
 
 export async function deleteAvatarFromCloudinary(userId: string): Promise<void> {
-  console.log('🗑️ Cloudinary delete starting...');
-  console.log('👤 User ID:', userId);
+  logger.log('🗑️ Cloudinary delete starting...');
+  logger.log('👤 User ID:', userId);
 
   try {
     const publicId = `hr-office/avatars/${userId}`;
-    console.log('📤 Deleting from Cloudinary:', publicId);
+    logger.log('📤 Deleting from Cloudinary:', publicId);
 
     const result = await cloudinary.uploader.destroy(publicId);
 
-    console.log('✅ Delete result:', result);
+    logger.log('✅ Delete result:', result);
 
     if (result.result !== 'ok' && result.result !== 'not found') {
       throw new Error(`Delete failed: ${result.result}`);
     }
   } catch (error) {
-    console.error('❌ Delete error:', error);
+    logger.error('❌ Delete error:', error);
     throw new Error(error instanceof Error ? error.message : 'Delete failed');
   }
 }
@@ -196,7 +197,7 @@ export async function uploadDocument(
   fileName: string,
   mimeType?: string,
 ): Promise<{ url: string; name: string; size: number; type: string }> {
-  console.log('📄 Document upload starting...');
+  logger.log('📄 Document upload starting...');
 
   const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
   const publicId = `doc_${Date.now()}_${safeFileName}`;
@@ -229,7 +230,7 @@ export async function uploadDocument(
       unique_filename: true,
     });
 
-    console.log('✅ Document uploaded:', result.secure_url);
+    logger.log('✅ Document uploaded:', result.secure_url);
     return {
       url: result.secure_url,
       name: fileName,
@@ -237,14 +238,14 @@ export async function uploadDocument(
       type: mimeType || result.resource_type,
     };
   } catch (error: any) {
-    console.error('❌ Document upload failed:', error);
+    logger.error('❌ Document upload failed:', error);
     throw new Error(error instanceof Error ? error.message : 'Upload failed');
   }
 }
 
 export async function deleteTaskAttachmentFromCloudinary(url: string): Promise<void> {
-  console.log('🗑️ Cloudinary task attachment delete starting...');
-  console.log('🔗 URL:', url);
+  logger.log('🗑️ Cloudinary task attachment delete starting...');
+  logger.log('🔗 URL:', url);
 
   try {
     // Extract public_id from URL
@@ -264,19 +265,19 @@ export async function deleteTaskAttachmentFromCloudinary(url: string): Promise<v
     const filename = filenameWithVersion.replace(/^v\d+_/, '').split('.')[0];
     const publicId = `hr-office/${folder}/${filename}`;
 
-    console.log('📤 Deleting from Cloudinary:', publicId);
+    logger.log('📤 Deleting from Cloudinary:', publicId);
 
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: 'raw', // task attachments can be any file type
     });
 
-    console.log('✅ Delete result:', result);
+    logger.log('✅ Delete result:', result);
 
     if (result.result !== 'ok' && result.result !== 'not found') {
       throw new Error(`Delete failed: ${result.result}`);
     }
   } catch (error) {
-    console.error('❌ Delete error:', error);
+    logger.error('❌ Delete error:', error);
     throw new Error(error instanceof Error ? error.message : 'Delete failed');
   }
 }

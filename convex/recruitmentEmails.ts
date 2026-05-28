@@ -7,6 +7,7 @@ import {
   offerLetterTemplate,
   rejectionNoticeTemplate,
 } from '../src/lib/recruitment-emails';
+import { logger } from '@/lib/logger';
 
 function getResendClient(): Resend | null {
   const key = process.env.RESEND_API_KEY;
@@ -28,7 +29,7 @@ export const sendApplicationConfirmation = action({
   },
   handler: async (ctx, args) => {
     if (!shouldSendEmail()) {
-      console.log('Resend not configured, skipping application confirmation email');
+      logger.log('Resend not configured, skipping application confirmation email');
       return;
     }
 
@@ -48,9 +49,9 @@ export const sendApplicationConfirmation = action({
         subject,
         html,
       });
-      console.log(`Application confirmation sent to ${args.candidateEmail}`);
+      logger.log(`Application confirmation sent to ${args.candidateEmail}`);
     } catch (error) {
-      console.error('Failed to send application confirmation:', error);
+      logger.error('Failed to send application confirmation:', error);
     }
   },
 });
@@ -76,7 +77,7 @@ export const sendInterviewInvitation = action({
   },
   handler: async (ctx, args) => {
     if (!shouldSendEmail()) {
-      console.log('Resend not configured, skipping interview invitation email');
+      logger.log('Resend not configured, skipping interview invitation email');
       return;
     }
 
@@ -102,9 +103,9 @@ export const sendInterviewInvitation = action({
         subject,
         html,
       });
-      console.log(`Interview invitation sent to ${args.candidateEmail}`);
+      logger.log(`Interview invitation sent to ${args.candidateEmail}`);
     } catch (error) {
-      console.error('Failed to send interview invitation:', error);
+      logger.error('Failed to send interview invitation:', error);
     }
   },
 });
@@ -124,7 +125,7 @@ export const sendOfferLetter = action({
   },
   handler: async (ctx, args) => {
     if (!shouldSendEmail()) {
-      console.log('Resend not configured, skipping offer letter email');
+      logger.log('Resend not configured, skipping offer letter email');
       return;
     }
 
@@ -150,9 +151,9 @@ export const sendOfferLetter = action({
         subject,
         html,
       });
-      console.log(`Offer letter sent to ${args.candidateEmail}`);
+      logger.log(`Offer letter sent to ${args.candidateEmail}`);
     } catch (error) {
-      console.error('Failed to send offer letter:', error);
+      logger.error('Failed to send offer letter:', error);
     }
   },
 });
@@ -168,7 +169,7 @@ export const sendRejectionNotice = action({
   },
   handler: async (ctx, args) => {
     if (!shouldSendEmail()) {
-      console.log('Resend not configured, skipping rejection notice email');
+      logger.log('Resend not configured, skipping rejection notice email');
       return;
     }
 
@@ -190,9 +191,9 @@ export const sendRejectionNotice = action({
         subject,
         html,
       });
-      console.log(`Rejection notice sent to ${args.candidateEmail}`);
+      logger.log(`Rejection notice sent to ${args.candidateEmail}`);
     } catch (error) {
-      console.error('Failed to send rejection notice:', error);
+      logger.error('Failed to send rejection notice:', error);
     }
   },
 });

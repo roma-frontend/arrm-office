@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: any) {
-    console.error('[Stripe Webhook] Signature failed:', err.message);
+    logger.error('[Stripe Webhook] Signature failed:', err.message);
     Sentry.captureException(err, { tags: { stripe: 'webhook_signature' } });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
           const plan = (session.metadata?.plan as string) ?? resolvePlanFromPriceId(priceId);
 
           if (!plan) {
-            console.error('[Stripe] ❌ Unknown plan:', priceId);
+            logger.error('[Stripe] ❌ Unknown plan:', priceId);
             Sentry.captureException(new Error(`Unknown plan: ${priceId}`), {
               tags: { stripe: 'unknown_plan' },
               extra: { sessionId: session.id, priceId },
@@ -173,7 +173,9 @@ export async function POST(req: NextRequest) {
               subscriptionId: sub.id,
               trialEnd: sub.trial_end ? (sub.trial_end as number) * 1000 : undefined,
             });
-            await sendTelegramNotification(`💳 <b>Новая подписка Stripe</b>\n\n📧 ${customerEmail}\n📦 План: ${plan}\n🆔 ${sub.id}`);
+            await sendTelegramNotification(
+              `💳 <b>Новая подписка Stripe</b>\n\n📧 ${customerEmail}\n📦 План: ${plan}\n🆔 ${sub.id}`,
+            );
           }
         }
         break;
@@ -181,7 +183,7 @@ export async function POST(req: NextRequest) {
 
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription;
-        console.log('[Stripe] 🔄 subscription.updated:', sub.id);
+        logger.log('[Stripe] 🔄 subscription.updated:', sub.id);
         await convexMutation('subscriptions/updateSubscriptionStatus', {
           stripeSubscriptionId: sub.id,
           status: sub.status,
@@ -194,7 +196,7 @@ export async function POST(req: NextRequest) {
 
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
-        console.log('[Stripe] ❌ subscription.deleted:', sub.id);
+        logger.log('[Stripe] ❌ subscription.deleted:', sub.id);
         await convexMutation('subscriptions/updateSubscriptionStatus', {
           stripeSubscriptionId: sub.id,
           status: 'canceled',
@@ -210,7 +212,7 @@ export async function POST(req: NextRequest) {
           typeof (invoice as any).subscription === 'string'
             ? (invoice as any).subscription
             : (invoice as any).subscription?.id;
-        console.log('[Stripe] ⚠️ invoice.payment_failed:', invoice.id);
+        logger.log('[Stripe] ⚠️ invoice.payment_failed:', invoice.id);
         if (subId) {
           await convexMutation('subscriptions/updateSubscriptionStatus', {
             stripeSubscriptionId: subId,
@@ -227,7 +229,7 @@ export async function POST(req: NextRequest) {
           typeof (invoice as any).subscription === 'string'
             ? (invoice as any).subscription
             : (invoice as any).subscription?.id;
-        console.log('[Stripe] 💰 invoice.payment_succeeded:', invoice.id);
+        logger.log('[Stripe] 💰 invoice.payment_succeeded:', invoice.id);
         if (subId) {
           await convexMutation('subscriptions/updateSubscriptionStatus', {
             stripeSubscriptionId: subId,
@@ -246,19 +248,19 @@ export async function POST(req: NextRequest) {
 
       case 'customer.subscription.trial_will_end': {
         const sub = event.data.object as Stripe.Subscription;
-        console.log('[Stripe] ⏳ trial_will_end:', sub.id);
+        logger.log('[Stripe] ⏳ trial_will_end:', sub.id);
         break;
       }
 
       case 'charge.refunded': {
         const charge = event.data.object as any;
-        console.log('[Stripe] 💸 charge.refunded:', charge.id);
+        logger.log('[Stripe] 💸 charge.refunded:', charge.id);
         break;
       }
 
       case 'payment_intent.payment_failed': {
         const intent = event.data.object as Stripe.PaymentIntent;
-        console.log('[Stripe] ❌ payment_intent.payment_failed:', intent.id);
+        logger.log('[Stripe] ❌ payment_intent.payment_failed:', intent.id);
         Sentry.captureException(new Error(`Payment intent failed: ${intent.id}`), {
           tags: { stripe: 'payment_intent_failed' },
           extra: { intentId: intent.id, amount: intent.amount },
@@ -269,7 +271,7 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.paused':
       case 'customer.subscription.resumed': {
         const sub = event.data.object as Stripe.Subscription;
-        console.log(`[Stripe] ${event.type}:`, sub.id);
+        logger.log(`[Stripe] ${event.type}:`, sub.id);
         await convexMutation('subscriptions/updateSubscriptionStatus', {
           stripeSubscriptionId: sub.id,
           status: event.type === 'customer.subscription.paused' ? 'canceled' : 'active',
@@ -279,11 +281,11 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        console.log('[Stripe Webhook] Unhandled:', event.type);
+        logger.log('[Stripe Webhook] Unhandled:', event.type);
         break;
     }
   } catch (err: any) {
-    console.error('[Stripe Webhook] Handler error:', err.message);
+    logger.error('[Stripe Webhook] Handler error:', err.message);
     Sentry.captureException(err, {
       tags: { stripe: 'webhook_handler' },
       extra: { eventType: event.type, eventId: event.id },

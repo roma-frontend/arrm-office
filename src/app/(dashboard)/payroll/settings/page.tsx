@@ -124,6 +124,13 @@ export default function PayrollSettingsPage() {
     );
   }
 
+  if (settings === undefined)
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+
   return (
     <div className="p-0 md:p-6 space-y-6">
       <div className="flex items-center gap-4">

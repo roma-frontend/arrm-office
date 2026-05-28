@@ -4,6 +4,7 @@ import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin, requireAuthUser } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 import { withAuth } from '../lib/withAuth';
+import { logger } from '@/lib/logger';
 
 // ── Employee limits by plan ──────────────────────────────────────────────────
 const PLAN_EMPLOYEE_LIMITS: Record<string, number> = {
@@ -665,7 +666,7 @@ export const approveJoinRequest = mutation({
 
     if (existingUser) {
       // User already exists (e.g., from OAuth) — update instead of creating new
-      console.log(
+      logger.log(
         `[approveJoinRequest] User ${invite.requestedByEmail} already exists, updating...`,
       );
 
@@ -688,7 +689,7 @@ export const approveJoinRequest = mutation({
       });
     } else {
       // No existing user — create new (for invite link flow)
-      console.log(`[approveJoinRequest] Creating new user for ${invite.requestedByEmail}`);
+      logger.log(`[approveJoinRequest] Creating new user for ${invite.requestedByEmail}`);
 
       userId = await ctx.db.insert('users', {
         organizationId: invite.organizationId,
@@ -974,7 +975,7 @@ export const removeMemberFromOrganization = mutation({
       createdAt: Date.now(),
     });
 
-    console.log(`[removeMemberFromOrganization] ✅ Removed ${user.email} from organization`);
+    logger.log(`[removeMemberFromOrganization] ✅ Removed ${user.email} from organization`);
 
     return userId;
   }),

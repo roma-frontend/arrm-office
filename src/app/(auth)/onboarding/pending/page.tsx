@@ -63,6 +63,13 @@ export default function PendingApprovalPage() {
     signOut({ callbackUrl: '/login' });
   };
 
+  if (freshUserData === undefined)
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-lg">

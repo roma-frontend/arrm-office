@@ -1,5 +1,7 @@
 // Push Notifications utility functions
 
+import { logger } from './logger';
+
 // Check if browser supports push notifications
 export function isPushNotificationSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
@@ -8,7 +10,7 @@ export function isPushNotificationSupported(): boolean {
 // Register service worker
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) {
-    console.warn('Service Workers not supported');
+    logger.warn('Service Workers not supported');
     return null;
   }
 
@@ -16,10 +18,10 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
     });
-    console.log('Service Worker registered:', registration);
+    logger.log('Service Worker registered:', registration);
     return registration;
   } catch (error) {
-    console.error('Service Worker registration failed:', error);
+    logger.error('Service Worker registration failed:', error);
     return null;
   }
 }
@@ -27,19 +29,19 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 // Request notification permission
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) {
-    console.warn('Notifications not supported');
+    logger.warn('Notifications not supported');
     return 'denied';
   }
 
   const permission = await Notification.requestPermission();
-  console.log('Notification permission:', permission);
+  logger.log('Notification permission:', permission);
   return permission;
 }
 
 // Subscribe to push notifications
 export async function subscribeToPushNotifications(): Promise<PushSubscription | null> {
   if (!isPushNotificationSupported()) {
-    console.warn('Push notifications not supported');
+    logger.warn('Push notifications not supported');
     return null;
   }
 
@@ -47,7 +49,7 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
     // First, request permission
     const permission = await requestNotificationPermission();
     if (permission !== 'granted') {
-      console.warn('Notification permission denied');
+      logger.warn('Notification permission denied');
       return null;
     }
 
@@ -74,12 +76,12 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
         ) as any,
       });
 
-      console.log('Subscribed to push notifications:', subscription);
+      logger.log('Subscribed to push notifications:', subscription);
     }
 
     return subscription;
   } catch (error) {
-    console.error('Failed to subscribe to push notifications:', error);
+    logger.error('Failed to subscribe to push notifications:', error);
     return null;
   }
 }
@@ -92,13 +94,13 @@ export async function unsubscribeFromPushNotifications(): Promise<boolean> {
 
     if (subscription) {
       await subscription.unsubscribe();
-      console.log('Unsubscribed from push notifications');
+      logger.log('Unsubscribed from push notifications');
       return true;
     }
 
     return false;
   } catch (error) {
-    console.error('Failed to unsubscribe from push notifications:', error);
+    logger.error('Failed to unsubscribe from push notifications:', error);
     return false;
   }
 }
@@ -109,14 +111,14 @@ export async function sendLocalPushNotification(
   options: NotificationOptions = {},
 ): Promise<void> {
   if (!isPushNotificationSupported()) {
-    console.warn('Push notifications not supported');
+    logger.warn('Push notifications not supported');
     return;
   }
 
   try {
     const permission = await requestNotificationPermission();
     if (permission !== 'granted') {
-      console.warn('Notification permission denied');
+      logger.warn('Notification permission denied');
       return;
     }
 
@@ -130,7 +132,7 @@ export async function sendLocalPushNotification(
       ...options,
     } as any);
   } catch (error) {
-    console.error('Failed to send local push notification:', error);
+    logger.error('Failed to send local push notification:', error);
   }
 }
 

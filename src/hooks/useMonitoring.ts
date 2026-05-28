@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/logger';
 
 /**
  * Hook for tracking component lifecycle in development
@@ -12,7 +13,7 @@ export function useComponentTracing(componentName: string) {
     renderCountRef.current++;
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[${componentName}] Rendered (count: ${renderCountRef.current})`);
+      logger.log(`[${componentName}] Rendered (count: ${renderCountRef.current})`);
     }
 
     // Report to Sentry in production for critical components
@@ -45,7 +46,7 @@ export function useAsyncTracing(operationName: string) {
       const duration = performance.now() - startTime;
 
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[${operationName}] Completed in ${duration.toFixed(2)}ms`);
+        logger.log(`[${operationName}] Completed in ${duration.toFixed(2)}ms`);
       }
 
       // Report slow operations

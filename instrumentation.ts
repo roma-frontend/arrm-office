@@ -5,25 +5,23 @@
  * Use it to initialize monitoring, tracing, and error handling
  */
 
+import { logger } from '@/lib/logger';
+
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
     // Initialize OpenTelemetry on server
-    const { initOpenTelemetryServer } = await import(
-      "./opentelemetry.server.config"
-    );
+    const { initOpenTelemetryServer } = await import('./opentelemetry.server.config');
     initOpenTelemetryServer();
 
     // Initialize Sentry on server (for production error tracking)
-    const { initSentryServer } = await import("./sentry.server.config");
+    const { initSentryServer } = await import('./sentry.server.config');
     initSentryServer();
 
-    console.log(
-      "✅ Server instrumentation initialized (OpenTelemetry + Sentry)"
-    );
+    logger.log('✅ Server instrumentation initialized (OpenTelemetry + Sentry)');
   }
 
-  if (process.env.NEXT_RUNTIME === "edge") {
+  if (process.env.NEXT_RUNTIME === 'edge') {
     // Edge runtime instrumentation
-    console.log("✅ Edge runtime initialized");
+    logger.log('✅ Edge runtime initialized');
   }
 }

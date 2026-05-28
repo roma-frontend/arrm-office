@@ -107,6 +107,13 @@ function SLADashboard({ organizationId }: SLADashboardProps) {
   // Target response time from config
   const targetHours = slaConfig?.targetResponseTimeHours || 24;
 
+  if (slaMetricsRaw === undefined)
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {/* Average Response Time */}

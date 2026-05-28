@@ -90,6 +90,13 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
     ? Math.min(100, (parseFloat(workedHours) / expectedHours) * 100)
     : 0;
 
+  if (monthlyStats === undefined)
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+
   return (
     <AnimatePresence>
       {open && (

@@ -1,16 +1,18 @@
 // lib/faceApi.ts
 // Lazy load @vladmandic/face-api to reduce initial bundle size
 
+import { logger } from './logger';
+
 // Suppress TensorFlow.js kernel registration warnings (HMR noise in dev)
 // Must run BEFORE any tfjs import to catch all registration messages
 (() => {
-  const originalWarn = console.warn;
-  console.warn = (...args) => {
+  const originalWarn = logger.warn;
+  logger.warn = (...args) => {
     if (typeof args[0] === 'string') {
       if (args[0].includes('already registered')) return;
       if (args[0].includes('Platform browser has already been set')) return;
     }
-    originalWarn.apply(console, args);
+    originalWarn.apply(logger, args);
   };
 })();
 
@@ -39,7 +41,7 @@ async function initTensorFlow() {
 
     tfInitialized = true;
   } catch (error) {
-    console.error('❌ Failed to initialize TensorFlow.js:', error);
+    logger.error('❌ Failed to initialize TensorFlow.js:', error);
     throw error;
   }
 }
@@ -66,7 +68,7 @@ export async function loadFaceApiModels() {
   ]);
 
   modelsLoaded = true;
-  console.log('✅ Face models loaded');
+  logger.log('✅ Face models loaded');
 }
 
 // Detect face and get descriptor
@@ -84,7 +86,7 @@ export async function detectFace(videoElement: HTMLVideoElement) {
       .withFaceLandmarks()
       .withFaceDescriptor();
   } catch (err) {
-    console.error('❌ Error detecting face:', err);
+    logger.error('❌ Error detecting face:', err);
     return null;
   }
 }

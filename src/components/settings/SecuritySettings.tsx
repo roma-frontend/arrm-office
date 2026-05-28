@@ -29,6 +29,13 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
   );
   const removeFaceRegistration = useMutation(api.faceRecognition.removeFaceRegistration);
 
+  if (faceData === undefined)
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+
   return (
     <div className="space-y-6">
       {/* Touch ID / Fingerprint */}

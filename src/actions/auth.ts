@@ -2,18 +2,18 @@
 
 import { cookies } from 'next/headers';
 import { signJWT, verifyJWT } from '@/lib/jwt';
-import { logger as log } from '@/lib/logger';
+import { logger as log, logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
 async function convexMutation(name: string, args: Record<string, unknown>) {
   try {
-    console.log('🔧 convexMutation called', { name, CONVEX_URL, hasURL: !!CONVEX_URL });
+    logger.log('🔧 convexMutation called', { name, CONVEX_URL, hasURL: !!CONVEX_URL });
     log.debug('convexMutation called', { name });
 
     if (!CONVEX_URL) {
-      console.error('❌ CONVEX_URL is undefined!');
-      console.error(
+      logger.error('❌ CONVEX_URL is undefined!');
+      logger.error(
         'Available env vars:',
         Object.keys(process.env).filter((k) => k.includes('CONVEX')),
       );
@@ -397,19 +397,19 @@ export async function updateSessionProfileAction(userId: string, name: string, e
     const jwt = cookieStore.get('hr-auth-token')?.value;
 
     if (!jwt) {
-      console.error('[updateSessionProfileAction] No JWT token found');
+      logger.error('[updateSessionProfileAction] No JWT token found');
       throw new Error('Not authenticated');
     }
 
     const payload = await verifyJWT(jwt);
 
     if (!payload) {
-      console.error('[updateSessionProfileAction] Invalid JWT payload');
+      logger.error('[updateSessionProfileAction] Invalid JWT payload');
       throw new Error('Invalid token');
     }
 
     if (payload.userId !== userId) {
-      console.error('[updateSessionProfileAction] User ID mismatch', {
+      logger.error('[updateSessionProfileAction] User ID mismatch', {
         payloadUserId: payload.userId,
         requestUserId: userId,
       });
@@ -439,7 +439,7 @@ export async function updateSessionProfileAction(userId: string, name: string, e
     });
     return { success: true };
   } catch (error) {
-    console.error('[updateSessionProfileAction] Error:', error);
+    logger.error('[updateSessionProfileAction] Error:', error);
     throw error;
   }
 }
