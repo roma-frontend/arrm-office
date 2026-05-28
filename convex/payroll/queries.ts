@@ -4,13 +4,14 @@ import { requireOrgAdmin, requireOrgSupervisor, requireUser } from '../lib/rbac'
 import { isSuperadminEmail } from '../lib/auth';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 export const getDashboardStats = query({
   args: {
     requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { requesterId, organizationId } = args;
 
     if (!organizationId) {
@@ -38,16 +39,19 @@ export const getDashboardStats = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const totalGross = records.reduce((sum, r) => sum + r.grossSalary, 0);
-    const totalNet = records.reduce((sum, r) => sum + r.netSalary, 0);
-    const totalDeductions = records.reduce((sum, r) => sum + (r.deductions?.total || 0), 0);
+    const totalGross = records.reduce((sum: any, r: any) => sum + r.grossSalary, 0);
+    const totalNet = records.reduce((sum: any, r: any) => sum + r.netSalary, 0);
+    const totalDeductions = records.reduce(
+      (sum: any, r: any) => sum + (r.deductions?.total || 0),
+      0,
+    );
 
-    const paidRuns = runs.filter((r) => r.status === 'paid').length;
+    const paidRuns = runs.filter((r: any) => r.status === 'paid').length;
     const pendingRuns = runs.filter(
       (r) => r.status === 'draft' || r.status === 'calculated',
     ).length;
 
-    const recentRuns = runs.sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
+    const recentRuns = runs.sort((a: any, b: any) => b.createdAt - a.createdAt).slice(0, 5);
 
     return {
       totalGross,
@@ -59,7 +63,7 @@ export const getDashboardStats = query({
       totalRecords: records.length,
       recentRuns,
     };
-  },
+  }),
 });
 
 export const getPayrollRecords = query({
@@ -78,7 +82,7 @@ export const getPayrollRecords = query({
     period: v.optional(v.string()),
     userId: v.optional(v.id('users')),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { requesterId, organizationId, status, period, userId } = args;
 
     if (!organizationId) return [];
@@ -91,22 +95,22 @@ export const getPayrollRecords = query({
       .take(DEFAULT_LIST_CAP);
 
     if (status) {
-      records = records.filter((r) => r.status === status);
+      records = records.filter((r: any) => r.status === status);
     }
 
     if (period) {
-      records = records.filter((r) => r.period === period);
+      records = records.filter((r: any) => r.period === period);
     }
 
     if (userId) {
-      records = records.filter((r) => r.userId === userId);
+      records = records.filter((r: any) => r.userId === userId);
     }
 
     const enriched = await Promise.all(
       records.map(async (record) => {
-        const user = await ctx.db.get(record.userId);
+        const user = (await ctx.db.get(record.userId)) as any;
         const userProfile = await getProfile(ctx, record.userId);
-        const run = record.payrollRunId ? await ctx.db.get(record.payrollRunId) : null;
+        const run = record.payrollRunId ? ((await ctx.db.get(record.payrollRunId)) as any) : null;
 
         return {
           ...record,
@@ -127,8 +131,8 @@ export const getPayrollRecords = query({
       }),
     );
 
-    return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  },
+    return enriched.sort((a: any, b: any) => b.createdAt - a.createdAt);
+  }),
 });
 
 export const getPayrollRuns = query({
@@ -145,7 +149,7 @@ export const getPayrollRuns = query({
       ),
     ),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { requesterId, organizationId, status } = args;
 
     if (!organizationId) return [];
@@ -158,12 +162,12 @@ export const getPayrollRuns = query({
       .take(DEFAULT_LIST_CAP);
 
     if (status) {
-      runs = runs.filter((r) => r.status === status);
+      runs = runs.filter((r: any) => r.status === status);
     }
 
     const enriched = await Promise.all(
       runs.map(async (run) => {
-        const approvedByUser = run.approvedBy ? await ctx.db.get(run.approvedBy) : null;
+        const approvedByUser = run.approvedBy ? ((await ctx.db.get(run.approvedBy)) as any) : null;
 
         const records = await ctx.db
           .query('payrollRecords')
@@ -180,8 +184,8 @@ export const getPayrollRuns = query({
       }),
     );
 
-    return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  },
+    return enriched.sort((a: any, b: any) => b.createdAt - a.createdAt);
+  }),
 });
 
 export const getPayrollRunById = query({
@@ -189,8 +193,8 @@ export const getPayrollRunById = query({
     requesterId: v.id('users'),
     id: v.id('payrollRuns'),
   },
-  handler: async (ctx, args) => {
-    const run = await ctx.db.get(args.id);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const run = (await ctx.db.get(args.id)) as any;
     if (!run) return null;
     if (!run.organizationId) return null;
 
@@ -203,7 +207,7 @@ export const getPayrollRunById = query({
 
     const enrichedRecords = await Promise.all(
       records.map(async (record) => {
-        const user = await ctx.db.get(record.userId);
+        const user = (await ctx.db.get(record.userId)) as any;
         const userProfile = await getProfile(ctx, record.userId);
         return {
           ...record,
@@ -218,7 +222,7 @@ export const getPayrollRunById = query({
       }),
     );
 
-    const approvedByUser = run.approvedBy ? await ctx.db.get(run.approvedBy) : null;
+    const approvedByUser = run.approvedBy ? ((await ctx.db.get(run.approvedBy)) as any) : null;
 
     return {
       ...run,
@@ -227,7 +231,7 @@ export const getPayrollRunById = query({
         ? { name: approvedByUser.name, email: approvedByUser.email }
         : null,
     };
-  },
+  }),
 });
 
 export const getPayslips = query({
@@ -237,7 +241,7 @@ export const getPayslips = query({
     userId: v.optional(v.id('users')),
     period: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { requesterId, organizationId, userId, period } = args;
     const requester = await requireUser(ctx, requesterId);
     const isSuper = isSuperadminEmail(requester.email);
@@ -279,9 +283,9 @@ export const getPayslips = query({
 
     const enriched = await Promise.all(
       payslips.map(async (payslip: any) => {
-        const user = (await ctx.db.get(payslip.userId)) as any;
-        const record = await ctx.db.get(payslip.payrollRecordId);
-        const run = await ctx.db.get(payslip.payrollRunId);
+        const user = (await ctx.db.get(payslip.userId)) as any as any;
+        const record = (await ctx.db.get(payslip.payrollRecordId)) as any;
+        const run = (await ctx.db.get(payslip.payrollRunId)) as any;
 
         return {
           ...payslip,
@@ -293,7 +297,7 @@ export const getPayslips = query({
     );
 
     return enriched.sort((a: any, b: any) => b.generatedAt - a.generatedAt);
-  },
+  }),
 });
 
 export const getSalarySettings = query({
@@ -301,7 +305,7 @@ export const getSalarySettings = query({
     requesterId: v.id('users'),
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await requireOrgSupervisor(ctx, args.requesterId, args.organizationId);
 
     const settings = await ctx.db
@@ -310,7 +314,7 @@ export const getSalarySettings = query({
       .first();
 
     return settings;
-  },
+  }),
 });
 
 export const getPayrollRecordById = query({
@@ -318,8 +322,8 @@ export const getPayrollRecordById = query({
     requesterId: v.id('users'),
     id: v.id('payrollRecords'),
   },
-  handler: async (ctx, args) => {
-    const record = await ctx.db.get(args.id);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const record = (await ctx.db.get(args.id)) as any;
     if (!record) return null;
 
     const requester = await requireUser(ctx, args.requesterId);
@@ -334,9 +338,9 @@ export const getPayrollRecordById = query({
       throw new Error('Access denied');
     }
 
-    const user = await ctx.db.get(record.userId);
+    const user = (await ctx.db.get(record.userId)) as any;
     const userProfile = await getProfile(ctx, record.userId);
-    const run = record.payrollRunId ? await ctx.db.get(record.payrollRunId) : null;
+    const run = record.payrollRunId ? ((await ctx.db.get(record.payrollRunId)) as any) : null;
 
     const payslip = await ctx.db
       .query('payslips')
@@ -355,7 +359,7 @@ export const getPayrollRecordById = query({
       run,
       payslip,
     };
-  },
+  }),
 });
 
 export const getAuditLog = query({
@@ -364,7 +368,7 @@ export const getAuditLog = query({
     organizationId: v.optional(v.id('organizations')),
     payrollRunId: v.optional(v.id('payrollRuns')),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { requesterId, organizationId, payrollRunId } = args;
     if (!organizationId) return [];
 
@@ -376,12 +380,12 @@ export const getAuditLog = query({
       .take(DEFAULT_LIST_CAP);
 
     if (payrollRunId) {
-      logs = logs.filter((l) => l.payrollRunId === payrollRunId);
+      logs = logs.filter((l: any) => l.payrollRunId === payrollRunId);
     }
 
     const enriched = await Promise.all(
       logs.map(async (log) => {
-        const user = await ctx.db.get(log.userId);
+        const user = (await ctx.db.get(log.userId)) as any;
         return {
           ...log,
           user: user ? { name: user.name, email: user.email } : null,
@@ -389,6 +393,6 @@ export const getAuditLog = query({
       }),
     );
 
-    return enriched.sort((a, b) => b.createdAt - a.createdAt);
-  },
+    return enriched.sort((a: any, b: any) => b.createdAt - a.createdAt);
+  }),
 });

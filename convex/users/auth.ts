@@ -3,6 +3,7 @@ import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from '../lib/auth';
 import { SMALL_LIST_CAP } from '../lib/limits';
+import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE OAUTH USER — for Google OAuth sign in
@@ -13,7 +14,8 @@ export const createOAuthUser = mutation({
     name: v.string(),
     avatarUrl: v.optional(v.string()),
   },
-  handler: async (ctx, { email, name, avatarUrl }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { email, name, avatarUrl } = args;
     const emailLower = email.toLowerCase().trim();
 
     // Ensure name is never empty
@@ -102,7 +104,7 @@ export const createOAuthUser = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,13 +116,14 @@ export const updateSession = mutation({
     sessionToken: v.string(),
     sessionExpiry: v.number(),
   },
-  handler: async (ctx, { userId, sessionToken, sessionExpiry }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, sessionToken, sessionExpiry } = args;
     await ctx.db.patch(userId, {
       sessionToken,
       sessionExpiry,
       lastLoginAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,12 +131,13 @@ export const updateSession = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const clearSession = mutation({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     await ctx.db.patch(userId, {
       sessionToken: undefined,
       sessionExpiry: undefined,
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,9 +145,10 @@ export const clearSession = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const setWebauthnChallenge = mutation({
   args: { userId: v.id('users'), challenge: v.string() },
-  handler: async (ctx, { userId, challenge }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, challenge } = args;
     await ctx.db.patch(userId, { webauthnChallenge: challenge });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -157,12 +162,12 @@ export const addWebauthnCredential = mutation({
     counter: v.number(),
     deviceName: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     return await ctx.db.insert('webauthnCredentials', {
       ...args,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,14 +175,15 @@ export const addWebauthnCredential = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateWebauthnCounter = mutation({
   args: { credentialId: v.string(), counter: v.number() },
-  handler: async (ctx, { credentialId, counter }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { credentialId, counter } = args;
     const cred = await ctx.db
       .query('webauthnCredentials')
       .withIndex('by_credential_id', (q) => q.eq('credentialId', credentialId))
       .unique();
     if (!cred) throw new Error('Credential not found');
     await ctx.db.patch(cred._id, { counter, lastUsedAt: Date.now() });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -189,11 +195,12 @@ export const recordFaceIdAttempt = mutation({
     userId: v.optional(v.id('users')),
     success: v.boolean(),
   },
-  handler: async (ctx, { email, userId, success }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { email, userId, success } = args;
     // Find user by email or userId
     let user;
     if (userId) {
-      user = await ctx.db.get(userId);
+      user = (await ctx.db.get(userId)) as any;
     } else if (email) {
       user = await ctx.db
         .query('users')
@@ -253,7 +260,7 @@ export const recordFaceIdAttempt = mutation({
 
       return { blocked: isBlocked, attempts: currentAttempts, email: user.email };
     }
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -264,12 +271,13 @@ export const unblockFaceId = mutation({
     adminId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { adminId, userId }) => {
-    const admin = await ctx.db.get(adminId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, userId } = args;
+    const admin = (await ctx.db.get(adminId)) as any;
     if (!admin || (admin.role !== 'admin' && admin.role !== 'superadmin')) {
       throw new Error('Only org admins can perform this action');
     }
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
 
     if (!user) {
       throw new Error('User not found');
@@ -309,7 +317,7 @@ export const unblockFaceId = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -317,8 +325,9 @@ export const unblockFaceId = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const autoUnblockFaceId = mutation({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
-    const user = await ctx.db.get(userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
+    const user = (await ctx.db.get(userId)) as any;
 
     if (!user) {
       throw new Error('User not found');
@@ -346,5 +355,5 @@ export const autoUnblockFaceId = mutation({
     }
 
     return userId;
-  },
+  }),
 });

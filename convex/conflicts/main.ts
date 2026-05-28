@@ -18,6 +18,7 @@ import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -76,7 +77,7 @@ export const detectAllConflicts = query({
     userId: v.optional(v.id('users')),
     conflictTypes: v.optional(v.array(v.string())),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const conflicts: Conflict[] = [];
 
     // Определяем, какие типы конфликтов проверять
@@ -113,12 +114,12 @@ export const detectAllConflicts = query({
     }
 
     // Сортируем: критические сначала, затем по дате
-    return conflicts.sort((a, b) => {
+    return conflicts.sort((a: any, b: any) => {
       if (a.severity === 'critical' && b.severity !== 'critical') return -1;
       if (b.severity === 'critical' && a.severity !== 'critical') return 1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
-  },
+  }),
 });
 
 /**
@@ -139,12 +140,12 @@ export const checkConflictsForRequest = query({
     endDate: v.number(),
     metadata: v.optional(v.any()),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const conflicts: Conflict[] = [];
 
     if (args.requestType === 'leave') {
       // Проверка конфликтов отпуска
-      const user = await ctx.db.get(args.userId);
+      const user = (await ctx.db.get(args.userId)) as any;
       if (!user) return { conflicts: [], hasCritical: false };
 
       const profile = await getProfile(ctx, args.userId);
@@ -275,9 +276,9 @@ export const checkConflictsForRequest = query({
 
     return {
       conflicts,
-      hasCritical: conflicts.some((c) => c.severity === 'critical'),
+      hasCritical: conflicts.some((c: any) => c.severity === 'critical'),
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -427,14 +428,14 @@ async function detectDepartmentConflicts(
   }
 
   // Sort events by date
-  events.sort((a, b) => a.date - b.date);
+  events.sort((a: any, b: any) => a.date - b.date);
 
   // Track active leaves per department using a map
   const activeLeavesPerDept = new Map<string, Set<Id<'users'>>>();
   let eventIndex = 0;
 
   // Process events at each unique date point
-  const uniqueDates = [...new Set(events.map((e) => e.date))].sort((a, b) => a - b);
+  const uniqueDates = [...new Set(events.map((e: any) => e.date))].sort((a: any, b: any) => a - b);
 
   for (const date of uniqueDates) {
     // Process all events at this date
@@ -659,7 +660,7 @@ export const getConflictSummaryForAI = query({
     startDate: v.number(),
     endDate: v.number(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const conflicts = await ctx.runQuery('conflicts:detectAllConflicts' as any, {
       organizationId: args.organizationId,
       startDate: args.startDate,
@@ -683,5 +684,5 @@ export const getConflictSummaryForAI = query({
       })),
       hasBlockingConflicts: critical.length > 0,
     };
-  },
+  }),
 });

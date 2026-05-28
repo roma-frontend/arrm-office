@@ -745,7 +745,7 @@ export const MessageBubble = React.memo(function MessageBubble({
 
           {/* Bubble */}
           <div
-            className="relative rounded-2xl px-3.5 py-2.5 text-[14px] leading-[1.45] wrap-break-words transition-all duration-200 hover:brightness-105"
+            className="relative rounded-2xl px-3.5 py-2.5 text-[14px] leading-[1.45] wrap-break-words transition-all duration-200"
             style={{
               background: isOwn ? 'var(--primary)' : 'var(--secondary)',
               color: isOwn ? 'white' : 'var(--text-primary)',

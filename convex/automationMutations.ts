@@ -5,6 +5,7 @@
 import { mutation } from './_generated/server';
 import { internalMutation } from './_generated/server';
 import { v } from 'convex/values';
+import { withAuth } from './lib/withAuth';
 
 // Public mutation that triggers the action
 export const runAutomation = mutation({
@@ -49,8 +50,8 @@ export const completeAutomationTask = internalMutation({
 
 export const toggleWorkflow = mutation({
   args: { workflowId: v.id('automationWorkflows') },
-  handler: async (ctx, args) => {
-    const workflow = await ctx.db.get(args.workflowId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const workflow = (await ctx.db.get(args.workflowId)) as any;
     if (!workflow) {
       throw new Error('Workflow not found');
     }
@@ -61,7 +62,7 @@ export const toggleWorkflow = mutation({
     });
 
     return { success: true, isActive: !workflow.isActive };
-  },
+  }),
 });
 
 export const createWorkflow = mutation({
@@ -70,7 +71,7 @@ export const createWorkflow = mutation({
     description: v.optional(v.string()),
     config: v.any(),
   },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const workflowId = await ctx.db.insert('automationWorkflows', {
       name: args.name,
       description: args.description || '',
@@ -81,13 +82,13 @@ export const createWorkflow = mutation({
     });
 
     return { success: true, workflowId };
-  },
+  }),
 });
 
 export const deleteWorkflow = mutation({
   args: { workflowId: v.id('automationWorkflows') },
-  handler: async (ctx, args) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     await ctx.db.delete(args.workflowId);
     return { success: true };
-  },
+  }),
 });

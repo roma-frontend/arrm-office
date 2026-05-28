@@ -10,7 +10,7 @@ import { withAuth } from '../lib/withAuth';
 // ── Security helpers ──────────────────────────────────────────────────────────
 /** Verify caller has admin/superadmin role and return their organizationId */
 async function requireAdmin(ctx: QueryCtx, adminId: Id<'users'>) {
-  const admin = (await ctx.db.get(adminId)) as Doc<'users'> | null;
+  const admin = (await ctx.db.get(adminId)) as any as Doc<'users'> | null;
   if (!admin) throw new Error('Admin not found');
   if (admin.role !== 'admin' && admin.role !== 'superadmin') {
     throw new Error('Only org admins can perform this action');
@@ -28,8 +28,8 @@ export const logAudit = mutation({
     target: v.optional(v.string()),
     details: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const user = (await ctx.db.get(args.userId)) as any;
     if (!user) throw new Error('User not found');
 
     await ctx.db.insert('auditLogs', {
@@ -40,7 +40,7 @@ export const logAudit = mutation({
       details: args.details,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,7 +53,8 @@ export const seedAdmin = mutation({
     passwordHash: v.string(),
     organizationId: v.id('organizations'),
   },
-  handler: async (ctx, { name, email, passwordHash, organizationId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { name, email, passwordHash, organizationId } = args;
     const existing = await ctx.db
       .query('users')
       .withIndex('by_email', (q) => q.eq('email', email.toLowerCase()))
@@ -78,7 +79,7 @@ export const seedAdmin = mutation({
       familyLeaveBalance: 5,
       createdAt: Date.now(),
     });
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,9 +92,10 @@ export const suspendUser = mutation({
     reason: v.string(),
     duration: v.optional(v.number()), // in hours, default 24
   },
-  handler: async (ctx, { adminId, userId, reason, duration = 24 }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, userId, reason, duration = 24 } = args;
     const admin = await requireAdmin(ctx, adminId);
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
 
     if (!user) {
       throw new Error('User not found');
@@ -140,7 +142,7 @@ export const suspendUser = mutation({
     });
 
     return { userId, suspendedUntil };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -151,9 +153,10 @@ export const unsuspendUser = mutation({
     adminId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { adminId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, userId } = args;
     const admin = await requireAdmin(ctx, adminId);
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
 
     if (!user) {
       throw new Error('User not found');
@@ -198,7 +201,7 @@ export const unsuspendUser = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -302,7 +305,7 @@ export const secureSuspendUser = mutation({
     { userId: Id<'users'>; reason: string; duration?: number },
     { userId: Id<'users'>; suspendedUntil: number }
   >({ minimumRole: 'admin' }, async (ctx, { userId, reason, duration = 24 }, caller) => {
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     if (caller.role !== 'superadmin' && caller.organizationId !== user.organizationId) {
@@ -336,7 +339,7 @@ export const secureUnsuspendUser = mutation({
   handler: withAuth<MutationCtx, { userId: Id<'users'> }, Id<'users'>>(
     { minimumRole: 'admin' },
     async (ctx, { userId }, caller) => {
-      const user = await ctx.db.get(userId);
+      const user = (await ctx.db.get(userId)) as any;
       if (!user) throw new Error('User not found');
 
       if (caller.role !== 'superadmin' && caller.organizationId !== user.organizationId) {

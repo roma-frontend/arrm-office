@@ -31,7 +31,8 @@ export const createUser = mutation({
     supervisorId: v.optional(v.id('users')),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { adminId, organizationId, ...args }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, organizationId, ...restArgs } = args;
     // RBAC: require org admin access (superadmin can create in any org)
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
@@ -61,7 +62,7 @@ export const createUser = mutation({
       await requireOrgAdmin(ctx, adminId, targetOrgId);
     }
 
-    const org = await ctx.db.get(targetOrgId);
+    const org = (await ctx.db.get(targetOrgId)) as any;
     if (!org) throw new Error('Organization not found');
 
     // NOTE: Capped at DEFAULT_LIST_CAP — sufficient to enforce employee limit.
@@ -137,7 +138,7 @@ export const createUser = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -169,12 +170,13 @@ export const updateUser = mutation({
     sickLeaveBalance: v.optional(v.number()),
     familyLeaveBalance: v.optional(v.number()),
   },
-  handler: async (ctx, { adminId, userId, ...updates }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, userId, ...updates } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // RBAC: verify same organization (superadmin can update any org)
@@ -225,7 +227,7 @@ export const updateUser = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -236,12 +238,13 @@ export const deleteUser = mutation({
     adminId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { adminId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, userId } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // RBAC: cross-org protection (superadmin can delete from any org)
@@ -276,7 +279,7 @@ export const deleteUser = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -287,11 +290,12 @@ export const hardDeleteUser = mutation({
     adminId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { adminId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, userId } = args;
     // RBAC: require superadmin role
     await requireRole(ctx, adminId, 'superadmin');
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Hard delete - remove from database completely
@@ -308,7 +312,7 @@ export const hardDeleteUser = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -319,12 +323,13 @@ export const approveUser = mutation({
     adminId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { adminId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, userId } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // RBAC: cross-org protection
@@ -336,10 +341,10 @@ export const approveUser = mutation({
 
     let org = null;
     if (user.organizationId) {
-      org = await ctx.db.get(user.organizationId);
+      org = (await ctx.db.get(user.organizationId)) as any;
     }
 
-    const callerUser = await ctx.db.get(adminId);
+    const callerUser = (await ctx.db.get(adminId)) as any;
 
     await ctx.db.patch(userId, {
       isApproved: true,
@@ -369,7 +374,7 @@ export const approveUser = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -380,12 +385,13 @@ export const rejectUser = mutation({
     adminId: v.id('users'),
     userId: v.id('users'),
   },
-  handler: async (ctx, { adminId, userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { adminId, userId } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // RBAC: cross-org protection
@@ -405,7 +411,7 @@ export const rejectUser = mutation({
 
     await ctx.db.delete(userId);
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -436,11 +442,12 @@ export const updateOwnProfile = mutation({
     dataRefreshRate: v.optional(v.string()),
     compactMode: v.optional(v.boolean()),
   },
-  handler: async (ctx, { userId, ...updates }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, ...updates } = args;
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     await ctx.db.patch(userId, updates);
@@ -456,7 +463,7 @@ export const updateOwnProfile = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -474,11 +481,12 @@ export const updatePresenceStatus = mutation({
     ),
     outOfOfficeMessage: v.optional(v.string()),
   },
-  handler: async (ctx, { userId, presenceStatus, outOfOfficeMessage: _outOfOfficeMessage }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, presenceStatus, outOfOfficeMessage: _outOfOfficeMessage } = args;
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Update status in both users and userProfiles tables (dual-write)
@@ -496,7 +504,7 @@ export const updatePresenceStatus = mutation({
     });
 
     return { success: true, newStatus: presenceStatus };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -504,11 +512,12 @@ export const updatePresenceStatus = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateAvatar = mutation({
   args: { userId: v.id('users'), avatarUrl: v.string() },
-  handler: async (ctx, { userId, avatarUrl }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, avatarUrl } = args;
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const userForAvatar = await ctx.db.get(userId);
+    const userForAvatar = (await ctx.db.get(userId)) as any;
     await patchProfile(ctx, userId, { avatarUrl });
 
     // Audit log: avatar updated
@@ -522,7 +531,7 @@ export const updateAvatar = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -530,11 +539,12 @@ export const updateAvatar = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const deleteAvatar = mutation({
   args: { userId: v.id('users') },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Remove avatar URL from database
@@ -553,7 +563,7 @@ export const deleteAvatar = mutation({
     });
 
     return userId;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -563,11 +573,12 @@ export const setInCallStatus = mutation({
   args: {
     userId: v.id('users'),
   },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Only update if not already "in_call"
@@ -589,7 +600,7 @@ export const setInCallStatus = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -599,11 +610,12 @@ export const resetFromCallStatus = mutation({
   args: {
     userId: v.id('users'),
   },
-  handler: async (ctx, { userId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId } = args;
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = await ctx.db.get(userId);
+    const user = (await ctx.db.get(userId)) as any;
     if (!user) throw new Error('User not found');
 
     // Reset to available if they're currently in_call
@@ -625,7 +637,7 @@ export const resetFromCallStatus = mutation({
     }
 
     return { success: true };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -636,7 +648,7 @@ export const secureDeleteUser = mutation({
   handler: withAuth<MutationCtx, { userId: Id<'users'> }, Id<'users'>>(
     { minimumRole: 'admin' },
     async (ctx, { userId }, caller) => {
-      const user = await ctx.db.get(userId);
+      const user = (await ctx.db.get(userId)) as any;
       if (!user) throw new Error('User not found');
 
       // Cross-org protection
@@ -679,8 +691,9 @@ export const updateChatBackground = mutation({
     userId: v.id('users'),
     backgroundId: v.string(),
   },
-  handler: async (ctx, { userId, backgroundId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
+    const { userId, backgroundId } = args;
     await ctx.db.patch(userId, { chatBackground: backgroundId });
     return { success: true };
-  },
+  }),
 });
