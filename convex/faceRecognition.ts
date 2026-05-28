@@ -66,7 +66,7 @@ export const registerFace = mutation({
       throw new Error(`Face descriptor must be ${FACE_DESCRIPTOR_LENGTH}-dim`);
     }
 
-    const user = (await ctx.db.get(args.userId)) as any as any;
+    const user = (await ctx.db.get(args.userId)) as any as any as any;
     if (!user) throw new Error('User not found');
 
     const patch: Record<string, unknown> = {
@@ -108,7 +108,7 @@ export const getFaceDescriptor = query({
     const isSuperadmin = requester.role === 'superadmin';
     if (!isSelf && !isSuperadmin) return null;
 
-    const user = (await ctx.db.get(args.userId)) as any as any;
+    const user = (await ctx.db.get(args.userId)) as any as any as any;
     if (!user) return null;
 
     return {
@@ -130,10 +130,10 @@ export const removeFaceRegistration = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { userId, requesterId } = args;
-    const requester = (await ctx.db.get(requesterId)) as any;
+    const requester = (await ctx.db.get(requesterId)) as any as any;
     if (!requester) throw new Error('Requester not found');
 
-    const target = (await ctx.db.get(userId)) as any;
+    const target = (await ctx.db.get(userId)) as any as any;
     if (!target) throw new Error('User not found');
 
     // Self, same-org admin, or superadmin only

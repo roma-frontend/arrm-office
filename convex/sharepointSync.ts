@@ -12,7 +12,7 @@ import { DEFAULT_LIST_CAP } from './lib/limits';
 const RESTRICTED_ORG_SLUG = 'adb-arrm';
 
 async function verifyRestrictedOrg(ctx: any, organizationId: string) {
-  const org = (await ctx.db.get(organizationId)) as any as any;
+  const org = (await ctx.db.get(organizationId)) as any as any as any;
   if (!org) {
     throw new Error('Organization not found');
   }
@@ -39,7 +39,7 @@ export const upsertSharePointUser = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Verify admin
-    const admin = (await ctx.db.get(args.adminId)) as any as any;
+    const admin = (await ctx.db.get(args.adminId)) as any as any as any;
     if (!admin) throw new Error('Admin not found');
     if (admin.role !== 'admin' && admin.role !== 'superadmin') {
       throw new Error('Only admins can sync SharePoint users');
@@ -112,7 +112,7 @@ export const deactivateSharePointUsers = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     // Verify admin
-    const admin = (await ctx.db.get(args.adminId)) as any as any;
+    const admin = (await ctx.db.get(args.adminId)) as any as any as any;
     if (!admin) throw new Error('Admin not found');
     if (admin.role !== 'admin' && admin.role !== 'superadmin') {
       throw new Error('Only admins can deactivate users');

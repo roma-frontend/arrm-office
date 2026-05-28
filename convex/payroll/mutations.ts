@@ -126,7 +126,7 @@ export const calculatePayrollRun = mutation({
     payrollRunId: v.id('payrollRuns'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const run = (await ctx.db.get(args.payrollRunId)) as any;
+    const run = (await ctx.db.get(args.payrollRunId)) as any as any;
     if (!run) {
       throw new Error('Payroll run not found');
     }
@@ -277,7 +277,7 @@ export const approvePayrollRun = mutation({
     payrollRunId: v.id('payrollRuns'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const run = (await ctx.db.get(args.payrollRunId)) as any;
+    const run = (await ctx.db.get(args.payrollRunId)) as any as any;
     if (!run) {
       throw new Error('Payroll run not found');
     }
@@ -328,7 +328,7 @@ export const markPayrollRunAsPaid = mutation({
     payrollRunId: v.id('payrollRuns'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const run = (await ctx.db.get(args.payrollRunId)) as any;
+    const run = (await ctx.db.get(args.payrollRunId)) as any as any;
     if (!run) {
       throw new Error('Payroll run not found');
     }
@@ -378,7 +378,7 @@ export const cancelPayrollRun = mutation({
     payrollRunId: v.id('payrollRuns'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const run = (await ctx.db.get(args.payrollRunId)) as any;
+    const run = (await ctx.db.get(args.payrollRunId)) as any as any;
     if (!run) {
       throw new Error('Payroll run not found');
     }
@@ -428,7 +428,7 @@ export const generatePayslip = mutation({
     email: v.optional(v.string()),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const record = (await ctx.db.get(args.payrollRecordId)) as any;
+    const record = (await ctx.db.get(args.payrollRecordId)) as any as any;
     if (!record) {
       throw new Error('Payroll record not found');
     }
@@ -480,7 +480,7 @@ export const sendPayslip = mutation({
     payslipId: v.id('payslips'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const payslip = (await ctx.db.get(args.payslipId)) as any;
+    const payslip = (await ctx.db.get(args.payslipId)) as any as any;
     if (!payslip) {
       throw new Error('Payslip not found');
     }
@@ -517,7 +517,7 @@ export const updatePayrollRecord = mutation({
     notes: v.optional(v.string()),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const record = (await ctx.db.get(args.payrollRecordId)) as any;
+    const record = (await ctx.db.get(args.payrollRecordId)) as any as any;
     if (!record) {
       throw new Error('Payroll record not found');
     }
@@ -638,7 +638,7 @@ export const deletePayrollRecord = mutation({
     payrollRecordId: v.id('payrollRecords'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const record = (await ctx.db.get(args.payrollRecordId)) as any;
+    const record = (await ctx.db.get(args.payrollRecordId)) as any as any;
     if (!record) {
       throw new Error('Payroll record not found');
     }
@@ -754,7 +754,7 @@ export const secureApprovePayrollRun = mutation({
   handler: withAuth<MutationCtx, { runId: Id<'payrollRuns'> }, void>(
     { minimumRole: 'admin' },
     async (ctx, { runId }, caller) => {
-      const run = (await ctx.db.get(runId)) as any as any;
+      const run = (await ctx.db.get(runId)) as any as any as any;
       if (!run) throw new Error('Payroll run not found');
       if (run.status !== 'calculated') throw new Error('Run must be calculated first');
 
@@ -786,7 +786,7 @@ export const secureDeletePayrollRecord = mutation({
   handler: withAuth<MutationCtx, { recordId: Id<'payrollRecords'> }, void>(
     { minimumRole: 'admin' },
     async (ctx, { recordId }, caller) => {
-      const record = (await ctx.db.get(recordId)) as any as any;
+      const record = (await ctx.db.get(recordId)) as any as any as any;
       if (!record) throw new Error('Record not found');
 
       if (caller.role !== 'superadmin' && caller.organizationId !== record.organizationId) {

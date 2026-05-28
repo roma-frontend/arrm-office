@@ -45,7 +45,7 @@ export const getMyJoinRequests = query({
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { userId } = args;
     // First get the user to get their email
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user || !user.email) return [];
 
     const requests = await ctx.db
@@ -119,7 +119,7 @@ export const requestJoinOrganization = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { userId, organizationId, message } = args;
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
     if (user.organizationId) {
       return {
@@ -129,7 +129,7 @@ export const requestJoinOrganization = mutation({
       };
     }
 
-    const org = (await ctx.db.get(organizationId)) as any;
+    const org = (await ctx.db.get(organizationId)) as any as any;
     if (!org) throw new Error('Organization not found');
 
     // Check if request already exists
@@ -188,11 +188,11 @@ export const approveJoinRequest = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { inviteId, reviewerId } = args;
-    const invite = (await ctx.db.get(inviteId)) as any;
+    const invite = (await ctx.db.get(inviteId)) as any as any;
     if (!invite) throw new Error('Invite not found');
     if (invite.status !== 'pending') throw new Error('Invite is not pending');
 
-    const reviewer = (await ctx.db.get(reviewerId)) as any;
+    const reviewer = (await ctx.db.get(reviewerId)) as any as any;
     if (!reviewer || !reviewer.organizationId) throw new Error('Reviewer not found');
     if (reviewer.role !== 'admin' && reviewer.role !== 'superadmin') {
       throw new Error('Only admins can approve join requests');
@@ -204,7 +204,7 @@ export const approveJoinRequest = mutation({
     const userId = invite.userId;
     if (!userId) throw new Error('Invite has no associated user');
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // Update user's organization
@@ -224,7 +224,7 @@ export const approveJoinRequest = mutation({
     });
 
     // Notify user
-    const org = (await ctx.db.get(invite.organizationId)) as any;
+    const org = (await ctx.db.get(invite.organizationId)) as any as any;
     await ctx.db.insert('notifications', {
       organizationId: invite.organizationId,
       userId,
@@ -250,11 +250,11 @@ export const rejectJoinRequest = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { inviteId, reviewerId, reason } = args;
-    const invite = (await ctx.db.get(inviteId)) as any;
+    const invite = (await ctx.db.get(inviteId)) as any as any;
     if (!invite) throw new Error('Invite not found');
     if (invite.status !== 'pending') throw new Error('Invite is not pending');
 
-    const reviewer = (await ctx.db.get(reviewerId)) as any;
+    const reviewer = (await ctx.db.get(reviewerId)) as any as any;
     if (!reviewer || !reviewer.organizationId) throw new Error('Reviewer not found');
     if (reviewer.role !== 'admin' && reviewer.role !== 'superadmin') {
       throw new Error('Only admins can reject join requests');
@@ -274,9 +274,9 @@ export const rejectJoinRequest = mutation({
     // Notify user
     const userId = invite.userId;
     if (userId) {
-      const user = (await ctx.db.get(userId)) as any;
+      const user = (await ctx.db.get(userId)) as any as any;
       if (user) {
-        const org = (await ctx.db.get(invite.organizationId)) as any;
+        const org = (await ctx.db.get(invite.organizationId)) as any as any;
         await ctx.db.insert('notifications', {
           organizationId: invite.organizationId,
           userId,

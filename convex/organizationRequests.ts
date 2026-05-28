@@ -197,7 +197,7 @@ export const getOrganizationRequests = query({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { superadminUserId, status } = args;
-    const superadmin = (await ctx.db.get(superadminUserId)) as any;
+    const superadmin = (await ctx.db.get(superadminUserId)) as any as any;
     if (!superadmin || !isSuperadmin(superadmin)) {
       throw new Error('Superadmin only');
     }
@@ -227,12 +227,12 @@ export const approveOrganizationRequest = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { superadminUserId, requestId } = args;
-    const superadmin = (await ctx.db.get(superadminUserId)) as any;
+    const superadmin = (await ctx.db.get(superadminUserId)) as any as any;
     if (!superadmin || !isSuperadmin(superadmin)) {
       throw new Error('Only superadmin can approve organization requests');
     }
 
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = (await ctx.db.get(requestId)) as any as any;
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('This request has already been reviewed');
 
@@ -320,12 +320,12 @@ export const rejectOrganizationRequest = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { superadminUserId, requestId, reason } = args;
-    const superadmin = (await ctx.db.get(superadminUserId)) as any;
+    const superadmin = (await ctx.db.get(superadminUserId)) as any as any;
     if (!superadmin || !isSuperadmin(superadmin)) {
       throw new Error('Only superadmin can reject organization requests');
     }
 
-    const request = (await ctx.db.get(requestId)) as any;
+    const request = (await ctx.db.get(requestId)) as any as any;
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('This request has already been reviewed');
 
@@ -347,7 +347,7 @@ export const getPendingRequestCount = query({
   args: { superadminUserId: v.id('users') },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { superadminUserId } = args;
-    const superadmin = (await ctx.db.get(superadminUserId)) as any;
+    const superadmin = (await ctx.db.get(superadminUserId)) as any as any;
     if (!superadmin || !isSuperadmin(superadmin)) {
       return 0;
     }
@@ -371,7 +371,7 @@ export const secureApproveOrgRequest = mutation({
     { requestId: Id<'organizationRequests'> },
     { organizationId: Id<'organizations'>; userId: Id<'users'> }
   >({ minimumRole: 'superadmin' }, async (ctx, { requestId }, caller) => {
-    const request = (await ctx.db.get(requestId)) as any as any;
+    const request = (await ctx.db.get(requestId)) as any as any as any;
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('Already reviewed');
 
@@ -438,7 +438,7 @@ export const secureRejectOrgRequest = mutation({
   handler: withAuth<MutationCtx, { requestId: Id<'organizationRequests'>; reason?: string }, void>(
     { minimumRole: 'superadmin' },
     async (ctx, { requestId, reason }, caller) => {
-      const request = (await ctx.db.get(requestId)) as any as any;
+      const request = (await ctx.db.get(requestId)) as any as any as any;
       if (!request) throw new Error('Request not found');
       if (request.status !== 'pending') throw new Error('Already reviewed');
 

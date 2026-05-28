@@ -323,11 +323,11 @@ export const sendKudos = mutation({
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const KUDOS_COST = 3;
 
-    const sender = (await ctx.db.get(args.senderId)) as any;
+    const sender = (await ctx.db.get(args.senderId)) as any as any;
     if (!sender) throw new Error('Sender not found');
     if (!sender.organizationId) throw new Error('Sender has no organization');
 
-    const receiver = (await ctx.db.get(args.receiverId)) as any;
+    const receiver = (await ctx.db.get(args.receiverId)) as any as any;
     if (!receiver) throw new Error('Receiver not found');
 
     if (sender.organizationId !== receiver.organizationId) {
@@ -412,10 +412,10 @@ export const reactToKudos = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { kudoId, userId, emoji } = args;
-    const kudo = (await ctx.db.get(kudoId)) as any;
+    const kudo = (await ctx.db.get(kudoId)) as any as any;
     if (!kudo) throw new Error('Kudos not found');
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
     if (user.organizationId !== kudo.organizationId) {
       throw new Error('Access denied');
@@ -449,10 +449,10 @@ export const deleteKudos = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { kudoId, userId } = args;
-    const kudo = (await ctx.db.get(kudoId)) as any;
+    const kudo = (await ctx.db.get(kudoId)) as any as any;
     if (!kudo) throw new Error('Kudos not found');
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // Only sender or admin/superadmin can delete
@@ -482,7 +482,7 @@ export const createBadge = mutation({
     criteria: v.optional(v.string()),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const user = (await ctx.db.get(args.userId)) as any;
+    const user = (await ctx.db.get(args.userId)) as any as any;
     if (!user) throw new Error('User not found');
     if (!user.organizationId) throw new Error('User has no organization');
     if (user.role !== 'admin' && user.role !== 'superadmin') {
@@ -513,20 +513,20 @@ export const awardBadge = mutation({
     reason: v.optional(v.string()),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const awarder = (await ctx.db.get(args.awardedBy)) as any;
+    const awarder = (await ctx.db.get(args.awardedBy)) as any as any;
     if (!awarder) throw new Error('User not found');
     if (!awarder.organizationId) throw new Error('User has no organization');
     if (!['admin', 'superadmin', 'supervisor'].includes(awarder.role)) {
       throw new Error('Not authorized to award badges');
     }
 
-    const recipient = (await ctx.db.get(args.userId)) as any;
+    const recipient = (await ctx.db.get(args.userId)) as any as any;
     if (!recipient) throw new Error('Recipient not found');
     if (recipient.organizationId !== awarder.organizationId) {
       throw new Error('Cannot award badge to user in different organization');
     }
 
-    const badge = (await ctx.db.get(args.badgeId)) as any;
+    const badge = (await ctx.db.get(args.badgeId)) as any as any;
     if (!badge) throw new Error('Badge not found');
     if (badge.organizationId !== awarder.organizationId) {
       throw new Error('Badge does not belong to this organization');
@@ -749,7 +749,7 @@ export const awardManualPoints = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { organizationId, userId, amount, description, awardedBy } = args;
-    const awarder = (await ctx.db.get(awardedBy)) as any;
+    const awarder = (await ctx.db.get(awardedBy)) as any as any;
     if (!awarder) throw new Error('Awarder not found');
     if (!['admin', 'superadmin', 'supervisor'].includes(awarder.role)) {
       throw new Error('Not authorized to award points');
@@ -797,11 +797,11 @@ export const getKudoById = query({
   args: { kudoId: v.id('kudos') },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { kudoId } = args;
-    const kudo = (await ctx.db.get(kudoId)) as any;
+    const kudo = (await ctx.db.get(kudoId)) as any as any;
     if (!kudo) return null;
 
-    const sender = (await ctx.db.get(kudo.senderId)) as any;
-    const receiver = (await ctx.db.get(kudo.receiverId)) as any;
+    const sender = (await ctx.db.get(kudo.senderId)) as any as any;
+    const receiver = (await ctx.db.get(kudo.receiverId)) as any as any;
     const senderProfile = sender ? await getProfile(ctx, sender._id) : null;
     const receiverProfile = receiver ? await getProfile(ctx, receiver._id) : null;
 

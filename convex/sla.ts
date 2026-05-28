@@ -177,7 +177,7 @@ export const createSLAMetric = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { leaveRequestId } = args;
-    const leave = (await ctx.db.get(leaveRequestId)) as any as any;
+    const leave = (await ctx.db.get(leaveRequestId)) as any as any as any;
     if (!leave) throw new Error('Leave request not found');
 
     const config = await ctx.db.query('slaConfig').first();
@@ -202,7 +202,7 @@ export const updateSLAMetric = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { leaveRequestId } = args;
-    const leave = (await ctx.db.get(leaveRequestId)) as any as any;
+    const leave = (await ctx.db.get(leaveRequestId)) as any as any as any;
     if (!leave || !leave.reviewedAt) throw new Error('Leave not reviewed');
 
     const metric = await ctx.db

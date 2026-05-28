@@ -14,7 +14,7 @@ import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
  * - admin: sees only their own org
  */
 async function requireAdmin(ctx: any, adminId: Id<'users'>) {
-  const user = (await ctx.db.get(adminId)) as any;
+  const user = (await ctx.db.get(adminId)) as any as any;
   if (!user) {
     throw new Error('User not found');
   }
@@ -47,7 +47,7 @@ export const createGdprRequest = mutation({
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const targetUser = (await ctx.db.get(args.userId)) as any;
+    const targetUser = (await ctx.db.get(args.userId)) as any as any;
     if (!targetUser) throw new Error('User not found');
     if (!orgId || targetUser.organizationId !== orgId) {
       throw new Error('Can only create GDPR requests for users in your organization');
@@ -91,7 +91,7 @@ export const updateGdprRequestStatus = mutation({
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const request = (await ctx.db.get(args.requestId)) as any;
+    const request = (await ctx.db.get(args.requestId)) as any as any;
     if (!request) {
       throw new Error('GDPR request not found');
     }
@@ -246,7 +246,7 @@ export const grantConsent = mutation({
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const targetUser = (await ctx.db.get(args.userId)) as any;
+    const targetUser = (await ctx.db.get(args.userId)) as any as any;
     if (!targetUser) throw new Error('User not found');
     if (orgId && targetUser.organizationId !== orgId) {
       throw new Error('Can only manage consent for users in your organization');
@@ -412,7 +412,7 @@ export const logDataAccess = mutation({
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const targetUser = (await ctx.db.get(args.userId)) as any;
+    const targetUser = (await ctx.db.get(args.userId)) as any as any;
     if (!targetUser) throw new Error('User not found');
     if (orgId && targetUser.organizationId !== orgId) {
       throw new Error('Can only log data access for users in your organization');
@@ -598,7 +598,7 @@ export const updatePolicy = mutation({
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const policy = (await ctx.db.get(args.policyId)) as any;
+    const policy = (await ctx.db.get(args.policyId)) as any as any;
     if (!policy) {
       throw new Error('Policy not found');
     }
@@ -687,7 +687,7 @@ export const deletePolicy = mutation({
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { user, orgId } = await requireAdmin(ctx, args.adminId);
 
-    const policy = (await ctx.db.get(args.policyId)) as any;
+    const policy = (await ctx.db.get(args.policyId)) as any as any;
     if (!policy) {
       throw new Error('Policy not found');
     }
@@ -794,7 +794,7 @@ export const secureUpdateGdprStatus = mutation({
     },
     void
   >({ minimumRole: 'admin' }, async (ctx, { requestId, status, notes }, caller) => {
-    const request = (await ctx.db.get(requestId)) as any as any;
+    const request = (await ctx.db.get(requestId)) as any as any as any;
     if (!request) throw new Error('Request not found');
 
     if (caller.role !== 'superadmin' && caller.organizationId !== request.organizationId) {
@@ -816,7 +816,7 @@ export const secureDeletePolicy = mutation({
   handler: withAuth<MutationCtx, { policyId: Id<'compliancePolicies'> }, void>(
     { minimumRole: 'admin' },
     async (ctx, { policyId }, caller) => {
-      const policy = (await ctx.db.get(policyId)) as any as any;
+      const policy = (await ctx.db.get(policyId)) as any as any as any;
       if (!policy) throw new Error('Policy not found');
 
       if (caller.role !== 'superadmin' && caller.organizationId !== policy.organizationId) {

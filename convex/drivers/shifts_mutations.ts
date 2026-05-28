@@ -86,7 +86,7 @@ export const endShift = mutation({
       overtimeHours = (endTime - shift.scheduledEndTime) / (1000 * 60 * 60);
     }
 
-    const driver = (await ctx.db.get(driverId)) as any;
+    const driver = (await ctx.db.get(driverId)) as any as any;
 
     await ctx.db.patch(shift._id, {
       endTime,
@@ -171,7 +171,7 @@ export const updateShiftTripCount = mutation({
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
     const { shiftId, distanceKm, durationMinutes } = args;
-    const shift = (await ctx.db.get(shiftId)) as any;
+    const shift = (await ctx.db.get(shiftId)) as any as any;
     if (!shift) throw new Error('Shift not found');
 
     await ctx.db.patch(shiftId, {
@@ -234,10 +234,19 @@ export const getShiftStatistics = query({
     const completedShifts = shifts.filter((s: any) => s.status === 'completed');
 
     const totalShifts = completedShifts.length;
-    const totalHours = completedShifts.reduce((sum, s) => sum + (s.totalHours || 0), 0);
-    const totalOvertime = completedShifts.reduce((sum, s) => sum + (s.overtimeHours || 0), 0);
-    const totalTrips = completedShifts.reduce((sum, s) => sum + (s.tripsCompleted || 0), 0);
-    const totalDistance = completedShifts.reduce((sum, s) => sum + (s.totalDistance || 0), 0);
+    const totalHours = completedShifts.reduce((sum: any, s: any) => sum + (s.totalHours || 0), 0);
+    const totalOvertime = completedShifts.reduce(
+      (sum: any, s: any) => sum + (s.overtimeHours || 0),
+      0,
+    );
+    const totalTrips = completedShifts.reduce(
+      (sum: any, s: any) => sum + (s.tripsCompleted || 0),
+      0,
+    );
+    const totalDistance = completedShifts.reduce(
+      (sum: any, s: any) => sum + (s.totalDistance || 0),
+      0,
+    );
 
     const avgShiftDuration = totalShifts > 0 ? totalHours / totalShifts : 0;
     const avgTripsPerShift = totalShifts > 0 ? totalTrips / totalShifts : 0;

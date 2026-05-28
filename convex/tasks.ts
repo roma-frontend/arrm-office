@@ -107,7 +107,7 @@ export const createTask = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const assigner = (await ctx.db.get(args.assignedBy)) as any;
+    const assigner = (await ctx.db.get(args.assignedBy)) as any as any;
     const organizationId = assigner?.organizationId;
 
     const now = Date.now();
@@ -172,7 +172,7 @@ export const updateTaskStatus = mutation({
     userId: v.id('users'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const task = (await ctx.db.get(args.taskId)) as any;
+    const task = (await ctx.db.get(args.taskId)) as any as any;
     if (!task) throw new Error('Task not found');
 
     const now = Date.now();
@@ -184,8 +184,8 @@ export const updateTaskStatus = mutation({
 
     // Notify supervisor when task goes to review or completed (skip superadmin)
     if (args.status === 'review' || args.status === 'completed') {
-      const employee = (await ctx.db.get(args.userId)) as any;
-      const supervisor = (await ctx.db.get(task.assignedBy)) as any;
+      const employee = (await ctx.db.get(args.userId)) as any as any;
+      const supervisor = (await ctx.db.get(task.assignedBy)) as any as any;
       if (supervisor?.role !== 'superadmin') {
         await ctx.db.insert('notifications', {
           userId: task.assignedBy,
@@ -250,7 +250,7 @@ export const updateTask = mutation({
     await ctx.db.patch(taskId, { ...filtered, updatedAt: Date.now() });
 
     // Audit log: task updated
-    const taskForUpdate = (await ctx.db.get(taskId)) as any;
+    const taskForUpdate = (await ctx.db.get(taskId)) as any as any;
     if (taskForUpdate?.organizationId && taskForUpdate?.assignedBy) {
       await ctx.db.insert('auditLogs', {
         organizationId: taskForUpdate.organizationId,
@@ -272,7 +272,7 @@ export const updateTask = mutation({
 export const deleteTask = mutation({
   args: { taskId: v.id('tasks') },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const task = (await ctx.db.get(args.taskId)) as any;
+    const task = (await ctx.db.get(args.taskId)) as any as any;
     if (!task) throw new Error('Task not found');
 
     // Delete comments first (capped: if a task has >SMALL_LIST_CAP comments,
@@ -304,7 +304,7 @@ export const addComment = mutation({
     content: v.string(),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const task = (await ctx.db.get(args.taskId)) as any;
+    const task = (await ctx.db.get(args.taskId)) as any as any;
     if (!task) throw new Error('Task not found');
 
     const now = Date.now();
@@ -335,7 +335,7 @@ export const assignSupervisor = mutation({
     supervisorId: v.optional(v.id('users')),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const empForSupervisor = (await ctx.db.get(args.employeeId)) as any;
+    const empForSupervisor = (await ctx.db.get(args.employeeId)) as any as any;
     await ctx.db.patch(args.employeeId, {
       supervisorId: args.supervisorId,
     });
@@ -357,7 +357,7 @@ export const assignSupervisor = mutation({
 export const getTasksForEmployee = query({
   args: { userId: v.id('users') },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const employee = (await ctx.db.get(args.userId)) as any;
+    const employee = (await ctx.db.get(args.userId)) as any as any;
     if (!employee) throw new Error('Employee not found');
 
     const userIsSuperadmin = isSuperadmin(employee);
@@ -385,7 +385,7 @@ export const getTasksForEmployee = query({
 export const getTasksAssignedBy = query({
   args: { supervisorId: v.id('users') },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const supervisor = (await ctx.db.get(args.supervisorId)) as any;
+    const supervisor = (await ctx.db.get(args.supervisorId)) as any as any;
     if (!supervisor) throw new Error('Supervisor not found');
 
     const userIsSuperadmin = isSuperadmin(supervisor);
@@ -601,7 +601,7 @@ export const addAttachment = mutation({
     uploadedBy: v.id('users'),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const task = (await ctx.db.get(args.taskId)) as any;
+    const task = (await ctx.db.get(args.taskId)) as any as any;
     if (!task) throw new Error('Task not found');
     const attachments = task.attachments ?? [];
     await ctx.db.patch(args.taskId, {
@@ -638,7 +638,7 @@ export const removeAttachment = mutation({
     url: v.string(),
   },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const task = (await ctx.db.get(args.taskId)) as any;
+    const task = (await ctx.db.get(args.taskId)) as any as any;
     if (!task) throw new Error('Task not found');
     const attachments = (task.attachments ?? []).filter((a: any) => a.url !== args.url);
     await ctx.db.patch(args.taskId, { attachments, updatedAt: Date.now() });
@@ -726,12 +726,12 @@ export const getAllTasksRaw = query({
 export const getTask = query({
   args: { taskId: v.id('tasks') },
   handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-    const task = (await ctx.db.get(args.taskId)) as any;
+    const task = (await ctx.db.get(args.taskId)) as any as any;
     if (!task) return null;
 
     // Load assigned user
-    const assignedTo = (await ctx.db.get(task.assignedTo)) as any;
-    const assignedBy = (await ctx.db.get(task.assignedBy)) as any;
+    const assignedTo = (await ctx.db.get(task.assignedTo)) as any as any;
+    const assignedBy = (await ctx.db.get(task.assignedBy)) as any as any;
 
     // Load profiles
     const assignedToProfile = assignedTo ? await getProfile(ctx, assignedTo._id) : null;
@@ -786,7 +786,7 @@ export const secureDeleteTask = mutation({
   handler: withAuth<MutationCtx, { taskId: Id<'tasks'> }, void>(
     { minimumRole: 'supervisor' },
     async (ctx, { taskId }, caller) => {
-      const task = (await ctx.db.get(taskId)) as any;
+      const task = (await ctx.db.get(taskId)) as any as any;
       if (!task) throw new Error('Task not found');
 
       // Cross-org protection
@@ -821,7 +821,7 @@ export const secureReassignTask = mutation({
   handler: withAuth<MutationCtx, { taskId: Id<'tasks'>; newAssigneeId: Id<'users'> }, void>(
     { minimumRole: 'supervisor' },
     async (ctx, { taskId, newAssigneeId }, caller) => {
-      const task = (await ctx.db.get(taskId)) as any;
+      const task = (await ctx.db.get(taskId)) as any as any;
       if (!task) throw new Error('Task not found');
 
       if (caller.role !== 'superadmin' && caller.organizationId !== task.organizationId) {

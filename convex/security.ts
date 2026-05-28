@@ -14,7 +14,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits'
  * - admin: sees only their own org
  */
 async function requireAdmin(ctx: any, adminId: Id<'users'>) {
-  const user = (await ctx.db.get(adminId)) as any as any;
+  const user = (await ctx.db.get(adminId)) as any as any as any;
   if (!user) {
     throw new Error('User not found');
   }
@@ -120,7 +120,7 @@ export const toggleSetting = mutation({
     }
 
     // Log this action in audit logs
-    const user = (await ctx.db.get(updatedBy)) as any as any;
+    const user = (await ctx.db.get(updatedBy)) as any as any as any;
     if (user) {
       await ctx.db.insert('auditLogs', {
         organizationId: user.organizationId,
@@ -187,7 +187,7 @@ export const logLoginAttempt = mutation({
             faceIdBlockedAt: Date.now(),
           });
           // Notify org admins
-          const user = (await ctx.db.get(args.userId)) as any as any;
+          const user = (await ctx.db.get(args.userId)) as any as any as any;
           if (user?.organizationId) {
             const admins = await ctx.db
               .query('users')
@@ -466,8 +466,8 @@ export const unlockAccount = mutation({
       faceIdBlockedAt: undefined,
       faceIdFailedAttempts: 0,
     });
-    const user = (await ctx.db.get(userId)) as any as any;
-    const unlocker = (await ctx.db.get(unlockedBy)) as any as any;
+    const user = (await ctx.db.get(userId)) as any as any as any;
+    const unlocker = (await ctx.db.get(unlockedBy)) as any as any as any;
     await ctx.db.insert('auditLogs', {
       organizationId: user?.organizationId,
       userId: unlockedBy,
@@ -510,7 +510,7 @@ export const notifySuperadminSuspiciousActivity = mutation({
     }
 
     // Get the suspicious user
-    const user = (await ctx.db.get(args.userId)) as any as any;
+    const user = (await ctx.db.get(args.userId)) as any as any as any;
     if (!user) {
       console.error('User not found for suspicious activity notification');
       return null;
@@ -660,7 +660,7 @@ export const secureUnlockAccount = mutation({
   handler: withAuth<MutationCtx, { userId: Id<'users'> }, { success: boolean }>(
     { minimumRole: 'admin' },
     async (ctx, { userId }, caller) => {
-      const user = (await ctx.db.get(userId)) as any as any;
+      const user = (await ctx.db.get(userId)) as any as any as any;
       if (!user) throw new Error('User not found');
 
       if (caller.role !== 'superadmin' && caller.organizationId !== user.organizationId) {

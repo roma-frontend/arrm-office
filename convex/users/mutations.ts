@@ -62,7 +62,7 @@ export const createUser = mutation({
       await requireOrgAdmin(ctx, adminId, targetOrgId);
     }
 
-    const org = (await ctx.db.get(targetOrgId)) as any;
+    const org = (await ctx.db.get(targetOrgId)) as any as any;
     if (!org) throw new Error('Organization not found');
 
     // NOTE: Capped at DEFAULT_LIST_CAP — sufficient to enforce employee limit.
@@ -176,7 +176,7 @@ export const updateUser = mutation({
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // RBAC: verify same organization (superadmin can update any org)
@@ -244,7 +244,7 @@ export const deleteUser = mutation({
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // RBAC: cross-org protection (superadmin can delete from any org)
@@ -295,7 +295,7 @@ export const hardDeleteUser = mutation({
     // RBAC: require superadmin role
     await requireRole(ctx, adminId, 'superadmin');
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // Hard delete - remove from database completely
@@ -329,7 +329,7 @@ export const approveUser = mutation({
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // RBAC: cross-org protection
@@ -341,10 +341,10 @@ export const approveUser = mutation({
 
     let org = null;
     if (user.organizationId) {
-      org = (await ctx.db.get(user.organizationId)) as any;
+      org = (await ctx.db.get(user.organizationId)) as any as any;
     }
 
-    const callerUser = (await ctx.db.get(adminId)) as any;
+    const callerUser = (await ctx.db.get(adminId)) as any as any;
 
     await ctx.db.patch(userId, {
       isApproved: true,
@@ -391,7 +391,7 @@ export const rejectUser = mutation({
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // RBAC: cross-org protection
@@ -447,7 +447,7 @@ export const updateOwnProfile = mutation({
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     await ctx.db.patch(userId, updates);
@@ -486,7 +486,7 @@ export const updatePresenceStatus = mutation({
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // Update status in both users and userProfiles tables (dual-write)
@@ -517,7 +517,7 @@ export const updateAvatar = mutation({
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const userForAvatar = (await ctx.db.get(userId)) as any;
+    const userForAvatar = (await ctx.db.get(userId)) as any as any;
     await patchProfile(ctx, userId, { avatarUrl });
 
     // Audit log: avatar updated
@@ -544,7 +544,7 @@ export const deleteAvatar = mutation({
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // Remove avatar URL from database
@@ -578,7 +578,7 @@ export const setInCallStatus = mutation({
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // Only update if not already "in_call"
@@ -615,7 +615,7 @@ export const resetFromCallStatus = mutation({
     // RBAC: verify ownership
     await requireUser(ctx, userId);
 
-    const user = (await ctx.db.get(userId)) as any;
+    const user = (await ctx.db.get(userId)) as any as any;
     if (!user) throw new Error('User not found');
 
     // Reset to available if they're currently in_call
@@ -648,7 +648,7 @@ export const secureDeleteUser = mutation({
   handler: withAuth<MutationCtx, { userId: Id<'users'> }, Id<'users'>>(
     { minimumRole: 'admin' },
     async (ctx, { userId }, caller) => {
-      const user = (await ctx.db.get(userId)) as any;
+      const user = (await ctx.db.get(userId)) as any as any;
       if (!user) throw new Error('User not found');
 
       // Cross-org protection

@@ -528,7 +528,7 @@ export const sendServiceBroadcast = mutation({
       }
 
       // IMPORTANT: Always add the superadmin who created the channel as owner, even if not approved
-      const superadminUser = (await ctx.db.get(args.userId)) as any as any;
+      const superadminUser = (await ctx.db.get(args.userId)) as any as any as any;
       if (superadminUser) {
         const superadminAlreadyAdded = users.some(
           (u) => u._id === args.userId && u.isActive && u.isApproved,
@@ -631,7 +631,7 @@ export const sendServiceBroadcast = mutation({
     // IMPORTANT: Always ensure superadmin is a member as owner
     const superadminIdStr = args.userId.toString();
     if (!existingMemberIds.has(superadminIdStr)) {
-      const superadminUser = (await ctx.db.get(args.userId)) as any as any;
+      const superadminUser = (await ctx.db.get(args.userId)) as any as any as any;
       if (superadminUser) {
         console.warn(
           `[sendServiceBroadcast] Ensuring superadmin is member: ${superadminUser.name}`,
@@ -850,7 +850,7 @@ export const assignUserAsOrgAdmin = mutation({
     }
 
     // Verify org exists
-    const org = (await ctx.db.get(args.organizationId)) as any as any;
+    const org = (await ctx.db.get(args.organizationId)) as any as any as any;
     if (!org) {
       throw new Error('Organization not found');
     }
@@ -1043,7 +1043,7 @@ export const secureAssignUserAsOrgAdmin = mutation({
       .unique();
     if (!user) throw new Error(`User with email ${userEmail} not found`);
 
-    const org = (await ctx.db.get(organizationId)) as any as any;
+    const org = (await ctx.db.get(organizationId)) as any as any as any;
     if (!org) throw new Error('Organization not found');
 
     await ctx.db.patch(user._id, { organizationId, role: 'admin', updatedAt: Date.now() });
