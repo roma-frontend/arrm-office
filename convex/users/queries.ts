@@ -368,9 +368,10 @@ export const getPendingApprovalUsers = query({
 // GET AUDIT LOGS — scoped to org
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAuditLogs = query({
-  args: { adminId: v.id('users') },
-  handler: async (ctx, { adminId }) => {
-    const admin = await requireRequester(ctx, adminId);
+  args: { adminId: v.optional(v.id('users')) },
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const admin = caller ?? (args.adminId ? await requireRequester(ctx, args.adminId) : null);
+    if (!admin) return [];
     if (admin.role !== 'admin' && !isSuperadmin(admin)) {
       throw new Error('Only org admins can view audit logs');
     }
@@ -380,7 +381,7 @@ export const getAuditLogs = query({
       .withIndex('by_org', (q) => q.eq('organizationId', admin.organizationId))
       .order('desc')
       .take(200);
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
