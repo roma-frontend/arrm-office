@@ -117,7 +117,7 @@ export function EmployeesClient() {
     results: accumulatedUsers,
     status: usersStatus,
     loadMore,
-  } = usePaginatedQuery(api.users.listUsersPaginated, paginatedArgs as any, {
+  } = usePaginatedQuery(api.users.listUsersPaginated as any, paginatedArgs as any, {
     initialNumItems: 50,
   });
 

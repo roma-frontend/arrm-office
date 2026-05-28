@@ -6,6 +6,7 @@ import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin } from '../lib/auth';
 import { requireRequester } from '../lib/requireRequester';
+import { withAuth } from '../lib/withAuth';
 
 // ── Helper: Get user ID from email or userId ────────────────────────────────
 async function getUserIdIdentityOrEmail(
@@ -47,18 +48,19 @@ export const getAllUsers = query({
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { requesterId, cursor, limit }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return [];
     const DEFAULT_LIMIT = 50;
     const MAX_LIMIT = 100;
-    const effectiveLimit = Math.min(limit || DEFAULT_LIMIT, MAX_LIMIT);
-
-    const requester = await requireRequester(ctx, requesterId);
+    const effectiveLimit = Math.min(args.limit || DEFAULT_LIMIT, MAX_LIMIT);
 
     // Superadmin sees all users across all orgs (with org info)
     if (isSuperadmin(requester)) {
       let query = ctx.db.query('users').order('desc');
-      if (cursor) {
-        query = (query as any).startAfter(cursor);
+      if (args.cursor) {
+        query = (query as any).startAfter(args.cursor);
       }
       const users = await query.take(effectiveLimit + 1);
       return users.filter((u) => u.role !== 'superadmin');
@@ -74,12 +76,12 @@ export const getAllUsers = query({
       .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
       .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')));
 
-    if (cursor) {
-      query = (query as any).startAfter(cursor);
+    if (args.cursor) {
+      query = (query as any).startAfter(args.cursor);
     }
 
     return await query.take(effectiveLimit + 1);
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,28 +93,30 @@ export const listUsersPaginated = query({
     organizationId: v.optional(v.id('organizations')),
     paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { requesterId, organizationId, paginationOpts }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return [];
 
     const isSuperadminUser = isSuperadmin(requester);
 
-    if (organizationId) {
+    if (args.organizationId) {
       return await ctx.db
         .query('users')
-        .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+        .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
         .order('desc')
-        .paginate(paginationOpts);
+        .paginate(args.paginationOpts);
     } else if (isSuperadminUser) {
-      return await ctx.db.query('users').order('desc').paginate(paginationOpts);
+      return await ctx.db.query('users').order('desc').paginate(args.paginationOpts);
     } else if (requester.organizationId) {
       return await ctx.db
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
         .order('desc')
-        .paginate(paginationOpts);
+        .paginate(args.paginationOpts);
     }
     return { page: [], isDone: true, continueCursor: '' };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -262,11 +266,13 @@ export const getSupervisors = query({
     requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
-  handler: async (ctx, { requesterId, organizationId }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return [];
 
     // Determine target org: explicit param > requester's own org
-    const targetOrgId = organizationId ?? requester.organizationId;
+    const targetOrgId = args.organizationId ?? requester.organizationId;
 
     if (!targetOrgId) return [];
 
@@ -283,7 +289,7 @@ export const getSupervisors = query({
     return [...supervisors, ...admins]
       .filter((u) => u.isActive)
       .map((u) => ({ _id: u._id, name: u.name, role: u.role, email: u.email }));
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

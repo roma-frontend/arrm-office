@@ -13,6 +13,7 @@ import { enrichLeavesWithUserData } from './helpers';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 import { requireRequester } from '../lib/requireRequester';
+import { withAuth } from '../lib/withAuth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ALL LEAVES — scoped to caller's organization
@@ -67,33 +68,35 @@ export const listLeavesPaginated = query({
     organizationId: v.optional(v.id('organizations')),
     paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { requesterId, organizationId, paginationOpts }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);
 
     let result;
-    if (organizationId) {
+    if (args.organizationId) {
       result = await ctx.db
         .query('leaveRequests')
-        .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+        .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
         .order('desc')
-        .paginate(paginationOpts);
+        .paginate(args.paginationOpts);
     } else if (userIsSuperadmin) {
-      result = await ctx.db.query('leaveRequests').order('desc').paginate(paginationOpts);
+      result = await ctx.db.query('leaveRequests').order('desc').paginate(args.paginationOpts);
     } else if (requester.organizationId) {
       result = await ctx.db
         .query('leaveRequests')
         .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
         .order('desc')
-        .paginate(paginationOpts);
+        .paginate(args.paginationOpts);
     } else {
       return { page: [], isDone: true, continueCursor: '' };
     }
 
     const enriched = await enrichLeavesWithUserData(ctx, result.page);
     return { ...result, page: enriched };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -133,8 +136,10 @@ export const getUserLeaves = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingLeaves = query({
   args: { requesterId: v.id('users') },
-  handler: async (ctx, { requesterId }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return [];
 
     // Superadmin sees all pending leaves — use status filter
     let leaves;
@@ -155,7 +160,7 @@ export const getPendingLeaves = query({
     }
 
     return enrichLeavesWithUserData(ctx, leaves, false); // Don't need reviewer for pending
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,8 +168,10 @@ export const getPendingLeaves = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getLeaveStats = query({
   args: { requesterId: v.id('users') },
-  handler: async (ctx, { requesterId }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return [];
 
     // Superadmin sees stats across all organizations
     let all;
@@ -187,7 +194,7 @@ export const getLeaveStats = query({
     ).length;
 
     return { total: all.length, pending, approved, rejected, onLeaveToday };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,8 +202,10 @@ export const getLeaveStats = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUnreadCount = query({
   args: { requesterId: v.id('users') },
-  handler: async (ctx, { requesterId }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return 0;
 
     // Superadmin sees all unread across all organizations
     let unread: number;
@@ -219,7 +228,7 @@ export const getUnreadCount = query({
     }
 
     return unread;
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -230,10 +239,12 @@ export const getLeavesPagederated = query({
     requesterId: v.id('users'),
     ...paginationArgs,
   },
-  handler: async (ctx, { requesterId, pageSize, cursor }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return { items: [], hasMore: false };
 
-    const normalizedPageSize = normalizePageSize(pageSize);
+    const normalizedPageSize = normalizePageSize(args.pageSize);
 
     // Get user's leaves based on role
     let items: any[] = [];
@@ -241,8 +252,8 @@ export const getLeavesPagederated = query({
     if (isSuperadmin(requester)) {
       // Superadmin sees all
       const query = ctx.db.query('leaveRequests').order('desc');
-      if (cursor) {
-        const cursorData = decodeCursor(cursor);
+      if (args.cursor) {
+        const cursorData = decodeCursor(args.cursor);
         items = await query
           .filter((q) => q.lt(q.field('_creationTime'), cursorData._creationTime))
           .take(normalizedPageSize + 1);
@@ -256,8 +267,8 @@ export const getLeavesPagederated = query({
         .query('leaveRequests')
         .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
         .order('desc');
-      if (cursor) {
-        const cursorData = decodeCursor(cursor);
+      if (args.cursor) {
+        const cursorData = decodeCursor(args.cursor);
         items = await query
           .filter((q) => q.lt(q.field('_creationTime'), cursorData._creationTime))
           .take(normalizedPageSize + 1);
@@ -281,7 +292,7 @@ export const getLeavesPagederated = query({
           ? encodeCursor({ _creationTime: items[items.length - 1]._creationTime })
           : undefined,
     };
-  },
+  }),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

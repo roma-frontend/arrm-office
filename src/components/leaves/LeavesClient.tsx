@@ -131,7 +131,7 @@ export function LeavesClient() {
     results: leaves,
     status: leavesStatus,
     loadMore: loadMoreLeaves,
-  } = usePaginatedQuery(api.leaves.listLeavesPaginated, paginatedArgs as any, {
+  } = usePaginatedQuery(api.leaves.listLeavesPaginated as any, paginatedArgs as any, {
     initialNumItems: 30,
   });
   const unreadCount = useQuery(

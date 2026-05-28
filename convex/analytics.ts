@@ -4,6 +4,7 @@ import { isSuperadminEmail } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { requireRequester } from './lib/requireRequester';
+import { withAuth } from './lib/withAuth';
 
 // ── Get analytics overview ─────────────────────────────────────────────────
 export const getAnalyticsOverview = query({
@@ -80,17 +81,16 @@ export const getAnalyticsOverview = query({
 // ── Get department statistics ──────────────────────────────────────────────
 export const getDepartmentStats = query({
   args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { requesterId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     let users = await ctx.db.query('users').take(XLARGE_LIST_CAP);
 
-    if (requesterId) {
-      const requester = await requireRequester(ctx, requesterId);
-
+    if (requester) {
       if (!isSuperadminEmail(requester.email)) {
         if (!requester.organizationId) {
           throw new Error('User does not belong to an organization');
         }
-        // Use by_org index instead of collecting all users
         users = await ctx.db
           .query('users')
           .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
@@ -151,18 +151,18 @@ export const getDepartmentStats = query({
     });
 
     return Object.values(stats);
-  },
+  }),
 });
 
 // ── Get leave trends (last 6 months) ───────────────────────────────────────
 export const getLeaveTrends = query({
   args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { requesterId }) => {
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+
     let leaves: any[];
-
-    if (requesterId) {
-      const requester = await requireRequester(ctx, requesterId);
-
+    if (requester) {
       if (!isSuperadminEmail(requester.email)) {
         if (!requester.organizationId) {
           throw new Error('User does not belong to an organization');
@@ -186,7 +186,7 @@ export const getLeaveTrends = query({
     const recentLeaves = leaves.filter((l) => l.createdAt >= sixMonthsAgo);
 
     return recentLeaves;
-  },
+  }),
 });
 
 // ── Get user personal analytics ────────────────────────────────────────────
@@ -235,16 +235,15 @@ export const getUserAnalytics = query({
 // ── Get team calendar (who's on leave) ────────────────────────────────────
 export const getTeamCalendar = query({
   args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { requesterId }) => {
-    // Use by_status index to avoid full-table scan.
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     let leaves = await ctx.db
       .query('leaveRequests')
       .withIndex('by_status', (q) => q.eq('status', 'approved'))
       .take(XLARGE_LIST_CAP);
 
-    if (requesterId) {
-      const requester = await requireRequester(ctx, requesterId);
-
+    if (requester) {
       if (!isSuperadminEmail(requester.email)) {
         if (!requester.organizationId) {
           throw new Error('User does not belong to an organization');
@@ -276,17 +275,29 @@ export const getTeamCalendar = query({
     );
 
     return enrichedLeaves;
-  },
+  }),
 });
 
 // ── Dashboard Stats (aggregated counts — no full data transfer) ────────────
 export const getDashboardStats = query({
   args: { requesterId: v.id('users'), organizationId: v.optional(v.id('organizations')) },
-  handler: async (ctx, { requesterId, organizationId }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester)
+      return {
+        totalEmployees: 0,
+        pendingRequests: 0,
+        onLeaveNow: 0,
+        approvedThisMonth: 0,
+        pieData: [],
+        monthlyTrend: [],
+      };
 
     const isSuperadminUser = requester.role === 'superadmin';
-    const orgId = isSuperadminUser ? organizationId : (organizationId ?? requester.organizationId);
+    const orgId = isSuperadminUser
+      ? args.organizationId
+      : (args.organizationId ?? requester.organizationId);
 
     if (!isSuperadminUser && !orgId) {
       return {
@@ -362,17 +373,29 @@ export const getDashboardStats = query({
       pieData,
       monthlyTrend,
     };
-  },
+  }),
 });
 
 // ── Recent Leaves (last 6, lightweight) ────────────────────────────────────
 export const getRecentLeaves = query({
   args: { requesterId: v.id('users'), organizationId: v.optional(v.id('organizations')) },
-  handler: async (ctx, { requesterId, organizationId }) => {
-    const requester = await requireRequester(ctx, requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester)
+      return {
+        totalEmployees: 0,
+        pendingRequests: 0,
+        onLeaveNow: 0,
+        approvedThisMonth: 0,
+        pieData: [],
+        monthlyTrend: [],
+      };
 
     const isSuperadminUser = requester.role === 'superadmin';
-    const orgId = isSuperadminUser ? organizationId : (organizationId ?? requester.organizationId);
+    const orgId = isSuperadminUser
+      ? args.organizationId
+      : (args.organizationId ?? requester.organizationId);
 
     if (!isSuperadminUser && !orgId) return [];
 
@@ -415,5 +438,5 @@ export const getRecentLeaves = query({
         userDepartment: profile?.department ?? user?.department ?? '',
       };
     });
-  },
+  }),
 });

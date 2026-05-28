@@ -596,7 +596,7 @@ export function Sidebar() {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               const taskBadgeCount = taskUnreadCount;
-              const leaveBadgeCount = unreadLeavesCount ?? 0;
+              const leaveBadgeCount = (unreadLeavesCount as number) ?? 0;
               const chatBadgeCount = chatUnreadCount ?? 0;
               const showTaskBadge = item.href === '/tasks' && taskBadgeCount > 0;
               const showLeaveBadge =
@@ -1293,7 +1293,7 @@ export function MobileSidebar() {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                 const mobileTaskCount = mobileTaskBadge;
-                const mobileLeaveCount = mobileUnreadLeavesCount ?? 0;
+                const mobileLeaveCount = (mobileUnreadLeavesCount as number) ?? 0;
                 const mobileChatCount = mobileChatUnreadCount ?? 0;
                 const mobileSignatureCount = (mobilePendingSignaturesCount ?? []).length;
                 const mobileBadge =
