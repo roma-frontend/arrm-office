@@ -80,7 +80,7 @@ export const listObjectives = query({
         const krs = await ctx.db
           .query('keyResults')
           .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
-          .collect();
+          .take(500);
         return {
           ...obj,
           ownerName: owner?.name ?? 'Unknown',
@@ -107,14 +107,14 @@ export const getObjective = query({
     const krs = await ctx.db
       .query('keyResults')
       .withIndex('by_objective_order', (q) => q.eq('objectiveId', objectiveId))
-      .collect();
+      .take(500);
 
     const krsWithCheckins = await Promise.all(
       krs.map(async (kr) => {
         const checkins = await ctx.db
           .query('goalCheckins')
           .withIndex('by_kr', (q) => q.eq('keyResultId', kr._id))
-          .collect();
+          .take(500);
         const krOwner = (await ctx.db.get(kr.ownerId)) as any;
         return {
           ...kr,
@@ -135,7 +135,7 @@ export const getObjective = query({
     const children = await ctx.db
       .query('objectives')
       .withIndex('by_parent', (q) => q.eq('parentObjectiveId', objectiveId))
-      .collect();
+      .take(500);
 
     return {
       ...obj,
@@ -159,14 +159,14 @@ export const getMyObjectives = query({
       .withIndex('by_org_owner', (q) =>
         q.eq('organizationId', organizationId).eq('ownerId', userId),
       )
-      .collect();
+      .take(500);
 
     const enriched = await Promise.all(
       objectives.map(async (obj) => {
         const krs = await ctx.db
           .query('keyResults')
           .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
-          .collect();
+          .take(500);
         return { ...obj, keyResults: krs, keyResultsCount: krs.length };
       }),
     );
@@ -226,7 +226,7 @@ export const getCheckinHistory = query({
     const checkins = await ctx.db
       .query('goalCheckins')
       .withIndex('by_kr', (q) => q.eq('keyResultId', keyResultId))
-      .collect();
+      .take(500);
 
     const enriched = await Promise.all(
       checkins.map(async (c) => {

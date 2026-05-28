@@ -445,7 +445,7 @@ export const getMonthlyStats = query({
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
-      .collect();
+      .take(500);
 
     // Filter by month
     const monthRecords = records.filter((r: any) => r.date.startsWith(args.month));
@@ -506,7 +506,7 @@ export const getAllEmployeesAttendanceOverview = query({
         const records = await ctx.db
           .query('timeTracking')
           .withIndex('by_user', (q) => q.eq('userId', user._id))
-          .collect();
+          .take(500);
 
         const monthRecords = records.filter((r: any) => r.date.startsWith(args.month));
         const totalDays = monthRecords.length;
@@ -564,7 +564,7 @@ export const getEmployeeAttendanceHistory = query({
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
-      .collect();
+      .take(500);
 
     return records
       .filter((r: any) => r.date.startsWith(args.month))

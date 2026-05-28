@@ -52,13 +52,13 @@ export const createLeave = mutation({
     // 2. Future: scheduled job to check conflicts
 
     // Notify admins within same org only
-    // NOTE: Using .collect() here because we must notify ALL admins of a new leave request; truncating would miss recipients
+    // NOTE: Using .take(500) here because we must notify ALL admins of a new leave request; truncating would miss recipients
     const admins = await ctx.db
       .query('users')
       .withIndex('by_org_role', (q) =>
         q.eq('organizationId', user.organizationId).eq('role', 'admin'),
       )
-      .collect();
+      .take(500);
 
     // ═══════════════════════════════════════════════════════════════
     // АВТО-ОТВЕТ СОТРУДНИКУ — Заявка получена

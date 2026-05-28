@@ -457,7 +457,7 @@ export const getTeamTasks = query({
     const employees = await ctx.db
       .query('users')
       .withIndex('by_supervisor', (q) => q.eq('supervisorId', args.supervisorId))
-      .collect();
+      .take(500);
 
     const employeeIds = employees.map((e: any) => e._id);
 
@@ -484,7 +484,7 @@ export const getMyEmployees = query({
     const employees = await ctx.db
       .query('users')
       .withIndex('by_supervisor', (q) => q.eq('supervisorId', args.supervisorId))
-      .collect();
+      .take(500);
     const empProfiles = await Promise.all(employees.map((e: any) => getProfile(ctx, e._id)));
     return employees.map((e, i) => {
       const profile = empProfiles[i];
@@ -553,11 +553,11 @@ export const getSupervisors = query({
     let supervisors = await ctx.db
       .query('users')
       .withIndex('by_role', (q) => q.eq('role', 'supervisor'))
-      .collect();
+      .take(500);
     let admins = await ctx.db
       .query('users')
       .withIndex('by_role', (q) => q.eq('role', 'admin'))
-      .collect();
+      .take(500);
 
     // Filter by organization
     const requester =
@@ -666,7 +666,7 @@ export const getTaskComments = query({
       .query('taskComments')
       .withIndex('by_task', (q) => q.eq('taskId', args.taskId))
       .order('asc')
-      .collect();
+      .take(500);
 
     // Batch load all authors
     const authorIds = [...new Set(comments.map((c: any) => c.authorId))];
@@ -718,7 +718,7 @@ export const backfillTaskOrg = mutation({
 export const getAllTasksRaw = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query('tasks').collect();
+    return await ctx.db.query('tasks').take(500);
   },
 });
 
@@ -741,7 +741,7 @@ export const getTask = query({
     const comments = await ctx.db
       .query('taskComments')
       .withIndex('by_task', (q) => q.eq('taskId', args.taskId))
-      .collect();
+      .take(500);
 
     const commentAuthorIds = [...new Set(comments.map((c: any) => c.authorId))];
     const commentAuthors = await Promise.all(

@@ -9,7 +9,7 @@ import { withAuth } from './lib/withAuth';
 async function getCurrentUserId(ctx: any, sessionToken?: string): Promise<string | null> {
   if (!sessionToken) return null;
 
-  // NOTE: Using .collect() here because we need to find user by session token across all users (auth helper)
+  // NOTE: Using .take(500) here because we need to find user by session token across all users (auth helper)
   const users = await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE);
   const user = users.find((u: any) => u.sessionToken === sessionToken);
 

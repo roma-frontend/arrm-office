@@ -16,7 +16,7 @@ export const list = query({
       ? await ctx.db
           .query('departments')
           .withIndex('by_org', (q: any) => q.eq('organizationId', orgId))
-          .collect()
+          .take(500)
       : await ctx.db.query('departments').take(DEFAULT_LIST_CAP);
 
     const users = orgId

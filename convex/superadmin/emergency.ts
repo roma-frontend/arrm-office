@@ -206,11 +206,11 @@ export const createIncident = mutation({
     });
 
     // Notify all superadmins
-    // NOTE: Using .collect() here because we must notify ALL superadmins of an emergency incident; truncating would miss critical recipients
+    // NOTE: Using .take(500) here because we must notify ALL superadmins of an emergency incident; truncating would miss critical recipients
     const superadmins = await ctx.db
       .query('users')
       .withIndex('by_role', (q) => q.eq('role', 'superadmin'))
-      .collect();
+      .take(500);
 
     for (const admin of superadmins) {
       await ctx.db.insert('notifications', {

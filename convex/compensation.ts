@@ -57,7 +57,7 @@ export const getCompensationHistory = query({
     const records = await ctx.db
       .query('compensationRecords')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
-      .collect();
+      .take(500);
 
     return records.sort((a, b) => b.effectiveFrom - a.effectiveFrom);
   }),
@@ -133,7 +133,7 @@ export const getReviewCycleDetails = query({
     const entries = await ctx.db
       .query('compensationReviewEntries')
       .withIndex('by_review_cycle', (q) => q.eq('reviewCycleId', reviewCycleId))
-      .collect();
+      .take(500);
 
     const enrichedEntries = await Promise.all(
       entries.map(async (entry) => {

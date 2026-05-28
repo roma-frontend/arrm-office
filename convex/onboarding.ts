@@ -41,7 +41,7 @@ export const listPrograms = query({
         const tasks = await ctx.db
           .query('onboardingTasks')
           .withIndex('by_program', (q) => q.eq('programId', prog._id))
-          .collect();
+          .take(500);
         const employee = (await ctx.db.get(prog.employeeId)) as any as any;
         const buddy = prog.buddyId ? ((await ctx.db.get(prog.buddyId)) as any as any) : null;
         return {
@@ -70,7 +70,7 @@ export const getProgram = query({
     const tasks = await ctx.db
       .query('onboardingTasks')
       .withIndex('by_program', (q) => q.eq('programId', programId))
-      .collect();
+      .take(500);
 
     const employee = (await ctx.db.get(program.employeeId)) as any as any;
     const buddy = program.buddyId ? ((await ctx.db.get(program.buddyId)) as any as any) : null;
@@ -120,7 +120,7 @@ export const getMyOnboarding = query({
     const tasks = await ctx.db
       .query('onboardingTasks')
       .withIndex('by_program', (q) => q.eq('programId', program._id))
-      .collect();
+      .take(500);
 
     const buddy = program.buddyId ? ((await ctx.db.get(program.buddyId)) as any as any) : null;
     const manager = (await ctx.db.get(program.managerId)) as any as any;
@@ -146,13 +146,13 @@ export const getMyMenteePrograms = query({
       .query('onboardingPrograms')
       .withIndex('by_buddy', (q) => q.eq('buddyId', userId))
       .filter((q: any) => q.eq(q.field('status'), 'active'))
-      .collect();
+      .take(500);
 
     const asManager = await ctx.db
       .query('onboardingPrograms')
       .withIndex('by_manager', (q) => q.eq('managerId', userId))
       .filter((q: any) => q.eq(q.field('status'), 'active'))
-      .collect();
+      .take(500);
 
     const all = [...asBuddy, ...asManager];
     const unique = Array.from(new Map(all.map((p: any) => [p._id, p])).values());
@@ -162,7 +162,7 @@ export const getMyMenteePrograms = query({
         const tasks = await ctx.db
           .query('onboardingTasks')
           .withIndex('by_program', (q) => q.eq('programId', prog._id))
-          .collect();
+          .take(500);
         const employee = (await ctx.db.get(prog.employeeId)) as any as any;
         return {
           ...prog,

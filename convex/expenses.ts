@@ -65,7 +65,7 @@ export const getUserExpenses = query({
     const expenses = await ctx.db
       .query('expenses')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
-      .collect();
+      .take(500);
 
     return expenses.sort((a, b) => b.expenseDate - a.expenseDate);
   }),
@@ -193,7 +193,7 @@ export const getExpenseReportDetails = query({
     const items = await ctx.db
       .query('expenseReportItems')
       .withIndex('by_report', (q) => q.eq('reportId', reportId))
-      .collect();
+      .take(500);
 
     const expenses = await Promise.all(
       items.map(async (item) => {

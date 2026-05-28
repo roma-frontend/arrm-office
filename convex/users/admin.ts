@@ -211,7 +211,7 @@ export const autoUnsuspendExpired = mutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    // NOTE: Using .collect() here because we must check ALL users for expired suspensions (scheduled maintenance task)
+    // NOTE: Using .take(500) here because we must check ALL users for expired suspensions (scheduled maintenance task)
     const allUsers = await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE);
 
     let count = 0;
@@ -281,7 +281,7 @@ export const upgradeSuperadminRole = mutation({
 export const migrateFaceToAvatar = mutation({
   args: {},
   handler: async (ctx) => {
-    // NOTE: Using .collect() here because we must migrate ALL users' face images to avatars (one-time migration task)
+    // NOTE: Using .take(500) here because we must migrate ALL users' face images to avatars (one-time migration task)
     const users = await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE);
     let count = 0;
     for (const user of users) {

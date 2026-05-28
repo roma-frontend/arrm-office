@@ -302,16 +302,6 @@ export async function loginAction(
       employeeType: result.employeeType,
       avatar: result.avatarUrl,
     });
-
-    console.log('[loginAction] 🔐 Password login - JWT created with:', {
-      userId: result.userId,
-      name: result.name,
-      email: result.email,
-      role: result.role,
-      organizationId: result.organizationId,
-      isApproved: result.isApproved,
-    });
-
     log.debug('JWT token created successfully');
 
     log.debug('Setting authentication cookies');
@@ -447,8 +437,6 @@ export async function updateSessionProfileAction(userId: string, name: string, e
       maxAge: 7 * 24 * 60 * 60,
       path: '/',
     });
-
-    console.log('[updateSessionProfileAction] Success', { userId, name, email });
     return { success: true };
   } catch (error) {
     console.error('[updateSessionProfileAction] Error:', error);

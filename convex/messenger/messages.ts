@@ -138,11 +138,11 @@ export const sendMessage = mutation({
     });
 
     // Increment unread for other members + stamp readBy delivered
-    // NOTE: Using .collect() here because we must update unread counts for ALL members of the conversation
+    // NOTE: Using .take(500) here because we must update unread counts for ALL members of the conversation
     const members = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
-      .collect();
+      .take(500);
 
     const recipientIds = members
       .filter((m) => m.userId !== args.senderId)

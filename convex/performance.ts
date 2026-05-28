@@ -112,7 +112,7 @@ export const getMyAssignments = query({
     const assignments = await ctx.db
       .query('reviewAssignments')
       .withIndex('by_reviewer', (q) => q.eq('reviewerId', args.userId))
-      .collect();
+      .take(500);
 
     const filtered = args.status
       ? assignments.filter((a: any) => a.status === args.status)
@@ -156,7 +156,7 @@ export const getRevieweeResults = query({
       .withIndex('by_cycle_reviewee', (q) =>
         q.eq('cycleId', args.cycleId).eq('revieweeId', args.revieweeId),
       )
-      .collect();
+      .take(500);
 
     // Group by type
     const selfReview = responses.find((r: any) => r.type === 'self');
@@ -175,7 +175,7 @@ export const getRevieweeResults = query({
         return ctx.db
           .query('reviewRatings')
           .withIndex('by_response', (q) => q.eq('responseId', responseId))
-          .collect();
+          .take(500);
       }),
     );
     const flatRatings = allRatings.flat();
@@ -311,7 +311,7 @@ export const listTemplates = query({
     return ctx.db
       .query('reviewTemplates')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .collect();
+      .take(500);
   }),
 });
 

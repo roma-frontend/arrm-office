@@ -164,7 +164,7 @@ export const getActiveSubscribers = internalQuery({
     const subs = await ctx.db
       .query('newsletterSubscribers')
       .withIndex('by_active', (q) => q.eq('unsubscribed', false))
-      .collect();
+      .take(500);
     // Filter out paused subscribers
     return subs.filter((s) => !s.pausedUntil || s.pausedUntil < now);
   },
@@ -366,7 +366,7 @@ export const getDripEligible = internalQuery({
     const subs = await ctx.db
       .query('newsletterSubscribers')
       .withIndex('by_active', (q) => q.eq('unsubscribed', false))
-      .collect();
+      .take(500);
 
     // Drip schedule: day 0, day 2, day 4, day 6
     return subs.filter((s) => {
