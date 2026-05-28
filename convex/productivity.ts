@@ -4,7 +4,7 @@ import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { requireRequester } from './lib/requireRequester';
-import { withAuth } from './lib/withAuth';
+import { getAuthCaller } from './lib/getAuthCaller';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET TODAY'S STATS FOR USER
@@ -127,9 +127,9 @@ export const getTodayTasks = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getTeamPresence = query({
   args: { requesterId: v.optional(v.id('users')) },
-  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+  handler: async (ctx, { requesterId }) => {
+    const caller = await getAuthCaller(ctx);
+    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
     if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -189,7 +189,7 @@ export const getTeamPresence = query({
     );
 
     return onlineUsers.slice(0, 10); // Limit to 10 for performance
-  }),
+  },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
