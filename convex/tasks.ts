@@ -412,8 +412,10 @@ export const getTasksAssignedBy = query({
 // OPTIMIZED: Batch loading eliminates N+1 queries
 export const getAllTasks = query({
   args: { requesterId: v.id('users'), selectedOrganizationId: v.optional(v.id('organizations')) },
-  handler: async (ctx, args) => {
-    const requester = await requireRequester(ctx, args.requesterId);
+  handler: withAuth({ allowUnauthenticated: true }, async (ctx, args: any, caller) => {
+    const requester =
+      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    if (!requester) return [];
 
     // Only admin/superadmin can get all tasks
     if (requester.role !== 'admin' && requester.role !== 'superadmin') {
@@ -443,7 +445,7 @@ export const getAllTasks = query({
     }
 
     return enrichTasksWithUserData(ctx, orgTasks);
-  },
+  }),
 });
 
 // ── Get My Team Tasks (supervisor sees tasks of their subordinates) ─────────
