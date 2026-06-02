@@ -304,12 +304,11 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
     // Double check: also check isDriverOnLeave directly, not just leaveWarning
     if (isDriverOnLeave?.onLeave || leaveWarning) {
       const leaveInfo = isDriverOnLeave?.leave || leaveWarning;
+      const leaveMessage = leaveInfo && 'message' in leaveInfo ? leaveInfo.message : undefined;
       toast.error(
         t('driver.driverOnLeaveBlock', 'Невозможно заказать водителя: он находится в отпуске'),
         {
-          description:
-            (leaveInfo as any).message ||
-            `Отпуск с ${(leaveInfo as any).startDate} по ${(leaveInfo as any).endDate}`,
+          description: leaveMessage || `Отпуск с ${leaveInfo?.startDate} по ${leaveInfo?.endDate}`,
           duration: 6000,
         },
       );

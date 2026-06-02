@@ -13,6 +13,7 @@
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { api } from '@/../convex/_generated/api';
+import type { Id } from '@/../convex/_generated/dataModel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -48,7 +49,9 @@ interface SLADashboardProps {
 function SLADashboard({ organizationId }: SLADashboardProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US';
-  const slaMetricsRaw = useQuery(api.sla.getSLAStats, { organizationId: organizationId as any });
+  const slaMetricsRaw = useQuery(api.sla.getSLAStats, {
+    organizationId: organizationId as Id<'organizations'> | undefined,
+  });
   const slaMetrics = Array.isArray(slaMetricsRaw) ? slaMetricsRaw : [];
   const slaConfig = useQuery(api.sla.getSLAConfig);
 

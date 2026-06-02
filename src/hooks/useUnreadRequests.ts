@@ -12,10 +12,7 @@ export function useUnreadRequestsCount(userId?: Id<'users'> | null) {
   const [isBlinking, setIsBlinking] = useState(false);
 
   // Get unread count from Convex
-  const unreadCount = useQuery(
-    api.leaves.getUnreadCount,
-    userId ? { requesterId: userId } : 'skip',
-  );
+  const unreadCount = useQuery(api.leaves.getUnreadCount, userId ? {} : 'skip');
 
   // Reset blinking when component mounts and unread changes
   useEffect(() => {

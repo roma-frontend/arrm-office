@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Lightbulb, Sparkles } from 'lucide-react';
@@ -15,7 +16,7 @@ interface SmartSuggestionsProps {
 export default function SmartSuggestions({ organizationId }: SmartSuggestionsProps) {
   const { t } = useTranslation();
   const suggestions = useQuery(api.admin.getSmartSuggestions, {
-    organizationId: organizationId as any,
+    organizationId: organizationId as Id<'organizations'> | undefined,
   });
 
   if (!suggestions) {

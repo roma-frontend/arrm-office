@@ -257,6 +257,8 @@ export const getTicketById = query({
       assigneeName: assignee?.name || null,
       assigneeAvatar: assigneeProfile?.avatarUrl ?? assignee?.avatarUrl,
       organizationName: org?.name || null,
+      isOverdue:
+        ticket.status !== 'closed' && ticket.slaDeadline && Date.now() > ticket.slaDeadline,
       comments: enrichedComments.sort((a: any, b: any) => a.createdAt - b.createdAt),
     };
   },

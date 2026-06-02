@@ -3,7 +3,6 @@ import { query, mutation } from './_generated/server';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { requireRequester } from './lib/requireRequester';
 import { getAuthCaller } from './lib/getAuthCaller';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -126,10 +125,9 @@ export const getTodayTasks = query({
 // GET TEAM PRESENCE (who's online)
 // ─────────────────────────────────────────────────────────────────────────────
 export const getTeamPresence = query({
-  args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { requesterId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);

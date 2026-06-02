@@ -48,7 +48,7 @@ export const list = query({
 
 export const getById = query({
   args: { id: v.id('departments') },
-  handler: async (ctx: any, args: any) => {
+  handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
   },
 });

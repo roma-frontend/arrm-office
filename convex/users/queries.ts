@@ -6,7 +6,6 @@ import type { Id, Doc } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin } from '../lib/auth';
-import { requireRequester } from '../lib/requireRequester';
 
 // ── Helper: Get user ID from email or userId ────────────────────────────────
 async function getUserIdIdentityOrEmail(
@@ -44,14 +43,11 @@ async function getUserIdIdentityOrEmail(
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllUsers = query({
   args: {
-    requesterId: v.id('users'),
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
     const DEFAULT_LIMIT = 50;
     const MAX_LIMIT = 100;
@@ -90,15 +86,12 @@ export const getAllUsers = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const listUsersPaginated = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
-    if (!requester) return [];
+    const requester = await getAuthCaller(ctx);
+    if (!requester) return { page: [], isDone: true, continueCursor: '' };
 
     const isSuperadminUser = isSuperadmin(requester);
 
@@ -126,15 +119,12 @@ export const listUsersPaginated = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUsersByOrganizationId = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.id('organizations'),
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
     const DEFAULT_LIMIT = 50;
     const MAX_LIMIT = 100;
@@ -267,13 +257,10 @@ export const getUserById = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getSupervisors = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     // Determine target org: explicit param > requester's own org
@@ -343,10 +330,9 @@ export const getUsersByRole = query({
 // GET PENDING APPROVAL USERS — scoped to org
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingApprovalUsers = query({
-  args: { adminId: v.id('users') },
-  handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const admin = caller ?? (args.adminId ? await requireRequester(ctx, args.adminId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const admin = await getAuthCaller(ctx);
     if (!admin) return [];
     if (admin.role !== 'admin' && !isSuperadmin(admin)) {
       throw new Error('Only org admins can view pending users');
@@ -373,10 +359,9 @@ export const getPendingApprovalUsers = query({
 // GET AUDIT LOGS — scoped to org
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAuditLogs = query({
-  args: { adminId: v.optional(v.id('users')) },
-  handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const admin = caller ?? (args.adminId ? await requireRequester(ctx, args.adminId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const admin = await getAuthCaller(ctx);
     if (!admin) return [];
     if (admin.role !== 'admin' && !isSuperadmin(admin)) {
       throw new Error('Only org admins can view audit logs');

@@ -65,7 +65,7 @@ export default function DocumentDetailClient() {
     if (!currentUser || !document) return;
     setIsPublishing(true);
     try {
-      await updateDocument({ documentId, requesterId: currentUser._id, isPublished: true });
+      await updateDocument({ documentId, isPublished: true });
       toast.success(t('documents.documentPublished'));
       router.refresh();
     } catch {
@@ -79,7 +79,7 @@ export default function DocumentDetailClient() {
     if (!currentUser) return;
     setIsDeleting(true);
     try {
-      await deleteDocument({ documentId, requesterId: currentUser._id });
+      await deleteDocument({ documentId });
       toast.success(t('documents.documentDeleted'));
       router.push('/documents');
     } catch {
@@ -95,7 +95,6 @@ export default function DocumentDetailClient() {
     try {
       await recordView({
         organizationId: document.organizationId,
-        requesterId: currentUser._id,
         documentId,
       });
       window.open(document.fileUrl, '_blank', 'noopener,noreferrer');

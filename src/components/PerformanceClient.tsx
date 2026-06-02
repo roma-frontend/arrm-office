@@ -258,7 +258,9 @@ function CreateCycleWizard({
                   <label className="text-sm font-medium">{t('performance.fields.type')}</label>
                   <CustomSelect
                     value={type}
-                    onChange={(v) => setType(v as any)}
+                    onChange={(v) =>
+                      setType(v as 'quarterly' | 'semi_annual' | 'annual' | 'custom')
+                    }
                     fullWidth
                     options={[
                       { value: 'quarterly', label: t('performance.types.quarterly') },

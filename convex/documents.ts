@@ -4,12 +4,11 @@ import { query, mutation } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
-import { requireRequester } from './lib/requireRequester';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
-async function checkAccess(ctx: any, organizationId: any, requesterId: any) {
-  const requester = await ctx.db.get(requesterId);
-  if (!requester) throw new Error('Requester not found');
+async function checkAccess(ctx: any, organizationId: any) {
+  const requester = await getAuthCaller(ctx);
+  if (!requester) throw new Error('Not authenticated');
   const userIsSuperadmin = isSuperadmin(requester);
   if (!userIsSuperadmin && requester.organizationId !== organizationId) {
     throw new Error('Access denied');
@@ -22,18 +21,12 @@ async function checkAccess(ctx: any, organizationId: any, requesterId: any) {
 export const listDocuments = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     category: v.optional(v.string()),
     search: v.optional(v.string()),
     includeUnpublished: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const { requester, isSuperadmin } = await checkAccess(
-      ctx,
-      args.organizationId,
-      args.requesterId,
-    );
+    const { isSuperadmin } = await checkAccess(ctx, args.organizationId);
 
     let docs = await ctx.db
       .query('documents')
@@ -67,12 +60,10 @@ export const listDocuments = query({
 export const getDocument = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     documentId: v.id('documents'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    await checkAccess(ctx, args.organizationId, args.requesterId);
+    await checkAccess(ctx, args.organizationId);
     const doc = await ctx.db.get(args.documentId);
     if (!doc || doc.organizationId !== args.organizationId) {
       throw new Error('Document not found');
@@ -88,6 +79,7 @@ export const getDocumentById = query({
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
     const doc = await ctx.db.get(args.documentId);
     if (!doc) return null;
     const uploader = await ctx.db.get(doc.uploadedBy);
@@ -98,7 +90,6 @@ export const getDocumentById = query({
 export const createDocument = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     title: v.string(),
     description: v.optional(v.string()),
     category: v.union(
@@ -119,8 +110,7 @@ export const createDocument = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
+    const { requester, isSuperadmin } = await checkAccess(ctx, args.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can create documents');
 
     const now = Date.now();
@@ -133,7 +123,7 @@ export const createDocument = mutation({
       fileName: args.fileName,
       fileSize: args.fileSize,
       mimeType: args.mimeType,
-      uploadedBy: args.requesterId,
+      uploadedBy: requester._id,
       isPublished: false,
       isMandatory: args.isMandatory ?? false,
       expiresAt: args.expiresAt,
@@ -147,7 +137,6 @@ export const createDocument = mutation({
 export const updateDocument = mutation({
   args: {
     documentId: v.id('documents'),
-    requesterId: v.id('users'),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -161,10 +150,9 @@ export const updateDocument = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
     const doc = await ctx.db.get(args.documentId);
     if (!doc) throw new Error('Document not found');
-    const { isSuperadmin } = await checkAccess(ctx, doc.organizationId, args.requesterId);
+    const { isSuperadmin } = await checkAccess(ctx, doc.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can update documents');
 
     const patch: any = { updatedAt: Date.now() };
@@ -188,13 +176,11 @@ export const updateDocument = mutation({
 export const deleteDocument = mutation({
   args: {
     documentId: v.id('documents'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
     const doc = await ctx.db.get(args.documentId);
     if (!doc) throw new Error('Document not found');
-    await checkAccess(ctx, doc.organizationId, args.requesterId);
+    await checkAccess(ctx, doc.organizationId);
 
     const views = await ctx.db
       .query('documentViews')
@@ -214,20 +200,18 @@ export const deleteDocument = mutation({
 export const recordDocumentView = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     documentId: v.id('documents'),
     acknowledged: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    await checkAccess(ctx, args.organizationId, args.requesterId);
+    const { requester } = await checkAccess(ctx, args.organizationId);
 
     const existing = await ctx.db
       .query('documentViews')
       .withIndex('by_user_document', (q) =>
         q
           .eq('organizationId', args.organizationId)
-          .eq('userId', args.requesterId)
+          .eq('userId', requester._id)
           .eq('documentId', args.documentId),
       )
       .first();
@@ -239,7 +223,7 @@ export const recordDocumentView = mutation({
       await ctx.db.insert('documentViews', {
         organizationId: args.organizationId,
         documentId: args.documentId,
-        userId: args.requesterId,
+        userId: requester._id,
         viewedAt: now,
         acknowledged: args.acknowledged,
       });
@@ -252,14 +236,13 @@ export const recordDocumentView = mutation({
 export const getMyDocumentViews = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
+    const { requester } = await checkAccess(ctx, args.organizationId);
     return await ctx.db
       .query('documentViews')
       .withIndex('by_user', (q) =>
-        q.eq('organizationId', args.organizationId).eq('userId', args.requesterId),
+        q.eq('organizationId', args.organizationId).eq('userId', requester._id),
       )
       .take(DEFAULT_LIST_CAP);
   },
@@ -268,12 +251,10 @@ export const getMyDocumentViews = query({
 export const getDocumentViews = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     documentId: v.id('documents'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    await checkAccess(ctx, args.organizationId, args.requesterId);
+    await checkAccess(ctx, args.organizationId);
     const views = await ctx.db
       .query('documentViews')
       .withIndex('by_document', (q) =>
@@ -297,11 +278,9 @@ export const getDocumentViews = query({
 export const getDocumentCategories = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    await checkAccess(ctx, args.organizationId, args.requesterId);
+    await checkAccess(ctx, args.organizationId);
     return await ctx.db
       .query('documentCategories')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
@@ -313,7 +292,6 @@ export const getDocumentCategories = query({
 export const createDocumentCategory = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     name: v.string(),
     description: v.optional(v.string()),
     icon: v.optional(v.string()),
@@ -321,8 +299,7 @@ export const createDocumentCategory = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const { isSuperadmin } = await checkAccess(ctx, args.organizationId, args.requesterId);
+    const { isSuperadmin } = await checkAccess(ctx, args.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can create categories');
 
     const now = Date.now();

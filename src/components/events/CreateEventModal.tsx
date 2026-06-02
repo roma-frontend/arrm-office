@@ -224,7 +224,21 @@ export function CreateEventModal({
           {/* Event Type */}
           <div>
             <Label>{t('events.eventType')}</Label>
-            <Select value={eventType} onValueChange={(v) => setEventType(v as any)}>
+            <Select
+              value={eventType}
+              onValueChange={(v) =>
+                setEventType(
+                  v as
+                    | 'meeting'
+                    | 'conference'
+                    | 'training'
+                    | 'team_building'
+                    | 'holiday'
+                    | 'deadline'
+                    | 'other',
+                )
+              }
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -246,7 +260,7 @@ export function CreateEventModal({
                 <button
                   key={level.value}
                   type="button"
-                  onClick={() => setPriority(level.value as any)}
+                  onClick={() => setPriority(level.value as 'high' | 'medium' | 'low')}
                   className={`p-3 rounded-lg border-2 transition-all ${
                     priority === level.value
                       ? 'border-blue-500 bg-blue-50'

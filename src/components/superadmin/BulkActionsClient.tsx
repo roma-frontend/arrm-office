@@ -42,10 +42,7 @@ export default function BulkActionsClient() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [comment, setComment] = useState('');
 
-  const leaves = useQuery(
-    api.leaves.getAllLeaves,
-    user?.id ? { requesterId: user.id as Id<'users'> } : 'skip',
-  );
+  const leaves = useQuery(api.leaves.getAllLeaves, user?.id ? {} : 'skip');
 
   const bulkApprove = useMutation(api.leaves.bulkApproveLeaves);
   const bulkReject = useMutation(api.leaves.bulkRejectLeaves);

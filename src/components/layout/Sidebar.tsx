@@ -344,7 +344,7 @@ export function Sidebar() {
   // Unread leaves count (only for admin role)
   const unreadLeavesCount = useQuery(
     api.leaves.getUnreadCount,
-    mounted && user?.id && user.role === 'admin' ? { requesterId: user.id as Id<'users'> } : 'skip',
+    mounted && user?.id && user.role === 'admin' ? {} : 'skip',
   );
 
   // Unread chat messages count
@@ -1006,7 +1006,7 @@ export function MobileSidebar() {
   // Mobile Unread leaves count (only for admin role)
   const mobileUnreadLeavesCount = useQuery(
     api.leaves.getUnreadCount,
-    mounted && user?.id && user.role === 'admin' ? { requesterId: user.id as Id<'users'> } : 'skip',
+    mounted && user?.id && user.role === 'admin' ? {} : 'skip',
   );
 
   // Mobile unread chat count

@@ -20,6 +20,7 @@ body.scroll-locked {
 @media (min-width: 1024px) {
   html {
     scrollbar-gutter: stable;
+    scrollbar-width: none;
   }
 }
 
@@ -72,6 +73,11 @@ body[data-scroll-locked] {
     filter 0.15s ease,
     transform 0.15s ease;
 }
+
+body {
+  scrollbar-width: none;
+}
+
 body.lang-switching #main-content {
   filter: blur(2px);
   transform: scale(0.995);

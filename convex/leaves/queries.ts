@@ -13,7 +13,6 @@ import {
 import { enrichLeavesWithUserData } from './helpers';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
-import { requireRequester } from '../lib/requireRequester';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ALL LEAVES — scoped to caller's organization
@@ -21,12 +20,11 @@ import { requireRequester } from '../lib/requireRequester';
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllLeaves = query({
   args: {
-    requesterId: v.optional(v.id('users')),
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requesterId = caller?._id ?? args.requesterId;
+    const requester = await getAuthCaller(ctx);
+    const requesterId = requester?._id;
     const organizationId = args.organizationId;
     // If organizationId is provided directly, use it
     if (organizationId && !requesterId) {
@@ -39,10 +37,8 @@ export const getAllLeaves = query({
       return enrichLeavesWithUserData(ctx, leaves);
     }
 
-    // Otherwise use requesterId
-    if (!requesterId) return [];
-
-    const requester = await requireRequester(ctx, requesterId);
+    // Otherwise use authenticated caller
+    if (!requester) return [];
 
     // Superadmin sees all leaves across all organizations
     let leaves;
@@ -67,15 +63,12 @@ export const getAllLeaves = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const listLeavesPaginated = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
-    if (!requester) return [];
+    const requester = await getAuthCaller(ctx);
+    if (!requester) return { page: [], isDone: true, continueCursor: '' };
 
     const userIsSuperadmin = isSuperadmin(requester);
 
@@ -139,11 +132,9 @@ export const getUserLeaves = query({
 // OPTIMIZED: Batch loading eliminates N+1 queries
 // ─────────────────────────────────────────────────────────────────────────────
 export const getPendingLeaves = query({
-  args: { requesterId: v.id('users') },
-  handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     // Superadmin sees all pending leaves — use status filter
@@ -172,11 +163,9 @@ export const getPendingLeaves = query({
 // GET LEAVE STATS — scoped to org
 // ─────────────────────────────────────────────────────────────────────────────
 export const getLeaveStats = query({
-  args: { requesterId: v.id('users') },
-  handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     // Superadmin sees stats across all organizations
@@ -207,11 +196,9 @@ export const getLeaveStats = query({
 // GET UNREAD LEAVE REQUESTS COUNT
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUnreadCount = query({
-  args: { requesterId: v.id('users') },
-  handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
     if (!requester) return 0;
 
     // Superadmin sees all unread across all organizations
@@ -243,13 +230,10 @@ export const getUnreadCount = query({
 // ─────────────────────────────────────────────────────────────────────────────
 export const getLeavesPagederated = query({
   args: {
-    requesterId: v.id('users'),
     ...paginationArgs,
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    const requester = await getAuthCaller(ctx);
     if (!requester) return { items: [], hasMore: false };
 
     const normalizedPageSize = normalizePageSize(args.pageSize);

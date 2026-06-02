@@ -117,13 +117,12 @@ export function LeavesClient() {
   const queryParams = shouldUseOrgQuery
     ? { organizationId: selectedOrgId as Id<'organizations'> }
     : user?.id
-      ? { requesterId: user.id as Id<'users'> }
+      ? {}
       : null;
 
   // Paginated leaves query
   const paginatedArgs = user?.id
     ? {
-        requesterId: user.id as Id<'users'>,
         ...(selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : {}),
       }
     : 'skip';
@@ -131,13 +130,10 @@ export function LeavesClient() {
     results: leaves,
     status: leavesStatus,
     loadMore: loadMoreLeaves,
-  } = usePaginatedQuery(api.leaves.listLeavesPaginated as any, paginatedArgs as any, {
+  } = usePaginatedQuery(api.leaves.listLeavesPaginated, paginatedArgs, {
     initialNumItems: 30,
   });
-  const unreadCount = useQuery(
-    api.leaves.getUnreadCount,
-    user?.id ? { requesterId: user.id as Id<'users'> } : 'skip',
-  );
+  const unreadCount = useQuery(api.leaves.getUnreadCount, user?.id ? {} : 'skip');
 
   const { approveOptimistic, rejectOptimistic, deleteOptimistic } = useOptimisticLeaveActions();
   const markLeaveAsRead = useMutation(api.leaves.markLeaveAsRead);

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
+import type { Id } from '../../../../../convex/_generated/dataModel';
 import { cookies } from 'next/headers';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 
 // Opt out of static generation — uses request.url
 export const revalidate = 0;
@@ -15,14 +15,20 @@ export async function GET(req: NextRequest) {
     const locale = cookieStore.get('i18nextLng')?.value || 'en';
     const { t } = await getServerTranslation('common', locale);
 
+    const auth = await getServerConvexAuth();
+    if (!auth) return NextResponse.json(null);
+
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
+
     const userId = req.nextUrl.searchParams.get('userId');
     if (!userId) return NextResponse.json(null);
 
     const [user, userLeaves, allLeaves, timeHistory] = await Promise.all([
-      convex.query(api.users.queries.getUserById, { userId: userId as any }),
-      convex.query(api.leaves.getUserLeaves, { userId: userId as any }),
-      convex.query(api.leaves.getAllLeaves, { requesterId: userId as any }),
-      convex.query(api.timeTracking.getUserHistory, { userId: userId as any, limit: 60 }),
+      convex.query(api.users.queries.getUserById, { userId: userId as Id<'users'> }),
+      convex.query(api.leaves.getUserLeaves, { userId: userId as Id<'users'> }),
+      convex.query(api.leaves.getAllLeaves, {}),
+      convex.query(api.timeTracking.getUserHistory, { userId: userId as Id<'users'>, limit: 60 }),
     ]);
 
     if (!user) return NextResponse.json(null);

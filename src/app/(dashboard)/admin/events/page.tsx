@@ -40,7 +40,6 @@ import {
   Trash2,
   Search,
   Clock,
-  MapPin,
   Bell,
   X,
   Filter,
@@ -535,13 +534,6 @@ export default function CompanyEventsPage() {
                                   {event.requiredDepartments?.length > 3 &&
                                     ` ${t('events.more', '+ more')}`}
                                 </span>
-                                {'location' in event && (
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3" />
-                                    {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */}
-                                    {(event as any).location}
-                                  </span>
-                                )}
                               </div>
                             </div>
 

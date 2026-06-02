@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
 
 interface TripDetailsModalProps {
-  schedule: any;
+  schedule: TripSchedule | null;
   currentTime: number;
   onClose: () => void;
   onRate?: (rating: number) => void;
@@ -33,6 +33,24 @@ interface TripDetailsModalProps {
   onCall?: () => void;
   userId: string;
   isAdmin?: boolean;
+}
+
+export interface TripSchedule {
+  type: string;
+  status: string;
+  startTime: number;
+  endTime: number;
+  userName?: string;
+  userAvatar?: string;
+  tripInfo?: {
+    from?: string;
+    to?: string;
+    purpose?: string;
+    passengerPhone?: string;
+    passengerCount?: number;
+    distanceKm?: number;
+    notes?: string;
+  };
 }
 
 export function TripDetailsModal({

@@ -75,10 +75,12 @@ export async function POST(req: NextRequest) {
         hours: 0.25, // last 15 min
       });
       if (recentByEmail) {
-        const emailFails = (recentByEmail.suspicious as any[])?.filter(
-          (a: any) => a.email === email && !a.success,
-        );
-        recentFailedAttempts = emailFails?.length ?? 0;
+        const suspicious = (recentByEmail.suspicious ?? []) as Array<{
+          email?: string;
+          success?: boolean;
+        }>;
+        const emailFails = suspicious.filter((a) => a.email === email && !a.success);
+        recentFailedAttempts = emailFails.length;
       }
 
       // ── Calculate risk score ─────────────────────────────────────────────────

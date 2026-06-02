@@ -34,10 +34,7 @@ export function CreateTaskModal({ currentUserId, userRole, onClose }: Props) {
 
   const safeUserId = currentUserId && currentUserId !== '' ? currentUserId : null;
 
-  const employees = useQuery(
-    api.tasks.getUsersForAssignment,
-    safeUserId ? { requesterId: safeUserId } : 'skip',
-  );
+  const employees = useQuery(api.tasks.getUsersForAssignment, safeUserId ? {} : 'skip');
   const myEmployees = useQuery(
     api.tasks.getMyEmployees,
     userRole === 'supervisor' && safeUserId ? { supervisorId: safeUserId } : 'skip',
@@ -223,7 +220,7 @@ export function CreateTaskModal({ currentUserId, userRole, onClose }: Props) {
               </label>
               <CustomSelect
                 value={priority}
-                onChange={(v) => setPriority(v as any)}
+                onChange={(v) => setPriority(v as 'low' | 'medium' | 'high' | 'urgent')}
                 fullWidth
                 options={[
                   { value: 'low', label: t('task.low') },

@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Users } from 'lucide-react';
@@ -15,7 +16,9 @@ interface ConflictDetectionProps {
 export default function ConflictDetection({ organizationId }: ConflictDetectionProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US';
-  const conflicts = useQuery(api.admin.detectConflicts, { organizationId: organizationId as any });
+  const conflicts = useQuery(api.admin.detectConflicts, {
+    organizationId: organizationId as Id<'organizations'> | undefined,
+  });
 
   if (!conflicts) {
     return (

@@ -217,7 +217,7 @@ export const sendBrowserNotification = (
   if (typeof window === 'undefined') return;
 
   const soundType = options?.soundType || 'new_request';
-  delete (options as any)?.soundType;
+  if (options) delete options.soundType;
 
   // Play sound
   playNotificationSound(soundType);

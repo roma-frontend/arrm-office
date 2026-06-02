@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -43,11 +44,14 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
   const stats = useQuery(api.sla.getSLAStats, {
     startDate,
     endDate,
-    organizationId: organizationId as any,
+    organizationId: organizationId as Id<'organizations'> | undefined,
   });
-  const trend = useQuery(api.sla.getSLATrend, { days: 30, organizationId: organizationId as any });
+  const trend = useQuery(api.sla.getSLATrend, {
+    days: 30,
+    organizationId: organizationId as Id<'organizations'> | undefined,
+  });
   const pendingWithSLA = useQuery(api.sla.getPendingWithSLA, {
-    organizationId: organizationId as any,
+    organizationId: organizationId as Id<'organizations'> | undefined,
   });
 
   if (!stats) {

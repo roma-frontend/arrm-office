@@ -171,7 +171,7 @@ export default function ChatClient({
     if (!conversations) return;
 
     const totalUnread = conversations.reduce(
-      (sum, conv) => sum + ((conv as any)?.membership?.unreadCount ?? 0),
+      (sum, conv) => sum + (conv?.membership?.unreadCount ?? 0),
       0,
     );
 
@@ -267,7 +267,7 @@ export default function ChatClient({
           }}
         >
           <ConversationList
-            conversations={(conversations ?? []).filter(Boolean) as any}
+            conversations={(conversations ?? []).filter(Boolean)}
             selectedId={selectedConvId}
             currentUserId={uid}
             onSelect={(convId) => {

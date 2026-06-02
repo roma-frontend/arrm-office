@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/api/auth/[...nextauth]/route';
-import { signJWT, verifyJWT } from '@/lib/jwt';
+import { signJWT, verifyJWT, type JWTPayload } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 
@@ -26,11 +26,11 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
         userId: session.user.id || userId,
         name: session.user.name || name,
         email: session.user.email || email,
-        role: (session.user as any).role || 'employee',
-        department: (session.user as any).department,
-        position: (session.user as any).position,
-        employeeType: (session.user as any).employeeType,
-        avatar: (session.user as any).avatar,
+        role: (session.user.role as JWTPayload['role']) || 'employee',
+        department: session.user.department,
+        position: session.user.position,
+        employeeType: session.user.employeeType as JWTPayload['employeeType'],
+        avatar: session.user.avatar,
       });
     }
 

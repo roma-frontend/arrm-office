@@ -39,7 +39,7 @@ export default function SubscriptionsManagementPage() {
 
   const allOrganizations = useQuery(
     api.organizations.getAllOrganizations,
-    user?.id ? { superadminUserId: user.id as any } : 'skip',
+    user?.id ? { superadminUserId: user.id as Id<'users'> } : 'skip',
   );
 
   const createManual = useMutation(api.subscriptions_admin.createManualSubscription);
@@ -191,7 +191,7 @@ export default function SubscriptionsManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {subscriptions?.map((sub: any) => (
+                {subscriptions?.map((sub) => (
                   <tr
                     key={sub._id}
                     className="border-b border-(--border) hover:bg-(--background-subtle) transition-colors"
@@ -238,7 +238,7 @@ export default function SubscriptionsManagementPage() {
                     </td>
                     <td className="py-3 px-2 text-(--text-primary)">
                       $
-                      {(sub as any).metadata?.customPrice ||
+                      {sub.metadata?.customPrice ||
                         (sub.plan === 'professional'
                           ? '49'
                           : sub.plan === 'enterprise'

@@ -4,6 +4,7 @@ import React from 'react';
 import { useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, TrendingUp, AlertTriangle, Award, Target } from 'lucide-react';
@@ -23,12 +24,12 @@ export function AttendanceDashboard() {
 
   const monthlyStats = useQuery(
     api.timeTracking.getMonthlyStats,
-    user?.id ? { userId: user.id as any, month: currentMonth } : 'skip',
+    user?.id ? { userId: user.id as Id<'users'>, month: currentMonth } : 'skip',
   );
 
   const history = useQuery(
     api.timeTracking.getUserHistory,
-    user?.id ? { userId: user.id as any, limit: 10 } : 'skip',
+    user?.id ? { userId: user.id as Id<'users'>, limit: 10 } : 'skip',
   );
 
   if (!monthlyStats) {

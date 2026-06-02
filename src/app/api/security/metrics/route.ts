@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       email: session.user.email,
       name: session.user.name,
-      role: (session.user as any).role,
+      role: session.user.role,
     });
   } catch (error) {
     console.error('[Metrics API] Error:', error);

@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../../../convex/_generated/api';
+import type { Id } from '../../../../../../../convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -26,7 +27,7 @@ export default function EditOrganizationPage() {
   const organization = useQuery(
     api.organizations.getOrganizationById,
     user?.id && orgId && canAccess
-      ? { callerUserId: user.id as any, organizationId: orgId as any }
+      ? { callerUserId: user.id as Id<'users'>, organizationId: orgId as Id<'organizations'> }
       : 'skip',
   );
 
@@ -121,8 +122,8 @@ export default function EditOrganizationPage() {
 
     try {
       await updateOrg({
-        superadminUserId: user.id as any,
-        organizationId: orgId as any,
+        superadminUserId: user.id as Id<'users'>,
+        organizationId: orgId as Id<'organizations'>,
         name: formData.name,
         plan: formData.plan,
         isActive: formData.isActive,
@@ -210,7 +211,9 @@ export default function EditOrganizationPage() {
             </label>
             <CustomSelect
               value={formData.plan}
-              onChange={(v) => setFormData({ ...formData, plan: v as any })}
+              onChange={(v) =>
+                setFormData({ ...formData, plan: v as 'starter' | 'professional' | 'enterprise' })
+              }
               fullWidth
               options={[
                 { value: 'starter', label: t('organization.planStarter') },
@@ -319,14 +322,12 @@ export default function EditOrganizationPage() {
           <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted/30">
             <div>
               <p className="text-xs text-muted-foreground">{t('organization.totalEmployees')}</p>
-              <p className="text-lg font-semibold">
-                {(organization as any).totalEmployees || organization.employeeCount || 0}
-              </p>
+              <p className="text-lg font-semibold">{organization.employeeCount || 0}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t('organization.activeEmployees')}</p>
               <p className="text-lg font-semibold text-green-600">
-                {(organization as any).activeEmployees || organization.employeeCount || 0}
+                {organization.employeeCount || 0}
               </p>
             </div>
           </div>

@@ -194,7 +194,17 @@ export default function ExpenseWizard({
         userId,
         title: String(data.title),
         description: (data.description as string) || '',
-        category: data.category as any,
+        category: String(data.category) as
+          | 'travel'
+          | 'meals'
+          | 'accommodation'
+          | 'transport'
+          | 'office_supplies'
+          | 'software'
+          | 'training'
+          | 'health'
+          | 'communication'
+          | 'other',
         amount,
         currency: String(data.currency),
         expenseDate,

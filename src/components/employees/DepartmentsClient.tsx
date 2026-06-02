@@ -71,8 +71,8 @@ function DepartmentWizard({
 }: DepartmentWizardProps) {
   const { t } = useTranslation();
   const selectedOrgId = useSelectedOrganization();
-  const createDepartment = useMutation(api.departments.create as any);
-  const updateDepartment = useMutation(api.departments.update as any);
+  const createDepartment = useMutation(api.departments.create);
+  const updateDepartment = useMutation(api.departments.update);
   const [wizardData, setWizardData] = useState<Record<string, string | number | boolean | null>>(
     editingDepartment
       ? {
@@ -280,9 +280,9 @@ export default function DepartmentsClient() {
         ? { organizationId: selectedOrgId as Id<'organizations'> }
         : {}
       : 'skip',
-  ) as any[] | undefined;
+  );
 
-  const removeDepartment = useMutation(api.departments.remove as any);
+  const removeDepartment = useMutation(api.departments.remove);
 
   const isLoading = departments === undefined;
 

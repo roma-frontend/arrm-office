@@ -160,7 +160,12 @@ export default function SelectOrganizationPage() {
         organizationId,
       });
 
-      if (result && (result as any).reason === 'already_in_organization') {
+      if (
+        result &&
+        typeof result === 'object' &&
+        'reason' in result &&
+        result.reason === 'already_in_organization'
+      ) {
         toast.info(t('auth.alreadyInOrg', 'You already belong to an organization'));
         setTimeout(() => router.push('/dashboard'), 600);
         return;

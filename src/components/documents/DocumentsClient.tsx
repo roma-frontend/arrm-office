@@ -100,7 +100,6 @@ export default function DocumentsClient() {
     effectiveOrgId && user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
           category: categoryFilter !== 'all' ? categoryFilter : undefined,
           search: searchQuery || undefined,
           includeUnpublished: isAdmin,
@@ -120,7 +119,6 @@ export default function DocumentsClient() {
     effectiveOrgId && user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
         }
       : 'skip',
   );
@@ -140,7 +138,6 @@ export default function DocumentsClient() {
     effectiveOrgId && user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
         }
       : 'skip',
   );
@@ -160,7 +157,6 @@ export default function DocumentsClient() {
     try {
       await recordViewMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         documentId: doc._id,
       });
       setSelectedDocument(doc);
@@ -176,7 +172,6 @@ export default function DocumentsClient() {
     try {
       await deleteDocumentMutation({
         documentId,
-        requesterId: user.id as Id<'users'>,
       });
 
       toast.success(t('documents.documentDeleted', 'Document deleted successfully'));
@@ -191,7 +186,6 @@ export default function DocumentsClient() {
     try {
       await updateDocumentMutation({
         documentId,
-        requesterId: user.id as Id<'users'>,
         isPublished: true,
       });
 

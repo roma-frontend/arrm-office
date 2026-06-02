@@ -117,7 +117,7 @@ export function ChatWidgetWindow({
     }
   }, [isOpen, inputRef]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     sendMessage(input, setIsOpen);
   };
@@ -642,7 +642,7 @@ export function ChatWidgetWindow({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleSubmit(e as any);
+                      handleSubmit(e);
                     }
                   }}
                 />

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +32,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
   const [googleConnected, setGoogleConnected] = useState(false);
   const [outlookConnected, setOutlookConnected] = useState(false);
   const calendarData = useQuery(api.admin.getCalendarExportData, {
-    organizationId: organizationId as any,
+    organizationId: organizationId as Id<'organizations'> | undefined,
   });
 
   // Plan gating

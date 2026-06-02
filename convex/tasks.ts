@@ -7,7 +7,6 @@ import { isSuperadmin } from './lib/auth';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { requireRequester } from './lib/requireRequester';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { sanitizeTitle, sanitizeText } from './lib/sanitize';
 
@@ -412,11 +411,9 @@ export const getTasksAssignedBy = query({
 // ── Get All Tasks (admin) ──────────────────────────────────────────────────
 // OPTIMIZED: Batch loading eliminates N+1 queries
 export const getAllTasks = query({
-  args: { requesterId: v.id('users'), selectedOrganizationId: v.optional(v.id('organizations')) },
+  args: { selectedOrganizationId: v.optional(v.id('organizations')) },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     // Only admin/superadmin can get all tasks
@@ -500,12 +497,10 @@ export const getMyEmployees = query({
 
 // ── Get all users for assignment (admin/supervisor) ────────────────────────
 export const getUsersForAssignment = query({
-  args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
     let users: any[] = [];
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (requester) {
       if (requester?.organizationId) {
         users = await ctx.db
@@ -551,9 +546,9 @@ export const getUsersForAssignment = query({
 
 // ── Get supervisors list ───────────────────────────────────────────────────
 export const getSupervisors = query({
-  args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
     let supervisors = await ctx.db
       .query('users')
       .withIndex('by_role', (q) => q.eq('role', 'supervisor'))
@@ -564,8 +559,6 @@ export const getSupervisors = query({
       .take(DEFAULT_LIST_CAP);
 
     // Filter by organization
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
     if (requester && requester.organizationId) {
       supervisors = supervisors.filter((u: any) => u.organizationId === requester.organizationId);
       admins = admins.filter((u: any) => u.organizationId === requester.organizationId);
@@ -695,13 +688,13 @@ export const listCommentsPaginated = query({
       .order('desc')
       .paginate(paginationOpts);
 
-    const authorIds = [...new Set(result.page.map((c: any) => c.authorId))];
-    const authors = await Promise.all(authorIds.map((id: Id<'users'>) => ctx.db.get(id)));
-    const authorMap = new Map(authors.map((a: any) => [a?._id, a]));
+    const authorIds = [...new Set(result.page.map((c) => c.authorId))];
+    const authors = await Promise.all(authorIds.map((id) => ctx.db.get(id)));
+    const authorMap = new Map(authors.map((a) => [a?._id, a]));
 
     return {
       ...result,
-      page: result.page.map((c: any) => ({ ...c, author: authorMap.get(c.authorId) })),
+      page: result.page.map((c) => ({ ...c, author: authorMap.get(c.authorId) })),
     };
   },
 });

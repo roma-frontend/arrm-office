@@ -440,7 +440,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const queryParams = shouldUseOrgQuery
     ? { organizationId: selectedOrgId as Id<'organizations'> }
     : mounted && user?.id
-      ? { requesterId: user.id as Id<'users'> }
+      ? {}
       : ('skip' as const);
 
   // Use organization-specific query if org selected, otherwise use default
@@ -1144,7 +1144,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteEventMutation({ id: evt.id as any });
+                            deleteEventMutation({ id: evt.id as Id<'calendarEvents'> });
                           }}
                           className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all shrink-0"
                         >

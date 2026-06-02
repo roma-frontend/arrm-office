@@ -88,9 +88,9 @@ export default function OnboardingClient() {
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">{t('onboarding.title', 'Onboarding') as any}</h1>
+            <h1 className="text-2xl font-bold">{t('onboarding.title', 'Onboarding')}</h1>
             <p className="text-sm text-muted-foreground">
-              {t('onboarding.subtitle', 'Manage new hire onboarding workflows') as any}
+              {t('onboarding.subtitle', 'Manage new hire onboarding workflows')}
             </p>
           </div>
           {isAdmin && (
@@ -108,7 +108,7 @@ export default function OnboardingClient() {
                 }}
               >
                 <FileText className="h-4 w-4 mr-1" />
-                {t('onboarding.newTemplate', 'New Template') as any}
+                {t('onboarding.newTemplate', 'New Template')}
               </Button>
               <Button
                 size="sm"
@@ -122,7 +122,7 @@ export default function OnboardingClient() {
                 }}
               >
                 <Rocket className="h-4 w-4 mr-1" />
-                {t('onboarding.startOnboarding', 'Start Onboarding') as any}
+                {t('onboarding.startOnboarding', 'Start Onboarding')}
               </Button>
             </div>
           )}
@@ -135,7 +135,7 @@ export default function OnboardingClient() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{activeCount}</p>
             <p className="text-xs text-muted-foreground">
-              {t('onboarding.stats.active', 'Active') as any}
+              {t('onboarding.stats.active', 'Active')}
             </p>
           </CardContent>
         </Card>
@@ -143,7 +143,7 @@ export default function OnboardingClient() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{completedCount}</p>
             <p className="text-xs text-muted-foreground">
-              {t('onboarding.stats.completed', 'Completed') as any}
+              {t('onboarding.stats.completed', 'Completed')}
             </p>
           </CardContent>
         </Card>
@@ -151,7 +151,7 @@ export default function OnboardingClient() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{templates?.length ?? 0}</p>
             <p className="text-xs text-muted-foreground">
-              {t('onboarding.stats.templates', 'Templates') as any}
+              {t('onboarding.stats.templates', 'Templates')}
             </p>
           </CardContent>
         </Card>
@@ -159,7 +159,7 @@ export default function OnboardingClient() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{myMentees?.length ?? 0}</p>
             <p className="text-xs text-muted-foreground">
-              {t('onboarding.stats.mentees', 'My Mentees') as any}
+              {t('onboarding.stats.mentees', 'My Mentees')}
             </p>
           </CardContent>
         </Card>
@@ -169,20 +169,20 @@ export default function OnboardingClient() {
       <Tabs defaultValue={myOnboarding ? 'my' : 'programs'}>
         <TabsList className="w-full my-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-3">
           {myOnboarding && (
-            <TabsTrigger value="my">{t('onboarding.tabs.my', 'My Onboarding') as any}</TabsTrigger>
+            <TabsTrigger value="my">{t('onboarding.tabs.my', 'My Onboarding')}</TabsTrigger>
           )}
           <TabsTrigger
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="programs"
           >
-            {t('onboarding.tabs.programs', 'Programs') as any}
+            {t('onboarding.tabs.programs', 'Programs')}
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger
               className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
               value="templates"
             >
-              {t('onboarding.tabs.templates', 'Templates') as any}
+              {t('onboarding.tabs.templates', 'Templates')}
             </TabsTrigger>
           )}
         </TabsList>
@@ -202,13 +202,11 @@ export default function OnboardingClient() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Rocket className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="font-medium">
-                  {t('onboarding.empty', 'No onboarding programs yet') as any}
-                </p>
+                <p className="font-medium">{t('onboarding.empty', 'No onboarding programs yet')}</p>
                 {isAdmin && (
                   <Button className="mt-4" onClick={() => setShowStartWizard(true)}>
                     <Plus className="h-4 w-4 mr-1" />{' '}
-                    {t('onboarding.startOnboarding', 'Start Onboarding') as any}
+                    {t('onboarding.startOnboarding', 'Start Onboarding')}
                   </Button>
                 )}
               </CardContent>
@@ -235,7 +233,7 @@ export default function OnboardingClient() {
                                   : 'bg-gray-100 text-gray-600'
                             }
                           >
-                            {t(`onboarding.status.${prog.status}`, prog.status) as any}
+                            {String(t(`onboarding.status.${prog.status}`, prog.status))}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
@@ -246,7 +244,7 @@ export default function OnboardingClient() {
                             </span>
                           )}
                           <span>
-                            {t('onboarding.started', 'Started') as any}:{' '}
+                            {t('onboarding.started', 'Started')}:{' '}
                             {new Date(prog.startDate).toLocaleDateString()}
                           </span>
                         </div>
@@ -282,12 +280,9 @@ export default function OnboardingClient() {
               <Card>
                 <CardContent className="p-8 text-center">
                   <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="font-medium">
-                    {t('onboarding.noTemplates', 'No templates yet') as any}
-                  </p>
+                  <p className="font-medium">{t('onboarding.noTemplates', 'No templates yet')}</p>
                   <Button className="mt-4" onClick={() => setShowTemplateWizard(true)}>
-                    <Plus className="h-4 w-4 mr-1" />{' '}
-                    {t('onboarding.newTemplate', 'New Template') as any}
+                    <Plus className="h-4 w-4 mr-1" /> {t('onboarding.newTemplate', 'New Template')}
                   </Button>
                 </CardContent>
               </Card>
@@ -311,7 +306,7 @@ export default function OnboardingClient() {
                               </Badge>
                             )}
                             <Badge variant="outline" className="text-xs">
-                              {tpl.tasks.length} {t('onboarding.tasks', 'tasks') as any}
+                              {tpl.tasks.length} {t('onboarding.tasks', 'tasks')}
                             </Badge>
                           </div>
                         </div>
@@ -393,18 +388,17 @@ function MyOnboardingView({
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-sm text-muted-foreground">
-                {t('onboarding.yourProgress', 'Your Progress') as any}
+                {t('onboarding.yourProgress', 'Your Progress')}
               </p>
               <p className="text-3xl font-bold">{program.progress}%</p>
             </div>
             <div className="text-right text-sm text-muted-foreground">
               <p>
-                {program.completedTasks}/{program.totalTasks}{' '}
-                {t('onboarding.tasks', 'tasks') as any}
+                {program.completedTasks}/{program.totalTasks} {t('onboarding.tasks', 'tasks')}
               </p>
               {program.buddyName && (
                 <p>
-                  {t('onboarding.buddy', 'Buddy') as any}: {program.buddyName}
+                  {t('onboarding.buddy', 'Buddy')}: {program.buddyName}
                 </p>
               )}
             </div>
@@ -442,7 +436,7 @@ function MyOnboardingView({
                 )}
               </div>
               <Badge variant="outline" className="text-xs shrink-0">
-                {t(`onboarding.category.${task.category}`, task.category) as any}
+                {t(`onboarding.category.${task.category}`, task.category)}
               </Badge>
             </CardContent>
           </Card>
@@ -492,7 +486,7 @@ function ProgramDetailDialog({
       <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {program?.employeeName ?? '...'} — {t('onboarding.title', 'Onboarding') as any}
+            {program?.employeeName ?? '...'} — {t('onboarding.title', 'Onboarding')}
           </DialogTitle>
         </DialogHeader>
 
@@ -514,36 +508,29 @@ function ProgramDetailDialog({
             {/* Info */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-muted-foreground">
-                  {t('onboarding.manager', 'Manager') as any}:
-                </span>{' '}
+                <span className="text-muted-foreground">{t('onboarding.manager', 'Manager')}:</span>{' '}
                 {program.managerName}
               </div>
               <div>
-                <span className="text-muted-foreground">
-                  {t('onboarding.buddy', 'Buddy') as any}:
-                </span>{' '}
+                <span className="text-muted-foreground">{t('onboarding.buddy', 'Buddy')}:</span>{' '}
                 {program.buddyName || '—'}
               </div>
               <div>
-                <span className="text-muted-foreground">
-                  {t('onboarding.started', 'Started') as any}:
-                </span>{' '}
+                <span className="text-muted-foreground">{t('onboarding.started', 'Started')}:</span>{' '}
                 {new Date(program.startDate).toLocaleDateString()}
               </div>
               <div>
                 <span className="text-muted-foreground">
-                  {t('onboarding.status.label', 'Status') as any}:
+                  {t('onboarding.status.label', 'Status')}:
                 </span>{' '}
-                {t(`onboarding.status.${program.status}`, program.status) as any}
+                {t(`onboarding.status.${program.status}`, program.status)}
               </div>
             </div>
 
             {/* Tasks */}
             <div className="space-y-2 pt-2 border-t">
               <p className="text-sm font-semibold">
-                {t('onboarding.tasks', 'Tasks') as any} ({program.completedTasks}/
-                {program.totalTasks})
+                {t('onboarding.tasks', 'Tasks')} ({program.completedTasks}/{program.totalTasks})
               </p>
               {program.tasks.map((task: any) => (
                 <div
@@ -565,19 +552,14 @@ function ProgramDetailDialog({
                     </p>
                     <div className="flex gap-2 mt-0.5">
                       <span className="text-xs text-muted-foreground">
-                        {
-                          t(
-                            `onboarding.assigneeType.${task.assigneeType}`,
-                            task.assigneeType,
-                          ) as any
-                        }
+                        {t(`onboarding.assigneeType.${task.assigneeType}`, task.assigneeType)}
                       </span>
                       {task.assigneeName && <span className="text-xs">• {task.assigneeName}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Badge variant="outline" className="text-[10px]">
-                      {t(`onboarding.category.${task.category}`, task.category) as any}
+                      {t(`onboarding.category.${task.category}`, task.category)}
                     </Badge>
                     {isAdmin && task.status === 'pending' && (
                       <Button
@@ -601,7 +583,7 @@ function ProgramDetailDialog({
             {isAdmin && program.status === 'active' && program.progress >= 80 && (
               <Button className="w-full" onClick={handleCompleteProgram}>
                 <CheckCircle2 className="h-4 w-4 mr-1" />
-                {t('onboarding.completeProgram', 'Complete Onboarding') as any}
+                {t('onboarding.completeProgram', 'Complete Onboarding')}
               </Button>
             )}
           </div>
@@ -665,7 +647,7 @@ function StartOnboardingWizard({
         {/* Stepper */}
         <div className="px-5 pt-5 pb-3">
           <DialogHeader>
-            <DialogTitle>{t('onboarding.wizard.title', 'Start Onboarding') as any}</DialogTitle>
+            <DialogTitle>{t('onboarding.wizard.title', 'Start Onboarding')}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-2 mt-4">
             {steps.map((s, i) => (
@@ -697,21 +679,14 @@ function StartOnboardingWizard({
                 <Input
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
-                  placeholder={
-                    t(
-                      'onboarding.fields.employeeIdPlaceholder',
-                      'Paste user ID of the new hire',
-                    ) as any
-                  }
+                  placeholder={t(
+                    'onboarding.fields.employeeIdPlaceholder',
+                    'Paste user ID of the new hire',
+                  )}
                   className="mt-1"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {
-                    t(
-                      'onboarding.fields.employeeHint',
-                      'The user must already exist in the system',
-                    ) as any
-                  }
+                  {t('onboarding.fields.employeeHint', 'The user must already exist in the system')}
                 </p>
               </div>
             </div>
@@ -720,7 +695,7 @@ function StartOnboardingWizard({
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">
-                  {t('onboarding.fields.template', 'Template') as any}
+                  {t('onboarding.fields.template', 'Template')}
                 </label>
                 <Select value={templateId} onValueChange={setTemplateId}>
                   <SelectTrigger className="mt-1">
@@ -744,7 +719,7 @@ function StartOnboardingWizard({
               </div>
               <div>
                 <label className="text-sm font-medium">
-                  {t('onboarding.fields.startDate', 'Start Date') as any}
+                  {t('onboarding.fields.startDate', 'Start Date')}
                 </label>
                 <Input
                   type="date"
@@ -759,14 +734,15 @@ function StartOnboardingWizard({
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">
-                  {t('onboarding.fields.managerId', 'Manager ID') as any}
+                  {t('onboarding.fields.managerId', 'Manager ID')}
                 </label>
                 <Input
                   value={managerId}
                   onChange={(e) => setManagerId(e.target.value)}
-                  placeholder={
-                    t('onboarding.fields.managerIdPlaceholder', 'User ID of the manager') as any
-                  }
+                  placeholder={t(
+                    'onboarding.fields.managerIdPlaceholder',
+                    'User ID of the manager',
+                  )}
                   className="mt-1"
                 />
               </div>
@@ -777,9 +753,10 @@ function StartOnboardingWizard({
                 <Input
                   value={buddyId}
                   onChange={(e) => setBuddyId(e.target.value)}
-                  placeholder={
-                    t('onboarding.fields.buddyIdPlaceholder', 'User ID of the buddy/mentor') as any
-                  }
+                  placeholder={t(
+                    'onboarding.fields.buddyIdPlaceholder',
+                    'User ID of the buddy/mentor',
+                  )}
                   className="mt-1"
                 />
               </div>
@@ -795,11 +772,11 @@ function StartOnboardingWizard({
           </Button>
           {step < steps.length - 1 ? (
             <Button onClick={() => setStep(step + 1)} disabled={step === 0 && !employeeId}>
-              {t('common.next', 'Next') as any} <ChevronRight className="h-4 w-4 ml-1" />
+              {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={!employeeId || !managerId}>
-              <Rocket className="h-4 w-4 mr-1" /> {t('onboarding.wizard.start', 'Start') as any}
+              <Rocket className="h-4 w-4 mr-1" /> {t('onboarding.wizard.start', 'Start')}
             </Button>
           )}
         </div>
@@ -883,9 +860,7 @@ function CreateTemplateWizard({
         {/* Stepper */}
         <div className="px-5 pt-5 pb-3">
           <DialogHeader>
-            <DialogTitle>
-              {t('onboarding.templateWizard.title', 'Create Template') as any}
-            </DialogTitle>
+            <DialogTitle>{t('onboarding.templateWizard.title', 'Create Template')}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-2 mt-4">
             {steps.map((s, i) => (
@@ -912,42 +887,38 @@ function CreateTemplateWizard({
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">
-                  {t('onboarding.fields.templateName', 'Template Name') as any}
+                  {t('onboarding.fields.templateName', 'Template Name')}
                 </label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={
-                    t(
-                      'onboarding.fields.templateNamePlaceholder',
-                      'e.g. Engineering Onboarding',
-                    ) as any
-                  }
+                  placeholder={t(
+                    'onboarding.fields.templateNamePlaceholder',
+                    'e.g. Engineering Onboarding',
+                  )}
                   className="mt-1"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium">
-                  {t('onboarding.fields.description', 'Description') as any}
+                  {t('onboarding.fields.description', 'Description')}
                 </label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder={
-                    t('onboarding.fields.descPlaceholder', 'What is this template for?') as any
-                  }
+                  placeholder={t('onboarding.fields.descPlaceholder', 'What is this template for?')}
                   className="mt-1"
                   rows={2}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium">
-                  {t('onboarding.fields.department', 'Department') as any}
+                  {t('onboarding.fields.department', 'Department')}
                 </label>
                 <Input
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  placeholder={t('onboarding.fields.deptPlaceholder', 'e.g. Engineering') as any}
+                  placeholder={t('onboarding.fields.deptPlaceholder', 'e.g. Engineering')}
                   className="mt-1"
                 />
               </div>
@@ -984,7 +955,7 @@ function CreateTemplateWizard({
                 <Input
                   value={newTask.title || ''}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  placeholder={t('onboarding.fields.taskTitle', 'Task title') as any}
+                  placeholder={t('onboarding.fields.taskTitle', 'Task title')}
                 />
                 <div className="grid grid-cols-3 gap-2">
                   <Select
@@ -999,7 +970,7 @@ function CreateTemplateWizard({
                     <SelectContent>
                       {ASSIGNEE_TYPES.map((at: any) => (
                         <SelectItem key={at} value={at}>
-                          {t(`onboarding.assigneeType.${at}`, at) as any}
+                          {t(`onboarding.assigneeType.${at}`, at)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1016,7 +987,7 @@ function CreateTemplateWizard({
                     <SelectContent>
                       {CATEGORIES.map((c: any) => (
                         <SelectItem key={c} value={c}>
-                          {t(`onboarding.category.${c}`, c) as any}
+                          {t(`onboarding.category.${c}`, c)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1027,7 +998,7 @@ function CreateTemplateWizard({
                     onChange={(e) =>
                       setNewTask({ ...newTask, dayOffset: parseInt(e.target.value) || 0 })
                     }
-                    placeholder={t('onboarding.fields.dayPlaceholder', 'Day') as any}
+                    placeholder={t('onboarding.fields.dayPlaceholder', 'Day')}
                     className="text-xs"
                   />
                 </div>
@@ -1038,7 +1009,7 @@ function CreateTemplateWizard({
                   disabled={!newTask.title}
                   className="w-full"
                 >
-                  <Plus className="h-3 w-3 mr-1" /> {t('onboarding.addTask', 'Add Task') as any}
+                  <Plus className="h-3 w-3 mr-1" /> {t('onboarding.addTask', 'Add Task')}
                 </Button>
               </div>
             </div>
@@ -1057,7 +1028,7 @@ function CreateTemplateWizard({
                 )}
               </div>
               <p className="text-sm font-medium">
-                {tasks.length} {t('onboarding.tasks', 'tasks') as any}:
+                {tasks.length} {t('onboarding.tasks', 'tasks')}:
               </p>
               <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
                 {tasks.map((task, i) => (
@@ -1085,12 +1056,12 @@ function CreateTemplateWizard({
               onClick={() => setStep(step + 1)}
               disabled={(step === 0 && !name) || (step === 1 && tasks.length === 0)}
             >
-              {t('common.next', 'Next') as any} <ChevronRight className="h-4 w-4 ml-1" />
+              {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button onClick={handleSubmit}>
               <CheckCircle2 className="h-4 w-4 mr-1" />{' '}
-              {t('onboarding.templateWizard.create', 'Create') as any}
+              {t('onboarding.templateWizard.create', 'Create')}
             </Button>
           )}
         </div>

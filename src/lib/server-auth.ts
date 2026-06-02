@@ -26,9 +26,9 @@ export async function getServerUser(): Promise<JWTPayload | null> {
         userId: session.user.id ?? '',
         name: session.user.name ?? 'User',
         email: session.user.email,
-        role: (session.user as any).role ?? 'employee',
-        organizationId: (session.user as any).organizationId,
-        isApproved: (session.user as any).isApproved,
+        role: (session.user.role as JWTPayload['role']) ?? 'employee',
+        organizationId: session.user.organizationId,
+        isApproved: session.user.isApproved,
       };
     }
   } catch {

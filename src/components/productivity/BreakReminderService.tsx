@@ -131,7 +131,7 @@ export default function BreakReminderService({
           tag: `break-reminder-${Date.now()}`, // Unique tag to ensure it always shows
           requireInteraction: false, // Better for iOS - auto dismiss after some time
           silent: false, // Play sound
-        } as any);
+        });
       } catch (error) {
         console.error('Failed to send push notification:', error);
       }

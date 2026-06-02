@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
 
-async function convexQuery(path: string, args: Record<string, unknown>) {
+async function convexQuery(path: string, args: Record<string, unknown>, token?: string) {
   const res = await fetch(`${CONVEX_URL}/api/query`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify({ path, args }),
   });
   const data = await res.json();
@@ -20,32 +22,13 @@ function euclideanDistance(a: number[], b: number[]): number {
   return Math.sqrt(a.reduce((sum, v, i) => sum + (v - (b[i] ?? 0)) ** 2, 0));
 }
 
-/**
- * Verify JWT auth token.
- */
-async function verifyAuth(): Promise<string | null> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('hr-auth-token') || cookieStore.get('oauth-session');
-    if (!token) return null;
-
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) return null;
-
-    const secret = new TextEncoder().encode(jwtSecret);
-    const { payload } = await jwtVerify(token.value, secret);
-    return payload.sub as string;
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(req: NextRequest) {
   // SECURITY: Require authentication — user can only verify their own face
-  const authenticatedUserId = await verifyAuth();
-  if (!authenticatedUserId) {
+  const auth = await getServerConvexAuth();
+  if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const authenticatedUserId = auth.payload.userId;
 
   try {
     const { userId, descriptor } = await req.json();
@@ -63,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get stored face descriptor
-    const profile = await convexQuery('faceRecognition:getFaceDescriptor', { userId });
+    const profile = await convexQuery('faceRecognition:getFaceDescriptor', { userId }, auth.token);
 
     if (!profile?.faceDescriptor) {
       // No face registered → skip verification (allow)

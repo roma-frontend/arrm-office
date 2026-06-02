@@ -144,7 +144,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
                           <Badge className={getSeverityColor(alert.severity)}>
                             {(() => {
                               const severity = alert.severity || 'medium';
-                              const severityText = t(`events.priority.${severity}` as any);
+                              const severityText = t(`events.priority.${severity}`);
                               return typeof severityText === 'string' ? severityText : severity;
                             })()}
                           </Badge>
@@ -274,7 +274,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
                     <p className="font-medium text-foreground capitalize">
                       {(() => {
                         const conflictType = selectedAlert.conflictType || 'required_department';
-                        const typeText = t(`events.conflictType.${conflictType}` as any);
+                        const typeText = t(`events.conflictType.${conflictType}`);
                         return typeof typeText === 'string'
                           ? typeText
                           : conflictType.replace('_', ' ');
@@ -286,7 +286,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
                     <Badge className={getSeverityColor(selectedAlert.severity)}>
                       {(() => {
                         const severity = selectedAlert.severity || 'medium';
-                        const severityText = t(`events.priority.${severity}` as any);
+                        const severityText = t(`events.priority.${severity}`);
                         return typeof severityText === 'string' ? severityText : severity;
                       })()}
                     </Badge>

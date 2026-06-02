@@ -198,10 +198,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
   };
 
   // ===== Data =====
-  const allUsers = useQuery(
-    api.users.queries.getAllUsers,
-    userId ? { requesterId: userId } : 'skip',
-  );
+  const allUsers = useQuery(api.users.queries.getAllUsers, userId ? {} : 'skip');
 
   const stats = allUsers?.reduce(
     (acc, user) => {
@@ -217,7 +214,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
       else if (user.role === 'employee') acc.employees++;
       else if (user.role === 'driver') acc.drivers++;
 
-      if ((user as any).employeeType === 'contractor') acc.contractors++;
+      if (user.employeeType === 'contractor') acc.contractors++;
       else acc.staff++;
 
       return acc;

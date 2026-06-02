@@ -41,18 +41,18 @@ export default function HelpSupportPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [showPlanLimit, setShowPlanLimit] = useState(false);
 
-  const myTickets = (useQuery as any)(
-    (api.tickets as any).getMyTickets,
+  const myTickets = useQuery(
+    api.tickets.getMyTickets,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
-  ) as any[] | undefined;
+  );
 
-  const stats = (useQuery as any)((api.tickets as any).getTicketStats) as any;
+  const stats = useQuery(api.tickets.getTicketStats);
 
   // Get organization plan
-  const userOrg = (useQuery as any)(
-    (api.organizations as any).getMyOrganization,
+  const userOrg = useQuery(
+    api.organizations.main.getMyOrganization,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
-  ) as any;
+  );
 
   // Check plan limitations
   const canCreateTickets = userOrg?.plan === 'professional' || userOrg?.plan === 'enterprise';

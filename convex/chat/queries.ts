@@ -77,6 +77,8 @@ export const getMyConversations = query({
     const filteredConvs = dedupedConvs.filter(Boolean) as Array<{
       _id: Id<'chatConversations'>;
       type: 'direct' | 'group';
+      name?: string;
+      avatarUrl?: string;
       createdBy: Id<'users'>;
       organizationId?: Id<'organizations'>;
       lastMessageAt?: number;
@@ -133,8 +135,9 @@ export const getMyConversations = query({
     const profileMap = new Map(allProfileUsers.map((id, i) => [id, profiles[i]]));
 
     // Step 10: Build result
-    const conversationsWithDetails = filteredConvs.map((conv, idx) => {
+    const conversationsWithDetails = filteredConvs.flatMap((conv, idx) => {
       const membership = dedupedMemberships[idx];
+      if (!membership) return [];
 
       let otherUser = null;
       if (conv.type === 'direct') {

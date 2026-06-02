@@ -118,7 +118,7 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
   // Load org users for recipient selection
   const orgUsers = useQuery(
     api.users.getUsersByOrganizationId,
-    organizationId && senderId ? { organizationId, requesterId: senderId } : 'skip',
+    organizationId && senderId ? { organizationId } : 'skip',
   );
 
   const availableRecipients = useMemo(() => {
@@ -179,7 +179,15 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
       await sendKudosMutation({
         senderId,
         receiverId: receiverId as Id<'users'>,
-        category: category as any,
+        category: category as
+          | 'teamwork'
+          | 'innovation'
+          | 'leadership'
+          | 'dedication'
+          | 'customer_focus'
+          | 'mentorship'
+          | 'excellence'
+          | 'above_and_beyond',
         message: message.trim(),
         isPublic,
       });
@@ -617,7 +625,12 @@ export function RecognitionClient() {
         {/* Leaderboard Tab */}
         <TabsContent value="leaderboard" className="mt-4">
           <div className="flex justify-end mb-4">
-            <Select value={leaderboardPeriod} onValueChange={(v) => setLeaderboardPeriod(v as any)}>
+            <Select
+              value={leaderboardPeriod}
+              onValueChange={(v) =>
+                setLeaderboardPeriod(v as 'week' | 'month' | 'quarter' | 'year' | 'all')
+              }
+            >
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>

@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../../../convex/_generated/api';
+import type { Id } from '../../../../../../../convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -60,12 +61,16 @@ export default function ManageAdminsPage() {
   // Queries and Mutations
   const organization = useQuery(
     api.organizations.getOrganizationById,
-    user?.id && orgId ? { callerUserId: user.id as any, organizationId: orgId as any } : 'skip',
+    user?.id && orgId
+      ? { callerUserId: user.id as Id<'users'>, organizationId: orgId as Id<'organizations'> }
+      : 'skip',
   );
 
   const orgMembers = useQuery(
     api.organizations.getOrgMembers,
-    user?.id && orgId ? { superadminUserId: user.id as any, organizationId: orgId as any } : 'skip',
+    user?.id && orgId
+      ? { superadminUserId: user.id as Id<'users'>, organizationId: orgId as Id<'organizations'> }
+      : 'skip',
   );
 
   const assignAdminMutation = useMutation(api.organizations.assignOrgAdmin);
@@ -94,9 +99,9 @@ export default function ManageAdminsPage() {
     setIsLoading(true);
     try {
       await assignAdminMutation({
-        superadminUserId: user?.id as any,
-        userId: selectedMemberId as any,
-        organizationId: orgId as any,
+        superadminUserId: user?.id as Id<'users'>,
+        userId: selectedMemberId as Id<'users'>,
+        organizationId: orgId as Id<'organizations'>,
       });
 
       toast.success(t('ui.adminAssignedSuccessfully'));
@@ -105,7 +110,7 @@ export default function ManageAdminsPage() {
       setActionType(null);
     } catch (error) {
       console.error('Error promoting admin:', error);
-      toast.error((error as any).message || t('ui.errorAssigningAdmin'));
+      toast.error((error instanceof Error ? error.message : '') || t('ui.errorAssigningAdmin'));
     } finally {
       setIsLoading(false);
     }
@@ -117,8 +122,8 @@ export default function ManageAdminsPage() {
     setIsLoading(true);
     try {
       await removeAdminMutation({
-        superadminUserId: user?.id as any,
-        userId: selectedMemberId as any,
+        superadminUserId: user?.id as Id<'users'>,
+        userId: selectedMemberId as Id<'users'>,
       });
 
       toast.success(t('ui.adminRemovedSuccessfully'));
@@ -127,7 +132,7 @@ export default function ManageAdminsPage() {
       setActionType(null);
     } catch (error) {
       console.error('Error removing admin:', error);
-      toast.error((error as any).message || t('ui.errorRemovingAdmin'));
+      toast.error((error instanceof Error ? error.message : '') || t('ui.errorRemovingAdmin'));
     } finally {
       setIsLoading(false);
     }

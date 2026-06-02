@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { TripDetailsModal } from '@/components/drivers/modals';
+import type { TripSchedule } from '@/components/drivers/modals/TripDetailsModal';
 import { toast } from 'sonner';
 import { motion } from '@/lib/cssMotion';
 import { Heart, ChevronLeft, Shield, Search, Car, Users, MapPin, Star } from 'lucide-react';
@@ -43,7 +44,7 @@ export default function FavoritesPage() {
   const { user, isAuthenticated } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showTripDetails, setShowTripDetails] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<Record<string, unknown> | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<TripSchedule | null>(null);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   useEffect(() => {
@@ -113,7 +114,7 @@ export default function FavoritesPage() {
           to: driver.userPosition || '',
         },
         userName: driver.userName,
-      } as Record<string, unknown>);
+      });
       setShowTripDetails(true);
     },
     [drivers, mainRef],
@@ -332,8 +333,7 @@ export default function FavoritesPage() {
               style={{ pointerEvents: 'auto' }}
             >
               <TripDetailsModal
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-                schedule={selectedRequest as any}
+                schedule={selectedRequest}
                 currentTime={currentTime}
                 onClose={() => {
                   setShowTripDetails(false);

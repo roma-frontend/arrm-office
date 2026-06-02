@@ -527,7 +527,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     api.tasks.getAllTasks,
     (userRole === 'admin' || userRole === 'superadmin') && convexId
       ? {
-          requesterId: convexId,
           selectedOrganizationId: effectiveOrgId
             ? (effectiveOrgId as Id<'organizations'>)
             : undefined,
@@ -579,7 +578,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       }
     >();
     rawTasksWithOptimistic.forEach((t) => {
-      const u = (t as any).assignedToUser;
+      const u = t.assignedToUser;
       if (!u?._id) return;
       const existing = map.get(u._id);
       if (existing) {
@@ -604,8 +603,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       const matchPriority = filterPriority === 'all' || t.priority === filterPriority;
       const matchStatus = filterStatus === 'all' || t.status === filterStatus;
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
-      const matchEmployee =
-        filterEmployee === 'all' || (t as any).assignedToUser?._id === filterEmployee;
+      const matchEmployee = filterEmployee === 'all' || t.assignedToUser?._id === filterEmployee;
       return matchPriority && matchStatus && matchSearch && matchEmployee;
     });
   }, [rawTasksWithOptimistic, filterPriority, filterStatus, search, filterEmployee]);
@@ -766,7 +764,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         {/* Priority filter */}
         <CustomSelect
           value={filterPriority}
-          onChange={(v) => setFilterPriority(v as any)}
+          onChange={(v) => setFilterPriority(v as Priority | 'all')}
           options={[
             { value: 'all', label: t('tasksClient.allPriorities') },
             { value: 'urgent', label: t('tasksClient.urgent') },
@@ -781,7 +779,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         {/* Status filter */}
         <CustomSelect
           value={filterStatus}
-          onChange={(v) => setFilterStatus(v as any)}
+          onChange={(v) => setFilterStatus(v as Status | 'all')}
           options={[
             { value: 'all', label: t('tasksClient.allStatuses') },
             { value: 'pending', label: t('statuses.pending') },

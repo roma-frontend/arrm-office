@@ -7,6 +7,7 @@ export const settings = {
     stripeCustomerId: v.string(),
     stripeSubscriptionId: v.string(),
     stripeSessionId: v.optional(v.string()),
+    stripePriceId: v.optional(v.string()),
     plan: v.union(v.literal('starter'), v.literal('professional'), v.literal('enterprise')),
     status: v.union(
       v.literal('trialing'),
@@ -21,6 +22,15 @@ export const settings = {
     currentPeriodEnd: v.optional(v.number()),
     cancelAtPeriodEnd: v.boolean(),
     trialEnd: v.optional(v.number()),
+    metadata: v.optional(
+      v.object({
+        manual: v.optional(v.boolean()),
+        customPrice: v.optional(v.number()),
+        notes: v.optional(v.string()),
+        createdBy: v.optional(v.id('users')),
+        createdAt: v.optional(v.number()),
+      }),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

@@ -5,6 +5,7 @@ import type { Id } from '../../../../../convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { cookies } from 'next/headers';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
@@ -12,28 +13,30 @@ export const POST = withCsrfProtection(async (req: Request) => {
     const locale = cookieStore.get('i18nextLng')?.value || 'en';
     const { t } = await getServerTranslation('common', locale);
 
-    const { leaveId, requesterId, startDate, endDate, days, reason, type } = await req.json();
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
+    }
+    const requesterId = auth.payload.userId;
+    const convexAuth = { token: auth.token };
 
-    if (!leaveId || !requesterId) {
-      return NextResponse.json(
-        { success: false, message: 'Missing leaveId or requesterId' },
-        { status: 400 },
-      );
+    const { leaveId, startDate, endDate, days, reason, type } = await req.json();
+
+    if (!leaveId) {
+      return NextResponse.json({ success: false, message: 'Missing leaveId' }, { status: 400 });
     }
 
     // Get the leave to validate
-    const leaves = await fetchQuery(api.leaves.getAllLeaves, { requesterId: requesterId as any });
-    const leave = (leaves as any[]).find((l: any) => l._id === leaveId);
+    const leaves = await fetchQuery(api.leaves.getAllLeaves, {}, convexAuth);
+    const leave = leaves.find((l) => l._id === leaveId);
 
     if (!leave) {
       return NextResponse.json({ success: false, message: 'Leave request not found' });
     }
 
     // Get requester
-    const users = await fetchQuery(api.users.queries.getAllUsers, {
-      requesterId: requesterId as any,
-    });
-    const requester = (users as any[]).find((u: any) => u._id === requesterId);
+    const users = await fetchQuery(api.users.queries.getAllUsers, {}, convexAuth);
+    const requester = users.find((u) => u._id === requesterId);
 
     if (!requester) {
       return NextResponse.json({ success: false, message: 'User not found' });
@@ -57,15 +60,18 @@ export const POST = withCsrfProtection(async (req: Request) => {
       });
     }
 
-    await fetchMutation(api.leaves.updateLeave, {
-      leaveId: leaveId as Id<'leaveRequests'>,
-      requesterId: requesterId as Id<'users'>,
-      ...(startDate && { startDate }),
-      ...(endDate && { endDate }),
-      ...(days && { days }),
-      ...(reason && { reason }),
-      ...(type && { type }),
-    });
+    await fetchMutation(
+      api.leaves.updateLeave,
+      {
+        leaveId: leaveId as Id<'leaveRequests'>,
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
+        ...(days && { days }),
+        ...(reason && { reason }),
+        ...(type && { type }),
+      },
+      convexAuth,
+    );
 
     return NextResponse.json({
       success: true,

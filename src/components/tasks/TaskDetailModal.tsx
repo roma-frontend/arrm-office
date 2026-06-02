@@ -478,7 +478,7 @@ export function TaskDetailModal({ task, currentUserId, userRole, onClose }: Prop
                 )}
                 {comments?.map((c) => (
                   <div key={c._id} className="flex gap-3">
-                    <Avatar name={c.author?.name ?? '?'} url={(c.author as any)?.avatarUrl} />
+                    <Avatar name={c.author?.name ?? '?'} url={c.author?.avatarUrl} />
                     <div className="flex-1 bg-(--background-subtle) rounded-2xl px-4 py-3">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-semibold text-(--text-primary)">

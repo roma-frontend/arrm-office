@@ -115,7 +115,6 @@ export default function LeaveEditClient() {
       const days = calculateDays(startDate, endDate);
       await updateLeaveMutation({
         leaveId,
-        requesterId: user.id as Id<'users'>,
         type,
         startDate,
         endDate,

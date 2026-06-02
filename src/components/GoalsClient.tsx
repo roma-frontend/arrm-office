@@ -225,7 +225,7 @@ function CreateObjectiveWizard({
     <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[95vh]">
       {/* Header */}
       <DialogHeader className="px-5 pt-5 pb-0">
-        <DialogTitle>{t('goals.wizard.title', 'Create Objective') as any}</DialogTitle>
+        <DialogTitle>{t('goals.wizard.title', 'Create Objective')}</DialogTitle>
       </DialogHeader>
 
       <div className="flex flex-col">
@@ -284,29 +284,31 @@ function CreateObjectiveWizard({
           {step === 0 && (
             <div className="space-y-4">
               <div>
-                <Label>{t('goals.wizard.titleLabel', 'Objective Title') as any}</Label>
+                <Label>{t('goals.wizard.titleLabel', 'Objective Title')}</Label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={
-                    t('goals.wizard.titlePlaceholder', 'e.g. Increase customer satisfaction') as any
-                  }
+                  placeholder={t(
+                    'goals.wizard.titlePlaceholder',
+                    'e.g. Increase customer satisfaction',
+                  )}
                 />
               </div>
               <div>
-                <Label>{t('goals.wizard.description', 'Description') as any}</Label>
+                <Label>{t('goals.wizard.description', 'Description')}</Label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder={
-                    t('goals.wizard.descPlaceholder', 'What does achieving this look like?') as any
-                  }
+                  placeholder={t(
+                    'goals.wizard.descPlaceholder',
+                    'What does achieving this look like?',
+                  )}
                   rows={3}
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>{t('goals.wizard.level', 'Level') as any}</Label>
+                  <Label>{t('goals.wizard.level', 'Level')}</Label>
                   <Select value={level} onValueChange={(v) => setLevel(v as ObjectiveLevel)}>
                     <SelectTrigger>
                       <SelectValue />
@@ -314,32 +316,32 @@ function CreateObjectiveWizard({
                     <SelectContent>
                       {canCreateCompany && (
                         <SelectItem value="company">
-                          {t('goals.level.company', 'Company') as any}
+                          {t('goals.level.company', 'Company')}
                         </SelectItem>
                       )}
                       {canCreateTeam && (
-                        <SelectItem value="team">{t('goals.level.team', 'Team') as any}</SelectItem>
+                        <SelectItem value="team">{t('goals.level.team', 'Team')}</SelectItem>
                       )}
                       <SelectItem value="individual">
-                        {t('goals.level.individual', 'Individual') as any}
+                        {t('goals.level.individual', 'Individual')}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {level === 'team' && (
                   <div>
-                    <Label>{t('goals.wizard.department', 'Department') as any}</Label>
+                    <Label>{t('goals.wizard.department', 'Department')}</Label>
                     <Input
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      placeholder={t('goals.wizard.deptPlaceholder', 'e.g. Engineering') as any}
+                      placeholder={t('goals.wizard.deptPlaceholder', 'e.g. Engineering')}
                     />
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>{t('goals.wizard.period', 'Period') as any}</Label>
+                  <Label>{t('goals.wizard.period', 'Period')}</Label>
                   <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
                     <SelectTrigger>
                       <SelectValue />
@@ -356,7 +358,7 @@ function CreateObjectiveWizard({
                   </Select>
                 </div>
                 <div>
-                  <Label>{t('goals.wizard.year', 'Year') as any}</Label>
+                  <Label>{t('goals.wizard.year', 'Year')}</Label>
                   <Select
                     value={String(periodYear)}
                     onValueChange={(v) => setPeriodYear(Number(v))}
@@ -374,7 +376,7 @@ function CreateObjectiveWizard({
               </div>
               {parentOptions.length > 0 && (
                 <div>
-                  <Label>{t('goals.wizard.alignTo', 'Align to Parent Objective') as any}</Label>
+                  <Label>{t('goals.wizard.alignTo', 'Align to Parent Objective')}</Label>
                   <Select value={parentId} onValueChange={setParentId}>
                     <SelectTrigger>
                       <SelectValue
@@ -401,19 +403,14 @@ function CreateObjectiveWizard({
           {step === 1 && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {
-                  t(
-                    'goals.wizard.krHint',
-                    'Define measurable outcomes. Weights should sum to 100.',
-                  ) as any
-                }
+                {t('goals.wizard.krHint', 'Define measurable outcomes. Weights should sum to 100.')}
               </p>
               {keyResults.map((kr, i) => (
                 <Card key={i} className="relative">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">
-                        {t('goals.wizard.kr', 'Key Result') as any} #{i + 1}
+                        {t('goals.wizard.kr', 'Key Result')} #{i + 1}
                       </span>
                       {keyResults.length > 1 && (
                         <Button
@@ -429,15 +426,11 @@ function CreateObjectiveWizard({
                     <Input
                       value={kr.title}
                       onChange={(e) => updateKR(i, 'title', e.target.value)}
-                      placeholder={
-                        t('goals.wizard.krTitlePlaceholder', 'e.g. Reach 95% NPS score') as any
-                      }
+                      placeholder={t('goals.wizard.krTitlePlaceholder', 'e.g. Reach 95% NPS score')}
                     />
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div>
-                        <Label className="text-xs">
-                          {t('goals.wizard.metric', 'Metric') as any}
-                        </Label>
+                        <Label className="text-xs">{t('goals.wizard.metric', 'Metric')}</Label>
                         <Select
                           value={kr.metricType}
                           onValueChange={(v) => updateKR(i, 'metricType', v)}
@@ -447,23 +440,23 @@ function CreateObjectiveWizard({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="number">
-                              {t('goals.metric.number', 'Number') as any}
+                              {t('goals.metric.number', 'Number')}
                             </SelectItem>
                             <SelectItem value="percentage">
-                              {t('goals.metric.percentage', 'Percentage') as any}
+                              {t('goals.metric.percentage', 'Percentage')}
                             </SelectItem>
                             <SelectItem value="currency">
-                              {t('goals.metric.currency', 'Currency') as any}
+                              {t('goals.metric.currency', 'Currency')}
                             </SelectItem>
                             <SelectItem value="boolean">
-                              {t('goals.metric.boolean', 'Yes/No') as any}
+                              {t('goals.metric.boolean', 'Yes/No')}
                             </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
                         <Label className="text-xs">
-                          {t('goals.wizard.direction', 'Direction') as any}
+                          {t('goals.wizard.direction', 'Direction')}
                         </Label>
                         <Select
                           value={kr.direction}
@@ -474,16 +467,16 @@ function CreateObjectiveWizard({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="increase">
-                              {t('goals.direction.increase', 'Increase') as any}
+                              {t('goals.direction.increase', 'Increase')}
                             </SelectItem>
                             <SelectItem value="decrease">
-                              {t('goals.direction.decrease', 'Decrease') as any}
+                              {t('goals.direction.decrease', 'Decrease')}
                             </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-xs">{t('goals.wizard.start', 'Start') as any}</Label>
+                        <Label className="text-xs">{t('goals.wizard.start', 'Start')}</Label>
                         <Input
                           type="number"
                           className="h-8 text-xs"
@@ -492,9 +485,7 @@ function CreateObjectiveWizard({
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">
-                          {t('goals.wizard.target', 'Target') as any}
-                        </Label>
+                        <Label className="text-xs">{t('goals.wizard.target', 'Target')}</Label>
                         <Input
                           type="number"
                           className="h-8 text-xs"
@@ -505,18 +496,16 @@ function CreateObjectiveWizard({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-xs">{t('goals.wizard.unit', 'Unit') as any}</Label>
+                        <Label className="text-xs">{t('goals.wizard.unit', 'Unit')}</Label>
                         <Input
                           className="h-8 text-xs"
                           value={kr.unit}
                           onChange={(e) => updateKR(i, 'unit', e.target.value)}
-                          placeholder={t('goals.wizard.unitPlaceholder', 'e.g. %, $, users') as any}
+                          placeholder={t('goals.wizard.unitPlaceholder', 'e.g. %, $, users')}
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">
-                          {t('goals.wizard.weight', 'Weight %') as any}
-                        </Label>
+                        <Label className="text-xs">{t('goals.wizard.weight', 'Weight %')}</Label>
                         <Input
                           type="number"
                           className="h-8 text-xs"
@@ -531,7 +520,7 @@ function CreateObjectiveWizard({
                 </Card>
               ))}
               <Button variant="outline" size="sm" onClick={addKR} className="w-full">
-                <Plus className="h-4 w-4 mr-1" /> {t('goals.wizard.addKR', 'Add Key Result') as any}
+                <Plus className="h-4 w-4 mr-1" /> {t('goals.wizard.addKR', 'Add Key Result')}
               </Button>
               {keyResults.reduce((s: any, kr: any) => s + kr.weight, 0) !== 100 && (
                 <p className="text-xs text-destructive">
@@ -563,7 +552,7 @@ function CreateObjectiveWizard({
               </Card>
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">
-                  {t('goals.wizard.krSummary', 'Key Results') as any} ({keyResults.length})
+                  {t('goals.wizard.krSummary', 'Key Results')} ({keyResults.length})
                 </h4>
                 {keyResults.map((kr, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm p-2 border rounded">
@@ -590,7 +579,7 @@ function CreateObjectiveWizard({
           </Button>
           {step < 2 ? (
             <Button onClick={() => setStep(step + 1)} disabled={step === 0 && !title.trim()}>
-              {t('common.next', 'Next') as any} <ChevronRight className="h-4 w-4 ml-1" />
+              {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={submitting}>
@@ -656,15 +645,13 @@ function CheckinDialog({
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>{t('goals.checkin.title', 'Check-in') as any}</DialogTitle>
+        <DialogTitle>{t('goals.checkin.title', 'Check-in')}</DialogTitle>
       </DialogHeader>
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">{krTitle}</p>
         <div className="flex items-center gap-3">
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">
-              {t('goals.checkin.current', 'Current') as any}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('goals.checkin.current', 'Current')}</p>
             <p className="text-lg font-bold">
               {currentValue}
               {unit}
@@ -672,15 +659,15 @@ function CheckinDialog({
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
           <div className="flex-1">
-            <Label className="text-xs">{t('goals.checkin.newValue', 'New Value') as any}</Label>
+            <Label className="text-xs">{t('goals.checkin.newValue', 'New Value')}</Label>
             {metricType === 'boolean' ? (
               <Select value={String(newValue)} onValueChange={(v) => setNewValue(Number(v))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">{t('goals.checkin.no', 'No') as any}</SelectItem>
-                  <SelectItem value="1">{t('goals.checkin.yes', 'Yes') as any}</SelectItem>
+                  <SelectItem value="0">{t('goals.checkin.no', 'No')}</SelectItem>
+                  <SelectItem value="1">{t('goals.checkin.yes', 'Yes')}</SelectItem>
                 </SelectContent>
               </Select>
             ) : (
@@ -692,9 +679,7 @@ function CheckinDialog({
             )}
           </div>
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">
-              {t('goals.checkin.target', 'Target') as any}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('goals.checkin.target', 'Target')}</p>
             <p className="text-lg font-bold text-primary">
               {targetValue}
               {unit}
@@ -702,7 +687,7 @@ function CheckinDialog({
           </div>
         </div>
         <div>
-          <Label>{t('goals.checkin.confidence', 'Confidence') as any}</Label>
+          <Label>{t('goals.checkin.confidence', 'Confidence')}</Label>
           <div className="flex gap-2 mt-1">
             {(['high', 'medium', 'low'] as const).map((c: any) => (
               <Button
@@ -716,7 +701,7 @@ function CheckinDialog({
                 {c === 'medium' && '🟡'}
                 {c === 'low' && '🔴'}
                 <span className="ml-1 text-xs capitalize">
-                  {t(`goals.confidence.${c}`, c) as any}
+                  {String(t(`goals.confidence.${c}`, c))}
                 </span>
               </Button>
             ))}
@@ -727,13 +712,13 @@ function CheckinDialog({
           <Textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder={t('goals.checkin.notePlaceholder', 'What progress was made?') as any}
+            placeholder={t('goals.checkin.notePlaceholder', 'What progress was made?')}
             rows={2}
           />
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            {t('common.cancel', 'Cancel') as any}
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
             {submitting ? '...' : t('goals.checkin.submit', 'Submit Check-in')}
@@ -803,7 +788,7 @@ function ObjectiveDetailDialog({
                   : 'bg-gray-100 text-gray-600'
             }
           >
-            {t(`goals.status.${objective.status}`, objective.status) as any}
+            {t(`goals.status.${objective.status}`, objective.status)}
           </Badge>
         </div>
 
@@ -814,9 +799,7 @@ function ObjectiveDetailDialog({
         {/* Overall Progress */}
         <div>
           <div className="flex items-center justify-between text-sm mb-1">
-            <span className="font-medium">
-              {t('goals.overallProgress', 'Overall Progress') as any}
-            </span>
+            <span className="font-medium">{t('goals.overallProgress', 'Overall Progress')}</span>
             <span className={`font-bold ${getProgressColor(objective.progress)}`}>
               {objective.progress}%
             </span>
@@ -826,7 +809,7 @@ function ObjectiveDetailDialog({
 
         {/* Key Results */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold">{t('goals.keyResults', 'Key Results') as any}</h4>
+          <h4 className="text-sm font-semibold">{t('goals.keyResults', 'Key Results')}</h4>
           {objective.keyResults.map((kr: any) => {
             const pct = kr.completionPercent;
             return (
@@ -846,7 +829,7 @@ function ObjectiveDetailDialog({
                           onClick={() => onCheckin(kr)}
                         >
                           <TrendingUp className="h-3 w-3 mr-1" />
-                          {t('goals.checkin.btn', 'Check-in') as any}
+                          {t('goals.checkin.btn', 'Check-in')}
                         </Button>
                       )}
                     </div>
@@ -869,7 +852,7 @@ function ObjectiveDetailDialog({
                   {kr.checkins.length > 0 && (
                     <div className="border-t pt-2 mt-2">
                       <p className="text-xs font-medium mb-1">
-                        {t('goals.recentCheckins', 'Recent Check-ins') as any}
+                        {t('goals.recentCheckins', 'Recent Check-ins')}
                       </p>
                       {kr.checkins.slice(0, 3).map((c: any) => (
                         <div
@@ -899,7 +882,7 @@ function ObjectiveDetailDialog({
         {objective.children && objective.children.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-2">
-              {t('goals.alignedGoals', 'Aligned Goals') as any}
+              {t('goals.alignedGoals', 'Aligned Goals')}
             </h4>
             {objective.children.map((child: any) => (
               <div
@@ -933,7 +916,7 @@ function ObjectiveDetailDialog({
               }}
             >
               <CheckCircle className="h-4 w-4 mr-1" />
-              {t('goals.markComplete', 'Mark Complete') as any}
+              {t('goals.markComplete', 'Mark Complete')}
             </Button>
             <Button
               size="sm"
@@ -948,7 +931,7 @@ function ObjectiveDetailDialog({
                 }
               }}
             >
-              {t('common.delete', 'Delete') as any}
+              {t('common.delete', 'Delete')}
             </Button>
           </div>
         )}
@@ -1043,10 +1026,10 @@ export default function GoalsClient() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              {t('goals.title', 'OKR & Goals') as any}
+              {t('goals.title', 'OKR & Goals')}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {t('goals.subtitle', 'Set objectives, track key results, and align your team') as any}
+              {t('goals.subtitle', 'Set objectives, track key results, and align your team')}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -1068,7 +1051,7 @@ export default function GoalsClient() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('goals.allPeriods', 'All') as any}</SelectItem>
+                <SelectItem value="all">{t('goals.allPeriods', 'All')}</SelectItem>
                 <SelectItem value="Q1">Q1</SelectItem>
                 <SelectItem value="Q2">Q2</SelectItem>
                 <SelectItem value="Q3">Q3</SelectItem>
@@ -1089,7 +1072,7 @@ export default function GoalsClient() {
               }}
               className="flex-1 sm:flex-initial"
             >
-              <Plus className="h-4 w-4 mr-1" /> {t('goals.create', 'New Objective') as any}
+              <Plus className="h-4 w-4 mr-1" /> {t('goals.create', 'New Objective')}
             </Button>
           </div>
         </div>
@@ -1106,7 +1089,7 @@ export default function GoalsClient() {
               <div>
                 <p className="text-2xl font-bold">{teamProgress.total}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('goals.stats.total', 'Total Objectives') as any}
+                  {t('goals.stats.total', 'Total Objectives')}
                 </p>
               </div>
             </CardContent>
@@ -1119,7 +1102,7 @@ export default function GoalsClient() {
               <div>
                 <p className="text-2xl font-bold">{teamProgress.avgProgress}%</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('goals.stats.avgProgress', 'Avg Progress') as any}
+                  {t('goals.stats.avgProgress', 'Avg Progress')}
                 </p>
               </div>
             </CardContent>
@@ -1132,7 +1115,7 @@ export default function GoalsClient() {
               <div>
                 <p className="text-2xl font-bold">{teamProgress.onTrack}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('goals.stats.onTrack', 'On Track') as any}
+                  {t('goals.stats.onTrack', 'On Track')}
                 </p>
               </div>
             </CardContent>
@@ -1145,7 +1128,7 @@ export default function GoalsClient() {
               <div>
                 <p className="text-2xl font-bold">{teamProgress.atRisk + teamProgress.behind}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('goals.stats.atRisk', 'At Risk / Behind') as any}
+                  {t('goals.stats.atRisk', 'At Risk / Behind')}
                 </p>
               </div>
             </CardContent>
@@ -1161,7 +1144,7 @@ export default function GoalsClient() {
             value="my"
           >
             <User className="h-4 w-4 mr-1 hidden sm:inline" />
-            {t('goals.tabs.my', 'My Goals') as any}
+            {t('goals.tabs.my', 'My Goals')}
             {myObjectives && (
               <Badge variant="warning" className="ml-1 text-xs border-0">
                 {myObjectives.length}
@@ -1173,14 +1156,14 @@ export default function GoalsClient() {
             value="team"
           >
             <Users className="h-4 w-4 mr-1 hidden sm:inline" />
-            {t('goals.tabs.team', 'Team') as any}
+            {t('goals.tabs.team', 'Team')}
           </TabsTrigger>
           <TabsTrigger
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="company"
           >
             <Building2 className="h-4 w-4 mr-1 hidden sm:inline" />
-            {t('goals.tabs.company', 'Company') as any}
+            {t('goals.tabs.company', 'Company')}
           </TabsTrigger>
         </TabsList>
 
@@ -1191,9 +1174,9 @@ export default function GoalsClient() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Crosshair className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="font-medium">{t('goals.empty', 'No objectives yet') as any}</p>
+                <p className="font-medium">{t('goals.empty', 'No objectives yet')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('goals.emptyHint', 'Create your first objective to get started') as any}
+                  {t('goals.emptyHint', 'Create your first objective to get started')}
                 </p>
                 <Button
                   className="mt-4"
@@ -1206,7 +1189,7 @@ export default function GoalsClient() {
                     setShowWizard(true);
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-1" /> {t('goals.create', 'New Objective') as any}
+                  <Plus className="h-4 w-4 mr-1" /> {t('goals.create', 'New Objective')}
                 </Button>
               </CardContent>
             </Card>
@@ -1255,7 +1238,7 @@ export default function GoalsClient() {
                                 : 'bg-gray-100 text-gray-600'
                           }
                         >
-                          {t(`goals.status.${obj.status}`, obj.status) as any}
+                          {String(t(`goals.status.${obj.status}`, obj.status))}
                         </Badge>
                       </div>
                     </div>

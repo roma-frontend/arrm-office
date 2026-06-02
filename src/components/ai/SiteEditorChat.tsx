@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -103,11 +104,11 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
   const { isActive } = useSubscription();
 
   const usage = useQuery(api.aiSiteEditor.getCurrentMonthUsage, {
-    userId: userId as any,
+    userId: userId as Id<'users'>,
   });
 
   const history = useQuery(api.aiSiteEditor.getHistory, {
-    userId: userId as any,
+    userId: userId as Id<'users'>,
     limit: 10,
   });
 
@@ -303,293 +304,293 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
 
   return (
     <ErrorBoundary>
-    <div className="flex flex-col h-full space-y-4">
-      {/* Usage Stats — только для starter */}
-      {!isProfessionalOrHigher && usage && (
-        <Card className="p-4 bg-linear-to-r from-amber-100/10 to-orange-100/10 dark:from-amber-900/10 dark:to-orange-900/10 border-amber-300/20 dark:border-amber-800/20">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-amber-500 dark:text-amber-600 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
-                {t('aiSiteEditor.usageThisMonth')}
-              </h4>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <div className="text-amber-500 dark:text-amber-600">
-                    {t('aiSiteEditor.design')}
+      <div className="flex flex-col h-full space-y-4">
+        {/* Usage Stats — только для starter */}
+        {!isProfessionalOrHigher && usage && (
+          <Card className="p-4 bg-linear-to-r from-amber-100/10 to-orange-100/10 dark:from-amber-900/10 dark:to-orange-900/10 border-amber-300/20 dark:border-amber-800/20">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-500 dark:text-amber-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                  {t('aiSiteEditor.usageThisMonth')}
+                </h4>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <div className="text-amber-500 dark:text-amber-600">
+                      {t('aiSiteEditor.design')}
+                    </div>
+                    <div className="font-semibold text-amber-900 dark:text-amber-100">
+                      {usage.designChanges} / {features.aiSiteEditorDesignChanges}
+                    </div>
                   </div>
-                  <div className="font-semibold text-amber-900 dark:text-amber-100">
-                    {usage.designChanges} / {features.aiSiteEditorDesignChanges}
+                  <div>
+                    <div className="text-amber-600 dark:text-amber-500">
+                      {t('aiSiteEditor.content')}
+                    </div>
+                    <div className="font-semibold text-amber-900 dark:text-amber-100">
+                      {usage.contentChanges} / {features.aiSiteEditorContentChanges}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-amber-600 dark:text-amber-500">
+                      {t('aiSiteEditor.layout')}
+                    </div>
+                    <div className="font-semibold text-amber-900 dark:text-amber-100">
+                      {usage.layoutChanges} / {features.aiSiteEditorLayoutChanges}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <div className="text-amber-600 dark:text-amber-500">
-                    {t('aiSiteEditor.content')}
-                  </div>
-                  <div className="font-semibold text-amber-900 dark:text-amber-100">
-                    {usage.contentChanges} / {features.aiSiteEditorContentChanges}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-amber-600 dark:text-amber-500">
-                    {t('aiSiteEditor.layout')}
-                  </div>
-                  <div className="font-semibold text-amber-900 dark:text-amber-100">
-                    {usage.layoutChanges} / {features.aiSiteEditorLayoutChanges}
-                  </div>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 border-amber-300 dark:border-amber-700 md:border-amber-300/50 sm:min-w-[120px]"
+                  onClick={() => router.push('/settings?tab=billing')}
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  {t('aiSiteEditor.upgradeForUnlimited')}
+                </Button>
               </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Professional/Enterprise badge */}
+        {isProfessionalOrHigher && (
+          <Card className="p-4 bg-linear-to-r from-purple-900/10 to-blue-900/10 dark:from-purple-50/20 dark:to-blue-50/20 border-purple-700/30 dark:border-purple-300/20">
+            <div className="flex items-center gap-3">
+              <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <div>
+                <h4 className="font-semibold">
+                  {plan === 'professional'
+                    ? t('aiSiteEditor.professionalPlan')
+                    : t('aiSiteEditor.enterprisePlan')}
+                </h4>
+                <p className="text-sm">
+                  {t('aiSiteEditor.unlimited')} · {t('aiSiteEditor.aiAutoApplies')}
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Chat Messages */}
+        <Card className="flex-1 flex flex-col min-h-0">
+          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+            <div className="space-y-4">
+              {messages.map((msg: any, idx: any) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-lg p-4 ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : msg.role === 'system'
+                          ? 'bg-muted text-muted-foreground'
+                          : 'bg-secondary text-secondary-foreground'
+                    }`}
+                  >
+                    {/* Edit type badge */}
+                    {msg.editType && (
+                      <Badge variant="outline" className="mb-2">
+                        {getEditTypeIcon(msg.editType)}
+                        <span className="ml-1">{getEditTypeLabel(msg.editType)}</span>
+                      </Badge>
+                    )}
+
+                    {/* Message content */}
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {msg.content || (
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <ShieldLoader size="xs" variant="inline" />
+                          AI читает файлы и применяет изменения…
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Applied files list with per-file rollback */}
+                    {msg.appliedFiles && msg.appliedFiles.length > 0 && (
+                      <div className="mt-3 space-y-1 border-t pt-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          📂 Изменённые файлы:
+                        </p>
+                        {msg.appliedFiles.map((af: any) => {
+                          const key = `${af.filePath}:${af.timestamp}`;
+                          const isRollingThisBack = rollingBack === key;
+                          return (
+                            <div
+                              key={key}
+                              className="flex items-center justify-between gap-2 rounded bg-background/50 px-2 py-1"
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <FileCode2 className="h-3 w-3 shrink-0 text-green-500" />
+                                <span className="text-xs truncate font-mono">{af.filePath}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 shrink-0 text-xs"
+                                disabled={isRollingThisBack}
+                                onClick={() => handleRollback(af.filePath, af.timestamp)}
+                              >
+                                {isRollingThisBack ? (
+                                  <ShieldLoader size="xs" variant="inline" />
+                                ) : (
+                                  <>
+                                    <Undo2 className="h-3 w-3 mr-1" />
+                                    Откат
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Global loading indicator */}
+              {isLoading && messages[messages.length - 1]?.content === '' && (
+                <div className="flex justify-start">
+                  <div className="bg-secondary text-secondary-foreground rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Sparkles className="h-4 w-4 animate-pulse text-purple-500" />
+                      AI читает код и применяет изменения…
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          {/* Input area */}
+          <div className="p-4 border-t">
+            <div className="flex gap-2">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder={t('aiSiteEditor.inputPlaceholder')}
+                className="min-h-[60px] resize-none"
+                disabled={isLoading}
+              />
               <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 border-amber-300 dark:border-amber-700 md:border-amber-300/50 sm:min-w-[120px]"
-                onClick={() => router.push('/settings?tab=billing')}
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading}
+                size="icon"
+                className="h-[60px] w-[60px]"
               >
-                <Crown className="h-4 w-4 mr-2" />
-                {t('aiSiteEditor.upgradeForUnlimited')}
+                {isLoading ? (
+                  <ShieldLoader size="sm" variant="inline" />
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
               </Button>
             </div>
           </div>
         </Card>
-      )}
 
-      {/* Professional/Enterprise badge */}
-      {isProfessionalOrHigher && (
-        <Card className="p-4 bg-linear-to-r from-purple-900/10 to-blue-900/10 dark:from-purple-50/20 dark:to-blue-50/20 border-purple-700/30 dark:border-purple-300/20">
-          <div className="flex items-center gap-3">
-            <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            <div>
-              <h4 className="font-semibold">
-                {plan === 'professional'
-                  ? t('aiSiteEditor.professionalPlan')
-                  : t('aiSiteEditor.enterprisePlan')}
-              </h4>
-              <p className="text-sm">
-                {t('aiSiteEditor.unlimited')} · {t('aiSiteEditor.aiAutoApplies')}
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Chat Messages */}
-      <Card className="flex-1 flex flex-col min-h-0">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((msg: any, idx: any) => (
-              <div
-                key={idx}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+        {/* Backup / Rollback panel */}
+        {backups.length > 0 && (
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <History className="h-4 w-4" />
+                История изменений ({backups.length} backup-ов)
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowBackups((v) => !v);
+                  fetchBackups();
+                }}
               >
-                <div
-                  className={`max-w-[85%] rounded-lg p-4 ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : msg.role === 'system'
-                        ? 'bg-muted text-muted-foreground'
-                        : 'bg-secondary text-secondary-foreground'
-                  }`}
-                >
-                  {/* Edit type badge */}
-                  {msg.editType && (
-                    <Badge variant="outline" className="mb-2">
-                      {getEditTypeIcon(msg.editType)}
-                      <span className="ml-1">{getEditTypeLabel(msg.editType)}</span>
-                    </Badge>
-                  )}
+                <RefreshCw className="h-3 w-3 mr-1" />
+                {showBackups ? 'Скрыть' : 'Показать'}
+              </Button>
+            </div>
 
-                  {/* Message content */}
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {msg.content || (
-                      <span className="flex items-center gap-2 text-muted-foreground">
-                        <ShieldLoader size="xs" variant="inline" />
-                        AI читает файлы и применяет изменения…
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Applied files list with per-file rollback */}
-                  {msg.appliedFiles && msg.appliedFiles.length > 0 && (
-                    <div className="mt-3 space-y-1 border-t pt-3">
-                      <p className="text-xs font-medium text-muted-foreground mb-1">
-                        📂 Изменённые файлы:
-                      </p>
-                      {msg.appliedFiles.map((af: any) => {
-                        const key = `${af.filePath}:${af.timestamp}`;
-                        const isRollingThisBack = rollingBack === key;
-                        return (
-                          <div
-                            key={key}
-                            className="flex items-center justify-between gap-2 rounded bg-background/50 px-2 py-1"
-                          >
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <FileCode2 className="h-3 w-3 shrink-0 text-green-500" />
-                              <span className="text-xs truncate font-mono">{af.filePath}</span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 shrink-0 text-xs"
-                              disabled={isRollingThisBack}
-                              onClick={() => handleRollback(af.filePath, af.timestamp)}
-                            >
-                              {isRollingThisBack ? (
-                                <ShieldLoader size="xs" variant="inline" />
-                              ) : (
-                                <>
-                                  <Undo2 className="h-3 w-3 mr-1" />
-                                  Откат
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        );
-                      })}
+            {showBackups && (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {backups.slice(0, 20).map((b: any) => {
+                  const key = `${b.originalPath}:${b.timestamp}`;
+                  const isRollingThisBack = rollingBack === key;
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between gap-2 text-sm p-2 rounded hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <FileCode2 className="h-3 w-3 shrink-0 text-blue-500" />
+                          <span className="font-mono text-xs truncate">{b.originalPath}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {formatDateTime(b.timestamp, i18n.language)} · {b.description}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 shrink-0"
+                        disabled={isRollingThisBack}
+                        onClick={() => handleRollback(b.originalPath, b.timestamp)}
+                      >
+                        {isRollingThisBack ? (
+                          <ShieldLoader size="xs" variant="inline" />
+                        ) : (
+                          <>
+                            <Undo2 className="h-3 w-3 mr-1" />
+                            Откат
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {/* Global loading indicator */}
-            {isLoading && messages[messages.length - 1]?.content === '' && (
-              <div className="flex justify-start">
-                <div className="bg-secondary text-secondary-foreground rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Sparkles className="h-4 w-4 animate-pulse text-purple-500" />
-                    AI читает код и применяет изменения…
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             )}
-          </div>
-        </ScrollArea>
+          </Card>
+        )}
 
-        {/* Input area */}
-        <div className="p-4 border-t">
-          <div className="flex gap-2">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder={t('aiSiteEditor.inputPlaceholder')}
-              className="min-h-[60px] resize-none"
-              disabled={isLoading}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              size="icon"
-              className="h-[60px] w-[60px]"
-            >
-              {isLoading ? (
-                <ShieldLoader size="sm" variant="inline" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Backup / Rollback panel */}
-      {backups.length > 0 && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold flex items-center gap-2 text-sm">
+        {/* Recent session history */}
+        {history && history.length > 0 && (
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm">
               <History className="h-4 w-4" />
-              История изменений ({backups.length} backup-ов)
+              {t('aiSiteEditor.recentChanges')}
             </h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setShowBackups((v) => !v);
-                fetchBackups();
-              }}
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              {showBackups ? 'Скрыть' : 'Показать'}
-            </Button>
-          </div>
-
-          {showBackups && (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {backups.slice(0, 20).map((b: any) => {
-                const key = `${b.originalPath}:${b.timestamp}`;
-                const isRollingThisBack = rollingBack === key;
-                return (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between gap-2 text-sm p-2 rounded hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <FileCode2 className="h-3 w-3 shrink-0 text-blue-500" />
-                        <span className="font-mono text-xs truncate">{b.originalPath}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {formatDateTime(b.timestamp, i18n.language)} · {b.description}
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 shrink-0"
-                      disabled={isRollingThisBack}
-                      onClick={() => handleRollback(b.originalPath, b.timestamp)}
-                    >
-                      {isRollingThisBack ? (
-                        <ShieldLoader size="xs" variant="inline" />
-                      ) : (
-                        <>
-                          <Undo2 className="h-3 w-3 mr-1" />
-                          Откат
-                        </>
-                      )}
-                    </Button>
+            <div className="space-y-2">
+              {history.slice(0, 5).map((session: any) => (
+                <div
+                  key={session._id}
+                  className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {getEditTypeIcon(session.editType)}
+                    <span className="text-muted-foreground truncate">
+                      {session.userMessage.substring(0, 60)}
+                      {session.userMessage.length > 60 ? '…' : ''}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* Recent session history */}
-      {history && history.length > 0 && (
-        <Card className="p-4">
-          <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-            <History className="h-4 w-4" />
-            {t('aiSiteEditor.recentChanges')}
-          </h3>
-          <div className="space-y-2">
-            {history.slice(0, 5).map((session: any) => (
-              <div
-                key={session._id}
-                className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {getEditTypeIcon(session.editType)}
-                  <span className="text-muted-foreground truncate">
-                    {session.userMessage.substring(0, 60)}
-                    {session.userMessage.length > 60 ? '…' : ''}
-                  </span>
+                  {session.status === 'completed' && (
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                  )}
                 </div>
-                {session.status === 'completed' && (
-                  <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-    </div>
+              ))}
+            </div>
+          </Card>
+        )}
+      </div>
     </ErrorBoundary>
   );
 }

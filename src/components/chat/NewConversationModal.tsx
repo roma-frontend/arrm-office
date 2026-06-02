@@ -68,15 +68,12 @@ export function NewConversationModal({
     api.chat.queries.getOrgUsers,
     isAllOrgs || !effectiveOrgId
       ? 'skip'
-      : { organizationId: effectiveOrgId as any, currentUserId },
+      : { organizationId: effectiveOrgId as Id<'organizations'>, currentUserId },
   );
 
   // In "All orgs" mode we load users via users.getAllUsers which,
   // for superadmin, returns employees from every organization.
-  const allOrgUsers = useQuery(
-    api.users.queries.getAllUsers,
-    isAllOrgs ? { requesterId: currentUserId } : 'skip',
-  );
+  const allOrgUsers = useQuery(api.users.queries.getAllUsers, isAllOrgs ? {} : 'skip');
 
   // Normalized users list used by the UI (always has organizationId attached).
   const users = React.useMemo(() => {
@@ -160,7 +157,7 @@ export function NewConversationModal({
         if (!targetId) return;
 
         const convId = await getOrCreateDM({
-          organizationId: dmOrgId as any,
+          organizationId: dmOrgId as Id<'organizations'>,
           currentUserId,
           targetUserId: targetId,
         });
@@ -190,7 +187,7 @@ export function NewConversationModal({
         }
 
         const convId = await createGroup({
-          organizationId: groupOrgId as any,
+          organizationId: groupOrgId as Id<'organizations'>,
           createdBy: currentUserId,
           name: groupName.trim(),
           memberIds: selectedUsers,

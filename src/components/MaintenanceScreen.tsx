@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { Wrench, Clock, Eye } from 'lucide-react';
@@ -33,7 +34,7 @@ export function MaintenanceScreen({ forceShow = false }: { forceShow?: boolean }
   // Fetch maintenance mode status
   const maintenance = useQuery(
     api.admin.getMaintenanceMode,
-    organizationId ? { organizationId: organizationId as any } : 'skip',
+    organizationId ? { organizationId: organizationId as Id<'organizations'> } : 'skip',
   );
 
   // Update countdown timer

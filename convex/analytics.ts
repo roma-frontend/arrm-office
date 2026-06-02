@@ -3,7 +3,6 @@ import { v } from 'convex/values';
 import { isSuperadminEmail } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { requireRequester } from './lib/requireRequester';
 import { getAuthCaller } from './lib/getAuthCaller';
 
 // ── Get analytics overview ─────────────────────────────────────────────────
@@ -80,10 +79,9 @@ export const getAnalyticsOverview = query({
 
 // ── Get department statistics ──────────────────────────────────────────────
 export const getDepartmentStats = query({
-  args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { requesterId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
     let users = await ctx.db.query('users').take(XLARGE_LIST_CAP);
 
     if (requester) {
@@ -156,10 +154,9 @@ export const getDepartmentStats = query({
 
 // ── Get leave trends (last 6 months) ───────────────────────────────────────
 export const getLeaveTrends = query({
-  args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { requesterId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
 
     let leaves;
     if (requester) {
@@ -234,10 +231,9 @@ export const getUserAnalytics = query({
 
 // ── Get team calendar (who's on leave) ────────────────────────────────────
 export const getTeamCalendar = query({
-  args: { requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { requesterId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
+  args: {},
+  handler: async (ctx) => {
+    const requester = await getAuthCaller(ctx);
     let leaves = await ctx.db
       .query('leaveRequests')
       .withIndex('by_status', (q) => q.eq('status', 'approved'))
@@ -280,10 +276,9 @@ export const getTeamCalendar = query({
 
 // ── Dashboard Stats (aggregated counts — no full data transfer) ────────────
 export const getDashboardStats = query({
-  args: { requesterId: v.id('users'), organizationId: v.optional(v.id('organizations')) },
-  handler: async (ctx, { requesterId, organizationId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
+  args: { organizationId: v.optional(v.id('organizations')) },
+  handler: async (ctx, { organizationId }) => {
+    const requester = await getAuthCaller(ctx);
     if (!requester)
       return {
         totalEmployees: 0,
@@ -376,10 +371,9 @@ export const getDashboardStats = query({
 
 // ── Recent Leaves (last 6, lightweight) ────────────────────────────────────
 export const getRecentLeaves = query({
-  args: { requesterId: v.id('users'), organizationId: v.optional(v.id('organizations')) },
-  handler: async (ctx, { requesterId, organizationId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
+  args: { organizationId: v.optional(v.id('organizations')) },
+  handler: async (ctx, { organizationId }) => {
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     const isSuperadminUser = requester.role === 'superadmin';

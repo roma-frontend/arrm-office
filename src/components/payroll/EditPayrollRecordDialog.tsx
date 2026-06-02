@@ -22,7 +22,7 @@ interface PayrollRecord {
   overtimeHours?: number;
   notes?: string;
   status: string;
-  user?: { name?: string };
+  user?: { name?: string } | null;
 }
 
 interface Props {

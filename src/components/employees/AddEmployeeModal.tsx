@@ -161,7 +161,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     setSubmitting(true);
     try {
       await createUser({
-        adminId: currentUser.id as any,
+        adminId: currentUser.id as Id<'users'>,
         name,
         email,
         passwordHash: 'temp-password-will-be-changed',
@@ -178,7 +178,10 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       fetch('/api/telegram/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'new_employee', data: { name, email, department, position, role } }),
+        body: JSON.stringify({
+          type: 'new_employee',
+          data: { name, email, department, position, role },
+        }),
       }).catch(() => {});
       onClose();
     } catch (err: unknown) {

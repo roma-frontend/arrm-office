@@ -124,9 +124,9 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="w-20 h-20 rounded-full overflow-hidden bg-linear-to-br from-[#2563eb] to-[#0ea5e9] flex items-center justify-center text-white font-bold text-2xl shrink-0">
-                {(employee as any).avatarUrl ? (
+                {employee.avatarUrl ? (
                   <img
-                    src={(employee as any).avatarUrl}
+                    src={employee.avatarUrl}
                     alt={employee.name}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"

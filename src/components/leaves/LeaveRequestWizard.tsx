@@ -85,7 +85,7 @@ export function LeaveRequestWizard({
             organizationId: selectedOrgId as Id<'organizations'>,
             superadminUserId: safeUserId,
           }
-        : { requesterId: safeUserId }
+        : {}
       : 'skip',
   );
   const currentUser = useQuery(

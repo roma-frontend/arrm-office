@@ -133,7 +133,7 @@ function CreateVacancyWizard({
   return (
     <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[95vh]">
       <DialogHeader className="px-5 pt-5 pb-0">
-        <DialogTitle>{t('recruitment.wizard.title', 'Create Vacancy') as any}</DialogTitle>
+        <DialogTitle>{t('recruitment.wizard.title', 'Create Vacancy')}</DialogTitle>
       </DialogHeader>
 
       <div className="flex flex-col">
@@ -186,40 +186,36 @@ function CreateVacancyWizard({
           {step === 0 && (
             <div className="space-y-4">
               <div>
-                <Label>{t('recruitment.fields.title', 'Job Title') as any}</Label>
+                <Label>{t('recruitment.fields.title', 'Job Title')}</Label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={
-                    t(
-                      'recruitment.fields.titlePlaceholder',
-                      'e.g. Senior Frontend Developer',
-                    ) as any
-                  }
+                  placeholder={t(
+                    'recruitment.fields.titlePlaceholder',
+                    'e.g. Senior Frontend Developer',
+                  )}
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>{t('recruitment.fields.department', 'Department') as any}</Label>
+                  <Label>{t('recruitment.fields.department', 'Department')}</Label>
                   <Input
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    placeholder={t('recruitment.fields.deptPlaceholder', 'e.g. Engineering') as any}
+                    placeholder={t('recruitment.fields.deptPlaceholder', 'e.g. Engineering')}
                   />
                 </div>
                 <div>
-                  <Label>{t('recruitment.fields.location', 'Location') as any}</Label>
+                  <Label>{t('recruitment.fields.location', 'Location')}</Label>
                   <Input
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder={
-                      t('recruitment.fields.locPlaceholder', 'e.g. Remote / Yerevan') as any
-                    }
+                    placeholder={t('recruitment.fields.locPlaceholder', 'e.g. Remote / Yerevan')}
                   />
                 </div>
               </div>
               <div>
-                <Label>{t('recruitment.fields.type', 'Employment Type') as any}</Label>
+                <Label>{t('recruitment.fields.type', 'Employment Type')}</Label>
                 <Select
                   value={employmentType}
                   onValueChange={(v) => setEmploymentType(v as typeof employmentType)}
@@ -229,16 +225,16 @@ function CreateVacancyWizard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="full_time">
-                      {t('recruitment.type.fullTime', 'Full-time') as any}
+                      {t('recruitment.type.fullTime', 'Full-time')}
                     </SelectItem>
                     <SelectItem value="part_time">
-                      {t('recruitment.type.partTime', 'Part-time') as any}
+                      {t('recruitment.type.partTime', 'Part-time')}
                     </SelectItem>
                     <SelectItem value="contract">
-                      {t('recruitment.type.contract', 'Contract') as any}
+                      {t('recruitment.type.contract', 'Contract')}
                     </SelectItem>
                     <SelectItem value="internship">
-                      {t('recruitment.type.internship', 'Internship') as any}
+                      {t('recruitment.type.internship', 'Internship')}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -249,37 +245,33 @@ function CreateVacancyWizard({
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <Label>{t('recruitment.fields.description', 'Job Description') as any}</Label>
+                <Label>{t('recruitment.fields.description', 'Job Description')}</Label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder={
-                    t(
-                      'recruitment.fields.descPlaceholder',
-                      'Describe the role, responsibilities...',
-                    ) as any
-                  }
+                  placeholder={t(
+                    'recruitment.fields.descPlaceholder',
+                    'Describe the role, responsibilities...',
+                  )}
                   rows={5}
                 />
               </div>
               <div>
-                <Label>{t('recruitment.fields.requirements', 'Requirements') as any}</Label>
+                <Label>{t('recruitment.fields.requirements', 'Requirements')}</Label>
                 <Textarea
                   value={requirements}
                   onChange={(e) => setRequirements(e.target.value)}
-                  placeholder={
-                    t(
-                      'recruitment.fields.reqPlaceholder',
-                      'Skills, experience, education...',
-                    ) as any
-                  }
+                  placeholder={t(
+                    'recruitment.fields.reqPlaceholder',
+                    'Skills, experience, education...',
+                  )}
                   rows={4}
                 />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <Label className="text-xs">
-                    {t('recruitment.fields.salaryMin', 'Min Salary') as any}
+                    {t('recruitment.fields.salaryMin', 'Min Salary')}
                   </Label>
                   <Input
                     type="number"
@@ -290,7 +282,7 @@ function CreateVacancyWizard({
                 </div>
                 <div>
                   <Label className="text-xs">
-                    {t('recruitment.fields.salaryMax', 'Max Salary') as any}
+                    {t('recruitment.fields.salaryMax', 'Max Salary')}
                   </Label>
                   <Input
                     type="number"
@@ -300,9 +292,7 @@ function CreateVacancyWizard({
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">
-                    {t('recruitment.fields.currency', 'Currency') as any}
-                  </Label>
+                  <Label className="text-xs">{t('recruitment.fields.currency', 'Currency')}</Label>
                   <Select value={currency} onValueChange={setCurrency}>
                     <SelectTrigger className="h-8">
                       <SelectValue />
@@ -333,12 +323,10 @@ function CreateVacancyWizard({
                       </Badge>
                     )}
                     <Badge variant="outline">
-                      {
-                        t(
-                          `recruitment.type.${employmentType === 'full_time' ? 'fullTime' : employmentType === 'part_time' ? 'partTime' : employmentType}`,
-                          employmentType,
-                        ) as any
-                      }
+                      {t(
+                        `recruitment.type.${employmentType === 'full_time' ? 'fullTime' : employmentType === 'part_time' ? 'partTime' : employmentType}`,
+                        employmentType,
+                      )}
                     </Badge>
                   </div>
                   {salaryMin && salaryMax && (
@@ -351,7 +339,7 @@ function CreateVacancyWizard({
               {description && (
                 <div>
                   <p className="text-xs font-medium mb-1">
-                    {t('recruitment.fields.description', 'Description') as any}
+                    {t('recruitment.fields.description', 'Description')}
                   </p>
                   <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-4">
                     {description}
@@ -370,7 +358,7 @@ function CreateVacancyWizard({
           </Button>
           {step < 2 ? (
             <Button onClick={() => setStep(step + 1)} disabled={step === 0 && !title.trim()}>
-              {t('common.next', 'Next') as any} <ChevronRight className="h-4 w-4 ml-1" />
+              {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button
@@ -459,20 +447,20 @@ function AddCandidateDialog({
   return (
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>{t('recruitment.candidate.addTitle', 'Add Candidate') as any}</DialogTitle>
+        <DialogTitle>{t('recruitment.candidate.addTitle', 'Add Candidate')}</DialogTitle>
       </DialogHeader>
       <div className="space-y-4">
         <div>
-          <Label>{t('recruitment.candidate.name', 'Full Name') as any}</Label>
+          <Label>{t('recruitment.candidate.name', 'Full Name')}</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={t('recruitment.fields.namePlaceholder', 'John Doe') as any}
+            placeholder={t('recruitment.fields.namePlaceholder', 'John Doe')}
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label>{t('recruitment.candidate.email', 'Email') as any}</Label>
+            <Label>{t('recruitment.candidate.email', 'Email')}</Label>
             <Input
               type="email"
               value={email}
@@ -480,56 +468,52 @@ function AddCandidateDialog({
                 setEmail(e.target.value);
                 setEmailError('');
               }}
-              placeholder={t('recruitment.fields.emailPlaceholder', 'john@example.com') as any}
+              placeholder={t('recruitment.fields.emailPlaceholder', 'john@example.com')}
               className={emailError ? 'border-red-500' : ''}
             />
             {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
           </div>
           <div>
-            <Label>{t('recruitment.candidate.phone', 'Phone') as any}</Label>
+            <Label>{t('recruitment.candidate.phone', 'Phone')}</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+374..." />
           </div>
         </div>
         <div>
-          <Label>{t('recruitment.candidate.source', 'Source') as any}</Label>
+          <Label>{t('recruitment.candidate.source', 'Source')}</Label>
           <Select value={source} onValueChange={(v) => setSource(v as typeof source)}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="manual">
-                {t('recruitment.source.manual', 'Manual') as any}
-              </SelectItem>
+              <SelectItem value="manual">{t('recruitment.source.manual', 'Manual')}</SelectItem>
               <SelectItem value="referral">
-                {t('recruitment.source.referral', 'Referral') as any}
+                {t('recruitment.source.referral', 'Referral')}
               </SelectItem>
               <SelectItem value="linkedin">
-                {t('recruitment.source.linkedin', 'LinkedIn') as any}
+                {t('recruitment.source.linkedin', 'LinkedIn')}
               </SelectItem>
               <SelectItem value="career_page">
-                {t('recruitment.source.careerPage', 'Career Page') as any}
+                {t('recruitment.source.careerPage', 'Career Page')}
               </SelectItem>
-              <SelectItem value="other">{t('recruitment.source.other', 'Other') as any}</SelectItem>
+              <SelectItem value="other">{t('recruitment.source.other', 'Other')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label>{t('recruitment.candidate.resume', 'Resume / Summary') as any}</Label>
+          <Label>{t('recruitment.candidate.resume', 'Resume / Summary')}</Label>
           <Textarea
             value={resumeText}
             onChange={(e) => setResumeText(e.target.value)}
-            placeholder={
-              t(
-                'recruitment.candidate.resumePlaceholder',
-                'Brief summary or paste resume...',
-              ) as any
-            }
+            placeholder={t(
+              'recruitment.candidate.resumePlaceholder',
+              'Brief summary or paste resume...',
+            )}
             rows={3}
           />
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            {t('common.cancel', 'Cancel') as any}
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
             {submitting ? t('common.loading', '...') : t('recruitment.candidate.add', 'Add')}
@@ -626,14 +610,14 @@ function CandidateDetailDialog({
             </span>
           )}
           <Badge className={getStageBadgeColor(data.stage)}>
-            {t(`recruitment.stage.${data.stage}`, data.stage) as any}
+            {t(`recruitment.stage.${data.stage}`, data.stage)}
           </Badge>
         </div>
 
         {/* Vacancy link */}
         {vacancy && (
           <p className="text-xs text-muted-foreground">
-            {t('recruitment.candidate.appliedTo', 'Applied to') as any}:{' '}
+            {t('recruitment.candidate.appliedTo', 'Applied to')}:{' '}
             <span className="font-medium">{vacancy.title}</span>
           </p>
         )}
@@ -642,7 +626,7 @@ function CandidateDetailDialog({
         {candidate?.resumeText && (
           <div>
             <p className="text-xs font-medium mb-1">
-              {t('recruitment.candidate.resume', 'Resume') as any}
+              {t('recruitment.candidate.resume', 'Resume')}
             </p>
             <p className="text-xs text-muted-foreground whitespace-pre-wrap border rounded p-2 max-h-32 overflow-y-auto">
               {candidate.resumeText}
@@ -656,12 +640,12 @@ function CandidateDetailDialog({
             {nextStage && (
               <Button size="sm" onClick={() => handleMove(nextStage)}>
                 <ArrowRight className="h-4 w-4 mr-1" />
-                {t(`recruitment.stage.${nextStage}`, nextStage) as any}
+                {t(`recruitment.stage.${nextStage}`, nextStage)}
               </Button>
             )}
             <Button size="sm" variant="destructive" onClick={handleReject}>
               <XCircle className="h-4 w-4 mr-1" />
-              {t('recruitment.candidate.reject', 'Reject') as any}
+              {t('recruitment.candidate.reject', 'Reject')}
             </Button>
             <Button
               size="sm"
@@ -670,7 +654,7 @@ function CandidateDetailDialog({
               onClick={handleDelete}
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              {t('recruitment.candidate.delete', 'Remove') as any}
+              {t('recruitment.candidate.delete', 'Remove')}
             </Button>
           </div>
         )}
@@ -683,7 +667,7 @@ function CandidateDetailDialog({
               onClick={handleDelete}
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              {t('recruitment.candidate.delete', 'Remove') as any}
+              {t('recruitment.candidate.delete', 'Remove')}
             </Button>
           </div>
         )}
@@ -692,7 +676,7 @@ function CandidateDetailDialog({
         {scorecards.length > 0 && (
           <div>
             <p className="text-sm font-semibold mb-2">
-              {t('recruitment.scorecards', 'Scorecards') as any} ({scorecards.length})
+              {t('recruitment.scorecards', 'Scorecards')} ({scorecards.length})
             </p>
             {scorecards.map((sc: any) => (
               <Card key={sc._id} className="mb-2">
@@ -703,7 +687,7 @@ function CandidateDetailDialog({
                       <Star className="h-3 w-3 text-yellow-500" />
                       <span className="font-bold">{sc.overallScore}/5</span>
                       <Badge variant="outline" className="text-xs ml-1">
-                        {t(`recruitment.rec.${sc.recommendation}`, sc.recommendation) as any}
+                        {String(t(`recruitment.rec.${sc.recommendation}`, sc.recommendation))}
                       </Badge>
                     </div>
                   </div>
@@ -718,14 +702,14 @@ function CandidateDetailDialog({
         {interviews.length > 0 && (
           <div>
             <p className="text-sm font-semibold mb-2">
-              {t('recruitment.interviews', 'Interviews') as any} ({interviews.length})
+              {t('recruitment.interviews', 'Interviews')} ({interviews.length})
             </p>
             {interviews.map((iv: any) => (
               <div key={iv._id} className="flex items-center gap-2 text-xs p-2 border rounded mb-1">
                 <Calendar className="h-3 w-3 text-muted-foreground" />
                 <span>{new Date(iv.scheduledAt).toLocaleString()}</span>
                 <Badge variant="outline" className="text-xs">
-                  {t(`recruitment.interviewType.${iv.type}`, iv.type) as any}
+                  {String(t(`recruitment.interviewType.${iv.type}`, iv.type))}
                 </Badge>
                 <span className="text-muted-foreground">{iv.interviewerName}</span>
                 <Badge
@@ -747,9 +731,7 @@ function CandidateDetailDialog({
         {/* Timeline */}
         {events.length > 0 && (
           <div>
-            <p className="text-sm font-semibold mb-2">
-              {t('recruitment.timeline', 'Timeline') as any}
-            </p>
+            <p className="text-sm font-semibold mb-2">{t('recruitment.timeline', 'Timeline')}</p>
             {events.map((ev: any) => (
               <div
                 key={ev._id}
@@ -822,7 +804,7 @@ function PipelineView({
           <div key={stage} className="border rounded-lg p-3 bg-muted/30">
             <div className="flex items-center justify-between mb-2">
               <Badge className={getStageBadgeColor(stage) + ' text-xs'}>
-                {t(`recruitment.stage.${stage}`, stage) as any}
+                {String(t(`recruitment.stage.${stage}`, stage))}
               </Badge>
               <span className="text-xs text-muted-foreground font-medium">
                 {byStage[stage]?.length || 0}
@@ -935,15 +917,10 @@ export default function RecruitmentClient() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              {t('recruitment.title', 'Recruitment') as any}
+              {t('recruitment.title', 'Recruitment')}
             </h1>
             <p className="text-sm text-muted-foreground">
-              {
-                t(
-                  'recruitment.subtitle',
-                  'Manage vacancies, candidates, and hiring pipeline',
-                ) as any
-              }
+              {t('recruitment.subtitle', 'Manage vacancies, candidates, and hiring pipeline')}
             </p>
           </div>
           {isAdmin && (
@@ -958,8 +935,7 @@ export default function RecruitmentClient() {
               }}
               className="w-full sm:w-auto"
             >
-              <Plus className="h-4 w-4 mr-1" />{' '}
-              {t('recruitment.createVacancy', 'New Vacancy') as any}
+              <Plus className="h-4 w-4 mr-1" /> {t('recruitment.createVacancy', 'New Vacancy')}
             </Button>
           )}
         </div>
@@ -976,7 +952,7 @@ export default function RecruitmentClient() {
               <div>
                 <p className="text-2xl font-bold">{stats.openVacancies}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('recruitment.stats.openVacancies', 'Open Vacancies') as any}
+                  {t('recruitment.stats.openVacancies', 'Open Vacancies')}
                 </p>
               </div>
             </CardContent>
@@ -989,7 +965,7 @@ export default function RecruitmentClient() {
               <div>
                 <p className="text-2xl font-bold">{stats.totalCandidates}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('recruitment.stats.totalCandidates', 'Total Candidates') as any}
+                  {t('recruitment.stats.totalCandidates', 'Total Candidates')}
                 </p>
               </div>
             </CardContent>
@@ -1002,7 +978,7 @@ export default function RecruitmentClient() {
               <div>
                 <p className="text-2xl font-bold">{stats.pipeline.hired}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('recruitment.stats.hired', 'Hired') as any}
+                  {t('recruitment.stats.hired', 'Hired')}
                 </p>
               </div>
             </CardContent>
@@ -1015,7 +991,7 @@ export default function RecruitmentClient() {
               <div>
                 <p className="text-2xl font-bold">{stats.pipeline.interview}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('recruitment.stats.inInterview', 'In Interview') as any}
+                  {t('recruitment.stats.inInterview', 'In Interview')}
                 </p>
               </div>
             </CardContent>
@@ -1030,19 +1006,19 @@ export default function RecruitmentClient() {
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
             value="vacancies"
           >
-            {t('recruitment.tabs.vacancies', 'Vacancies') as any}
+            {t('recruitment.tabs.vacancies', 'Vacancies')}
           </TabsTrigger>
           <TabsTrigger
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
             value="pipeline"
           >
-            {t('recruitment.tabs.pipeline', 'Pipeline') as any}
+            {t('recruitment.tabs.pipeline', 'Pipeline')}
           </TabsTrigger>
           <TabsTrigger
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
             value="interviews"
           >
-            {t('recruitment.tabs.interviews', 'My Interviews') as any}
+            {t('recruitment.tabs.interviews', 'My Interviews')}
             {myInterviews && myInterviews.length > 0 && (
               <Badge
                 variant="destructive"
@@ -1062,7 +1038,7 @@ export default function RecruitmentClient() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Briefcase className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="font-medium">{t('recruitment.empty', 'No vacancies yet') as any}</p>
+                <p className="font-medium">{t('recruitment.empty', 'No vacancies yet')}</p>
                 {isAdmin && (
                   <Button
                     className="mt-4"
@@ -1076,7 +1052,7 @@ export default function RecruitmentClient() {
                     }}
                   >
                     <Plus className="h-4 w-4 mr-1" />{' '}
-                    {t('recruitment.createVacancy', 'New Vacancy') as any}
+                    {t('recruitment.createVacancy', 'New Vacancy')}
                   </Button>
                 )}
               </CardContent>
@@ -1099,7 +1075,7 @@ export default function RecruitmentClient() {
                                   : 'bg-gray-100 text-gray-600'
                             }
                           >
-                            {t(`recruitment.status.${vac.status}`, vac.status) as any}
+                            {String(t(`recruitment.status.${vac.status}`, vac.status))}
                           </Badge>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
@@ -1112,7 +1088,7 @@ export default function RecruitmentClient() {
                           )}
                           <span>
                             <Users className="h-3 w-3 inline mr-0.5" />
-                            {vac.candidateCount} {t('recruitment.candidates', 'candidates') as any}
+                            {vac.candidateCount} {t('recruitment.candidates', 'candidates')}
                           </span>
                         </div>
                       </div>
@@ -1125,7 +1101,7 @@ export default function RecruitmentClient() {
                           >
                             <UserPlus className="h-4 w-4 mr-1" />
                             <span className="hidden sm:inline">
-                              {t('recruitment.addCandidate', 'Add') as any}
+                              {t('recruitment.addCandidate', 'Add')}
                             </span>
                           </Button>
                         )}
@@ -1198,7 +1174,7 @@ export default function RecruitmentClient() {
                 className="mb-3"
                 onClick={() => setSelectedVacancy(null)}
               >
-                <ChevronLeft className="h-4 w-4 mr-1" /> {t('common.back', 'Back') as any}
+                <ChevronLeft className="h-4 w-4 mr-1" /> {t('common.back', 'Back')}
               </Button>
               <PipelineView
                 vacancyId={selectedVacancy}
@@ -1209,7 +1185,7 @@ export default function RecruitmentClient() {
           ) : (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground mb-3">
-                {t('recruitment.selectVacancy', 'Select a vacancy to view pipeline:') as any}
+                {t('recruitment.selectVacancy', 'Select a vacancy to view pipeline:')}
               </p>
               {vacancies
                 ?.filter((v: any) => v.status === 'open')
@@ -1223,7 +1199,7 @@ export default function RecruitmentClient() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{vac.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          {vac.candidateCount} {t('recruitment.candidates', 'candidates') as any}
+                          {vac.candidateCount} {t('recruitment.candidates', 'candidates')}
                         </p>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -1243,7 +1219,7 @@ export default function RecruitmentClient() {
               <CardContent className="p-8 text-center">
                 <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                 <p className="font-medium">
-                  {t('recruitment.noInterviews', 'No upcoming interviews') as any}
+                  {t('recruitment.noInterviews', 'No upcoming interviews')}
                 </p>
               </CardContent>
             </Card>
@@ -1258,7 +1234,7 @@ export default function RecruitmentClient() {
                     </div>
                     <div className="flex items-center gap-2 text-xs shrink-0">
                       <Badge variant="outline">
-                        {t(`recruitment.interviewType.${iv.type}`, iv.type) as any}
+                        {String(t(`recruitment.interviewType.${iv.type}`, iv.type))}
                       </Badge>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
@@ -1310,7 +1286,7 @@ export default function RecruitmentClient() {
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>{t('common.confirmDelete', 'Confirm Deletion') as any}</DialogTitle>
+            <DialogTitle>{t('common.confirmDelete', 'Confirm Deletion')}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             {deleteConfirm?.type === 'vacancy'
@@ -1325,10 +1301,10 @@ export default function RecruitmentClient() {
           </p>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
-              {t('common.cancel', 'Cancel') as any}
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              {t('common.delete', 'Delete') as any}
+              {t('common.delete', 'Delete')}
             </Button>
           </div>
         </DialogContent>
@@ -1432,26 +1408,26 @@ function EditVacancyDialog({
   return (
     <DialogContent className="sm:max-w-lg max-h-[95vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>{t('recruitment.editVacancy', 'Edit Vacancy') as any}</DialogTitle>
+        <DialogTitle>{t('recruitment.editVacancy', 'Edit Vacancy')}</DialogTitle>
       </DialogHeader>
       <div className="space-y-4">
         <div>
-          <Label>{t('recruitment.vacancy.title', 'Job Title') as any}</Label>
+          <Label>{t('recruitment.vacancy.title', 'Job Title')}</Label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label>{t('recruitment.vacancy.department', 'Department') as any}</Label>
+            <Label>{t('recruitment.vacancy.department', 'Department')}</Label>
             <Input value={department} onChange={(e) => setDepartment(e.target.value)} />
           </div>
           <div>
-            <Label>{t('recruitment.vacancy.location', 'Location') as any}</Label>
+            <Label>{t('recruitment.vacancy.location', 'Location')}</Label>
             <Input value={location} onChange={(e) => setLocation(e.target.value)} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label>{t('recruitment.vacancy.type', 'Employment Type') as any}</Label>
+            <Label>{t('recruitment.vacancy.type', 'Employment Type')}</Label>
             <Select
               value={employmentType}
               onValueChange={(v) => setEmploymentType(v as typeof employmentType)}
@@ -1461,61 +1437,55 @@ function EditVacancyDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="full_time">
-                  {t('recruitment.type.fullTime', 'Full-time') as any}
+                  {t('recruitment.type.fullTime', 'Full-time')}
                 </SelectItem>
                 <SelectItem value="part_time">
-                  {t('recruitment.type.partTime', 'Part-time') as any}
+                  {t('recruitment.type.partTime', 'Part-time')}
                 </SelectItem>
                 <SelectItem value="contract">
-                  {t('recruitment.type.contract', 'Contract') as any}
+                  {t('recruitment.type.contract', 'Contract')}
                 </SelectItem>
                 <SelectItem value="internship">
-                  {t('recruitment.type.internship', 'Internship') as any}
+                  {t('recruitment.type.internship', 'Internship')}
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>{t('recruitment.vacancy.status', 'Status') as any}</Label>
+            <Label>{t('recruitment.vacancy.status', 'Status')}</Label>
             <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="open">{t('recruitment.status.open', 'Open') as any}</SelectItem>
-                <SelectItem value="paused">
-                  {t('recruitment.status.paused', 'Paused') as any}
-                </SelectItem>
-                <SelectItem value="closed">
-                  {t('recruitment.status.closed', 'Closed') as any}
-                </SelectItem>
-                <SelectItem value="draft">
-                  {t('recruitment.status.draft', 'Draft') as any}
-                </SelectItem>
+                <SelectItem value="open">{t('recruitment.status.open', 'Open')}</SelectItem>
+                <SelectItem value="paused">{t('recruitment.status.paused', 'Paused')}</SelectItem>
+                <SelectItem value="closed">{t('recruitment.status.closed', 'Closed')}</SelectItem>
+                <SelectItem value="draft">{t('recruitment.status.draft', 'Draft')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <Label>{t('recruitment.salary.min', 'Min Salary') as any}</Label>
+            <Label>{t('recruitment.salary.min', 'Min Salary')}</Label>
             <Input type="number" value={salaryMin} onChange={(e) => setSalaryMin(e.target.value)} />
           </div>
           <div>
-            <Label>{t('recruitment.salary.max', 'Max Salary') as any}</Label>
+            <Label>{t('recruitment.salary.max', 'Max Salary')}</Label>
             <Input type="number" value={salaryMax} onChange={(e) => setSalaryMax(e.target.value)} />
           </div>
           <div>
-            <Label>{t('recruitment.salary.currency', 'Currency') as any}</Label>
+            <Label>{t('recruitment.salary.currency', 'Currency')}</Label>
             <Input value={salaryCurrency} onChange={(e) => setSalaryCurrency(e.target.value)} />
           </div>
         </div>
         <div>
-          <Label>{t('recruitment.vacancy.description', 'Description') as any}</Label>
+          <Label>{t('recruitment.vacancy.description', 'Description')}</Label>
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
         </div>
         <div>
-          <Label>{t('recruitment.vacancy.requirements', 'Requirements') as any}</Label>
+          <Label>{t('recruitment.vacancy.requirements', 'Requirements')}</Label>
           <Textarea
             value={requirements}
             onChange={(e) => setRequirements(e.target.value)}
@@ -1524,7 +1494,7 @@ function EditVacancyDialog({
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            {t('common.cancel', 'Cancel') as any}
+            {t('common.cancel', 'Cancel')}
           </Button>
           <Button onClick={handleSave} disabled={submitting}>
             {submitting ? '...' : t('common.save', 'Save')}

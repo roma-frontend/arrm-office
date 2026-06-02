@@ -25,7 +25,7 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
   // Get face descriptor status (requester must be self or superadmin)
   const faceData = useQuery(
     api.faceRecognition.getFaceDescriptor,
-    safeUserId ? { userId: safeUserId, requesterId: safeUserId } : 'skip',
+    safeUserId ? { userId: safeUserId } : 'skip',
   );
   const removeFaceRegistration = useMutation(api.faceRecognition.removeFaceRegistration);
 
@@ -114,8 +114,8 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
                   onClick={async () => {
                     if (confirm(t('settingsSecurity.removeFaceIdConfirm'))) {
                       await removeFaceRegistration({
-                        userId: userId as any,
-                        requesterId: userId as any,
+                        userId: userId,
+                        requesterId: userId,
                       });
                       toast.success(t('settingsSecurity.faceIdRemoved'));
                     }
@@ -144,7 +144,7 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
                   </div>
                 ) : (
                   <FaceRegistration
-                    userId={userId as any}
+                    userId={userId}
                     onSuccess={() => {
                       setShowFaceRegistration(false);
                       toast.success(t('settingsSecurity.faceIdSuccess'));

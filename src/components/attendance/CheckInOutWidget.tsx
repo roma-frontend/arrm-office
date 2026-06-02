@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +22,7 @@ export function CheckInOutWidget() {
 
   const todayStatus = useQuery(
     api.timeTracking.getTodayStatus,
-    user?.id ? { userId: user.id as any } : 'skip',
+    user?.id ? { userId: user.id as Id<'users'> } : 'skip',
   );
 
   const checkIn = useMutation(api.timeTracking.checkIn);
@@ -36,7 +37,7 @@ export function CheckInOutWidget() {
   const handleCheckIn = async () => {
     if (!user?.id) return;
     try {
-      await checkIn({ userId: user.id as any });
+      await checkIn({ userId: user.id as Id<'users'> });
       toast.success(t('toasts.checkedInSuccess'));
     } catch (error: any) {
       toast.error(error.message || t('attendance.failedCheckIn'));
@@ -46,7 +47,7 @@ export function CheckInOutWidget() {
   const handleCheckOut = async () => {
     if (!user?.id) return;
     try {
-      await checkOut({ userId: user.id as any });
+      await checkOut({ userId: user.id as Id<'users'> });
       toast.success(t('toasts.checkedOutSuccess'));
     } catch (error: any) {
       toast.error(error.message || t('attendance.failedCheckOut'));

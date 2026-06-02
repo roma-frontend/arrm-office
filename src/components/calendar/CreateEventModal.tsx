@@ -116,7 +116,7 @@ export function CreateEventModal({
 
   const orgUsers = useQuery(
     api.users.getUsersByOrganizationId,
-    organizationId && requesterId ? { organizationId, requesterId } : 'skip',
+    organizationId && requesterId ? { organizationId } : 'skip',
   ) as OrgUser[] | undefined;
 
   const filteredUsers = useMemo(() => {

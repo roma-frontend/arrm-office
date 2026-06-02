@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
+import type { FunctionReturnType } from 'convex/server';
 import { useAuthStore } from '@/store/useAuthStore';
 import { CreateSupportTicketWizard } from '@/components/superadmin/CreateSupportTicketWizard';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -47,6 +48,8 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
+type TicketListItem = FunctionReturnType<typeof api.tickets.getAllTickets>[number];
+
 export default function SupportTicketsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,11 +61,11 @@ export default function SupportTicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(searchParams.get('new') === 'true');
 
-  const tickets = useQuery(api.tickets.getAllTickets, user?.id ? {} : 'skip') as any;
+  const tickets = useQuery(api.tickets.getAllTickets, user?.id ? {} : 'skip');
 
   const stats = useQuery(api.tickets.getTicketStats);
 
-  const filteredTickets = tickets?.filter((ticket: any) => {
+  const filteredTickets = tickets?.filter((ticket) => {
     const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
     const matchesSearch =
@@ -112,222 +115,222 @@ export default function SupportTicketsPage() {
 
   return (
     <ErrorBoundary>
-    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1
-                className="text-2xl sm:text-3xl font-bold tracking-tight mb-1"
-                style={{ color: 'var(--text-primary)' }}
+      <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+        <div className="mx-auto max-w-7xl">
+          {/* Header */}
+          <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1
+                  className="text-2xl sm:text-3xl font-bold tracking-tight mb-1"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {t('superadmin.support.title')}
+                </h1>
+                <p className="text-sm text-muted-foreground">{t('superadmin.support.subtitle')}</p>
+              </div>
+              <Button
+                onClick={() => setCreateDialogOpen(true)}
+                className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
               >
-                {t('superadmin.support.title')}
-              </h1>
-              <p className="text-sm text-muted-foreground">{t('superadmin.support.subtitle')}</p>
+                <Plus className="w-4 h-4 transition-transform duration-200" />
+                <span>{t('superadmin.support.createTicket')}</span>
+              </Button>
             </div>
-            <Button
-              onClick={() => setCreateDialogOpen(true)}
-              className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
-            >
-              <Plus className="w-4 h-4 transition-transform duration-200" />
-              <span>{t('superadmin.support.createTicket')}</span>
-            </Button>
           </div>
+
+          {/* Stats Grid */}
+          {stats && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+              <StatCard
+                title={t('superadmin.support.total')}
+                value={stats.total}
+                icon={Ticket}
+                color="blue"
+              />
+              <StatCard
+                title={t('superadmin.support.open')}
+                value={stats.open}
+                icon={AlertCircle}
+                color="blue"
+              />
+              <StatCard
+                title={t('superadmin.support.inProgress')}
+                value={stats.inProgress}
+                icon={Clock}
+                color="purple"
+              />
+              <StatCard
+                title={t('superadmin.support.waitingCustomer')}
+                value={stats.waitingCustomer}
+                icon={MessageSquare}
+                color="orange"
+              />
+              <StatCard
+                title={t('superadmin.support.resolved')}
+                value={stats.resolved}
+                icon={CheckCircle}
+                color="green"
+              />
+              <StatCard
+                title={t('superadmin.support.critical')}
+                value={stats.critical}
+                icon={AlertCircle}
+                color="red"
+              />
+              <StatCard
+                title={t('superadmin.support.overdue')}
+                value={stats.overdue}
+                icon={Clock}
+                color="red"
+              />
+              <StatCard
+                title={t('superadmin.support.avgTime')}
+                value={`${stats.avgResponseTime}${t('common.hoursShort')}`}
+                icon={TrendingUp}
+                color="green"
+              />
+            </div>
+          )}
+
+          {/* Filters */}
+          <Card className="mb-6 border-(--border)" style={{ background: 'var(--card)' }}>
+            <CardContent className="p-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder={t('superadmin.support.searchTickets')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-3 flex-1">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[160px] h-9">
+                      <Filter className="hidden sm:block w-3.5 h-3.5 mr-2" />
+                      <SelectValue placeholder={t('superadmin.support.allStatuses')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('superadmin.support.allStatuses')}</SelectItem>
+                      <SelectItem value="open">{t('superadmin.support.open')}</SelectItem>
+                      <SelectItem value="in_progress">
+                        {t('superadmin.support.inProgress')}
+                      </SelectItem>
+                      <SelectItem value="waiting_customer">
+                        {t('superadmin.support.waitingCustomer')}
+                      </SelectItem>
+                      <SelectItem value="resolved">{t('superadmin.support.resolved')}</SelectItem>
+                      <SelectItem value="closed">{t('superadmin.support.closed')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger className="w-full sm:w-[160px] h-9">
+                      <SelectValue placeholder={t('superadmin.support.allPriorities')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('superadmin.support.allPriorities')}</SelectItem>
+                      <SelectItem value="critical">{t('superadmin.support.critical')}</SelectItem>
+                      <SelectItem value="high">{t('superadmin.support.high')}</SelectItem>
+                      <SelectItem value="medium">{t('superadmin.support.medium')}</SelectItem>
+                      <SelectItem value="low">{t('superadmin.support.low')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(statusFilter !== 'all' || priorityFilter !== 'all' || searchQuery) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 px-3 text-muted-foreground"
+                      onClick={() => {
+                        setStatusFilter('all');
+                        setPriorityFilter('all');
+                        setSearchQuery('');
+                      }}
+                    >
+                      <X className="w-3.5 h-3.5 mr-1" />
+                      {t('superadmin.support.resetFilters')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tickets List */}
+          <Card style={{ background: 'var(--card)' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">{t('superadmin.support.tickets')}</CardTitle>
+                  <CardDescription className="mt-1">
+                    {filteredTickets?.length || 0} {t('superadmin.support.ticketsFound')}
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {filteredTickets === undefined ? (
+                <div className="flex items-center justify-center py-12">
+                  <ShieldLoader size="sm" />
+                </div>
+              ) : filteredTickets.length === 0 ? (
+                <div className="text-center py-12">
+                  <Ticket className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                  <p className="text-muted-foreground">{t('superadmin.support.noTickets')}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredTickets.map((ticket) => (
+                    <TicketRow
+                      key={ticket._id}
+                      ticket={ticket}
+                      onClick={() => setSelectedTicket(ticket._id)}
+                      getPriorityColor={getPriorityColor}
+                      getStatusColor={getStatusColor}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Stats Grid */}
-        {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
-            <StatCard
-              title={t('superadmin.support.total')}
-              value={stats.total}
-              icon={Ticket}
-              color="blue"
-            />
-            <StatCard
-              title={t('superadmin.support.open')}
-              value={stats.open}
-              icon={AlertCircle}
-              color="blue"
-            />
-            <StatCard
-              title={t('superadmin.support.inProgress')}
-              value={stats.inProgress}
-              icon={Clock}
-              color="purple"
-            />
-            <StatCard
-              title={t('superadmin.support.waitingCustomer')}
-              value={stats.waitingCustomer}
-              icon={MessageSquare}
-              color="orange"
-            />
-            <StatCard
-              title={t('superadmin.support.resolved')}
-              value={stats.resolved}
-              icon={CheckCircle}
-              color="green"
-            />
-            <StatCard
-              title={t('superadmin.support.critical')}
-              value={stats.critical}
-              icon={AlertCircle}
-              color="red"
-            />
-            <StatCard
-              title={t('superadmin.support.overdue')}
-              value={stats.overdue}
-              icon={Clock}
-              color="red"
-            />
-            <StatCard
-              title={t('superadmin.support.avgTime')}
-              value={`${stats.avgResponseTime}${t('common.hoursShort')}`}
-              icon={TrendingUp}
-              color="green"
-            />
-          </div>
+        {/* Create Ticket Dialog - Using Wizard */}
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[85vw] max-w-3xl max-h-[95vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="text-lg md:text-xl">
+                {t('superadmin.support.createTicket')}
+              </DialogTitle>
+              <DialogDescription className="text-sm">
+                {t('superadmin.support.createDescription')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <CreateSupportTicketWizard
+                userId={user.id as Id<'users'>}
+                organizationId={user.organizationId as Id<'organizations'>}
+                onComplete={() => {
+                  setCreateDialogOpen(false);
+                  router.refresh();
+                }}
+                onCancel={() => setCreateDialogOpen(false)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Ticket Detail Dialog */}
+        {selectedTicket && (
+          <TicketDetailDialog
+            ticketId={selectedTicket}
+            open={!!selectedTicket}
+            onOpenChange={(open) => !open && setSelectedTicket(null)}
+            userId={user.id as Id<'users'>}
+          />
         )}
-
-        {/* Filters */}
-        <Card className="mb-6 border-(--border)" style={{ background: 'var(--card)' }}>
-          <CardContent className="p-3">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder={t('superadmin.support.searchTickets')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-9"
-                />
-              </div>
-              <div className="flex flex-wrap gap-3 flex-1">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[160px] h-9">
-                    <Filter className="hidden sm:block w-3.5 h-3.5 mr-2" />
-                    <SelectValue placeholder={t('superadmin.support.allStatuses')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('superadmin.support.allStatuses')}</SelectItem>
-                    <SelectItem value="open">{t('superadmin.support.open')}</SelectItem>
-                    <SelectItem value="in_progress">
-                      {t('superadmin.support.inProgress')}
-                    </SelectItem>
-                    <SelectItem value="waiting_customer">
-                      {t('superadmin.support.waitingCustomer')}
-                    </SelectItem>
-                    <SelectItem value="resolved">{t('superadmin.support.resolved')}</SelectItem>
-                    <SelectItem value="closed">{t('superadmin.support.closed')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className="w-full sm:w-[160px] h-9">
-                    <SelectValue placeholder={t('superadmin.support.allPriorities')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('superadmin.support.allPriorities')}</SelectItem>
-                    <SelectItem value="critical">{t('superadmin.support.critical')}</SelectItem>
-                    <SelectItem value="high">{t('superadmin.support.high')}</SelectItem>
-                    <SelectItem value="medium">{t('superadmin.support.medium')}</SelectItem>
-                    <SelectItem value="low">{t('superadmin.support.low')}</SelectItem>
-                  </SelectContent>
-                </Select>
-                {(statusFilter !== 'all' || priorityFilter !== 'all' || searchQuery) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 px-3 text-muted-foreground"
-                    onClick={() => {
-                      setStatusFilter('all');
-                      setPriorityFilter('all');
-                      setSearchQuery('');
-                    }}
-                  >
-                    <X className="w-3.5 h-3.5 mr-1" />
-                    {t('superadmin.support.resetFilters')}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tickets List */}
-        <Card style={{ background: 'var(--card)' }}>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">{t('superadmin.support.tickets')}</CardTitle>
-                <CardDescription className="mt-1">
-                  {filteredTickets?.length || 0} {t('superadmin.support.ticketsFound')}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {filteredTickets === undefined ? (
-              <div className="flex items-center justify-center py-12">
-                <ShieldLoader size="sm" />
-              </div>
-            ) : filteredTickets.length === 0 ? (
-              <div className="text-center py-12">
-                <Ticket className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                <p className="text-muted-foreground">{t('superadmin.support.noTickets')}</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filteredTickets.map((ticket: any) => (
-                  <TicketRow
-                    key={ticket._id}
-                    ticket={ticket}
-                    onClick={() => setSelectedTicket(ticket._id)}
-                    getPriorityColor={getPriorityColor}
-                    getStatusColor={getStatusColor}
-                  />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Create Ticket Dialog - Using Wizard */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[85vw] max-w-3xl max-h-[95vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-lg md:text-xl">
-              {t('superadmin.support.createTicket')}
-            </DialogTitle>
-            <DialogDescription className="text-sm">
-              {t('superadmin.support.createDescription')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <CreateSupportTicketWizard
-              userId={user.id as Id<'users'>}
-              organizationId={user.organizationId as Id<'organizations'>}
-              onComplete={() => {
-                setCreateDialogOpen(false);
-                router.refresh();
-              }}
-              onCancel={() => setCreateDialogOpen(false)}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Ticket Detail Dialog */}
-      {selectedTicket && (
-        <TicketDetailDialog
-          ticketId={selectedTicket}
-          open={!!selectedTicket}
-          onOpenChange={(open) => !open && setSelectedTicket(null)}
-          userId={user.id as Id<'users'>}
-        />
-      )}
-    </div>
     </ErrorBoundary>
   );
 }
@@ -372,7 +375,7 @@ function TicketRow({
   getPriorityColor,
   getStatusColor,
 }: {
-  ticket: any;
+  ticket: TicketListItem;
   onClick: () => void;
   getPriorityColor: (priority: string) => string;
   getStatusColor: (status: string) => string;
@@ -762,7 +765,7 @@ function TicketDetailDialog({
     }
   };
 
-  const ticketWithOverdue = ticket as any;
+  const ticketWithOverdue = ticket;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

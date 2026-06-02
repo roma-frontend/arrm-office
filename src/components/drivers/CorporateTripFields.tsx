@@ -93,7 +93,10 @@ export function CorporateTripFields({
       {/* Priority */}
       <div className="flex flex-col gap-2">
         <Label>{t('driver.tripPriority')}</Label>
-        <Select value={priority} onValueChange={(v) => onPriorityChange(v as any)}>
+        <Select
+          value={priority}
+          onValueChange={(v) => onPriorityChange(v as 'P0' | 'P1' | 'P2' | 'P3')}
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -113,7 +116,20 @@ export function CorporateTripFields({
       {/* Category */}
       <div className="flex flex-col gap-2">
         <Label>{t('driver.tripCategory')}</Label>
-        <Select value={tripCategory} onValueChange={(v) => onCategoryChange(v as any)}>
+        <Select
+          value={tripCategory}
+          onValueChange={(v) =>
+            onCategoryChange(
+              v as
+                | 'client_meeting'
+                | 'airport'
+                | 'office_transfer'
+                | 'emergency'
+                | 'team_event'
+                | 'personal',
+            )
+          }
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>

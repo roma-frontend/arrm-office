@@ -70,16 +70,17 @@ export default function PerformanceMonitor() {
         // First Input Delay (FID)
         const fidObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
+            const fidEntry = entry as PerformanceEventTiming;
             reportWebVitals({
               name: 'FID',
-              value: (entry as any).processingStart - entry.startTime,
+              value: fidEntry.processingStart - entry.startTime,
               rating:
-                (entry as any).processingStart - entry.startTime < 100
+                fidEntry.processingStart - entry.startTime < 100
                   ? 'good'
-                  : (entry as any).processingStart - entry.startTime < 300
+                  : fidEntry.processingStart - entry.startTime < 300
                     ? 'needs-improvement'
                     : 'poor',
-              delta: (entry as any).processingStart - entry.startTime,
+              delta: fidEntry.processingStart - entry.startTime,
               id: 'fid',
             });
           }
@@ -90,8 +91,12 @@ export default function PerformanceMonitor() {
         let clsValue = 0;
         const clsObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
+            const clsEntry = entry as PerformanceEntry & {
+              hadRecentInput: boolean;
+              value: number;
+            };
+            if (!clsEntry.hadRecentInput) {
+              clsValue += clsEntry.value;
               reportWebVitals({
                 name: 'CLS',
                 value: clsValue,

@@ -200,11 +200,7 @@ export function CreatePayrollRunDialog({
   const [submitting, setSubmitting] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
-  const _useMutation = useMutation as unknown as (
-    ...args: any[]
-  ) => (...callArgs: any[]) => Promise<any>;
-  const _api = api as any;
-  const createRun = _useMutation(_api.payroll.mutations.createPayrollRun);
+  const createRun = useMutation(api.payroll.mutations.createPayrollRun);
 
   const steps: WizardStep[] = [
     {

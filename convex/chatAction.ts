@@ -131,15 +131,11 @@ ${
       // All users get team calendar (who else is on leave)
       const requesterId = userProfile?._id ?? userId;
       const organizationId = userProfile?.organizationId;
-      // If requesterId is not available, use organizationId directly
-      const allLeaves = requesterId
-        ? await ctx.runQuery(leavesApi.getAllLeaves, { requesterId })
-        : organizationId
-          ? await ctx.runQuery(leavesApi.getAllLeaves, { organizationId })
-          : [];
-      const allUsers = requesterId
-        ? await ctx.runQuery(usersApi.queries.getAllUsers, { requesterId })
-        : [];
+      // Identity is derived from auth on the server; pass org only as a fallback scope
+      const allLeaves = organizationId
+        ? await ctx.runQuery(leavesApi.getAllLeaves, { organizationId })
+        : await ctx.runQuery(leavesApi.getAllLeaves, {});
+      const allUsers = await ctx.runQuery(usersApi.queries.getAllUsers, {});
 
       const leavesArr = Array.isArray(allLeaves) ? allLeaves : [];
       const usersArr = Array.isArray(allUsers) ? allUsers : [];

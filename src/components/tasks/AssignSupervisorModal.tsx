@@ -45,14 +45,8 @@ export function AssignSupervisorModal({ onClose }: Props) {
   const [success, setSuccess] = useState(false);
 
   const { user } = useAuthStore();
-  const employees = useQuery(
-    api.tasks.getUsersForAssignment,
-    user?.id ? { requesterId: user.id as Id<'users'> } : 'skip',
-  );
-  const supervisors = useQuery(
-    api.tasks.getSupervisors,
-    user?.id ? { requesterId: user.id as Id<'users'> } : 'skip',
-  );
+  const employees = useQuery(api.tasks.getUsersForAssignment, user?.id ? {} : 'skip');
+  const supervisors = useQuery(api.tasks.getSupervisors, user?.id ? {} : 'skip');
 
   // Debug: log to check if data is loading
   logger.log('AssignSupervisorModal - user:', user);

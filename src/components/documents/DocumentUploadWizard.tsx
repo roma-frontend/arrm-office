@@ -188,16 +188,13 @@ export default function DocumentUploadWizard({
   const [tagsInput, setTagsInput] = useState('');
 
   // Fetch template if provided
-  const templateData = useQuery(
-    api.signatures.getDocument,
-    templateId ? { documentId: templateId as any } : 'skip',
-  );
+  const templateData = useQuery(api.signatures.getTemplate, templateId ? { templateId } : 'skip');
 
   // Prefill from template
   React.useEffect(() => {
     if (templateData && !title) {
       setTitle(templateData.title);
-      setDescription((templateData as any).description || '');
+      setDescription(templateData.description || '');
       setCategory('template');
     }
   }, [templateData, title]);
@@ -370,7 +367,6 @@ export default function DocumentUploadWizard({
 
       const docId = await createDocumentMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         title: title.trim(),
         description: description.trim() || undefined,
         category,
@@ -386,7 +382,6 @@ export default function DocumentUploadWizard({
       if (publishImmediately && docId) {
         await updateDocumentMutation({
           documentId: docId,
-          requesterId: user.id as Id<'users'>,
           isPublished: true,
         });
       }

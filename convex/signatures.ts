@@ -65,6 +65,13 @@ export const getDocument = query({
   },
 });
 
+export const getTemplate = query({
+  args: { templateId: v.id('documentTemplates') },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.templateId);
+  },
+});
+
 export const getMyPendingSignatures = query({
   args: {
     organizationId: v.id('organizations'),

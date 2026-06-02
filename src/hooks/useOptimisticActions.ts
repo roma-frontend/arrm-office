@@ -473,7 +473,7 @@ export function useOptimisticLeaveActions() {
       try {
         startTransition(() => setOptimisticAction({ leaveId, action: 'delete' }));
 
-        await deleteLeave({ leaveId, requesterId });
+        await deleteLeave({ leaveId });
 
         setError(null);
         return true;

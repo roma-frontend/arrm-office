@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchQuery } from 'convex/nextjs';
 import { api } from '../../../../../convex/_generated/api';
 import { jwtVerify } from 'jose';
+import { signConvexJWT, type JWTPayload } from '@/lib/jwt';
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel';
 
 // Opt out of static generation — uses request.url
@@ -118,21 +119,24 @@ export async function GET(req: NextRequest) {
     const isAdmin = userRole === 'admin' || userRole === 'superadmin';
     const isSupervisor = userRole === 'supervisor';
 
+    // Forward a Convex auth token derived from the verified session identity
+    const convexToken = await signConvexJWT({
+      userId: requesterId,
+      name: '',
+      email: auth.email,
+      role: userRole as JWTPayload['role'],
+    });
+    const convexAuth = { token: convexToken };
+
     // Fetch core system data first (needed to get orgId)
     const [users, leaves, todayAttendance, allTasks, allTickets, automationWorkflows] =
       await Promise.all([
-        fetchQuery(api.users.queries.getAllUsers, {
-          requesterId: requesterId as Id<'users'>,
-        }),
-        fetchQuery(api.leaves.getAllLeaves, {
-          requesterId: requesterId as Id<'users'>,
-        }),
+        fetchQuery(api.users.queries.getAllUsers, {}, convexAuth),
+        fetchQuery(api.leaves.getAllLeaves, {}, convexAuth),
         fetchQuery(api.timeTracking.getTodayAllAttendance, {
           adminId: requesterId as Id<'users'>,
         }),
-        fetchQuery(api.tasks.getAllTasks, {
-          requesterId: requesterId as Id<'users'>,
-        }),
+        fetchQuery(api.tasks.getAllTasks, {}, convexAuth),
         fetchQuery(api.tickets.getAllTickets, {
           status: undefined,
           priority: undefined,

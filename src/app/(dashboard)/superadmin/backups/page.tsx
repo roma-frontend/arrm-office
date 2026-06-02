@@ -555,7 +555,6 @@ function OrgBackups({
     api.users.queries.getUsersByOrganizationId,
     isExpanded
       ? {
-          requesterId: superadminUserId as Id<'users'>,
           organizationId: org._id as Id<'organizations'>,
         }
       : 'skip',

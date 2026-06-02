@@ -73,7 +73,7 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
           process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
             // Default test key (replace with your own)
             'BEl62iUYgUivxIkv69yViEuiBIa-Ib37gp65oYI-vA0e-CvnG8V8RswNPQNBrD7xHYb9rJXLGYvO6CYnlPqEm0U',
-        ) as any,
+        ),
       });
 
       logger.log('Subscribed to push notifications:', subscription);
@@ -130,14 +130,14 @@ export async function sendLocalPushNotification(
       requireInteraction: false, // Better for iOS
       silent: false,
       ...options,
-    } as any);
+    });
   } catch (error) {
     logger.error('Failed to send local push notification:', error);
   }
 }
 
 // Utility: Convert VAPID key
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const paddingLength = (4 - (base64String.length % 4)) % 4;
   const padding = paddingLength > 0 ? '='.repeat(paddingLength) : '';
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');

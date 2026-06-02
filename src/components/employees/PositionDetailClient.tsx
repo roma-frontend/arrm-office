@@ -119,8 +119,8 @@ function PositionWizard({
 }: PositionWizardProps) {
   const { t } = useTranslation();
   const selectedOrgId = useSelectedOrganization();
-  const createPosition = useMutation(api.positions.create as any);
-  const updatePosition = useMutation(api.positions.update as any);
+  const createPosition = useMutation(api.positions.create);
+  const updatePosition = useMutation(api.positions.update);
   const [wizardData, setWizardData] = useState<Record<string, string | number | boolean | null>>(
     editingPosition
       ? {
@@ -425,16 +425,16 @@ export default function PositionDetailClient() {
   const position = useQuery(
     api.positions.getById,
     positionId ? { id: positionId as Id<'positions'> } : 'skip',
-  ) as any | undefined | null;
+  );
 
-  const employees = useQuery(api.users.listAll) as any[] | undefined;
+  const employees = useQuery(api.users.listAll);
 
   const departments = useQuery(
     api.departments.list,
-    selectedOrgId ? { organizationId: selectedOrgId as any } : 'skip',
-  ) as any[] | undefined;
+    selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
+  );
 
-  const removePosition = useMutation(api.positions.remove as any);
+  const removePosition = useMutation(api.positions.remove);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -751,7 +751,7 @@ export default function PositionDetailClient() {
                         <Badge
                           className={cn(
                             'text-xs',
-                            levelColors[position.level] || 'bg-gray-500/10 text-gray-600',
+                            levelColors[position.level ?? ''] || 'bg-gray-500/10 text-gray-600',
                           )}
                         >
                           {position.level || position.title}

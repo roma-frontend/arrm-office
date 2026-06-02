@@ -70,5 +70,5 @@ export const CSRF_PROTECTED_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'] as cons
  * Check if method requires CSRF protection
  */
 export function requiresCsrfProtection(method: string): boolean {
-  return CSRF_PROTECTED_METHODS.includes(method.toUpperCase() as any);
+  return (CSRF_PROTECTED_METHODS as readonly string[]).includes(method.toUpperCase());
 }

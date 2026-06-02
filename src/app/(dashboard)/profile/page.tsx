@@ -102,7 +102,7 @@ export default function ProfilePage() {
 
       // 1. Save to Convex DB
       await updateOwnProfile({
-        userId: user.id as any,
+        userId: user.id as Id<'users'>,
         name: newName,
         email: newEmail,
         phone: newPhone || undefined,
@@ -164,7 +164,7 @@ export default function ProfilePage() {
       await deleteAvatarFromCloudinary(user.id);
 
       // 2. Delete from database
-      await deleteAvatar({ userId: user.id as any });
+      await deleteAvatar({ userId: user.id as Id<'users'> });
 
       // 3. Update local state
       login({ ...user, avatar: undefined });

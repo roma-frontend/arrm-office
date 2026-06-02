@@ -4,7 +4,6 @@ import type { Id, Doc } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { getProfile } from './lib/userProfile';
-import { requireRequester } from './lib/requireRequester';
 import { getAuthCaller } from './lib/getAuthCaller';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,11 +12,9 @@ import { getAuthCaller } from './lib/getAuthCaller';
 export const getOrgChart = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, requesterId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
+  handler: async (ctx, { organizationId }) => {
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -75,11 +72,9 @@ export const getOrgChart = query({
 export const getOrgChartTree = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, requesterId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (requesterId ? await requireRequester(ctx, requesterId) : null);
+  handler: async (ctx, { organizationId }) => {
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -669,12 +664,9 @@ export const fixOrgChartDepartments = mutation({
 export const debugOrgChart = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -743,12 +735,9 @@ export const debugOrgChart = query({
 export const getLayouts = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
     const userIsSuperadmin = isSuperadmin(requester);
@@ -759,7 +748,7 @@ export const getLayouts = query({
     const layouts = await ctx.db
       .query('orgChartLayouts')
       .withIndex('by_user', (q) =>
-        q.eq('organizationId', args.organizationId).eq('userId', args.requesterId),
+        q.eq('organizationId', args.organizationId).eq('userId', requester._id),
       )
       .take(MAX_PAGE_SIZE);
 

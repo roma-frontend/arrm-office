@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
+import { signConvexJWT, type JWTPayload } from '@/lib/jwt';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
 
@@ -29,9 +30,20 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch user's leave data
+    const convexToken = await signConvexJWT({
+      userId: String(userId),
+      name: session.name,
+      email: session.email,
+      role: session.role as JWTPayload['role'],
+      organizationId: session.organizationId,
+    });
     const userLeaves = await fetchQuery(api.leaves.getUserLeaves, { userId });
     const analytics = await fetchQuery(api.analytics.getUserAnalytics, { userId });
-    const teamCalendar = await fetchQuery(api.analytics.getTeamCalendar, { requesterId: userId });
+    const teamCalendar = await fetchQuery(
+      api.analytics.getTeamCalendar,
+      {},
+      { token: convexToken },
+    );
 
     // Build context for AI
     const context = {

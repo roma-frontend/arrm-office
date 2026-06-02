@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DollarSign } from 'lucide-react';
@@ -19,7 +20,7 @@ export default function CostAnalysis({ organizationId }: CostAnalysisProps) {
 
   const data = useQuery(api.admin.getCostAnalysis, {
     period,
-    organizationId: organizationId as any,
+    organizationId: organizationId as Id<'organizations'> | undefined,
   });
 
   if (!data) {

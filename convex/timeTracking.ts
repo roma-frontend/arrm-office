@@ -353,9 +353,12 @@ export const getTodayAllAttendance = query({
         if (user.role === 'superadmin') return null;
 
         const profile = await getProfile(ctx, record.userId);
+        const supervisorId = profile?.supervisorId ?? user.supervisorId;
+        const supervisor = supervisorId ? await ctx.db.get(supervisorId) : null;
         const userWithAvatar = {
           ...user,
           avatarUrl: profile?.avatarUrl ?? user.avatarUrl ?? user.faceImageUrl,
+          supervisorName: supervisor?.name,
         };
         return { ...record, user: userWithAvatar };
       }),

@@ -89,21 +89,20 @@ export function EmployeeDashboard() {
   // ═══════════════════════════════════════════════════════════════
   // HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   // ═══════════════════════════════════════════════════════════════
-  const leaves = useQuery(
-    api.leaves.getAllLeaves,
-    user?.id && user.organizationId ? { requesterId: user.id as Id<'users'> } : 'skip',
-  );
+  const leaves = useQuery(api.leaves.getAllLeaves, user?.id && user.organizationId ? {} : 'skip');
   const userData = useQuery(
     api.users.queries.getUserById,
-    user?.id ? { userId: user.id as any } : 'skip',
+    user?.id ? { userId: user.id as Id<'users'> } : 'skip',
   );
   const latestRating = useQuery(
     api.supervisorRatings.getLatestRating,
-    user?.id ? { employeeId: user.id as any } : 'skip',
+    user?.id ? { employeeId: user.id as Id<'users'> } : 'skip',
   );
   const monthlyStats = useQuery(
     api.timeTracking.getMonthlyStats,
-    user?.id ? { userId: user.id as any, month: new Date().toISOString().slice(0, 7) } : 'skip',
+    user?.id
+      ? { userId: user.id as Id<'users'>, month: new Date().toISOString().slice(0, 7) }
+      : 'skip',
   );
 
   // ═══════════════════════════════════════════════════════════════

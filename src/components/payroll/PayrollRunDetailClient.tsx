@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from 'convex/react';
+import type { FunctionReturnType } from 'convex/server';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { motion } from '@/lib/cssMotion';
@@ -32,6 +33,11 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { EditPayrollRecordDialog } from '@/components/payroll/EditPayrollRecordDialog';
+
+type PayrollRunDetail = NonNullable<
+  FunctionReturnType<typeof api.payroll.queries.getPayrollRunById>
+>;
+type PayrollRecordItem = PayrollRunDetail['records'][number];
 
 function formatCurrency(amount: number, currency = 'AMD'): string {
   return new Intl.NumberFormat('en-US', {
@@ -74,16 +80,16 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
     user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
   const run = useQuery(
-    api.payroll.queries.getPayrollRunById as any,
-    user?.id ? ({ requesterId: user.id, id: runId } as any) : 'skip',
-  ) as any;
+    api.payroll.queries.getPayrollRunById,
+    user?.id ? { requesterId: user.id as Id<'users'>, id: runId } : 'skip',
+  );
 
   const calculate = useMutation(api.payroll.mutations.calculatePayrollRun);
   const approve = useMutation(api.payroll.mutations.approvePayrollRun);
   const markPaid = useMutation(api.payroll.mutations.markPayrollRunAsPaid);
   const cancel = useMutation(api.payroll.mutations.cancelPayrollRun);
 
-  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editingRecord, setEditingRecord] = useState<PayrollRecordItem | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const runAction = async (fn: () => Promise<unknown>, successKey: string) => {
@@ -294,7 +300,7 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
                   </tr>
                 </thead>
                 <tbody>
-                  {run.records.map((record: any) => (
+                  {run.records.map((record) => (
                     <tr
                       key={record._id}
                       className="border-b border-(--border) hover:bg-(--card-hover)"

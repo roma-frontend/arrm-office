@@ -88,8 +88,8 @@ function DepartmentWizard({
 }: DepartmentWizardProps) {
   const { t } = useTranslation();
   const selectedOrgId = useSelectedOrganization();
-  const createDepartment = useMutation(api.departments.create as any);
-  const updateDepartment = useMutation(api.departments.update as any);
+  const createDepartment = useMutation(api.departments.create);
+  const updateDepartment = useMutation(api.departments.update);
   const [wizardData, setWizardData] = useState<Record<string, string | number | boolean | null>>(
     editingDepartment
       ? {
@@ -289,19 +289,19 @@ export default function DepartmentDetailClient() {
   const department = useQuery(
     api.departments.getById,
     departmentId ? { id: departmentId as Id<'departments'> } : 'skip',
-  ) as any | undefined | null;
+  );
 
   const employees = useQuery(
     api.users.queries.getUsersByDepartment,
     departmentId ? { departmentId: departmentId as Id<'departments'> } : 'skip',
-  ) as any[] | undefined;
+  );
 
   const positions = useQuery(
     api.positions.list,
-    selectedOrgId ? { organizationId: selectedOrgId as any } : 'skip',
-  ) as any[] | undefined;
+    selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
+  );
 
-  const removeDepartment = useMutation(api.departments.remove as any);
+  const removeDepartment = useMutation(api.departments.remove);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -466,7 +466,7 @@ export default function DepartmentDetailClient() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{department.avgPerformance || 'N/A'}</div>
+              <div className="text-2xl font-bold">{'N/A'}</div>
             </CardContent>
           </Card>
           <Card>
@@ -476,9 +476,7 @@ export default function DepartmentDetailClient() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                ${(department.totalSalary || 0).toLocaleString()}
-              </div>
+              <div className="text-2xl font-bold">${(0).toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>

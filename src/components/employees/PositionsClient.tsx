@@ -112,8 +112,8 @@ function PositionWizard({
 }: PositionWizardProps) {
   const { t } = useTranslation();
   const selectedOrgId = useSelectedOrganization();
-  const createPosition = useMutation(api.positions.create as any);
-  const updatePosition = useMutation(api.positions.update as any);
+  const createPosition = useMutation(api.positions.create);
+  const updatePosition = useMutation(api.positions.update);
   const [wizardData, setWizardData] = useState<Record<string, string | number | boolean | null>>(
     editingPosition
       ? {
@@ -423,21 +423,21 @@ export default function PositionsClient() {
     api.positions.list,
     selectedOrgId || isSuperadmin
       ? selectedOrgId
-        ? { organizationId: selectedOrgId as any }
+        ? { organizationId: selectedOrgId as Id<'organizations'> }
         : {}
       : 'skip',
-  ) as any[] | undefined;
+  );
 
   const departments = useQuery(
     api.departments.list,
     selectedOrgId || isSuperadmin
       ? selectedOrgId
-        ? { organizationId: selectedOrgId as any }
+        ? { organizationId: selectedOrgId as Id<'organizations'> }
         : {}
       : 'skip',
-  ) as any[] | undefined;
+  );
 
-  const removePosition = useMutation(api.positions.remove as any);
+  const removePosition = useMutation(api.positions.remove);
 
   const isLoading = positions === undefined || departments === undefined;
 

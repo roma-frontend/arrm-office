@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
       const match = data.match(/^poll_(.+)_(\d+)$/);
       if (match && chatId) {
         const result = await convex.mutation(api.newsletter.votePoll, {
-          pollId: match[1] as any,
+          pollId: match[1] as Id<'newsletterPolls'>,
           chatId,
           optionIndex: parseInt(match[2]!),
         });
@@ -131,7 +132,7 @@ export async function POST(req: Request) {
         if (validLangs.includes(newLang)) {
           await convex.mutation(api.newsletter.updateLanguage, {
             chatId,
-            language: newLang as any,
+            language: newLang as 'en' | 'ru' | 'hy' | 'de',
           });
           reply = r.langUpdated! + newLang;
         } else {
@@ -150,7 +151,10 @@ export async function POST(req: Request) {
           .map((t: string) => t.trim().toLowerCase())
           .filter((t: string) => valid.includes(t));
         if (topics.length > 0) {
-          await convex.mutation(api.newsletter.updateTopics, { chatId, topics: topics as any });
+          await convex.mutation(api.newsletter.updateTopics, {
+            chatId,
+            topics: topics as ('hr-tips' | 'leadership' | 'wellness' | 'tech')[],
+          });
           reply = r.topicsUpdated! + '\n' + topics.join(', ');
         } else {
           reply = r.topicsPrompt!;

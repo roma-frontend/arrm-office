@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +40,7 @@ function SLASettings() {
     setIsSaving(true);
     try {
       await updateConfig({
-        userId: user.id as any,
+        userId: user.id as Id<'users'>,
         targetResponseTime: targetHours,
         warningThreshold: warningThreshold,
         criticalThreshold: criticalThreshold,

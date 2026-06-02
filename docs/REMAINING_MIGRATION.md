@@ -117,6 +117,36 @@ After Steps 1-4 are done and `args` has proper types again:
 This is ~2-3 days of manual work across 60+ files. Do it file by file,
 running `npx tsc --noEmit --skipLibCheck` after each to verify.
 
+### Step 5 — progress (updated 2026-06-02)
+
+Client-side `as any` audit COMPLETE. Started ~140 client casts → load-bearing ones removed
+via root-cause type fixes; genuine library/boundary/test casts classified and kept.
+
+**Real bugs surfaced by removing load-bearing casts:**
+
+- **Attendance** — `getTodayAllAttendance` did not compute `supervisorName`, so the supervisor
+  block in `AttendanceDetailModal` never rendered. Fixed query to resolve supervisor.
+- **Support tickets** — `getTicketById` did not return `isOverdue`, so the "overdue" badge in the
+  ticket detail dialog never showed. Added the field (same logic as `getAllTickets`).
+- **Subscriptions** — `subscriptions` table was missing `stripePriceId` / `metadata` (written by
+  `createManualSubscription`) → manual-subscription writes failed at runtime under schema validation;
+  and `listAllWithUsers` did not return `organizationName/Slug/employeeCount/isManual` that the UI read
+  (showed Unknown/0/always-stripe). Added schema fields + enriched the query.
+- **Push notifications** — `applicationServerKey` cast hid a real lib-type mismatch
+  (`Uint8Array<ArrayBufferLike>` vs `BufferSource`). Fixed `urlBase64ToUint8Array` return type.
+
+**Lesson:** `get_errors` (language server) can miss lib-type mismatches that full `tsc` catches —
+always run a full `tsc` after a batch, not just per-file checks.
+
+**Remaining `as any` (intentional keeps):** Stripe SDK type gaps (webhook), `__tests__`
+invalid-input casts, browser globals (`webkitAudioContext`, `gtag`, `__layoutCache`, leaflet),
+`pdfMake` vfs, framer-motion arrays, generic `sanitize`, a few prop-bridge casts, and the
+`SavedMessagesPanel` placeholder.
+
+**convex `(x: any)` lambda/builder annotations (200+):** NOT load-bearing — sources already return
+`Doc<>[]`, object literals give typed returns, so these mask no bugs. Left as cosmetic churn (no
+functional benefit, high diff cost). Can be cleaned later if desired.
+
 ## TypeScript issue to be aware of
 
 When wrapping handlers with `withAuth`, `ctx.db.get(someId)` returns a union type

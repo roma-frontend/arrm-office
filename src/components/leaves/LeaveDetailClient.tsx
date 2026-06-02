@@ -115,7 +115,7 @@ export default function LeaveDetailClient() {
     if (!currentUser) return;
     setIsDeleting(true);
     try {
-      await deleteLeave({ leaveId, requesterId: currentUser._id });
+      await deleteLeave({ leaveId });
       toast.success(t('leave.deletedSuccess'));
       router.push('/leaves');
     } catch {

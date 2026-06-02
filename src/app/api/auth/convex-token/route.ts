@@ -1,18 +1,53 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { verifyJWT, signConvexJWT } from '@/lib/jwt';
+import { verifyJWT, signConvexJWT, type JWTPayload } from '@/lib/jwt';
+import { auth } from '@/app/api/auth/[...nextauth]/route';
 
+/**
+ * Mint a fresh Convex auth token for the browser auth bridge.
+ *
+ * IMPORTANT: We always re-derive identity from the trusted session and re-sign
+ * a fresh Convex JWT. We deliberately do NOT return a cached `convex-auth-token`
+ * cookie: a stale/expired token (or one signed before a key/issuer change) would
+ * be rejected by Convex, leaving `getUserIdentity()` null and every auth-gated
+ * function failing until the cookie is manually cleared.
+ *
+ * Identity sources, in order:
+ *   1. `hr-auth-token` cookie  — credential / face login
+ *   2. `oauth-session` cookie  — OAuth bridge session
+ *   3. NextAuth session        — OAuth users before the cookie sync completes
+ */
 export async function GET() {
   const jar = await cookies();
 
-  const existing = jar.get('convex-auth-token')?.value;
-  if (existing) return NextResponse.json({ token: existing });
+  // 1 + 2: custom JWT cookies (credential login or OAuth bridge session)
+  const sessionToken = jar.get('hr-auth-token')?.value ?? jar.get('oauth-session')?.value;
+  let payload: JWTPayload | null = sessionToken ? await verifyJWT(sessionToken) : null;
 
-  const hrToken = jar.get('hr-auth-token')?.value;
-  if (!hrToken) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  // 3: fall back to NextAuth session (OAuth users)
+  if (!payload) {
+    try {
+      const session = await auth();
+      if (session?.user?.email) {
+        payload = {
+          userId: session.user.id ?? '',
+          name: session.user.name ?? 'User',
+          email: session.user.email,
+          role: (session.user.role as JWTPayload['role']) ?? 'employee',
+          organizationId: session.user.organizationId,
+          isApproved: session.user.isApproved,
+          department: session.user.department,
+          position: session.user.position,
+          employeeType: session.user.employeeType as JWTPayload['employeeType'],
+          avatar: session.user.avatar,
+        };
+      }
+    } catch {
+      // NextAuth unavailable — fall through to 401
+    }
+  }
 
-  const payload = await verifyJWT(hrToken);
-  if (!payload) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+  if (!payload) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   try {
     const convexToken = await signConvexJWT(payload);

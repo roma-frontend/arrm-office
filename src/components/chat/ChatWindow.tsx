@@ -186,10 +186,10 @@ export const ChatWindow = React.memo(function ChatWindow({
   const setTyping = useMutation(api.chat.mutations.setTyping);
 
   const conv = conversation?.find((c) => c != null && c._id === conversationId) ?? null;
-  const otherUser = conv?.type === 'direct' ? (conv as any).otherUser : null;
+  const otherUser = conv?.type === 'direct' ? conv.otherUser : null;
   const displayName =
     conv?.type === 'group'
-      ? ((conv as any).name ?? t('chat.defaultGroupName'))
+      ? (conv.name ?? t('chat.defaultGroupName'))
       : (otherUser?.name ?? t('chat.defaultChatName'));
   const otherMembers = members?.filter((m) => m.userId !== currentUserId) ?? [];
   const otherMemberIds = otherMembers.map((m) => m.userId as Id<'users'>);
@@ -576,7 +576,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         poll: {
           question: q,
           options: opts.map((text, i) => ({ id: `opt_${i}`, text, votes: [] })),
-        } as any,
+        },
       });
       setPollQuestion('');
       setPollOptions(['', '']);
@@ -642,7 +642,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   const canSend = (input.trim().length > 0 || pendingFiles.length > 0) && !sending;
 
   // Check if current user can send messages (not blocked from System Announcements)
-  const isSystemAnnouncementsChannel = (conv as any)?.name === 'System Announcements';
+  const isSystemAnnouncementsChannel = conv?.name === 'System Announcements';
   const canUserSendMessage = !isSystemAnnouncementsChannel || currentUser?.role === 'superadmin';
 
   // Resolve chat background
@@ -688,7 +688,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               </Link>
             ) : (
               <Avatar className="w-9 h-9">
-                {(conv as any)?.avatarUrl && <AvatarImage src={(conv as any).avatarUrl} />}
+                {conv?.avatarUrl && <AvatarImage src={conv.avatarUrl} />}
                 <AvatarFallback
                   className="text-xs font-bold text-white"
                   style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
@@ -724,7 +724,7 @@ export const ChatWindow = React.memo(function ChatWindow({
 
           <div className="flex items-center gap-1">
             {/* Disable calls for System Announcements channel */}
-            {(conv as any)?.name !== 'System Announcements' && (
+            {conv?.name !== 'System Announcements' && (
               <>
                 <button
                   onClick={() => handleStartCall('audio')}
@@ -912,7 +912,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                   const prevMsg = dedupedMessages?.[virtualRow.index - 1];
                   const isFirstOfStreak =
                     virtualRow.index === 0 || prevMsg?.senderId !== msg.senderId;
-                  const isSystemAnnouncements = (conv as any)?.name === 'System Announcements';
+                  const isSystemAnnouncements = conv?.name === 'System Announcements';
                   const showAvatar = isFirstOfStreak && !isSystemAnnouncements;
                   const showName = isSystemAnnouncements
                     ? false

@@ -52,7 +52,6 @@ export default function DashboardClient() {
     api.analytics.getDashboardStats,
     userId
       ? {
-          requesterId: userId,
           organizationId: (selectedOrgId || undefined) as Id<'organizations'> | undefined,
         }
       : 'skip',
@@ -62,7 +61,6 @@ export default function DashboardClient() {
     api.analytics.getRecentLeaves,
     userId
       ? {
-          requesterId: userId,
           organizationId: (selectedOrgId || undefined) as Id<'organizations'> | undefined,
         }
       : 'skip',
@@ -198,7 +196,7 @@ export default function DashboardClient() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         <RecentLeavesCard
           recentLeaves={
-            (recentLeaves as any[])?.map((l) => ({
+            recentLeaves.map((l) => ({
               ...l,
               organizationId: l.organizationId ?? ('' as Id<'organizations'>),
             })) as LeaveEnriched[]

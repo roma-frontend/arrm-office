@@ -148,11 +148,11 @@ function SignaturePad({ onSave, width = 400, height = 200 }: SignaturePadProps) 
       <div className="flex items-center justify-between">
         <Button variant="outline" size="sm" onClick={clear} disabled={!hasContent}>
           <Trash2 className="w-3.5 h-3.5 mr-1" />
-          {t('signatures.pad.clear', 'Clear') as any}
+          {t('signatures.pad.clear', 'Clear')}
         </Button>
         <Button size="sm" onClick={save} disabled={!hasContent}>
           <CheckCircle className="w-3.5 h-3.5 mr-1" />
-          {t('signatures.pad.apply', 'Apply Signature') as any}
+          {t('signatures.pad.apply', 'Apply Signature')}
         </Button>
       </div>
     </div>
@@ -194,7 +194,7 @@ function CreateDocumentWizard({
   const templates = useQuery(api.signatures.listTemplates, { organizationId });
   const employees = useQuery(
     api.users.getUsersByOrganizationId as never,
-    organizationId ? ({ organizationId, requesterId: userId } as never) : 'skip',
+    organizationId ? ({ organizationId } as never) : 'skip',
   );
   const createDocument = useMutation(api.signatures.createDocument);
 
@@ -300,10 +300,10 @@ function CreateDocumentWizard({
 
         <DialogHeader className="px-5 pt-5 pb-0">
           <DialogTitle className="text-lg font-bold">
-            {t('signatures.createDocument', 'Create Document for Signing') as any}
+            {t('signatures.createDocument', 'Create Document for Signing')}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            {t('signatures.createDocument', 'Create Document for Signing') as any}
+            {t('signatures.createDocument', 'Create Document for Signing')}
           </DialogDescription>
         </DialogHeader>
 
@@ -351,9 +351,10 @@ function CreateDocumentWizard({
                       <Select value={templateId} onValueChange={handleTemplateSelect}>
                         <SelectTrigger className="mt-1">
                           <SelectValue
-                            placeholder={
-                              t('signatures.fields.selectTemplate', 'Select a template...') as any
-                            }
+                            placeholder={t(
+                              'signatures.fields.selectTemplate',
+                              'Select a template...',
+                            )}
                           />
                         </SelectTrigger>
                         <SelectContent>
@@ -367,28 +368,27 @@ function CreateDocumentWizard({
                     </div>
                   )}
                   <div>
-                    <Label>{t('signatures.fields.title', 'Document Title') as any}</Label>
+                    <Label>{t('signatures.fields.title', 'Document Title')}</Label>
                     <Input
                       className="mt-1"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder={
-                        t(
-                          'signatures.fields.titlePlaceholder',
-                          'e.g., Employment Contract — John Doe',
-                        ) as any
-                      }
+                      placeholder={t(
+                        'signatures.fields.titlePlaceholder',
+                        'e.g., Employment Contract — John Doe',
+                      )}
                     />
                   </div>
                   <div>
-                    <Label>{t('signatures.fields.content', 'Document Content') as any}</Label>
+                    <Label>{t('signatures.fields.content', 'Document Content')}</Label>
                     <Textarea
                       className="mt-1 min-h-[150px]"
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      placeholder={
-                        t('signatures.fields.contentPlaceholder', 'Enter document text...') as any
-                      }
+                      placeholder={t(
+                        'signatures.fields.contentPlaceholder',
+                        'Enter document text...',
+                      )}
                     />
                   </div>
                 </div>
@@ -397,12 +397,10 @@ function CreateDocumentWizard({
               {step === 1 && (
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    {
-                      t(
-                        'signatures.wizard.selectSigners',
-                        'Select employees who need to sign. Order determines signing sequence.',
-                      ) as any
-                    }
+                    {t(
+                      'signatures.wizard.selectSigners',
+                      'Select employees who need to sign. Order determines signing sequence.',
+                    )}
                   </p>
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {employeeList.map((emp: any) => {
@@ -432,7 +430,7 @@ function CreateDocumentWizard({
                     })}
                     {employeeList.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        {t('signatures.noEmployees', 'No employees found') as any}
+                        {t('signatures.noEmployees', 'No employees found')}
                       </p>
                     )}
                   </div>
@@ -454,19 +452,19 @@ function CreateDocumentWizard({
                     <CardContent className="p-4 space-y-3">
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          {t('signatures.fields.title', 'Title') as any}
+                          {t('signatures.fields.title', 'Title')}
                         </p>
                         <p className="font-medium">{title}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          {t('signatures.fields.content', 'Content') as any}
+                          {t('signatures.fields.content', 'Content')}
                         </p>
                         <p className="text-sm whitespace-pre-wrap line-clamp-4">{content}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          {t('signatures.wizard.signers', 'Signers') as any}
+                          {t('signatures.wizard.signers', 'Signers')}
                         </p>
                         <div className="space-y-1 mt-1">
                           {selectedSigners.map((s: any) => (
@@ -483,7 +481,7 @@ function CreateDocumentWizard({
                       {expiresAt && (
                         <div>
                           <p className="text-xs text-muted-foreground">
-                            {t('signatures.fields.expiresAt', 'Expires') as any}
+                            {t('signatures.fields.expiresAt', 'Expires')}
                           </p>
                           <p className="text-sm">{new Date(expiresAt).toLocaleDateString()}</p>
                         </div>
@@ -513,13 +511,13 @@ function CreateDocumentWizard({
           >
             {step < 2 ? (
               <>
-                {t('common.next', 'Next') as any}
+                {t('common.next', 'Next')}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </>
             ) : (
               <>
                 <Send className="w-4 h-4 mr-1" />
-                {t('signatures.send', 'Send for Signing') as any}
+                {t('signatures.send', 'Send for Signing')}
               </>
             )}
           </Button>
@@ -618,7 +616,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
               {!declineMode ? (
                 <div>
                   <Label className="mb-2 block">
-                    {t('signatures.pad.drawSignature', 'Draw your signature below') as any}
+                    {t('signatures.pad.drawSignature', 'Draw your signature below')}
                   </Label>
                   {signatureData ? (
                     <div className="space-y-2">
@@ -626,19 +624,17 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
                         <img src={signatureData} alt="Signature" className="max-h-[80px] mx-auto" />
                       </div>
                       <Button variant="outline" size="sm" onClick={() => setSignatureData(null)}>
-                        {t('signatures.pad.redraw', 'Redraw') as any}
+                        {t('signatures.pad.redraw', 'Redraw')}
                       </Button>
                     </div>
                   ) : (
                     <SignaturePad onSave={setSignatureData} />
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
-                    {
-                      t(
-                        'signatures.consent',
-                        'By signing, you agree to be legally bound by this document.',
-                      ) as any
-                    }
+                    {t(
+                      'signatures.consent',
+                      'By signing, you agree to be legally bound by this document.',
+                    )}
                   </p>
                 </div>
               ) : (
@@ -650,12 +646,10 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
                     className="mt-1"
                     value={declineReason}
                     onChange={(e) => setDeclineReason(e.target.value)}
-                    placeholder={
-                      t(
-                        'signatures.fields.declineReasonPlaceholder',
-                        'Explain why you are declining...',
-                      ) as any
-                    }
+                    placeholder={t(
+                      'signatures.fields.declineReasonPlaceholder',
+                      'Explain why you are declining...',
+                    )}
                   />
                 </div>
               )}
@@ -668,22 +662,22 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
             <>
               <Button variant="outline" size="sm" onClick={() => setDeclineMode(true)}>
                 <XCircle className="w-4 h-4 mr-1" />
-                {t('signatures.decline', 'Decline') as any}
+                {t('signatures.decline', 'Decline')}
               </Button>
               <Button size="sm" disabled={!signatureData} onClick={handleSign}>
                 <CheckCircle className="w-4 h-4 mr-1" />
-                {t('signatures.sign', 'Sign Document') as any}
+                {t('signatures.sign', 'Sign Document')}
               </Button>
             </>
           ) : (
             <>
               <Button variant="outline" size="sm" onClick={() => setDeclineMode(false)}>
                 <ChevronLeft className="w-4 h-4 mr-1" />
-                {t('common.back', 'Back') as any}
+                {t('common.back', 'Back')}
               </Button>
               <Button variant="destructive" size="sm" onClick={handleDecline}>
                 <XCircle className="w-4 h-4 mr-1" />
-                {t('signatures.confirmDecline', 'Confirm Decline') as any}
+                {t('signatures.confirmDecline', 'Confirm Decline')}
               </Button>
             </>
           )}
@@ -800,12 +794,10 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
             <>
               {/* Status Badge */}
               <div className="flex items-center gap-2">
-                <Badge variant="outline">
-                  {t(`signatures.status.${doc.status}`, doc.status) as any}
-                </Badge>
+                <Badge variant="outline">{t(`signatures.status.${doc.status}`, doc.status)}</Badge>
                 {doc.expiresAt && (
                   <span className="text-xs text-muted-foreground">
-                    {t('signatures.expiresOn', 'Expires') as any}:{' '}
+                    {t('signatures.expiresOn', 'Expires')}:{' '}
                     {new Date(doc.expiresAt).toLocaleDateString()}
                   </span>
                 )}
@@ -818,9 +810,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
 
               {/* Signers */}
               <div>
-                <h4 className="text-sm font-semibold mb-2">
-                  {t('signatures.signers', 'Signers') as any}
-                </h4>
+                <h4 className="text-sm font-semibold mb-2">{t('signatures.signers', 'Signers')}</h4>
                 <div className="space-y-2">
                   {doc.requests?.map((req: any) => (
                     <div
@@ -835,7 +825,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge className={`text-xs ${statusColor[req.status] || ''}`}>
-                          {t(`signatures.requestStatus.${req.status}`, req.status) as any}
+                          {String(t(`signatures.requestStatus.${req.status}`, req.status))}
                         </Badge>
                         {req.status === 'pending' && doc.createdBy === userId && (
                           <Button
@@ -857,7 +847,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
               {auditLog && auditLog.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold mb-2">
-                    {t('signatures.auditLog', 'Activity Log') as any}
+                    {t('signatures.auditLog', 'Activity Log')}
                   </h4>
                   <div className="space-y-1 max-h-[150px] overflow-y-auto">
                     {auditLog.map((entry: any) => {
@@ -869,7 +859,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
                         >
                           <Icon className="w-3 h-3 shrink-0" />
                           <span>
-                            {t(`signatures.actions.${entry.action}`, entry.action) as any}
+                            {String(t(`signatures.actions.${entry.action}`, entry.action))}
                           </span>
                           <span className="ml-auto">
                             {new Date(entry.timestamp).toLocaleString()}
@@ -887,12 +877,12 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
         <div className="px-5 py-4 border-t bg-muted/30 flex items-center justify-between">
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={onClose}>
-              {t('common.close', 'Close') as any}
+              {t('common.close', 'Close')}
             </Button>
             {doc && doc.status === 'completed' && (
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <Download className="w-4 h-4 mr-1" />
-                {t('signatures.exportPdf', 'Export PDF') as any}
+                {t('signatures.exportPdf', 'Export PDF')}
               </Button>
             )}
           </div>
@@ -901,7 +891,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
             (doc.status === 'pending' || doc.status === 'partially_signed') && (
               <Button variant="destructive" size="sm" onClick={handleCancel}>
                 <XCircle className="w-4 h-4 mr-1" />
-                {t('signatures.cancel', 'Cancel Document') as any}
+                {t('signatures.cancel', 'Cancel Document')}
               </Button>
             )}
         </div>
@@ -962,7 +952,7 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[80vh]">
         <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle>{t('signatures.templates', 'Document Templates') as any}</DialogTitle>
+          <DialogTitle>{t('signatures.templates', 'Document Templates')}</DialogTitle>
           <DialogDescription className="sr-only">Manage templates</DialogDescription>
         </DialogHeader>
 
@@ -971,7 +961,7 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
             <div className="space-y-3">
               <Button size="sm" onClick={() => setCreating(true)}>
                 <Plus className="w-4 h-4 mr-1" />
-                {t('signatures.createTemplate', 'New Template') as any}
+                {t('signatures.createTemplate', 'New Template')}
               </Button>
               {templates?.map((tpl: any) => (
                 <div
@@ -981,7 +971,7 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
                   <div>
                     <p className="text-sm font-medium">{tpl.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {t(`signatures.category.${tpl.category}`, tpl.category) as any}
+                      {String(t(`signatures.category.${tpl.category}`, tpl.category))}
                     </p>
                   </div>
                   <Button
@@ -995,14 +985,14 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
               ))}
               {(!templates || templates.length === 0) && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  {t('signatures.noTemplates', 'No templates yet') as any}
+                  {t('signatures.noTemplates', 'No templates yet')}
                 </p>
               )}
             </div>
           ) : (
             <div className="space-y-3">
               <div>
-                <Label>{t('signatures.fields.title', 'Title') as any}</Label>
+                <Label>{t('signatures.fields.title', 'Title')}</Label>
                 <Input
                   className="mt-1"
                   value={title}
@@ -1011,32 +1001,30 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
                 />
               </div>
               <div>
-                <Label>{t('signatures.fields.category', 'Category') as any}</Label>
+                <Label>{t('signatures.fields.category', 'Category')}</Label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="nda">
-                      {t('signatures.category.nda', 'NDA') as any}
-                    </SelectItem>
+                    <SelectItem value="nda">{t('signatures.category.nda', 'NDA')}</SelectItem>
                     <SelectItem value="offer">
-                      {t('signatures.category.offer', 'Offer Letter') as any}
+                      {t('signatures.category.offer', 'Offer Letter')}
                     </SelectItem>
                     <SelectItem value="contract">
-                      {t('signatures.category.contract', 'Contract') as any}
+                      {t('signatures.category.contract', 'Contract')}
                     </SelectItem>
                     <SelectItem value="policy">
-                      {t('signatures.category.policy', 'Policy') as any}
+                      {t('signatures.category.policy', 'Policy')}
                     </SelectItem>
                     <SelectItem value="custom">
-                      {t('signatures.category.custom', 'Custom') as any}
+                      {t('signatures.category.custom', 'Custom')}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>{t('signatures.fields.description', 'Description') as any}</Label>
+                <Label>{t('signatures.fields.description', 'Description')}</Label>
                 <Input
                   className="mt-1"
                   value={description}
@@ -1044,7 +1032,7 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
                 />
               </div>
               <div>
-                <Label>{t('signatures.fields.content', 'Content') as any}</Label>
+                <Label>{t('signatures.fields.content', 'Content')}</Label>
                 <Textarea
                   className="mt-1 min-h-[120px]"
                   value={content}
@@ -1066,7 +1054,7 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
           {creating && (
             <Button size="sm" disabled={!title.trim() || !content.trim()} onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-1" />
-              {t('signatures.save', 'Save Template') as any}
+              {t('signatures.save', 'Save Template')}
             </Button>
           )}
         </div>
@@ -1128,10 +1116,10 @@ export function ESignaturesClient() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--text-primary)">
-              {t('signatures.title', 'E-Signatures') as any}
+              {t('signatures.title', 'E-Signatures')}
             </h2>
             <p className="text-(--text-muted) text-sm mt-1">
-              {t('signatures.subtitle', 'Create, send, and sign documents electronically') as any}
+              {t('signatures.subtitle', 'Create, send, and sign documents electronically')}
             </p>
           </div>
           {isAdmin && (
@@ -1143,7 +1131,7 @@ export function ESignaturesClient() {
                 className="flex-1 sm:flex-initial"
               >
                 <FileText className="w-4 h-4 mr-1" />
-                {t('signatures.templates', 'Templates') as any}
+                {t('signatures.templates', 'Templates')}
               </Button>
               <Button
                 size="sm"
@@ -1151,7 +1139,7 @@ export function ESignaturesClient() {
                 className="flex-1 sm:flex-initial"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                {t('signatures.createDocument', 'New Document') as any}
+                {t('signatures.createDocument', 'New Document')}
               </Button>
             </div>
           )}
@@ -1169,7 +1157,7 @@ export function ESignaturesClient() {
               <div>
                 <p className="text-2xl font-bold">{stats.pendingMySignature}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('signatures.stats.pending', 'Awaiting My Signature') as any}
+                  {t('signatures.stats.pending', 'Awaiting My Signature')}
                 </p>
               </div>
             </CardContent>
@@ -1182,7 +1170,7 @@ export function ESignaturesClient() {
               <div>
                 <p className="text-2xl font-bold">{stats.completed}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('signatures.stats.completed', 'Completed') as any}
+                  {t('signatures.stats.completed', 'Completed')}
                 </p>
               </div>
             </CardContent>
@@ -1195,7 +1183,7 @@ export function ESignaturesClient() {
               <div>
                 <p className="text-2xl font-bold">{stats.awaitingOthers}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t('signatures.stats.awaitingOthers', 'Awaiting Others') as any}
+                  {t('signatures.stats.awaitingOthers', 'Awaiting Others')}
                 </p>
               </div>
             </CardContent>
@@ -1210,7 +1198,7 @@ export function ESignaturesClient() {
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="pending"
           >
-            {t('signatures.tabs.mySignatures', 'My Signatures') as any}
+            {t('signatures.tabs.mySignatures', 'My Signatures')}
             {myPending && myPending.length > 0 && (
               <Badge
                 variant="destructive"
@@ -1224,7 +1212,7 @@ export function ESignaturesClient() {
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="documents"
           >
-            {t('signatures.tabs.documents', 'Documents') as any}
+            {t('signatures.tabs.documents', 'Documents')}
           </TabsTrigger>
         </TabsList>
 
@@ -1236,11 +1224,9 @@ export function ESignaturesClient() {
             <Card>
               <CardContent className="p-8 text-center">
                 <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-3" />
-                <p className="font-medium">
-                  {t('signatures.noPending', 'No documents to sign') as any}
-                </p>
+                <p className="font-medium">{t('signatures.noPending', 'No documents to sign')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('signatures.noPendingHint') as any}
+                  {t('signatures.noPendingHint')}
                 </p>
               </CardContent>
             </Card>
@@ -1268,13 +1254,13 @@ export function ESignaturesClient() {
                           {req.document?.title ?? 'Document'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {t('signatures.signingOrder', 'Order') as any}: #{req.order}
+                          {t('signatures.signingOrder', 'Order')}: #{req.order}
                         </p>
                       </div>
                     </div>
                     <Button size="sm" className="w-full sm:w-auto shrink-0">
                       <PenTool className="w-4 h-4 mr-1" />
-                      {t('signatures.sign', 'Sign') as any}
+                      {t('signatures.sign', 'Sign')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1291,13 +1277,11 @@ export function ESignaturesClient() {
             <Card>
               <CardContent className="p-8 text-center">
                 <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <p className="font-medium">
-                  {t('signatures.noDocuments', 'No documents yet') as any}
-                </p>
+                <p className="font-medium">{t('signatures.noDocuments', 'No documents yet')}</p>
                 {isAdmin && (
                   <Button size="sm" className="mt-3" onClick={() => setWizardOpen(true)}>
                     <Plus className="w-4 h-4 mr-1" />
-                    {t('signatures.createFirst', 'Create your first document') as any}
+                    {t('signatures.createFirst', 'Create your first document')}
                   </Button>
                 )}
               </CardContent>
@@ -1323,7 +1307,7 @@ export function ESignaturesClient() {
                       </div>
                     </div>
                     <Badge className={`shrink-0 ${statusBadgeClass[doc.status] || ''}`}>
-                      {t(`signatures.status.${doc.status}`, doc.status) as any}
+                      {String(t(`signatures.status.${doc.status}`, doc.status))}
                     </Badge>
                   </CardContent>
                 </Card>

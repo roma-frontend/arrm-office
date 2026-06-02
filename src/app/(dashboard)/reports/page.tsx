@@ -47,7 +47,7 @@ export default function ReportsPage() {
   const leavesQueryParams = shouldUseOrgQuery
     ? { organizationId: selectedOrgId as Id<'organizations'> }
     : user?.id
-      ? { requesterId: user.id as Id<'users'> }
+      ? {}
       : ('skip' as const);
 
   // Use organization-specific query if superadmin has selected an org, otherwise use default
@@ -56,13 +56,13 @@ export default function ReportsPage() {
     user?.id && leavesQueryParams !== 'skip' ? leavesQueryParams : 'skip',
   );
   const usersQueryParams = shouldUseOrgQuery
-    ? { requesterId: user.id as Id<'users'>, organizationId: selectedOrgId as Id<'organizations'> }
+    ? { organizationId: selectedOrgId as Id<'organizations'> }
     : user?.id
-      ? { requesterId: user.id as Id<'users'> }
+      ? {}
       : ('skip' as const);
   const users = useQuery(
     shouldUseOrgQuery ? api.users.queries.getUsersByOrganizationId : api.users.queries.getAllUsers,
-    user?.id && usersQueryParams !== 'skip' ? usersQueryParams : 'skip',
+    user?.id && usersQueryParams !== 'skip' ? (usersQueryParams as never) : 'skip',
   );
 
   const isLoading = leaves === undefined || users === undefined;

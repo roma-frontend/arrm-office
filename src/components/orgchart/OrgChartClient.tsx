@@ -215,7 +215,6 @@ export default function OrgChartClient() {
     orgIdToQuery && user?.id
       ? {
           organizationId: orgIdToQuery as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
         }
       : 'skip',
   );
@@ -225,7 +224,6 @@ export default function OrgChartClient() {
     orgIdToQuery && user?.id
       ? {
           organizationId: orgIdToQuery as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
         }
       : 'skip',
   );

@@ -229,7 +229,14 @@ export function CreateEventWizard({
         startDate: new Date(String(data.startDate)).getTime(),
         endDate: new Date(String(data.endDate)).getTime(),
         isAllDay: true,
-        eventType: String(data.type) as any,
+        eventType: String(data.type) as
+          | 'meeting'
+          | 'conference'
+          | 'training'
+          | 'team_building'
+          | 'holiday'
+          | 'deadline'
+          | 'other',
         priority: (data.priority as 'high' | 'medium' | 'low') || 'medium',
         requiredDepartments: departments,
         notifyDaysBefore: parseInt(String(data.notifyDays)) || 3,

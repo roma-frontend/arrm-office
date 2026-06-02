@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, usePaginatedQuery } from 'convex/react';
 import { useDebouncedCallback } from 'use-debounce';
 import { api } from '../../../convex/_generated/api';
-import { Id } from '../../../convex/_generated/dataModel';
+import { Doc, Id } from '../../../convex/_generated/dataModel';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { cn } from '@/lib/utils';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -99,7 +99,7 @@ export function EmployeesClient() {
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editEmployee, setEditEmployee] = useState<any | null>(null);
+  const [editEmployee, setEditEmployee] = useState<Doc<'users'> | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false); // Закрыт по умолчанию
@@ -108,7 +108,6 @@ export function EmployeesClient() {
   const paginatedArgs =
     mounted && user?.id
       ? {
-          requesterId: user.id as Id<'users'>,
           ...(selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : {}),
         }
       : 'skip';
@@ -117,7 +116,7 @@ export function EmployeesClient() {
     results: accumulatedUsers,
     status: usersStatus,
     loadMore,
-  } = usePaginatedQuery(api.users.listUsersPaginated as any, paginatedArgs as any, {
+  } = usePaginatedQuery(api.users.listUsersPaginated, paginatedArgs, {
     initialNumItems: 50,
   });
 
@@ -163,7 +162,7 @@ export function EmployeesClient() {
         (u.department ?? '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         (u.position ?? '').toLowerCase().includes(debouncedSearch.toLowerCase());
       const matchRole = filterRole === 'all' || u.role === filterRole;
-      const matchType = filterType === 'all' || (u as any).employeeType === filterType;
+      const matchType = filterType === 'all' || u.employeeType === filterType;
       const matchStatus =
         filterStatus === 'all' ||
         (filterStatus === 'active' && u.isActive) ||
@@ -178,8 +177,8 @@ export function EmployeesClient() {
     const active = accumulatedUsers.filter((u) => u.isActive);
     return {
       total: active.length,
-      staff: active.filter((u: any) => (u as any).employeeType === 'staff').length,
-      contractors: active.filter((u: any) => (u as any).employeeType === 'contractor').length,
+      staff: active.filter((u) => u.employeeType === 'staff').length,
+      contractors: active.filter((u) => u.employeeType === 'contractor').length,
       admins: active.filter((u) => u.role === 'admin').length,
       supervisors: active.filter((u) => u.role === 'supervisor').length,
     };
@@ -489,7 +488,7 @@ export function EmployeesClient() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setEditEmployee(emp as any);
+                          setEditEmployee(emp);
                           setOpenMenuId(null);
                         }}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:opacity-80"
@@ -522,13 +521,13 @@ export function EmployeesClient() {
               {viewMode === 'grid' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                   <AnimatePresence>
-                    {filtered.map((emp: any, i: any) => {
+                    {filtered.map((emp, i) => {
                       const roleConf = ROLE_CONFIG[emp.role as keyof typeof ROLE_CONFIG];
                       const typeConf =
-                        TYPE_CONFIG[(emp as any).employeeType as keyof typeof TYPE_CONFIG] ||
+                        TYPE_CONFIG[emp.employeeType as keyof typeof TYPE_CONFIG] ||
                         TYPE_CONFIG.staff;
                       const RoleIcon = roleConf.icon;
-                      const presenceStatus = (emp as any).presenceStatus;
+                      const presenceStatus = emp.presenceStatus;
                       const presence = presenceStatus ? getPresenceBadge(presenceStatus) : null;
                       return (
                         <motion.div
@@ -583,13 +582,13 @@ export function EmployeesClient() {
                               <Mail className="w-3 h-3 shrink-0" />
                               <span className="truncate">{emp.email}</span>
                             </div>
-                            {(emp as any).phone && (
+                            {emp.phone && (
                               <div
                                 className="flex items-center gap-2"
                                 style={{ color: 'var(--text-muted)' }}
                               >
                                 <Phone className="w-3 h-3" />
-                                {(emp as any).phone}
+                                {emp.phone}
                               </div>
                             )}
                             {emp.department && (
@@ -601,11 +600,11 @@ export function EmployeesClient() {
                                 {emp.department}
                               </div>
                             )}
-                            {(emp as any).supervisorId && (
+                            {emp.supervisorId && (
                               <div className="flex items-center gap-2">
                                 <UserCog className="w-3 h-3 shrink-0 text-blue-400" />
                                 <span className="truncate text-blue-500 font-medium">
-                                  {supervisorMap.get((emp as any).supervisorId) ??
+                                  {supervisorMap.get(emp.supervisorId) ??
                                     t('employees.noSupervisor')}
                                 </span>
                               </div>
@@ -622,9 +621,9 @@ export function EmployeesClient() {
                               >
                                 {t(typeConf.labelKey)}
                               </span>
-                              {(emp as any).supervisorId && (
+                              {emp.supervisorId && (
                                 <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-500">
-                                  {supervisorMap.get((emp as any).supervisorId) ??
+                                  {supervisorMap.get(emp.supervisorId) ??
                                     t('employees.noSupervisor')}
                                 </span>
                               )}
@@ -635,8 +634,7 @@ export function EmployeesClient() {
                                   className="text-xs font-semibold"
                                   style={{ color: 'var(--text-muted)' }}
                                 >
-                                  {(emp as any).travelAllowance?.toLocaleString() ?? '0'}{' '}
-                                  {t('currency.amd')}
+                                  {emp.travelAllowance?.toLocaleString() ?? '0'} {t('currency.amd')}
                                 </span>
                               ) : (
                                 <span
@@ -783,13 +781,13 @@ export function EmployeesClient() {
                       </div>
                     </div>
                     <AnimatePresence>
-                      {filtered.map((emp: any, i: any) => {
+                      {filtered.map((emp, i) => {
                         const roleConf = ROLE_CONFIG[emp.role as keyof typeof ROLE_CONFIG];
                         const typeConf =
-                          TYPE_CONFIG[(emp as any).employeeType as keyof typeof TYPE_CONFIG] ||
+                          TYPE_CONFIG[emp.employeeType as keyof typeof TYPE_CONFIG] ||
                           TYPE_CONFIG.staff;
                         const RoleIcon = roleConf.icon;
-                        const presenceStatus = (emp as any).presenceStatus;
+                        const presenceStatus = emp.presenceStatus;
                         const presence = presenceStatus ? getPresenceBadge(presenceStatus) : null;
                         return (
                           <motion.div
@@ -891,8 +889,8 @@ export function EmployeesClient() {
 
                             {/* Supervisor - desktop only */}
                             <div className="hidden sm:block sm:col-span-2 text-sm truncate text-blue-500 font-medium">
-                              {(emp as any).supervisorId
-                                ? (supervisorMap.get((emp as any).supervisorId) ?? t('common.none'))
+                              {emp.supervisorId
+                                ? (supervisorMap.get(emp.supervisorId) ?? t('common.none'))
                                 : t('common.none')}
                             </div>
 

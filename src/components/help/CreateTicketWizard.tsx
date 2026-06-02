@@ -132,11 +132,17 @@ export function CreateTicketWizard({ userId, onComplete, onCancel }: CreateTicke
   ) => {
     try {
       await createTicket({
-        createdBy: userId as any,
+        createdBy: userId,
         title: String(data.title),
         description: String(data.description),
-        category: (String(data.category) || 'other') as any,
-        priority: (String(data.priority) || 'medium') as any,
+        category: (String(data.category) || 'other') as
+          | 'technical'
+          | 'billing'
+          | 'access'
+          | 'feature_request'
+          | 'bug'
+          | 'other',
+        priority: (String(data.priority) || 'medium') as 'low' | 'medium' | 'high' | 'critical',
       });
 
       toast.success(t('help.alerts.ticketCreated'));

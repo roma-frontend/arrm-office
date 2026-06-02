@@ -141,8 +141,8 @@ export default function AutomationClient() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
-          <TabsTrigger value="dashboard">{t('automation.dashboard') as any}</TabsTrigger>
-          <TabsTrigger value="builder">{t('automation.builder.title') as any}</TabsTrigger>
+          <TabsTrigger value="dashboard">{t('automation.dashboard')}</TabsTrigger>
+          <TabsTrigger value="builder">{t('automation.builder.title')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6 mt-6">

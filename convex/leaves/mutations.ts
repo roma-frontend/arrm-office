@@ -143,10 +143,13 @@ export const createLeave = mutation({
 export const approveLeave = mutation({
   args: {
     leaveId: v.id('leaveRequests'),
-    reviewerId: v.id('users'),
+    reviewerId: v.optional(v.id('users')),
     comment: v.optional(v.string()),
   },
-  handler: async (ctx, { leaveId, reviewerId, comment }) => {
+  handler: async (ctx, { leaveId, comment }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const reviewerId = caller._id;
     const leave = await ctx.db.get(leaveId);
     if (!leave) throw new Error('Leave request not found');
     if (leave.status !== 'pending') throw new Error('Leave is not pending');
@@ -256,10 +259,13 @@ export const approveLeave = mutation({
 export const rejectLeave = mutation({
   args: {
     leaveId: v.id('leaveRequests'),
-    reviewerId: v.id('users'),
+    reviewerId: v.optional(v.id('users')),
     comment: v.optional(v.string()),
   },
-  handler: async (ctx, { leaveId, reviewerId, comment }) => {
+  handler: async (ctx, { leaveId, comment }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const reviewerId = caller._id;
     const leave = await ctx.db.get(leaveId);
     if (!leave) throw new Error('Leave request not found');
     if (leave.status !== 'pending') throw new Error('Leave is not pending');
@@ -349,7 +355,6 @@ export const rejectLeave = mutation({
 export const updateLeave = mutation({
   args: {
     leaveId: v.id('leaveRequests'),
-    requesterId: v.id('users'),
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     days: v.optional(v.number()),
@@ -366,7 +371,8 @@ export const updateLeave = mutation({
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
-    const requesterId = caller?._id ?? args.requesterId;
+    if (!caller) throw new Error('Not authenticated');
+    const requesterId = caller._id;
     const leave = await ctx.db.get(args.leaveId);
     if (!leave) throw new Error('Leave request not found');
 
@@ -426,11 +432,11 @@ export const updateLeave = mutation({
 export const deleteLeave = mutation({
   args: {
     leaveId: v.id('leaveRequests'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
-    const requesterId = caller?._id ?? args.requesterId;
+    if (!caller) throw new Error('Not authenticated');
+    const requesterId = caller._id;
     const leave = await ctx.db.get(args.leaveId);
     if (!leave) throw new Error('Leave request not found');
 
@@ -506,11 +512,11 @@ export const deleteLeave = mutation({
 export const forceDeleteLeave = mutation({
   args: {
     leaveId: v.id('leaveRequests'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
-    const requesterId = caller?._id ?? args.requesterId;
+    if (!caller) throw new Error('Not authenticated');
+    const requesterId = caller._id;
     const leave = await ctx.db.get(args.leaveId);
     if (!leave) throw new Error('Leave request not found');
 
@@ -571,8 +577,11 @@ export const markLeaveAsRead = mutation({
 // MARK ALL LEAVE REQUESTS AS READ (for an organization)
 // ─────────────────────────────────────────────────────────────────────────────
 export const markAllLeavesAsRead = mutation({
-  args: { requesterId: v.id('users') },
-  handler: async (ctx, { requesterId }) => {
+  args: {},
+  handler: async (ctx) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const requesterId = caller._id;
     const requester = await ctx.db.get(requesterId);
     if (!requester) throw new Error('Requester not found');
     if (!requester.organizationId && !isSuperadminEmail(requester.email)) {
@@ -618,10 +627,13 @@ export const markAllLeavesAsRead = mutation({
 export const bulkApproveLeaves = mutation({
   args: {
     leaveIds: v.array(v.id('leaveRequests')),
-    reviewerId: v.id('users'),
+    reviewerId: v.optional(v.id('users')),
     comment: v.optional(v.string()),
   },
-  handler: async (ctx, { leaveIds, reviewerId, comment }) => {
+  handler: async (ctx, { leaveIds, comment }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const reviewerId = caller._id;
     const reviewer = await ctx.db.get(reviewerId);
     if (!reviewer) throw new Error('Reviewer not found');
     if (
@@ -761,10 +773,13 @@ export const bulkApproveLeaves = mutation({
 export const bulkRejectLeaves = mutation({
   args: {
     leaveIds: v.array(v.id('leaveRequests')),
-    reviewerId: v.id('users'),
+    reviewerId: v.optional(v.id('users')),
     comment: v.string(),
   },
-  handler: async (ctx, { leaveIds, reviewerId, comment }) => {
+  handler: async (ctx, { leaveIds, comment }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const reviewerId = caller._id;
     const reviewer = await ctx.db.get(reviewerId);
     if (!reviewer) throw new Error('Reviewer not found');
     if (

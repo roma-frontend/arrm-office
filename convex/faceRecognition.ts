@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query, internalQuery } from './_generated/server';
 import type { Id } from './_generated/dataModel';
-import { requireRequester } from './lib/requireRequester';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getAuthCaller } from './lib/getAuthCaller';
 
@@ -97,12 +96,9 @@ export const registerFace = mutation({
 export const getFaceDescriptor = query({
   args: {
     userId: v.id('users'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ?? (args.requesterId ? await requireRequester(ctx, args.requesterId) : null);
+    const requester = await getAuthCaller(ctx);
     if (!requester) return null;
 
     // Only self or superadmin can read face data

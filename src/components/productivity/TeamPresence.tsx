@@ -47,10 +47,7 @@ export function TeamPresence() {
   // Only pass requesterId if it looks like a valid Convex user ID (not organizationId or temp ID)
   const hasValidUserId =
     user?.id && !user.id.startsWith('nextauth-') && user.id !== user.organizationId;
-  const teamMembers = useQuery(
-    api.productivity.getTeamPresence,
-    hasValidUserId ? { requesterId: user!.id as any } : 'skip',
-  );
+  const teamMembers = useQuery(api.productivity.getTeamPresence, hasValidUserId ? {} : 'skip');
 
   if (!teamMembers) {
     return (

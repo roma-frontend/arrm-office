@@ -1,20 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
+import type { Id } from '../../../../../convex/_generated/dataModel';
 import { groq } from '@ai-sdk/groq';
 import { generateText } from 'ai';
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 
 // Opt out of static generation — uses request.url
 export const revalidate = 0;
 
-// GET /api/chat/weekly-digest?adminId=xxx
-// Returns AI-generated weekly digest for admin
-export async function GET(req: NextRequest) {
+// GET /api/chat/weekly-digest
+// Returns AI-generated weekly digest for the authenticated admin
+export async function GET() {
   try {
-    const adminId = req.nextUrl.searchParams.get('adminId');
-    if (!adminId) return NextResponse.json({ error: 'adminId required' }, { status: 400 });
+    const auth = await getServerConvexAuth();
+    if (!auth) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const adminId = auth.payload.userId;
+
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
 
     const today = new Date();
     const weekStart = new Date(today);
@@ -26,9 +30,9 @@ export async function GET(req: NextRequest) {
 
     // Fetch all data in parallel
     const [allLeaves, allUsers, attendanceSummary] = await Promise.all([
-      convex.query(api.leaves.getAllLeaves, { requesterId: adminId as any }),
-      convex.query(api.users.queries.getAllUsers, { requesterId: adminId as any }),
-      convex.query(api.timeTracking.getTodayAttendanceSummary, { adminId: adminId as any }),
+      convex.query(api.leaves.getAllLeaves, {}),
+      convex.query(api.users.queries.getAllUsers, {}),
+      convex.query(api.timeTracking.getTodayAttendanceSummary, { adminId: adminId as Id<'users'> }),
     ]);
 
     const activeEmployees = allUsers.filter((u: any) => u.isActive && u.role === 'employee');

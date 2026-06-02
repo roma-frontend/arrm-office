@@ -86,7 +86,22 @@ export const listAllWithUsers = query({
     const withOrganizations = await Promise.all(
       subscriptions.map(async (sub) => {
         const org = sub.organizationId ? await ctx.db.get(sub.organizationId) : null;
-        return { ...sub, organization: org };
+        const employeeCount = sub.organizationId
+          ? (
+              await ctx.db
+                .query('users')
+                .withIndex('by_org', (q) => q.eq('organizationId', sub.organizationId))
+                .take(DEFAULT_LIST_CAP)
+            ).length
+          : 0;
+        return {
+          ...sub,
+          organization: org,
+          organizationName: org?.name ?? null,
+          organizationSlug: org?.slug ?? null,
+          employeeCount,
+          isManual: sub.metadata?.manual ?? false,
+        };
       }),
     );
 

@@ -2,7 +2,7 @@ import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation } from '../_generated/server';
 import type { MutationCtx } from '../_generated/server';
-import type { Id, Doc } from '../_generated/dataModel';
+import type { Doc } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
@@ -10,8 +10,10 @@ import { DEFAULT_LIST_CAP } from '../lib/limits';
 
 // ── Security helpers ──────────────────────────────────────────────────────────
 /** Verify caller has admin/superadmin role and return their organizationId */
-async function requireAdmin(ctx: QueryCtx, adminId: Id<'users'>) {
-  const admin = (await ctx.db.get(adminId)) as Doc<'users'> | null;
+async function requireAdmin(ctx: QueryCtx | MutationCtx) {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) throw new Error('Not authenticated');
+  const admin = (await ctx.db.get(caller._id)) as Doc<'users'> | null;
   if (!admin) throw new Error('Admin not found');
   if (admin.role !== 'admin' && admin.role !== 'superadmin') {
     throw new Error('Only org admins can perform this action');
@@ -88,14 +90,14 @@ export const seedAdmin = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const suspendUser = mutation({
   args: {
-    adminId: v.id('users'),
     userId: v.id('users'),
     reason: v.string(),
     duration: v.optional(v.number()), // in hours, default 24
   },
   handler: async (ctx, args) => {
-    const { adminId, userId, reason, duration = 24 } = args;
-    const admin = await requireAdmin(ctx, adminId);
+    const { userId, reason, duration = 24 } = args;
+    const admin = await requireAdmin(ctx);
+    const adminId = admin._id;
     const user = await ctx.db.get(userId);
 
     if (!user) {
@@ -151,12 +153,12 @@ export const suspendUser = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 export const unsuspendUser = mutation({
   args: {
-    adminId: v.id('users'),
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { adminId, userId } = args;
-    const admin = await requireAdmin(ctx, adminId);
+    const { userId } = args;
+    const admin = await requireAdmin(ctx);
+    const adminId = admin._id;
     const user = await ctx.db.get(userId);
 
     if (!user) {
