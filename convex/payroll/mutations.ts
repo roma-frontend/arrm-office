@@ -53,6 +53,13 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+// Verified caller id from JWT (never trust a client-supplied requesterId).
+async function callerId(ctx: any): Promise<Id<'users'>> {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) throw new Error('Not authenticated');
+  return caller._id;
+}
+
 type FieldChange = { field: string; before: unknown; after: unknown };
 
 function diffFields(
@@ -73,13 +80,13 @@ function diffFields(
 
 export const createPayrollRun = mutation({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.id('organizations'),
     period: v.string(),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { requesterId, organizationId, period, notes } = args;
+    const { organizationId, period, notes } = args;
+    const requesterId = await callerId(ctx);
     await requireOrgAdmin(ctx, requesterId, organizationId);
 
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(period)) {
@@ -122,10 +129,10 @@ export const createPayrollRun = mutation({
 
 export const calculatePayrollRun = mutation({
   args: {
-    requesterId: v.id('users'),
     payrollRunId: v.id('payrollRuns'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await callerId(ctx);
     const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
       throw new Error('Payroll run not found');
@@ -133,7 +140,7 @@ export const calculatePayrollRun = mutation({
     if (!run.organizationId) {
       throw new Error('Payroll run has no organization');
     }
-    await requireOrgAdmin(ctx, args.requesterId, run.organizationId);
+    await requireOrgAdmin(ctx, requesterId, run.organizationId);
 
     if (run.status !== 'draft') {
       throw new Error('Can only calculate draft payroll runs');
@@ -246,7 +253,7 @@ export const calculatePayrollRun = mutation({
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId: run.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'calculate',
       payrollRunId: args.payrollRunId,
       details: `Calculated ${processed} of ${employees.length} employees (${skipped.length} skipped)`,
@@ -273,10 +280,10 @@ export const calculatePayrollRun = mutation({
 
 export const approvePayrollRun = mutation({
   args: {
-    requesterId: v.id('users'),
     payrollRunId: v.id('payrollRuns'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await callerId(ctx);
     const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
       throw new Error('Payroll run not found');
@@ -284,7 +291,7 @@ export const approvePayrollRun = mutation({
     if (!run.organizationId) {
       throw new Error('Payroll run has no organization');
     }
-    await requireOrgAdmin(ctx, args.requesterId, run.organizationId);
+    await requireOrgAdmin(ctx, requesterId, run.organizationId);
 
     if (run.status !== 'calculated') {
       throw new Error('Can only approve calculated payroll runs');
@@ -292,7 +299,7 @@ export const approvePayrollRun = mutation({
 
     await ctx.db.patch(args.payrollRunId, {
       status: 'approved',
-      approvedBy: args.requesterId,
+      approvedBy: requesterId,
       approvedAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -311,7 +318,7 @@ export const approvePayrollRun = mutation({
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId: run.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'approve',
       payrollRunId: args.payrollRunId,
       details: 'Payroll run approved',
@@ -324,10 +331,10 @@ export const approvePayrollRun = mutation({
 
 export const markPayrollRunAsPaid = mutation({
   args: {
-    requesterId: v.id('users'),
     payrollRunId: v.id('payrollRuns'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await callerId(ctx);
     const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
       throw new Error('Payroll run not found');
@@ -335,7 +342,7 @@ export const markPayrollRunAsPaid = mutation({
     if (!run.organizationId) {
       throw new Error('Payroll run has no organization');
     }
-    await requireOrgAdmin(ctx, args.requesterId, run.organizationId);
+    await requireOrgAdmin(ctx, requesterId, run.organizationId);
 
     if (run.status !== 'approved') {
       throw new Error('Can only pay approved payroll runs');
@@ -361,7 +368,7 @@ export const markPayrollRunAsPaid = mutation({
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId: run.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'pay',
       payrollRunId: args.payrollRunId,
       details: 'Payroll run marked as paid',
@@ -374,10 +381,10 @@ export const markPayrollRunAsPaid = mutation({
 
 export const cancelPayrollRun = mutation({
   args: {
-    requesterId: v.id('users'),
     payrollRunId: v.id('payrollRuns'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await callerId(ctx);
     const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
       throw new Error('Payroll run not found');
@@ -385,7 +392,7 @@ export const cancelPayrollRun = mutation({
     if (!run.organizationId) {
       throw new Error('Payroll run has no organization');
     }
-    await requireOrgAdmin(ctx, args.requesterId, run.organizationId);
+    await requireOrgAdmin(ctx, requesterId, run.organizationId);
 
     if (run.status === 'paid') {
       throw new Error('Cannot cancel a paid payroll run');
@@ -410,7 +417,7 @@ export const cancelPayrollRun = mutation({
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId: run.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'cancel',
       payrollRunId: args.payrollRunId,
       details: 'Payroll run cancelled',
@@ -423,11 +430,11 @@ export const cancelPayrollRun = mutation({
 
 export const generatePayslip = mutation({
   args: {
-    requesterId: v.id('users'),
     payrollRecordId: v.id('payrollRecords'),
     email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const requesterId = await callerId(ctx);
     const record = await ctx.db.get(args.payrollRecordId);
     if (!record) {
       throw new Error('Payroll record not found');
@@ -435,7 +442,7 @@ export const generatePayslip = mutation({
     if (!record.organizationId) {
       throw new Error('Payroll record has no organization');
     }
-    await requireOrgAdmin(ctx, args.requesterId, record.organizationId);
+    await requireOrgAdmin(ctx, requesterId, record.organizationId);
 
     const existing = await ctx.db
       .query('payslips')
@@ -463,7 +470,7 @@ export const generatePayslip = mutation({
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId: record.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'generate_payslip',
       payrollRecordId: args.payrollRecordId,
       details: 'Payslip generated',
@@ -476,10 +483,10 @@ export const generatePayslip = mutation({
 
 export const sendPayslip = mutation({
   args: {
-    requesterId: v.id('users'),
     payslipId: v.id('payslips'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await callerId(ctx);
     const payslip = await ctx.db.get(args.payslipId);
     if (!payslip) {
       throw new Error('Payslip not found');
@@ -487,7 +494,7 @@ export const sendPayslip = mutation({
     if (!payslip.organizationId) {
       throw new Error('Payslip has no organization');
     }
-    await requireOrgAdmin(ctx, args.requesterId, payslip.organizationId);
+    await requireOrgAdmin(ctx, requesterId, payslip.organizationId);
 
     await ctx.db.patch(args.payslipId, {
       status: 'sent',
@@ -496,7 +503,7 @@ export const sendPayslip = mutation({
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId: payslip.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'send_payslip',
       payrollRecordId: payslip.payrollRecordId,
       details: `Payslip sent to ${payslip.email}`,
@@ -509,7 +516,6 @@ export const sendPayslip = mutation({
 
 export const updatePayrollRecord = mutation({
   args: {
-    requesterId: v.id('users'),
     payrollRecordId: v.id('payrollRecords'),
     baseSalary: v.optional(v.number()),
     bonuses: v.optional(v.number()),
@@ -517,6 +523,7 @@ export const updatePayrollRecord = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const requesterId = await callerId(ctx);
     const record = await ctx.db.get(args.payrollRecordId);
     if (!record) {
       throw new Error('Payroll record not found');
@@ -524,7 +531,7 @@ export const updatePayrollRecord = mutation({
     if (!record.organizationId) {
       throw new Error('Payroll record has no organization');
     }
-    await requireOrgAdmin(ctx, args.requesterId, record.organizationId);
+    await requireOrgAdmin(ctx, requesterId, record.organizationId);
 
     if (record.status === 'paid') {
       throw new Error('Cannot update a paid payroll record');
@@ -619,7 +626,7 @@ export const updatePayrollRecord = mutation({
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId: record.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'update_record',
       payrollRecordId: args.payrollRecordId,
       payrollRunId: record.payrollRunId ?? undefined,
@@ -634,10 +641,10 @@ export const updatePayrollRecord = mutation({
 
 export const deletePayrollRecord = mutation({
   args: {
-    requesterId: v.id('users'),
     payrollRecordId: v.id('payrollRecords'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await callerId(ctx);
     const record = await ctx.db.get(args.payrollRecordId);
     if (!record) {
       throw new Error('Payroll record not found');
@@ -645,7 +652,7 @@ export const deletePayrollRecord = mutation({
     if (!record.organizationId) {
       throw new Error('Payroll record has no organization');
     }
-    await requireOrgAdmin(ctx, args.requesterId, record.organizationId);
+    await requireOrgAdmin(ctx, requesterId, record.organizationId);
 
     if (record.status === 'paid') {
       throw new Error('Cannot delete a paid payroll record');
@@ -670,7 +677,7 @@ export const deletePayrollRecord = mutation({
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId: record.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'delete_record',
       payrollRecordId: args.payrollRecordId,
       payrollRunId: runId ?? undefined,
@@ -693,7 +700,6 @@ export const deletePayrollRecord = mutation({
 
 export const saveSalarySettings = mutation({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.id('organizations'),
     taxCountry: v.union(v.literal('armenia'), v.literal('russia')),
     taxRegion: v.optional(v.string()),
@@ -711,7 +717,8 @@ export const saveSalarySettings = mutation({
     bankName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireOrgAdmin(ctx, args.requesterId, args.organizationId);
+    const requesterId = await callerId(ctx);
+    await requireOrgAdmin(ctx, requesterId, args.organizationId);
 
     if (args.minimumWage !== undefined && args.minimumWage < 0) {
       throw new Error('Minimum wage cannot be negative');
@@ -720,7 +727,7 @@ export const saveSalarySettings = mutation({
       throw new Error('Maximum overtime cannot be negative');
     }
 
-    const { requesterId: _requesterId, ...settingsArgs } = args;
+    const settingsArgs = args;
 
     const existing = await ctx.db
       .query('salarySettings')

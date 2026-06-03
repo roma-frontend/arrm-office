@@ -79,10 +79,7 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
   const isAdmin =
     user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
-  const run = useQuery(
-    api.payroll.queries.getPayrollRunById,
-    user?.id ? { requesterId: user.id as Id<'users'>, id: runId } : 'skip',
-  );
+  const run = useQuery(api.payroll.queries.getPayrollRunById, user?.id ? { id: runId } : 'skip');
 
   const calculate = useMutation(api.payroll.mutations.calculatePayrollRun);
   const approve = useMutation(api.payroll.mutations.approvePayrollRun);
@@ -150,7 +147,6 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
                 runAction(
                   () =>
                     calculate({
-                      requesterId: user!.id as Id<'users'>,
                       payrollRunId: run._id,
                     }),
                   'payroll.calculated',
@@ -169,7 +165,6 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
                 runAction(
                   () =>
                     approve({
-                      requesterId: user.id as Id<'users'>,
                       payrollRunId: run._id,
                     }),
                   'payroll.approved',
@@ -188,7 +183,6 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
                 runAction(
                   () =>
                     markPaid({
-                      requesterId: user!.id as Id<'users'>,
                       payrollRunId: run._id,
                     }),
                   'payroll.markedAsPaid',
@@ -208,7 +202,6 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
                 runAction(
                   () =>
                     cancel({
-                      requesterId: user!.id as Id<'users'>,
                       payrollRunId: run._id,
                     }),
                   'payroll.cancelled',

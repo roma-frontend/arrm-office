@@ -1,175 +1,200 @@
-# Remaining withAuth Migration — Manual Work
+# Remaining Auth Migration — Manual Work
 
-**Created:** 2026-05-28  
-**Execute after:** 2026-06-04 (7 days, when old sessions expire)  
-**Status:** pending
+**Originally created:** 2026-05-28
+**Reassessed:** 2026-06-03 (verified against live code)
+**Status:** ~90% done — one focused security task left
 
-## Context
+---
 
-84% of handlers (674/799) are already wrapped with `withAuth({ allowUnauthenticated: true })`.
-The remaining 93 handlers use destructuring patterns (`{ userId, orgId }`) that break TypeScript
-when wrapped automatically. They need manual migration.
+## TL;DR for next session
 
-## Pre-requisites before starting
+The auth migration is almost finished. Verified state of `convex/` on 2026-06-03:
 
-1. Verify bridge works: `fetch('/api/auth/convex-token').then(r=>r.json()).then(console.log)` → should return token
-2. Verify `ctx.auth.getUserIdentity()` returns identity in Convex (use a test query)
-3. All users have re-logged in (old sessions expired after 7 days)
+| Item                                       | State                                                        |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `as any` casts in convex                   | **0** ✅                                                     |
+| `convex/lib/requireRequester.ts`           | **deleted** ✅                                               |
+| `allowUnauthenticated: true` in handlers   | **0** ✅                                                     |
+| `getAuthCaller` adoption                   | **118 handlers** ✅                                          |
+| `requesterId: v.id('users')` still in args | **~60 handlers across 11 files** ❌ ← **THE remaining work** |
 
-## Step 1: Remove `allowUnauthenticated: true` from all existing handlers
+**The one remaining job:** replace client-supplied `requesterId` with the
+server-verified caller from `getAuthCaller(ctx)`. While a handler still reads
+`args.requesterId`, the **browser is asserting its own identity** — that is the
+last auth-bypass surface to close.
 
-Replace in all convex files:
+---
 
-```
-withAuth({ allowUnauthenticated: true }, async (ctx, args: any, _caller) => {
-```
+## The pattern (before → after)
 
-With:
-
-```
-withAuth({}, async (ctx, args: any, _caller) => {
-```
-
-This makes all 674 already-migrated handlers **strictly require auth**.
-
-## Step 2: Migrate remaining 93 handlers
-
-For each handler below, change:
+**Secure reference pattern** (already used in 118 handlers, e.g. `convex/productivity.ts`):
 
 ```ts
-handler: async (ctx, { userId, organizationId }) => {
+import { getAuthCaller } from './lib/getAuthCaller';
+
+handler: async (ctx, args) => {
+  const requester = await getAuthCaller(ctx); // server-verified, from JWT
+  if (!requester) return []; // or throw
+  // requester._id, requester.role, requester.email, requester.organizationId
+};
 ```
 
-To:
+`getAuthCaller(ctx)` (in `convex/lib/getAuthCaller.ts`) reads
+`ctx.auth.getUserIdentity()`, looks the user up by email, checks `isActive`,
+and returns `{ _id, role, email, organizationId, name }` or `null`. It does
+**not** change the handler signature, so TypeScript inference is preserved.
+
+**Insecure pattern still present** (e.g. `convex/payroll/queries.ts`):
 
 ```ts
-handler: withAuth({}, async (ctx, args: any, _caller) => {
-  const { userId, organizationId } = args;
+export const getDashboardStats = query({
+  args: {
+    requesterId: v.id('users'),                 // ❌ client-supplied identity
+    organizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, organizationId } = args;
+    await requireOrgSupervisor(ctx, requesterId, organizationId);
+    ...
+  },
+});
 ```
 
-And fix the closing `},` → `}),`
+**Migrate to:**
 
-### Files to migrate (sorted by count):
+```ts
+export const getDashboardStats = query({
+  args: {
+    organizationId: v.optional(v.id('organizations')), // requesterId removed
+  },
+  handler: async (ctx, args) => {
+    const { organizationId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    await requireOrgSupervisor(ctx, caller._id, organizationId);
+    ...
+  },
+});
+```
 
-| File                                 | Handlers | Priority |
-| ------------------------------------ | -------- | -------- |
-| `convex/users/queries.ts`            | 11       | HIGH     |
-| `convex/leaves/mutations.ts`         | 9        | HIGH     |
-| `convex/productivity.ts`             | 6        | HIGH     |
-| `convex/users/admin.ts`              | 5        | HIGH     |
-| `convex/admin.ts`                    | 4        | MED      |
-| `convex/departments.ts`              | 4        | MED      |
-| `convex/positions.ts`                | 4        | MED      |
-| `convex/security.ts`                 | 4        | MED      |
-| `convex/backups.ts`                  | 3        | MED      |
-| `convex/leaves/queries.ts`           | 3        | MED      |
-| `convex/messenger/messages.ts`       | 3        | MED      |
-| `convex/sla.ts`                      | 3        | MED      |
-| `convex/tasks.ts`                    | 3        | MED      |
-| `convex/analytics.ts`                | 2        | LOW      |
-| `convex/automation.ts`               | 2        | LOW      |
-| `convex/chat/queries.ts`             | 2        | LOW      |
-| `convex/compliance.ts`               | 2        | LOW      |
-| `convex/organizationRequests.ts`     | 2        | LOW      |
-| `convex/payroll/mutations.ts`        | 2        | LOW      |
-| `convex/recruitment.ts`              | 2        | LOW      |
-| `convex/subscriptions.ts`            | 2        | LOW      |
-| `convex/automationMutations.ts`      | 1        | LOW      |
-| `convex/drivers/shifts_mutations.ts` | 1        | LOW      |
-| `convex/faceRecognition.ts`          | 1        | LOW      |
-| `convex/onboarding.ts`               | 1        | LOW      |
-| `convex/organizationJoinRequests.ts` | 1        | LOW      |
-| `convex/organizations/main.ts`       | 1        | LOW      |
-| `convex/performance.ts`              | 1        | LOW      |
-| `convex/recognition.ts`              | 1        | LOW      |
-| `convex/sharepointSync.ts`           | 1        | LOW      |
-| `convex/subscriptions_admin.ts`      | 1        | LOW      |
-| `convex/superadmin/emergency.ts`     | 1        | LOW      |
-| `convex/superadmin/search.ts`        | 1        | LOW      |
-| `convex/tickets.ts`                  | 1        | LOW      |
-| `convex/users/mutations.ts`          | 1        | LOW      |
+Then remove `requesterId` from the corresponding **client-side calls**.
 
-## Step 3: Remove `requesterId` from args validators
+---
 
-After all handlers use `_caller` from withAuth, remove `requesterId` from:
+## Files to migrate (verified counts, 2026-06-03)
 
-- `args: { requesterId: v.id('users'), ... }` → `args: { ... }`
-- Client-side calls that pass `requesterId`
+Sorted by number of `requesterId: v.id('users')` validator occurrences:
 
-## Step 4: Cleanup
+| File                                   | requesterId args | Priority |
+| -------------------------------------- | ---------------- | -------- |
+| `convex/learning.ts`                   | 27               | HIGH     |
+| `convex/payroll/mutations.ts`          | 10               | HIGH     |
+| `convex/payroll/queries.ts`            | 8                | HIGH     |
+| `convex/orgchart.ts`                   | 7                | HIGH     |
+| `convex/users/queries.ts`              | 2                | MED      |
+| `convex/aiChatMutations.ts`            | 1                | MED      |
+| `convex/chat/mutations.ts`             | 1                | MED      |
+| `convex/documents.ts`                  | 1                | MED      |
+| `convex/drivers/calendar_mutations.ts` | 1                | MED      |
+| `convex/drivers/requests_mutations.ts` | 1                | MED      |
+| `convex/faceRecognition.ts`            | 1                | MED      |
 
-1. Delete `convex/lib/requireRequester.ts`
-2. Remove all `as any` casts added during migration (see Step 5)
-3. Remove `allowUnauthenticated` option from `withAuth` interface
-4. Run `npx convex dev` to regenerate types
-5. Fix any remaining client-side type errors
+> NOTE: `convex/schema/drivers.ts` also matches `requesterId: v.` but that is a
+> **schema field definition**, not a handler arg — leave it alone (or rename
+> separately if the column is genuinely unused).
 
-## Step 5: Remove `as any` casts (969 occurrences)
+---
 
-After Steps 1-4 are done and `args` has proper types again:
+## Step-by-step procedure (per file)
 
-1. Remove `args: any` → let Convex infer from validator
-2. Remove `_caller` unused param where not needed
-3. Remove `as any` from `ctx.db.get()` calls — they'll have proper return types
-4. Remove `as any` from `.map()/.filter()` callbacks — they'll infer from array type
-5. Remove `// @ts-expect-error` comments
+For each file above, repeat:
 
-This is ~2-3 days of manual work across 60+ files. Do it file by file,
-running `npx tsc --noEmit --skipLibCheck` after each to verify.
+1. Add `import { getAuthCaller } from '<relative>/lib/getAuthCaller';` if missing.
+2. For every handler that declares `requesterId: v.id('users')` in `args`:
+   - Remove the `requesterId` line from the `args` validator.
+   - Remove `requesterId` from the destructuring of `args`.
+   - Add at the top of the handler body:
+     ```ts
+     const caller = await getAuthCaller(ctx);
+     if (!caller) throw new Error('Not authenticated'); // list queries may `return []` instead
+     ```
+   - Replace every use of the old `requesterId` with `caller._id`.
+3. Update **client callers** of those functions: remove the `requesterId` arg they pass.
+   - Find them: `grep -rn "requesterId" src --include=*.ts --include=*.tsx`
+4. Run `NODE_OPTIONS="--max-old-space-size=8192" npx tsc --noEmit --skipLibCheck`
+   after each file and fix any fallout before moving on.
+5. Commit per logical file/group (e.g. `refactor(payroll): use getAuthCaller instead of client requesterId`).
 
-### Step 5 — progress (updated 2026-06-02)
+---
 
-Client-side `as any` audit COMPLETE. Started ~140 client casts → load-bearing ones removed
+## Final cleanup (after all 11 files done)
+
+1. Verify zero remaining: `grep -rn "requesterId: v\." convex --include=*.ts`
+   → only `convex/schema/drivers.ts` (schema field) may remain.
+2. Remove `allowUnauthenticated` from the `withAuth` interface in
+   `convex/lib/withAuth.ts` (lines ~35 and ~50) — no handler passes it anymore.
+   (Optional: if `withAuth` itself is fully unused, delete the helper.)
+3. `npx convex dev --once` to regenerate types.
+4. Full typecheck + deploy.
+
+---
+
+## Verification checklist
+
+```bash
+# 1. No client-supplied identity left (only schema/drivers.ts allowed)
+grep -rn "requesterId: v\." convex --include=*.ts
+
+# 2. No client code still passing requesterId
+grep -rn "requesterId" src --include=*.ts --include=*.tsx
+
+# 3. Compiles
+NODE_OPTIONS="--max-old-space-size=8192" npx tsc --noEmit --skipLibCheck
+
+# 4. Deploys
+npx convex dev --once
+
+# 5. Manual smoke test in browser:
+#    Login (email + Google) → Dashboard → Payroll → Learning → Org chart
+#    → confirm every page still loads data (auth now comes from JWT, not args)
+```
+
+When all five pass with no `requesterId` left in handler args, the migration is
+**100% complete**: every Convex handler derives identity from the verified JWT,
+not from client input.
+
+---
+
+## Risk / rollout notes
+
+- These functions are protected by `requireOrgSupervisor` / `requireOrgAdmin`
+  RBAC checks today, but those checks trust the **passed** `requesterId`. The
+  switch to `getAuthCaller(ctx)` is what makes the RBAC check trustworthy.
+- The Convex auth bridge (JWT → `ctx.auth.getUserIdentity()`) is confirmed
+  working in production as of 2026-06-03 (all login flows fixed). So
+  `getAuthCaller` will resolve correctly for authenticated users.
+- Do it file-by-file with a typecheck between each — `payroll/*` and `learning.ts`
+  are the largest and most worth doing first.
+
+---
+
+## Historical notes — Step 5 (`as any` removal), completed 2026-06-02
+
+Client-side `as any` audit COMPLETE. ~140 client casts → load-bearing ones removed
 via root-cause type fixes; genuine library/boundary/test casts classified and kept.
 
 **Real bugs surfaced by removing load-bearing casts:**
 
-- **Attendance** — `getTodayAllAttendance` did not compute `supervisorName`, so the supervisor
-  block in `AttendanceDetailModal` never rendered. Fixed query to resolve supervisor.
+- **Attendance** — `getTodayAllAttendance` did not compute `supervisorName`, so the
+  supervisor block in `AttendanceDetailModal` never rendered. Fixed query to resolve supervisor.
 - **Support tickets** — `getTicketById` did not return `isOverdue`, so the "overdue" badge in the
   ticket detail dialog never showed. Added the field (same logic as `getAllTickets`).
 - **Subscriptions** — `subscriptions` table was missing `stripePriceId` / `metadata` (written by
   `createManualSubscription`) → manual-subscription writes failed at runtime under schema validation;
-  and `listAllWithUsers` did not return `organizationName/Slug/employeeCount/isManual` that the UI read
-  (showed Unknown/0/always-stripe). Added schema fields + enriched the query.
+  and `listAllWithUsers` did not return `organizationName/Slug/employeeCount/isManual` that the UI read.
+  Added schema fields + enriched the query.
 - **Push notifications** — `applicationServerKey` cast hid a real lib-type mismatch
   (`Uint8Array<ArrayBufferLike>` vs `BufferSource`). Fixed `urlBase64ToUint8Array` return type.
 
 **Lesson:** `get_errors` (language server) can miss lib-type mismatches that full `tsc` catches —
 always run a full `tsc` after a batch, not just per-file checks.
-
-**Remaining `as any` (intentional keeps):** Stripe SDK type gaps (webhook), `__tests__`
-invalid-input casts, browser globals (`webkitAudioContext`, `gtag`, `__layoutCache`, leaflet),
-`pdfMake` vfs, framer-motion arrays, generic `sanitize`, a few prop-bridge casts, and the
-`SavedMessagesPanel` placeholder.
-
-**convex `(x: any)` lambda/builder annotations (200+):** NOT load-bearing — sources already return
-`Doc<>[]`, object literals give typed returns, so these mask no bugs. Left as cosmetic churn (no
-functional benefit, high diff cost). Can be cleaned later if desired.
-
-## TypeScript issue to be aware of
-
-When wrapping handlers with `withAuth`, `ctx.db.get(someId)` returns a union type
-because TypeScript loses the table inference. Fix with `as any`:
-
-```ts
-const user = (await ctx.db.get(args.userId)) as any;
-```
-
-## Verification
-
-After migration:
-
-```bash
-# Should be 0
-node -e "..." # (check unprotected count)
-
-# Should compile
-npx tsc --noEmit --skipLibCheck
-
-# Should deploy
-npx convex dev --once
-
-# Should work in browser
-# Login → Dashboard → all pages load data
-```

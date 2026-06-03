@@ -78,9 +78,7 @@ export default function PayrollRecordsTable() {
 
   const records = useQuery(
     api.payroll.queries.getPayrollRecords,
-    orgId && user?.id && isAdmin
-      ? { requesterId: user.id as Id<'users'>, organizationId: orgId }
-      : 'skip',
+    orgId && user?.id && isAdmin ? { organizationId: orgId } : 'skip',
   );
 
   const filteredRecords = useMemo(() => {

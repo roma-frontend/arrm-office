@@ -805,7 +805,7 @@ export function EmployeesClient() {
                           >
                             {/* Employee name + avatar */}
                             <div className="sm:col-span-4 flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-linear-to-r from-(--primary) to-(--primary-dark,var(--primary)) hover:opacity-90 flex items-center justify-center text-white text-xs font-bold">
+                              <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 text-gradient hover:opacity-90 flex items-center justify-center text-white text-xs font-bold">
                                 {emp.avatarUrl ? (
                                   <img
                                     src={emp.avatarUrl}

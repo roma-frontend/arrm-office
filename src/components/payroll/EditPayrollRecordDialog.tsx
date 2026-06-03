@@ -190,7 +190,6 @@ export function EditPayrollRecordDialog({ open, onOpenChange, record }: Props) {
     }
     try {
       await updateRecord({
-        requesterId: user.id as Id<'users'>,
         payrollRecordId: record._id,
         baseSalary: Number(data.baseSalary ?? 0),
         bonuses: Number(data.bonuses ?? 0),
@@ -213,7 +212,6 @@ export function EditPayrollRecordDialog({ open, onOpenChange, record }: Props) {
     setDeleting(true);
     try {
       await deleteRecord({
-        requesterId: user.id as Id<'users'>,
         payrollRecordId: record._id,
       });
       toast.success(t('payroll.recordDeleted'));

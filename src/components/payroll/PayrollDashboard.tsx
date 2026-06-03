@@ -122,12 +122,12 @@ export default function PayrollDashboard() {
   const _runsRef = api.payroll.queries.getPayrollRuns as unknown as never;
   const stats = _useQuery(
     _statsRef,
-    orgId && user?.id && isAdmin ? { requesterId: user.id, organizationId: orgId } : 'skip',
+    orgId && user?.id && isAdmin ? { organizationId: orgId } : 'skip',
   );
 
   const recentRuns = _useQuery(
     _runsRef,
-    orgId && user?.id && isAdmin ? { requesterId: user.id, organizationId: orgId } : 'skip',
+    orgId && user?.id && isAdmin ? { organizationId: orgId } : 'skip',
   );
 
   const safeStats = stats ?? {

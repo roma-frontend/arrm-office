@@ -4,14 +4,22 @@ import { requireOrgAdmin, requireOrgSupervisor, requireUser } from '../lib/rbac'
 import { isSuperadminEmail } from '../lib/auth';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getProfile } from '../lib/userProfile';
+import { getAuthCaller } from '../lib/getAuthCaller';
+import type { Id } from '../_generated/dataModel';
+
+// Verified caller id from JWT (never trust a client-supplied requesterId).
+async function callerId(ctx: any): Promise<Id<'users'>> {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) throw new Error('Not authenticated');
+  return caller._id;
+}
 
 export const getDashboardStats = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
-    const { requesterId, organizationId } = args;
+    const { organizationId } = args;
 
     if (!organizationId) {
       return {
@@ -26,6 +34,7 @@ export const getDashboardStats = query({
       };
     }
 
+    const requesterId = await callerId(ctx);
     await requireOrgSupervisor(ctx, requesterId, organizationId);
 
     const runs = await ctx.db
@@ -67,7 +76,6 @@ export const getDashboardStats = query({
 
 export const getPayrollRecords = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
     status: v.optional(
       v.union(
@@ -82,10 +90,11 @@ export const getPayrollRecords = query({
     userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
-    const { requesterId, organizationId, status, period, userId } = args;
+    const { organizationId, status, period, userId } = args;
 
     if (!organizationId) return [];
 
+    const requesterId = await callerId(ctx);
     await requireOrgSupervisor(ctx, requesterId, organizationId);
 
     let records = await ctx.db
@@ -136,7 +145,6 @@ export const getPayrollRecords = query({
 
 export const getPayrollRuns = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
     status: v.optional(
       v.union(
@@ -149,10 +157,11 @@ export const getPayrollRuns = query({
     ),
   },
   handler: async (ctx, args) => {
-    const { requesterId, organizationId, status } = args;
+    const { organizationId, status } = args;
 
     if (!organizationId) return [];
 
+    const requesterId = await callerId(ctx);
     await requireOrgSupervisor(ctx, requesterId, organizationId);
 
     let runs = await ctx.db
@@ -189,7 +198,6 @@ export const getPayrollRuns = query({
 
 export const getPayrollRunById = query({
   args: {
-    requesterId: v.id('users'),
     id: v.id('payrollRuns'),
   },
   handler: async (ctx, args) => {
@@ -197,7 +205,8 @@ export const getPayrollRunById = query({
     if (!run) return null;
     if (!run.organizationId) return null;
 
-    await requireOrgSupervisor(ctx, args.requesterId, run.organizationId);
+    const requesterId = await callerId(ctx);
+    await requireOrgSupervisor(ctx, requesterId, run.organizationId);
 
     const records = await ctx.db
       .query('payrollRecords')
@@ -235,13 +244,13 @@ export const getPayrollRunById = query({
 
 export const getPayslips = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
     userId: v.optional(v.id('users')),
     period: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { requesterId, organizationId, userId, period } = args;
+    const { organizationId, userId, period } = args;
+    const requesterId = await callerId(ctx);
     const requester = await requireUser(ctx, requesterId);
     const isSuper = isSuperadminEmail(requester.email);
     const isAdmin = requester.role === 'admin' || requester.role === 'supervisor';
@@ -301,11 +310,11 @@ export const getPayslips = query({
 
 export const getSalarySettings = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
-    await requireOrgSupervisor(ctx, args.requesterId, args.organizationId);
+    const requesterId = await callerId(ctx);
+    await requireOrgSupervisor(ctx, requesterId, args.organizationId);
 
     const settings = await ctx.db
       .query('salarySettings')
@@ -318,16 +327,16 @@ export const getSalarySettings = query({
 
 export const getPayrollRecordById = query({
   args: {
-    requesterId: v.id('users'),
     id: v.id('payrollRecords'),
   },
   handler: async (ctx, args) => {
     const record = await ctx.db.get(args.id);
     if (!record) return null;
 
-    const requester = await requireUser(ctx, args.requesterId);
+    const requesterId = await callerId(ctx);
+    const requester = await requireUser(ctx, requesterId);
     const isSuper = isSuperadminEmail(requester.email);
-    const isOwner = record.userId === args.requesterId;
+    const isOwner = record.userId === requesterId;
     const isOrgAdmin =
       record.organizationId !== undefined &&
       (requester.role === 'admin' || requester.role === 'supervisor') &&
@@ -363,14 +372,14 @@ export const getPayrollRecordById = query({
 
 export const getAuditLog = query({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
     payrollRunId: v.optional(v.id('payrollRuns')),
   },
   handler: async (ctx, args) => {
-    const { requesterId, organizationId, payrollRunId } = args;
+    const { organizationId, payrollRunId } = args;
     if (!organizationId) return [];
 
+    const requesterId = await callerId(ctx);
     await requireOrgAdmin(ctx, requesterId, organizationId);
 
     let logs = await ctx.db

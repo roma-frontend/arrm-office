@@ -243,7 +243,6 @@ export function CreatePayrollRunDialog({
     setSubmitting(true);
     try {
       await createRun({
-        requesterId: user.id as Id<'users'>,
         organizationId,
         period,
         notes: notes || undefined,

@@ -39,9 +39,7 @@ export default function PayrollSettingsPage() {
 
   const settings = useQuery(
     api.payroll.queries.getSalarySettings,
-    orgId && user?.id && isAdmin
-      ? { requesterId: user.id as Id<'users'>, organizationId: orgId }
-      : 'skip',
+    orgId && user?.id && isAdmin ? { organizationId: orgId } : 'skip',
   );
   const saveSettings = useMutation(api.payroll.mutations.saveSalarySettings);
 
@@ -89,7 +87,6 @@ export default function PayrollSettingsPage() {
     setSaving(true);
     try {
       await saveSettings({
-        requesterId: user.id as Id<'users'>,
         organizationId: orgId,
         taxCountry: form.taxCountry,
         taxRegion: form.taxRegion || undefined,
