@@ -36,8 +36,10 @@ export function useChatWidgetAI() {
   // Fetch CSRF token on mount
   useEffect(() => {
     fetch('/api/csrf-token')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data) csrfRef.current = data; })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) csrfRef.current = data;
+      })
       .catch(() => {});
   }, []);
 
@@ -197,7 +199,6 @@ export function useChatWidgetAI() {
       } else if (action.type === 'EDIT_LEAVE') {
         url = '/api/chat/edit-leave';
         body = {
-          requesterId: user.id,
           leaveId: action.leaveId,
           startDate: action.startDate,
           endDate: action.endDate,
@@ -208,7 +209,6 @@ export function useChatWidgetAI() {
       } else if (action.type === 'DELETE_LEAVE') {
         url = '/api/chat/delete-leave';
         body = {
-          requesterId: user.id,
           leaveId: action.leaveId,
           employeeName: (action as DeleteLeaveAction).employeeName,
           startDate: (action as DeleteLeaveAction).startDate,
@@ -302,7 +302,12 @@ export function useChatWidgetAI() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(csrfRef.current ? { 'X-CSRF-Token': csrfRef.current.token, 'X-CSRF-Token-Signature': csrfRef.current.signature } : {}),
+          ...(csrfRef.current
+            ? {
+                'X-CSRF-Token': csrfRef.current.token,
+                'X-CSRF-Token-Signature': csrfRef.current.signature,
+              }
+            : {}),
         },
         body: JSON.stringify(body),
       });
@@ -569,7 +574,12 @@ export function useChatWidgetAI() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(csrfRef.current ? { 'X-CSRF-Token': csrfRef.current.token, 'X-CSRF-Token-Signature': csrfRef.current.signature } : {}),
+          ...(csrfRef.current
+            ? {
+                'X-CSRF-Token': csrfRef.current.token,
+                'X-CSRF-Token-Signature': csrfRef.current.signature,
+              }
+            : {}),
         },
         body: JSON.stringify({
           messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
@@ -611,8 +621,19 @@ export function useChatWidgetAI() {
       const hasTable = /\|.*\|.*\|/m.test(cleanContent) || cleanContent.split('\n').length > 20;
       if (hasTable) {
         // Persist messages for fullscreen page to pick up
-        const allMessages = [...messages, { id: (Date.now() + 1).toString(), role: 'assistant' as const, content: cleanContent, actions, suggestions }];
-        try { sessionStorage.setItem('ai-chat-handoff', JSON.stringify(allMessages)); } catch {}
+        const allMessages = [
+          ...messages,
+          {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant' as const,
+            content: cleanContent,
+            actions,
+            suggestions,
+          },
+        ];
+        try {
+          sessionStorage.setItem('ai-chat-handoff', JSON.stringify(allMessages));
+        } catch {}
         router.push('/ai-chat');
         setIsOpen(false);
       }
