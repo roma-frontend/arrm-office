@@ -3,21 +3,25 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
 import type { Id } from '../../../../../convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
-    const { userId, backupId } = await req.json();
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (auth.payload.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Only superadmins can restore backups' }, { status: 403 });
+    }
 
-    if (!userId || !backupId) {
+    const { backupId } = await req.json();
+    if (!backupId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const requester = await convex.query(api.users.queries.getUserById, { userId });
-    if (!requester || requester.role !== 'superadmin') {
-      return NextResponse.json({ error: 'Only superadmins can restore backups' }, { status: 403 });
-    }
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
 
     const result = await convex.mutation(api.backups.restoreEmployeeBackup, {
       backupId: backupId as Id<'employeeBackups'>,

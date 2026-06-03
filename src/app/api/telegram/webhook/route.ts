@@ -53,6 +53,16 @@ async function sendReply(token: string, chatId: string, text: string) {
 
 export async function POST(req: Request) {
   try {
+    // Verify the request actually originates from Telegram. Telegram echoes the
+    // secret configured at setWebhook time in this header on every update.
+    const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const provided = req.headers.get('x-telegram-bot-api-secret-token');
+      if (provided !== webhookSecret) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) return NextResponse.json({ ok: true });

@@ -14,12 +14,16 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 import { logger } from '@/lib/logger';
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
   try {
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { userId, organizationId, requestType, startDate, endDate, metadata } = await req.json();
 
     logger.log('[conflict-check] Request:', {
@@ -38,6 +42,9 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
         { status: 400 },
       );
     }
+
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
 
     // Вызываем Conflict Service
     const conflictResult = await convex.query(api.conflicts.checkConflictsForRequest, {
@@ -82,6 +89,11 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
 export async function GET(req: NextRequest) {
   // GET для быстрой проверки через query params
   try {
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
     const organizationId = searchParams.get('organizationId');
@@ -92,6 +104,9 @@ export async function GET(req: NextRequest) {
     if (!userId || !organizationId || !requestType || !startDate || !endDate) {
       return NextResponse.json({ error: 'Missing required query params' }, { status: 400 });
     }
+
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
 
     // Вызываем Conflict Service
     const conflictResult = await convex.query(api.conflicts.checkConflictsForRequest, {

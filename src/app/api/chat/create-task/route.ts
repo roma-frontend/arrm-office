@@ -14,41 +14,41 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 import { logger } from '@/lib/logger';
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
   try {
-    const {
-      userId,
-      organizationId,
-      title,
-      description,
-      assignedTo,
-      assignedBy,
-      priority,
-      deadline,
-      tags,
-    } = await req.json();
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { title, description, assignedTo, priority, deadline, tags } = await req.json();
+
+    // Creator identity comes from the trusted session, never the request body
+    const assignedBy = auth.payload.userId as Id<'users'>;
+    const organizationId = auth.payload.organizationId as Id<'organizations'> | undefined;
 
     logger.log('[create-task] Request:', {
-      userId,
+      assignedBy,
       organizationId,
       title,
       assignedTo,
       deadline,
     });
 
-    if (!userId || !organizationId || !title || !assignedTo || !assignedBy || !priority) {
+    if (!organizationId || !title || !assignedTo || !priority) {
       return NextResponse.json(
         {
-          error:
-            'Missing required fields: userId, organizationId, title, assignedTo, assignedBy, priority',
+          error: 'Missing required fields: title, assignedTo, priority',
         },
         { status: 400 },
       );
     }
+
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
 
     // ═══════════════════════════════════════════════════════════════
     // CONFLICT DETECTION — Check task conflicts
@@ -62,7 +62,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     if (deadline) {
       // Проверяем конфликты задачи с отпусками
       const conflictData: any = await convex.query(api.conflicts.checkConflictsForRequest, {
-        organizationId: organizationId as Id<'organizations'>,
+        organizationId: organizationId,
         requestType: 'task' as const,
         userId: assignedTo as Id<'users'>,
         startDate: Date.now(),
@@ -133,6 +133,11 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
  */
 export async function GET(req: NextRequest) {
   try {
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
     const organizationId = searchParams.get('organizationId');
@@ -142,6 +147,9 @@ export async function GET(req: NextRequest) {
     if (!userId || !organizationId || !assigneeId || !deadline) {
       return NextResponse.json({ error: 'Missing required query params' }, { status: 400 });
     }
+
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
 
     const conflictResult = await convex.query(api.conflicts.checkConflictsForRequest, {
       organizationId: organizationId as Id<'organizations'>,

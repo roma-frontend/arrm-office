@@ -3,24 +3,28 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
 import type { Id } from '../../../../../convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
-
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
-    const { userId, organizationId } = await req.json();
-
-    if (!userId || !organizationId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const requester = await convex.query(api.users.queries.getUserById, { userId });
-    if (!requester || requester.role !== 'superadmin') {
+    if (auth.payload.role !== 'superadmin') {
       return NextResponse.json({ error: 'Only superadmins can run backups' }, { status: 403 });
     }
 
+    const { organizationId } = await req.json();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
+
     const org = await convex.query(api.organizations.getOrganizationById, {
-      callerUserId: userId,
+      callerUserId: auth.payload.userId as Id<'users'>,
       organizationId: organizationId as Id<'organizations'>,
     });
     if (!org) {

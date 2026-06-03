@@ -3,30 +3,47 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
 import type { Id } from '../../../../../convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 import { cookies } from 'next/headers';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const cookieStore = await cookies();
     const locale = cookieStore.get('i18nextLng')?.value || 'en';
     const { t } = await getServerTranslation('common', locale);
 
-    const { userId, organizationId, type, startDate, endDate, days, reason } = await req.json();
+    const { type, startDate, endDate, days, reason } = await req.json();
 
-    if (!userId || !organizationId || !type || !startDate || !endDate || !days || !reason) {
+    if (!type || !startDate || !endDate || !days || !reason) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    // Identity is derived from the trusted session — never from the request body
+    const userId = auth.payload.userId as Id<'users'>;
+    const organizationId = auth.payload.organizationId as Id<'organizations'> | undefined;
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'User does not belong to an organization' },
+        { status: 400 },
+      );
+    }
+
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
 
     // ═══════════════════════════════════════════════════════════════
     // CONFLICT DETECTION — Unified Conflict Service
     // ═══════════════════════════════════════════════════════════════
     const conflictResult = await convex.query(api.conflicts.checkConflictsForRequest, {
-      organizationId: organizationId as Id<'organizations'>,
+      organizationId: organizationId,
       requestType: 'leave' as const,
-      userId: userId as Id<'users'>,
+      userId: userId,
       startDate: new Date(startDate).getTime(),
       endDate: new Date(endDate).getTime(),
       metadata: { leaveType: type },
