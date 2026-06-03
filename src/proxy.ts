@@ -11,6 +11,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
+import { getToken } from 'next-auth/jwt';
 import { checkRateLimit, blockKey } from '@/lib/redis';
 
 // ═══════════════════════════════════════════════════════════════
@@ -31,6 +32,29 @@ async function isValidJWT(token: string | undefined): Promise<boolean> {
   try {
     await jwtVerify(token, jwtSecret, { algorithms: ['HS256'] });
     return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate a NextAuth (Auth.js) session for OAuth users.
+ *
+ * Google sign-in establishes an Auth.js session cookie and redirects straight
+ * to a protected route — but the `hr-auth-token` bridge cookie is only minted
+ * client-side *after* landing there. Without accepting the Auth.js session in
+ * the middleware, OAuth users bounce protected → /login in a redirect loop.
+ */
+async function hasValidNextAuthSession(request: NextRequest): Promise<boolean> {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) return false;
+  try {
+    const token = await getToken({
+      req: request,
+      secret,
+      secureCookie: process.env.NODE_ENV === 'production',
+    });
+    return !!token?.email;
   } catch {
     return false;
   }
@@ -363,7 +387,7 @@ export async function proxy(request: NextRequest) {
     if (
       AUTH_PATHS.some((prefix) => pathname.startsWith(prefix)) &&
       !isMaintenance &&
-      (await isValidJWT(authToken))
+      ((await isValidJWT(authToken)) || (await hasValidNextAuthSession(request)))
     ) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
@@ -374,7 +398,11 @@ export async function proxy(request: NextRequest) {
   if (isProtectedPath(pathname)) {
     const authToken = request.cookies.get('hr-auth-token')?.value;
 
-    const hasValidSession = await isValidJWT(authToken);
+    // Accept either the credential/face bridge cookie (hr-auth-token) or a
+    // valid Auth.js session (Google OAuth users, whose bridge cookie is only
+    // minted client-side after they reach the dashboard).
+    const hasValidSession =
+      (await isValidJWT(authToken)) || (await hasValidNextAuthSession(request));
     if (!hasValidSession) {
       // Invalidate any stale cookies so the user doesn't see a login loop
       const loginUrl = new URL('/login', request.url);
