@@ -2,21 +2,22 @@
 
 import dynamic from 'next/dynamic';
 
-// SSR the hero so the <h1> is in the initial HTML and becomes the LCP element
-// immediately (previously `ssr: false` left an empty pulsing div until hydration,
-// pushing the LCP ~2.7s and making the cookie banner the LCP element instead).
+// Render the hero client-side only. SSR was tried for LCP but it forced a
+// server render in English + logged-out state, then the client re-rendered with
+// the user's real language/auth -> a visible double-render flash. Client-only
+// shows a stable placeholder, then the final content paints once (no flash).
 const HeroSection = dynamic(() => import('@/components/landing/HeroSection'), {
   loading: () => (
     <div className="min-h-screen animate-pulse" style={{ background: 'var(--landing-bg)' }} />
   ),
-  ssr: true,
+  ssr: false,
 });
 
-// SSR the navbar too so it is part of the initial HTML instead of "flying in"
-// from the top after hydration (which caused a visible layout shift / flash).
+// Client-only for the same reason: SSR rendered a logged-out / English navbar
+// that flashed and switched after hydration.
 const NavbarWrapper = dynamic(() => import('@/components/landing/NavbarWrapper'), {
   loading: () => null,
-  ssr: true,
+  ssr: false,
 });
 
 const LandingBelowFold = dynamic(() => import('@/components/landing/LandingBelowFold'), {

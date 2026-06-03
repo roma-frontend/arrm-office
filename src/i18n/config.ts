@@ -23,6 +23,18 @@ import compensationEn from '../../public/locales/en/compensation.json';
 import learningEn from '../../public/locales/en/learning.json';
 import expensesEn from '../../public/locales/en/expenses.json';
 
+// Landing + common namespaces bundled for ALL supported languages so the
+// above-the-fold landing page renders in the user's language on the very first
+// paint (no English-then-switch flash). Other namespaces still lazy-load via
+// HttpBackend. Keep this list limited to landing-critical namespaces to avoid
+// bloating the initial bundle.
+import landingRu from '../../public/locales/ru/landing.json';
+import commonRu from '../../public/locales/ru/common.json';
+import landingHy from '../../public/locales/hy/landing.json';
+import commonHy from '../../public/locales/hy/common.json';
+import landingDe from '../../public/locales/de/landing.json';
+import commonDe from '../../public/locales/de/common.json';
+
 export const allNamespaces = [
   'common',
   'landing',
@@ -64,6 +76,18 @@ export const resources = {
     compensation: compensationEn,
     learning: learningEn,
     expenses: expensesEn,
+  },
+  ru: {
+    landing: landingRu,
+    common: commonRu,
+  },
+  hy: {
+    landing: landingHy,
+    common: commonHy,
+  },
+  de: {
+    landing: landingDe,
+    common: commonDe,
   },
 } as const;
 
