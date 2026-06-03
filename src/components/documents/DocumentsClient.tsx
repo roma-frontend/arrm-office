@@ -128,7 +128,6 @@ export default function DocumentsClient() {
     effectiveOrgId && user?.id && isAdmin
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
         }
       : 'skip',
   );

@@ -318,7 +318,6 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
     try {
       const result = await requestDriver({
         organizationId,
-        requesterId: userId,
         driverId: selectedDriver as Id<'drivers'>,
         startTime: new Date(startTime).getTime(),
         endTime: new Date(endTime).getTime(),

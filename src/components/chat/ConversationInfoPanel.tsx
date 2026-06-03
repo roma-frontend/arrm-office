@@ -84,7 +84,6 @@ export function ConversationInfoPanel({
       for (const userId of selectedUsers) {
         await addMember({
           conversationId,
-          requesterId: currentUserId,
           userId,
           organizationId: selectedOrgId,
         });

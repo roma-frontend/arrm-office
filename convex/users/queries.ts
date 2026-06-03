@@ -203,8 +203,8 @@ export const getCurrentUser = query({
 // GET USER BY EMAIL — only within same org
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUserByEmail = query({
-  args: { email: v.string(), requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { email, requesterId }) => {
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
     const user = await ctx.db
       .query('users')
       .withIndex('by_email', (q) => q.eq('email', email.toLowerCase()))
@@ -212,13 +212,14 @@ export const getUserByEmail = query({
 
     if (!user) return null;
 
-    // If requester provided, verify same org
-    if (requesterId) {
-      const requester = await ctx.db.get(requesterId);
+    // Verify same org as the authenticated caller
+    const requester = await getAuthCaller(ctx);
+    if (requester) {
+      const requesterDoc = await ctx.db.get(requester._id);
       if (
-        requester &&
-        requester.organizationId !== user.organizationId &&
-        !isSuperadmin(requester)
+        requesterDoc &&
+        requesterDoc.organizationId !== user.organizationId &&
+        !isSuperadmin(requesterDoc)
       ) {
         return null;
       }
@@ -232,17 +233,18 @@ export const getUserByEmail = query({
 // GET USER BY ID — only within same org
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUserById = query({
-  args: { userId: v.id('users'), requesterId: v.optional(v.id('users')) },
-  handler: async (ctx, { userId, requesterId }) => {
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
     const user = await ctx.db.get(userId);
     if (!user) return null;
 
-    if (requesterId) {
-      const requester = await ctx.db.get(requesterId);
+    const requester = await getAuthCaller(ctx);
+    if (requester) {
+      const requesterDoc = await ctx.db.get(requester._id);
       if (
-        requester &&
-        requester.organizationId !== user.organizationId &&
-        !isSuperadmin(requester)
+        requesterDoc &&
+        requesterDoc.organizationId !== user.organizationId &&
+        !isSuperadmin(requesterDoc)
       ) {
         throw new Error('Access denied: cross-organization access is not allowed');
       }

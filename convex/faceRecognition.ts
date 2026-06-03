@@ -124,10 +124,12 @@ export const getFaceDescriptor = query({
 export const removeFaceRegistration = mutation({
   args: {
     userId: v.id('users'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { userId, requesterId } = args;
+    const { userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const requesterId = caller._id;
     const requester = await ctx.db.get(requesterId);
     if (!requester) throw new Error('Requester not found');
 

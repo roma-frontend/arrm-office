@@ -16,7 +16,6 @@ import { requireUser } from '../lib/rbac';
 export const requestDriver = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     driverId: v.id('drivers'),
     startTime: v.number(),
     endTime: v.number(),
@@ -58,8 +57,8 @@ export const requestDriver = mutation({
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
-    // Use verified caller ID if available, fallback to args.requesterId
-    if (caller) args.requesterId = caller._id;
+    if (!caller) throw new Error('Not authenticated');
+    const requesterId = caller._id;
     // Validate startTime < endTime
     if (args.startTime >= args.endTime) {
       throw new Error('Start time must be before end time');
@@ -144,7 +143,7 @@ export const requestDriver = mutation({
     // Create request with corporate fields
     const requestId = await ctx.db.insert('driverRequests', {
       organizationId: args.organizationId,
-      requesterId: args.requesterId,
+      requesterId: requesterId,
       driverId: args.driverId,
       startTime: args.startTime,
       endTime: args.endTime,

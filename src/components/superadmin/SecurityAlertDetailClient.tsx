@@ -35,7 +35,7 @@ export default function SecurityAlertDetailClient() {
 
   const suspiciousUser = useQuery(
     api.users.queries.getUserById,
-    user?.id && safeUserId ? { userId: safeUserId, requesterId: user.id as Id<'users'> } : 'skip',
+    user?.id && safeUserId ? { userId: safeUserId } : 'skip',
   );
 
   const recentAttempts = useQuery(

@@ -5,6 +5,7 @@
 import { mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { SMALL_LIST_CAP } from './lib/limits';
+import { getAuthCaller } from './lib/getAuthCaller';
 
 export const createConversation = mutation({
   args: {
@@ -109,7 +110,6 @@ export const autoRenameConversation = mutation({
 
 export const createLeaveRequest = mutation({
   args: {
-    requesterId: v.id('users'),
     organizationId: v.id('organizations'),
     type: v.union(
       v.literal('paid'),
@@ -123,6 +123,8 @@ export const createLeaveRequest = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const now = Date.now();
     const days =
       Math.ceil(
@@ -131,7 +133,7 @@ export const createLeaveRequest = mutation({
       ) + 1;
 
     const leaveId = await ctx.db.insert('leaveRequests', {
-      userId: args.requesterId,
+      userId: caller._id,
       organizationId: args.organizationId,
       type: args.type,
       startDate: args.startDate,

@@ -57,7 +57,7 @@ export default function ProfilePage() {
   const deleteAvatar = useMutation(api.users.mutations.deleteAvatar);
   const userData = useQuery(
     api.users.queries.getUserById,
-    user?.id ? { userId: user.id as Id<'users'>, requesterId: user.id as Id<'users'> } : 'skip',
+    user?.id ? { userId: user.id as Id<'users'> } : 'skip',
   );
   const userStats = useQuery(
     api.userStats.getUserStats,

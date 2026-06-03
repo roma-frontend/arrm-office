@@ -353,7 +353,6 @@ export default function OrgChartClient() {
     try {
       const result = await generateOrgChart({
         organizationId: orgIdToQuery as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
       });
 
       toast.success(
@@ -375,7 +374,6 @@ export default function OrgChartClient() {
     try {
       await createNode({
         organizationId: orgIdToQuery as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         name: nodeForm.name,
         type: nodeForm.type,
         title: nodeForm.title || undefined,
@@ -401,7 +399,6 @@ export default function OrgChartClient() {
     try {
       await updateNode({
         nodeId: selectedNode,
-        requesterId: user.id as Id<'users'>,
         name: nodeForm.name,
         title: nodeForm.title || undefined,
         parentId: nodeForm.parentId ? (nodeForm.parentId as Id<'orgChartNodes'>) : undefined,
@@ -434,7 +431,6 @@ export default function OrgChartClient() {
     try {
       await deleteNode({
         nodeId,
-        requesterId: user.id as Id<'users'>,
       });
 
       toast.success(t('orgChart.deleteSuccess', 'Node deleted successfully'));
@@ -468,7 +464,6 @@ export default function OrgChartClient() {
     try {
       await saveLayout({
         organizationId: orgIdToQuery as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         layoutData: { nodes, edges },
         isDefault: true,
       });
@@ -485,7 +480,6 @@ export default function OrgChartClient() {
     try {
       const result = await fixDepartments({
         organizationId: orgIdToQuery as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
       });
 
       if (result.fixedCount > 0) {

@@ -115,7 +115,6 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
                     if (confirm(t('settingsSecurity.removeFaceIdConfirm'))) {
                       await removeFaceRegistration({
                         userId: userId,
-                        requesterId: userId,
                       });
                       toast.success(t('settingsSecurity.faceIdRemoved'));
                     }

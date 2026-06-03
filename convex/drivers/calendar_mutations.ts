@@ -4,6 +4,7 @@
 
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
+import { getAuthCaller } from '../lib/getAuthCaller';
 
 /** Grant calendar access to another user */
 export const grantCalendarAccess = mutation({
@@ -73,11 +74,13 @@ export const revokeCalendarAccess = mutation({
 export const requestCalendarAccess = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     driverUserId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { organizationId, requesterId, driverUserId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { organizationId, driverUserId } = args;
+    const requesterId = caller._id;
     await ctx.db.insert('notifications', {
       organizationId,
       userId: driverUserId,

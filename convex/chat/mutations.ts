@@ -4,6 +4,7 @@ import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { sanitizeText } from '../lib/sanitize';
+import { getAuthCaller } from '../lib/getAuthCaller';
 
 /**
  * Convert emoji to ASCII-safe key format using Unicode code points
@@ -223,11 +224,13 @@ export const updateGroup = mutation({
 export const addMember = mutation({
   args: {
     conversationId: v.id('chatConversations'),
-    requesterId: v.id('users'),
     userId: v.id('users'),
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const requesterId = caller._id;
     const existing = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -251,7 +254,7 @@ export const addMember = mutation({
     await ctx.db.insert('chatMessages', {
       conversationId: args.conversationId,
       organizationId: args.organizationId,
-      senderId: args.requesterId,
+      senderId: requesterId,
       type: 'system',
       content: `${user?.name ?? 'Someone'} was added to the group`,
       createdAt: now,
@@ -260,7 +263,7 @@ export const addMember = mutation({
     // Audit log: member added
     await ctx.db.insert('auditLogs', {
       organizationId: args.organizationId,
-      userId: args.requesterId,
+      userId: requesterId,
       action: 'chat_member_added',
       target: args.conversationId,
       details: JSON.stringify({ addedUserId: args.userId, addedUserName: user?.name }),

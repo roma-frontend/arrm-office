@@ -124,12 +124,10 @@ export const getOrgChartTree = query({
 export const generateOrgChartFromUsers = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
-  handler: async (ctx, { organizationId, requesterId }) => {
-    const caller = await getAuthCaller(ctx);
-    const requester = caller ?? (await ctx.db.get(requesterId));
-    if (!requester) throw new Error('Requester not found');
+  handler: async (ctx, { organizationId }) => {
+    const requester = await getAuthCaller(ctx);
+    if (!requester) throw new Error('Not authenticated');
 
     const userIsSuperadmin = isSuperadmin(requester);
     const isAdmin = requester.role === 'admin';
@@ -227,7 +225,6 @@ export const generateOrgChartFromUsers = mutation({
 export const createNode = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     parentId: v.optional(v.id('orgChartNodes')),
     userId: v.optional(v.id('users')),
     name: v.string(),
@@ -236,16 +233,8 @@ export const createNode = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ??
-      ((await ctx.db.get(args.requesterId)) as {
-        _id: any;
-        role: string;
-        organizationId?: any;
-        email?: string;
-      });
-    if (!requester) throw new Error('Requester not found');
+    const requester = await getAuthCaller(ctx);
+    if (!requester) throw new Error('Not authenticated');
 
     const userIsSuperadmin = isSuperadmin(requester);
     const isAdmin = requester.role === 'admin';
@@ -279,7 +268,6 @@ export const createNode = mutation({
 export const updateNode = mutation({
   args: {
     nodeId: v.id('orgChartNodes'),
-    requesterId: v.id('users'),
     parentId: v.optional(v.id('orgChartNodes')),
     name: v.optional(v.string()),
     title: v.optional(v.string()),
@@ -287,16 +275,8 @@ export const updateNode = mutation({
     userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ??
-      ((await ctx.db.get(args.requesterId)) as {
-        _id: any;
-        role: string;
-        organizationId?: any;
-        email?: string;
-      });
-    if (!requester) throw new Error('Requester not found');
+    const requester = await getAuthCaller(ctx);
+    if (!requester) throw new Error('Not authenticated');
 
     const userIsSuperadmin = isSuperadmin(requester);
     const isAdmin = requester.role === 'admin';
@@ -333,19 +313,10 @@ export const updateNode = mutation({
 export const deleteNode = mutation({
   args: {
     nodeId: v.id('orgChartNodes'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ??
-      ((await ctx.db.get(args.requesterId)) as {
-        _id: any;
-        role: string;
-        organizationId?: any;
-        email?: string;
-      });
-    if (!requester) throw new Error('Requester not found');
+    const requester = await getAuthCaller(ctx);
+    if (!requester) throw new Error('Not authenticated');
 
     const userIsSuperadmin = isSuperadmin(requester);
     const isAdmin = requester.role === 'admin';
@@ -385,19 +356,10 @@ export const moveNode = mutation({
   args: {
     nodeId: v.id('orgChartNodes'),
     newParentId: v.optional(v.id('orgChartNodes')),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ??
-      ((await ctx.db.get(args.requesterId)) as {
-        _id: any;
-        role: string;
-        organizationId?: any;
-        email?: string;
-      });
-    if (!requester) throw new Error('Requester not found');
+    const requester = await getAuthCaller(ctx);
+    if (!requester) throw new Error('Not authenticated');
 
     const userIsSuperadmin = isSuperadmin(requester);
     const isAdmin = requester.role === 'admin';
@@ -472,22 +434,13 @@ async function checkIsDescendant(
 export const saveLayout = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
     layoutData: v.any(),
     name: v.optional(v.string()),
     isDefault: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ??
-      ((await ctx.db.get(args.requesterId)) as {
-        _id: any;
-        role: string;
-        organizationId?: any;
-        email?: string;
-      });
-    if (!requester) throw new Error('Requester not found');
+    const requester = await getAuthCaller(ctx);
+    if (!requester) throw new Error('Not authenticated');
 
     const userIsSuperadmin = isSuperadmin(requester);
     if (!userIsSuperadmin && requester.organizationId !== args.organizationId) {
@@ -499,7 +452,7 @@ export const saveLayout = mutation({
       const existingDefaults = await ctx.db
         .query('orgChartLayouts')
         .withIndex('by_user', (q) =>
-          q.eq('organizationId', args.organizationId).eq('userId', args.requesterId),
+          q.eq('organizationId', args.organizationId).eq('userId', requester._id),
         )
         .filter((q) => q.eq(q.field('isDefault'), true))
         .take(MAX_PAGE_SIZE);
@@ -511,7 +464,7 @@ export const saveLayout = mutation({
 
     const layoutId = await ctx.db.insert('orgChartLayouts', {
       organizationId: args.organizationId,
-      userId: args.requesterId,
+      userId: requester._id,
       layoutData: args.layoutData,
       name: args.name,
       isDefault: args.isDefault,
@@ -529,19 +482,10 @@ export const saveLayout = mutation({
 export const fixOrgChartDepartments = mutation({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const caller = await getAuthCaller(ctx);
-    const requester =
-      caller ??
-      ((await ctx.db.get(args.requesterId)) as {
-        _id: any;
-        role: string;
-        organizationId?: any;
-        email?: string;
-      });
-    if (!requester) throw new Error('Requester not found');
+    const requester = await getAuthCaller(ctx);
+    if (!requester) throw new Error('Not authenticated');
 
     const userIsSuperadmin = isSuperadmin(requester);
     const isAdmin = requester.role === 'admin';

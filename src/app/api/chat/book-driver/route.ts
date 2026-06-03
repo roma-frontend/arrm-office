@@ -6,6 +6,7 @@ import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { logger } from '@/lib/logger';
 import { cookies } from 'next/headers';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
+import { getServerConvexAuth } from '@/lib/server-convex-auth';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -78,9 +79,14 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     // ═══════════════════════════════════════════════════════════════
     // CREATE DRIVER REQUEST
     // ═══════════════════════════════════════════════════════════════
-    const requestId = await convex.mutation(api.drivers.requests_mutations.requestDriver, {
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const authedConvex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    authedConvex.setAuth(auth.token);
+    const requestId = await authedConvex.mutation(api.drivers.requests_mutations.requestDriver, {
       organizationId: organizationId as Id<'organizations'>,
-      requesterId: userId as Id<'users'>,
       driverId: driverId as Id<'drivers'>,
       startTime,
       endTime,

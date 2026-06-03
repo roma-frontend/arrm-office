@@ -321,7 +321,6 @@ export const createDocumentCategory = mutation({
 export const getTeamDocumentOverview = query({
   args: {
     organizationId: v.id('organizations'),
-    requesterId: v.id('users'),
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);

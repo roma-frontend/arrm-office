@@ -568,7 +568,6 @@ export function useOptimisticDriverRequest() {
 
         const result = await requestDriver({
           organizationId,
-          requesterId,
           driverId,
           startTime,
           endTime,
