@@ -11,12 +11,11 @@ const BCRYPT_ROUNDS = 12;
  * Hash a password with bcrypt on the server side.
  * The client sends plaintext (or client-hash), we re-hash with bcrypt.
  *
- * Uses async `bcrypt.hash` (not `hashSync`) to avoid blocking the event loop
- * on serverless functions — at 12 rounds, sync hashing pegs the runtime for
- * ~250ms which kills latency under any concurrent auth load.
+ * Uses sync `bcrypt.hashSync`: the async variant relies on `setTimeout`
+ * internally, which the Convex runtime forbids inside queries/mutations.
  */
 async function hashPassword(plaintext: string): Promise<string> {
-  return bcrypt.hash(plaintext, BCRYPT_ROUNDS);
+  return bcrypt.hashSync(plaintext, BCRYPT_ROUNDS);
 }
 
 /**
@@ -28,7 +27,8 @@ const SHA256_HEX_RE = /^[a-f0-9]{64}$/i;
 /**
  * Compare a plaintext password against a bcrypt hash.
  *
- * Uses async `bcrypt.compare` to avoid event-loop blocking.
+ * Uses sync `bcrypt.compareSync`: the async variant relies on `setTimeout`
+ * internally, which the Convex runtime forbids inside queries/mutations.
  *
  * Legacy fallback: pre-bcrypt accounts stored a client-side SHA-256 hash.
  * We accept that ONLY when `hash` actually looks like SHA-256 hex —
@@ -41,7 +41,7 @@ const SHA256_HEX_RE = /^[a-f0-9]{64}$/i;
 async function verifyPassword(plaintext: string, hash: string): Promise<boolean> {
   // Try bcrypt first (new passwords)
   try {
-    const match = await bcrypt.compare(plaintext, hash);
+    const match = bcrypt.compareSync(plaintext, hash);
     if (match) return true;
   } catch {
     // bcrypt.compare throws if `hash` is not a valid bcrypt hash (legacy users)
