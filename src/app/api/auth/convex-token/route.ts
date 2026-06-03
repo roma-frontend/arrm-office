@@ -52,7 +52,8 @@ export async function GET() {
   try {
     const convexToken = await signConvexJWT(payload);
     return NextResponse.json({ token: convexToken });
-  } catch {
+  } catch (err) {
+    console.error('[convex-token] failed to sign Convex JWT:', err);
     return NextResponse.json({ error: 'Convex auth not configured' }, { status: 503 });
   }
 }
