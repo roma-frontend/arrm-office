@@ -95,7 +95,12 @@ export default function HeroCTA() {
 
   const text = (key: string, fallback: string) => (mounted ? t(key) : fallback);
 
-  if (user) {
+  // Gate the auth-dependent branch behind `mounted` so the server render and the
+  // first client render always match (both show the logged-out CTA). The zustand
+  // store rehydrates from localStorage synchronously on the client, so reading
+  // `user` during the first render would otherwise cause a hydration mismatch —
+  // which is why this hero used to be `ssr: false` (at the cost of LCP).
+  if (mounted && user) {
     return (
       <div className="hero-fade-2 flex flex-col sm:flex-row items-center gap-4 mb-16">
         <Button
