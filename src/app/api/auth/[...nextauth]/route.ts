@@ -17,7 +17,10 @@ if (missingVars.length > 0) {
   }
 }
 
-const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_URL!.replace('.convex.cloud', '.convex.site');
+const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_URL!.replace(
+  '.convex.cloud',
+  '.convex.site',
+);
 
 export const authConfig: NextAuthConfig = {
   providers: [
@@ -204,15 +207,25 @@ export const authConfig: NextAuthConfig = {
 
       // Sign a JWT for Convex auth
       if (process.env.CONVEX_AUTH_PRIVATE_KEY && token.email) {
-        const privateKey = await importPKCS8(process.env.CONVEX_AUTH_PRIVATE_KEY, 'RS256');
-        session.convexToken = await new SignJWT({ email: token.email })
-          .setProtectedHeader({ alg: 'RS256' })
-          .setIssuedAt()
-          .setIssuer(CONVEX_SITE_URL)
-          .setAudience('convex')
-          .setSubject(token.email as string)
-          .setExpirationTime('1h')
-          .sign(privateKey);
+        try {
+          // Vercel stores the key with escaped newlines (\n as literal chars);
+          // importPKCS8 needs real newlines. Without this the callback throws,
+          // NextAuth returns no session, and OAuth users appear unauthenticated.
+          const privateKey = await importPKCS8(
+            process.env.CONVEX_AUTH_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            'RS256',
+          );
+          session.convexToken = await new SignJWT({ email: token.email })
+            .setProtectedHeader({ alg: 'RS256' })
+            .setIssuedAt()
+            .setIssuer(CONVEX_SITE_URL)
+            .setAudience('convex')
+            .setSubject(token.email as string)
+            .setExpirationTime('1h')
+            .sign(privateKey);
+        } catch (err) {
+          console.error('[Auth.js] Failed to sign Convex token:', err);
+        }
       }
 
       return session;
