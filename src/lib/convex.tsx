@@ -2,6 +2,7 @@
 
 import { ConvexProviderWithAuth, ConvexReactClient } from 'convex/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
 
 let convexInstance: ConvexReactClient | null = null;
 
@@ -18,11 +19,17 @@ function useAuthForConvex() {
   const tokenRef = useRef<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Track the app-level auth state (set by email/Google/face login). When the
+  // user logs in via SPA navigation (router.push, no full reload), this flips
+  // to true and we must re-mint the Convex token — otherwise the Convex client
+  // stays unauthenticated and every query returns nothing until a hard reload.
+  const storeAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   const fetchAccessToken = useCallback(
     async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
       if (!forceRefreshToken && tokenRef.current) return tokenRef.current;
       try {
-        const res = await fetch('/api/auth/convex-token');
+        const res = await fetch('/api/auth/convex-token', { credentials: 'same-origin' });
         if (!res.ok) {
           tokenRef.current = null;
           setIsAuthenticated(false);
@@ -44,6 +51,12 @@ function useAuthForConvex() {
   useEffect(() => {
     fetchAccessToken({ forceRefreshToken: true });
   }, [fetchAccessToken]);
+
+  // Re-fetch the Convex token whenever the app auth state changes (login/logout)
+  // so the Convex client picks up the freshly-set `hr-auth-token` cookie.
+  useEffect(() => {
+    fetchAccessToken({ forceRefreshToken: true });
+  }, [storeAuthenticated, fetchAccessToken]);
 
   return useMemo(
     () => ({
