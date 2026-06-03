@@ -47,6 +47,7 @@ import { useRouter } from 'next/navigation';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { MobileCard } from '@/components/ui/mobile-card';
 import { Button } from '../ui/button';
+import Image from 'next/image';
 
 const ROLE_CONFIG = {
   superadmin: {
@@ -805,13 +806,15 @@ export function EmployeesClient() {
                           >
                             {/* Employee name + avatar */}
                             <div className="sm:col-span-4 flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 text-gradient hover:opacity-90 flex items-center justify-center text-white text-xs font-bold">
+                              <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
                                 {emp.avatarUrl ? (
-                                  <img
+                                  <Image
                                     src={emp.avatarUrl}
                                     alt={emp.name}
                                     className="w-full h-full object-cover"
                                     referrerPolicy="no-referrer"
+                                    width={36}
+                                    height={36}
                                   />
                                 ) : (
                                   emp.name
