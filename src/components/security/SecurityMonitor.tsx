@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useConvexAuth } from 'convex/react';
 import { Shield, AlertTriangle, Lock, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ interface SecurityMetrics {
 
 export function SecurityMonitor() {
   const { t } = useTranslation();
+  const { isAuthenticated } = useConvexAuth();
   const [metrics, setMetrics] = useState<SecurityMetrics>({
     blockedIPs: 0,
     rateLimitHits: 0,
@@ -28,6 +30,7 @@ export function SecurityMonitor() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     // Проверяем, является ли пользователь админом
     // В реальном приложении проверьте роль пользователя
     const checkAdmin = async () => {
@@ -48,7 +51,7 @@ export function SecurityMonitor() {
     // Обновление каждые 30 секунд
     const interval = setInterval(checkAdmin, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isAuthenticated]);
 
   if (!isVisible) return null;
 

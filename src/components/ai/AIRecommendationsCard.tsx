@@ -16,6 +16,7 @@ import {
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useConvexAuth } from 'convex/react';
 
 interface Insights {
   balanceWarning: string | null;
@@ -27,13 +28,14 @@ interface Insights {
 export default function AIRecommendationsCard() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
+  const { isAuthenticated } = useConvexAuth();
   const [insights, setInsights] = useState<Insights | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
   const fetchInsights = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !isAuthenticated) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/chat/insights?userId=${user.id}`);
@@ -52,7 +54,7 @@ export default function AIRecommendationsCard() {
   useEffect(() => {
     fetchInsights();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, isAuthenticated]);
 
   // Don't show if no insights at all
   const hasContent =
