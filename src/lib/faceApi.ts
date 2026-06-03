@@ -19,6 +19,7 @@ import { logger } from './logger';
 let faceapi: typeof import('@vladmandic/face-api') | null = null;
 let modelsLoaded = false;
 let tfInitialized = false;
+let warmedUp = false;
 
 async function initTensorFlow() {
   if (tfInitialized) return;
@@ -29,15 +30,20 @@ async function initTensorFlow() {
     // Official way to suppress kernel registration warnings (HMR noise in dev)
     tf.env().set('DEBUG', false);
 
-    // Prefer WebGL when available for better performance (fallback to cpu)
-    const hasWebgl = !!tf.findBackend('webgl');
-    const targetBackend = hasWebgl ? 'webgl' : 'cpu';
-
-    // Only set backend if it's not already active
-    if (tf.getBackend() !== targetBackend) {
-      await tf.setBackend(targetBackend);
+    // Prefer WebGL — SSD MobileNet inference on the CPU backend takes *seconds*
+    // per frame, which is the main cause of the long delay before detection
+    // starts. Try WebGL explicitly and only fall back to CPU if it throws.
+    try {
+      await tf.setBackend('webgl');
+      await tf.ready();
+    } catch {
+      await tf.setBackend('cpu');
+      await tf.ready();
     }
-    await tf.ready();
+
+    if (tf.getBackend() !== 'webgl') {
+      logger.warn(`⚠️ TensorFlow.js running on '${tf.getBackend()}' backend (slow).`);
+    }
 
     tfInitialized = true;
   } catch (error) {
@@ -69,6 +75,33 @@ export async function loadFaceApiModels() {
 
   modelsLoaded = true;
   logger.log('✅ Face models loaded');
+
+  // Warm up the WebGL pipeline. The first real inference compiles dozens of
+  // GPU shaders synchronously (multi-second freeze) — doing it once here on a
+  // blank canvas means the first camera frame is processed immediately instead
+  // of stalling detection for ~10-20s.
+  void warmUpModels();
+}
+
+async function warmUpModels() {
+  if (warmedUp || typeof document === 'undefined') return;
+  try {
+    const api = await loadFaceApiLibrary();
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    const options = new api.SsdMobilenetv1Options({ minConfidence: 0.5 });
+    await api.detectSingleFace(canvas, options).withFaceLandmarks().withFaceDescriptor();
+    warmedUp = true;
+    logger.log('✅ Face model warmup complete');
+  } catch {
+    // Warmup is best-effort; detection still works without it.
+  }
 }
 
 // Detect face and get descriptor
