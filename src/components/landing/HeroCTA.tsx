@@ -83,17 +83,20 @@ function ZapIcon() {
   );
 }
 
-export default function HeroCTA() {
+export default function HeroCTA({ initialLanguage = 'en' }: { initialLanguage?: string }) {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { t } = useTranslation();
+  const { t: liveT, i18n } = useTranslation();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  const text = (key: string, fallback: string) => (mounted ? t(key) : fallback);
+  // Render with the server-detected language before mount so the SSR HTML matches
+  // the first client render exactly (no flash); switch to live `t` after mount.
+  const t = mounted ? liveT : i18n.getFixedT(initialLanguage);
+  const text = (key: string, fallback: string) => t(key) || fallback;
 
   // Gate the auth-dependent branch behind `mounted` so the server render and the
   // first client render always match (both show the logged-out CTA). The zustand

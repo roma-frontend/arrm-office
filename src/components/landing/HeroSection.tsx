@@ -31,13 +31,21 @@ function SparklesIcon() {
   );
 }
 
-export default function HeroSection() {
-  const { t } = useTranslation();
+export default function HeroSection({ initialLanguage = 'en' }: { initialLanguage?: string }) {
+  const { t: liveT, i18n } = useTranslation();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Before mount, render with the server-detected language so the server HTML and
+  // the first client render are byte-identical (no hydration mismatch, no flash).
+  // The landing + common namespaces are statically bundled for every language, so
+  // this resolves synchronously. After mount we switch to the live `t`, which lets
+  // runtime language switching keep working (and matches `initialLanguage` on a
+  // normal load, so nothing visibly changes).
+  const t = mounted ? liveT : i18n.getFixedT(initialLanguage);
 
   return (
     <div
@@ -86,7 +94,7 @@ export default function HeroSection() {
           color: '#ffffff',
         }}
       >
-        {mounted ? t('ui.skipToContent') : 'Skip to content'}
+        {t('ui.skipToContent')}
       </a>
 
       {/* Badge — CSS shimmer, no JS */}
@@ -110,7 +118,7 @@ export default function HeroSection() {
           className="relative text-xs font-bold tracking-[0.2em] uppercase"
           style={{ color: 'var(--landing-text-muted)' }}
         >
-          {mounted ? t('landing.exclusiveHR') : 'Exclusive HR'}
+          {t('landing.exclusiveHR')}
         </span>
         <SparklesIcon />
       </div>
@@ -124,7 +132,7 @@ export default function HeroSection() {
             textShadow: '0 2px 40px rgba(37, 99, 235, 0.15)',
           }}
         >
-          {mounted ? t('landing.heroTitle') : 'Simplify HR with AI'}
+          {t('landing.heroTitle')}
         </span>
         <div
           className="hero-line absolute -bottom-4 left-1/2 -translate-x-1/2 h-[2px] w-32"
@@ -154,9 +162,7 @@ export default function HeroSection() {
           className="text-lg md:text-xl leading-loose font-light text-center"
           style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}
         >
-          {mounted
-            ? t('landing.heroSubtitle')
-            : 'All-in-one platform for leave management, attendance tracking, and team collaboration'}
+          {t('landing.heroSubtitle')}
         </p>
         <div className="flex items-center justify-center gap-2 mt-6">
           {[0, 1, 2, 1, 0].map((size, idx) => (
@@ -176,7 +182,7 @@ export default function HeroSection() {
       </div>
 
       {/* CTA Buttons — Client Island */}
-      <HeroCTA />
+      <HeroCTA initialLanguage={initialLanguage} />
 
       {/* Trusted companies */}
       <div className="hero-fade-4 flex flex-col items-center gap-6">
@@ -192,7 +198,7 @@ export default function HeroSection() {
             className="text-xs uppercase tracking-[0.3em] font-semibold"
             style={{ color: 'var(--landing-text-muted)' }}
           >
-            {mounted ? t('landing.trustedByElite') : 'Trusted by elite HR professionals'}
+            {t('landing.trustedByElite')}
           </p>
           <div
             className="w-8 h-[1px]"
@@ -233,7 +239,7 @@ export default function HeroSection() {
           className="text-xs uppercase tracking-widest"
           style={{ color: 'var(--primary)', opacity: 0.6 }}
         >
-          {mounted ? t('landing.scroll') : 'Scroll'}
+          {t('landing.scroll')}
         </span>
         <div
           className="scroll-line w-px h-12"

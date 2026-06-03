@@ -152,20 +152,28 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const nonce = (await headers()).get('x-nonce') ?? undefined;
+  const headerList = await headers();
+  const nonce = headerList.get('x-nonce') ?? undefined;
+  const cookieStore = await cookies();
+  const locale = cookieStore.get('i18nextLng')?.value || 'en';
+  const htmlLang = ['en', 'hy', 'ru', 'de'].includes(locale) ? locale : 'en';
   return (
-    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang={htmlLang} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         {/* Safari pinned tab */}
         <link rel="mask-icon" href="/favicon.svg?v=3" color="#2563eb" />
 
         {/* ── Resource hints: preconnect to critical origins ──
             Only origins used during the initial render are preconnected.
-            Google OAuth origins (accounts.google.com / oauth2.googleapis.com)
-            are connected to only on the login page, so preconnecting them
-            globally is wasted work (Lighthouse: "Unused preconnect"). */}
-        <link rel="preconnect" href="https://o4505283179249664.ingest.us.sentry.io" />
-        <link rel="preconnect" href="https://res.cloudinary.com" />
+            Sentry needs `crossOrigin` for the preconnect to actually be reused by
+            the SDK's CORS request (without it Lighthouse flags an "unused
+            preconnect"). Cloudinary/Google OAuth are not requested on the landing
+            page, so they are not preconnected here. */}
+        <link
+          rel="preconnect"
+          href="https://o4505283179249664.ingest.us.sentry.io"
+          crossOrigin="anonymous"
+        />
 
         {/* Apply the persisted theme BEFORE first paint to avoid a light→dark
             flash (FOUC). Reads the `next-theme` cookie / `theme` localStorage

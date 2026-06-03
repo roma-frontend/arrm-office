@@ -2,19 +2,21 @@
 
 import dynamic from 'next/dynamic';
 
-// Render the hero client-side only. SSR was tried for LCP but it forced a
-// server render in English + logged-out state, then the client re-rendered with
-// the user's real language/auth -> a visible double-render flash. Client-only
-// shows a stable placeholder, then the final content paints once (no flash).
+// SSR the hero so the <h1> is in the initial HTML and is the LCP element
+// immediately. The hero renders in the server-detected language (passed via
+// `initialLanguage`) so there is no English→language flash: server and the
+// first client render produce identical markup. (Previously `ssr: false` left
+// an empty placeholder until hydration, pushing LCP to ~5.7s and making the
+// cookie banner the LCP element.)
 const HeroSection = dynamic(() => import('@/components/landing/HeroSection'), {
   loading: () => (
     <div className="min-h-screen animate-pulse" style={{ background: 'var(--landing-bg)' }} />
   ),
-  ssr: false,
+  ssr: true,
 });
 
-// Client-only for the same reason: SSR rendered a logged-out / English navbar
-// that flashed and switched after hydration.
+// Navbar stays client-only: it depends on theme + auth state (browser-only) and
+// is not the LCP element, so SSR'ing it adds hydration complexity for no gain.
 const NavbarWrapper = dynamic(() => import('@/components/landing/NavbarWrapper'), {
   loading: () => null,
   ssr: false,
@@ -25,11 +27,11 @@ const LandingBelowFold = dynamic(() => import('@/components/landing/LandingBelow
   ssr: false,
 });
 
-export default function LandingPageClient() {
+export default function LandingPageClient({ initialLanguage }: { initialLanguage: string }) {
   return (
     <>
       <NavbarWrapper />
-      <HeroSection />
+      <HeroSection initialLanguage={initialLanguage} />
       <LandingBelowFold />
     </>
   );
