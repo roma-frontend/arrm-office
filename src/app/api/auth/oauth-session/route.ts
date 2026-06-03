@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { signJWT } from '@/lib/jwt';
 import { logger } from '@/lib/logger';
 
@@ -115,23 +114,6 @@ export async function POST(req: NextRequest) {
       role: result.role,
     });
 
-    // Set cookies
-    const cookieStore = await cookies();
-    cookieStore.set('hr-auth-token', jwt, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
-    cookieStore.set('hr-session-token', sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
-
     // Log the OAuth login
     try {
       const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
@@ -175,7 +157,23 @@ export async function POST(req: NextRequest) {
       role: responseData.session.role,
     });
 
-    return NextResponse.json(responseData);
+    const response = NextResponse.json(responseData);
+    response.cookies.set('hr-auth-token', jwt, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+    response.cookies.set('hr-session-token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+
+    return response;
   } catch (error: any) {
     console.error('[oauth-session] ❌ OAuth session error:', error.message || error);
     return NextResponse.json(

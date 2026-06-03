@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { signJWT } from '@/lib/jwt';
 import { jwtVerify } from 'jose';
 
@@ -53,15 +52,15 @@ export async function POST(request: NextRequest) {
     const sessionToken = crypto.randomUUID();
 
     // Set cookies with secure settings
-    const cookieStore = await cookies();
-    cookieStore.set('hr-auth-token', jwt, {
+    const response = NextResponse.json({ success: true });
+    response.cookies.set('hr-auth-token', jwt, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60,
       path: '/',
     });
-    cookieStore.set('hr-session-token', sessionToken, {
+    response.cookies.set('hr-session-token', sessionToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
@@ -69,7 +68,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    return NextResponse.json({ success: true });
+    return response;
   } catch (error) {
     console.error('Error creating session:', error);
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });

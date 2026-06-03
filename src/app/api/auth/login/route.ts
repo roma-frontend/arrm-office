@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { signJWT } from '@/lib/jwt';
 import { calculateRiskScore } from '@/lib/riskScore';
 import { withTracing, addSpanAttributes } from '@/lib/tracing';
@@ -273,23 +272,7 @@ export async function POST(req: NextRequest) {
         avatar: result.avatarUrl,
       });
 
-      const cookieStore = await cookies();
-      cookieStore.set('hr-auth-token', jwt, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60,
-        path: '/',
-      });
-      cookieStore.set('hr-session-token', sessionToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60,
-        path: '/',
-      });
-
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         riskLevel: riskResult.level,
         session: {
@@ -307,6 +290,23 @@ export async function POST(req: NextRequest) {
           avatar: result.avatarUrl,
         },
       });
+
+      response.cookies.set('hr-auth-token', jwt, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60,
+        path: '/',
+      });
+      response.cookies.set('hr-session-token', sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60,
+        path: '/',
+      });
+
+      return response;
     } catch (error: any) {
       console.error('Login error:', error);
       // Log server error attempt

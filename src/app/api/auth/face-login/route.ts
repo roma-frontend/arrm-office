@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { signJWT } from '@/lib/jwt';
 import { log } from '@/lib/logger';
 import { applyRateLimit, FACE_LOGIN_RATE_LIMIT } from '@/lib/rate-limit';
@@ -137,26 +136,11 @@ export async function POST(request: NextRequest) {
       avatar: result.avatarUrl,
     });
 
-    const cookieStore = await cookies();
     const secure = process.env.NODE_ENV === 'production';
-    cookieStore.set('hr-auth-token', jwt, {
-      httpOnly: true,
-      secure,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
-    cookieStore.set('hr-session-token', sessionToken, {
-      httpOnly: true,
-      secure,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
 
     log.info('Face Login successful', { userId: result.userId, email });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       session: {
         userId: result.userId,
@@ -170,6 +154,23 @@ export async function POST(request: NextRequest) {
         avatar: result.avatarUrl,
       },
     });
+
+    response.cookies.set('hr-auth-token', jwt, {
+      httpOnly: true,
+      secure,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+    response.cookies.set('hr-session-token', sessionToken, {
+      httpOnly: true,
+      secure,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+
+    return response;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Login failed';
     log.error('Face Login API error', error as Error);
