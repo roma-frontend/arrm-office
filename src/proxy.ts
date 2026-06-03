@@ -203,6 +203,16 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
     blockDurationMs: 30 * 60 * 1000,
   },
   {
+    // Convex auth-bridge token refresh. Called repeatedly by the Convex client
+    // to (re)mint a short-lived token from the existing session cookie, so it
+    // needs a far more generous budget than sensitive auth mutations. Abuse is
+    // bounded anyway: without a valid session cookie it just returns a null token.
+    id: 'convex-token',
+    pattern: (p) => p === '/api/auth/convex-token',
+    maxRequests: 240,
+    windowMs: 15 * 60 * 1000,
+  },
+  {
     id: 'auth-other',
     pattern: (p) => p.startsWith('/api/auth/'),
     maxRequests: 30,

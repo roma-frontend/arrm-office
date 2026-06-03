@@ -253,7 +253,11 @@ export default function Navbar() {
             </button>
           )}
 
-          {user ? (
+          {/* Gate the auth-dependent account menu behind `mounted` so the server
+              render and first client render always show the logged-out buttons
+              (the zustand store rehydrates from localStorage on the client, which
+              would otherwise cause a hydration mismatch). */}
+          {mounted && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 md:px-3 md:py-2 transition-all outline-none focus-visible:outline-none focus:outline-none hover:bg-(--background-subtle)">

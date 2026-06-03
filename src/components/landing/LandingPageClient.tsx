@@ -12,9 +12,11 @@ const HeroSection = dynamic(() => import('@/components/landing/HeroSection'), {
   ssr: true,
 });
 
+// SSR the navbar too so it is part of the initial HTML instead of "flying in"
+// from the top after hydration (which caused a visible layout shift / flash).
 const NavbarWrapper = dynamic(() => import('@/components/landing/NavbarWrapper'), {
   loading: () => null,
-  ssr: false,
+  ssr: true,
 });
 
 const LandingBelowFold = dynamic(() => import('@/components/landing/LandingBelowFold'), {

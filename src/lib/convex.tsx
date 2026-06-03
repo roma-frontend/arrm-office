@@ -28,6 +28,17 @@ function useAuthForConvex() {
   const fetchAccessToken = useCallback(
     async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
       if (!forceRefreshToken && tokenRef.current) return tokenRef.current;
+      // Skip the network entirely when the app has no session. Convex polls this
+      // callback to (re)mint a token; firing it for anonymous visitors spams
+      // `/api/auth/convex-token`, which (a) trips the auth rate limiter (429) and
+      // (b) logs a console error on every public page. The `storeAuthenticated`
+      // effect below re-runs this with `forceRefreshToken` the moment the user
+      // logs in, so authenticated users still get their token promptly.
+      if (!useAuthStore.getState().isAuthenticated) {
+        tokenRef.current = null;
+        setIsAuthenticated(false);
+        return null;
+      }
       try {
         const res = await fetch('/api/auth/convex-token', { credentials: 'same-origin' });
         if (!res.ok) {
