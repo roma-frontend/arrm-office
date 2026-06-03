@@ -47,7 +47,12 @@ export async function GET() {
     }
   }
 
-  if (!payload) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  if (!payload) {
+    // Anonymous visitor — not an error, just no token to mint. Returning 200 with
+    // a null token (instead of 401) avoids a noisy console error on public pages
+    // while the client treats `token: null` exactly like an unauthenticated state.
+    return NextResponse.json({ token: null });
+  }
 
   try {
     const convexToken = await signConvexJWT(payload);

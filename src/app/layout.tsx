@@ -159,11 +159,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         {/* Safari pinned tab */}
         <link rel="mask-icon" href="/favicon.svg?v=3" color="#2563eb" />
 
-        {/* ── Resource hints: preconnect to critical origins ── */}
+        {/* ── Resource hints: preconnect to critical origins ──
+            Only origins used during the initial render are preconnected.
+            Google OAuth origins (accounts.google.com / oauth2.googleapis.com)
+            are connected to only on the login page, so preconnecting them
+            globally is wasted work (Lighthouse: "Unused preconnect"). */}
         <link rel="preconnect" href="https://o4505283179249664.ingest.us.sentry.io" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
-        <link rel="preconnect" href="https://accounts.google.com" />
-        <link rel="preconnect" href="https://oauth2.googleapis.com" />
 
         {/* Block Radix UI from adding scroll-lock compensation styles to <body>.
             suppressHydrationWarning is required on nonce'd inline scripts:
