@@ -2,32 +2,46 @@
 
 **Originally created:** 2026-05-28
 **Reassessed:** 2026-06-03 (verified against live code)
-**Status:** ~90% done — one focused security task left
+**Completed:** 2026-06-03
+**Status:** ✅ DONE — Convex `requesterId` migration 100% complete + API routes hardened
 
 ---
 
-## TL;DR for next session
+## TL;DR
 
-The auth migration is almost finished. Verified state of `convex/` on 2026-06-03:
+The auth migration is **finished**. Verified state of `convex/` on 2026-06-03:
 
-| Item                                       | State                                                        |
-| ------------------------------------------ | ------------------------------------------------------------ |
-| `as any` casts in convex                   | **0** ✅                                                     |
-| `convex/lib/requireRequester.ts`           | **deleted** ✅                                               |
-| `allowUnauthenticated: true` in handlers   | **0** ✅                                                     |
-| `getAuthCaller` adoption                   | **118 handlers** ✅                                          |
-| `requesterId: v.id('users')` still in args | **~60 handlers across 11 files** ❌ ← **THE remaining work** |
+| Item                                   | State                                                        |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `as any` casts in convex               | **0** ✅                                                     |
+| `convex/lib/requireRequester.ts`       | **deleted** ✅                                               |
+| `convex/lib/withAuth.ts` (allowUnauth) | **deleted** ✅ (dead code)                                   |
+| `getAuthCaller` adoption               | **138+ handlers** ✅                                         |
+| `requesterId: v.id('users')` in args   | **0** ✅ (only the `schema/drivers.ts` column field remains) |
 
-**The one remaining job:** replace client-supplied `requesterId` with the
-server-verified caller from `getAuthCaller(ctx)`. While a handler still reads
-`args.requesterId`, the **browser is asserting its own identity** — that is the
-last auth-bypass surface to close.
+Every Convex handler now derives identity from the verified JWT via
+`getAuthCaller(ctx)` — the browser can no longer assert its own identity.
+
+### Server API routes also hardened (2026-06-03)
+
+Insecure Next.js routes that created an unauthenticated `ConvexHttpClient` and
+trusted client-supplied `userId`/`assignedBy`/`organizationId` were fixed to use
+`getServerConvexAuth()` + per-request `convex.setAuth(token)` (identity from the
+`hr-auth-token` session cookie). Routes secured:
+`chat/create-task`, `chat/book-leave`, `chat/conflict-check` (POST+GET),
+`chat/book-driver`, `chat/restore-backup`, `chat/backup-org`,
+`chat/backup-employee`, `drivers/available` (tenant-isolation / IDOR fix).
+`telegram/webhook` validates `x-telegram-bot-api-secret-token` vs
+`TELEGRAM_WEBHOOK_SECRET`.
+
+> NOTE: `convex/schema/drivers.ts` still matches `requesterId: v.` but that is a
+> **schema field definition**, not a handler arg — intentionally left alone.
 
 ---
 
-## The pattern (before → after)
+## Reference: the pattern (before → after)
 
-**Secure reference pattern** (already used in 118 handlers, e.g. `convex/productivity.ts`):
+**Secure Convex handler pattern** (used in 138+ handlers, e.g. `convex/productivity.ts`):
 
 ```ts
 import { getAuthCaller } from './lib/getAuthCaller';

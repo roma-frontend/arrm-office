@@ -8,15 +8,22 @@ import { cookies } from 'next/headers';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
 import { getServerConvexAuth } from '@/lib/server-convex-auth';
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
 export const POST = withCsrfProtection(async (req: NextRequest) => {
   try {
+    const auth = await getServerConvexAuth();
+    if (!auth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const cookieStore = await cookies();
     const locale = cookieStore.get('i18nextLng')?.value || 'en';
     const { t } = await getServerTranslation('common', locale);
 
-    const { userId, organizationId, driverId, startTime, endTime, tripInfo } = await req.json();
+    const { driverId, startTime, endTime, tripInfo } = await req.json();
+
+    // Identity comes from the verified session, never from the request body
+    const userId = auth.payload.userId as Id<'users'>;
+    const organizationId = auth.payload.organizationId as Id<'organizations'> | undefined;
 
     logger.log('[book-driver] Received request:', {
       userId,
@@ -27,21 +34,13 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       tripInfo,
     });
 
-    if (!userId || !organizationId || !driverId || !startTime || !endTime || !tripInfo) {
+    if (!organizationId || !driverId || !startTime || !endTime || !tripInfo) {
       console.error('[book-driver] Missing required fields');
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Validate IDs are proper Convex IDs
-    if (!userId || !userId.startsWith('jn')) {
-      console.error('[book-driver] Invalid userId:', userId);
-      return NextResponse.json({ error: 'Invalid userId format' }, { status: 400 });
-    }
-    if (!organizationId || (!organizationId.startsWith('jn') && !organizationId.startsWith('n5'))) {
-      console.error('[book-driver] Invalid organizationId:', organizationId);
-      return NextResponse.json({ error: 'Invalid organizationId format' }, { status: 400 });
-    }
-    if (!driverId || !driverId.startsWith('jn')) {
+    // Validate driverId is a proper Convex ID
+    if (!driverId.startsWith('jn')) {
       console.error('[book-driver] Invalid driverId:', driverId);
       return NextResponse.json(
         { error: `Invalid driverId format. Must start with "jn", got: "${driverId}"` },
@@ -49,13 +48,16 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       );
     }
 
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    convex.setAuth(auth.token);
+
     // ═══════════════════════════════════════════════════════════════
     // CONFLICT DETECTION — Check driver availability
     // ═══════════════════════════════════════════════════════════════
     const conflictResult = await convex.query(api.conflicts.checkConflictsForRequest, {
-      organizationId: organizationId as Id<'organizations'>,
+      organizationId: organizationId,
       requestType: 'driver' as const,
-      userId: userId as Id<'users'>,
+      userId: userId,
       startDate: new Date(startTime).getTime(),
       endDate: new Date(endTime).getTime(),
       metadata: { driverId: driverId as Id<'drivers'> },
@@ -79,14 +81,8 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     // ═══════════════════════════════════════════════════════════════
     // CREATE DRIVER REQUEST
     // ═══════════════════════════════════════════════════════════════
-    const auth = await getServerConvexAuth();
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const authedConvex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-    authedConvex.setAuth(auth.token);
-    const requestId = await authedConvex.mutation(api.drivers.requests_mutations.requestDriver, {
-      organizationId: organizationId as Id<'organizations'>,
+    const requestId = await convex.mutation(api.drivers.requests_mutations.requestDriver, {
+      organizationId: organizationId,
       driverId: driverId as Id<'drivers'>,
       startTime,
       endTime,
