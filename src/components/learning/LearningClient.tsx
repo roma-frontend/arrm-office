@@ -142,7 +142,6 @@ export default function LearningClient() {
     effectiveOrgId && user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
           includeUnpublished: isAdmin,
         }
       : 'skip',
@@ -153,7 +152,6 @@ export default function LearningClient() {
     effectiveOrgId && user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
         }
       : 'skip',
   );
@@ -163,7 +161,6 @@ export default function LearningClient() {
     effectiveOrgId && user?.id && isAdmin
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
         }
       : 'skip',
   );
@@ -174,7 +171,6 @@ export default function LearningClient() {
     showCourseDetail && selectedCourse && effectiveOrgId && user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
           courseId: selectedCourse._id,
         }
       : 'skip',
@@ -186,7 +182,6 @@ export default function LearningClient() {
     showLessonPlayer && courseLessons.length > 0 && effectiveOrgId && user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
           lessonId: courseLessons[activeLessonIndex]?._id as Id<'lessons'>,
         }
       : 'skip',
@@ -213,7 +208,6 @@ export default function LearningClient() {
       user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
           lessonId: currentLesson._id as Id<'lessons'>,
         }
       : 'skip',
@@ -225,7 +219,6 @@ export default function LearningClient() {
     effectiveOrgId && user?.id
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
-          requesterId: user.id as Id<'users'>,
         }
       : 'skip',
   );
@@ -236,7 +229,6 @@ export default function LearningClient() {
     try {
       const result = await enrollMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         courseId,
       });
 
@@ -264,7 +256,6 @@ export default function LearningClient() {
     try {
       await createCourseMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         title: courseForm.title.trim(),
         description: courseForm.description.trim() || undefined,
         category: courseForm.category.trim(),
@@ -327,7 +318,6 @@ export default function LearningClient() {
     try {
       await updateLessonProgressMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         lessonId: currentLessonData._id as Id<'lessons'>,
         courseId: currentLessonData.courseId as Id<'courses'>,
         isCompleted: true,
@@ -390,7 +380,6 @@ export default function LearningClient() {
     try {
       await createLessonMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         courseId: selectedCourse._id,
         title: lessonForm.title.trim(),
         description: lessonForm.description.trim() || undefined,
@@ -422,7 +411,6 @@ export default function LearningClient() {
     try {
       await updateLessonMutation({
         lessonId: editingLesson._id,
-        requesterId: user!.id as Id<'users'>,
         title: lessonForm.title.trim(),
         description: lessonForm.description.trim() || undefined,
         contentType: lessonForm.contentType,
@@ -449,7 +437,6 @@ export default function LearningClient() {
     try {
       await deleteLessonMutation({
         lessonId,
-        requesterId: user.id as Id<'users'>,
       });
 
       toast.success(t('learning.lessonDeleted', 'Lesson deleted successfully'));
@@ -468,7 +455,6 @@ export default function LearningClient() {
     try {
       await updateCourseMutation({
         courseId: selectedCourse._id,
-        requesterId: user.id as Id<'users'>,
         isPublished: true,
       });
 
@@ -518,7 +504,6 @@ export default function LearningClient() {
     try {
       const result = await submitQuizAttemptMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
-        requesterId: user.id as Id<'users'>,
         quizId: quizDataResult.quiz._id,
         answers,
       });
@@ -531,7 +516,6 @@ export default function LearningClient() {
         if (currentLesson) {
           await updateLessonProgressMutation({
             organizationId: effectiveOrgId as Id<'organizations'>,
-            requesterId: user.id as Id<'users'>,
             lessonId: currentLesson._id as Id<'lessons'>,
             courseId: currentLesson.courseId as Id<'courses'>,
             isCompleted: true,
