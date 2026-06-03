@@ -167,6 +167,32 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <link rel="preconnect" href="https://o4505283179249664.ingest.us.sentry.io" />
         <link rel="preconnect" href="https://res.cloudinary.com" />
 
+        {/* Apply the persisted theme BEFORE first paint to avoid a light→dark
+            flash (FOUC). Reads the `next-theme` cookie / `theme` localStorage
+            value (falling back to the OS preference) and sets the html class
+            synchronously, matching ThemeProvider's resolution logic. */}
+        <script
+          id="theme-init"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var m = document.cookie.match(/(?:^| )next-theme=([^;]+)/);
+                  var t = m ? m[1] : (localStorage.getItem('theme') || 'system');
+                  var resolved = t === 'system'
+                    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                    : t;
+                  var root = document.documentElement;
+                  root.classList.remove('light', 'dark');
+                  root.classList.add(resolved === 'dark' ? 'dark' : 'light');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+
         {/* Block Radix UI from adding scroll-lock compensation styles to <body>.
             suppressHydrationWarning is required on nonce'd inline scripts:
             per HTML spec, browsers strip the `nonce` attribute from the DOM
