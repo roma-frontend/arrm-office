@@ -143,6 +143,19 @@ export function useAuthSync() {
           };
 
           await createOAuthUser(userData);
+
+          // Immediately create the JWT bridge session so the `hr-auth-token`
+          // cookie is set and the Zustand store is logged in — without waiting
+          // for the Convex `currentUser` query. The oauth-session endpoint
+          // resolves role/org server-side and `createJwtSession` calls
+          // `login()`. Without this, OAuth users land on /dashboard with an
+          // empty store (no data, "Sign in" still showing).
+          await createJwtSession({
+            email: session.user.email!,
+            name: finalName,
+            avatarUrl: session.user.image || undefined,
+          });
+
           setUserEmail(session.user.email!);
         } catch (error) {
           console.error('[useAuthSync] Error syncing OAuth user:', error);
