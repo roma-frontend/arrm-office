@@ -57,7 +57,7 @@ export default function ApprovalsClient() {
     }
   };
 
-  if (user?.role !== 'admin') {
+  if (user?.role !== 'admin' && user?.role !== 'superadmin') {
     return (
       <div className="flex flex-col items-center justify-center text-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center">

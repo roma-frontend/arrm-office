@@ -31,8 +31,8 @@ export function ThemeSwitcher() {
           variant="ghost"
           size="icon"
           className="text-(--text-muted) hover:text-(--text-primary)"
-          title={t('settings.theme', { defaultValue: 'Theme' })}
-          aria-label={t('settings.theme', { defaultValue: 'Select theme' })}
+          title={t('settings.selectTheme', { defaultValue: 'Theme' })}
+          aria-label={t('settings.selectTheme', { defaultValue: 'Select theme' })}
         >
           <motion.div
             key={resolvedTheme}
@@ -41,11 +41,7 @@ export function ThemeSwitcher() {
             exit={{ opacity: 0, rotate: 30, scale: 0.8 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            {resolvedTheme === 'dark' ? (
-              <Moon className="w-5 h-5" />
-            ) : (
-              <Sun className="w-5 h-5" />
-            )}
+            {resolvedTheme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
           </motion.div>
         </Button>
       </DropdownMenuTrigger>

@@ -37,10 +37,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 
-const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  closed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'danger'> = {
+  draft: 'secondary',
+  active: 'success',
+  closed: 'danger',
 };
 
 const QUESTION_TYPE_ICONS: Record<string, typeof Star> = {
@@ -54,7 +54,7 @@ const QUESTION_TYPE_ICONS: Record<string, typeof Star> = {
 function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
   return (
-    <Badge className={`${STATUS_COLORS[status] || STATUS_COLORS.draft} border-0`}>
+    <Badge variant={STATUS_VARIANT[status] || 'secondary'}>
       {t(`surveys.status.${status}`) || status}
     </Badge>
   );

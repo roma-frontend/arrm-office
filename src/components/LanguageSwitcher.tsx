@@ -20,7 +20,7 @@ const languages = {
 };
 
 export function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const currentLang = i18n.language || 'en';
 
   const changeLanguage = async (lng: string) => {
@@ -49,6 +49,8 @@ export function LanguageSwitcher() {
           size="sm"
           className="gap-2"
           style={{ color: 'var(--text-primary)' }}
+          title={t('settings.selectLanguage', { defaultValue: 'Language' })}
+          aria-label={t('settings.selectLanguage', { defaultValue: 'Select language' })}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = 'var(--text-primary)';
           }}

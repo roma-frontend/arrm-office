@@ -11,6 +11,8 @@
     "notificationsDesc": "Настройте предпочтения email, push и внутренних уведомлений",
     "preferences": "Предпочтения",
     "language": "Язык",
+    "selectTheme": "Тема",
+    "selectLanguage": "Язык",
     "theme": {
       "dark": "Тёмная",
       "light": "Светлая",

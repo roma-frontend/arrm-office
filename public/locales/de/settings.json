@@ -11,6 +11,8 @@
     "notificationsDesc": "Passen Sie Ihre E-Mail-, Push- und In-App-Benachrichtigungseinstellungen an",
     "preferences": "Einstellungen",
     "language": "Sprache",
+    "selectTheme": "Thema",
+    "selectLanguage": "Sprache",
     "theme": {
       "dark": "Dunkel",
       "light": "Hell",

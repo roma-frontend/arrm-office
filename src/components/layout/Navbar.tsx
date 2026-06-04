@@ -401,6 +401,7 @@ export function Navbar() {
                 size="icon"
                 className="relative text-(--text-muted) hover:text-(--text-primary)"
                 onClick={() => setShowNotifications(!showNotifications)}
+                title={t('notifications.title', { defaultValue: 'Notifications' })}
                 aria-label={t('notifications.title', { defaultValue: 'Notifications' })}
               >
                 <Bell className="w-5 h-5" />

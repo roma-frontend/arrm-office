@@ -11,6 +11,8 @@
     "notificationsDesc": "Կազմաձևեք էլ․ փոստի, push և հավելվածի ծանուցումների նախապատվությունները",
     "preferences": "Նախընտրություններ",
     "language": "Լեզու",
+    "selectTheme": "Թեմա",
+    "selectLanguage": "Լեզու",
     "theme": {
       "dark": "Մուգ ռեժիմ",
       "light": "Լուսավոր ռեժիմ",

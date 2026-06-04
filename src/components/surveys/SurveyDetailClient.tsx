@@ -36,26 +36,10 @@ import { Progress } from '@/components/ui/progress';
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
   const variant = {
-    draft: {
-      bg: 'bg-gray-100 dark:bg-gray-900/30',
-      text: 'text-gray-700 dark:text-gray-400',
-      Icon: FileText,
-    },
-    active: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-700 dark:text-green-400',
-      Icon: CheckCircle,
-    },
-    closed: {
-      bg: 'bg-red-100 dark:bg-red-900/30',
-      text: 'text-red-700 dark:text-red-400',
-      Icon: XCircle,
-    },
-  }[status] ?? {
-    bg: 'bg-gray-100 dark:bg-gray-900/30',
-    text: 'text-gray-700 dark:text-gray-400',
-    Icon: FileText,
-  };
+    draft: { badge: 'secondary' as const, Icon: FileText },
+    active: { badge: 'success' as const, Icon: CheckCircle },
+    closed: { badge: 'danger' as const, Icon: XCircle },
+  }[status] ?? { badge: 'secondary' as const, Icon: FileText };
 
   const label =
     {
@@ -65,7 +49,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     }[status] ?? t('surveyStatus.draft');
 
   return (
-    <Badge className={`${variant.bg} ${variant.text} border-0 flex items-center gap-1`}>
+    <Badge variant={variant.badge} className="flex items-center gap-1">
       <variant.Icon className="h-3 w-3" />
       {label}
     </Badge>

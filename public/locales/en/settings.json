@@ -11,6 +11,8 @@
     "notificationsDesc": "Configure email, push, and in-app notification preferences",
     "preferences": "Preferences",
     "language": "Language",
+    "selectTheme": "Theme",
+    "selectLanguage": "Language",
     "theme": {
       "dark": "Dark",
       "light": "Light",

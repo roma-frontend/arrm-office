@@ -80,10 +80,10 @@ const QUESTION_TYPE_CONFIG: Record<QuestionType, { icon: LucideIcon; labelKey: s
   nps: { icon: BarChart3, labelKey: 'surveys.questionType.nps' },
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  closed: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'danger'> = {
+  draft: 'secondary',
+  active: 'success',
+  closed: 'danger',
 };
 
 // ── Sortable Question Component ──────────────────────────────────────────────
@@ -1211,7 +1211,7 @@ export function SurveysClient() {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-1">
                       <h3 className="font-semibold text-base truncate">{survey.title}</h3>
-                      <Badge className={STATUS_COLORS[survey.status] || ''}>
+                      <Badge variant={STATUS_VARIANT[survey.status] || 'secondary'}>
                         {t(`surveys.status.${survey.status}`)}
                       </Badge>
                       {survey.isAnonymous && (
