@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { usePlanFeatures, PLAN_LABELS, PLAN_PRICES } from '@/lib/hooks/usePlanFeatures';
+import { useCurrency } from '@/hooks/useCurrency';
 import { UpgradeModal } from './UpgradeModal';
 
 const PLAN_ICONS: Record<string, React.ReactNode> = {
@@ -81,7 +82,18 @@ export function SubscriptionPlanCard() {
     : 0;
 
   const { features } = usePlanFeatures();
+  const currency = useCurrency();
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Localized, API-rate-converted price for the current plan. Falls back to the
+  // static USD price string while rates load or for plans without a base price.
+  const planPriceLabel = (() => {
+    const perMonth = t('billing.upgradeModal.perMonth');
+    if (plan === 'starter') return `${currency.starter.formatted}${perMonth}`;
+    if (plan === 'professional') return `${currency.professional.formatted}${perMonth}`;
+    if (plan === 'free') return `${currency.symbol}0${perMonth}`;
+    return PLAN_PRICES[plan];
+  })();
 
   const featureList = [
     { label: t('billing.advancedAnalytics'), enabled: features.advancedAnalytics },
@@ -137,7 +149,7 @@ export function SubscriptionPlanCard() {
                     <p className="font-bold text-(--text-primary) text-lg leading-tight">
                       {PLAN_LABELS[plan]}
                     </p>
-                    <p className="text-sm text-(--text-muted)">{PLAN_PRICES[plan]}</p>
+                    <p className="text-sm text-(--text-muted)">{planPriceLabel}</p>
                   </div>
                 </div>
                 <StatusBadge status={subscription?.status ?? null} isTrialing={isTrialing} />

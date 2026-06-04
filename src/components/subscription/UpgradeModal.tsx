@@ -17,6 +17,7 @@ import {
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useSubscription, type Plan } from '@/lib/hooks/useSubscription';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
+import { useCurrency } from '@/hooks/useCurrency';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 
@@ -118,11 +119,20 @@ function PlanCard({
 }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const currency = useCurrency();
 
   const isCurrent = relation === 'current';
   const isDowngrade = relation === 'downgrade';
   // Highlight the recommended tier only when it's actionable (not the current plan)
   const highlight = isRecommended && !isCurrent;
+
+  // Localized, API-rate-converted display price. Enterprise keeps its text price.
+  const displayPrice =
+    tier.id === 'starter'
+      ? currency.starter.formatted
+      : tier.id === 'professional'
+        ? currency.professional.formatted
+        : tier.price;
 
   const handleCheckout = async () => {
     if (isCurrent) return;
@@ -250,7 +260,7 @@ function PlanCard({
                   tier.priceMonthly ? 'text-3xl' : 'text-xl'
                 }`}
               >
-                {tier.price}
+                {displayPrice}
               </span>
               {tier.priceMonthly && (
                 <span className="text-xs text-(--text-muted) pb-1">
