@@ -157,7 +157,16 @@ export default function AdminPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{org.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{org.plan}</p>
+                    <p
+                      className={cn(
+                        'text-xs truncate',
+                        selectedOrgId === org._id
+                          ? 'text-primary-foreground/80'
+                          : 'text-muted-foreground',
+                      )}
+                    >
+                      {org.plan}
+                    </p>
                   </div>
                   {selectedOrgId === org._id && (
                     <CheckCircle className="w-4 h-4 text-green-500 shrink-0 ml-2" />
