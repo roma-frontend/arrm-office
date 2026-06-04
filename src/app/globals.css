@@ -951,6 +951,10 @@ body {
   background: var(--text-disabled);
 }
 
+.scrollbar-width-none {
+  scrollbar-width: none;
+}
+
 /* ── Animations ────────────────────────────────────────────────── */
 @keyframes shimmer {
   0% {
