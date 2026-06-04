@@ -576,7 +576,7 @@ export default function LoginPage() {
           {/* Onboarding Tour */}
           {!isOAuthSyncing && status !== 'authenticated' && (
             <OnboardingTour
-              steps={getLoginTourSteps(t, loginMode)}
+              steps={getLoginTourSteps(t)}
               tourId="login-tour"
               onComplete={() => {}}
               onSkip={() => {}}

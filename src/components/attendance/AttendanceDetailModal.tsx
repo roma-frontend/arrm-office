@@ -23,6 +23,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 export interface AttendanceRecord {
@@ -97,7 +98,7 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
   if (monthlyStats === undefined)
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+        <ShieldLoader size="md" />
       </div>
     );
 

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, LogIn, LogOut, TrendingUp, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
+import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 
@@ -70,7 +71,7 @@ export function CheckInOutWidget() {
   if (todayStatus === undefined)
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+        <ShieldLoader size="md" />
       </div>
     );
 

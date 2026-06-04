@@ -1,9 +1,6 @@
 import { TourStep } from './OnboardingTour';
 
-export function getLoginTourSteps(
-  t: (key: string, fallback: string) => string,
-  loginMode: 'email' | 'face' | 'touch' = 'email',
-): TourStep[] {
+export function getLoginTourSteps(t: (key: string, fallback: string) => string): TourStep[] {
   const common: TourStep[] = [
     {
       target: '#login-card',
@@ -50,26 +47,13 @@ export function getLoginTourSteps(
     },
   ];
 
-  const faceSteps: TourStep[] = [
+  const googleSteps: TourStep[] = [
     {
-      target: '#login-card',
-      title: t('onboarding.login.faceId.title', '📷 Face ID Login'),
+      target: '#email-login-form button[type="button"], #login-card',
+      title: t('onboarding.login.google.title', '🔵 Sign in with Google'),
       description: t(
-        'onboarding.login.faceId.desc',
-        'Use your camera for instant face recognition login. Fast and secure!',
-      ),
-      placement: 'bottom',
-      highlight: true,
-    },
-  ];
-
-  const touchSteps: TourStep[] = [
-    {
-      target: '#biometric-login',
-      title: t('onboarding.login.biometric.title', '🔐 Quick Login'),
-      description: t(
-        'onboarding.login.biometric.desc',
-        'Use fingerprint or Touch ID for instant access',
+        'onboarding.login.google.desc',
+        'You can also sign in instantly with your Google account — one click and you are in!',
       ),
       placement: 'bottom',
       highlight: true,
@@ -109,8 +93,5 @@ export function getLoginTourSteps(
     },
   ];
 
-  const modeSteps =
-    loginMode === 'face' ? faceSteps : loginMode === 'touch' ? touchSteps : emailSteps;
-
-  return [...common, ...modeSteps, ...endSteps];
+  return [...common, ...emailSteps, ...googleSteps, ...endSteps];
 }
