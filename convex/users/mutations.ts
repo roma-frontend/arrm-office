@@ -441,6 +441,16 @@ export const updateOwnProfile = mutation({
     defaultView: v.optional(v.string()),
     dataRefreshRate: v.optional(v.string()),
     compactMode: v.optional(v.boolean()),
+    dashboardWidgets: v.optional(
+      v.object({
+        quickStats: v.boolean(),
+        leaveCalendar: v.boolean(),
+        upcomingTasks: v.boolean(),
+        teamActivity: v.boolean(),
+        recentLeaves: v.boolean(),
+        analytics: v.boolean(),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
     const { userId, ...updates } = args;

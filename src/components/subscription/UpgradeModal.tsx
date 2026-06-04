@@ -268,7 +268,7 @@ function PlanCard({
                 </span>
               )}
             </div>
-            {tier.priceMonthly && (
+            {tier.priceMonthly && !isCurrent && (
               <p className="text-[11px] text-(--text-muted) mt-1 flex items-center gap-1">
                 <Shield size={10} className="text-(--success)" />
                 {t('billing.upgradeModal.freeTrial')}

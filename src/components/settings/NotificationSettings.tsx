@@ -1,51 +1,68 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 
-interface NotificationSettingsProps {
-  emailNotifs: boolean;
-  pushNotifs: boolean;
-  weeklyReport: boolean;
-  onEmailNotifsChange: (value: boolean) => void;
-  onPushNotifsChange: (value: boolean) => void;
-  onWeeklyReportChange: (value: boolean) => void;
-}
-
-export function NotificationSettings({
-  emailNotifs,
-  pushNotifs,
-  weeklyReport,
-  onEmailNotifsChange,
-  onPushNotifsChange,
-  onWeeklyReportChange,
-}: NotificationSettingsProps) {
+export function NotificationSettings() {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const userId = user?.id as Id<'users'> | undefined;
+
+  const settings = useQuery(api.settings.getUserSettings, userId ? { userId } : 'skip');
+  const updateNotificationSettings = useMutation(api.settings.updateNotificationSettings);
+
+  const [emailNotifs, setEmailNotifs] = useState(true);
+  const [pushNotifs, setPushNotifs] = useState(false);
+
+  // Sync local state when settings load
+  useEffect(() => {
+    if (settings) {
+      setEmailNotifs(settings.emailNotifications);
+      setPushNotifs(settings.pushNotifications);
+    }
+  }, [settings?.emailNotifications, settings?.pushNotifications]);
+
+  const persist = async (next: { email: boolean; push: boolean }) => {
+    if (!userId) return;
+    await updateNotificationSettings({
+      userId,
+      notificationsEnabled: next.email || next.push,
+      emailNotifications: next.email,
+      pushNotifications: next.push,
+    });
+  };
+
+  const handleEmailChange = (value: boolean) => {
+    setEmailNotifs(value);
+    void persist({ email: value, push: pushNotifs });
+  };
+
+  const handlePushChange = (value: boolean) => {
+    setPushNotifs(value);
+    void persist({ email: emailNotifs, push: value });
+  };
 
   const notifications = [
     {
       label: t('settingsNotifications.emailNotifications'),
       desc: t('settingsNotifications.emailNotificationsDesc'),
       value: emailNotifs,
-      onChange: onEmailNotifsChange,
+      onChange: handleEmailChange,
       icon: '📧',
     },
     {
       label: t('settingsNotifications.pushNotifications'),
       desc: t('settingsNotifications.pushNotificationsDesc'),
       value: pushNotifs,
-      onChange: onPushNotifsChange,
+      onChange: handlePushChange,
       icon: '🔔',
-    },
-    {
-      label: t('settingsNotifications.weeklyReport'),
-      desc: t('settingsNotifications.weeklyReportDesc'),
-      value: weeklyReport,
-      onChange: onWeeklyReportChange,
-      icon: '📊',
     },
   ];
 
@@ -69,11 +86,13 @@ export function NotificationSettings({
                   <p className="text-xs text-(--text-muted) mt-0.5">{item.desc}</p>
                 </div>
               </div>
-              <Switch checked={item.value} onCheckedChange={item.onChange} />
+              <Switch
+                checked={item.value}
+                onCheckedChange={item.onChange}
+                disabled={!userId || settings === undefined}
+              />
             </div>
-            {idx < notifications.length - 1 && (
-              <div className="border-b border-(--border) mt-3" />
-            )}
+            {idx < notifications.length - 1 && <div className="border-b border-(--border) mt-3" />}
           </div>
         ))}
       </CardContent>

@@ -132,26 +132,6 @@ export function AppearanceSettings() {
               })}
             </div>
           </div>
-
-          {/* Color Accent (Future feature) */}
-          <div className="pt-4 border-t border-(--border)">
-            <p className="text-sm font-medium text-(--text-primary) mb-3">
-              {t('settingsExtended.accentColor')}
-            </p>
-            <div className="flex gap-3">
-              {['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'].map((color) => (
-                <button
-                  key={color}
-                  className="w-10 h-10 rounded-full border-2 border-(--border) hover:scale-110 transition-transform"
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
-            </div>
-            <p className="text-xs text-(--text-muted) mt-2">
-              {t('settingsExtended.chooseAccentColor')}
-            </p>
-          </div>
         </div>
       </CardContent>
     </Card>

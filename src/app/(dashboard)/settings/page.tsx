@@ -102,9 +102,6 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const { user, login } = useAuthStore();
   const [activeTab, setActiveTab] = useState('profile');
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(false);
-  const [weeklyReport, setWeeklyReport] = useState(true);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -408,14 +405,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6 mt-0">
-            <NotificationSettings
-              emailNotifs={emailNotifications}
-              pushNotifs={pushNotifications}
-              weeklyReport={weeklyReport}
-              onEmailNotifsChange={setEmailNotifications}
-              onPushNotifsChange={setPushNotifications}
-              onWeeklyReportChange={setWeeklyReport}
-            />
+            <NotificationSettings />
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6 mt-0">

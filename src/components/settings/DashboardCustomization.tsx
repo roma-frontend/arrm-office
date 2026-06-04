@@ -43,8 +43,9 @@ export function DashboardCustomization({ user, onSettingsChange }: DashboardCust
       defaultView,
       dataRefreshRate: refreshRate,
       compactMode,
+      dashboardWidgets: widgets,
     });
-  }, [defaultView, refreshRate, compactMode]);
+  }, [defaultView, refreshRate, compactMode, widgets]);
 
   // Sync when user data changes
   useEffect(() => {
