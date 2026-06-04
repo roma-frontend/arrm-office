@@ -152,7 +152,7 @@ export function EmployeeDashboard() {
         <h2 className="text-2xl font-bold text-(--text-primary)">
           {t('dashboard.welcome')}, {user?.name?.split(' ')[0]} 👋
         </h2>
-        <p className="text-(--text-muted) text-sm mt-1">
+        <p className="text-(--text-muted) text-sm mt-1 capitalize">
           {format(today, 'EEEE, MMMM d, yyyy', { locale: dateFnsLocale })}
         </p>
       </motion.div>

@@ -40,7 +40,7 @@ export function DashboardHeader({ selectedOrganization, userRole }: DashboardHea
               ? `${t('nav.dashboard', { defaultValue: 'Dashboard' })} - ${selectedOrganization.name}`
               : t('nav.dashboard', { defaultValue: 'Dashboard' })}
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground capitalize">
             {format(today, 'EEEE, MMMM d, yyyy', { locale: dateFnsLocale })}
           </p>
         </div>
