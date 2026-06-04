@@ -1270,6 +1270,57 @@
     "upgradeYourPlan": "Plan upgraden",
     "unlockFeature": "{{feature}} freischalten",
     "upgradeDescription": "Wählen Sie einen Plan, um diese und andere Funktionen freizuschalten.",
+    "upgradeModal": {
+      "currentPlan": "Aktueller",
+      "recommended": "Empfohlen",
+      "downgrade": "Plan wechseln",
+      "currentPlanButton": "Ihr aktueller Plan",
+      "mostPopular": "Am beliebtesten",
+      "perMonth": "/Mon.",
+      "freeTrial": "14 Tage kostenlos testen",
+      "securedFooter": "Zahlungen über Stripe gesichert · Jederzeit kündbar · DSGVO-konform",
+      "starter": {
+        "name": "Starter",
+        "description": "Ideal für kleine Teams am Anfang",
+        "button": "Kostenlos testen",
+        "features": [
+          "Bis zu 10 Mitarbeiter",
+          "Grundlegende Urlaubsverwaltung",
+          "E-Mail-Benachrichtigungen",
+          "Zugriff auf mobile App",
+          "Standard-Support"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Für wachsende Teams mit mehr Anforderungen",
+        "button": "Auf Professional upgraden",
+        "features": [
+          "Bis zu 50 Mitarbeiter",
+          "Erweiterte Analysen & Berichte",
+          "KI-Urlaubsassistent & Insights",
+          "SLA-Management",
+          "Kalendersynchronisierung (Google & Outlook)",
+          "Prioritäts-Support",
+          "CSV-Export"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Individuell",
+        "description": "Maßgeschneidert für große Organisationen",
+        "button": "Vertrieb kontaktieren",
+        "features": [
+          "100+ Mitarbeiter",
+          "Alles aus Professional",
+          "Individuelle Integrationen & API",
+          "White-Label-Lösung",
+          "Persönlicher Account-Manager",
+          "24/7 Telefon-Support & SLA",
+          "On-Premise-Option"
+        ]
+      }
+    },
     "trialDaysRemaining": "<strong>{{days}}</strong> {{days, plural, one {Tag} few {Tage} many {Tage} other {Tage}}} verbleiben in Ihrer kostenlosen Testphase",
     "paymentFailed": "Zahlung fehlgeschlagen. Bitte aktualisieren Sie Ihre Zahlungsinformationen, um den Plan aktiv zu halten.",
     "cancelsOn": "Wird am <strong>{{date}}</strong> gekündigt. Der Zugriff bleibt bis zu diesem Zeitpunkt bestehen.",

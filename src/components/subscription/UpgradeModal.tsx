@@ -2,18 +2,28 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import { Check, Zap, Building2, Rocket, Sparkles, ArrowRight, Shield, Star } from 'lucide-react';
+  Check,
+  Zap,
+  Building2,
+  Rocket,
+  Sparkles,
+  ArrowRight,
+  Shield,
+  Crown,
+  TrendingDown,
+} from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { useSubscription } from '@/hooks/useSubscription';
-import { PLAN_LABELS, type PlanType } from '@/hooks/usePlanFeatures';
+import { useSubscription, type Plan } from '@/lib/hooks/useSubscription';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
+
+// Card tiers (paid plans only). 'free' is the implicit "no paid plan" state.
+type PlanType = 'starter' | 'professional' | 'enterprise';
+const PLAN_ORDER: PlanType[] = ['starter', 'professional', 'enterprise'];
+type PlanRelation = 'current' | 'upgrade' | 'downgrade';
 
 // ── Plan definitions ──────────────────────────────────────────────────────────
 
@@ -33,85 +43,86 @@ interface PlanTier {
   checkoutPlan?: string;
 }
 
-const ALL_TIERS: PlanTier[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: '$29',
-    priceMonthly: 29,
-    description: 'Perfect for small teams getting started',
-    icon: <Zap size={20} />,
-    features: [
-      'Up to 10 employees',
-      'Basic leave tracking',
-      'Email notifications',
-      'Mobile app access',
-      'Standard support',
-    ],
-    buttonText: 'Start Free Trial',
-    accentFrom: '#6366f1',
-    accentTo: '#8b5cf6',
-    glowColor: 'rgba(99,102,241,0.2)',
-    checkoutPlan: 'starter',
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    price: '$79',
-    priceMonthly: 79,
-    description: 'For growing teams that need more power',
-    icon: <Building2 size={20} />,
-    features: [
-      'Up to 50 employees',
-      'Advanced analytics & reports',
-      'AI Leave Assistant & Insights',
-      'SLA management',
-      'Calendar sync (Google & Outlook)',
-      'Priority support',
-      'CSV export',
-    ],
-    buttonText: 'Upgrade to Professional',
-    popular: true,
-    accentFrom: '#3b82f6',
-    accentTo: '#6366f1',
-    glowColor: 'rgba(59,130,246,0.3)',
-    checkoutPlan: 'professional',
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 'Custom',
-    description: 'Tailored for large organizations',
-    icon: <Rocket size={20} />,
-    features: [
-      '100+ employees',
-      'Everything in Professional',
-      'Custom integrations & API',
-      'White-label solution',
-      'Dedicated account manager',
-      '24/7 phone support & SLA',
-      'On-premise option',
-    ],
-    buttonText: 'Contact Sales',
-    accentFrom: '#0ea5e9',
-    accentTo: '#06b6d4',
-    glowColor: 'rgba(14,165,233,0.3)',
-  },
-];
+type TFunc = ReturnType<typeof useTranslation>['t'];
+
+function buildTiers(t: TFunc): PlanTier[] {
+  return [
+    {
+      id: 'starter',
+      name: t('billing.upgradeModal.starter.name'),
+      price: '$29',
+      priceMonthly: 29,
+      description: t('billing.upgradeModal.starter.description'),
+      icon: <Zap size={20} />,
+      features: t('billing.upgradeModal.starter.features', {
+        returnObjects: true,
+      }) as string[],
+      buttonText: t('billing.upgradeModal.starter.button'),
+      accentFrom: '#6366f1',
+      accentTo: '#8b5cf6',
+      glowColor: 'rgba(99,102,241,0.2)',
+      checkoutPlan: 'starter',
+    },
+    {
+      id: 'professional',
+      name: t('billing.upgradeModal.professional.name'),
+      price: '$79',
+      priceMonthly: 79,
+      description: t('billing.upgradeModal.professional.description'),
+      icon: <Building2 size={20} />,
+      features: t('billing.upgradeModal.professional.features', {
+        returnObjects: true,
+      }) as string[],
+      buttonText: t('billing.upgradeModal.professional.button'),
+      popular: true,
+      accentFrom: '#3b82f6',
+      accentTo: '#6366f1',
+      glowColor: 'rgba(59,130,246,0.3)',
+      checkoutPlan: 'professional',
+    },
+    {
+      id: 'enterprise',
+      name: t('billing.upgradeModal.enterprise.name'),
+      price: t('billing.upgradeModal.enterprise.price'),
+      description: t('billing.upgradeModal.enterprise.description'),
+      icon: <Rocket size={20} />,
+      features: t('billing.upgradeModal.enterprise.features', {
+        returnObjects: true,
+      }) as string[],
+      buttonText: t('billing.upgradeModal.enterprise.button'),
+      accentFrom: '#0ea5e9',
+      accentTo: '#06b6d4',
+      glowColor: 'rgba(14,165,233,0.3)',
+    },
+  ];
+}
 
 // ── Plan card ─────────────────────────────────────────────────────────────────
 
 function PlanCard({
   tier,
-  isCurrent,
+  relation,
+  isRecommended,
+  organizationId,
+  email,
   onClose,
+  t,
 }: {
   tier: PlanTier;
-  isCurrent: boolean;
+  relation: PlanRelation;
+  isRecommended: boolean;
+  organizationId?: string;
+  email?: string;
   onClose: () => void;
+  t: TFunc;
 }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const isCurrent = relation === 'current';
+  const isDowngrade = relation === 'downgrade';
+  // Highlight the recommended tier only when it's actionable (not the current plan)
+  const highlight = isRecommended && !isCurrent;
 
   const handleCheckout = async () => {
     if (isCurrent) return;
@@ -124,7 +135,7 @@ function PlanCard({
     try {
       const csrfRes = await fetch('/api/csrf-token', { method: 'GET' });
       if (!csrfRes.ok) throw new Error('Failed to get CSRF token');
-      const csrfData = await csrfRes.json();
+      const csrfData = (await csrfRes.json()) as { token: string; signature: string };
 
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -133,9 +144,9 @@ function PlanCard({
           'X-CSRF-Token': csrfData.token,
           'X-CSRF-Token-Signature': csrfData.signature,
         },
-        body: JSON.stringify({ plan: tier.checkoutPlan }),
+        body: JSON.stringify({ plan: tier.checkoutPlan, organizationId, email }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { url?: string };
       if (data.url) window.location.href = data.url;
     } catch (e) {
       console.error('[Stripe checkout]', e);
@@ -144,136 +155,195 @@ function PlanCard({
     }
   };
 
+  // Button label reflects the relationship to the active subscription
+  const ctaLabel = isCurrent
+    ? t('billing.upgradeModal.currentPlanButton')
+    : isDowngrade
+      ? t('billing.upgradeModal.downgrade')
+      : tier.buttonText;
+
   return (
     <div
-      className={`relative flex flex-col rounded-2xl overflow-hidden border transition-all duration-200 ${
-        isCurrent
-          ? 'border-(--border) bg-(--background-subtle) opacity-80'
-          : 'border-(--border) bg-(--background-subtle) hover:border-(--primary)/40'
-      }`}
+      className={`group relative flex flex-col transform-gpu transition-transform duration-300 ease-out ${
+        highlight ? 'sm:scale-[1.03] z-10' : 'hover:-translate-y-1'
+      } ${isCurrent ? 'opacity-95' : ''}`}
     >
-      {/* Current plan badge */}
-      {isCurrent && (
-        <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider z-10 bg-(--background-subtle) border border-(--border) text-(--text-muted)">
-          Current Plan
-        </div>
-      )}
-
-      {/* Popular badge */}
-      {tier.popular && !isCurrent && (
-        <div
-          className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider z-10"
-          style={{ background: `linear-gradient(135deg, ${tier.accentFrom}, ${tier.accentTo})` }}
-        >
-          <Star size={9} fill="currentColor" />
-          Most Popular
-        </div>
-      )}
-
-      {/* Top accent line */}
-      <div
-        className="h-0.75 w-full shrink-0"
-        style={{ background: `linear-gradient(90deg, ${tier.accentFrom}, ${tier.accentTo})` }}
-      />
-
-      <div className="p-5 flex flex-col flex-1 gap-3">
-        {/* Icon + name */}
-        <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{
-              background: `${tier.accentFrom}1a`,
-              border: `1px solid ${tier.accentFrom}33`,
-              color: tier.accentFrom,
-            }}
-          >
-            {tier.icon}
-          </div>
-          <div>
-            <p className="font-bold text-(--text-primary) leading-tight text-sm">{tier.name}</p>
-            <p className="text-[11px] text-(--text-muted)">{tier.description}</p>
-          </div>
-        </div>
-
-        {/* Price */}
-        <div>
-          <div className="flex items-end gap-1">
-            <span className="text-2xl font-black leading-none text-(--text-primary)">
-              {tier.price}
+      {/* Floating status badge */}
+      {(isCurrent || highlight || tier.popular) && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+          {isCurrent ? (
+            <span className="flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-(--background-subtle) border border-(--border) text-(--text-muted) shadow-sm">
+              <Check size={9} />
+              {t('billing.upgradeModal.currentPlan')}
             </span>
-            {tier.priceMonthly && <span className="text-xs text-(--text-muted) pb-0.5">/mo</span>}
-          </div>
-          {tier.priceMonthly && (
-            <p className="text-[11px] text-(--text-muted) mt-0.5 flex items-center gap-1">
-              <Shield size={9} />
-              14-day free trial
-            </p>
+          ) : highlight ? (
+            <span
+              className="flex items-center gap-1 px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider shadow-md"
+              style={{
+                background: `linear-gradient(135deg, ${tier.accentFrom}, ${tier.accentTo})`,
+              }}
+            >
+              <Crown size={9} fill="currentColor" />
+              {t('billing.upgradeModal.recommended')}
+            </span>
+          ) : (
+            <span
+              className="flex items-center gap-1 px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider shadow-md"
+              style={{
+                background: `linear-gradient(135deg, ${tier.accentFrom}, ${tier.accentTo})`,
+              }}
+            >
+              <Sparkles size={9} fill="currentColor" />
+              {t('billing.upgradeModal.mostPopular')}
+            </span>
           )}
         </div>
+      )}
 
-        {/* Features */}
-        <ul className="space-y-1.5 flex-1">
-          {tier.features.map((feature) => (
-            <li key={feature} className="flex items-start gap-2 text-xs">
-              <div
-                className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                style={{
-                  background: `${tier.accentFrom}1a`,
-                  border: `1px solid ${tier.accentFrom}33`,
-                }}
+      {/* Card body — overflow-hidden clips the accent gradient to rounded corners */}
+      <div
+        className={`flex flex-col flex-1 overflow-hidden rounded-2xl border ${
+          highlight ? 'shadow-xl ring-1 ring-white/15' : ''
+        }`}
+        style={{
+          background: highlight
+            ? `linear-gradient(180deg, ${tier.accentFrom}1a, color-mix(in srgb, var(--card) 80%, transparent))`
+            : 'color-mix(in srgb, var(--card) 65%, transparent)',
+          borderColor: highlight
+            ? `${tier.accentFrom}55`
+            : 'color-mix(in srgb, var(--border) 60%, transparent)',
+          boxShadow: highlight ? `0 16px 44px -14px ${tier.glowColor}` : undefined,
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+      >
+        {/* Top accent line */}
+        <div
+          className="h-1 w-full shrink-0"
+          style={{ background: `linear-gradient(90deg, ${tier.accentFrom}, ${tier.accentTo})` }}
+        />
+
+        <div className="p-5 flex flex-col flex-1 gap-4">
+          {/* Icon + name */}
+          <div className="flex items-center gap-3">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transform-gpu transition-transform duration-300 ease-out group-hover:scale-105"
+              style={{
+                background: `linear-gradient(135deg, ${tier.accentFrom}1f, ${tier.accentTo}1f)`,
+                border: `1px solid ${tier.accentFrom}33`,
+                color: tier.accentFrom,
+              }}
+            >
+              {tier.icon}
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-(--text-primary) leading-tight text-sm">{tier.name}</p>
+              <p className="text-[11px] text-(--text-muted) leading-snug">{tier.description}</p>
+            </div>
+          </div>
+
+          {/* Price */}
+          <div>
+            <div className="flex items-end gap-1 min-w-0">
+              <span
+                className={`font-black leading-none text-(--text-primary) tracking-tight truncate ${
+                  tier.priceMonthly ? 'text-3xl' : 'text-xl'
+                }`}
               >
-                <Check size={8} style={{ color: tier.accentFrom }} />
-              </div>
-              <span className="text-(--text-secondary)">{feature}</span>
-            </li>
-          ))}
-        </ul>
+                {tier.price}
+              </span>
+              {tier.priceMonthly && (
+                <span className="text-xs text-(--text-muted) pb-1">
+                  {t('billing.upgradeModal.perMonth')}
+                </span>
+              )}
+            </div>
+            {tier.priceMonthly && (
+              <p className="text-[11px] text-(--text-muted) mt-1 flex items-center gap-1">
+                <Shield size={10} className="text-(--success)" />
+                {t('billing.upgradeModal.freeTrial')}
+              </p>
+            )}
+          </div>
 
-        {/* CTA */}
-        <button
-          onClick={handleCheckout}
-          disabled={loading || isCurrent}
-          className="relative w-full py-2.5 rounded-xl font-semibold text-xs transition-all duration-200 flex items-center justify-center gap-1.5 overflow-hidden group/btn disabled:cursor-not-allowed"
-          style={
-            isCurrent
-              ? {
-                  background: 'var(--background)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-muted)',
-                }
-              : tier.popular
+          {/* Divider */}
+          <div className="h-px w-full bg-(--border)" />
+
+          {/* Features */}
+          <ul className="space-y-2 flex-1">
+            {tier.features.map((feature) => (
+              <li key={feature} className="flex items-start gap-2 text-xs">
+                <span
+                  className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-px"
+                  style={{
+                    background: `linear-gradient(135deg, ${tier.accentFrom}26, ${tier.accentTo}26)`,
+                  }}
+                >
+                  <Check size={9} strokeWidth={3} style={{ color: tier.accentFrom }} />
+                </span>
+                <span className="text-(--text-secondary) leading-snug">{feature}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* CTA */}
+          <button
+            onClick={handleCheckout}
+            disabled={loading || isCurrent}
+            className="relative w-full p-2.5 rounded-xl font-semibold text-xs transition-all duration-200 flex items-center justify-center gap-1.5 overflow-hidden group/btn disabled:cursor-not-allowed enabled:hover:brightness-105 enabled:active:scale-[0.98]"
+            style={
+              isCurrent
                 ? {
-                    background: `linear-gradient(135deg, ${tier.accentFrom}, ${tier.accentTo})`,
-                    boxShadow: `0 4px 16px ${tier.glowColor}`,
-                    color: '#fff',
-                    opacity: loading ? 0.7 : 1,
+                    background: 'var(--background-subtle)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-muted)',
                   }
-                : {
-                    background: `${tier.accentFrom}15`,
-                    border: `1px solid ${tier.accentFrom}33`,
-                    color: tier.accentFrom,
-                    opacity: loading ? 0.7 : 1,
-                  }
-          }
-        >
-          {loading ? (
-            <ShieldLoader size="xs" variant="inline" />
-          ) : isCurrent ? (
-            <>
-              <Check size={12} />
-              {tier.buttonText}
-            </>
-          ) : (
-            <>
-              <Sparkles size={12} />
-              {tier.buttonText}
-              <ArrowRight
-                size={12}
-                className="group-hover/btn:translate-x-0.5 transition-transform"
-              />
-            </>
-          )}
-        </button>
+                : isDowngrade
+                  ? {
+                      background: 'transparent',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text-secondary)',
+                      opacity: loading ? 0.7 : 1,
+                    }
+                  : highlight
+                    ? {
+                        background: `linear-gradient(135deg, ${tier.accentFrom}, ${tier.accentTo})`,
+                        boxShadow: `0 6px 20px -6px ${tier.glowColor}`,
+                        color: '#fff',
+                        opacity: loading ? 0.7 : 1,
+                      }
+                    : {
+                        background: `${tier.accentFrom}15`,
+                        border: `1px solid ${tier.accentFrom}33`,
+                        color: tier.accentFrom,
+                        opacity: loading ? 0.7 : 1,
+                      }
+            }
+          >
+            {loading ? (
+              <ShieldLoader size="xs" variant="inline" />
+            ) : isCurrent ? (
+              <>
+                <Check size={12} />
+                {ctaLabel}
+              </>
+            ) : isDowngrade ? (
+              <>
+                <TrendingDown size={12} />
+                {ctaLabel}
+              </>
+            ) : (
+              <>
+                <Sparkles size={12} />
+                {ctaLabel}
+                <ArrowRight
+                  size={12}
+                  className="group-hover/btn:translate-x-0.5 transition-transform"
+                />
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -300,7 +370,21 @@ export function UpgradeModal({
   recommendedPlan = 'professional',
 }: UpgradeModalProps) {
   const { t } = useTranslation();
-  const { plan: currentPlan } = useSubscription();
+  const { subscription } = useSubscription();
+  const { user } = useAuthStore();
+  const selectedOrgId = useSelectedOrganization();
+  const organizationId = selectedOrgId ?? user?.organizationId ?? undefined;
+  const email = user?.email ?? undefined;
+  const currentPlan: Plan = subscription.plan;
+  const tiers = buildTiers(t);
+
+  const currentIndex = PLAN_ORDER.indexOf(currentPlan as PlanType);
+
+  const relationFor = (id: PlanType): PlanRelation => {
+    if (id === currentPlan) return 'current';
+    // currentIndex === -1 when on the free plan → every paid tier is an upgrade
+    return PLAN_ORDER.indexOf(id) > currentIndex ? 'upgrade' : 'downgrade';
+  };
 
   return (
     <Dialog
@@ -309,20 +393,32 @@ export function UpgradeModal({
         if (!v) onClose();
       }}
     >
-      <DialogContent className="max-w-3xl w-full p-0 overflow-hidden gap-0">
+      <DialogContent className="max-w-3xl w-full p-0 overflow-hidden gap-0 border border-white/15 bg-(--card)/80 backdrop-blur-2xl shadow-2xl">
+        {/* Ambient glass glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute -top-24 -left-16 w-72 h-72 rounded-full opacity-40 blur-3xl"
+            style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }}
+          />
+          <div
+            className="absolute -bottom-24 -right-16 w-72 h-72 rounded-full opacity-30 blur-3xl"
+            style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)' }}
+          />
+        </div>
+
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-(--border)">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-(--primary)/10 border border-(--primary)/20 flex items-center justify-center shrink-0">
-              <Zap className="w-5 h-5 text-(--primary)" />
+        <div className="relative px-6 pt-7 pb-5 border-b border-white/10 overflow-hidden">
+          <div className="relative flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-(--primary)/15 border border-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-sm">
+              <Sparkles className="w-5 h-5 text-(--primary)" />
             </div>
             <div>
-              <DialogTitle className="text-base font-bold leading-tight">
+              <DialogTitle className="text-lg font-bold leading-tight tracking-tight">
                 {featureTitle
                   ? t('billing.unlockFeature', { feature: featureTitle })
                   : t('billing.upgradeYourPlan')}
               </DialogTitle>
-              <DialogDescription className="text-xs mt-0.5">
+              <DialogDescription className="text-xs mt-1 text-(--text-muted)">
                 {featureDescription ?? t('billing.upgradeDescription')}
               </DialogDescription>
             </div>
@@ -330,21 +426,25 @@ export function UpgradeModal({
         </div>
 
         {/* Plan cards — all 3 tiers side by side */}
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {ALL_TIERS.map((tier) => (
+        <div className="relative p-6 pt-7 grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
+          {tiers.map((tier) => (
             <PlanCard
               key={tier.id}
               tier={tier}
-              isCurrent={tier.id === currentPlan}
+              relation={relationFor(tier.id)}
+              isRecommended={tier.id === recommendedPlan}
+              organizationId={organizationId}
+              email={email}
               onClose={onClose}
+              t={t}
             />
           ))}
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-5 flex items-center justify-center gap-2 text-xs text-(--text-muted)">
-          <Shield size={11} />
-          Payments secured by Stripe · Cancel anytime · GDPR compliant
+        <div className="relative px-6 pb-5 flex items-center justify-center gap-2 text-xs text-(--text-muted)">
+          <Shield size={12} className="text-(--success)" />
+          {t('billing.upgradeModal.securedFooter')}
         </div>
       </DialogContent>
     </Dialog>

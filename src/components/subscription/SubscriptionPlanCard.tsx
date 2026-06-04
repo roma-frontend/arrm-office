@@ -86,7 +86,7 @@ export function SubscriptionPlanCard() {
   const featureList = [
     { label: t('billing.advancedAnalytics'), enabled: features.advancedAnalytics },
     { label: t('billing.reportsCsvExport'), enabled: features.exportReports },
-    { label: t('billing.aiLeaveAssistant'), enabled: features.aiChat },
+    { label: t('billing.aiLeaveAssistant'), enabled: features.aiLeaveAssistant },
     { label: t('billing.slaManagement'), enabled: features.slaSettings },
     { label: t('billing.calendarSync'), enabled: features.calendarSync },
     { label: t('billing.integrations'), enabled: features.integrations },
@@ -220,12 +220,7 @@ export function SubscriptionPlanCard() {
         </CardContent>
       </Card>
 
-      <UpgradeModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        featureTitle="your plan"
-        featureDescription="Unlock advanced features for your team by upgrading to a higher plan."
-      />
+      <UpgradeModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
 }

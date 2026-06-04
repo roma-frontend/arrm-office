@@ -2,7 +2,9 @@
 
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 
 export type Plan = 'starter' | 'professional' | 'enterprise' | 'free';
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete';
@@ -23,14 +25,18 @@ export interface SubscriptionData {
 
 export function useSubscription(): { subscription: SubscriptionData; loading: boolean } {
   const { user } = useAuthStore();
+  const selectedOrgId = useSelectedOrganization();
+  const organizationId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
 
   const raw = useQuery(
-    api.subscriptions.getSubscriptionByEmail,
-    user?.email ? { email: user.email } : 'skip',
+    api.subscriptions.getSubscriptionForContext,
+    user?.email || organizationId ? { organizationId, email: user?.email ?? undefined } : 'skip',
   );
 
   // loading state — raw is undefined while Convex is fetching
-  const loading = raw === undefined && !!user?.email;
+  const loading = raw === undefined && !!(user?.email || organizationId);
 
   if (!raw) {
     return {

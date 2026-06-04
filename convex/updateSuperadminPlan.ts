@@ -3,6 +3,8 @@
 
 import { mutation } from './_generated/server';
 import { v } from 'convex/values';
+import { PLAN_EMPLOYEE_LIMITS } from './lib/limits';
+import { MAX_PAGE_SIZE } from './pagination';
 
 export const updatePlan = mutation({
   args: {
@@ -49,5 +51,31 @@ export const updatePlan = mutation({
         newPlan: 'enterprise',
       },
     };
+  },
+});
+
+// Разовый ресинк: привести employeeLimit каждой организации в соответствие с её планом.
+// Запустите: npx convex run updateSuperadminPlan:resyncEmployeeLimits
+export const resyncEmployeeLimits = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const orgs = await ctx.db.query('organizations').take(MAX_PAGE_SIZE);
+    const fixed: Array<{
+      name: string;
+      plan: string;
+      oldLimit: number | undefined;
+      newLimit: number;
+    }> = [];
+
+    for (const org of orgs) {
+      const plan = org.plan as keyof typeof PLAN_EMPLOYEE_LIMITS;
+      const expected = PLAN_EMPLOYEE_LIMITS[plan];
+      if (expected !== undefined && org.employeeLimit !== expected) {
+        fixed.push({ name: org.name, plan, oldLimit: org.employeeLimit, newLimit: expected });
+        await ctx.db.patch(org._id, { employeeLimit: expected, updatedAt: Date.now() });
+      }
+    }
+
+    return { success: true, fixedCount: fixed.length, fixed };
   },
 });

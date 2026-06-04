@@ -24,6 +24,16 @@ body.scroll-locked {
   }
 }
 
+/* Dashboard content scrolls inside .main-scrollable (a flex child), not <html>,
+   so the page-level scrollbar-gutter on <html> doesn't apply here. Reserve the
+   gutter on the real scroll container to stop content shifting when navigating
+   between short (no scrollbar) and tall (scrollbar) pages — desktop only. */
+@media (min-width: 1024px) {
+  .main-scrollable {
+    scrollbar-gutter: stable;
+  }
+}
+
 /* Prevent Radix UI from adding padding-right shift on body */
 body[data-scroll-locked] {
   padding-right: 0 !important;

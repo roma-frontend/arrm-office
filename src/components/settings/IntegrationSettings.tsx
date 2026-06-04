@@ -24,12 +24,15 @@ import { getGoogleCalendarAuthUrl } from '@/lib/calendar-sync';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useAuthStoreShallow } from '@/store/useAuthStore';
 import { isRestrictedOrganization } from '@/lib/restricted-org';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 
 export function IntegrationSettings() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuthStoreShallow();
+  const selectedOrgId = useSelectedOrganization();
+  const activeOrganizationId = selectedOrgId ?? user?.organizationId;
 
   const isRestrictedOrg = user?.organizationSlug
     ? isRestrictedOrganization(user.organizationSlug)
@@ -174,7 +177,7 @@ export function IntegrationSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           adminId: user._id,
-          organizationId: user.organizationId,
+          organizationId: activeOrganizationId ?? user.organizationId,
         }),
       });
       const data = await res.json();

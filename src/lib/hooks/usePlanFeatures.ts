@@ -50,7 +50,7 @@ const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     calendarSync: false,
     integrations: false,
     employeeBackups: false,
-    maxEmployees: 50,
+    maxEmployees: 10,
   },
   starter: {
     analytics: true,
@@ -73,7 +73,7 @@ const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     calendarSync: true,
     integrations: false,
     employeeBackups: false,
-    maxEmployees: 50,
+    maxEmployees: 10,
   },
   professional: {
     analytics: true,
@@ -96,7 +96,7 @@ const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     calendarSync: true,
     integrations: false,
     employeeBackups: false,
-    maxEmployees: 200,
+    maxEmployees: 50,
   },
   enterprise: {
     analytics: true,

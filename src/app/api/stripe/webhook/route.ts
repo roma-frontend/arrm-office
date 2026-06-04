@@ -150,13 +150,19 @@ export async function POST(req: NextRequest) {
           }
 
           await convexMutation('subscriptions/upsertSubscription', {
+            organizationId:
+              session.metadata?.organizationId ||
+              (typeof session.client_reference_id === 'string'
+                ? session.client_reference_id
+                : '') ||
+              undefined,
             stripeCustomerId:
               typeof sub.customer === 'string' ? sub.customer : (sub.customer as any).id,
             stripeSubscriptionId: sub.id,
             stripeSessionId: session.id,
             plan,
             status: sub.status,
-            email: session.customer_email ?? undefined,
+            email: session.customer_email ?? (session.customer_details as any)?.email ?? undefined,
             currentPeriodStart: (sub as any).current_period_start * 1000,
             currentPeriodEnd: (sub as any).current_period_end * 1000,
             cancelAtPeriodEnd: sub.cancel_at_period_end,

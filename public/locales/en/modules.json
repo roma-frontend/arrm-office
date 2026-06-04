@@ -1275,6 +1275,57 @@
     "upgradeYourPlan": "Upgrade your plan",
     "unlockFeature": "Unlock {{feature}}",
     "upgradeDescription": "Choose a plan to unlock this feature and more.",
+    "upgradeModal": {
+      "currentPlan": "Current",
+      "recommended": "Recommended",
+      "downgrade": "Switch Plan",
+      "currentPlanButton": "Your Current Plan",
+      "mostPopular": "Most Popular",
+      "perMonth": "/mo",
+      "freeTrial": "14-day free trial",
+      "securedFooter": "Payments secured by Stripe · Cancel anytime · GDPR compliant",
+      "starter": {
+        "name": "Starter",
+        "description": "Perfect for small teams getting started",
+        "button": "Start Free Trial",
+        "features": [
+          "Up to 10 employees",
+          "Basic leave tracking",
+          "Email notifications",
+          "Mobile app access",
+          "Standard support"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "For growing teams that need more power",
+        "button": "Upgrade to Professional",
+        "features": [
+          "Up to 50 employees",
+          "Advanced analytics & reports",
+          "AI Leave Assistant & Insights",
+          "SLA management",
+          "Calendar sync (Google & Outlook)",
+          "Priority support",
+          "CSV export"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "Custom",
+        "description": "Tailored for large organizations",
+        "button": "Contact Sales",
+        "features": [
+          "100+ employees",
+          "Everything in Professional",
+          "Custom integrations & API",
+          "White-label solution",
+          "Dedicated account manager",
+          "24/7 phone support & SLA",
+          "On-premise option"
+        ]
+      }
+    },
     "trialDaysRemaining": "<strong>{{days}}</strong> {{days, plural, one {day} other {days}} remaining in your free trial",
     "paymentFailed": "Payment failed. Please update your billing info to keep your plan active.",
     "cancelsOn": "Cancels on <strong>{{date}}</strong>. You'll keep access until then.",

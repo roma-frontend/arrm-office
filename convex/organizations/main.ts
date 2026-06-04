@@ -3,14 +3,8 @@ import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin, requireAuthUser } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
+import { PLAN_EMPLOYEE_LIMITS } from '../lib/limits';
 import { logger } from '@/lib/logger';
-
-// ── Employee limits by plan ──────────────────────────────────────────────────
-const PLAN_EMPLOYEE_LIMITS: Record<string, number> = {
-  starter: 10,
-  professional: 50,
-  enterprise: 999999,
-} as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUPERADMIN: Create a new organization

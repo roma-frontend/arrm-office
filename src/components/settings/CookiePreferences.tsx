@@ -147,14 +147,14 @@ export function CookiePreferences() {
       </CardHeader>
       <CardContent className="space-y-5">
         {/* Info Banner */}
-        <div className="flex gap-3 rounded-lg border border-blue-200 bg-(--primary)/15 p-3 dark:border-blue-900/50 dark:bg-blue-950/30">
-          <Info className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
-          <div className="text-xs">
+        <div className="flex gap-3 rounded-lg border border-(--border) bg-(--background-subtle) p-3">
+          <Info className="h-4 w-4 shrink-0 text-(--primary) mt-0.5" />
+          <div className="text-xs text-(--text-secondary)">
             {t('cookies.respectPrivacy')}{' '}
             <Link
               href="/privacy"
               target="_blank"
-              className="font-semibold underline hover:text-blue-700 dark:hover:text-blue-300"
+              className="font-semibold text-(--primary) underline decoration-(--primary)/40 underline-offset-2 transition-colors hover:decoration-(--primary)"
               aria-label={t('cookies.privacyPolicyLabel', {
                 defaultValue:
                   'Privacy Policy - learn how we collect, use and protect your personal data',
@@ -166,7 +166,7 @@ export function CookiePreferences() {
             <Link
               href="/terms"
               target="_blank"
-              className="font-semibold underline hover:text-blue-700 dark:hover:text-blue-300"
+              className="font-semibold text-(--primary) underline decoration-(--primary)/40 underline-offset-2 transition-colors hover:decoration-(--primary)"
               aria-label={t('cookies.termsLabel', {
                 defaultValue: 'Terms of Service - read the legal terms for using our platform',
               })}
@@ -211,7 +211,7 @@ export function CookiePreferences() {
                           {category.name}
                         </h4>
                         {category.required && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-(--success)/30 bg-(--success)/12 px-2 py-0.5 text-[10px] font-semibold text-(--success)">
                             {t('cookies.alwaysOn')}
                           </span>
                         )}

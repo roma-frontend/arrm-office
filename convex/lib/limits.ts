@@ -21,3 +21,17 @@ export const DEFAULT_LIST_CAP = 2000;
 
 /** Admin-only reports / exports. Use sparingly — memory footprint is significant. */
 export const XLARGE_LIST_CAP = 8000;
+
+/**
+ * Maximum number of employees allowed per subscription plan.
+ *
+ * This is the single source of truth for seat enforcement. Whenever an
+ * organization's `plan` changes (via Stripe webhook, manual superadmin
+ * assignment, or admin update) the organization's `employeeLimit` MUST be set
+ * from this map so plan and seat-limit never drift apart.
+ */
+export const PLAN_EMPLOYEE_LIMITS: Record<'starter' | 'professional' | 'enterprise', number> = {
+  starter: 10,
+  professional: 50,
+  enterprise: 999999,
+};

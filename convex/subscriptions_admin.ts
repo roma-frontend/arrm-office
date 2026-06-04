@@ -1,7 +1,7 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { isSuperadmin } from './lib/auth';
-import { DEFAULT_LIST_CAP } from './lib/limits';
+import { DEFAULT_LIST_CAP, PLAN_EMPLOYEE_LIMITS } from './lib/limits';
 
 // SUPERADMIN ONLY: Manually create/update subscription for Enterprise customers
 export const createManualSubscription = mutation({
@@ -58,11 +58,17 @@ export const createManualSubscription = mutation({
 
     if (existing) {
       await ctx.db.patch(existing._id, subscriptionData);
-      await ctx.db.patch(args.organizationId, { plan: args.plan });
+      await ctx.db.patch(args.organizationId, {
+        plan: args.plan,
+        employeeLimit: PLAN_EMPLOYEE_LIMITS[args.plan],
+      });
       return { success: true, subscriptionId: existing._id, action: 'updated' };
     } else {
       const id = await ctx.db.insert('subscriptions', subscriptionData);
-      await ctx.db.patch(args.organizationId, { plan: args.plan });
+      await ctx.db.patch(args.organizationId, {
+        plan: args.plan,
+        employeeLimit: PLAN_EMPLOYEE_LIMITS[args.plan],
+      });
       return { success: true, subscriptionId: id, action: 'created' };
     }
   },
