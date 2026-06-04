@@ -1691,6 +1691,7 @@
     "event": "Ereignis",
     "newEvent": "Neues Ereignis",
     "newLeave": "Neuer Urlaub",
+    "cannotBookPast": "Sie können nur heute oder zukünftige Termine buchen",
     "editEvent": "Ereignis bearbeiten",
     "deleteEvent": "Ereignis löschen",
     "eventTitle": "Ereignistitel",

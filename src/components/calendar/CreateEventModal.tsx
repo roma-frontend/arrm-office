@@ -343,6 +343,7 @@ export function CreateEventModal({
                       <Input
                         type="date"
                         value={date}
+                        min={editEvent ? undefined : format(new Date(), 'yyyy-MM-dd')}
                         onChange={(e) => setDate(e.target.value)}
                         className="h-10 rounded-lg"
                       />

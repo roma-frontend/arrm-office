@@ -1695,6 +1695,7 @@
     "event": "Event",
     "newEvent": "New Event",
     "newLeave": "New Leave",
+    "cannotBookPast": "You can only book today or future dates",
     "editEvent": "Edit Event",
     "deleteEvent": "Delete Event",
     "eventTitle": "Event Title",

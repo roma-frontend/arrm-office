@@ -88,6 +88,11 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
 
+  // Minimum selectable datetime — now (local). Driver bookings can't be in the past.
+  const minDateTime = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+
   // Get alternative drivers when current driver is on leave
   const alternativeDrivers = useQuery(
     api.drivers.queries.getAlternativeDrivers,
@@ -595,6 +600,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
               <Input
                 type="datetime-local"
                 value={startTime}
+                min={minDateTime}
                 onChange={(e) => setStartTime(e.target.value)}
               />
             </div>
@@ -606,6 +612,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
               <Input
                 type="datetime-local"
                 value={endTime}
+                min={startTime || minDateTime}
                 onChange={(e) => setEndTime(e.target.value)}
               />
             </div>

@@ -32,6 +32,8 @@ import {
   addMonths,
   subMonths,
   isToday,
+  isBefore,
+  startOfDay,
   Locale,
 } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -165,6 +167,12 @@ const LEAVE_TYPE_BG: Record<string, string> = {
 // --- Calendar Day Cell ---------------------------------------------------------
 const GOOGLE_EVENT_COLOR = '#8b5cf6';
 const DRIVER_EVENT_COLOR = '#f97316'; // orange for driver bookings
+
+// A date is "past" if it is strictly before the start of today.
+// Past days can be viewed but not booked.
+function isPastDate(date: Date): boolean {
+  return isBefore(startOfDay(date), startOfDay(new Date()));
+}
 
 function DayCell({
   date,
@@ -602,6 +610,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
     setSelectedDay(t);
   };
 
+  // Booking is allowed only for today and future dates. Past days are view-only.
+  const guardBooking = (date: Date | null, open: () => void) => {
+    if (date && isPastDate(date)) {
+      toast.error(t('calendar.cannotBookPast', 'You can only book today or future dates'));
+      return;
+    }
+    open();
+  };
+
   // Monthly summary
   const monthlySummary = useMemo(() => {
     return (Object.keys(LEAVE_TYPE_LABELS) as LeaveType[])
@@ -649,7 +666,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             </Button>
             <Button
               size="sm"
-              onClick={() => setShowLeaveModal(true)}
+              onClick={() => guardBooking(selectedDay, () => setShowLeaveModal(true))}
               className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
             >
               <Plus className="w-4 h-4" />
@@ -658,7 +675,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setShowCreateEvent(true)}
+              onClick={() => guardBooking(selectedDay, () => setShowCreateEvent(true))}
               className="flex items-center gap-2 w-full sm:w-auto justify-center"
             >
               <Plus className="w-4 h-4" />
@@ -760,16 +777,17 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             onClick={() => setSelectedDay(date)}
                             onDoubleClick={() => {
                               setSelectedDay(date);
-                              setShowCreateEvent(true);
+                              guardBooking(date, () => setShowCreateEvent(true));
                             }}
                           />
                         </ContextMenuTrigger>
                         <ContextMenuContent className="w-52">
                           <ContextMenuItem
+                            disabled={isPastDate(date)}
                             onSelect={() =>
                               setTimeout(() => {
                                 setSelectedDay(date);
-                                setShowCreateEvent(true);
+                                guardBooking(date, () => setShowCreateEvent(true));
                               })
                             }
                             className="gap-2"
@@ -778,10 +796,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             {t('createMeeting.contextMenu.newEvent')}
                           </ContextMenuItem>
                           <ContextMenuItem
+                            disabled={isPastDate(date)}
                             onSelect={() =>
                               setTimeout(() => {
                                 setSelectedDay(date);
-                                setShowLeaveModal(true);
+                                guardBooking(date, () => setShowLeaveModal(true));
                               })
                             }
                             className="gap-2"
@@ -790,10 +809,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             {t('createMeeting.contextMenu.newLeave')}
                           </ContextMenuItem>
                           <ContextMenuItem
+                            disabled={isPastDate(date)}
                             onSelect={() =>
                               setTimeout(() => {
                                 setSelectedDay(date);
-                                setShowDriverModal(true);
+                                guardBooking(date, () => setShowDriverModal(true));
                               })
                             }
                             className="gap-2"
