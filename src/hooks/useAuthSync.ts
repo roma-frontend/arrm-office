@@ -84,52 +84,63 @@ export function useAuthSync() {
   const lastSyncedUserRef = useRef<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const prevUserState = useRef<{ organizationId?: string | null; isApproved?: boolean }>({});
+  const loggingOutRef = useRef(false);
 
   const currentUser = useQuery(
     api.users.queries.getCurrentUser,
     userEmail ? { email: userEmail } : 'skip',
   );
+  const prevUserRef = useRef(currentUser);
 
   useEffect(() => {
     const syncAuth = async () => {
       if (status === 'loading') return;
 
       if (status === 'unauthenticated') {
+        if (loggingOutRef.current) return;
+
+        // Check JWT FIRST — if cookie is gone, always force logout
+        // regardless of what Zustand persist rehydrated from localStorage
+        let jwtSession: any = null;
+        try {
+          const { getSessionAction } = await import('@/actions/auth');
+          jwtSession = await getSessionAction();
+        } catch {}
+
+        if (!jwtSession || !jwtSession.userId) {
+          // No valid JWT — clear any stale persisted auth state
+          localStorage.removeItem('auth-storage');
+          logout();
+          setUserEmail(null);
+          sessionCreated.current = false;
+          return;
+        }
+
+        // JWT found — always track the email so the reactive `getCurrentUser`
+        // watcher is active. Without this, an already-authenticated session
+        // (store rehydrated from localStorage) would skip setUserEmail and the
+        // revoke/delete logout watcher would never fire.
+        if (jwtSession.email) setUserEmail(jwtSession.email);
+
+        // Hydrate Zustand store only if not already authenticated.
         const { isAuthenticated: storeAuthenticated } = useAuthStore.getState();
         if (storeAuthenticated) return;
 
-        // Check for JWT cookie from email/password login
-        try {
-          const { getSessionAction } = await import('@/actions/auth');
-          const jwtSession = await getSessionAction();
-
-          if (jwtSession && jwtSession.userId) {
-            // Email login session exists — hydrate Zustand store
-            const userData = {
-              id: jwtSession.userId,
-              name: jwtSession.name,
-              email: jwtSession.email,
-              role: jwtSession.role,
-              organizationId: jwtSession.organizationId,
-              organizationSlug: jwtSession.organizationSlug,
-              organizationName: jwtSession.organizationName,
-              department: jwtSession.department,
-              position: jwtSession.position,
-              employeeType: jwtSession.employeeType,
-              avatar: jwtSession.avatar,
-            };
-            login(userData);
-            setUserEmail(jwtSession.email);
-            return;
-          }
-        } catch (error) {
-          console.error('[useAuthSync] Failed to restore email session:', error);
-        }
-
-        // No valid session found — logout
-        logout();
-        setUserEmail(null);
-        sessionCreated.current = false;
+        const userData = {
+          id: jwtSession.userId,
+          name: jwtSession.name,
+          email: jwtSession.email,
+          role: jwtSession.role,
+          organizationId: jwtSession.organizationId,
+          organizationSlug: jwtSession.organizationSlug,
+          organizationName: jwtSession.organizationName,
+          department: jwtSession.department,
+          position: jwtSession.position,
+          employeeType: jwtSession.employeeType,
+          avatar: jwtSession.avatar,
+        };
+        login(userData);
+        setUserEmail(jwtSession.email);
         return;
       }
 
@@ -164,7 +175,7 @@ export function useAuthSync() {
     };
 
     syncAuth();
-  }, [status, session?.user?.email, userEmail, createOAuthUser]);
+  }, [status, session?.user?.email, userEmail, createOAuthUser, isAuthenticated]);
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -251,6 +262,26 @@ export function useAuthSync() {
       setTimeout(createSession, 0);
     }
   }, [currentUser]);
+
+  // Reactive logout: when user doc is deleted (revoke), currentUser becomes null
+  useEffect(() => {
+    if (currentUser === undefined) {
+      prevUserRef.current = undefined;
+      return;
+    }
+    if (currentUser === null && userEmail !== null && prevUserRef.current !== null) {
+      prevUserRef.current = null;
+      loggingOutRef.current = true;
+      localStorage.removeItem('auth-storage');
+      logout();
+      setUserEmail(null);
+      sessionCreated.current = false;
+      // Redirect to /api/clear-session — clears httpOnly cookies server-side
+      // then redirects to / in a single response. No race conditions.
+      window.location.replace('/api/clear-session?redirect=/');
+    }
+    prevUserRef.current = currentUser;
+  }, [currentUser, userEmail, logout]);
 
   return { session, status, currentUser };
 }
