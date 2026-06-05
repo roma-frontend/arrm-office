@@ -4,6 +4,9 @@ import React, { useEffect, useLayoutEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Undo2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore, type User } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import { useSidebarStore } from '@/store/useSidebarStore';
@@ -104,6 +107,7 @@ const MobilePageTransition = dynamic(
 );
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const user = useAuthStore(useShallow((state: { user: User | null }) => state.user));
   const { status } = useSession();
   const router = useRouter();
@@ -195,6 +199,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <div className="flex-1 flex flex-col min-w-0 overflow-clip">
             {/* Navbar — ssr:false prevents theme/user/notification mismatch */}
             <Navbar />
+            {user?.impersonation?.active && (
+              <div className="fixed top-20 right-4 z-80">
+                <Link
+                  href="https://hr-project-sigma.vercel.app/superadmin/impersonate"
+                  className="inline-flex items-center gap-2 rounded-full border border-amber-500/60 bg-amber-500 text-black px-4 py-2 text-sm font-semibold shadow-lg transition hover:scale-[1.02] hover:bg-amber-400"
+                >
+                  <Undo2 className="h-4 w-4" />
+                  {t('superadmin.impersonate.exitMode')}
+                </Link>
+              </div>
+            )}
             {/* Maintenance warning banner — below navbar, above content */}
             {user && <MaintenanceBanner />}
             {/* Status update banner — below maintenance banner */}
