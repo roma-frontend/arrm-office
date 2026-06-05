@@ -59,6 +59,10 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   const markTourAsSeenMutation = useMutation(api.userPreferences.markTourAsSeen);
   const [localStorageChecked, setLocalStorageChecked] = useState(false);
   const [hasSeenTourLocal, setHasSeenTourLocal] = useState<boolean | null>(null);
+  // Once the user finishes/skips the tour in this session, never auto-show it
+  // again — guards against re-render churn (e.g. the login page recreates the
+  // steps array on every render) re-triggering the init effect.
+  const [dismissed, setDismissed] = useState(false);
 
   // Check localStorage for non-authenticated users
   useEffect(() => {
@@ -74,6 +78,9 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   // 1. User is authenticated AND hasSeenTour === false
   // 2. OR user is not authenticated AND localStorage shows they haven't seen it
   const shouldShowTour = React.useMemo(() => {
+    // Already dismissed in this session — never auto-reopen.
+    if (dismissed) return false;
+
     // If user is authenticated (has sessionToken)
     if (sessionToken !== undefined) {
       // Show only if they haven't seen the tour (hasSeenTour === false)
@@ -89,7 +96,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
 
     // Still loading, don't show yet
     return false;
-  }, [hasSeenTour, sessionToken, localStorageChecked, hasSeenTourLocal]);
+  }, [hasSeenTour, sessionToken, localStorageChecked, hasSeenTourLocal, dismissed]);
 
   // Helper function to calculate and set tooltip position
   const positionTooltip = useCallback((rect: DOMRect, placement: string) => {
@@ -288,6 +295,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
 
   const handleComplete = async () => {
     setIsVisible(false);
+    setDismissed(true);
 
     // Try to save to database if user is logged in
     if (sessionToken) {
@@ -308,6 +316,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
 
   const handleSkip = async () => {
     setIsVisible(false);
+    setDismissed(true);
 
     // Try to save to database if user is logged in
     if (sessionToken) {

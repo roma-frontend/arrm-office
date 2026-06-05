@@ -10,6 +10,7 @@ import { FaceRegistration } from '@/components/auth/FaceRegistration';
 import { toast } from 'sonner';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { ShieldLoader } from '@/components/ui/ShieldLoader';
 
 import type { Id } from '@/convex/_generated/dataModel';
 
@@ -32,7 +33,7 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
   if (faceData === undefined)
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+        <ShieldLoader size="md" />
       </div>
     );
 

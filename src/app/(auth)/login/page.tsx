@@ -2,7 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 
-import React, { useState, useTransition, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useTransition, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
@@ -237,6 +237,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loginMode, setLoginMode] = useState<'email' | 'face' | 'touch'>('email');
+  // Stable identity so the onboarding tour effect doesn't re-run every render
+  const loginTourSteps = useMemo(() => getLoginTourSteps(t), [t]);
   // 2FA state
   const [twoFactorPending, setTwoFactorPending] = useState(false);
   const [tempToken, setTempToken] = useState<string | null>(null);
@@ -576,7 +578,7 @@ export default function LoginPage() {
           {/* Onboarding Tour */}
           {!isOAuthSyncing && status !== 'authenticated' && (
             <OnboardingTour
-              steps={getLoginTourSteps(t)}
+              steps={loginTourSteps}
               tourId="login-tour"
               onComplete={() => {}}
               onSkip={() => {}}
