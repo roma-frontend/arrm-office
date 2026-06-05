@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifyJWT, type JWTPayload } from '@/lib/jwt';
-import { auth } from '@/app/api/auth/[...nextauth]/route';
+import { auth } from '@/auth';
 
 /**
  * Unified server-side auth helper for React Server Components.

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyJWT, signConvexJWT, type JWTPayload } from '@/lib/jwt';
-import { auth } from '@/app/api/auth/[...nextauth]/route';
+import { auth } from '@/auth';
 
 /**
  * Mint a fresh Convex auth token for the browser auth bridge.

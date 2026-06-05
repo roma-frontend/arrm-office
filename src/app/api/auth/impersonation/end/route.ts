@@ -29,8 +29,30 @@ export async function POST(req: NextRequest) {
     if (!jwt) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const payload = await verifyJWT(jwt);
-    if (!payload?.impersonation?.active) {
-      return NextResponse.json({ error: 'No active impersonation session' }, { status: 400 });
+    if (!payload) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Idempotent exit: if impersonation metadata is already absent,
+    // treat this as an already-ended session and return current user session.
+    if (!payload.impersonation?.active) {
+      return NextResponse.json({
+        success: true,
+        session: {
+          userId: payload.userId,
+          name: payload.name,
+          email: payload.email,
+          role: payload.role,
+          organizationId: payload.organizationId,
+          organizationSlug: payload.organizationSlug,
+          organizationName: payload.organizationName,
+          isApproved: payload.isApproved,
+          department: payload.department,
+          position: payload.position,
+          employeeType: payload.employeeType,
+          avatar: payload.avatar,
+        },
+      });
     }
 
     const restoredSessionToken = crypto.randomUUID();

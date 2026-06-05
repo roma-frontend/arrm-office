@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { signOut } from '@/app/api/auth/[...nextauth]/route';
 
 /**
  * Refresh Session API Route - Extend session by another 7 days
