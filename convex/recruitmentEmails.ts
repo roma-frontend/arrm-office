@@ -7,7 +7,7 @@ import {
   offerLetterTemplate,
   rejectionNoticeTemplate,
 } from '../src/lib/recruitment-emails';
-import { logger } from '@/lib/logger';
+import { logger } from '../src/lib/logger';
 
 function getResendClient(): Resend | null {
   const key = process.env.RESEND_API_KEY;

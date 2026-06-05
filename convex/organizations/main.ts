@@ -4,7 +4,7 @@ import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin, requireAuthUser } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 import { PLAN_EMPLOYEE_LIMITS } from '../lib/limits';
-import { logger } from '@/lib/logger';
+import { logger } from '../../src/lib/logger';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUPERADMIN: Create a new organization
@@ -982,7 +982,7 @@ export const getOrganizationsForPicker = query({
   handler: async (ctx, args) => {
     const { userId } = args;
     const user = await ctx.db.get(userId);
-    if (!user) throw new Error('User not found');
+    if (!user) return [];
 
     if (isSuperadmin(user)) {
       const orgs = await ctx.db

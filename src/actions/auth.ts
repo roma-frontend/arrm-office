@@ -391,6 +391,12 @@ export async function getSessionAction() {
   return await verifyJWT(jwt);
 }
 
+export async function forceClearSessionAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete('hr-auth-token');
+  cookieStore.delete('hr-session-token');
+}
+
 export async function updateSessionProfileAction(userId: string, name: string, email: string) {
   try {
     const cookieStore = await cookies();

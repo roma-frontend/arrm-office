@@ -139,4 +139,27 @@ export const security = {
     sampleCount: v.number(),
     updatedAt: v.number(),
   }).index('by_user', ['userId']),
+
+  /**
+   * Time-limited superadmin accounts for external specialists (auditors, pen-testers).
+   * When generated, a real user is created with role='superadmin'. The token tracks
+   * the credentials and expiry — the user is deactivated after expiry.
+   */
+  superadminAccessTokens: defineTable({
+    createdBy: v.id('users'),
+    name: v.string(),
+    email: v.string(),
+    tempUserId: v.id('users'),
+    passwordHash: v.string(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+    isRevoked: v.boolean(),
+    revokedAt: v.optional(v.number()),
+    lastUsedAt: v.optional(v.number()),
+    reason: v.string(),
+  })
+    .index('by_creator', ['createdBy'])
+    .index('by_email', ['email'])
+    .index('by_temp_user', ['tempUserId'])
+    .index('by_expires', ['expiresAt']),
 };

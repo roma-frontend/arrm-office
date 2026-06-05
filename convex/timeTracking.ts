@@ -380,7 +380,17 @@ export const getTodayAttendanceSummary = query({
   },
   handler: async (ctx, args) => {
     const admin = await ctx.db.get(args.adminId);
-    if (!admin || (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin))) {
+    if (!admin)
+      return {
+        totalActive: 0,
+        checkedIn: 0,
+        checkedOut: 0,
+        late: 0,
+        earlyLeave: 0,
+        absent: 0,
+        attendanceRate: '0',
+      };
+    if (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin)) {
       throw new Error('Only admins/supervisors can view attendance');
     }
 

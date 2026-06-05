@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * Logout API Route - Complete session termination
- * Accepts both POST and GET. GET redirects to the specified URL or /.
- */
-export async function POST(req: NextRequest) {
-  return handleLogout(req);
-}
-
 export async function GET(req: NextRequest) {
-  return handleLogout(req);
-}
-
-async function handleLogout(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const redirectTo = searchParams.get('redirect') || '/';
@@ -22,10 +10,13 @@ async function handleLogout(req: NextRequest) {
     response.cookies.delete('hr-auth-token');
     response.cookies.delete('oauth-session');
     response.cookies.delete('hr-session-token');
+    response.cookies.delete('next-auth.session-token');
+    response.cookies.delete('authjs.callback-url');
+    response.cookies.delete('authjs.csrf-token');
 
     return response;
   } catch (error) {
-    console.error('Logout error:', error);
-    return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
+    console.error('Clear session error:', error);
+    return NextResponse.json({ error: 'Clear session failed' }, { status: 500 });
   }
 }

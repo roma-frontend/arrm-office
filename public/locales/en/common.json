@@ -196,6 +196,7 @@
     "support": "Support",
     "emergency": "Emergency",
     "impersonate": "Impersonation",
+    "accessTokens": "Temporary Access",
     "bulkActions": "Bulk Actions",
     "aiChat": "AI Assistant",
     "newLeaveRequest": "New Leave Request",

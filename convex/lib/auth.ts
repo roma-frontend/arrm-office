@@ -61,9 +61,9 @@ export async function requireAuth(ctx: QueryCtx | MutationCtx): Promise<string> 
 
 /**
  * Resolves the authenticated user from ctx.auth (unforgeable JWT).
- * Returns the full user doc from the DB. Throws if not authenticated or user not found.
- *
- * Use this instead of accepting userId/adminId as a client-supplied arg.
+ * Returns the full user doc from the DB, or null if the user was deleted.
+ * Use in queries so they gracefully return empty data instead of throwing
+ * error boundaries when a temp user's access is revoked mid-session.
  */
 export async function requireAuthUser(ctx: QueryCtx | MutationCtx) {
   const email = await requireAuth(ctx);
@@ -71,6 +71,15 @@ export async function requireAuthUser(ctx: QueryCtx | MutationCtx) {
     .query('users')
     .withIndex('by_email', (q) => q.eq('email', email))
     .unique();
+  return user ?? null;
+}
+
+/**
+ * Same as requireAuthUser but throws when the user is not found.
+ * Use in mutations where the user MUST exist.
+ */
+export async function requireAuthUserOrThrow(ctx: QueryCtx | MutationCtx) {
+  const user = await requireAuthUser(ctx);
   if (!user) throw new Error('User not found');
   return user;
 }

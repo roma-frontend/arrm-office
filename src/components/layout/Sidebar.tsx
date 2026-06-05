@@ -44,6 +44,7 @@ import {
   Database,
   ClipboardCheck,
   Receipt,
+  Key,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -269,6 +270,12 @@ const navItems: NavEntry[] = [
         href: '/superadmin/impersonate',
         labelKey: 'nav.impersonate',
         icon: User,
+        roles: ['superadmin'],
+      },
+      {
+        href: '/superadmin/access-tokens',
+        labelKey: 'nav.accessTokens',
+        icon: Key,
         roles: ['superadmin'],
       },
       {

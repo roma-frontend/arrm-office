@@ -69,12 +69,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        // Clear Zustand state
         set({ user: null, isAuthenticated: false, needsOnboarding: false });
-        // Clear httpOnly cookies via API call
-        if (typeof window !== 'undefined') {
-          fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-        }
       },
     }),
     {

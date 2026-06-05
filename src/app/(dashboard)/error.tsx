@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardError({
   error,
@@ -13,6 +14,7 @@ export default function DashboardError({
   reset: () => void;
 }) {
   const { t, ready } = useTranslation();
+  const router = useRouter();
   const tr = (key: string, fallback: string) => {
     if (!ready) return fallback;
     const result = t(key);
@@ -21,7 +23,17 @@ export default function DashboardError({
   useEffect(() => {
     console.error('Dashboard error:', error);
 
-    // Send to Sentry if available
+    const msg = error?.message ?? '';
+    if (
+      msg.includes('User not found') ||
+      msg.includes('Not authenticated') ||
+      msg.includes('Only admins/supervisors') ||
+      msg.includes('temporary access')
+    ) {
+      router.push('/');
+      return;
+    }
+
     if (typeof window !== 'undefined' && window.Sentry) {
       window.Sentry.captureException(error, {
         extra: {
@@ -30,7 +42,7 @@ export default function DashboardError({
         },
       });
     }
-  }, [error]);
+  }, [error, router]);
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4">
@@ -62,7 +74,7 @@ export default function DashboardError({
           href="/dashboard"
           className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-5 py-2.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Home className="h-4 w-4" />
+          <Home className="w-4 h-4" />
           {tr('nav.dashboard', 'Dashboard')}
         </Link>
       </div>

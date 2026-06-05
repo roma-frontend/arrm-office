@@ -156,6 +156,7 @@ import type * as sla from "../sla.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as subscriptions_admin from "../subscriptions_admin.js";
 import type * as superadmin from "../superadmin.js";
+import type * as superadmin_accessTokens from "../superadmin/accessTokens.js";
 import type * as superadmin_emergency from "../superadmin/emergency.js";
 import type * as superadmin_impersonation from "../superadmin/impersonation.js";
 import type * as superadmin_index from "../superadmin/index.js";
@@ -332,6 +333,7 @@ declare const fullApi: ApiFromModules<{
   subscriptions: typeof subscriptions;
   subscriptions_admin: typeof subscriptions_admin;
   superadmin: typeof superadmin;
+  "superadmin/accessTokens": typeof superadmin_accessTokens;
   "superadmin/emergency": typeof superadmin_emergency;
   "superadmin/impersonation": typeof superadmin_impersonation;
   "superadmin/index": typeof superadmin_index;

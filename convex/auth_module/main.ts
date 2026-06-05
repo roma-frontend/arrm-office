@@ -3,6 +3,7 @@ import { mutation, query } from '../_generated/server';
 import bcrypt from 'bcryptjs';
 import { SUPERADMIN_EMAIL, isSuperadminEmail, isSuperadmin } from '../lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
+import { checkTempAccessStillValid } from '../superadmin/accessTokens';
 
 // ── Password Hashing Helpers ─────────────────────────────────────────────────
 const BCRYPT_ROUNDS = 12;
@@ -472,6 +473,12 @@ export const login = mutation({
       const org = await ctx.db.get(user.organizationId);
       if (!org || !org.isActive) {
         throw new Error('Your organization account is inactive. Contact support.');
+      }
+
+      // Temporary superadmin access check — reject if expired/revoked
+      const tempCheck = await checkTempAccessStillValid(ctx, user._id);
+      if (!tempCheck.valid) {
+        throw new Error(tempCheck.reason ?? 'Temporary access is no longer valid.');
       }
 
       await ctx.db.patch(user._id, {
