@@ -17,6 +17,13 @@ export interface User {
   organizationName?: string;
   isApproved?: boolean;
   phone?: string;
+  impersonation?: {
+    active: boolean;
+    sessionId: string;
+    expiresAt: number;
+    superadminName: string;
+    superadminEmail: string;
+  };
 }
 
 interface AuthState {

@@ -5,6 +5,8 @@ export {
   endImpersonation,
   getActiveImpersonation,
   getImpersonationHistory,
+  activateImpersonationSession,
+  endImpersonationWithToken,
 } from './impersonation';
 export { generateAccessToken, revokeAccessToken, listAccessTokens } from './accessTokens';
 export { globalSearch, quickSearch, searchUsersByPrefix } from './search';

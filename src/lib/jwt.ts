@@ -17,7 +17,7 @@ export interface JWTPayload {
   userId: string;
   name: string;
   email: string;
-  role: 'admin' | 'supervisor' | 'employee' | 'superadmin';
+  role: 'admin' | 'supervisor' | 'employee' | 'superadmin' | 'driver';
   organizationId?: string;
   organizationSlug?: string;
   organizationName?: string;
@@ -27,6 +27,26 @@ export interface JWTPayload {
   employeeType?: 'staff' | 'contractor';
   avatar?: string;
   type?: '2fa-pending';
+  impersonation?: {
+    active: true;
+    sessionId: string;
+    sessionToken: string;
+    expiresAt: number;
+    superadmin: {
+      userId: string;
+      name: string;
+      email: string;
+      role: 'superadmin';
+      organizationId?: string;
+      organizationSlug?: string;
+      organizationName?: string;
+      department?: string;
+      position?: string;
+      employeeType?: 'staff' | 'contractor';
+      avatar?: string;
+      isApproved?: boolean;
+    };
+  };
 }
 
 export async function signJWT(payload: JWTPayload, expiresIn: string = '7d'): Promise<string> {

@@ -138,6 +138,15 @@ export function useAuthSync() {
           position: jwtSession.position,
           employeeType: jwtSession.employeeType,
           avatar: jwtSession.avatar,
+          impersonation: jwtSession.impersonation
+            ? {
+                active: true,
+                sessionId: jwtSession.impersonation.sessionId,
+                expiresAt: jwtSession.impersonation.expiresAt,
+                superadminName: jwtSession.impersonation.superadmin?.name || 'Superadmin',
+                superadminEmail: jwtSession.impersonation.superadmin?.email || '',
+              }
+            : undefined,
         };
         login(userData);
         setUserEmail(jwtSession.email);
