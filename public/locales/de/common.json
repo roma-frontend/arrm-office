@@ -1037,7 +1037,8 @@
       "taskAssigned": "Aufgabe \"{{taskTitle}}\" wurde Ihnen zugewiesen",
       "leaveRequestNew": "{{userName}} hat {{type}}-Urlaub beantragt ({{start}} – {{end}})",
       "leaveApproved": "Ihr {{type}}-Urlaub ({{start}} – {{end}}) wurde genehmigt",
-      "leaveRejected": "Ihr {{type}}-Urlaub ({{start}} – {{end}}) wurde abgelehnt"
+      "leaveRejected": "Ihr {{type}}-Urlaub ({{start}} – {{end}}) wurde abgelehnt",
+      "impersonation": "{{name}} hat eine Impersonation-Sitzung auf Ihrem Konto gestartet. Grund: {{reason}}"
     }
   },
   "aiChat": {

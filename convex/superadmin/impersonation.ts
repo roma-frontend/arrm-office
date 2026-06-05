@@ -93,6 +93,10 @@ export const startImpersonation = mutation({
       type: 'security_alert',
       title: '👤 Superadmin impersonation',
       message: `${superadmin.name} has started an impersonation session on your account. Reason: ${args.reason}`,
+      metadata: JSON.stringify({
+        messageKey: 'notifications.messages.impersonation',
+        params: { name: superadmin.name, reason: args.reason },
+      }),
       isRead: false,
       relatedId: `impersonation:${sessionId}`,
       route: '/security',

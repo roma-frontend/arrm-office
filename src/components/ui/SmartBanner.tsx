@@ -31,19 +31,48 @@ export interface SmartBannerProps {
 }
 
 const colorClasses: Record<BannerType, string> = {
-  success: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400',
-  warning: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400',
-  info: 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400',
-  error: 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400',
-  purple: 'bg-violet-500/10 border-violet-500/20 text-violet-600 dark:text-violet-400',
+  success:
+    'bg-emerald-100 border-emerald-400 text-emerald-950 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300',
+  warning:
+    'bg-amber-100 border-amber-400 text-slate-900 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300',
+  info: 'bg-blue-100 border-blue-400 text-blue-950 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-300',
+  error:
+    'bg-red-100 border-red-400 text-red-950 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-300',
+  purple:
+    'bg-violet-100 border-violet-400 text-violet-950 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300',
 };
 
 const iconColors: Record<BannerType, string> = {
-  success: 'text-emerald-500',
-  warning: 'text-amber-500',
-  info: 'text-blue-500',
-  error: 'text-red-500',
-  purple: 'text-violet-500',
+  success: 'text-emerald-800 dark:text-emerald-300',
+  warning: 'text-amber-800 dark:text-amber-300',
+  info: 'text-blue-800 dark:text-blue-300',
+  error: 'text-red-800 dark:text-red-300',
+  purple: 'text-violet-800 dark:text-violet-300',
+};
+
+const messageColors: Record<BannerType, string> = {
+  success: 'text-emerald-950 dark:text-emerald-200',
+  warning: 'text-slate-900 dark:text-amber-200',
+  info: 'text-blue-950 dark:text-blue-200',
+  error: 'text-red-950 dark:text-red-200',
+  purple: 'text-violet-950 dark:text-violet-200',
+};
+
+const suggestionColors: Record<BannerType, string> = {
+  success: 'text-emerald-900 dark:text-emerald-300',
+  warning: 'text-slate-800 dark:text-amber-300',
+  info: 'text-blue-900 dark:text-blue-300',
+  error: 'text-red-900 dark:text-red-300',
+  purple: 'text-violet-900 dark:text-violet-300',
+};
+
+const actionColors: Record<BannerType, string> = {
+  success:
+    'text-emerald-900 hover:text-emerald-950 dark:text-emerald-300 dark:hover:text-emerald-200',
+  warning: 'text-amber-900 hover:text-amber-950 dark:text-amber-300 dark:hover:text-amber-200',
+  info: 'text-blue-900 hover:text-blue-950 dark:text-blue-300 dark:hover:text-blue-200',
+  error: 'text-red-900 hover:text-red-950 dark:text-red-300 dark:hover:text-red-200',
+  purple: 'text-violet-900 hover:text-violet-950 dark:text-violet-300 dark:hover:text-violet-200',
 };
 
 const defaultIcons: Record<BannerType, React.ComponentType<{ className?: string }>> = {
@@ -97,7 +126,7 @@ export function SmartBanner({
         >
           {/* Animated background gradient */}
           <motion.div
-            className="absolute inset-0 opacity-30"
+            className="absolute inset-0 opacity-0 dark:opacity-30"
             animate={{
               background: [
                 'radial-gradient(circle at 0% 0%, currentColor 0%, transparent 50%)',
@@ -138,7 +167,7 @@ export function SmartBanner({
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
-                className="text-sm font-medium leading-relaxed"
+                className={`text-sm font-semibold leading-relaxed ${messageColors[type]}`}
               >
                 {message}
               </motion.p>
@@ -149,7 +178,7 @@ export function SmartBanner({
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="flex items-start gap-2 text-xs opacity-90"
+                  className={`flex items-start gap-2 text-xs opacity-100 ${suggestionColors[type]}`}
                 >
                   <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" />
                   <p className="leading-relaxed">{suggestion}</p>
@@ -163,7 +192,7 @@ export function SmartBanner({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                   onClick={action.onClick}
-                  className="flex items-center gap-1.5 text-xs font-medium underline underline-offset-2 hover:no-underline transition-all group"
+                  className={`flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2 hover:no-underline transition-all group ${actionColors[type]}`}
                 >
                   {action.label}
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />

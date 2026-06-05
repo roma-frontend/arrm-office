@@ -1008,7 +1008,8 @@
       "taskAssigned": "\"{{taskTitle}}\" առաջադրանքը նշանակվել է {{userName}}-ի կողմից",
       "leaveRequestNew": "{{userName}}-ի {{type}} հայտը ներկայացվել է ({{start}} – {{end}})",
       "leaveApproved": "{{userName}}-ի {{type}} հայտը հաստատվել է ({{start}} – {{end}})",
-      "leaveRejected": "{{userName}}-ի {{type}} հայտը մերժվել է ({{start}} – {{end}})"
+      "leaveRejected": "{{userName}}-ի {{type}} հայտը մերժվել է ({{start}} – {{end}})",
+      "impersonation": "{{name}} սկսել է իմպերսոնացիայի սեսիա ձեր հաշվում: Պատճառ: {{reason}}"
     }
   },
   "aiChat": {

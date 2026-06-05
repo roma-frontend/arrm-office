@@ -47,42 +47,42 @@ import { api } from '@/convex/_generated/api';
 const CATEGORY_CONFIG: Record<string, { icon: LucideIcon; color: string; labelKey: string }> = {
   teamwork: {
     icon: Users,
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    color: 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-300',
     labelKey: 'recognition.category.teamwork',
   },
   innovation: {
     icon: Sparkles,
-    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+    color: 'bg-purple-100 text-purple-900 dark:bg-purple-900/30 dark:text-purple-300',
     labelKey: 'recognition.category.innovation',
   },
   leadership: {
     icon: Trophy,
-    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+    color: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-300',
     labelKey: 'recognition.category.leadership',
   },
   dedication: {
     icon: Heart,
-    color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+    color: 'bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-300',
     labelKey: 'recognition.category.dedication',
   },
   customer_focus: {
     icon: Star,
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    color: 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-300',
     labelKey: 'recognition.category.customerFocus',
   },
   mentorship: {
     icon: Award,
-    color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+    color: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-300',
     labelKey: 'recognition.category.mentorship',
   },
   excellence: {
     icon: TrendingUp,
-    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    color: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-300',
     labelKey: 'recognition.category.excellence',
   },
   above_and_beyond: {
     icon: Sparkles,
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-300',
     labelKey: 'recognition.category.aboveAndBeyond',
   },
 };
@@ -532,8 +532,8 @@ export function RecognitionClient() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-2">
-                  <ThumbsUp className="h-5 w-5 text-green-700 dark:text-green-300" />
+                <div className="rounded-full bg-white dark:bg-green-900/30 p-2 border border-green-200 dark:border-green-800">
+                  <ThumbsUp className="h-5 w-5 text-green-600 dark:text-green-300" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{myStats.totalReceived}</p>
@@ -545,8 +545,8 @@ export function RecognitionClient() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-2">
-                  <Send className="h-5 w-5 text-blue-700 dark:text-blue-300" />
+                <div className="rounded-full bg-white dark:bg-blue-900/30 p-2 border border-blue-200 dark:border-blue-800">
+                  <Send className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{myStats.totalSent}</p>
@@ -558,8 +558,8 @@ export function RecognitionClient() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-yellow-100 dark:bg-yellow-900/30 p-2">
-                  <Star className="h-5 w-5 text-yellow-700 dark:text-yellow-300" />
+                <div className="rounded-full bg-white dark:bg-yellow-900/30 p-2 border border-yellow-200 dark:border-yellow-800">
+                  <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-300" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{myPoints?.balance ?? 0}</p>

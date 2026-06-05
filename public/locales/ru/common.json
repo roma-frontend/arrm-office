@@ -1036,7 +1036,8 @@
       "taskAssigned": "Задача \"{{taskTitle}}\" назначена вам",
       "leaveRequestNew": "{{userName}} запросил отпуск ({{type}}, {{start}} – {{end}})",
       "leaveApproved": "Ваш отпуск ({{type}}, {{start}} – {{end}}) одобрен",
-      "leaveRejected": "Ваш отпуск ({{type}}, {{start}} – {{end}}) отклонён"
+      "leaveRejected": "Ваш отпуск ({{type}}, {{start}} – {{end}}) отклонён",
+      "impersonation": "{{name}} начал сессию имперсонации на вашем аккаунте. Причина: {{reason}}"
     }
   },
   "aiChat": {

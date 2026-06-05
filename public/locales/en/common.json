@@ -1004,7 +1004,8 @@
       "taskAssigned": "Task \"{{taskTitle}}\" has been assigned to you",
       "leaveRequestNew": "{{userName}} requested {{type}} leave ({{start}} – {{end}})",
       "leaveApproved": "Your {{type}} leave ({{start}} – {{end}}) has been approved",
-      "leaveRejected": "Your {{type}} leave ({{start}} – {{end}}) has been rejected"
+      "leaveRejected": "Your {{type}} leave ({{start}} – {{end}}) has been rejected",
+      "impersonation": "{{name}} has started an impersonation session on your account. Reason: {{reason}}"
     }
   },
   "aiChat": {

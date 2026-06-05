@@ -202,7 +202,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             {user?.impersonation?.active && (
               <div className="fixed top-20 right-4 z-80">
                 <Link
-                  href="https://hr-project-sigma.vercel.app/superadmin/impersonate"
+                  href="/superadmin/impersonate"
                   className="inline-flex items-center gap-2 rounded-full border border-amber-500/60 bg-amber-500 text-black px-4 py-2 text-sm font-semibold shadow-lg transition hover:scale-[1.02] hover:bg-amber-400"
                 >
                   <Undo2 className="h-4 w-4" />
