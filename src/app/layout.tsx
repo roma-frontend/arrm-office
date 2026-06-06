@@ -8,6 +8,7 @@ import { AppProviders } from '@/components/AppProviders';
 import PerformanceMonitor from '@/components/PerformanceMonitor';
 import { Analytics } from '@vercel/analytics/next';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Validate environment variables at startup
 validateEnvironment();
@@ -260,6 +261,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <main id="main-content">{children}</main>
             {/* Defer Analytics loading to reduce main thread work */}
             <Analytics />
+            <SpeedInsights />
           </AppProviders>
         </Suspense>
         {/* Performance monitoring (только в dev) */}
