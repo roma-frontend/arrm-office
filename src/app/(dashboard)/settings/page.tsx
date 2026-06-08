@@ -295,12 +295,16 @@ export default function SettingsPage() {
       icon: Link2,
       description: t('settings.integrationsDesc'),
     },
-    {
-      value: 'billing',
-      label: t('settings.billing'),
-      icon: CreditCard,
-      description: t('settings.billingDesc'),
-    },
+    ...(user?.role === 'admin'
+      ? [
+          {
+            value: 'billing',
+            label: t('settings.billing'),
+            icon: CreditCard,
+            description: t('settings.billingDesc'),
+          },
+        ]
+      : []),
     ...(user?.role === 'admin'
       ? [
           {
@@ -436,10 +440,12 @@ export default function SettingsPage() {
             <IntegrationSettings />
           </TabsContent>
 
-          <TabsContent value="billing" className="space-y-6 mt-0">
-            <SubscriptionPlanCard />
-            <CookiePreferences />
-          </TabsContent>
+          {user?.role === 'admin' && (
+            <TabsContent value="billing" className="space-y-6 mt-0">
+              <SubscriptionPlanCard />
+              <CookiePreferences />
+            </TabsContent>
+          )}
 
           {user?.role === 'admin' && (
             <TabsContent value="admin" className="space-y-6 mt-0">

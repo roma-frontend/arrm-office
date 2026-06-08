@@ -107,6 +107,18 @@ export default function ApprovalDetailClient() {
     }
   };
 
+  if (user?.role !== 'admin' && user?.role !== 'superadmin') {
+    return (
+      <div className="flex flex-col items-center justify-center text-center min-h-[60vh] gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center">
+          <XCircle className="w-8 h-8 text-red-500" />
+        </div>
+        <h2 className="text-xl font-bold text-(--text-primary)">{t('ui.accessDenied')}</h2>
+        <p className="text-(--text-muted) text-sm">{t('ui.onlyAdminsCanAccess')}</p>
+      </div>
+    );
+  }
+
   if (!pendingUser) {
     return (
       <div className="space-y-6">

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscription } from '@/lib/hooks/useSubscription';
 import { usePlanFeatures, PLAN_LABELS, PLAN_PRICES } from '@/lib/hooks/usePlanFeatures';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -81,6 +82,7 @@ export function SubscriptionPlanCard() {
     ? Math.max(0, Math.ceil((subscription.trialEnd - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
+  const { user } = useAuthStore();
   const { features } = usePlanFeatures();
   const currency = useCurrency();
   const [modalOpen, setModalOpen] = useState(false);
@@ -215,7 +217,7 @@ export function SubscriptionPlanCard() {
               </div>
 
               {/* Upgrade CTA */}
-              {plan !== 'enterprise' && (
+              {user?.role === 'admin' && plan !== 'enterprise' && (
                 <div className="pt-2 border-t border-(--border)">
                   <button
                     onClick={() => setModalOpen(true)}

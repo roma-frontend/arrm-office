@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { isValidEmail } from '@/lib/stripe-config';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { verifyJWT } from '@/lib/jwt';
+
+async function verifyAdmin(req: NextRequest): Promise<boolean> {
+  try {
+    const cookieHeader = req.headers.get('cookie') || '';
+    const jwtMatch = cookieHeader.match(/hr-auth-token=([^;]+)/);
+    const jwt = jwtMatch ? jwtMatch[1] : null;
+    if (!jwt) return false;
+    const payload = await verifyJWT(jwt);
+    if (!payload) return false;
+    return payload.role === 'admin' || payload.role === 'superadmin';
+  } catch {
+    return false;
+  }
+}
 
 function getStripe(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -16,6 +31,10 @@ const PLANS: Record<string, { priceId: string; name: string }> = {
 };
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
+  if (!(await verifyAdmin(req))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const stripe = getStripe();
   if (!stripe) {
     return NextResponse.json(

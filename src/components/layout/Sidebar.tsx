@@ -229,17 +229,19 @@ const navItems: NavEntry[] = [
     ],
   },
 
-  // ── Communication ──
+  // ── Approvals ──
   { type: 'separator', labelKey: 'nav.groups.communication' },
   {
     href: '/approvals',
-    labelKey: 'nav.communication',
-    icon: MessageCircle,
+    labelKey: 'nav.approvals',
+    icon: UserCheck,
+    roles: ['superadmin', 'admin'],
+  },
+  {
+    href: '/surveys',
+    labelKey: 'nav.surveys',
+    icon: ClipboardList,
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
-    children: [
-      { href: '/approvals', labelKey: 'nav.approvals', icon: UserCheck },
-      { href: '/surveys', labelKey: 'nav.surveys', icon: ClipboardList },
-    ],
   },
 
   // ── Settings & Admin ──
@@ -641,7 +643,7 @@ export function Sidebar() {
                         onMouseEnter={() => setHoveredItem(item.href)}
                         onMouseLeave={() => setHoveredItem(null)}
                         className={cn(
-                          'group relative flex items-center justify-center px-3 py-2.5 rounded-xl transition-all duration-200 w-full',
+                          'group relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 w-full',
                           'focus:outline-none focus:ring-2 focus:ring-primary/30',
                           isActive
                             ? 'bg-sidebar-item-active shadow-sm text-sidebar-item-active-text'

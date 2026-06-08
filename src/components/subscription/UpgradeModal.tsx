@@ -396,6 +396,8 @@ export function UpgradeModal({
     return PLAN_ORDER.indexOf(id) > currentIndex ? 'upgrade' : 'downgrade';
   };
 
+  if (user?.role !== 'admin') return null;
+
   return (
     <Dialog
       open={open}
