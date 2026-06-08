@@ -712,7 +712,7 @@ export default function EmojiPicker({ onSelect, onClose }: Props) {
       className="absolute bottom-full right-0 mb-2 sm:w-72 w-80 rounded-2xl shadow-2xl border overflow-hidden z-50"
       style={{ background: 'var(--background)', borderColor: 'var(--border)' }}
     >
-      <div className="max-h-56 overflow-y-auto p-2 custom-scrollbar">
+      <div className="max-h-56 overflow-y-auto p-2  ">
         {EMOJI_GROUPS.map((group) => (
           <div key={group.label} className="mb-2">
             <p

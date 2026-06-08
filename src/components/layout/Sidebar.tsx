@@ -567,7 +567,7 @@ export function Sidebar() {
         <div className="relative h-full">
           {/* Main navigation view */}
           <div
-            className="space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] p-2"
+            className="space-y-1 overflow-y-auto overflow-x-hidden   absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] p-2"
             style={{
               transform: activeSubNav ? 'translateX(-100%) scale(0.95)' : 'translateX(0) scale(1)',
               opacity: activeSubNav ? 0 : 1,
@@ -847,7 +847,7 @@ export function Sidebar() {
           {/* Sub-navigation view */}
           {!collapsed && (
             <div
-              className="space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] p-2"
+              className="space-y-1 overflow-y-auto overflow-x-hidden   absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] p-2"
               style={{
                 transform: activeSubNav ? 'translateX(0) scale(1)' : 'translateX(100%) scale(0.95)',
                 opacity: activeSubNav ? 1 : 0,
@@ -1259,7 +1259,7 @@ export function MobileSidebar() {
           <div className="relative h-full">
             {/* Main navigation view */}
             <div
-              className="space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] p-2"
+              className="space-y-1 overflow-y-auto overflow-x-hidden   absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] p-2"
               style={{
                 transform: activeSubNav
                   ? 'translateX(-100%) scale(0.95)'
@@ -1448,7 +1448,7 @@ export function MobileSidebar() {
 
             {/* Sub-navigation view */}
             <div
-              className="space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] p-2"
+              className="space-y-1 overflow-y-auto overflow-x-hidden   absolute inset-0 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] p-2"
               style={{
                 transform: activeSubNav ? 'translateX(0) scale(1)' : 'translateX(100%) scale(0.95)',
                 opacity: activeSubNav ? 1 : 0,

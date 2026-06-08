@@ -3,6 +3,7 @@ import { query } from '../_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { Id, Doc } from '../_generated/dataModel';
 import { isSuperadmin } from '../lib/auth';
+import { getAuthCaller } from '../lib/getAuthCaller';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
 
@@ -626,6 +627,13 @@ export const getOrgUsers = query({
     currentUserId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    if (caller.role !== 'superadmin' && caller.organizationId !== args.organizationId) {
+      throw new Error('Access denied: cannot view users from another organization');
+    }
+
     const users = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))

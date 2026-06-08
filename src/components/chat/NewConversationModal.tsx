@@ -249,7 +249,7 @@ export function NewConversationModal({
                 </button>
                 {showOrgDropdown && (
                   <div
-                    className="absolute right-0 mt-1 w-56 rounded-lg border shadow-xl z-50 max-h-64 overflow-y-auto custom-scrollbar"
+                    className="absolute right-0 mt-1 w-56 rounded-lg border shadow-xl z-50 max-h-64 overflow-y-auto  "
                     style={{ background: 'var(--background)', borderColor: 'var(--border)' }}
                   >
                     <button

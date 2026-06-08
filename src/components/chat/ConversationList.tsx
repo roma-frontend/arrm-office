@@ -458,7 +458,7 @@ export const ConversationList = React.memo(function ConversationList({
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto px-2 space-y-0.5 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-2 space-y-0.5  ">
         {filtered.length === 0 && !showCollapse && (
           <div className="text-center py-12">
             <Users

@@ -230,6 +230,16 @@ export const addMember = mutation({
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
+
+    const userToAdd = await ctx.db.get(args.userId);
+    if (
+      userToAdd &&
+      caller.role !== 'superadmin' &&
+      userToAdd.organizationId !== caller.organizationId
+    ) {
+      throw new Error('Access denied: cannot add members from another organization');
+    }
+
     const requesterId = caller._id;
     const existing = await ctx.db
       .query('chatMembers')

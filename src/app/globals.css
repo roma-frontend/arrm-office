@@ -944,7 +944,7 @@ body {
 
 /* ── Scrollbar ─────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
   height: 6px;
 }
 
@@ -2270,38 +2270,6 @@ html.dark .quick-action-slate:hover {
   100% {
     background-position: -200% 0;
   }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   CUSTOM SCROLLBAR STYLES
-   ═══════════════════════════════════════════════════════════════ */
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: var(--border);
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: var(--text-muted);
-}
-
-.scrollbar-thumb-\(--border\)::-webkit-scrollbar-thumb {
-  background-color: var(--border);
-}
-
-.scrollbar-track-transparent::-webkit-scrollbar-track {
-  background: transparent;
 }
 
 /* ═══════════════════════════════════════════════════════════════

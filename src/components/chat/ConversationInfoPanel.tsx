@@ -7,6 +7,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { X, Plus, Search, Building2, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface Props {
   conversationId: Id<'chatConversations'>;
@@ -31,6 +32,8 @@ export function ConversationInfoPanel({
   onClose,
 }: Props) {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const isSuperadmin = user?.role === 'superadmin';
   const [showAddMember, setShowAddMember] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<Id<'users'>[]>([]);
@@ -47,10 +50,13 @@ export function ConversationInfoPanel({
   });
   const conversation = (conversations ?? []).find((c) => c && c._id === conversationId) ?? null;
 
-  // Fetch all organizations for the dropdown (no superadmin check — just lists all orgs)
-  const allOrganizations = useQuery(api.organizations.getAllOrganizations, {});
+  // Only superadmins can fetch all organizations for cross-org member addition
+  const allOrganizations = useQuery(
+    api.organizations.getAllOrganizations,
+    isSuperadmin ? {} : 'skip',
+  );
 
-  // Fetch users from the selected organization using getOrgUsers (no permission restrictions)
+  // Fetch users from the selected organization (non-superadmins can only see their own org)
   const orgUsers = useQuery(
     api.chat.queries.getOrgUsers,
     selectedOrgId ? { organizationId: selectedOrgId, currentUserId } : 'skip',
@@ -133,7 +139,7 @@ export function ConversationInfoPanel({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto  ">
         {/* Conversation details */}
         {isGroupConversation && (
           <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
@@ -179,8 +185,8 @@ export function ConversationInfoPanel({
               className="mb-4 p-3 rounded-lg border"
               style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
             >
-              {/* Organization selector — always visible when multiple orgs exist */}
-              {allOrganizations && allOrganizations.length > 1 && (
+              {/* Organization selector — superadmin only */}
+              {isSuperadmin && allOrganizations && allOrganizations.length > 1 && (
                 <div className="mb-3">
                   <p
                     className="text-[10px] font-medium mb-1.5 flex items-center gap-1"
@@ -217,7 +223,7 @@ export function ConversationInfoPanel({
                           borderColor: 'var(--border)',
                         }}
                       >
-                        <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                        <div className="max-h-40 overflow-y-auto  ">
                           {allOrganizations.map(
                             (org: { _id: Id<'organizations'>; name: string }) => (
                               <button
@@ -286,7 +292,7 @@ export function ConversationInfoPanel({
               </div>
 
               {/* User list */}
-              <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
+              <div className="space-y-1 max-h-48 overflow-y-auto  ">
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
                     <label
@@ -394,29 +400,6 @@ export function ConversationInfoPanel({
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: var(--border);
-          border-radius: 2px;
-        }
-      `}</style>
     </div>
   );
 }
