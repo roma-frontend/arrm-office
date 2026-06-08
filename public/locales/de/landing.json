@@ -278,7 +278,8 @@
     "priorityProcessing": "Priorisierte AI-Verarbeitung",
     "custom": "Individuell",
     "automatedBackups": "Automatisierte Mitarbeiter-Backups (Speicherung 48h)",
-    "checkoutError": "Checkout konnte nicht gestartet werden. Bitte versuchen Sie es erneut."
+    "checkoutError": "Checkout konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
+    "permissionDenied": "Sie haben keine Berechtigung, den Plan zu ändern. Kontaktieren Sie Ihren Administrator."
   },
   "testimonials": {
     "eyebrow": "Referenzen",

@@ -277,7 +277,8 @@
     "priorityProcessing": "Priority AI processing",
     "custom": "Custom",
     "automatedBackups": "Automated employee backups (48h retention)",
-    "checkoutError": "Failed to start checkout. Please try again."
+    "checkoutError": "Failed to start checkout. Please try again.",
+    "permissionDenied": "You do not have permission to change the plan. Contact your administrator."
   },
   "testimonials": {
     "eyebrow": "Testimonials",

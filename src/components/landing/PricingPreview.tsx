@@ -347,7 +347,16 @@ function PricingCard({
         window.location.href = data.url;
       } else if (data.error) {
         console.error('[Stripe checkout error]', data.error, data.message);
-        toast.error(t('pricing.checkoutError', 'Failed to start checkout. Please try again.'));
+        if (res.status === 401) {
+          toast.error(
+            t(
+              'pricing.permissionDenied',
+              'You do not have permission to change the plan. Contact your administrator.',
+            ),
+          );
+        } else {
+          toast.error(t('pricing.checkoutError', 'Failed to start checkout. Please try again.'));
+        }
       }
     } catch (e: unknown) {
       console.error('[Stripe checkout error]', e);
