@@ -1225,5 +1225,11 @@
   },
   "chatWidget": {
     "viewFullScreen": "View full response"
+  },
+  "events": {
+    "reviewFailed": "Failed to review alert"
+  },
+  "careers": {
+    "submitError": "Error submitting application"
   }
 }

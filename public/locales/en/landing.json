@@ -276,7 +276,8 @@
     "calendarIntegrations": "Google & Outlook calendar sync",
     "priorityProcessing": "Priority AI processing",
     "custom": "Custom",
-    "automatedBackups": "Automated employee backups (48h retention)"
+    "automatedBackups": "Automated employee backups (48h retention)",
+    "checkoutError": "Failed to start checkout. Please try again."
   },
   "testimonials": {
     "eyebrow": "Testimonials",

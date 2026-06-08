@@ -49,6 +49,7 @@
     "noSavedMessages": "Нет избранных сообщений",
     "voiceMessageSent": "Голосовое сообщение отправлено",
     "voiceMessageFailed": "Не удалось отправить голосовое сообщение",
+    "micAccessError": "Нет доступа к микрофону. Проверьте разрешения.",
     "fileReadyToSend": "файл готов к отправке",
     "filesReadyToSend": "файлов готово к отправке",
     "messageDeleted": "Это сообщение было удалено",

@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -73,7 +74,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
       setReviewNotes('');
     } catch (error: any) {
       console.error('Failed to review alert:', error);
-      alert(error.message || 'Failed to review alert');
+      toast.error(t('events.reviewFailed', 'Failed to review alert'));
     } finally {
       setIsReviewing(false);
     }

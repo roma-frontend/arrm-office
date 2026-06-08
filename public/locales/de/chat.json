@@ -49,6 +49,7 @@
     "noSavedMessages": "Keine gespeicherten Nachrichten",
     "voiceMessageSent": "Sprachnachricht gesendet",
     "voiceMessageFailed": "Sprachnachricht konnte nicht gesendet werden",
+    "micAccessError": "Kein Zugriff auf das Mikrofon. Bitte überprüfen Sie die Berechtigungen.",
     "fileReadyToSend": "Datei bereit zum Senden",
     "filesReadyToSend": "Dateien bereit zum Senden",
     "messageDeleted": "Diese Nachricht wurde gelöscht",

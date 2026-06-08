@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Mic, Square, Send, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -64,9 +65,11 @@ export function VoiceMessageRecorder({
       onRecordingStart();
     } catch (err) {
       console.error('Error accessing microphone:', err);
-      alert('Could not access microphone. Please check permissions.');
+      toast.error(
+        t('chat.micAccessError', 'Could not access microphone. Please check permissions.'),
+      );
     }
-  }, [onRecordingStart]);
+  }, [onRecordingStart, t]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {

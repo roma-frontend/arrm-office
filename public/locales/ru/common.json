@@ -1257,5 +1257,11 @@
   },
   "chatWidget": {
     "viewFullScreen": "Показать полный ответ"
+  },
+  "events": {
+    "reviewFailed": "Не удалось обработать уведомление"
+  },
+  "careers": {
+    "submitError": "Ошибка при отправке заявки"
   }
 }

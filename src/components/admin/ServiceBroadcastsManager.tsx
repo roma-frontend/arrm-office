@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Button } from '@/components/ui/button';
@@ -67,7 +68,7 @@ export function ServiceBroadcastsManager({
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.error('[ServiceBroadcastsManager] ✗ Failed to delete broadcast:', errorMsg);
-      alert(t('broadcasts.deleteFailed', { error: errorMsg }));
+      toast.error(t('broadcasts.deleteFailed', { error: errorMsg }));
     } finally {
       setIsDeleting(false);
     }

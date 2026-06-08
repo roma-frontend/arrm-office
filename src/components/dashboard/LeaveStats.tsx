@@ -174,9 +174,7 @@ export default React.memo(
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-green-600 dark:text-green-300">
-                  ✅ {t('leaveStats.allGood')}
-                </p>
+                <p className="text-sm font-medium text-green-600">✅ {t('leaveStats.allGood')}</p>
                 <p className="text-xs text-green-600 dark:text-green-400">
                   {t('leaveStats.lastLeave')}:{' '}
                   {stats.lastLeaveDate

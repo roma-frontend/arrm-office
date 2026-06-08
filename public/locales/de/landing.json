@@ -277,7 +277,8 @@
     "calendarIntegrations": "Integration mit Google- und Outlook-Kalender",
     "priorityProcessing": "Priorisierte AI-Verarbeitung",
     "custom": "Individuell",
-    "automatedBackups": "Automatisierte Mitarbeiter-Backups (Speicherung 48h)"
+    "automatedBackups": "Automatisierte Mitarbeiter-Backups (Speicherung 48h)",
+    "checkoutError": "Checkout konnte nicht gestartet werden. Bitte versuchen Sie es erneut."
   },
   "testimonials": {
     "eyebrow": "Referenzen",

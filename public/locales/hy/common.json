@@ -1226,5 +1226,11 @@
     "calendarEvents": "Օրացույցի իրադարձություններ",
     "googleEvents": "Google Օրացույց",
     "driverBookings": "Վարորդների պատվերներ"
+  },
+  "events": {
+    "reviewFailed": "Չհաջողվեց մշակել ծանուցումը"
+  },
+  "careers": {
+    "submitError": "Սխալ հայտի ուղարկման ժամանակ"
   }
 }

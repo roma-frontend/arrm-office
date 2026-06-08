@@ -261,7 +261,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     const MAX_SIZE = 1 * 1024 * 1024; // 1MB
     const tooBig = files.filter((f) => f.size > MAX_SIZE);
     if (tooBig.length > 0) {
-      alert(t('chat.fileSizeLimit'));
+      toast.error(t('chat.fileSizeLimit'));
       return;
     }
 
@@ -464,7 +464,7 @@ export const ChatWindow = React.memo(function ChatWindow({
       try {
         const MAX_SIZE = 1 * 1024 * 1024; // 1MB
         if (blob.size > MAX_SIZE) {
-          alert(t('chat.voiceSizeLimit'));
+          toast.error(t('chat.voiceSizeLimit'));
           return;
         }
 

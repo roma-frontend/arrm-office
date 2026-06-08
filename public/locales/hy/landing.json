@@ -276,7 +276,8 @@
     "calendarIntegrations": "Google և Outlook օրացույցների սինխրոնիզացիա",
     "priorityProcessing": "AI առաջնահերթ մշակում",
     "custom": "Անհատական",
-    "automatedBackups": "Աշխատակիցների ավտոմատ պահուստային պատճեններ (48ժ պահպանում)"
+    "automatedBackups": "Աշխատակիցների ավտոմատ պահուստային պատճեններ (48ժ պահպանում)",
+    "checkoutError": "Չհաջողվեց սկսել գրանցումը: Խնդրում եմ կրկին փորձել:"
   },
   "testimonials": {
     "eyebrow": "Վկայություններ",

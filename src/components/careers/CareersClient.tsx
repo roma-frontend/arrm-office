@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -505,7 +506,7 @@ function VacancyDetailModal({
         }),
       }).catch(() => {});
     } catch (e: any) {
-      alert(e.message || 'Error submitting application');
+      toast.error(t('careers.submitError', 'Error submitting application'));
     } finally {
       setSubmitting(false);
     }

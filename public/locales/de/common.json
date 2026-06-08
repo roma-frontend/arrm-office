@@ -1255,5 +1255,11 @@
     "calendarEvents": "Kalender-Ereignisse",
     "googleEvents": "Google Kalender",
     "driverBookings": "Fahrerbuchungen"
+  },
+  "events": {
+    "reviewFailed": "Benachrichtigung konnte nicht verarbeitet werden"
+  },
+  "careers": {
+    "submitError": "Fehler beim Senden der Bewerbung"
   }
 }

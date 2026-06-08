@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -346,11 +347,11 @@ function PricingCard({
         window.location.href = data.url;
       } else if (data.error) {
         console.error('[Stripe checkout error]', data.error, data.message);
-        alert(data.message || data.error);
+        toast.error(t('pricing.checkoutError', 'Failed to start checkout. Please try again.'));
       }
     } catch (e: unknown) {
       console.error('[Stripe checkout error]', e);
-      alert('Failed to start checkout. Please try again.');
+      toast.error(t('pricing.checkoutError', 'Failed to start checkout. Please try again.'));
     } finally {
       setLoading(false);
     }

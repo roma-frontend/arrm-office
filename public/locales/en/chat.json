@@ -49,6 +49,7 @@
     "noSavedMessages": "No saved messages",
     "voiceMessageSent": "Voice message sent",
     "voiceMessageFailed": "Failed to send voice message",
+    "micAccessError": "Could not access microphone. Please check permissions.",
     "defaultChatName": "Chat",
     "defaultGroupName": "Group",
     "readOnlyChannel": "🔒 Read-Only Channel",
