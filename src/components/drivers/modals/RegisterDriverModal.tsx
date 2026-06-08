@@ -170,7 +170,7 @@ export function RegisterDriverModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative p-6">
+        <div className="relative p-6 btn-gradient rounded-t-2xl">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
