@@ -49,7 +49,7 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
 
   return (
     <div
-      className="relative flex flex-col items-center text-center pt-24 pb-20 px-6 min-h-screen justify-center overflow-hidden"
+      className="relative flex flex-col items-center text-center pt-24 pb-20 md:pb-32 px-6 min-h-screen justify-center overflow-hidden"
       role="banner"
       aria-label="Hero section"
     >
@@ -232,19 +232,19 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
 
       {/* Scroll indicator */}
       <div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-2 hidden md:flex"
+        className="absolute bottom-4 lg:bottom-8 xl:bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-2 hidden md:flex pointer-events-none"
         aria-hidden="true"
       >
         <span
           className="text-xs uppercase tracking-widest"
-          style={{ color: 'var(--primary)', opacity: 0.6 }}
+          style={{ color: 'var(--landing-gradient-from)', opacity: 0.6 }}
         >
           {t('landing.scroll')}
         </span>
         <div
           className="scroll-line w-px h-12"
           style={{
-            background: 'linear-gradient(to bottom, var(--primary), transparent)',
+            background: 'linear-gradient(to bottom, var(--landing-gradient-from), transparent)',
             opacity: 0.7,
           }}
         />
