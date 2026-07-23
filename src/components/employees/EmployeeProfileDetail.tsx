@@ -22,6 +22,7 @@ import {
   Plus,
   Edit2,
   Trash2,
+  IdCard,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -448,6 +449,50 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           </div>
         </CardContent>
       </Card>
+
+      {/* Identity / Passport */}
+      {profile?.profile &&
+        (profile.profile.passportNumber ||
+          profile.profile.passportIssuedBy ||
+          profile.profile.passportIssueDate ||
+          profile.profile.passportExpiryDate ||
+          profile.profile.socialCardNumber ||
+          profile.profile.nationality) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <IdCard className="w-5 h-5 text-sky-500" />
+                {t('employees.identity') || 'Identity'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { label: t('employees.passportNumber'), value: profile.profile.passportNumber },
+                { label: t('employees.nationality'), value: profile.profile.nationality },
+                { label: t('employees.passportIssuedBy'), value: profile.profile.passportIssuedBy },
+                {
+                  label: t('employees.socialCardNumber'),
+                  value: profile.profile.socialCardNumber,
+                },
+                {
+                  label: t('employees.passportIssueDate'),
+                  value: profile.profile.passportIssueDate,
+                },
+                {
+                  label: t('employees.passportExpiryDate'),
+                  value: profile.profile.passportExpiryDate,
+                },
+              ]
+                .filter((f) => f.value)
+                .map((f, i) => (
+                  <div key={i}>
+                    <p className="text-sm text-(--text-muted)">{f.label}</p>
+                    <p className="font-medium text-(--text-primary)">{f.value}</p>
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+        )}
 
       {/* AI Performance Breakdown */}
       {score && (

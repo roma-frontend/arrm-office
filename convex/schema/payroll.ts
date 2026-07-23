@@ -1,6 +1,18 @@
 import { defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
+// Supported tax jurisdictions. Widening this union is a safe, backward-compatible
+// schema change (existing 'armenia'/'russia' rows keep validating). Keep in sync
+// with CountryCode in convex/lib/taxRules.ts.
+const TAX_COUNTRY = v.union(
+  v.literal('armenia'),
+  v.literal('russia'),
+  v.literal('germany'),
+  v.literal('uk'),
+  v.literal('poland'),
+  v.literal('usa'),
+);
+
 export const payroll = {
   payrollRecords: defineTable({
     organizationId: v.optional(v.id('organizations')),
@@ -25,7 +37,7 @@ export const payroll = {
     ),
     employerContributions: v.optional(v.number()),
     totalCost: v.optional(v.number()),
-    taxCountry: v.union(v.literal('armenia'), v.literal('russia')),
+    taxCountry: TAX_COUNTRY,
     currency: v.optional(v.string()),
     status: v.union(
       v.literal('draft'),
@@ -93,7 +105,7 @@ export const payroll = {
 
   salarySettings: defineTable({
     organizationId: v.id('organizations'),
-    taxCountry: v.union(v.literal('armenia'), v.literal('russia')),
+    taxCountry: TAX_COUNTRY,
     taxRegion: v.optional(v.string()),
     payFrequency: v.union(v.literal('monthly'), v.literal('biweekly'), v.literal('weekly')),
     currency: v.optional(v.string()),

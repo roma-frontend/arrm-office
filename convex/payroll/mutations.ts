@@ -4,6 +4,7 @@ import { mutation } from '../_generated/server';
 import type { MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { calculatePayroll } from '../lib/payrollCalculator';
+import { toCountryCode } from '../lib/taxRules';
 import { requireOrgAdmin } from '../lib/rbac';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 
@@ -156,7 +157,13 @@ export const calculatePayrollRun = mutation({
       .withIndex('by_org', (q) => q.eq('organizationId', run.organizationId!))
       .first();
 
-    const taxCountry = settings?.taxCountry ?? 'armenia';
+    // Prefer explicit salary settings, then fall back to the organization's country.
+    const org = await ctx.db.get(run.organizationId);
+    const taxCountry =
+      settings?.taxCountry ??
+      toCountryCode(org?.taxCountry) ??
+      toCountryCode(org?.country) ??
+      'armenia';
     const minWage = settings?.minimumWage ?? 0;
     const maxOvertime = settings?.maximumOvertime ?? 0;
 
@@ -701,7 +708,14 @@ export const deletePayrollRecord = mutation({
 export const saveSalarySettings = mutation({
   args: {
     organizationId: v.id('organizations'),
-    taxCountry: v.union(v.literal('armenia'), v.literal('russia')),
+    taxCountry: v.union(
+      v.literal('armenia'),
+      v.literal('russia'),
+      v.literal('germany'),
+      v.literal('uk'),
+      v.literal('poland'),
+      v.literal('usa'),
+    ),
     taxRegion: v.optional(v.string()),
     payFrequency: v.union(v.literal('monthly'), v.literal('biweekly'), v.literal('weekly')),
     currency: v.optional(v.string()),

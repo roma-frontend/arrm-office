@@ -263,6 +263,16 @@
     "stepReviewDesc": "Überprüfen Sie die Daten, fügen Sie Notizen hinzu und speichern Sie",
     "baseSalaryHint": "Geben Sie das monatliche Grundgehalt vor Steuern und Boni ein.",
     "additionsHint": "Fügen Sie Boni oder Überstunden für die Gehaltsberechnung hinzu.",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "germany": "Deutschland",
+    "uk": "Vereinigtes Königreich",
+    "poland": "Polen",
+    "usa": "Vereinigte Staaten",
+    "salaryMode": "Gehaltsart",
+    "netMode": "Netto",
+    "grossMode": "Brutto",
+    "salaryModeHint": "Netto oder Brutto eingeben - das System berechnet den Rest automatisch.",
+    "employeeContributions": "Arbeitnehmerbeiträge",
+    "employerCost": "Arbeitgeberbeiträge"
   }
 }

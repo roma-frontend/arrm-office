@@ -134,3 +134,4 @@ check-*.js
 skills-lock.json
 AGENTS.md
 CLAUDE.md
+venv_report

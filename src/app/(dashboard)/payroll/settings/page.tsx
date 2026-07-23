@@ -22,8 +22,9 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save, Loader2, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { TAX_RULES, type CountryCode } from '../../../../../convex/lib/taxRules';
 
-type TaxCountry = 'armenia' | 'russia';
+type TaxCountry = CountryCode;
 type PayFrequency = 'monthly' | 'biweekly' | 'weekly';
 
 export default function PayrollSettingsPage() {
@@ -156,7 +157,14 @@ export default function PayrollSettingsPage() {
             <Label>{t('payroll.countryLabel')}</Label>
             <Select
               value={form.taxCountry}
-              onValueChange={(v) => setForm((p) => ({ ...p, taxCountry: v as TaxCountry }))}
+              onValueChange={(v) =>
+                setForm((p) => ({
+                  ...p,
+                  taxCountry: v as TaxCountry,
+                  // Default the currency to the country's currency when switching.
+                  currency: TAX_RULES[v as CountryCode]?.currency ?? p.currency,
+                }))
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -164,6 +172,10 @@ export default function PayrollSettingsPage() {
               <SelectContent>
                 <SelectItem value="armenia">{t('payroll.armenia')}</SelectItem>
                 <SelectItem value="russia">{t('payroll.russia')}</SelectItem>
+                <SelectItem value="germany">{t('payroll.germany') || 'Germany'}</SelectItem>
+                <SelectItem value="uk">{t('payroll.uk') || 'United Kingdom'}</SelectItem>
+                <SelectItem value="poland">{t('payroll.poland') || 'Poland'}</SelectItem>
+                <SelectItem value="usa">{t('payroll.usa') || 'United States'}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -191,6 +203,8 @@ export default function PayrollSettingsPage() {
                 <SelectItem value="RUB">RUB</SelectItem>
                 <SelectItem value="USD">USD</SelectItem>
                 <SelectItem value="EUR">EUR</SelectItem>
+                <SelectItem value="GBP">GBP</SelectItem>
+                <SelectItem value="PLN">PLN</SelectItem>
               </SelectContent>
             </Select>
           </div>

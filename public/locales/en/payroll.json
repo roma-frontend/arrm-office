@@ -262,6 +262,16 @@
     "stepAdditionsDesc": "Bonuses and overtime hours",
     "stepReviewDesc": "Review details, add notes and save",
     "baseSalaryHint": "Enter the employee's monthly base salary before taxes and bonuses.",
-    "additionsHint": "Add any bonuses or overtime hours to be included in the payroll calculation."
+    "additionsHint": "Add any bonuses or overtime hours to be included in the payroll calculation.",
+    "germany": "Germany",
+    "uk": "United Kingdom",
+    "poland": "Poland",
+    "usa": "United States",
+    "salaryMode": "Salary type",
+    "netMode": "Net",
+    "grossMode": "Gross",
+    "salaryModeHint": "Enter net or gross - the system calculates the rest automatically.",
+    "employeeContributions": "Employee contributions",
+    "employerCost": "Employer contributions"
   }
 }

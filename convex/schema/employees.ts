@@ -20,6 +20,13 @@ export const employees = {
     hourlyRate: v.optional(v.number()),
     salaryCurrency: v.optional(v.string()),
     salaryUpdatedAt: v.optional(v.number()),
+    // Identity / passport document data (all optional — sensitive PII)
+    passportNumber: v.optional(v.string()),
+    passportIssuedBy: v.optional(v.string()),
+    passportIssueDate: v.optional(v.string()),
+    passportExpiryDate: v.optional(v.string()),
+    socialCardNumber: v.optional(v.string()),
+    nationality: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

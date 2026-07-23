@@ -30,6 +30,15 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useQuery } from 'convex/react';
 import type { Id } from '../../../convex/_generated/dataModel';
 import type { FunctionReference } from 'convex/server';
+import { toCountryCode, TAX_RULES, type CountryCode } from '../../../convex/lib/taxRules';
+import { computeGrossFromNet } from '../../../convex/lib/payrollCalculator';
+import { SalaryCalculatorStep, type SalaryState } from './SalaryCalculatorStep';
+import {
+  PassportFields,
+  EMPTY_PASSPORT,
+  type PassportData,
+  type PassportScanFile,
+} from './PassportFields';
 import {
   UserPlus,
   User,
@@ -41,6 +50,8 @@ import {
   ChevronLeft,
   Building2,
   Shield,
+  DollarSign,
+  IdCard,
 } from 'lucide-react';
 
 const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_BOOTSTRAP_SUPERADMIN_EMAIL ?? '').toLowerCase();
@@ -58,16 +69,21 @@ function formatCurrency(amount: number, lang: string = 'en'): string {
 // Bizier easing for smooth animations
 const bizierEasing = [0.34, 1.56, 0.64, 1];
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 6;
 
 export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   const { t, i18n } = useTranslation();
   const createUser = useMutation(api.users.mutations.createUser as FunctionReference<'mutation'>);
+  const uploadEmployeeDocument = useMutation(api.employeeProfiles.uploadDocument);
   const currentUser = useAuthStore((s) => s.user);
   const isActualAdmin = currentUser?.email?.toLowerCase() === ADMIN_EMAIL;
   const isSuperadmin = currentUser?.role === 'superadmin';
 
   const organizations = useQuery(api.organizations.getAllOrganizations, isSuperadmin ? {} : 'skip');
+  const myOrg = useQuery(
+    api.organizations.getMyOrganization,
+    !isSuperadmin && currentUser?.id ? { userId: currentUser.id as Id<'users'> } : 'skip',
+  );
 
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -83,6 +99,20 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   const [type, setType] = useState<'staff' | 'contractor'>('staff');
   const [selectedOrgId, setSelectedOrgId] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Resolve the tax country for salary calc from the target organization.
+  const targetOrg = isSuperadmin ? organizations?.find((o: any) => o._id === selectedOrgId) : myOrg;
+  const orgCountry: CountryCode =
+    toCountryCode(targetOrg?.taxCountry) ?? toCountryCode(targetOrg?.country) ?? 'armenia';
+
+  const [salary, setSalary] = useState<SalaryState>({
+    mode: 'gross',
+    amount: 0,
+    currency: TAX_RULES.armenia.currency,
+    country: 'armenia',
+  });
+  const [passport, setPassport] = useState<PassportData>(EMPTY_PASSPORT);
+  const [passportScan, setPassportScan] = useState<PassportScanFile | null>(null);
 
   const allowance = getTravelAllowance(email);
 
@@ -101,9 +131,22 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       setType('staff');
       setRole('employee');
       setSelectedOrgId('');
+      setSalary({
+        mode: 'gross',
+        amount: 0,
+        currency: TAX_RULES.armenia.currency,
+        country: 'armenia',
+      });
+      setPassport(EMPTY_PASSPORT);
+      setPassportScan(null);
       setErrors({});
     }
   }, [open, isSuperadmin]);
+
+  // Keep salary calc country/currency in sync with the resolved organization.
+  useEffect(() => {
+    setSalary((p) => ({ ...p, country: orgCountry, currency: TAX_RULES[orgCountry].currency }));
+  }, [orgCountry]);
 
   useEffect(() => {
     if (email.toLowerCase().includes('contractor')) setType('contractor');
@@ -160,7 +203,17 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
 
     setSubmitting(true);
     try {
-      await createUser({
+      // Persist the resolved GROSS salary (net is always derivable from it).
+      const salaryGross =
+        salary.amount > 0
+          ? salary.mode === 'gross'
+            ? salary.amount
+            : computeGrossFromNet({ country: salary.country, net: salary.amount }).grossSalary
+          : undefined;
+
+      const passportProvided = Object.values(passport).some((v) => v.trim() !== '');
+
+      const newUserId = (await createUser({
         adminId: currentUser.id as Id<'users'>,
         name,
         email,
@@ -173,7 +226,33 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         ...(isSuperadmin && selectedOrgId
           ? { organizationId: selectedOrgId as Id<'organizations'> }
           : {}),
-      });
+        ...(salaryGross !== undefined
+          ? { baseSalary: salaryGross, salaryCurrency: salary.currency }
+          : {}),
+        ...(passportProvided
+          ? {
+              passportNumber: passport.passportNumber || undefined,
+              passportIssuedBy: passport.passportIssuedBy || undefined,
+              passportIssueDate: passport.passportIssueDate || undefined,
+              passportExpiryDate: passport.passportExpiryDate || undefined,
+              socialCardNumber: passport.socialCardNumber || undefined,
+              nationality: passport.nationality || undefined,
+            }
+          : {}),
+      })) as Id<'users'>;
+
+      // Persist the uploaded passport scan now that we have the user id.
+      if (passportScan && newUserId) {
+        await uploadEmployeeDocument({
+          userId: newUserId,
+          uploaderId: currentUser.id as Id<'users'>,
+          category: 'id_document',
+          fileName: passportScan.name,
+          fileUrl: passportScan.url,
+          fileSize: passportScan.size,
+        }).catch(() => {});
+      }
+
       toast.success(t('success.created'));
       fetch('/api/telegram/notify', {
         method: 'POST',
@@ -199,6 +278,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     { icon: User, label: t('common.name') },
     { icon: Briefcase, label: t('employees.position') },
     { icon: Shield, label: t('employees.role') },
+    { icon: DollarSign, label: t('payroll.salary') || 'Salary' },
+    { icon: IdCard, label: t('employees.identity') || 'Identity' },
     { icon: CheckCircle, label: t('common.review') || 'Review' },
   ];
 
@@ -467,20 +548,24 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   <div className="space-y-1.5">
                     <Label>{t('employees.employeeType')}</Label>
                     <div className="grid grid-cols-2 gap-2">
-                      {(['staff', 'contractor'] as const).map((empType) => (
-                        <button
-                          key={empType}
-                          type="button"
-                          onClick={() => setType(empType)}
-                          className={`px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                            type === empType
-                              ? 'border-(--primary) bg-(--primary)/10 text-(--text-primary) shadow-sm'
-                              : 'border-(--border) text-(--text-muted) hover:border-(--border-subtle)'
-                          }`}
-                        >
-                          {t(`employees.${empType}`)}
-                        </button>
-                      ))}
+                      {(['staff', 'contractor'] as const).map((empType) => {
+                        const selected = type === empType;
+                        return (
+                          <button
+                            key={empType}
+                            type="button"
+                            onClick={() => setType(empType)}
+                            className={`relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                              selected
+                                ? 'btn-gradient border-transparent text-white shadow-md ring-[3px] ring-blue-500/30'
+                                : 'border-(--border) bg-(--background-subtle) text-(--text-muted) hover:border-(--border-subtle)'
+                            }`}
+                          >
+                            {selected && <CheckCircle className="w-4 h-4" />}
+                            {t(`employees.${empType}`)}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -498,6 +583,63 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                       />
                     </div>
                   </div>
+                </motion.div>
+              )}
+
+              {/* Step: Salary */}
+              {step === (isSuperadmin ? 4 : 3) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-5"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-(--text-primary)">
+                        {t('wizard.salaryInfo') || 'Salary'}
+                      </h3>
+                      <p className="text-sm text-(--text-muted)">
+                        {t('wizard.salaryInfoDesc') ||
+                          'Set salary — taxes are calculated automatically'}
+                      </p>
+                    </div>
+                  </div>
+                  <SalaryCalculatorStep
+                    value={salary}
+                    onChange={(patch) => setSalary((p) => ({ ...p, ...patch }))}
+                  />
+                </motion.div>
+              )}
+
+              {/* Step: Identity / Passport */}
+              {step === (isSuperadmin ? 5 : 4) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-5"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                      <IdCard className="w-5 h-5 text-sky-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-(--text-primary)">
+                        {t('wizard.identityInfo') || 'Identity Documents'}
+                      </h3>
+                      <p className="text-sm text-(--text-muted)">
+                        {t('wizard.identityInfoDesc') ||
+                          'Passport / ID details — upload a scan to auto-fill'}
+                      </p>
+                    </div>
+                  </div>
+                  <PassportFields
+                    value={passport}
+                    onChange={(patch) => setPassport((p) => ({ ...p, ...patch }))}
+                    onScanUploaded={setPassportScan}
+                  />
                 </motion.div>
               )}
 
@@ -543,6 +685,25 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                         { label: t('employees.role'), value: t(`roles.${role}`) },
                         { label: t('employees.employeeType'), value: t(`employees.${type}`) },
                         ...(phone ? [{ label: t('common.phone'), value: phone }] : []),
+                        ...(salary.amount > 0
+                          ? [
+                              {
+                                label: `${t('payroll.baseSalary')} (${salary.mode === 'gross' ? t('payroll.grossMode') || 'Gross' : t('payroll.netMode') || 'Net'})`,
+                                value: `${salary.amount.toLocaleString()} ${salary.currency}`,
+                              },
+                            ]
+                          : []),
+                        ...(passport.passportNumber
+                          ? [
+                              {
+                                label: t('employees.passportNumber'),
+                                value: passport.passportNumber,
+                              },
+                            ]
+                          : []),
+                        ...(passportScan
+                          ? [{ label: t('employees.identity'), value: passportScan.name }]
+                          : []),
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-sm">
                           <span className="text-(--text-muted)">{item.label}</span>

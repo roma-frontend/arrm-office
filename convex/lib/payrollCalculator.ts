@@ -1,8 +1,13 @@
-export interface TaxBracket {
-  min: number;
-  max?: number;
-  rate: number;
-}
+import {
+  TAX_RULES,
+  getTaxRule,
+  type CountryCode,
+  type CountryTaxRule,
+  type TaxBracket,
+  type DeductionField,
+} from './taxRules';
+
+export type { TaxBracket, CountryCode } from './taxRules';
 
 export interface Deductions {
   incomeTax: number;
@@ -14,7 +19,7 @@ export interface Deductions {
 }
 
 export interface PayrollCalculation {
-  country: 'armenia' | 'russia';
+  country: CountryCode;
   baseSalary: number;
   bonuses: number;
   overtimePay: number;
@@ -26,31 +31,16 @@ export interface PayrollCalculation {
 }
 
 export interface PayrollInput {
-  country: 'armenia' | 'russia';
+  country: CountryCode;
   baseSalary: number;
   bonuses?: number;
   overtimeHours?: number;
   hourlyRate?: number;
 }
 
-const ARMENIA_TAX_BRACKETS: TaxBracket[] = [
-  { min: 0, max: 3000000, rate: 0.2 },
-  { min: 3000000, rate: 0.23 },
-];
-
-const RUSSIA_TAX_BRACKETS: TaxBracket[] = [
-  { min: 0, max: 5000000, rate: 0.13 },
-  { min: 5000000, rate: 0.15 },
-];
-
-const ARMENIA_SOCIAL_SECURITY_RATE = 0.05;
-
-const RUSSIA_EMPLOYER_CONTRIBUTIONS = {
-  socialInsurance: 0.029,
-  pension: 0.22,
-  medical: 0.051,
-  accident: 0.002,
-};
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
 
 function calculateProgressiveTax(taxableIncome: number, brackets: TaxBracket[]): number {
   let tax = 0;
@@ -67,63 +57,68 @@ function calculateProgressiveTax(taxableIncome: number, brackets: TaxBracket[]):
     remainingIncome -= taxableInBracket;
   }
 
-  return Math.round(tax * 100) / 100;
+  return round2(tax);
 }
 
 function calculateOvertimePay(hours: number, hourlyRate: number, multiplier: number = 1.5): number {
-  return Math.round(hours * hourlyRate * multiplier * 100) / 100;
+  return round2(hours * hourlyRate * multiplier);
+}
+
+/**
+ * Compute the employee-side deductions for a given gross salary using a country rule.
+ * Income tax is rounded by calculateProgressiveTax; each named contribution is rounded
+ * individually into its Deductions slot; total is the rounded sum.
+ */
+function computeDeductions(grossSalary: number, rule: CountryTaxRule): Deductions {
+  const taxableIncome = Math.max(0, grossSalary - (rule.taxFreeAllowance ?? 0));
+  const incomeTax = calculateProgressiveTax(taxableIncome, rule.incomeTaxBrackets);
+
+  const deductions: Deductions = { incomeTax, socialSecurity: 0, total: 0 };
+
+  for (const c of rule.employeeContributions) {
+    const base = c.cap ? Math.min(grossSalary, c.cap) : grossSalary;
+    const amount = round2(base * c.rate);
+    const field: DeductionField = c.field ?? 'other';
+    deductions[field] = round2((deductions[field] ?? 0) + amount);
+  }
+
+  const contributionsTotal = rule.employeeContributions.reduce((sum, c) => {
+    const base = c.cap ? Math.min(grossSalary, c.cap) : grossSalary;
+    return sum + round2(base * c.rate);
+  }, 0);
+
+  deductions.total = round2(incomeTax + contributionsTotal);
+  return deductions;
+}
+
+/**
+ * Employer-side contributions on top of gross. The sum of applicable amounts is
+ * rounded once (matches the previous Russia implementation exactly).
+ */
+function computeEmployerContributions(grossSalary: number, rule: CountryTaxRule): number {
+  const sum = rule.employerContributions.reduce((acc, c) => {
+    const base = c.cap ? Math.min(grossSalary, c.cap) : grossSalary;
+    return acc + base * c.rate;
+  }, 0);
+  return round2(sum);
 }
 
 export function calculatePayroll(input: PayrollInput): PayrollCalculation {
   const { country, baseSalary, bonuses = 0, overtimeHours = 0, hourlyRate = 0 } = input;
+  const rule = getTaxRule(country);
 
   const overtimePay =
     overtimeHours > 0 && hourlyRate > 0 ? calculateOvertimePay(overtimeHours, hourlyRate) : 0;
 
   const grossSalary = baseSalary + bonuses + overtimePay;
 
-  let deductions: Deductions;
-  let employerContributions: number | undefined;
-  let totalCost: number | undefined;
-
-  if (country === 'armenia') {
-    const incomeTax = calculateProgressiveTax(grossSalary, ARMENIA_TAX_BRACKETS);
-    const socialSecurity = Math.round(grossSalary * ARMENIA_SOCIAL_SECURITY_RATE * 100) / 100;
-
-    deductions = {
-      incomeTax,
-      socialSecurity,
-      total: Math.round((incomeTax + socialSecurity) * 100) / 100,
-    };
-
-    employerContributions = 0;
-    totalCost = grossSalary;
-  } else {
-    const incomeTax = calculateProgressiveTax(grossSalary, RUSSIA_TAX_BRACKETS);
-
-    deductions = {
-      incomeTax,
-      socialSecurity: 0,
-      total: incomeTax,
-    };
-
-    employerContributions =
-      Math.round(
-        grossSalary *
-          (RUSSIA_EMPLOYER_CONTRIBUTIONS.socialInsurance +
-            RUSSIA_EMPLOYER_CONTRIBUTIONS.pension +
-            RUSSIA_EMPLOYER_CONTRIBUTIONS.medical +
-            RUSSIA_EMPLOYER_CONTRIBUTIONS.accident) *
-          100,
-      ) / 100;
-
-    totalCost = grossSalary + employerContributions;
-  }
-
-  const netSalary = Math.round((grossSalary - deductions.total) * 100) / 100;
+  const deductions = computeDeductions(grossSalary, rule);
+  const employerContributions = computeEmployerContributions(grossSalary, rule);
+  const totalCost = round2(grossSalary + employerContributions);
+  const netSalary = round2(grossSalary - deductions.total);
 
   return {
-    country,
+    country: rule.code,
     baseSalary,
     bonuses,
     overtimePay,
@@ -135,11 +130,71 @@ export function calculatePayroll(input: PayrollInput): PayrollCalculation {
   };
 }
 
-export function formatCurrency(amount: number, country: 'armenia' | 'russia'): string {
-  const currency = country === 'armenia' ? 'AMD' : 'RUB';
-  return new Intl.NumberFormat(country === 'armenia' ? 'hy-AM' : 'ru-RU', {
+export interface GrossFromNetInput {
+  country: CountryCode;
+  net: number;
+  bonuses?: number;
+  overtimeHours?: number;
+  hourlyRate?: number;
+}
+
+/**
+ * Reverse calculation: given a desired NET salary, find the base salary that yields it.
+ *
+ * net(gross) = gross − deductions(gross) is monotonically increasing for any progressive
+ * schedule, so we binary-search gross and reuse calculatePayroll as the single source of
+ * truth. Returns the full self-consistent breakdown for the resolved gross.
+ */
+export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculation {
+  const { country, net, bonuses = 0, overtimeHours = 0, hourlyRate = 0 } = input;
+
+  const overtimePay =
+    overtimeHours > 0 && hourlyRate > 0 ? calculateOvertimePay(overtimeHours, hourlyRate) : 0;
+  const fixedAddon = bonuses + overtimePay;
+
+  // netForBase(base) using the same forward engine.
+  const netForBase = (base: number): number =>
+    calculatePayroll({ country, baseSalary: base, bonuses, overtimeHours, hourlyRate }).netSalary;
+
+  if (net <= 0) {
+    return calculatePayroll({
+      country,
+      baseSalary: Math.max(0, -fixedAddon),
+      bonuses,
+      overtimeHours,
+      hourlyRate,
+    });
+  }
+
+  // Bracket the base salary. net is always <= gross, so base upper bound grows from net.
+  let lo = 0;
+  let hi = Math.max(net, 1);
+  let guard = 0;
+  while (netForBase(hi) < net && guard < 100) {
+    hi *= 2;
+    guard += 1;
+  }
+
+  for (let i = 0; i < 80; i += 1) {
+    const mid = (lo + hi) / 2;
+    const midNet = netForBase(mid);
+    if (Math.abs(midNet - net) < 0.005) {
+      lo = mid;
+      break;
+    }
+    if (midNet < net) lo = mid;
+    else hi = mid;
+  }
+
+  const baseSalary = round2(lo);
+  return calculatePayroll({ country, baseSalary, bonuses, overtimeHours, hourlyRate });
+}
+
+export function formatCurrency(amount: number, country: CountryCode): string {
+  const rule = getTaxRule(country);
+  return new Intl.NumberFormat(rule.locale, {
     style: 'currency',
-    currency,
+    currency: rule.currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
@@ -149,3 +204,6 @@ export function getEffectiveTaxRate(grossSalary: number, deductions: Deductions)
   if (grossSalary === 0) return 0;
   return Math.round((deductions.total / grossSalary) * 10000) / 100;
 }
+
+// Re-export for consumers that referenced the engine's rules directly.
+export { TAX_RULES };

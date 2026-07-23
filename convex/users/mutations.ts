@@ -30,6 +30,19 @@ export const createUser = mutation({
     phone: v.optional(v.string()),
     supervisorId: v.optional(v.id('users')),
     organizationId: v.optional(v.id('organizations')),
+    // Salary (optional — persisted into employeeProfiles on creation)
+    baseSalary: v.optional(v.number()),
+    bonuses: v.optional(v.number()),
+    overtimeHours: v.optional(v.number()),
+    hourlyRate: v.optional(v.number()),
+    salaryCurrency: v.optional(v.string()),
+    // Passport / identity (optional — sensitive PII, persisted into employeeProfiles)
+    passportNumber: v.optional(v.string()),
+    passportIssuedBy: v.optional(v.string()),
+    passportIssueDate: v.optional(v.string()),
+    passportExpiryDate: v.optional(v.string()),
+    socialCardNumber: v.optional(v.string()),
+    nationality: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { adminId, organizationId, ...restArgs } = args;
@@ -101,6 +114,43 @@ export const createUser = mutation({
       createdAt: Date.now(),
     });
 
+    // Atomically persist salary / passport into employeeProfiles when provided.
+    const hasSalary =
+      args.baseSalary !== undefined ||
+      args.bonuses !== undefined ||
+      args.overtimeHours !== undefined ||
+      args.hourlyRate !== undefined ||
+      args.salaryCurrency !== undefined;
+    const hasPassport =
+      args.passportNumber !== undefined ||
+      args.passportIssuedBy !== undefined ||
+      args.passportIssueDate !== undefined ||
+      args.passportExpiryDate !== undefined ||
+      args.socialCardNumber !== undefined ||
+      args.nationality !== undefined;
+
+    if (hasSalary || hasPassport) {
+      const now = Date.now();
+      await ctx.db.insert('employeeProfiles', {
+        userId,
+        organizationId: targetOrgId,
+        baseSalary: args.baseSalary,
+        bonuses: args.bonuses,
+        overtimeHours: args.overtimeHours,
+        hourlyRate: args.hourlyRate,
+        salaryCurrency: args.salaryCurrency,
+        salaryUpdatedAt: hasSalary ? now : undefined,
+        passportNumber: args.passportNumber,
+        passportIssuedBy: args.passportIssuedBy,
+        passportIssueDate: args.passportIssueDate,
+        passportExpiryDate: args.passportExpiryDate,
+        socialCardNumber: args.socialCardNumber,
+        nationality: args.nationality,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
     // Notify org admins (within same org). Capped — admin count bounded.
     const admins = await ctx.db
       .query('users')
@@ -133,6 +183,9 @@ export const createUser = mutation({
         role: args.role,
         employeeType: args.employeeType,
         department: args.department,
+        // PII values intentionally omitted — only presence flags are logged.
+        hasSalary,
+        hasPassport,
       }),
       createdAt: Date.now(),
     });

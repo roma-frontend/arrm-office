@@ -2217,7 +2217,11 @@
     "roleType": "Rolle und Typ",
     "roleTypeDesc": "Legen Sie Rolle und Beschäftigungsart fest",
     "review": "Überprüfung",
-    "reviewDesc": "Überprüfen Sie die Daten vor dem Speichern"
+    "reviewDesc": "Überprüfen Sie die Daten vor dem Speichern",
+    "salaryInfo": "Gehalt",
+    "salaryInfoDesc": "Gehalt festlegen - Steuern werden automatisch berechnet",
+    "identityInfo": "Ausweisdokumente",
+    "identityInfoDesc": "Pass / ID - Scan hochladen zum automatischen Ausfuellen"
   },
   "toasts": {
     "pleaseLogin": "Bitte melden Sie sich an, um einen Fahrer anzufordern",

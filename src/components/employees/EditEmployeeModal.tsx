@@ -21,10 +21,17 @@ import {
   ChevronLeft,
   CheckCircle,
   DollarSign,
+  IdCard,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
+import {
+  PassportFields,
+  EMPTY_PASSPORT,
+  type PassportData,
+  type PassportScanFile,
+} from './PassportFields';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
@@ -98,7 +105,7 @@ const DEPARTMENTS_LIST = [
   'IT',
 ];
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
   const { t } = useTranslation();
@@ -121,10 +128,18 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
   );
   const updateUser = useMutation(api.users.mutations.updateUser);
   const updateSalary = useMutation(api.employeeProfiles.updateSalary);
+  const updatePassport = useMutation(api.employeeProfiles.updatePassport);
+  const uploadEmployeeDocument = useMutation(api.employeeProfiles.uploadDocument);
   const currentSalary = useQuery(
     api.employeeProfiles.getSalary,
     open ? { userId: employee._id as Id<'users'> } : 'skip',
   );
+  const employeeProfile = useQuery(
+    api.employeeProfiles.getEmployeeProfile,
+    open ? { userId: employee._id as Id<'users'> } : 'skip',
+  );
+  const [passport, setPassport] = useState<PassportData>(EMPTY_PASSPORT);
+  const [passportScan, setPassportScan] = useState<PassportScanFile | null>(null);
   const organizations = useQuery(
     api.organizations.getAllOrganizations,
     user?.role === 'superadmin' ? {} : 'skip',
@@ -193,6 +208,26 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
       }));
     }
   }, [currentSalary]);
+
+  // Hydrate passport fields when the profile resolves
+  useEffect(() => {
+    const p = employeeProfile?.profile;
+    if (p) {
+      setPassport({
+        passportNumber: p.passportNumber ?? '',
+        passportIssuedBy: p.passportIssuedBy ?? '',
+        passportIssueDate: p.passportIssueDate ?? '',
+        passportExpiryDate: p.passportExpiryDate ?? '',
+        socialCardNumber: p.socialCardNumber ?? '',
+        nationality: p.nationality ?? '',
+      });
+    }
+  }, [employeeProfile]);
+
+  // Reset passport transient state on open
+  useEffect(() => {
+    if (open) setPassportScan(null);
+  }, [open]);
 
   // Reset supervisorId when organization changes (can't have supervisor from another org)
   useEffect(() => {
@@ -360,6 +395,26 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         overtimeHours: form.overtimeHours,
         salaryCurrency: form.salaryCurrency,
       });
+      await updatePassport({
+        userId: employee._id as Id<'users'>,
+        organizationId: (employee.organizationId || undefined) as Id<'organizations'> | undefined,
+        passportNumber: passport.passportNumber || undefined,
+        passportIssuedBy: passport.passportIssuedBy || undefined,
+        passportIssueDate: passport.passportIssueDate || undefined,
+        passportExpiryDate: passport.passportExpiryDate || undefined,
+        socialCardNumber: passport.socialCardNumber || undefined,
+        nationality: passport.nationality || undefined,
+      });
+      if (passportScan) {
+        await uploadEmployeeDocument({
+          userId: employee._id as Id<'users'>,
+          uploaderId: user.id as Id<'users'>,
+          category: 'id_document',
+          fileName: passportScan.name,
+          fileUrl: passportScan.url,
+          fileSize: passportScan.size,
+        }).catch(() => {});
+      }
       toast.success(t('modals.editEmployee.updatedSuccess'));
       onClose();
     } catch (err) {
@@ -374,6 +429,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     { icon: User, label: t('common.name') },
     { icon: Briefcase, label: t('employees.position') },
     { icon: DollarSign, label: t('payroll.salary') || 'Salary' },
+    { icon: IdCard, label: t('employees.identity') || 'Identity' },
     { icon: CheckCircle, label: t('common.review') || 'Review' },
   ];
 
@@ -603,31 +659,33 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                     <Briefcase className="w-3.5 h-3.5" /> {t('common.employeeType')}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {['staff', 'contractor'].map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() =>
-                          setForm((p) => ({ ...p, employeeType: type as 'staff' | 'contractor' }))
-                        }
-                        className="flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-sm font-medium transition-all"
-                        style={{
-                          borderColor: form.employeeType === type ? '#2563eb' : 'var(--border)',
-                          background:
-                            form.employeeType === type
-                              ? 'rgba(99,102,241,0.1)'
-                              : 'var(--background-subtle)',
-                          color: form.employeeType === type ? '#2563eb' : 'var(--text-muted)',
-                        }}
-                      >
-                        <span className="capitalize">{t(`employeeTypes.${type}`)}</span>
-                        <span className="text-xs opacity-70">
-                          {type === 'contractor'
-                            ? `12,000 ${t('currency.amd')}`
-                            : `20,000 ${t('currency.amd')}`}
-                        </span>
-                      </button>
-                    ))}
+                    {['staff', 'contractor'].map((type) => {
+                      const selected = form.employeeType === type;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() =>
+                            setForm((p) => ({ ...p, employeeType: type as 'staff' | 'contractor' }))
+                          }
+                          className={`relative flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                            selected
+                              ? 'btn-gradient border-transparent text-white shadow-md ring-[3px] ring-blue-500/30'
+                              : 'border-(--border) bg-(--background-subtle) text-(--text-muted) hover:border-(--border-subtle)'
+                          }`}
+                        >
+                          {selected && (
+                            <CheckCircle className="absolute top-1.5 right-1.5 w-3.5 h-3.5" />
+                          )}
+                          <span className="capitalize">{t(`employeeTypes.${type}`)}</span>
+                          <span className="text-xs opacity-70">
+                            {type === 'contractor'
+                              ? `12,000 ${t('currency.amd')}`
+                              : `20,000 ${t('currency.amd')}`}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -812,8 +870,36 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
               </motion.div>
             )}
 
-            {/* Step: Review */}
+            {/* Step: Identity / Passport */}
             {step === (isSuperadmin ? 4 : 3) && (
+              <motion.div
+                key="step-identity"
+                initial={{ x: direction > 0 ? 300 : -300, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: direction > 0 ? -300 : 300, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <IdCard className="w-4 h-4 text-sky-500" />
+                  <h3 className="text-sm font-semibold">
+                    {t('wizard.identityInfo') || 'Identity Documents'}
+                  </h3>
+                </div>
+                <p className="text-xs text-(--text-muted) mb-2">
+                  {t('wizard.identityInfoDesc') ||
+                    'Passport / ID details — upload a scan to auto-fill'}
+                </p>
+                <PassportFields
+                  value={passport}
+                  onChange={(patch) => setPassport((p) => ({ ...p, ...patch }))}
+                  onScanUploaded={setPassportScan}
+                />
+              </motion.div>
+            )}
+
+            {/* Step: Review */}
+            {step === (isSuperadmin ? 5 : 4) && (
               <motion.div
                 key="step-review"
                 initial={{ x: direction > 0 ? 300 : -300, opacity: 0 }}

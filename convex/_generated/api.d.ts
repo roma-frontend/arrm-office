@@ -72,6 +72,7 @@ import type * as lib_limits from "../lib/limits.js";
 import type * as lib_payrollCalculator from "../lib/payrollCalculator.js";
 import type * as lib_rbac from "../lib/rbac.js";
 import type * as lib_sanitize from "../lib/sanitize.js";
+import type * as lib_taxRules from "../lib/taxRules.js";
 import type * as lib_userProfile from "../lib/userProfile.js";
 import type * as messenger_calls from "../messenger/calls.js";
 import type * as messenger_conversations from "../messenger/conversations.js";
@@ -249,6 +250,7 @@ declare const fullApi: ApiFromModules<{
   "lib/payrollCalculator": typeof lib_payrollCalculator;
   "lib/rbac": typeof lib_rbac;
   "lib/sanitize": typeof lib_sanitize;
+  "lib/taxRules": typeof lib_taxRules;
   "lib/userProfile": typeof lib_userProfile;
   "messenger/calls": typeof messenger_calls;
   "messenger/conversations": typeof messenger_conversations;

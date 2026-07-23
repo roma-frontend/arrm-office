@@ -2222,7 +2222,11 @@
     "roleType": "Role & Type",
     "roleTypeDesc": "Set role and employment type",
     "review": "Review",
-    "reviewDesc": "Confirm the details before saving"
+    "reviewDesc": "Confirm the details before saving",
+    "salaryInfo": "Salary",
+    "salaryInfoDesc": "Set salary - taxes are calculated automatically",
+    "identityInfo": "Identity Documents",
+    "identityInfoDesc": "Passport / ID details - upload a scan to auto-fill"
   },
   "toasts": {
     "pleaseLogin": "Please login to request a driver",

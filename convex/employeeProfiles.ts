@@ -215,6 +215,53 @@ export const updateSalary = mutation({
   },
 });
 
+// ── Update Passport / Identity ──────────────────────────────────────
+export const updatePassport = mutation({
+  args: {
+    userId: v.id('users'),
+    organizationId: v.optional(v.id('organizations')),
+    passportNumber: v.optional(v.string()),
+    passportIssuedBy: v.optional(v.string()),
+    passportIssueDate: v.optional(v.string()),
+    passportExpiryDate: v.optional(v.string()),
+    socialCardNumber: v.optional(v.string()),
+    nationality: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query('employeeProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .first();
+
+    const now = Date.now();
+    const patch: Record<string, unknown> = { updatedAt: now };
+    if (args.passportNumber !== undefined) patch.passportNumber = args.passportNumber;
+    if (args.passportIssuedBy !== undefined) patch.passportIssuedBy = args.passportIssuedBy;
+    if (args.passportIssueDate !== undefined) patch.passportIssueDate = args.passportIssueDate;
+    if (args.passportExpiryDate !== undefined) patch.passportExpiryDate = args.passportExpiryDate;
+    if (args.socialCardNumber !== undefined) patch.socialCardNumber = args.socialCardNumber;
+    if (args.nationality !== undefined) patch.nationality = args.nationality;
+
+    if (existing) {
+      await ctx.db.patch(existing._id, patch);
+      return existing._id;
+    }
+
+    return await ctx.db.insert('employeeProfiles', {
+      userId: args.userId,
+      organizationId: args.organizationId,
+      passportNumber: args.passportNumber,
+      passportIssuedBy: args.passportIssuedBy,
+      passportIssueDate: args.passportIssueDate,
+      passportExpiryDate: args.passportExpiryDate,
+      socialCardNumber: args.socialCardNumber,
+      nationality: args.nationality,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
 // ── Get Salary by User ──────────────────────────────────────────────
 export const getSalary = query({
   args: { userId: v.id('users') },
