@@ -12,8 +12,9 @@ export function MonitoringProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     // Defer Sentry initialization until after LCP
     // Only load Sentry on dashboard pages (not landing pages)
-    const isDashboard = typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard');
-    
+    const isDashboard =
+      typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard');
+
     if (isDashboard || process.env.NODE_ENV === 'production') {
       // Use requestIdleCallback to defer non-critical monitoring
       const initMonitoring = () => {

@@ -70,9 +70,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
                       <Keyboard className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-(--foreground)">
-                        Keyboard Shortcuts
-                      </h2>
+                      <h2 className="text-2xl font-bold text-(--foreground)">Keyboard Shortcuts</h2>
                       <p className="text-sm text-(--text-muted) mt-0.5">
                         Work faster with keyboard shortcuts
                       </p>
@@ -134,9 +132,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
               {/* Footer */}
               <div className="border-t border-(--border) bg-(--background-subtle) px-6 py-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-(--text-muted)">
-                    t(&quot;keyboard.closeHint&quot;)
-                  </p>
+                  <p className="text-xs text-(--text-muted)">t(&quot;keyboard.closeHint&quot;)</p>
                   <Button onClick={onClose} variant="secondary" size="sm">
                     Got it!
                   </Button>

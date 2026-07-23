@@ -8,9 +8,7 @@ module.exports = {
     '^.+\\.tsx?$': ['ts-jest', { useESM: false }],
     '^.+\\.jsx?$': 'babel-jest',
   },
-  transformIgnorePatterns: [
-    '/node_modules/(?!(convex|convex-test)/)',
-  ],
+  transformIgnorePatterns: ['/node_modules/(?!(convex|convex-test)/)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -33,15 +31,6 @@ module.exports = {
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/.next/',
-    '/out/',
-  ],
-  coveragePathIgnorePatterns: [
-    '/node_modules/',
-    '/__tests__/',
-    '/_generated/',
-    '/.next/',
-  ],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/', '/out/'],
+  coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/', '/_generated/', '/.next/'],
 };

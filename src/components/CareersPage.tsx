@@ -685,7 +685,15 @@ function VacancyModal({
       fetch('/api/telegram/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'career', data: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), vacancy: details?.title || '' } }),
+        body: JSON.stringify({
+          type: 'career',
+          data: {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            phone: form.phone.trim(),
+            vacancy: details?.title || '',
+          },
+        }),
       }).catch(() => {});
     } catch (e: unknown) {
       setError(

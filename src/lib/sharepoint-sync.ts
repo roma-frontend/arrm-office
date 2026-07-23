@@ -198,7 +198,7 @@ export function mapSharePointToEmployee(
   const employeeType: 'staff' | 'contractor' = rawType === 'contractor' ? 'contractor' : 'staff';
 
   return {
-    name: ((fields[COLUMN_MAP.name] as string) || email.split('@')[0] || 'User'),
+    name: (fields[COLUMN_MAP.name] as string) || email.split('@')[0] || 'User',
     email,
     department: fields[COLUMN_MAP.department] as string | undefined,
     position: fields[COLUMN_MAP.position] as string | undefined,

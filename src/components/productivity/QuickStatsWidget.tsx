@@ -88,9 +88,7 @@ export function QuickStatsWidget() {
             >
               <div className="flex items-center gap-2 mb-1">
                 <Icon className={`w-3.5 h-3.5 ${stat.color}`} />
-                <span className="text-[10px] font-medium text-(--text-muted)">
-                  {stat.label}
-                </span>
+                <span className="text-[10px] font-medium text-(--text-muted)">{stat.label}</span>
               </div>
               <div className="text-xl font-bold text-(--text-primary)">{stat.value}</div>
               <div className="text-[10px] text-(--text-muted) mt-0.5">{stat.subtext}</div>
@@ -102,9 +100,7 @@ export function QuickStatsWidget() {
       {/* Weekly progress bar */}
       <div className="mt-3 px-2">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-(--text-muted)">
-            {t('quickStats.weeklyProgress')}
-          </span>
+          <span className="text-[10px] text-(--text-muted)">{t('quickStats.weeklyProgress')}</span>
           <span className="text-[10px] font-semibold text-(--text-primary)">
             {stats.weeklyGoalProgress}%
           </span>

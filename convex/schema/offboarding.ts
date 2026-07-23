@@ -17,11 +17,7 @@ export const offboarding = {
       v.literal('other'),
     ),
     reasonNote: v.optional(v.string()),
-    status: v.union(
-      v.literal('active'),
-      v.literal('completed'),
-      v.literal('cancelled'),
-    ),
+    status: v.union(v.literal('active'), v.literal('completed'), v.literal('cancelled')),
     createdBy: v.id('users'),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
@@ -53,11 +49,7 @@ export const offboarding = {
       v.literal('payroll'),
       v.literal('other'),
     ),
-    status: v.union(
-      v.literal('pending'),
-      v.literal('completed'),
-      v.literal('skipped'),
-    ),
+    status: v.union(v.literal('pending'), v.literal('completed'), v.literal('skipped')),
     completedBy: v.optional(v.id('users')),
     completedAt: v.optional(v.number()),
     order: v.number(),
@@ -78,11 +70,7 @@ export const offboarding = {
     primaryReason: v.optional(v.string()),
     feedback: v.optional(v.string()),
     improvements: v.optional(v.string()),
-    status: v.union(
-      v.literal('scheduled'),
-      v.literal('completed'),
-      v.literal('skipped'),
-    ),
+    status: v.union(v.literal('scheduled'), v.literal('completed'), v.literal('skipped')),
     createdAt: v.number(),
   })
     .index('by_program', ['programId'])

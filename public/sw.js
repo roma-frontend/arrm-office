@@ -5,18 +5,18 @@ const PRECACHE_URLS = [OFFLINE_URL];
 
 // Install event — precache offline page
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)));
   self.skipWaiting();
 });
 
 // Activate event — clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))),
+      ),
   );
   clients.claim();
 });
@@ -24,19 +24,17 @@ self.addEventListener('activate', (event) => {
 // Fetch event — serve offline page when network fails for navigation requests
 self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(OFFLINE_URL))
-    );
+    event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE_URL)));
   }
 });
 
 // Push notification event
 self.addEventListener('push', (event) => {
   logger.log('Push notification received:', event);
-  
+
   let notificationData = {
     title: 'Time for a Break! ☕',
-    body: 'You\'ve been working hard. Take a 5-minute break to stretch and recharge!',
+    body: "You've been working hard. Take a 5-minute break to stretch and recharge!",
     icon: '/icon-192x192.png',
     badge: '/icon-192x192.png',
     tag: 'break-reminder',
@@ -70,15 +68,13 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  event.waitUntil(
-    self.registration.showNotification(notificationData.title, notificationData)
-  );
+  event.waitUntil(self.registration.showNotification(notificationData.title, notificationData));
 });
 
 // Notification click event
 self.addEventListener('notificationclick', (event) => {
   logger.log('Notification clicked:', event);
-  
+
   event.notification.close();
 
   if (event.action === 'dismiss') {
@@ -87,13 +83,16 @@ self.addEventListener('notificationclick', (event) => {
 
   if (event.action === 'snooze') {
     // Schedule another notification in 5 minutes
-    setTimeout(() => {
-      self.registration.showNotification('Break Reminder - Snoozed ⏰', {
-        body: 'Your 5-minute snooze is up. Time for that break!',
-        icon: '/icon-192x192.png',
-        tag: 'break-reminder-snooze',
-      });
-    }, 5 * 60 * 1000);
+    setTimeout(
+      () => {
+        self.registration.showNotification('Break Reminder - Snoozed ⏰', {
+          body: 'Your 5-minute snooze is up. Time for that break!',
+          icon: '/icon-192x192.png',
+          tag: 'break-reminder-snooze',
+        });
+      },
+      5 * 60 * 1000,
+    );
     return;
   }
 
@@ -110,7 +109,7 @@ self.addEventListener('notificationclick', (event) => {
       if (clients.openWindow) {
         return clients.openWindow(event.notification.data.url || '/dashboard');
       }
-    })
+    }),
   );
 });
 

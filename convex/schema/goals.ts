@@ -95,11 +95,7 @@ export const goals = {
     previousValue: v.number(),
     newValue: v.number(),
     note: v.optional(v.string()),
-    confidence: v.union(
-      v.literal('high'),
-      v.literal('medium'),
-      v.literal('low'),
-    ),
+    confidence: v.union(v.literal('high'), v.literal('medium'), v.literal('low')),
     createdAt: v.number(),
   })
     .index('by_kr', ['keyResultId'])

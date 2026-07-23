@@ -3,8 +3,8 @@
  * Prevents loading all data at once, improves performance for large datasets
  */
 
-import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import { v } from 'convex/values';
+import type { Id } from './_generated/dataModel';
 
 export interface PaginationOptions {
   pageSize?: number;
@@ -58,31 +58,31 @@ export const paginationArgs = {
 
 /**
  * Example usage in Convex query:
- * 
+ *
  * export const getLeavesPaginated = query({
  *   args: { ...paginationArgs, organizationId: v.id("organizations") },
  *   handler: async (ctx, { pageSize, cursor, organizationId }) => {
  *     const normalizedPageSize = normalizePageSize(pageSize);
- *     
+ *
  *     let query = ctx.db
  *       .query("leaveRequests")
  *       .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
  *       .order("desc");
- *     
+ *
  *     // Apply cursor if provided
  *     if (cursor) {
  *       const { _id } = decodeCursor(cursor);
  *       query = query.filter((q) => q.lt(q.field("_creationTime"), _id));
  *     }
- *     
+ *
  *     // Fetch pageSize + 1 to check if there are more items
  *     const items = await query.take(normalizedPageSize + 1);
  *     const hasMore = items.length > normalizedPageSize;
- *     
+ *
  *     if (hasMore) {
  *       items.pop(); // Remove the extra item
  *     }
- *     
+ *
  *     return {
  *       items,
  *       hasMore,

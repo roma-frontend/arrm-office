@@ -87,7 +87,7 @@ export function MarkdownTable({ content }: { content: string }) {
   const colWidths = (table.headers ?? []).map((_, colIdx) => {
     const maxWidth = Math.max(
       (table.headers?.[colIdx] ?? '').length,
-      ...((table.rows ?? []).map((row) => (row?.[colIdx] || '').length)),
+      ...(table.rows ?? []).map((row) => (row?.[colIdx] || '').length),
     );
     return Math.min(Math.max(maxWidth + 2, 8), 40); // Min 8, max 40 chars
   });

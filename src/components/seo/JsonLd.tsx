@@ -112,7 +112,7 @@ export function FAQPageJsonLd() {
         name: 'How do I get started?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Getting started is easy! Sign up for a free trial, add your team members, configure your leave policies, and you\'re ready to go. Our onboarding team will guide you through the setup process and answer any questions.',
+          text: "Getting started is easy! Sign up for a free trial, add your team members, configure your leave policies, and you're ready to go. Our onboarding team will guide you through the setup process and answer any questions.",
         },
       },
     ],

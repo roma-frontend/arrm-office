@@ -112,7 +112,9 @@ export const AvailableDriversSection = memo(function AvailableDriversSection({
               <div>
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                   <CarFront className="w-4 h-4 sm:w-5 sm:h-5 text-(--primary)" />
-                  <span className="hidden sm:inline">{t('driver.availableDrivers', 'Available Drivers')}</span>
+                  <span className="hidden sm:inline">
+                    {t('driver.availableDrivers', 'Available Drivers')}
+                  </span>
                   <span className="sm:hidden">{t('driver.availableDrivers', 'Drivers')}</span>
                 </CardTitle>
                 <CardDescription className="hidden sm:block">
@@ -153,7 +155,10 @@ export const AvailableDriversSection = memo(function AvailableDriversSection({
               value={String(capacityFilter ?? 0)}
               onValueChange={(v) => onCapacityChange(v === '0' ? null : Number(v))}
             >
-              <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs" style={{ borderRadius: '0.75rem' }}>
+              <SelectTrigger
+                className="w-full sm:w-[140px] h-8 text-xs"
+                style={{ borderRadius: '0.75rem' }}
+              >
                 <SelectValue placeholder={t('driver.minSeats', 'Min seats')} />
               </SelectTrigger>
               <SelectContent>
@@ -165,7 +170,10 @@ export const AvailableDriversSection = memo(function AvailableDriversSection({
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={onSortChange}>
-              <SelectTrigger className="w-full sm:w-[130px] h-8 text-xs" style={{ borderRadius: '0.75rem' }}>
+              <SelectTrigger
+                className="w-full sm:w-[130px] h-8 text-xs"
+                style={{ borderRadius: '0.75rem' }}
+              >
                 <SortAsc className="w-3 h-3 mr-1 hidden sm:inline" />
                 <SelectValue placeholder={t('driver.sortBy', 'Sort by')} />
               </SelectTrigger>

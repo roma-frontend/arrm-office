@@ -197,9 +197,7 @@ export function ProductivitySettings({ user, onSettingsChange }: ProductivitySet
                 value={dailyGoal}
                 onChange={(e) => setDailyGoal(e.target.value)}
               />
-              <p className="text-xs text-(--text-muted)">
-                {t('settingsProductivity.tasksPerDay')}
-              </p>
+              <p className="text-xs text-(--text-muted)">{t('settingsProductivity.tasksPerDay')}</p>
             </div>
             <div className="flex items-center justify-center p-6 rounded-lg bg-linear-to-br from-(--primary)/10 to-(--success)/10 border border-(--border)">
               <div className="text-center">
@@ -263,9 +261,7 @@ export function ProductivitySettings({ user, onSettingsChange }: ProductivitySet
                       {shortcut.key}
                     </kbd>
                     <div>
-                      <p className="text-sm font-medium text-(--text-primary)">
-                        {shortcut.action}
-                      </p>
+                      <p className="text-sm font-medium text-(--text-primary)">{shortcut.action}</p>
                       <p className="text-xs text-(--text-muted)">{shortcut.desc}</p>
                     </div>
                   </div>

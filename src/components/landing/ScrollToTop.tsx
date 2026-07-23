@@ -59,12 +59,8 @@ export default function ScrollToTop() {
       }}
       aria-label="Scroll to top"
     >
-      <ArrowUp
-        size={22}
-        className="group-hover:animate-bounce text-white"
-        aria-hidden="true"
-      />
+      <ArrowUp size={22} className="group-hover:animate-bounce text-white" aria-hidden="true" />
     </button>,
-    document.body
+    document.body,
   );
 }

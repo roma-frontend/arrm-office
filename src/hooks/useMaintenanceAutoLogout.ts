@@ -60,7 +60,7 @@ export function useMaintenanceAutoLogout() {
       localStorage.removeItem('hr-auth-storage');
       router.push(`/login?maintenance=true${organizationId ? `&org=${organizationId}` : ''}`);
     }
-  }, [organizationId, logout]);
+  }, [organizationId, logout, router]);
 
   useEffect(() => {
     if (

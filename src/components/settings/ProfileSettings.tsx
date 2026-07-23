@@ -51,9 +51,7 @@ export function ProfileSettings({
             <p className="text-sm font-medium text-(--text-primary)">
               {t('settingsProfile.profilePicture')}
             </p>
-            <p className="text-xs text-(--text-muted) mt-1">
-              {t('settingsProfile.clickToUpload')}
-            </p>
+            <p className="text-xs text-(--text-muted) mt-1">{t('settingsProfile.clickToUpload')}</p>
             <p className="text-xs text-(--text-muted)">{t('settingsProfile.fileTypes')}</p>
           </div>
         </div>

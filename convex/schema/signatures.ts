@@ -11,7 +11,7 @@ export const signatures = {
       v.literal('offer'),
       v.literal('contract'),
       v.literal('policy'),
-      v.literal('custom')
+      v.literal('custom'),
     ),
     // Structured content (markdown-like sections)
     content: v.string(),
@@ -23,7 +23,7 @@ export const signatures = {
         type: v.union(v.literal('text'), v.literal('date'), v.literal('signature')),
         required: v.boolean(),
         placeholder: v.optional(v.string()),
-      })
+      }),
     ),
     createdBy: v.id('users'),
     createdAt: v.number(),
@@ -46,7 +46,7 @@ export const signatures = {
         type: v.union(v.literal('text'), v.literal('date'), v.literal('signature')),
         required: v.boolean(),
         placeholder: v.optional(v.string()),
-      })
+      }),
     ),
     // Filled field values (by creator)
     fieldValues: v.optional(
@@ -54,8 +54,8 @@ export const signatures = {
         v.object({
           fieldId: v.string(),
           value: v.string(),
-        })
-      )
+        }),
+      ),
     ),
     status: v.union(
       v.literal('draft'),
@@ -63,7 +63,7 @@ export const signatures = {
       v.literal('partially_signed'),
       v.literal('completed'),
       v.literal('cancelled'),
-      v.literal('expired')
+      v.literal('expired'),
     ),
     // Content hash for integrity verification
     contentHash: v.optional(v.string()),
@@ -89,7 +89,7 @@ export const signatures = {
       v.literal('pending'),
       v.literal('signed'),
       v.literal('declined'),
-      v.literal('expired')
+      v.literal('expired'),
     ),
     signedAt: v.optional(v.number()),
     declinedAt: v.optional(v.number()),
@@ -118,7 +118,7 @@ export const signatures = {
       v.literal('declined'),
       v.literal('cancelled'),
       v.literal('expired'),
-      v.literal('reminder_sent')
+      v.literal('reminder_sent'),
     ),
     metadata: v.optional(v.string()),
     timestamp: v.number(),

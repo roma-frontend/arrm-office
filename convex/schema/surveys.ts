@@ -7,11 +7,7 @@ export const surveys = {
     title: v.string(),
     description: v.optional(v.string()),
     createdBy: v.id('users'),
-    status: v.union(
-      v.literal('draft'),
-      v.literal('active'),
-      v.literal('closed'),
-    ),
+    status: v.union(v.literal('draft'), v.literal('active'), v.literal('closed')),
     isAnonymous: v.boolean(),
     targetRoles: v.optional(
       v.array(

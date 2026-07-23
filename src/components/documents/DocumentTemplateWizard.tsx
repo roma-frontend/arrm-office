@@ -91,7 +91,11 @@ function SortableField({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-start gap-2 p-3 rounded-lg border bg-muted/30">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-start gap-2 p-3 rounded-lg border bg-muted/30"
+    >
       <button
         type="button"
         {...attributes}
@@ -262,7 +266,9 @@ export default function DocumentTemplateWizard({
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
-      toast.error((error as Error).message || t('documents.templateCreateError', 'Failed to create template'));
+      toast.error(
+        (error as Error).message || t('documents.templateCreateError', 'Failed to create template'),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -278,10 +284,26 @@ export default function DocumentTemplateWizard({
   };
 
   const steps = [
-    { id: 'info', title: t('documents.detailsStep', 'Details'), icon: <FileText className="w-4 h-4" /> },
-    { id: 'content', title: t('documents.templateContent', 'Content'), icon: <FileText className="w-4 h-4" /> },
-    { id: 'fields', title: t('documents.templateFields', 'Fields'), icon: <Plus className="w-4 h-4" /> },
-    { id: 'review', title: t('documents.reviewStep', 'Review'), icon: <CheckCircle className="w-4 h-4" /> },
+    {
+      id: 'info',
+      title: t('documents.detailsStep', 'Details'),
+      icon: <FileText className="w-4 h-4" />,
+    },
+    {
+      id: 'content',
+      title: t('documents.templateContent', 'Content'),
+      icon: <FileText className="w-4 h-4" />,
+    },
+    {
+      id: 'fields',
+      title: t('documents.templateFields', 'Fields'),
+      icon: <Plus className="w-4 h-4" />,
+    },
+    {
+      id: 'review',
+      title: t('documents.reviewStep', 'Review'),
+      icon: <CheckCircle className="w-4 h-4" />,
+    },
   ];
 
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -357,22 +379,36 @@ export default function DocumentTemplateWizard({
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t('documents.descriptionPlaceholder', 'Enter template description')}
+                    placeholder={t(
+                      'documents.descriptionPlaceholder',
+                      'Enter template description',
+                    )}
                     rows={3}
                   />
                 </div>
                 <div>
                   <Label>{t('documents.templateCategory')}</Label>
-                  <Select value={category} onValueChange={(v) => setCategory(v as TemplateCategory)}>
+                  <Select
+                    value={category}
+                    onValueChange={(v) => setCategory(v as TemplateCategory)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="nda">{t('documents.templateNDA', 'NDA')}</SelectItem>
-                      <SelectItem value="offer">{t('documents.templateOffer', 'Offer Letter')}</SelectItem>
-                      <SelectItem value="contract">{t('documents.templateContract', 'Contract')}</SelectItem>
-                      <SelectItem value="policy">{t('documents.templatePolicy', 'Policy')}</SelectItem>
-                      <SelectItem value="custom">{t('documents.templateCustom', 'Custom')}</SelectItem>
+                      <SelectItem value="offer">
+                        {t('documents.templateOffer', 'Offer Letter')}
+                      </SelectItem>
+                      <SelectItem value="contract">
+                        {t('documents.templateContract', 'Contract')}
+                      </SelectItem>
+                      <SelectItem value="policy">
+                        {t('documents.templatePolicy', 'Policy')}
+                      </SelectItem>
+                      <SelectItem value="custom">
+                        {t('documents.templateCustom', 'Custom')}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -387,7 +423,10 @@ export default function DocumentTemplateWizard({
                   <Textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder={t('documents.templateContentPlaceholder', 'Enter the template content here...')}
+                    placeholder={t(
+                      'documents.templateContentPlaceholder',
+                      'Enter the template content here...',
+                    )}
                     rows={10}
                     className="font-mono text-sm"
                     autoFocus
@@ -502,7 +541,10 @@ export default function DocumentTemplateWizard({
                   )}
                   <div className="flex gap-2">
                     <Badge variant="default">
-                      {t(`documents.template${category.charAt(0).toUpperCase() + category.slice(1)}`, category)}
+                      {t(
+                        `documents.template${category.charAt(0).toUpperCase() + category.slice(1)}`,
+                        category,
+                      )}
                     </Badge>
                     <Badge variant="secondary">
                       {fields.length} {t('documents.templateFields', 'fields')}
@@ -525,7 +567,9 @@ export default function DocumentTemplateWizard({
                     <div className="space-y-1">
                       {fields.map((field, idx) => (
                         <div key={field.id} className="flex items-center gap-2 p-2 rounded border">
-                          <span className="text-xs text-muted-foreground font-mono">{idx + 1}.</span>
+                          <span className="text-xs text-muted-foreground font-mono">
+                            {idx + 1}.
+                          </span>
                           <span className="text-sm flex-1">{field.label}</span>
                           <Badge variant="secondary" className="text-[10px]">
                             {field.type}
