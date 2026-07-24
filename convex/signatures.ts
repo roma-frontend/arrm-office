@@ -186,6 +186,12 @@ export const createDocument = mutation({
     templateId: v.optional(v.id('documentTemplates')),
     title: v.string(),
     content: v.string(),
+    // Optional presentation theme so the signed PDF matches the original.
+    accent: v.optional(
+      v.union(v.literal('blue'), v.literal('slate'), v.literal('emerald'), v.literal('burgundy')),
+    ),
+    orgName: v.optional(v.string()),
+    signatureBlock: v.optional(v.boolean()),
     fieldDefinitions: v.array(
       v.object({
         id: v.string(),

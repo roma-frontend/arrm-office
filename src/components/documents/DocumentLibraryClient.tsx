@@ -168,6 +168,11 @@ export default function DocumentLibraryClient() {
         organizationId: effectiveOrgId,
         title: resolved.title,
         content: resolved.body,
+        // Capture the theme so the signed/archived PDF is rendered with the
+        // same look as this document, not a generic audit report.
+        accent: template.accent,
+        orgName: mergeData.organization.name ?? user?.organizationName ?? '',
+        signatureBlock: template.signature,
         // The document is pre-filled from employee data, so it needs only a
         // single signature field for the employee to sign.
         fieldDefinitions: [

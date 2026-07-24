@@ -26,6 +26,22 @@ export interface RenderableDocument {
   now: number;
   /** Localized static labels so exports match the UI language. */
   labels: DocumentLabels;
+  /**
+   * When present, the signature block is rendered as *signed*: the drawn
+   * signature image is placed above the name line and the signer's name/date
+   * are filled in. Used for the archived / exported copy of a completed
+   * e-signature document so HR keeps the original themed document with the
+   * signature baked in.
+   */
+  signed?: SignedSignature;
+}
+
+export interface SignedSignature {
+  /** Base64 PNG data URL of the drawn signature. */
+  signatureData?: string;
+  signerName?: string;
+  /** Absolute timestamp the document was signed. */
+  signedAt?: number;
 }
 
 export interface DocumentLabels {
@@ -47,19 +63,19 @@ function paragraphs(body: string): string[] {
 
 async function loadPdfMakeWithFonts(): Promise<any> {
   const pdfMake: any = await loadPdfMake();
-  // vfs_fonts registers the default Roboto font family used by pdfmake.
-  const pdfFonts: any = await import('pdfmake/build/vfs_fonts');
+  // vfs_fonts registers the default Roboto font family used by pdfmake. In
+  // pdfmake 0.3.x the module *is* the vfs map (top-level *.ttf keys); older
+  // builds nested it under `.pdfMake.vfs` or `.vfs`. Cover every shape —
+  // otherwise createPdf()/getBase64() never invokes its callback and hangs.
   if (!pdfMake.vfs) {
-    pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
+    const pdfFonts: any = await import('pdfmake/build/vfs_fonts');
+    pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs || pdfFonts.default || pdfFonts;
   }
   return pdfMake;
 }
 
-export async function exportDocumentToPDF(
-  doc: RenderableDocument,
-  filename = 'document.pdf',
-): Promise<{ success: boolean }> {
-  const pdfMake = await loadPdfMakeWithFonts();
+/** Build the pdfmake document definition shared by the download and render paths. */
+function buildDocDefinition(doc: RenderableDocument): any {
   const accent = ACCENT_HEX[doc.accent];
 
   const content: any[] = [
@@ -75,48 +91,41 @@ export async function exportDocumentToPDF(
   ];
 
   if (doc.signature) {
+    const signed = doc.signed;
+    // When signed, drop the drawn signature image just above the name line and
+    // fill the name/date placeholders — otherwise leave blank ruled lines.
+    const nameStack: any[] = [
+      signed?.signatureData
+        ? { image: signed.signatureData, fit: [200, 48], margin: [0, 8, 0, 0] }
+        : { text: ' ', margin: [0, 24, 0, 0] },
+      {
+        canvas: [
+          { type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.8, lineColor: '#94a3b8' },
+        ],
+      },
+      { text: `${doc.labels.name} / ${doc.labels.position}`, style: 'sigLabel' },
+    ];
+    if (signed?.signerName) {
+      nameStack.push({ text: signed.signerName, style: 'sigValue' });
+    }
+
+    const dateStack: any[] = [
+      { text: ' ', margin: [0, 24, 0, 0] },
+      {
+        canvas: [
+          { type: 'line', x1: 0, y1: 0, x2: 160, y2: 0, lineWidth: 0.8, lineColor: '#94a3b8' },
+        ],
+      },
+      { text: doc.labels.date, style: 'sigLabel' },
+    ];
+    if (signed?.signedAt) {
+      dateStack.push({ text: new Date(signed.signedAt).toLocaleDateString(), style: 'sigValue' });
+    }
+
     content.push({
       columns: [
-        {
-          width: '*',
-          stack: [
-            { text: ' ', margin: [0, 24, 0, 0] },
-            {
-              canvas: [
-                {
-                  type: 'line',
-                  x1: 0,
-                  y1: 0,
-                  x2: 200,
-                  y2: 0,
-                  lineWidth: 0.8,
-                  lineColor: '#94a3b8',
-                },
-              ],
-            },
-            { text: `${doc.labels.name} / ${doc.labels.position}`, style: 'sigLabel' },
-          ],
-        },
-        {
-          width: '*',
-          stack: [
-            { text: ' ', margin: [0, 24, 0, 0] },
-            {
-              canvas: [
-                {
-                  type: 'line',
-                  x1: 0,
-                  y1: 0,
-                  x2: 160,
-                  y2: 0,
-                  lineWidth: 0.8,
-                  lineColor: '#94a3b8',
-                },
-              ],
-            },
-            { text: doc.labels.date, style: 'sigLabel' },
-          ],
-        },
+        { width: '*', stack: nameStack },
+        { width: '*', stack: dateStack },
       ],
       columnGap: 32,
       margin: [0, 32, 0, 0],
@@ -126,7 +135,7 @@ export async function exportDocumentToPDF(
   const footerParts = [`${doc.labels.generatedOn} ${new Date(doc.now).toLocaleString()}`];
   if (doc.contentHash) footerParts.push(`${doc.labels.integrity}: ${doc.contentHash}`);
 
-  const docDefinition: any = {
+  return {
     content,
     footer: () => ({
       text: footerParts.join('   ·   '),
@@ -139,14 +148,56 @@ export async function exportDocumentToPDF(
       title: { fontSize: 20, bold: true, margin: [0, 0, 0, 16] },
       body: { fontSize: 11, lineHeight: 1.5, margin: [0, 0, 0, 6] },
       sigLabel: { fontSize: 9, color: '#64748b', margin: [0, 4, 0, 0] },
+      sigValue: { fontSize: 10, color: '#334155', margin: [0, 2, 0, 0] },
       footer: { fontSize: 7, color: '#94a3b8' },
     },
     defaultStyle: { fontSize: 11 },
     pageMargins: [48, 48, 48, 56],
   };
+}
 
-  pdfMake.createPdf(docDefinition).download(filename);
+export async function exportDocumentToPDF(
+  doc: RenderableDocument,
+  filename = 'document.pdf',
+): Promise<{ success: boolean }> {
+  const pdfMake = await loadPdfMakeWithFonts();
+  pdfMake.createPdf(buildDocDefinition(doc)).download(filename);
   return { success: true };
+}
+
+/**
+ * Render the themed document and return it as a base64 PDF data URL. Used to
+ * upload a permanent signed copy to storage. Rejects (rather than hanging) if
+ * pdfmake never invokes its callback — e.g. if fonts fail to load.
+ */
+export async function renderDocumentPdfBase64(doc: RenderableDocument): Promise<string> {
+  const pdfMake = await loadPdfMakeWithFonts();
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('PDF rendering timed out'));
+    }, 30000);
+
+    try {
+      pdfMake.createPdf(buildDocDefinition(doc)).getBase64((data: string) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (!data) {
+          reject(new Error('Failed to render PDF (empty output)'));
+          return;
+        }
+        resolve(`data:application/pdf;base64,${data}`);
+      });
+    } catch (err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(err instanceof Error ? err : new Error('Failed to render PDF'));
+    }
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

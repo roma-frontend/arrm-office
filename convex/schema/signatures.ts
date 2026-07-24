@@ -67,6 +67,14 @@ export const signatures = {
     ),
     // Content hash for integrity verification
     contentHash: v.optional(v.string()),
+    // Presentation theme captured at send time so the signed/archived PDF is
+    // rendered with the SAME look as the original themed document (Document
+    // Library), not a generic audit report.
+    accent: v.optional(
+      v.union(v.literal('blue'), v.literal('slate'), v.literal('emerald'), v.literal('burgundy')),
+    ),
+    orgName: v.optional(v.string()),
+    signatureBlock: v.optional(v.boolean()),
     expiresAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),
     // Archived final signed PDF (Cloudinary URL) — generated once all signers complete.

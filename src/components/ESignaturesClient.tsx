@@ -48,54 +48,83 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { exportSignatureToPDF, renderSignaturePdfBase64 } from '@/lib/exportSignatureToPDF';
+import {
+  exportDocumentToPDF,
+  renderDocumentPdfBase64,
+  type RenderableDocument,
+  type DocumentLabels,
+} from '@/lib/exportDocument';
+import type { AccentColor } from '@/lib/documentCatalog';
 import { uploadDocument } from '@/actions/cloudinary';
+
+/** Localized static labels for the themed PDF footer / signature block. */
+function useDocumentLabels(): DocumentLabels {
+  const { t } = useTranslation();
+  return {
+    signature: t('docLibrary.signature', 'Signature'),
+    name: t('docLibrary.nameLabel', 'Name'),
+    position: t('docLibrary.positionLabel', 'Position'),
+    date: t('docLibrary.dateLabel', 'Date'),
+    generatedOn: t('docLibrary.generatedOn', 'Generated on'),
+    integrity: t('docLibrary.integrity', 'Integrity'),
+  };
+}
+
+// ============ THEMED RENDER HELPERS ============
+
+/**
+ * Build the themed `RenderableDocument` for a signature document, baking in the
+ * drawn signature so the exported/archived PDF looks like the ORIGINAL document
+ * that was sent (org header, accent, signature block) — not a generic audit
+ * report. Falls back to sensible defaults for documents created before the
+ * theme was persisted.
+ */
+function toRenderableDocument(doc: any, labels: DocumentLabels): RenderableDocument {
+  // The primary signed request supplies the signature image + signer name/date.
+  const signedReq = (doc.requests || [])
+    .filter((r: any) => r.status === 'signed' && r.signatureData)
+    .sort((a: any, b: any) => a.order - b.order)[0];
+
+  return {
+    title: doc.title,
+    body: doc.content,
+    accent: (doc.accent as AccentColor) || 'blue',
+    // Show the signature block if the doc was themed with one, or if we have a
+    // signature to place (legacy docs have no `signatureBlock` flag).
+    signature: doc.signatureBlock ?? Boolean(signedReq),
+    orgName: doc.orgName || '',
+    contentHash: doc.contentHash || undefined,
+    now: doc.completedAt || doc.createdAt || 0,
+    labels,
+    signed: signedReq
+      ? {
+          signatureData: signedReq.signatureData,
+          signerName: signedReq.signerName,
+          signedAt: signedReq.signedAt,
+        }
+      : undefined,
+  };
+}
 
 // ============ ARCHIVE HELPER ============
 
 /**
- * Render the final signed PDF (signatures + audit trail baked in), upload it to
- * Cloudinary and record the URL on the document. Called once a document becomes
- * fully signed. Best-effort: failures are logged/toasted but never block signing.
+ * Render the final signed PDF (themed document with the signature baked in),
+ * upload it to Cloudinary and record the URL on the document. Called once a
+ * document becomes fully signed. Best-effort: failures are logged/toasted but
+ * never block signing.
  */
 async function archiveSignedDocument(
   convex: ReturnType<typeof useConvex>,
   attachSignedPdf: ReturnType<typeof useMutation>,
   documentId: Id<'signatureDocuments'>,
   userId: Id<'users'>,
+  labels: DocumentLabels,
 ): Promise<boolean> {
-  const [doc, auditLog] = await Promise.all([
-    convex.query(api.signatures.getDocument, { documentId }),
-    convex.query(api.signatures.getAuditLog, { documentId }),
-  ]);
+  const doc = await convex.query(api.signatures.getDocument, { documentId });
   if (!doc || doc.status !== 'completed' || doc.signedPdfUrl) return false;
 
-  const signers = (doc.requests || []).map((req: any) => ({
-    order: req.order,
-    name: req.signerName,
-    email: req.signerEmail || '',
-    status: req.status,
-    signedAt: req.signedAt,
-    signatureData: req.signatureData,
-    declineReason: req.declinedReason,
-  }));
-  const auditEntries = (auditLog || []).map((entry: any) => ({
-    action: entry.action,
-    actorName: entry.userId ? 'User' : 'System',
-    timestamp: entry.timestamp,
-  }));
-
-  const base64 = await renderSignaturePdfBase64({
-    title: doc.title,
-    content: doc.content,
-    status: doc.status,
-    createdAt: doc.createdAt,
-    completedAt: doc.completedAt,
-    expiresAt: doc.expiresAt,
-    contentHash: doc.contentHash || '',
-    signers,
-    auditLog: auditEntries,
-  });
+  const base64 = await renderDocumentPdfBase64(toRenderableDocument(doc, labels));
 
   const fileName = `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`;
   const uploaded = await uploadDocument(base64, fileName, 'application/pdf');
@@ -613,6 +642,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
   const declineMutation = useMutation(api.signatures.declineDocument);
   const attachSignedPdf = useMutation(api.signatures.attachSignedPdf);
   const convex = useConvex();
+  const labels = useDocumentLabels();
 
   const handleSign = async () => {
     if (!request || !signatureData) return;
@@ -633,6 +663,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
             attachSignedPdf,
             request.documentId,
             userId,
+            labels,
           );
           if (archived) {
             toast.success(t('signatures.archived', 'Signed document archived'));
@@ -783,13 +814,20 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
   const reminderMutation = useMutation(api.signatures.sendReminder);
   const attachSignedPdf = useMutation(api.signatures.attachSignedPdf);
   const convex = useConvex();
+  const labels = useDocumentLabels();
   const [archiving, setArchiving] = useState(false);
 
   const handleArchive = async () => {
     if (!documentId) return;
     setArchiving(true);
     try {
-      const archived = await archiveSignedDocument(convex, attachSignedPdf, documentId, userId);
+      const archived = await archiveSignedDocument(
+        convex,
+        attachSignedPdf,
+        documentId,
+        userId,
+        labels,
+      );
       toast.success(
         archived
           ? t('signatures.archived', 'Signed document archived')
@@ -822,38 +860,14 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!doc) return;
     try {
-      const signerInfo = (doc.requests || []).map((req: any) => ({
-        order: req.order,
-        name: req.signerName,
-        email: req.signerEmail || '',
-        status: req.status,
-        signedAt: req.signedAt,
-        signatureData: req.signatureData,
-        declineReason: req.declinedReason,
-      }));
-
-      const auditEntries = (auditLog || []).map((entry: any) => ({
-        action: entry.action,
-        actorName: entry.userId ? 'User' : 'System',
-        timestamp: entry.timestamp,
-      }));
-
-      exportSignatureToPDF(
-        {
-          title: doc.title,
-          content: doc.content,
-          status: doc.status,
-          createdAt: doc.createdAt,
-          completedAt: doc.completedAt,
-          expiresAt: doc.expiresAt,
-          contentHash: doc.contentHash || '',
-          signers: signerInfo,
-          auditLog: auditEntries,
-        },
-        `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
+      // Export the themed document with the signature baked in — the same copy
+      // HR archives — instead of a generic audit report.
+      await exportDocumentToPDF(
+        toRenderableDocument(doc, labels),
+        `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`,
       );
       toast.success(t('signatures.pdfExported', 'PDF exported successfully'));
     } catch {
