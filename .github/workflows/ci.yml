@@ -136,7 +136,10 @@ jobs:
           CSRF_SECRET: build-placeholder-CSRF_SECRET-value-32chars-min
           NEXTAUTH_URL: https://hr-project-sigma.vercel.app
           AUTH_URL: https://hr-project-sigma.vercel.app
-          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+          # Fall back to placeholders so the production build's env validation
+          # passes even when these repo secrets are unset (real values win if set).
+          CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT || 'dev:build-placeholder' }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL || 'https://build-placeholder.convex.cloud' }}
           AUTH_GOOGLE_ID: build-placeholder
           AUTH_GOOGLE_SECRET: build-placeholder
       - uses: actions/cache@v4
