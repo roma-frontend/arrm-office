@@ -54,7 +54,9 @@ const nextConfig = {
   // ═══════════════════════════════════════════════════════════════
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      // 10mb to match uploadDocument()'s own size check — signed PDFs bake in
+      // signature images and can exceed the old 2mb cap, which stalled uploads.
+      bodySizeLimit: '10mb',
       // SECURITY: restrict to your actual domain(s)
       allowedOrigins: [
         process.env.NEXT_PUBLIC_APP_URL || 'https://hr-project.vercel.app',

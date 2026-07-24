@@ -504,10 +504,16 @@
       "reminderFailed": "Erinnerung konnte nicht gesendet werden",
       "templateFailed": "Vorlage konnte nicht erstellt werden",
       "previousSigners": "Warten auf vorherige Unterzeichner",
-      "exportFailed": "PDF konnte nicht exportiert werden"
+      "exportFailed": "PDF konnte nicht exportiert werden",
+      "archiveFailed": "Signiertes PDF konnte nicht archiviert werden"
     },
     "exportPdf": "PDF exportieren",
-    "pdfExported": "PDF erfolgreich exportiert"
+    "pdfExported": "PDF erfolgreich exportiert",
+    "archivePdf": "PDF archivieren",
+    "archivedPdf": "Archiviertes PDF",
+    "archiving": "Wird archiviert…",
+    "archived": "Signiertes Dokument archiviert",
+    "alreadyArchived": "Dokument bereits archiviert"
   },
   "goals": {
     "title": "OKR und Ziele",

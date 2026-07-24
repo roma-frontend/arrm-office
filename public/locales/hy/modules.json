@@ -512,10 +512,16 @@
       "reminderFailed": "Հիշեցումը ուղարկելն անհաջողվեց",
       "templateFailed": "Ձևանմուշը ստեղծելը անհաջողվեց",
       "previousSigners": "Սպասում է նախորդ ստորագրողներին",
-      "exportFailed": "PDF արտահանելը անհաջողվեց"
+      "exportFailed": "PDF արտահանելը անհաջողվեց",
+      "archiveFailed": "Ստորագրված PDF-ը արխիվացնելը անհաջողվեց"
     },
     "exportPdf": "Արտահանել PDF",
-    "pdfExported": "PDF-ը հաջողությամբ արտահանվել է"
+    "pdfExported": "PDF-ը հաջողությամբ արտահանվել է",
+    "archivePdf": "Արխիվացնել PDF",
+    "archivedPdf": "Արխիվացված PDF",
+    "archiving": "Արխիվացում…",
+    "archived": "Ստորագրված փաստաթուղթը արխիվացվել է",
+    "alreadyArchived": "Փաստաթուղթն արդեն արխիվացված է"
   },
   "goals": {
     "title": "Նպատակներ և արդյունքներ",

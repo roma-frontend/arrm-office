@@ -5,7 +5,11 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
-(pdfMake as any).vfs = (pdfFonts as any).pdfMake?.vfs || (pdfFonts as any).vfs;
+// pdfmake 0.3.x ships vfs_fonts as the font map itself (top-level keys are the
+// *.ttf files). Older builds nested it under `.pdfMake.vfs` or `.vfs`. Support
+// all shapes so fonts always load — otherwise createPdf()/getBase64() hangs.
+(pdfMake as any).vfs =
+  (pdfFonts as any).pdfMake?.vfs || (pdfFonts as any).vfs || (pdfFonts as any).default || pdfFonts;
 
 interface SignerInfo {
   order: number;
@@ -177,12 +181,31 @@ export function exportSignatureToPDF(doc: DocumentData, filename: string = 'sign
 export function renderSignaturePdfBase64(doc: DocumentData): Promise<string> {
   const docDefinition = buildSignatureDocDefinition(doc);
   return new Promise((resolve, reject) => {
+    // Guard: if pdfmake never invokes the callback (e.g. fonts failed to load),
+    // reject instead of leaving the caller stuck on "Archiving…" forever.
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('PDF rendering timed out'));
+    }, 30000);
+
     try {
       const pdf = pdfMake.createPdf(docDefinition) as any;
       pdf.getBase64((data: string) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (!data) {
+          reject(new Error('Failed to render PDF (empty output)'));
+          return;
+        }
         resolve(`data:application/pdf;base64,${data}`);
       });
     } catch (err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       reject(err instanceof Error ? err : new Error('Failed to render PDF'));
     }
   });

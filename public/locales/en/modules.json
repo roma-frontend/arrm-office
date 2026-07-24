@@ -505,10 +505,16 @@
       "reminderFailed": "Failed to send reminder",
       "templateFailed": "Failed to create template",
       "previousSigners": "Waiting for previous signers",
-      "exportFailed": "Failed to export PDF"
+      "exportFailed": "Failed to export PDF",
+      "archiveFailed": "Failed to archive signed PDF"
     },
     "exportPdf": "Export PDF",
-    "pdfExported": "PDF exported successfully"
+    "pdfExported": "PDF exported successfully",
+    "archivePdf": "Archive PDF",
+    "archivedPdf": "Archived PDF",
+    "archiving": "Archiving…",
+    "archived": "Signed document archived",
+    "alreadyArchived": "Document already archived"
   },
   "goals": {
     "title": "OKR & Goals",

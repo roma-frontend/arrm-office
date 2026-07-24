@@ -504,10 +504,16 @@
       "reminderFailed": "Не удалось отправить напоминание",
       "templateFailed": "Не удалось создать шаблон",
       "previousSigners": "Ожидание предыдущих подписантов",
-      "exportFailed": "Не удалось экспортировать PDF"
+      "exportFailed": "Не удалось экспортировать PDF",
+      "archiveFailed": "Не удалось архивировать подписанный PDF"
     },
     "exportPdf": "Экспорт PDF",
-    "pdfExported": "PDF успешно экспортирован"
+    "pdfExported": "PDF успешно экспортирован",
+    "archivePdf": "Архивировать PDF",
+    "archivedPdf": "Архивный PDF",
+    "archiving": "Архивирование…",
+    "archived": "Подписанный документ заархивирован",
+    "alreadyArchived": "Документ уже заархивирован"
   },
   "goals": {
     "title": "OKR и Цели",
