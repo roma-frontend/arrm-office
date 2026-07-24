@@ -230,7 +230,31 @@
     "userMenu": "Benutzermenü",
     "orgChart": "Organigramm",
     "learning": "Lernen",
-    "documents": "Dokumente"
+    "documents": "Dokumente",
+    "documentLibrary": "Dokumentbibliothek"
+  },
+  "docLibrary": {
+    "title": "Dokumentbibliothek",
+    "subtitle": "Vorlage und Mitarbeiter wählen — das Dokument füllt sich selbst aus. Exportieren oder zur Unterschrift senden.",
+    "selectEmployee": "Mitarbeiter auswählen…",
+    "selectTemplate": "Wählen Sie eine Vorlage zur Vorschau.",
+    "selectEmployeeFirst": "Wählen Sie zuerst einen Mitarbeiter",
+    "noEmployeeHint": "Kein Mitarbeiter ausgewählt — bis dahin werden Platzhalter angezeigt.",
+    "sendForSignature": "Zur Unterschrift senden",
+    "sentForSignature": "Zur Unterschrift gesendet",
+    "sendError": "Senden zur Unterschrift fehlgeschlagen",
+    "pdfDownloaded": "PDF heruntergeladen",
+    "docxDownloaded": "DOCX heruntergeladen",
+    "exportError": "Export fehlgeschlagen",
+    "loadingData": "Mitarbeiterdaten werden geladen…",
+    "adminOnly": "Dieser Bereich ist nur für Administratoren verfügbar.",
+    "includesSignature": "Unterschriftsblock",
+    "signature": "Unterschrift",
+    "nameLabel": "Name",
+    "positionLabel": "Position",
+    "dateLabel": "Datum",
+    "generatedOn": "Erstellt am",
+    "integrity": "Integrität"
   },
   "navGroups": {
     "main": "Hauptmenü",

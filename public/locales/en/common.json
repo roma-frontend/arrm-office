@@ -228,7 +228,31 @@
     "learning": "Learning",
     "openMenu": "Open menu",
     "userMenu": "User menu",
-    "documents": "Documents"
+    "documents": "Documents",
+    "documentLibrary": "Document Library"
+  },
+  "docLibrary": {
+    "title": "Document Library",
+    "subtitle": "Pick a template, choose an employee, and the document fills itself in — export or send for signature.",
+    "selectEmployee": "Select an employee…",
+    "selectTemplate": "Select a template to preview it.",
+    "selectEmployeeFirst": "Select an employee first",
+    "noEmployeeHint": "No employee selected — placeholders are shown until you pick one.",
+    "sendForSignature": "Send for signature",
+    "sentForSignature": "Sent for signature",
+    "sendError": "Failed to send for signature",
+    "pdfDownloaded": "PDF downloaded",
+    "docxDownloaded": "DOCX downloaded",
+    "exportError": "Export failed",
+    "loadingData": "Loading employee data…",
+    "adminOnly": "This section is available to administrators only.",
+    "includesSignature": "Signature block",
+    "signature": "Signature",
+    "nameLabel": "Name",
+    "positionLabel": "Position",
+    "dateLabel": "Date",
+    "generatedOn": "Generated on",
+    "integrity": "Integrity"
   },
   "navGroups": {
     "main": "Main",

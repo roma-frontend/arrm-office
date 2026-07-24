@@ -41,6 +41,7 @@ import {
   Network,
   GraduationCap,
   FileText,
+  Library,
   Database,
   ClipboardCheck,
   Receipt,
@@ -202,6 +203,12 @@ const navItems: NavEntry[] = [
     children: [
       { href: '/org-chart', labelKey: 'nav.orgChart', icon: Network },
       { href: '/documents', labelKey: 'nav.documents', icon: FileText },
+      {
+        href: '/documents/library',
+        labelKey: 'nav.documentLibrary',
+        icon: Library,
+        roles: ['superadmin', 'admin'],
+      },
       {
         href: '/admin/events',
         labelKey: 'nav.events',

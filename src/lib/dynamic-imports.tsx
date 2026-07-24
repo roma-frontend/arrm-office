@@ -89,6 +89,11 @@ export const loadPdfMake = () => import('pdfmake/build/pdfmake').then((mod) => m
 export const loadExcelJS = () => import('exceljs').then((mod) => mod);
 
 // ══════════════════════════════════════════════════════════════
+// DOCX — dynamic import for Word (.docx) generation
+// ══════════════════════════════════════════════════════════════
+export const loadDocx = () => import('docx').then((mod) => mod);
+
+// ══════════════════════════════════════════════════════════════
 // LEAFLET — dynamic import for maps
 // ══════════════════════════════════════════════════════════════
 export const loadLeaflet = () => import('leaflet').then((mod) => mod.default || mod);

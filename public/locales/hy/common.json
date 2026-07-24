@@ -228,7 +228,31 @@
     "goals": "Նպատակներ",
     "offboarding": "Ազատում",
     "onboarding": "Ներգրավում",
-    "signatures": "Էլ. ստորագրություններ"
+    "signatures": "Էլ. ստորագրություններ",
+    "documentLibrary": "Փաստաթղթերի գրադարան"
+  },
+  "docLibrary": {
+    "title": "Փաստաթղթերի գրադարան",
+    "subtitle": "Ընտրեք ձևանմուշ և աշխատակից — փաստաթուղթը կլրացվի ինքնաբերաբար։ Արտահանեք կամ ուղարկեք ստորագրման։",
+    "selectEmployee": "Ընտրեք աշխատակից…",
+    "selectTemplate": "Ընտրեք ձևանմուշ՝ նախադիտելու համար։",
+    "selectEmployeeFirst": "Նախ ընտրեք աշխատակից",
+    "noEmployeeHint": "Աշխատակից ընտրված չէ — ցուցադրվում են տեղապահներ։",
+    "sendForSignature": "Ուղարկել ստորագրման",
+    "sentForSignature": "Ուղարկվեց ստորագրման",
+    "sendError": "Չհաջողվեց ուղարկել ստորագրման",
+    "pdfDownloaded": "PDF-ը ներբեռնվեց",
+    "docxDownloaded": "DOCX-ը ներբեռնվեց",
+    "exportError": "Արտահանումը ձախողվեց",
+    "loadingData": "Աշխատակցի տվյալները բեռնվում են…",
+    "adminOnly": "Այս բաժինը հասանելի է միայն ադմինիստրատորներին։",
+    "includesSignature": "Ստորագրության դաշտ",
+    "signature": "Ստորագրություն",
+    "nameLabel": "Անուն",
+    "positionLabel": "Պաշտոն",
+    "dateLabel": "Ամսաթիվ",
+    "generatedOn": "Ստեղծված է",
+    "integrity": "Ամբողջականություն"
   },
   "navGroups": {
     "main": "Հիմնական",

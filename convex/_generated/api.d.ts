@@ -38,6 +38,7 @@ import type * as conflicts_index from "../conflicts/index.js";
 import type * as conflicts_main from "../conflicts/main.js";
 import type * as corporate from "../corporate.js";
 import type * as departments from "../departments.js";
+import type * as documentLibrary from "../documentLibrary.js";
 import type * as documents from "../documents.js";
 import type * as driverAI from "../driverAI.js";
 import type * as drivers from "../drivers.js";
@@ -216,6 +217,7 @@ declare const fullApi: ApiFromModules<{
   "conflicts/main": typeof conflicts_main;
   corporate: typeof corporate;
   departments: typeof departments;
+  documentLibrary: typeof documentLibrary;
   documents: typeof documents;
   driverAI: typeof driverAI;
   drivers: typeof drivers;

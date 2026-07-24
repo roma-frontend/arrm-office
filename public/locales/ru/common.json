@@ -230,7 +230,31 @@
     "userMenu": "Меню пользователя",
     "orgChart": "Оргструктура",
     "learning": "Обучение",
-    "documents": "Документы"
+    "documents": "Документы",
+    "documentLibrary": "Библиотека документов"
+  },
+  "docLibrary": {
+    "title": "Библиотека документов",
+    "subtitle": "Выберите шаблон и сотрудника — документ заполнится сам. Экспортируйте или отправьте на подпись.",
+    "selectEmployee": "Выберите сотрудника…",
+    "selectTemplate": "Выберите шаблон для предпросмотра.",
+    "selectEmployeeFirst": "Сначала выберите сотрудника",
+    "noEmployeeHint": "Сотрудник не выбран — пока показаны плейсхолдеры.",
+    "sendForSignature": "На подпись",
+    "sentForSignature": "Отправлено на подпись",
+    "sendError": "Не удалось отправить на подпись",
+    "pdfDownloaded": "PDF загружен",
+    "docxDownloaded": "DOCX загружен",
+    "exportError": "Ошибка экспорта",
+    "loadingData": "Загрузка данных сотрудника…",
+    "adminOnly": "Этот раздел доступен только администраторам.",
+    "includesSignature": "Блок подписи",
+    "signature": "Подпись",
+    "nameLabel": "ФИО",
+    "positionLabel": "Должность",
+    "dateLabel": "Дата",
+    "generatedOn": "Сформировано",
+    "integrity": "Контрольная сумма"
   },
   "navGroups": {
     "main": "Главное",
