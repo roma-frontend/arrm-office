@@ -11,14 +11,24 @@ import { z } from 'zod';
 import { fetchAllContexts } from '@/lib/chat-context';
 import { logger } from '@/lib/logger';
 
-const openrouter = new OpenAI({
-  baseURL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
-  defaultHeaders: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    'X-Title': 'HR Project',
-  },
-});
+// Lazily construct the OpenRouter client. The OpenAI SDK constructor throws when
+// no API key is present, so instantiating at module scope would break the
+// production build's page-data collection (where the key is absent). Create it
+// on first use inside the handler instead.
+let openrouterClient: OpenAI | null = null;
+function getOpenRouter(): OpenAI {
+  if (!openrouterClient) {
+    openrouterClient = new OpenAI({
+      baseURL: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+      apiKey: process.env.OPENROUTER_API_KEY,
+      defaultHeaders: {
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        'X-Title': 'HR Project',
+      },
+    });
+  }
+  return openrouterClient;
+}
 
 // SECURITY: Input validation schema for chat requests
 const chatRequestSchema = z.object({
@@ -194,7 +204,7 @@ FORMAT RULES:
       logger.log('⚠️ Groq failed, trying OpenRouter...', groqErrorMessage);
 
       try {
-        const stream = await openrouter.chat.completions.create({
+        const stream = await getOpenRouter().chat.completions.create({
           model: 'meta-llama/llama-3.3-70b-instruct:free',
           messages: [{ role: 'system', content: corePrompt }, ...messages],
           stream: true,
