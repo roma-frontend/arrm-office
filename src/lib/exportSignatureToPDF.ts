@@ -35,7 +35,11 @@ interface DocumentData {
   auditLog: AuditEntry[];
 }
 
-export function exportSignatureToPDF(doc: DocumentData, filename: string = 'signed-document.pdf') {
+/**
+ * Build the pdfmake document definition for a signed document. Shared by the
+ * download path and the archive path so both produce an identical PDF.
+ */
+function buildSignatureDocDefinition(doc: DocumentData) {
   const signerTableBody: any[][] = [
     [
       { text: 'Order', style: 'tableHeader' },
@@ -156,7 +160,30 @@ export function exportSignatureToPDF(doc: DocumentData, filename: string = 'sign
     pageMargins: [40, 40, 40, 40],
   };
 
-  pdfMake.createPdf(docDefinition).download(filename);
+  return docDefinition;
+}
 
+/** Render + trigger a browser download of the signed-document PDF. */
+export function exportSignatureToPDF(doc: DocumentData, filename: string = 'signed-document.pdf') {
+  const docDefinition = buildSignatureDocDefinition(doc);
+  pdfMake.createPdf(docDefinition).download(filename);
   return { success: true, message: 'PDF file downloaded' };
+}
+
+/**
+ * Render the signed-document PDF and return it as a base64 data URL.
+ * Used to upload a permanent copy to storage (Cloudinary) on completion.
+ */
+export function renderSignaturePdfBase64(doc: DocumentData): Promise<string> {
+  const docDefinition = buildSignatureDocDefinition(doc);
+  return new Promise((resolve, reject) => {
+    try {
+      const pdf = pdfMake.createPdf(docDefinition) as any;
+      pdf.getBase64((data: string) => {
+        resolve(`data:application/pdf;base64,${data}`);
+      });
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error('Failed to render PDF'));
+    }
+  });
 }

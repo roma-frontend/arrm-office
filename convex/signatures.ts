@@ -309,7 +309,8 @@ export const signDocument = mutation({
       (r) => r._id !== requestId && r.status === 'pending',
     );
 
-    if (remainingPending.length === 0) {
+    const completed = remainingPending.length === 0;
+    if (completed) {
       // All signed — complete the document
       await ctx.db.patch(request.documentId, {
         status: 'completed',
@@ -330,6 +331,56 @@ export const signDocument = mutation({
       action: 'signed',
       timestamp: now,
     });
+
+    // Signal the client so it can render + archive the final signed PDF.
+    return { completed, documentId: request.documentId };
+  },
+});
+
+/**
+ * Archive the final signed PDF for a completed document.
+ *
+ * The PDF (with signature images, integrity hash and audit trail baked in) is
+ * rendered and uploaded to Cloudinary on the client; this mutation just records
+ * the resulting URL/metadata on the document. Idempotent — refuses to overwrite
+ * an existing archive and only accepts completed documents.
+ */
+export const attachSignedPdf = mutation({
+  args: {
+    documentId: v.id('signatureDocuments'),
+    url: v.string(),
+    name: v.string(),
+    size: v.number(),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const { documentId, url, name, size, userId } = args;
+    const doc = await ctx.db.get(documentId);
+    if (!doc) throw new Error('Document not found');
+    if (doc.status !== 'completed') {
+      throw new Error('Only completed documents can be archived');
+    }
+    // Idempotent: keep the first archived copy.
+    if (doc.signedPdfUrl) return { alreadyArchived: true, url: doc.signedPdfUrl };
+
+    const now = Date.now();
+    await ctx.db.patch(documentId, {
+      signedPdfUrl: url,
+      signedPdfName: name,
+      signedPdfSize: size,
+      archivedAt: now,
+    });
+
+    await ctx.db.insert('signatureAuditLog', {
+      documentId,
+      organizationId: doc.organizationId,
+      userId,
+      action: 'signed',
+      metadata: JSON.stringify({ archivedPdf: name }),
+      timestamp: now,
+    });
+
+    return { alreadyArchived: false, url };
   },
 });
 

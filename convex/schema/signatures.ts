@@ -69,6 +69,11 @@ export const signatures = {
     contentHash: v.optional(v.string()),
     expiresAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),
+    // Archived final signed PDF (Cloudinary URL) — generated once all signers complete.
+    signedPdfUrl: v.optional(v.string()),
+    signedPdfName: v.optional(v.string()),
+    signedPdfSize: v.optional(v.number()),
+    archivedAt: v.optional(v.number()),
     createdBy: v.id('users'),
     createdAt: v.number(),
   })

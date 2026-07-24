@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useConvex } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,66 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { exportSignatureToPDF } from '@/lib/exportSignatureToPDF';
+import { exportSignatureToPDF, renderSignaturePdfBase64 } from '@/lib/exportSignatureToPDF';
+import { uploadDocument } from '@/actions/cloudinary';
+
+// ============ ARCHIVE HELPER ============
+
+/**
+ * Render the final signed PDF (signatures + audit trail baked in), upload it to
+ * Cloudinary and record the URL on the document. Called once a document becomes
+ * fully signed. Best-effort: failures are logged/toasted but never block signing.
+ */
+async function archiveSignedDocument(
+  convex: ReturnType<typeof useConvex>,
+  attachSignedPdf: ReturnType<typeof useMutation>,
+  documentId: Id<'signatureDocuments'>,
+  userId: Id<'users'>,
+): Promise<boolean> {
+  const [doc, auditLog] = await Promise.all([
+    convex.query(api.signatures.getDocument, { documentId }),
+    convex.query(api.signatures.getAuditLog, { documentId }),
+  ]);
+  if (!doc || doc.status !== 'completed' || doc.signedPdfUrl) return false;
+
+  const signers = (doc.requests || []).map((req: any) => ({
+    order: req.order,
+    name: req.signerName,
+    email: req.signerEmail || '',
+    status: req.status,
+    signedAt: req.signedAt,
+    signatureData: req.signatureData,
+    declineReason: req.declinedReason,
+  }));
+  const auditEntries = (auditLog || []).map((entry: any) => ({
+    action: entry.action,
+    actorName: entry.userId ? 'User' : 'System',
+    timestamp: entry.timestamp,
+  }));
+
+  const base64 = await renderSignaturePdfBase64({
+    title: doc.title,
+    content: doc.content,
+    status: doc.status,
+    createdAt: doc.createdAt,
+    completedAt: doc.completedAt,
+    expiresAt: doc.expiresAt,
+    contentHash: doc.contentHash || '',
+    signers,
+    auditLog: auditEntries,
+  });
+
+  const fileName = `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`;
+  const uploaded = await uploadDocument(base64, fileName, 'application/pdf');
+  await attachSignedPdf({
+    documentId,
+    url: uploaded.url,
+    name: uploaded.name,
+    size: uploaded.size,
+    userId,
+  });
+  return true;
+}
 
 // ============ SIGNATURE PAD COMPONENT ============
 
@@ -552,17 +611,37 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
   );
   const signMutation = useMutation(api.signatures.signDocument);
   const declineMutation = useMutation(api.signatures.declineDocument);
+  const attachSignedPdf = useMutation(api.signatures.attachSignedPdf);
+  const convex = useConvex();
 
   const handleSign = async () => {
     if (!request || !signatureData) return;
     try {
-      await signMutation({
+      const result = await signMutation({
         requestId: request._id,
         signatureData,
         userId,
       });
       toast.success(t('signatures.signed', 'Document signed successfully!'));
       onClose();
+
+      // Last signer just completed the document — render + archive the final PDF.
+      if (result?.completed) {
+        try {
+          const archived = await archiveSignedDocument(
+            convex,
+            attachSignedPdf,
+            request.documentId,
+            userId,
+          );
+          if (archived) {
+            toast.success(t('signatures.archived', 'Signed document archived'));
+          }
+        } catch (archiveErr) {
+          console.error('Failed to archive signed PDF:', archiveErr);
+          toast.error(t('signatures.errors.archiveFailed', 'Failed to archive signed PDF'));
+        }
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.includes('Previous signers')) {
@@ -702,6 +781,26 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
   const auditLog = useQuery(api.signatures.getAuditLog, documentId ? { documentId } : 'skip');
   const cancelMutation = useMutation(api.signatures.cancelDocument);
   const reminderMutation = useMutation(api.signatures.sendReminder);
+  const attachSignedPdf = useMutation(api.signatures.attachSignedPdf);
+  const convex = useConvex();
+  const [archiving, setArchiving] = useState(false);
+
+  const handleArchive = async () => {
+    if (!documentId) return;
+    setArchiving(true);
+    try {
+      const archived = await archiveSignedDocument(convex, attachSignedPdf, documentId, userId);
+      toast.success(
+        archived
+          ? t('signatures.archived', 'Signed document archived')
+          : t('signatures.alreadyArchived', 'Document already archived'),
+      );
+    } catch {
+      toast.error(t('signatures.errors.archiveFailed', 'Failed to archive signed PDF'));
+    } finally {
+      setArchiving(false);
+    }
+  };
 
   const handleCancel = async () => {
     if (!documentId) return;
@@ -875,7 +974,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
         </div>
 
         <div className="px-5 py-4 border-t bg-muted/30 flex items-center justify-between">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={onClose}>
               {t('common.close', 'Close')}
             </Button>
@@ -883,6 +982,22 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <Download className="w-4 h-4 mr-1" />
                 {t('signatures.exportPdf', 'Export PDF')}
+              </Button>
+            )}
+            {doc && doc.status === 'completed' && doc.signedPdfUrl && (
+              <Button variant="outline" size="sm" asChild>
+                <a href={doc.signedPdfUrl} target="_blank" rel="noopener noreferrer">
+                  <Download className="w-4 h-4 mr-1" />
+                  {t('signatures.archivedPdf', 'Archived PDF')}
+                </a>
+              </Button>
+            )}
+            {doc && doc.status === 'completed' && !doc.signedPdfUrl && (
+              <Button variant="outline" size="sm" onClick={handleArchive} disabled={archiving}>
+                <Download className="w-4 h-4 mr-1" />
+                {archiving
+                  ? t('signatures.archiving', 'Archiving…')
+                  : t('signatures.archivePdf', 'Archive PDF')}
               </Button>
             )}
           </div>
