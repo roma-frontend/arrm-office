@@ -181,6 +181,12 @@ jobs:
           CSRF_SECRET: test-secret-for-ci-only-not-for-production
           NEXTAUTH_URL: http://localhost:3000
           AUTH_URL: http://localhost:3000
+          # The Next web server (started by Playwright) runs env validation in
+          # layout.tsx; provide placeholders so it boots when secrets are unset.
+          CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT || 'dev:build-placeholder' }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL || 'https://build-placeholder.convex.cloud' }}
+          AUTH_GOOGLE_ID: build-placeholder
+          AUTH_GOOGLE_SECRET: build-placeholder
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -32,7 +32,26 @@ export async function login(page: Page, email = TEST_EMAIL, password = TEST_PASS
  */
 
 export const test = base.extend<{ authedPage: Page }>({
+  // Override the built-in page so every test starts with the onboarding tour
+  // pre-dismissed. On a fresh CI browser the login-tour auto-shows and its
+  // full-screen z-[9999] spotlight overlay intercepts clicks on the login
+  // form, which otherwise breaks every test that logs in.
+  page: async ({ page }, run) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('tour_seen_login-tour', 'true');
+      } catch {
+        // localStorage may be unavailable before first navigation — ignore.
+      }
+    });
+    await run(page);
+  },
   authedPage: async ({ page }, run) => {
+    // These tests require a real backend with a seeded test user. Without
+    // credentials (e.g. CI running against a placeholder Convex deployment)
+    // login cannot succeed, so skip rather than hard-fail — same guard the
+    // real-login tests in auth.spec.ts already use.
+    test.skip(!process.env.E2E_USER_EMAIL, 'No test credentials configured');
     await login(page);
     // Wait for redirect to dashboard
     await page.waitForURL(/dashboard|leaves|tasks/, { timeout: 15_000 });
