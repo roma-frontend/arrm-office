@@ -200,12 +200,26 @@ jobs:
           path: test-results/
           retention-days: 14
 
+  # GitHub does not allow secrets.* in a job-level `if:`, so surface the
+  # presence of VERCEL_TOKEN as an output the deploy jobs can gate on. This
+  # lets CI pass on forks / before secrets are configured, while the deploy
+  # runs automatically once the token is added in repo settings.
+  check-deploy-secret:
+    name: "🔑 Deploy Secret Check"
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        run: echo "enabled=${{ secrets.VERCEL_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
   deploy-preview:
     name: "🔍 Deploy Preview"
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [build]
-    if: github.event_name == 'pull_request'
+    needs: [build, check-deploy-secret]
+    if: github.event_name == 'pull_request' && needs.check-deploy-secret.outputs.enabled == 'true'
     environment:
       name: preview
       url: ${{ steps.deploy.outputs.preview-url }}
@@ -227,8 +241,8 @@ jobs:
     name: "🚀 Deploy Production"
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [build, e2e-tests, codeql, security-audit]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, e2e-tests, codeql, security-audit, check-deploy-secret]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check-deploy-secret.outputs.enabled == 'true'
     environment:
       name: production
       url: https://hr-project-sigma.vercel.app
