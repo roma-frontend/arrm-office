@@ -220,6 +220,7 @@
     "performance": "Performance",
     "signatures": "E-Signatures",
     "goals": "OKR & Goals",
+    "strategyMap": "Strategy Map",
     "recruitment": "Recruitment",
     "onboarding": "Onboarding",
     "offboarding": "Offboarding",
@@ -995,6 +996,38 @@
     "goHome": "Go Home",
     "errorDescription": "An unexpected error occurred. Don't worry — your data is safe. Try refreshing or go back to the dashboard.",
     "errorReference": "Reference:"
+  },
+  "strategyMap": {
+    "title": "Strategy Map",
+    "subtitle": "Visual cascade of company objectives to individual goals",
+    "manageOkrs": "Manage OKRs",
+    "totalObjectives": "Total",
+    "avgProgress": "Avg Progress",
+    "onTrack": "On Track",
+    "atRisk": "At Risk",
+    "behind": "Behind",
+    "completed": "Completed",
+    "showAll": "Show All Levels",
+    "compact": "Hide Individuals",
+    "company": "Company",
+    "team": "Team",
+    "individual": "Individual",
+    "alignedObjectives": "{{count}} aligned",
+    "viewDetails": "View details",
+    "empty": "No objectives found",
+    "emptyHint": "Create company-level objectives to build your strategy map",
+    "createFirst": "Create Your First Objective",
+    "alignmentTip": "Alignment Tip",
+    "alignmentHint": "Company objectives cascade down to teams and individuals through parent-child relationships. Each level aligns with the level above to ensure everyone works toward the same strategic goals. Click any objective to view details or create new aligned objectives from the Goals page.",
+    "upgradeTitle": "Strategy Maps",
+    "upgradeDesc": "Visualize your entire OKR cascade from company objectives down to individual goals. Upgrade to see the full strategy map with health indicators and drill-down.",
+    "health": {
+      "on_track": "On Track",
+      "at_risk": "At Risk",
+      "behind": "Behind",
+      "completed": "Completed",
+      "draft": "Draft"
+    }
   },
   "notifications": {
     "types": {

@@ -155,6 +155,7 @@ import type * as settings from "../settings.js";
 import type * as sharepointSync from "../sharepointSync.js";
 import type * as signatures from "../signatures.js";
 import type * as sla from "../sla.js";
+import type * as strategyMaps from "../strategyMaps.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as subscriptions_admin from "../subscriptions_admin.js";
 import type * as superadmin from "../superadmin.js";
@@ -334,6 +335,7 @@ declare const fullApi: ApiFromModules<{
   sharepointSync: typeof sharepointSync;
   signatures: typeof signatures;
   sla: typeof sla;
+  strategyMaps: typeof strategyMaps;
   subscriptions: typeof subscriptions;
   subscriptions_admin: typeof subscriptions_admin;
   superadmin: typeof superadmin;

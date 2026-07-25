@@ -546,6 +546,14 @@
         "feature2": "Automatische Aufgabenverteilung",
         "feature3": "Verfolgung des Fortschritts neuer Mitarbeiter",
         "feature4": "Offboarding und Exit-Interviews"
+      },
+      "strategyMap": {
+        "title": "Strategiekarte",
+        "description": "Visuelle OKR-Kaskade von Unternehmenszielen bis zu individuellen Zielen.",
+        "feature1": "Interaktiver OKR-Baum",
+        "feature2": "Gesundheitsindikatoren und Status",
+        "feature3": "Kompakte und vollständige Ansicht",
+        "feature4": "Filterung nach Jahr und Periode"
       }
     },
     "platform": {

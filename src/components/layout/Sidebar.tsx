@@ -46,6 +46,7 @@ import {
   ClipboardCheck,
   Receipt,
   Key,
+  Layers,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -141,6 +142,7 @@ const navItems: NavEntry[] = [
     children: [
       { href: '/performance', labelKey: 'nav.performance', icon: Target },
       { href: '/goals', labelKey: 'nav.goals', icon: Crosshair },
+      { href: '/strategy', labelKey: 'nav.strategyMap', icon: Layers },
       { href: '/signatures', labelKey: 'nav.signatures', icon: PenTool },
       { href: '/recognition', labelKey: 'nav.recognition', icon: Heart },
     ],

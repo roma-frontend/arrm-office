@@ -9,6 +9,9 @@ export interface PlanFeatures {
   analytics: boolean;
   advancedAnalytics: boolean; // professional+
 
+  // Strategy Maps
+  strategyMaps: boolean; // basic on starter, full on professional+
+
   // Отчёты
   reports: boolean;
   exportReports: boolean; // professional+
@@ -39,10 +42,11 @@ export interface PlanFeatures {
   integrations: boolean; // enterprise only
 }
 
-const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
+export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   starter: {
     analytics: true,
     advancedAnalytics: true,
+    strategyMaps: false, // Professional+ feature
     reports: true,
     exportReports: true,
     aiChat: true,
@@ -63,6 +67,7 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   professional: {
     analytics: true,
     advancedAnalytics: true,
+    strategyMaps: true, // Full interactive strategy map
     reports: true,
     exportReports: true,
     aiChat: true,
@@ -83,6 +88,7 @@ const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
   enterprise: {
     analytics: true,
     advancedAnalytics: true,
+    strategyMaps: true, // Full strategy map with custom frameworks
     reports: true,
     exportReports: true,
     aiChat: true,

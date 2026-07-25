@@ -545,6 +545,14 @@
         "feature2": "Automated task assignments",
         "feature3": "Progress tracking for new hires",
         "feature4": "Offboarding & exit interviews"
+      },
+      "strategyMap": {
+        "title": "Strategy Map",
+        "description": "Visual cascade of OKRs from company objectives through teams down to individual goals with health indicators.",
+        "feature1": "Company → Team → Individual cascade visualization",
+        "feature2": "Color-coded health indicators (on-track / at-risk / behind)",
+        "feature3": "Interactive tree with expand/collapse and drill-down",
+        "feature4": "Alignment tips & compact view mode"
       }
     },
     "platform": {

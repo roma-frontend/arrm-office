@@ -7,6 +7,7 @@ import { useSubscription, type Plan } from './useSubscription';
 export interface PlanFeatures {
   analytics: boolean;
   advancedAnalytics: boolean;
+  strategyMaps: boolean;
   reports: boolean;
   exportReports: boolean;
   aiChat: boolean;
@@ -32,6 +33,7 @@ const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
   free: {
     analytics: true,
     advancedAnalytics: false,
+    strategyMaps: false,
     reports: true,
     exportReports: false,
     aiChat: false,
@@ -55,6 +57,7 @@ const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
   starter: {
     analytics: true,
     advancedAnalytics: false,
+    strategyMaps: false,
     reports: true,
     exportReports: true,
     aiChat: true,
@@ -78,6 +81,7 @@ const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
   professional: {
     analytics: true,
     advancedAnalytics: true,
+    strategyMaps: true,
     reports: true,
     exportReports: true,
     aiChat: true,
@@ -101,6 +105,7 @@ const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
   enterprise: {
     analytics: true,
     advancedAnalytics: true,
+    strategyMaps: true,
     reports: true,
     exportReports: true,
     aiChat: true,

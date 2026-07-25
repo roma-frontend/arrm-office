@@ -61,6 +61,13 @@ const MODULES = [
     dashboardLink: '/goals',
   },
   {
+    id: 'strategyMap',
+    icon: Layers,
+    color: '#8b5cf6',
+    gradient: 'linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(167,139,250,0.06) 100%)',
+    dashboardLink: '/strategy',
+  },
+  {
     id: 'performance',
     icon: BarChart3,
     color: '#10b981',
