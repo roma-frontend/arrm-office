@@ -192,6 +192,7 @@ const navItems: NavEntry[] = [
     children: [
       { href: '/reports', labelKey: 'nav.reports', icon: FileText },
       { href: '/analytics', labelKey: 'nav.analytics', icon: BarChart3 },
+      { href: '/analytics/reports', labelKey: 'nav.reportBuilder', icon: BarChart3 },
     ],
   },
 
@@ -312,6 +313,12 @@ const navItems: NavEntry[] = [
         labelKey: 'nav.security',
         icon: ShieldCheck,
         roles: ['superadmin'],
+      },
+      {
+        href: '/admin/ai-governance',
+        labelKey: 'nav.aiGovernance',
+        icon: ShieldCheck,
+        roles: ['superadmin', 'admin'],
       },
       {
         href: '/compliance',

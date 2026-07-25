@@ -92,7 +92,8 @@ for (const ns of NAMESPACES) {
       if (missingInTarget.length) {
         report.push('  Missing (in EN, not in target):');
         for (const k of missingInTarget.slice(0, 20)) report.push(`    + ${k}`);
-        if (missingInTarget.length > 20) report.push(`    … and ${missingInTarget.length - 20} more`);
+        if (missingInTarget.length > 20)
+          report.push(`    … and ${missingInTarget.length - 20} more`);
       }
       if (extraInTarget.length) {
         report.push('  Extra (in target, not in EN):');
@@ -111,4 +112,6 @@ if (hasDrift) {
   process.exit(1);
 }
 
-console.warn(`✓ Locale parity OK across ${TARGETS.join(', ')} for ${NAMESPACES.length} namespaces.`);
+console.warn(
+  `✓ Locale parity OK across ${TARGETS.join(', ')} for ${NAMESPACES.length} namespaces.`,
+);

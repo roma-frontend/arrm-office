@@ -10,6 +10,8 @@ module.exports = {
   },
   transformIgnorePatterns: ['/node_modules/(?!(convex|convex-test)/)'],
   moduleNameMapper: {
+    // Convex generated code lives at project root, not under src/ — must be BEFORE generic @/ mapper
+    '^@/convex/_generated/(.*)$': '<rootDir>/convex/_generated/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
     // Prevent TensorFlow.js optional peer dependency from crashing test workers
     '^@tensorflow/tfjs-node$': '<rootDir>/src/__tests__/__mocks__/empty-module.ts',

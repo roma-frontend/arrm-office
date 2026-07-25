@@ -18,6 +18,8 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
+  Building2,
+  Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -97,6 +99,12 @@ const ProfileSettings = dynamic(
   { ssr: false },
 );
 const SLASettings = dynamic(() => import('@/components/admin/SLASettings'), { ssr: false });
+const BrandingSettings = dynamic(() => import('@/components/settings/BrandingSettings'), {
+  ssr: false,
+});
+const AIGovernancePanel = dynamic(() => import('@/components/ai/AIGovernancePanel'), {
+  ssr: false,
+});
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -313,6 +321,18 @@ export default function SettingsPage() {
             icon: SettingsIcon,
             description: t('settings.adminDesc'),
           },
+          {
+            value: 'branding',
+            label: t('settings.branding', 'Branding'),
+            icon: Building2,
+            description: t('settings.brandingDesc', 'White-label & branding'),
+          },
+          {
+            value: 'ai-governance',
+            label: t('settings.aiGovernance', 'AI Governance'),
+            icon: Bot,
+            description: t('settings.aiGovernanceDesc', 'AI agent oversight & guardrails'),
+          },
         ]
       : []),
   ];
@@ -450,6 +470,18 @@ export default function SettingsPage() {
           {user?.role === 'admin' && (
             <TabsContent value="admin" className="space-y-6 mt-0">
               <SLASettings />
+            </TabsContent>
+          )}
+
+          {user?.role === 'admin' && (
+            <TabsContent value="branding" className="space-y-6 mt-0">
+              <BrandingSettings />
+            </TabsContent>
+          )}
+
+          {user?.role === 'admin' && (
+            <TabsContent value="ai-governance" className="space-y-6 mt-0">
+              <AIGovernancePanel />
             </TabsContent>
           )}
         </div>

@@ -93,17 +93,18 @@ function TestimonialCard({
           className="leading-relaxed text-sm flex-1"
           style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
         >
-          "{text}"
+          &ldquo;{text}&rdquo;
         </p>
         <div
           className="flex items-center gap-3 pt-4 border-t"
           style={{ borderColor: 'var(--landing-card-border)' }}
         >
           <Avatar className="w-10 h-10">
+            <AvatarImage src={index === 0 ? '/testimonials/sarah.jpg' : undefined} />
             <AvatarFallback
               className="text-xs text-white font-semibold"
               style={{
-                background: 'btn-gradient',
+                background: 'linear-gradient(135deg, #2563eb, #93c5fd)',
               }}
             >
               {getInitials(name)}
@@ -117,7 +118,7 @@ function TestimonialCard({
               className="text-xs"
               style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}
             >
-              {role} at {company}
+              {role}, {company}
             </p>
           </div>
         </div>
