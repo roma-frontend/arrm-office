@@ -2,6 +2,20 @@ import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 
+/**
+ * Deterministic, Unicode-safe content hash for integrity display. Uses a DJB2
+ * hash over the full string's code points, so it works for any language
+ * (Cyrillic, emoji, etc.) — unlike `btoa`, which throws on non-Latin1 input.
+ */
+function hashContent(content: string): string {
+  let hash = 5381;
+  for (let i = 0; i < content.length; i++) {
+    hash = (hash * 33) ^ content.charCodeAt(i);
+  }
+  // >>> 0 coerces to an unsigned 32-bit int; base36 keeps it short.
+  return (hash >>> 0).toString(36) + '-' + content.length.toString(36);
+}
+
 // ============ QUERIES ============
 
 export const listTemplates = query({
@@ -224,8 +238,11 @@ export const createDocument = mutation({
     const { signers, ...docArgs } = args;
     const now = Date.now();
 
-    // Simple hash for content integrity
-    const contentHash = btoa(args.content.slice(0, 100) + args.content.length);
+    // Simple hash for content integrity. Must be Unicode-safe: `btoa` throws on
+    // any character outside Latin1 (e.g. Cyrillic / emoji), which previously
+    // made createDocument fail for non-English documents. Use a deterministic
+    // DJB2 hash over the code points instead.
+    const contentHash = hashContent(args.content);
 
     // Create the document (immutable snapshot)
     const documentId = await ctx.db.insert('signatureDocuments', {
