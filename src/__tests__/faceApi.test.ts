@@ -172,10 +172,18 @@ describe('createCanvasFromVideo', () => {
     Object.defineProperty(video, 'videoWidth', { get: () => 640, configurable: true });
     Object.defineProperty(video, 'videoHeight', { get: () => 480, configurable: true });
 
+    // Stub getContext so the test doesn't depend on node-canvas being installed
+    // (real node-canvas rejects a jsdom video element passed to drawImage).
+    const getContextSpy = jest
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue({ drawImage: jest.fn() } as unknown as CanvasRenderingContext2D);
+
     const canvas = createCanvasFromVideo(video);
     expect(canvas).toBeDefined();
     expect(canvas.width).toBe(640);
     expect(canvas.height).toBe(480);
+
+    getContextSpy.mockRestore();
   });
 });
 

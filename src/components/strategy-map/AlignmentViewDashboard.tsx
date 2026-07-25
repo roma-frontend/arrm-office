@@ -306,8 +306,6 @@ export default function AlignmentViewDashboard() {
     organizationId ? { organizationId, periodYear: filterYear } : 'skip',
   );
 
-  if (!user || !organizationId) return null;
-
   // Aggregate stats
   const stats = useMemo(() => {
     if (!alignmentTree) return null;
@@ -316,7 +314,7 @@ export default function AlignmentViewDashboard() {
     let totalCompletedTasks = 0;
     let totalProgress = 0;
     let activeCount = 0;
-    let byLevel = { company: 0, team: 0, individual: 0 };
+    const byLevel = { company: 0, team: 0, individual: 0 };
 
     const walk = (nodes: AlignmentNode[]) => {
       for (const n of nodes) {
@@ -354,6 +352,8 @@ export default function AlignmentViewDashboard() {
     }
     return alignmentTree;
   }, [alignmentTree, compact]);
+
+  if (!user || !organizationId) return null;
 
   return (
     <div className="space-y-5">

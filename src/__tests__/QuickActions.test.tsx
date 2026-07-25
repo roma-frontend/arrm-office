@@ -50,7 +50,7 @@ jest.mock('@/store/useAuthStore', () => ({
 }));
 
 import { render, screen, fireEvent } from '@testing-library/react';
-import { QuickActions } from '@/components/Dashboard/QuickActions';
+import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useAuthUser } from '@/store/useAuthStore';
 
 const mockPush = jest.fn();
