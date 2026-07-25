@@ -209,7 +209,13 @@ export async function uploadDocument(
     throw new Error(`File size (${sizeMB}MB) exceeds the 10MB limit.`);
   }
 
-  let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'auto';
+  // Pick the Cloudinary resource type from the MIME type. Documents (PDF, doc,
+  // etc.) MUST be uploaded as `raw` — not `image`/`auto`. Cloudinary's `auto`
+  // detection classifies a PDF as an `image` resource, and PDF delivery under
+  // the `image` type is blocked by default (→ "failed to load PDF document"),
+  // plus the image pipeline appends a second `.pdf` extension. `raw` serves the
+  // file verbatim via /raw/upload/ with no restriction and no double extension.
+  let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'raw';
   if (mimeType) {
     if (mimeType.startsWith('image/')) resourceType = 'image';
     else if (mimeType.startsWith('video/')) resourceType = 'video';
