@@ -432,6 +432,15 @@
     "declineTitle": "Dokument ablehnen",
     "pad": {
       "drawSignature": "Unterschrift unten zeichnen",
+      "provideSignature": "Unterschrift zeichnen oder hochladen",
+      "tabDraw": "Zeichnen",
+      "tabUpload": "Hochladen",
+      "uploadCta": "Bild klicken oder hierher ziehen",
+      "uploadProcessing": "Bild wird verarbeitet…",
+      "uploadHint": "PNG, JPG oder WEBP — transparentes PNG sieht am besten aus",
+      "uploadTypeError": "Bitte laden Sie ein PNG-, JPG- oder WEBP-Bild hoch.",
+      "uploadSizeError": "Bild ist zu groß (max. 2 MB).",
+      "uploadReadError": "Datei konnte nicht gelesen werden. Versuchen Sie ein anderes Bild.",
       "clear": "Löschen",
       "apply": "Unterschrift anwenden",
       "redraw": "Neu zeichnen"

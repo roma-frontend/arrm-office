@@ -16,6 +16,8 @@ import {
   ChevronRight,
   RefreshCw,
   Download,
+  Upload,
+  ImageIcon,
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -136,6 +138,204 @@ async function archiveSignedDocument(
     userId,
   });
   return true;
+}
+
+// ============ SIGNATURE CAPTURE (DRAW / UPLOAD) ============
+
+/** Max accepted signature image size (bytes). Keeps the base64 payload small
+ * enough to embed in the PDF and store on the request. */
+const MAX_SIGNATURE_BYTES = 2 * 1024 * 1024; // 2 MB
+const ACCEPTED_SIGNATURE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+/**
+ * Normalize an uploaded signature image so it embeds as cleanly as a drawn one:
+ * knock out the near-white background (so it sits transparently on the PDF's
+ * signature line), then crop to the tight bounding box of the ink. Returns a PNG
+ * data URL. On any failure (e.g. a tainted canvas) it resolves to the original
+ * data URL so upload still works.
+ */
+function normalizeSignatureImage(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx || !canvas.width || !canvas.height) return resolve(dataUrl);
+        ctx.drawImage(img, 0, 0);
+
+        const { width, height } = canvas;
+        const image = ctx.getImageData(0, 0, width, height);
+        const data = image.data;
+
+        // Pixels brighter than this on all channels are treated as background.
+        const WHITE_THRESHOLD = 240;
+        let minX = width;
+        let minY = height;
+        let maxX = -1;
+        let maxY = -1;
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const i = (y * width + x) * 4;
+            const r = data[i]!;
+            const g = data[i + 1]!;
+            const b = data[i + 2]!;
+            const a = data[i + 3]!;
+            const isBackground =
+              a < 10 || (r >= WHITE_THRESHOLD && g >= WHITE_THRESHOLD && b >= WHITE_THRESHOLD);
+            if (isBackground) {
+              data[i + 3] = 0; // make transparent
+            } else {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+
+        // No ink found — keep the original rather than returning a blank crop.
+        if (maxX < minX || maxY < minY) return resolve(dataUrl);
+
+        ctx.putImageData(image, 0, 0);
+
+        // Crop to the ink bounds with a small padding margin.
+        const pad = 8;
+        const cx = Math.max(0, minX - pad);
+        const cy = Math.max(0, minY - pad);
+        const cw = Math.min(width, maxX + pad) - cx;
+        const ch = Math.min(height, maxY + pad) - cy;
+
+        const out = document.createElement('canvas');
+        out.width = cw;
+        out.height = ch;
+        const outCtx = out.getContext('2d');
+        if (!outCtx) return resolve(canvas.toDataURL('image/png'));
+        outCtx.drawImage(canvas, cx, cy, cw, ch, 0, 0, cw, ch);
+        resolve(out.toDataURL('image/png'));
+      } catch {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+interface SignatureCaptureProps {
+  onSave: (dataUrl: string) => void;
+  width?: number;
+  height?: number;
+}
+
+/**
+ * Lets a signer either draw their signature or upload an existing image (e.g.
+ * a nice PNG of their handwritten signature). Both paths ultimately hand back a
+ * PNG/image data URL via `onSave`, so downstream code is unchanged.
+ */
+function SignatureCapture({ onSave, width, height }: SignatureCaptureProps) {
+  const { t } = useTranslation();
+  return (
+    <Tabs defaultValue="draw" className="w-full">
+      <TabsList className="grid w-full grid-cols-2 mb-3">
+        <TabsTrigger value="draw" className="flex items-center gap-1.5">
+          <PenTool className="w-3.5 h-3.5" />
+          {t('signatures.pad.tabDraw', 'Draw')}
+        </TabsTrigger>
+        <TabsTrigger value="upload" className="flex items-center gap-1.5">
+          <ImageIcon className="w-3.5 h-3.5" />
+          {t('signatures.pad.tabUpload', 'Upload')}
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="draw" className="mt-0">
+        <SignaturePad onSave={onSave} width={width} height={height} />
+      </TabsContent>
+      <TabsContent value="upload" className="mt-0">
+        <SignatureUpload onSave={onSave} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+// ============ SIGNATURE UPLOAD ============
+
+function SignatureUpload({ onSave }: { onSave: (dataUrl: string) => void }) {
+  const { t } = useTranslation();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+
+  const handleFile = (file: File | undefined) => {
+    setError(null);
+    if (!file) return;
+    if (!ACCEPTED_SIGNATURE_TYPES.includes(file.type)) {
+      setError(t('signatures.pad.uploadTypeError', 'Please upload a PNG, JPG, or WEBP image.'));
+      return;
+    }
+    if (file.size > MAX_SIGNATURE_BYTES) {
+      setError(t('signatures.pad.uploadSizeError', 'Image is too large (max 2 MB).'));
+      return;
+    }
+    setProcessing(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const result = typeof reader.result === 'string' ? reader.result : null;
+      if (!result) {
+        setProcessing(false);
+        setError(
+          t('signatures.pad.uploadReadError', 'Could not read the file. Try another image.'),
+        );
+        return;
+      }
+      // Clean up the uploaded image (transparent background + tight crop) so it
+      // embeds as neatly as a drawn signature.
+      const normalized = await normalizeSignatureImage(result);
+      setProcessing(false);
+      onSave(normalized);
+    };
+    reader.onerror = () => {
+      setProcessing(false);
+      setError(t('signatures.pad.uploadReadError', 'Could not read the file. Try another image.'));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        disabled={processing}
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (!processing) handleFile(e.dataTransfer.files?.[0]);
+        }}
+        className="w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed border-muted-foreground/30 rounded-lg py-8 px-4 bg-white hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+      >
+        <Upload className="w-6 h-6 text-muted-foreground" />
+        <span className="text-sm font-medium">
+          {processing
+            ? t('signatures.pad.uploadProcessing', 'Processing image…')
+            : t('signatures.pad.uploadCta', 'Click or drag an image to upload')}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {t('signatures.pad.uploadHint', 'PNG, JPG or WEBP — transparent PNG looks best')}
+        </span>
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPTED_SIGNATURE_TYPES.join(',')}
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
 }
 
 // ============ SIGNATURE PAD COMPONENT ============
@@ -726,7 +926,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
               {!declineMode ? (
                 <div>
                   <Label className="mb-2 block">
-                    {t('signatures.pad.drawSignature', 'Draw your signature below')}
+                    {t('signatures.pad.provideSignature', 'Draw or upload your signature')}
                   </Label>
                   {signatureData ? (
                     <div className="space-y-2">
@@ -738,7 +938,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
                       </Button>
                     </div>
                   ) : (
-                    <SignaturePad onSave={setSignatureData} />
+                    <SignatureCapture onSave={setSignatureData} />
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
                     {t(
