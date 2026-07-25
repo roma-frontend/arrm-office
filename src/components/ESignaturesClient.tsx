@@ -833,8 +833,16 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
           ? t('signatures.archived', 'Signed document archived')
           : t('signatures.alreadyArchived', 'Document already archived'),
       );
-    } catch {
-      toast.error(t('signatures.errors.archiveFailed', 'Failed to archive signed PDF'));
+    } catch (err) {
+      // Surface the real cause (Cloudinary upload / PDF render / Convex mutation)
+      // instead of swallowing it behind a generic message.
+      console.error('Failed to archive signed PDF:', err);
+      const detail = err instanceof Error ? err.message : '';
+      toast.error(
+        detail
+          ? `${t('signatures.errors.archiveFailed', 'Failed to archive signed PDF')}: ${detail}`
+          : t('signatures.errors.archiveFailed', 'Failed to archive signed PDF'),
+      );
     } finally {
       setArchiving(false);
     }
