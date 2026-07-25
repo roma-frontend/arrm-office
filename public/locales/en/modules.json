@@ -433,6 +433,15 @@
     "declineTitle": "Decline Document",
     "pad": {
       "drawSignature": "Draw your signature below",
+      "provideSignature": "Draw or upload your signature",
+      "tabDraw": "Draw",
+      "tabUpload": "Upload",
+      "uploadCta": "Click or drag an image to upload",
+      "uploadProcessing": "Processing image…",
+      "uploadHint": "PNG, JPG or WEBP — transparent PNG looks best",
+      "uploadTypeError": "Please upload a PNG, JPG, or WEBP image.",
+      "uploadSizeError": "Image is too large (max 2 MB).",
+      "uploadReadError": "Could not read the file. Try another image.",
       "clear": "Clear",
       "apply": "Apply Signature",
       "redraw": "Redraw"
