@@ -1062,6 +1062,42 @@
       "draft": "Entwurf"
     }
   },
+  "bsc": {
+    "northStar": "Leitstern",
+    "mostImportant": "Am wichtigsten",
+    "northStarDesc": "Ihre wichtigste strategische Kennzahl",
+    "target": "Ziel",
+    "progress": "Fortschritt",
+    "overallScore": "Gesamt BSC-Wert",
+    "outOf100": "von 100",
+    "objectives": "Ziele",
+    "objectives_small": "Ziele",
+    "avgProgress": "Ø Fortschritt",
+    "trend": "Trend",
+    "hideMetrics": "Metriken ausblenden",
+    "showMetrics": "Metriken anzeigen",
+    "heatMap": "Strategische Heatmap",
+    "perspectives": "4 Perspektiven",
+    "perspectivesDesc": "Finanzen · Kunden · Prozesse · Lernen & Wachstum",
+    "expandAll": "Alle erweitern",
+    "compact": "Kompakte Ansicht",
+    "legend": "Bewertungslegende:",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "empty": "Noch keine BSC-Daten",
+    "emptyHint": "Erstellen Sie Ziele in verschiedenen Bereichen (Finanzen, Kunden, Prozesse, Lernen), um Ihre Balanced Scorecard zu sehen.",
+    "grade": {
+      "excellent": "Hervorragend",
+      "good": "Gut",
+      "fair": "Befriedigend",
+      "poor": "Schwach"
+    },
+    "perspective": {
+      "financial": "Finanzen",
+      "customer": "Kunden",
+      "internal": "Prozesse",
+      "learning": "Lernen & Wachstum"
+    }
+  },
   "notifications": {
     "types": {
       "leave_request": "Neuer Urlaubsantrag",
@@ -1228,17 +1264,7 @@
     "touchId": "Touch ID"
   },
   "events": {
-    "eventType": "Ereignistyp",
-    "priorityLevel": "Priorität",
-    "notifyDaysBefore": "Tage vorher benachrichtigen",
-    "description": "Beschreibung",
-    "daysBeforeEvent": "Tage vor dem Ereignis",
-    "eventSummary": "Ereignisübersicht",
-    "conflictAlertDesc": "Urlaubsanträge aus diesen Abteilungen lösen Konfliktwarnungen aus",
-    "creating": "Erstellen...",
-    "createEvent": "Ereignis erstellen",
-    "descriptionPlaceholder": "Kurze Beschreibung...",
-    "fillRequired": "Bitte alle Pflichtfelder ausfüllen"
+    "reviewFailed": "Benachrichtigung konnte nicht verarbeitet werden"
   },
   "chat": {
     "newMessage": "Neue Nachricht"
@@ -1308,15 +1334,39 @@
     "events": "Ereignisse",
     "leaves": "Urlaube",
     "noEvents": "Keine Ereignisse an diesem Tag",
-    "leaveRequests": "Urlaubsantr\u00e4ge",
+    "leaveRequests": "Urlaubsanträge",
     "calendarEvents": "Kalender-Ereignisse",
     "googleEvents": "Google Kalender",
     "driverBookings": "Fahrerbuchungen"
   },
-  "events": {
-    "reviewFailed": "Benachrichtigung konnte nicht verarbeitet werden"
-  },
   "careers": {
     "submitError": "Fehler beim Senden der Bewerbung"
+  },
+  "chatWidget": {
+    "viewFullScreen": "View full response"
+  },
+  "aiAgent": {
+    "general": "Allgemein",
+    "generalDesc": "Allgemeiner Assistent für alle HR-Fragen",
+    "recruitment": "Rekrutierung",
+    "recruitmentDesc": "Einstellung, Stellenangebote & Kandidaten",
+    "policy": "Richtlinien",
+    "policyDesc": "Unternehmensrichtlinien, Compliance & Dokumente",
+    "analytics": "Analytik",
+    "analyticsDesc": "Berichte, Trends & Dateneinblicke",
+    "kpi": "KPI",
+    "kpiDesc": "OKR, Ziele & Leistungsstrategie",
+    "hint": "Spezialisierte Agenten für domänenspezifische Aufgaben"
+  },
+  "strategyPage": {
+    "title": "Ausrichtung, Strategie & BSC",
+    "strategyTree": "Strategiebaum",
+    "balancedScorecard": "Balanced Scorecard",
+    "alignmentView": "Ausrichtung"
+  },
+  "alignmentView": {
+    "totalTasks": "Verknüpfte Aufgaben",
+    "cascade": "Unternehmen → Team → Einzelperson",
+    "emptyHint": "Erstellen Sie Ziele auf Unternehmensebene und verknüpfen Sie Aufgaben, um die vollständige Ausrichtungsansicht mit Fortschrittsverfolgung zu sehen."
   }
 }

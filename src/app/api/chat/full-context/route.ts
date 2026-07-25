@@ -97,8 +97,11 @@ async function verifyAuth(req: NextRequest): Promise<AuthPayload | null> {
 
     const secret = new TextEncoder().encode(jwtSecret);
     const { payload } = await jwtVerify(token.value, secret);
+    const userId = (payload.sub as string) || '';
+    // Reject empty userId — Convex v.id('users') requires a valid ID
+    if (!userId) return null;
     return {
-      userId: (payload.sub as string) || '',
+      userId,
       role: (payload.role as string) || 'employee',
       email: (payload.email as string) || '',
     };

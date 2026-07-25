@@ -72,7 +72,7 @@ export const listObjectives = query({
     if (ownerId) objectives = objectives.filter((o: any) => o.ownerId === ownerId);
     if (status) objectives = objectives.filter((o: any) => o.status === status);
 
-    // Fetch owner names
+    // Fetch owner names + task counts
     const enriched = await Promise.all(
       objectives.map(async (obj) => {
         const owner = await ctx.db.get(obj.ownerId);
@@ -81,12 +81,20 @@ export const listObjectives = query({
           .query('keyResults')
           .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
           .take(DEFAULT_LIST_CAP);
+        // Count linked tasks for this objective
+        const tasks = await ctx.db
+          .query('tasks')
+          .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
+          .take(SMALL_LIST_CAP);
+        const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
         return {
           ...obj,
           ownerName: owner?.name ?? 'Unknown',
           ownerAvatar: ownerProfile?.avatarUrl ?? owner?.avatarUrl,
           keyResultsCount: krs.length,
           keyResults: krs,
+          taskCount: tasks.length,
+          completedTaskCount: completedTasks,
         };
       }),
     );

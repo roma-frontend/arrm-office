@@ -299,7 +299,8 @@
     "text": "Տեքստ",
     "rating": "Գնահատական",
     "yes_no": "Այո/Ոչ",
-    "scale": "Սանդղակ"
+    "scale": "Սանդղակ",
+    "nps": "NPS"
   },
   "surveyResults": {
     "title": "Հարցումների արդյունքների վահանակ",
@@ -1131,7 +1132,8 @@
     "delete": "Ջնջել",
     "edit": "Խմբագրել",
     "view": "Դիտել",
-    "close": "Փակել"
+    "close": "Փակել",
+    "policyType": "Policy Type"
   },
   "documents": {
     "title": "Փաստաթղթերի կառավարում",
@@ -2089,6 +2091,18 @@
       "feature": "Ֆունկցիայի առաջարկ",
       "bug": "Սխալի հաղորդում",
       "other": "Այլ"
+    },
+    "categoryNames": {
+      "travel": "Travel",
+      "meals": "Meals",
+      "accommodation": "Accommodation",
+      "transport": "Transport",
+      "office_supplies": "Office Supplies",
+      "software": "Software",
+      "training": "Training",
+      "health": "Health",
+      "communication": "Communication",
+      "other": "Other"
     }
   },
   "supportWizard": {

@@ -1029,6 +1029,42 @@
       "draft": "Draft"
     }
   },
+  "bsc": {
+    "northStar": "North Star",
+    "mostImportant": "Most Important",
+    "northStarDesc": "Your single most important strategic metric",
+    "target": "Target",
+    "progress": "Progress",
+    "overallScore": "Overall BSC Score",
+    "outOf100": "out of 100",
+    "objectives": "objectives",
+    "objectives_small": "obj",
+    "avgProgress": "Avg Progress",
+    "trend": "Trend",
+    "hideMetrics": "Hide metrics",
+    "showMetrics": "Show metrics",
+    "heatMap": "Strategy Heat Map",
+    "perspectives": "4 Perspectives",
+    "perspectivesDesc": "Financial · Customer · Internal Process · Learning & Growth",
+    "expandAll": "Expand All",
+    "compact": "Compact View",
+    "legend": "Score legend:",
+    "lastUpdated": "Last updated",
+    "empty": "No Balanced Scorecard data yet",
+    "emptyHint": "Create objectives across different areas (financial, customer, operations, learning) to see your Balanced Scorecard.",
+    "grade": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor"
+    },
+    "perspective": {
+      "financial": "Financial",
+      "customer": "Customer",
+      "internal": "Internal Process",
+      "learning": "Learning & Growth"
+    }
+  },
   "notifications": {
     "types": {
       "leave_request": "New Leave Request",
@@ -1195,17 +1231,7 @@
     "touchId": "Touch ID"
   },
   "events": {
-    "eventType": "Event Type",
-    "priorityLevel": "Priority Level",
-    "notifyDaysBefore": "Notify Days Before",
-    "description": "Description",
-    "daysBeforeEvent": "days before the event",
-    "eventSummary": "Event Summary",
-    "conflictAlertDesc": "Leave requests from these departments will trigger conflict alerts",
-    "creating": "Creating...",
-    "createEvent": "Create Event",
-    "descriptionPlaceholder": "Brief description of the event...",
-    "fillRequired": "Please fill all required fields"
+    "reviewFailed": "Failed to review alert"
   },
   "chat": {
     "newMessage": "New message"
@@ -1283,10 +1309,31 @@
   "chatWidget": {
     "viewFullScreen": "View full response"
   },
-  "events": {
-    "reviewFailed": "Failed to review alert"
-  },
   "careers": {
     "submitError": "Error submitting application"
+  },
+  "aiAgent": {
+    "general": "General",
+    "generalDesc": "General assistant for all HR questions",
+    "recruitment": "Recruitment",
+    "recruitmentDesc": "Hiring, vacancies & candidate pipeline",
+    "policy": "Policy",
+    "policyDesc": "Company policies, compliance & documents",
+    "analytics": "Analytics",
+    "analyticsDesc": "Reports, trends & data insights",
+    "kpi": "KPI",
+    "kpiDesc": "OKR, goals & performance strategy",
+    "hint": "Specialized agents for domain-specific tasks"
+  },
+  "strategyPage": {
+    "title": "Alignment View, Strategy & Balanced Scorecard",
+    "strategyTree": "Strategy Tree",
+    "balancedScorecard": "Balanced Scorecard",
+    "alignmentView": "Alignment View"
+  },
+  "alignmentView": {
+    "totalTasks": "Linked Tasks",
+    "cascade": "Company → Team → Individual",
+    "emptyHint": "Create company-level objectives and link tasks to see the full alignment view with progress tracking."
   }
 }

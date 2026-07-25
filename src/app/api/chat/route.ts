@@ -2,7 +2,9 @@ import { groq } from '@ai-sdk/groq';
 import OpenAI from 'openai';
 import { streamText } from 'ai';
 import { buildRoleBasedPrompt, detectIntent } from '@/lib/aiAssistant';
+import { buildAgentPrompt, routeToAgent, getAgentSystemInstruction } from '@/lib/ai/agents';
 import type { UserRole } from '@/lib/aiAssistant';
+import type { AgentType } from '@/lib/ai/agents';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
@@ -40,6 +42,7 @@ const chatRequestSchema = z.object({
   ),
   userId: z.string().optional(),
   lang: z.enum(['en', 'ru', 'hy']).optional(),
+  agent: z.enum(['recruitment', 'policy', 'analytics', 'kpi', 'general']).optional(),
 });
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
@@ -67,7 +70,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       );
     }
 
-    const { messages, userId, lang } = validation.data;
+    const { messages, userId, lang, agent: manualAgent } = validation.data;
 
     const langInstruction =
       lang === 'ru'
@@ -117,27 +120,39 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     logger.log(`⚡ Context fetch completed in ${fetchTime}ms`);
 
     // ═══════════════════════════════════════════════════════════════
-    // BUILD PROMPT — Compact and focused
+    // AGENT ROUTING — Route to specialized domain agent
     // ═══════════════════════════════════════════════════════════════
-    const roleBasedSystemPrompt = buildRoleBasedPrompt(
-      {
-        userId: userId || '',
-        name: contexts.userName,
-        email: contexts.userEmail,
-        role: contexts.userRole as UserRole,
-        organizationId: contexts.userOrgId,
-        department: contexts.userDepartment,
-        position: contexts.userPosition,
-      },
-      {
-        userContext: contexts.userContext,
-        fullContext: contexts.fullContext,
-        aiInsights: contexts.aiInsights,
-        conflictCheckData: contexts.conflictCheckData,
-        availableDriversInfo: contexts.availableDriversInfo,
-        dateContext,
-      },
-    );
+    const userContext = {
+      userId: userId || '',
+      name: contexts.userName,
+      email: contexts.userEmail,
+      role: contexts.userRole as UserRole,
+      organizationId: contexts.userOrgId,
+      department: contexts.userDepartment,
+      position: contexts.userPosition,
+    };
+
+    // Route to the best agent for this message (respect manual override, but validate against role restrictions)
+    const autoAgent = routeToAgent(lastUserMessage, userContext.role);
+    const selectedAgent: AgentType = manualAgent
+      ? routeToAgent(manualAgent, userContext.role) === manualAgent
+        ? manualAgent
+        : autoAgent
+      : autoAgent;
+    const liveDataString = [
+      contexts.userContext,
+      contexts.fullContext ? `\n${contexts.fullContext}` : '',
+      contexts.aiInsights ? `\n${contexts.aiInsights}` : '',
+      contexts.conflictCheckData ? `\n${contexts.conflictCheckData}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    // Build agent-specific prompt (focused, smaller)
+    const agentPrompt = buildAgentPrompt(selectedAgent, userContext, liveDataString);
+    const agentInstruction = getAgentSystemInstruction(selectedAgent);
+
+    logger.log('Routed to agent: ' + selectedAgent);
 
     // Navigation hint
     let navigationHint = '';
@@ -166,7 +181,35 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     // ═══════════════════════════════════════════════════════════════
     // GROQ PRIMARY — Fast inference
     // ═══════════════════════════════════════════════════════════════
-    const corePrompt = `${roleBasedSystemPrompt}
+    // Use agent-specific prompt for specialized agents, full prompt for general
+    // buildRoleBasedPrompt is ONLY called inside the else branch (lazy)
+    const systemPrompt =
+      selectedAgent !== 'general'
+        ? `${agentPrompt}${agentInstruction}
+
+LIVE DATA:
+${liveDataString}
+${navigationHint}
+
+${langInstruction}
+
+FORMAT RULES:
+- Use markdown tables for lists
+- Use emojis for readability
+- Be concise but complete
+- Answer in user's language
+- CRITICAL: NEVER invent, fabricate, or hallucinate data. ONLY use information from LIVE DATA section above.
+- <NAVIGATE>/path only for explicit page requests
+- <ACTION>{"type":"BOOK_LEAVE",...} for leave booking (ask dates first if missing)
+`
+        : `${buildRoleBasedPrompt(userContext, {
+            userContext: contexts.userContext,
+            fullContext: contexts.fullContext,
+            aiInsights: contexts.aiInsights,
+            conflictCheckData: contexts.conflictCheckData,
+            availableDriversInfo: contexts.availableDriversInfo,
+            dateContext,
+          })}
 
 LIVE DATA:
 ${contexts.userContext}
@@ -179,21 +222,23 @@ ${langInstruction}
 
 FORMAT RULES:
 - Use markdown tables for lists
-- Use emojis: 👤📅⏰📊🎯🎫📝🚗✅⏳❌
+- Use emojis for readability
 - Be concise but complete
 - Answer in user's language
 - CRITICAL: NEVER invent, fabricate, or hallucinate data. ONLY use information from LIVE DATA section above. If the LIVE DATA does not contain the answer, respond: "I don't have this data right now. Please check [relevant page]." Do NOT generate fake names, numbers, dates, or statistics.
-- If LIVE DATA shows "No data" or is empty for a section, tell the user that information is not available — do NOT make up placeholder data.
+- If LIVE DATA shows "No data" or is empty for a section, tell the user that information is not available.
 - <NAVIGATE>/path only for explicit page requests
 - <ACTION>{"type":"BOOK_LEAVE",...} for leave booking (ask dates first if missing)
 `;
+
+    logger.log(`📐 Prompt size: ${systemPrompt.length} chars (agent: ${selectedAgent})`);
 
     try {
       logger.log('🚀 Using Groq (primary)...');
       const result = await streamText({
         model: groq('llama-3.1-8b-instant'),
         maxRetries: 0,
-        system: corePrompt,
+        system: systemPrompt,
         messages,
       });
 
@@ -206,7 +251,7 @@ FORMAT RULES:
       try {
         const stream = await getOpenRouter().chat.completions.create({
           model: 'meta-llama/llama-3.3-70b-instruct:free',
-          messages: [{ role: 'system', content: corePrompt }, ...messages],
+          messages: [{ role: 'system', content: systemPrompt }, ...messages],
           stream: true,
         });
 

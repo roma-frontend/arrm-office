@@ -29,6 +29,9 @@ import {
   BarChart3,
   CheckSquare,
   ListChecks,
+  Plus,
+  FileText,
+  ChevronRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -366,21 +369,36 @@ export default function GoalDetailClient() {
         </Card>
       )}
 
-      {/* Linked Tasks Section */}
+      {/* Linked Tasks Section — Enhanced */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ListChecks className="h-5 w-5" />
-            {t('goals.linkedTasks', 'Linked Tasks')}
-            {linkedTasks && linkedTasks.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {linkedTasks.length}
-              </Badge>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ListChecks className="h-5 w-5" />
+                {t('goals.linkedTasks', 'Linked Tasks')}
+                {linkedTasks && linkedTasks.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {linkedTasks.length}
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {t('goals.linkedTasksDesc', 'Tasks that contribute to this objective')}
+              </CardDescription>
+            </div>
+            {goal.status === 'active' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 shrink-0"
+                onClick={() => router.push(`/tasks/new?objectiveId=${goalId}`)}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t('goals.addTask', 'Add Task')}
+              </Button>
             )}
-          </CardTitle>
-          <CardDescription>
-            {t('goals.linkedTasksDesc', 'Tasks that contribute to this objective')}
-          </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           {!linkedTasks ? (
@@ -394,74 +412,166 @@ export default function GoalDetailClient() {
               <p className="text-sm text-muted-foreground">
                 {t('goals.noLinkedTasks', 'No linked tasks yet')}
               </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                {t(
+                  'goals.noLinkedTasksHint',
+                  'Create tasks that align with this objective to track progress',
+                )}
+              </p>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
-                className="mt-3"
-                onClick={() => router.push('/tasks')}
+                className="gap-1.5"
+                onClick={() => router.push(`/tasks/new?objectiveId=${goalId}`)}
               >
+                <Plus className="w-3.5 h-3.5" />
                 {t('goals.createLinkedTask', 'Create a task')}
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {linkedTasks.map((task: any) => {
-                const statusColors: Record<string, string> = {
-                  pending: 'border-l-yellow-500',
-                  in_progress: 'border-l-blue-500',
-                  review: 'border-l-purple-500',
-                  completed: 'border-l-green-500',
-                  cancelled: 'border-l-gray-500',
-                };
-                const isOverdue =
-                  task.deadline &&
-                  new Date(task.deadline) < new Date() &&
-                  task.status !== 'completed';
+            <div className="space-y-4">
+              {/* Task Completion Stats */}
+              {(() => {
+                const total = linkedTasks.length;
+                const completed = linkedTasks.filter((t: any) => t.status === 'completed').length;
+                const inProgress = linkedTasks.filter(
+                  (t: any) => t.status === 'in_progress' || t.status === 'review',
+                ).length;
+                const pending = linkedTasks.filter((t: any) => t.status === 'pending').length;
+                const overdue = linkedTasks.filter(
+                  (t: any) =>
+                    t.deadline && new Date(t.deadline) < new Date() && t.status !== 'completed',
+                ).length;
+                const completionPct = Math.round((completed / total) * 100);
+
                 return (
-                  <div
-                    key={task._id}
-                    className={`flex items-center justify-between p-3 rounded-lg border border-l-4 cursor-pointer
-                      hover:bg-muted/50 transition-colors ${statusColors[task.status] || 'border-l-gray-500'}`}
-                    onClick={() => router.push(`/tasks/${task._id}`)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <CheckSquare className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{task.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {task.assignedToUser?.name ?? 'Unassigned'}
-                          {isOverdue && ` · ${t('tasksClient.overdueTag', 'Overdue')}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          task.status === 'completed'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : task.status === 'in_progress'
-                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                              : task.status === 'review'
-                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                : task.status === 'cancelled'
-                                  ? 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                        }`}
-                      >
-                        {task.status === 'completed'
-                          ? t('taskStatus.completed')
-                          : task.status === 'in_progress'
-                            ? t('taskStatus.inProgress')
-                            : task.status === 'review'
-                              ? t('taskStatus.inReview')
-                              : task.status === 'cancelled'
-                                ? t('taskStatus.cancelled')
-                                : t('taskStatus.pending')}
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {t('goals.taskProgress', 'Task Progress')}
                       </span>
+                      <span className="text-xs font-semibold">
+                        {completed}/{total} {t('goals.done', 'done')}
+                      </span>
+                    </div>
+                    <Progress value={completionPct} className="h-2" />
+                    <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        {completed} {t('taskStatus.completed', 'done')}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        {inProgress} {t('taskStatus.inProgress', 'in progress')}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                        {pending} {t('taskStatus.pending', 'pending')}
+                      </span>
+                      {overdue > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-red-500" />
+                          {overdue} {t('tasksClient.overdueTag', 'overdue')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
-              })}
+              })()}
+
+              {/* Task List */}
+              <div className="space-y-2">
+                {linkedTasks.map((task: any) => {
+                  const statusColors: Record<string, string> = {
+                    pending: 'border-l-yellow-500',
+                    in_progress: 'border-l-blue-500',
+                    review: 'border-l-purple-500',
+                    completed: 'border-l-green-500',
+                    cancelled: 'border-l-gray-500',
+                  };
+                  const isOverdue =
+                    task.deadline &&
+                    new Date(task.deadline) < new Date() &&
+                    task.status !== 'completed';
+                  const statusIconMap: Record<
+                    string,
+                    React.ComponentType<{ className?: string }>
+                  > = {
+                    pending: Clock,
+                    in_progress: AlertCircle,
+                    review: FileText,
+                    completed: CheckCircle,
+                    cancelled: XCircle,
+                  };
+                  const StatusIcon = statusIconMap[task.status] || Clock;
+
+                  return (
+                    <div
+                      key={task._id}
+                      className={`flex items-center justify-between p-3 rounded-lg border border-l-4 cursor-pointer
+                        hover:bg-muted/50 transition-colors group ${
+                          statusColors[task.status] || 'border-l-gray-500'
+                        } ${isOverdue ? 'bg-red-50 dark:bg-red-950/10' : ''}`}
+                      onClick={() => router.push(`/tasks/${task._id}`)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <StatusIcon
+                          className={`h-4 w-4 shrink-0 ${
+                            task.status === 'completed'
+                              ? 'text-green-500'
+                              : isOverdue
+                                ? 'text-red-500'
+                                : 'text-muted-foreground'
+                          }`}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                            {task.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <User className="w-3 h-3" />
+                            {task.assignedToUser?.name ?? 'Unassigned'}
+                            {isOverdue && (
+                              <>
+                                <span className="text-red-400">·</span>
+                                <span className="text-red-500 font-medium">
+                                  {t('tasksClient.overdueTag', 'Overdue')}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            task.status === 'completed'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              : task.status === 'in_progress'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                : task.status === 'review'
+                                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                  : task.status === 'cancelled'
+                                    ? 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}
+                        >
+                          {task.status === 'completed'
+                            ? t('taskStatus.completed')
+                            : task.status === 'in_progress'
+                              ? t('taskStatus.inProgress')
+                              : task.status === 'review'
+                                ? t('taskStatus.inReview')
+                                : task.status === 'cancelled'
+                                  ? t('taskStatus.cancelled')
+                                  : t('taskStatus.pending')}
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </CardContent>

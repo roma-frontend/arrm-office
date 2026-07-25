@@ -17,6 +17,7 @@ import {
   Users,
   User,
   Calendar,
+  ListChecks,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useMutation } from 'convex/react';
@@ -1217,6 +1218,15 @@ export default function GoalsClient() {
                             </span>
                             <span>•</span>
                             <span>{obj.keyResultsCount} KRs</span>
+                            {obj.taskCount > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1">
+                                  <ListChecks className="w-3 h-3" />
+                                  {obj.completedTaskCount}/{obj.taskCount}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>

@@ -11,6 +11,9 @@ module.exports = {
   transformIgnorePatterns: ['/node_modules/(?!(convex|convex-test)/)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    // Prevent TensorFlow.js optional peer dependency from crashing test workers
+    '^@tensorflow/tfjs-node$': '<rootDir>/src/__tests__/__mocks__/empty-module.ts',
+    '^@tensorflow/tfjs-node-gpu$': '<rootDir>/src/__tests__/__mocks__/empty-module.ts',
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',

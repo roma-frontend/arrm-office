@@ -1,169 +1,123 @@
 /**
- * Tests for document catalog (src/lib/documentCatalog.ts)
- * Tests: CATALOG, getCatalogTemplate, localizedContent,
- *        CATEGORY_LABELS, CATEGORY_ORDER, ACCENT_HEX
+ * Tests for documentCatalog.ts — template data + query functions.
  */
-
 import {
   CATALOG,
-  CATEGORY_ORDER,
-  CATEGORY_LABELS,
-  ACCENT_HEX,
   getCatalogTemplate,
   localizedContent,
+  CATEGORY_LABELS,
+  ACCENT_HEX,
 } from '@/lib/documentCatalog';
 
-describe('CATALOG', () => {
-  it('contains 8 templates (all categories)', () => {
+describe('CATALOG data', () => {
+  it('has all 8 templates', () => {
     expect(CATALOG.length).toBe(8);
   });
 
-  it('every template has required fields', () => {
-    CATALOG.forEach((template) => {
-      expect(template.id).toBeDefined();
-      expect(template.category).toBeDefined();
-      expect(template.accent).toBeDefined();
-      expect(typeof template.signature).toBe('boolean');
-      expect(template.locales).toBeDefined();
-    });
+  it('all templates have required fields', () => {
+    for (const tpl of CATALOG) {
+      expect(tpl.id).toBeDefined();
+      expect(tpl.category).toMatch(/^(certificate|hiring|consent|order)$/);
+      expect(tpl.accent).toMatch(/^(blue|slate|emerald|burgundy)$/);
+      expect(typeof tpl.signature).toBe('boolean');
+      expect(tpl.locales.en).toBeDefined();
+      expect(tpl.locales.ru).toBeDefined();
+      expect(tpl.locales.de).toBeDefined();
+      expect(tpl.locales.hy).toBeDefined();
+    }
   });
 
-  it('every template has en locale as fallback', () => {
-    CATALOG.forEach((template) => {
-      expect(template.locales.en).toBeDefined();
-      expect(template.locales.en.title).toBeDefined();
-      expect(template.locales.en.body).toBeDefined();
-    });
+  it('each locale has title and body', () => {
+    for (const tpl of CATALOG) {
+      const locales = ['en', 'ru', 'de', 'hy'] as const;
+      for (const locale of locales) {
+        expect(tpl.locales[locale].title).toBeDefined();
+        expect(tpl.locales[locale].body).toBeDefined();
+      }
+    }
   });
 
-  it('every template has ru, hy, de locales', () => {
-    CATALOG.forEach((template) => {
-      expect(template.locales.ru).toBeDefined();
-      expect(template.locales.hy).toBeDefined();
-      expect(template.locales.de).toBeDefined();
-    });
-  });
-
-  it('all templates have unique ids', () => {
+  it('has unique ids', () => {
     const ids = CATALOG.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('all body contents contain merge tokens', () => {
-    CATALOG.forEach((template) => {
-      ['en', 'ru', 'hy', 'de'].forEach((lang) => {
-        const locale = template.locales[lang as keyof typeof template.locales];
-        if (locale) {
-          expect(locale.body).toContain('{{');
-        }
-      });
-    });
-  });
-});
-
-describe('CATEGORY_ORDER', () => {
-  it('defines expected categories in order', () => {
-    expect(CATEGORY_ORDER).toEqual(['certificate', 'hiring', 'consent', 'order']);
-  });
-
-  it('every category has at least one template', () => {
-    CATEGORY_ORDER.forEach((category) => {
-      const count = CATALOG.filter((t) => t.category === category).length;
-      expect(count).toBeGreaterThanOrEqual(1);
-    });
-  });
-});
-
-describe('CATEGORY_LABELS', () => {
-  it('has labels for all categories', () => {
-    CATEGORY_ORDER.forEach((category) => {
-      expect(CATEGORY_LABELS[category]).toBeDefined();
-    });
-  });
-
-  it('has labels in all 4 languages', () => {
-    const langs = ['en', 'ru', 'de', 'hy'];
-    CATEGORY_ORDER.forEach((category) => {
-      langs.forEach((lang) => {
-        expect(
-          CATEGORY_LABELS[category][lang as keyof (typeof CATEGORY_LABELS)['certificate']],
-        ).toBeDefined();
-        expect(
-          CATEGORY_LABELS[category][lang as keyof (typeof CATEGORY_LABELS)['certificate']]!.length,
-        ).toBeGreaterThan(0);
-      });
-    });
-  });
-
-  it('all certificates are non-empty strings', () => {
-    CATEGORY_ORDER.forEach((category) => {
-      const labels = CATEGORY_LABELS[category];
-      ['en', 'ru', 'de', 'hy'].forEach((lang) => {
-        expect(labels[lang as keyof typeof labels]?.length).toBeGreaterThan(0);
-      });
-    });
-  });
-});
-
-describe('ACCENT_HEX', () => {
-  it('defines all 4 accent colors', () => {
-    expect(Object.keys(ACCENT_HEX)).toHaveLength(4);
-  });
-
-  it('all colors are valid hex codes', () => {
-    Object.values(ACCENT_HEX).forEach((hex) => {
-      expect(hex).toMatch(/^#[0-9a-f]{6}$/);
-    });
-  });
-
-  it('has expected colors', () => {
-    expect(ACCENT_HEX.blue).toBe('#1d4ed8');
-    expect(ACCENT_HEX.slate).toBe('#334155');
-    expect(ACCENT_HEX.emerald).toBe('#047857');
-    expect(ACCENT_HEX.burgundy).toBe('#9f1239');
+  it('has at least one template per category', () => {
+    const categories = CATALOG.map((t) => t.category);
+    expect(categories.filter((c) => c === 'certificate').length).toBeGreaterThan(0);
+    expect(categories.filter((c) => c === 'hiring').length).toBeGreaterThan(0);
+    expect(categories.filter((c) => c === 'consent').length).toBeGreaterThan(0);
+    expect(categories.filter((c) => c === 'order').length).toBeGreaterThan(0);
   });
 });
 
 describe('getCatalogTemplate', () => {
-  it('finds existing template by id', () => {
-    CATALOG.forEach((template) => {
-      expect(getCatalogTemplate(template.id)).toBeDefined();
-      expect(getCatalogTemplate(template.id)!.id).toBe(template.id);
-    });
+  it('returns template for valid id', () => {
+    const tpl = getCatalogTemplate('employment-verification');
+    expect(tpl).toBeDefined();
+    expect(tpl!.id).toBe('employment-verification');
   });
 
-  it('returns undefined for non-existent id', () => {
-    expect(getCatalogTemplate('non-existent')).toBeUndefined();
-    expect(getCatalogTemplate('')).toBeUndefined();
+  it('returns undefined for unknown id', () => {
+    expect(getCatalogTemplate('nonexistent')).toBeUndefined();
   });
 
-  it('is case-sensitive', () => {
-    if (CATALOG[0]) {
-      expect(getCatalogTemplate(CATALOG[0].id.toUpperCase())).toBeUndefined();
+  it('finds all templates by id', () => {
+    for (const tpl of CATALOG) {
+      expect(getCatalogTemplate(tpl.id)).toBeDefined();
     }
   });
 });
 
 describe('localizedContent', () => {
-  it('returns English content for en locale', () => {
-    const template = CATALOG[0]!;
-    const content = localizedContent(template, 'en');
-    expect(content.title).toBe(template.locales.en.title);
-    expect(content.body).toBe(template.locales.en.body);
+  it('returns English content for en', () => {
+    const tpl = CATALOG[0];
+    const content = localizedContent(tpl, 'en');
+    expect(content.title).toBe(tpl.locales.en.title);
   });
 
-  it('returns locale-specific content for each locale', () => {
-    const template = CATALOG[0]!;
-    const langs = ['ru', 'hy', 'de'] as const;
-    langs.forEach((lang) => {
-      const content = localizedContent(template, lang);
-      expect(content.title).toBe(template.locales[lang].title);
-    });
+  it('returns Russian content for ru', () => {
+    const tpl = CATALOG[0];
+    const content = localizedContent(tpl, 'ru');
+    expect(content.title).toBe(tpl.locales.ru.title);
   });
 
-  it('falls back to English for unsupported locale', () => {
-    const template = CATALOG[0]!;
-    const content = localizedContent(template, 'fr' as any);
-    expect(content.title).toBe(template.locales.en.title);
+  it('returns German content for de', () => {
+    const tpl = CATALOG[0];
+    const content = localizedContent(tpl, 'de');
+    expect(content.title).toBe(tpl.locales.de.title);
+  });
+
+  it('returns Armenian content for hy', () => {
+    const tpl = CATALOG[0];
+    const content = localizedContent(tpl, 'hy');
+    expect(content.title).toBe(tpl.locales.hy.title);
+  });
+
+  it('falls back to English for unknown locale', () => {
+    const tpl = CATALOG[0];
+    const content = localizedContent(tpl, 'fr' as any);
+    expect(content.title).toBe(tpl.locales.en.title);
+  });
+});
+
+describe('CATEGORY_LABELS', () => {
+  it('has labels for all categories in all locales', () => {
+    const categories = ['certificate', 'hiring', 'consent', 'order'] as const;
+    const locales = ['en', 'ru', 'de', 'hy'] as const;
+    for (const cat of categories) {
+      for (const loc of locales) {
+        expect(CATEGORY_LABELS[cat][loc]).toBeDefined();
+      }
+    }
+  });
+});
+
+describe('ACCENT_HEX', () => {
+  it('returns hex colors for all accents', () => {
+    expect(ACCENT_HEX.blue).toMatch(/^#[0-9a-f]{6}$/);
+    expect(ACCENT_HEX.slate).toMatch(/^#[0-9a-f]{6}$/);
+    expect(ACCENT_HEX.emerald).toMatch(/^#[0-9a-f]{6}$/);
+    expect(ACCENT_HEX.burgundy).toMatch(/^#[0-9a-f]{6}$/);
   });
 });

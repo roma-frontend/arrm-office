@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import {
@@ -18,6 +18,7 @@ import { CheckSquare, User, AlertCircle, Tag, Paperclip, Target } from 'lucide-r
 import { useMutation, useQuery } from 'convex/react';
 import { useOptimisticCreateTask } from '@/hooks/useOptimisticActions';
 import { api } from '@/convex/_generated/api';
+import { useWizardContext } from '@/components/ui/wizard';
 
 interface AttachmentData {
   url: string;
@@ -45,6 +46,48 @@ export function CreateTaskWizard({
 }: CreateTaskWizardProps) {
   const { t } = useTranslation();
   const { createOptimistic: createTask } = useOptimisticCreateTask();
+
+  // Internal component that reads objectiveId from Wizard context and shows KR selector
+  const ObjectiveLinkedKRField = ({
+    objectivesForLinking: objs,
+  }: {
+    objectivesForLinking:
+      | Array<{
+          _id: string;
+          title: string;
+          keyResults: Array<{
+            _id: string;
+            title: string;
+            completionPercent: number;
+          }>;
+        }>
+      | undefined;
+  }) => {
+    const { stepData } = useWizardContext();
+    const selObjectiveId = stepData.objectiveId as string | undefined;
+    const selObjective = objs?.find((o) => o._id === selObjectiveId);
+
+    if (!selObjective || selObjective.keyResults.length === 0) return null;
+
+    return (
+      <SelectStep
+        field="keyResultId"
+        label={t('taskWizard.steps.objectiveLink.keyResultLabel', 'Key Result')}
+        options={selObjective.keyResults.map((kr) => ({
+          value: kr._id,
+          label: `${kr.title} (${kr.completionPercent}%)`,
+        }))}
+        placeholder={t(
+          'taskWizard.steps.objectiveLink.keyResultPlaceholder',
+          'Select a key result (optional)',
+        )}
+        description={t(
+          'taskWizard.steps.objectiveLink.keyResultHint',
+          'Link to a specific key result',
+        )}
+      />
+    );
+  };
   const addAttachment = useMutation(api.tasks.addAttachment);
 
   const safeUserId = currentUserId && currentUserId !== '' ? currentUserId : null;
@@ -68,10 +111,6 @@ export function CreateTaskWizard({
       ? { organizationId: userForQuery.organizationId as Id<'organizations'>, userId: safeUserId! }
       : 'skip',
   );
-
-  // Get KRs for selected objective
-  const [selectedObjectiveId, setSelectedObjectiveId] = useState<string | null>(null);
-  const selectedObjective = objectivesForLinking?.find((o: any) => o._id === selectedObjectiveId);
 
   const steps: WizardStep[] = [
     {
@@ -187,24 +226,7 @@ export function CreateTaskWizard({
               'Link this task to a strategic goal',
             )}
           />
-          {selectedObjective && selectedObjective.keyResults.length > 0 && (
-            <SelectStep
-              field="keyResultId"
-              label={t('taskWizard.steps.objectiveLink.keyResultLabel', 'Key Result')}
-              options={selectedObjective.keyResults.map((kr: any) => ({
-                value: kr._id,
-                label: `${kr.title} (${kr.completionPercent}%)`,
-              }))}
-              placeholder={t(
-                'taskWizard.steps.objectiveLink.keyResultPlaceholder',
-                'Select a key result (optional)',
-              )}
-              description={t(
-                'taskWizard.steps.objectiveLink.keyResultHint',
-                'Link to a specific key result',
-              )}
-            />
-          )}
+          <ObjectiveLinkedKRField objectivesForLinking={objectivesForLinking} />
         </div>
       ),
     },

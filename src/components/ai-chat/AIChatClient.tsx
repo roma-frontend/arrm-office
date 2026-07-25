@@ -10,6 +10,8 @@ import { useQuery, useMutation, usePaginatedQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { getRoleSuggestions, type UserRole } from '@/lib/aiAssistant';
+import AgentSelector from '@/components/ai/AgentSelector';
+import { type AgentType, routeToAgent } from '@/lib/ai/agents';
 import {
   Sparkles,
   Send,
@@ -172,6 +174,8 @@ export default function AIChatPage() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const [selectedAgent, setSelectedAgent] = useState<AgentType>('general');
+  const [lastDetectedAgent, setLastDetectedAgent] = useState<AgentType>('general');
   const _isListening = false;
 
   // Update sidebar state when screen size changes
@@ -463,10 +467,22 @@ export default function AIChatPage() {
         message: userMessageContent,
       });
 
+      // Auto-detect agent if not manually set
+      const effectiveAgent =
+        selectedAgent !== 'general'
+          ? selectedAgent
+          : routeToAgent(userMessageContent, (user?.role as UserRole) || 'employee');
+
+      // Sync displayed agent in UI (doesn't affect future auto-detection)
+      if (selectedAgent === 'general') {
+        setLastDetectedAgent(effectiveAgent);
+      }
+
       const payload = {
         messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
         userId,
         lang,
+        agent: effectiveAgent,
       };
 
       let res = await fetch('/api/chat', {
@@ -872,10 +888,17 @@ export default function AIChatPage() {
             </div>
           </div>
 
-          <Badge variant="secondary" className="gap-1 shrink-0">
-            <Zap className="w-3 h-3" />
-            {t('aiChat.aiPowered')}
-          </Badge>
+          <div className="flex items-center gap-2 shrink-0">
+            <AgentSelector
+              selectedAgent={selectedAgent !== 'general' ? selectedAgent : lastDetectedAgent}
+              onSelect={setSelectedAgent}
+              disabled={isLoading}
+            />
+            <Badge variant="secondary" className="gap-1 shrink-0">
+              <Zap className="w-3 h-3" />
+              {t('aiChat.aiPowered')}
+            </Badge>
+          </div>
         </header>
 
         {/* Messages */}

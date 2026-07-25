@@ -561,7 +561,7 @@ export default function StrategyMapsClient() {
 
         {/* Level legend */}
         {levelBreakdown && (
-          <div className="flex items-center gap-4 mt-3 text-xs text-(--text-muted)">
+          <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-(--text-muted)">
             <span className="flex items-center gap-1">
               <Building2 className="w-3 h-3 text-purple-500" />
               {t('strategyMap.company', 'Company')}: {levelBreakdown.company}
@@ -574,7 +574,7 @@ export default function StrategyMapsClient() {
               <User className="w-3 h-3 text-emerald-500" />
               {t('strategyMap.individual', 'Individual')}: {levelBreakdown.individual}
             </span>
-            <span className="ml-auto flex items-center gap-2">
+            <span className="sm:ml-auto flex items-center gap-2">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 {t('strategyMap.onTrack', 'On Track')}

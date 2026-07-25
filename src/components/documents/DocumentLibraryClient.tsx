@@ -290,7 +290,7 @@ export default function DocumentLibraryClient() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={handleExportPDF} disabled={exporting || !resolved}>
                 <FileText className="h-4 w-4 mr-1.5" />
                 PDF

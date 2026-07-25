@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +30,8 @@ import {
   MessageSquare,
   Target,
   Layers,
+  ChevronRight,
+  BarChart3,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -322,7 +325,7 @@ export default function TaskDetailClient() {
         </Card>
       )}
 
-      {/* Linked Objective Card */}
+      {/* Linked Objective Card — Enhanced with KR info */}
       {linkedObjective && (
         <Card>
           <CardHeader>
@@ -334,18 +337,21 @@ export default function TaskDetailClient() {
               {t('tasksClient.linkedObjectiveDesc', 'This task contributes to the following OKR')}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            {/* Main Objective Card */}
             <div
               className="flex items-center justify-between p-3 rounded-lg border border-blue-500/20 bg-blue-500/5
-                hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-200 cursor-pointer"
+                hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-200 cursor-pointer group"
               onClick={() => router.push(`/goals/${linkedObjective._id}`)}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 shadow-sm">
                   <Target className="w-4 h-4 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{linkedObjective.title}</p>
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                    {linkedObjective.title}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {linkedObjective.ownerName} · {linkedObjective.periodType}{' '}
                     {linkedObjective.periodYear}
@@ -368,8 +374,39 @@ export default function TaskDetailClient() {
                   </div>
                   <span className="text-xs font-medium">{linkedObjective.progress}%</span>
                 </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
+
+            {/* Linked Key Result (if available) */}
+            {task.keyResultId &&
+              linkedObjective.keyResults &&
+              (() => {
+                const linkedKr = linkedObjective.keyResults.find(
+                  (kr: any) => kr._id === task.keyResultId,
+                );
+                if (!linkedKr) return null;
+                return (
+                  <div className="p-3 rounded-lg border border-purple-500/20 bg-purple-500/5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BarChart3 className="w-3.5 h-3.5 text-purple-500" />
+                      <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                        {t('tasksClient.linkedKeyResult', 'Linked Key Result')}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium mb-2">{linkedKr.title}</p>
+                    <Progress value={linkedKr.completionPercent} className="h-1.5" />
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px] text-muted-foreground">
+                        {linkedKr.startValue} → {linkedKr.targetValue}
+                      </span>
+                      <span className="text-[10px] font-semibold">
+                        {linkedKr.completionPercent}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
           </CardContent>
         </Card>
       )}

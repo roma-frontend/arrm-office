@@ -95,7 +95,8 @@
     "leftToday": "Heute gegangen",
     "noRecordsToday": "Keine Aufzeichnungen für heute",
     "allEmployeesRated": "Alle Mitarbeiter in diesem Monat bewertet! ✅",
-    "checkBackNextMonth": "Kommen Sie nächsten Monat wieder, um die Bewertungen zu sehen"
+    "checkBackNextMonth": "Kommen Sie nächsten Monat wieder, um die Bewertungen zu sehen",
+    "lastMonth": "Last Month"
   },
   "attendanceExtra": {
     "daysWorked": "Gearbeitete Tage",
@@ -637,7 +638,11 @@
     "start": "Start",
     "startDate": "Startdatum",
     "target": "Ziel",
-    "timeline": "Zeitachse"
+    "timeline": "Zeitachse",
+    "errors": {
+      "completeFailed": "Failed to complete objective",
+      "deleteFailed": "Failed to delete objective"
+    }
   },
   "goalStatus": {
     "active": "Aktiv",
@@ -1120,7 +1125,8 @@
     "delete": "Löschen",
     "edit": "Bearbeiten",
     "view": "Ansehen",
-    "close": "Schließen"
+    "close": "Schließen",
+    "policyType": "Policy Type"
   },
   "documents": {
     "title": "Dokumentenverwaltung",
@@ -2079,6 +2085,18 @@
       "feature": "Funktionsvorschlag",
       "bug": "Fehlerbericht",
       "other": "Anderes"
+    },
+    "categoryNames": {
+      "travel": "Travel",
+      "meals": "Meals",
+      "accommodation": "Accommodation",
+      "transport": "Transport",
+      "office_supplies": "Office Supplies",
+      "software": "Software",
+      "training": "Training",
+      "health": "Health",
+      "communication": "Communication",
+      "other": "Other"
     }
   },
   "supportWizard": {

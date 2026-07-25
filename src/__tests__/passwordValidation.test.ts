@@ -1,4 +1,9 @@
-import { validatePassword, validateEmail, getStrengthColor } from '@/lib/passwordValidation';
+import {
+  validatePassword,
+  validateEmail,
+  getStrengthColor,
+  generateSecurePassword,
+} from '@/lib/passwordValidation';
 
 describe('validatePassword', () => {
   it('returns score 0 for empty string', () => {
@@ -112,5 +117,121 @@ describe('getStrengthColor', () => {
 
   it('returns gray for unknown strength', () => {
     expect(getStrengthColor('unknown' as any)).toBe('#6b7280');
+  });
+});
+
+describe('generateSecurePassword', () => {
+  it('returns a string of length 16', () => {
+    const pwd = generateSecurePassword();
+    expect(pwd.length).toBe(16);
+  });
+
+  it('contains at least one uppercase letter', () => {
+    const pwd = generateSecurePassword();
+    expect(pwd).toMatch(/[A-Z]/);
+  });
+
+  it('contains at least one lowercase letter', () => {
+    const pwd = generateSecurePassword();
+    expect(pwd).toMatch(/[a-z]/);
+  });
+
+  it('contains at least one digit', () => {
+    const pwd = generateSecurePassword();
+    expect(pwd).toMatch(/[0-9]/);
+  });
+
+  it('contains at least one special character', () => {
+    const pwd = generateSecurePassword();
+    expect(pwd).toMatch(/[!@#$%^&*()_+\-=\[\]{}]/);
+  });
+
+  it('generates different passwords each call', () => {
+    const pwd1 = generateSecurePassword();
+    const pwd2 = generateSecurePassword();
+    expect(pwd1).not.toBe(pwd2);
+  });
+
+  it('16 chars contain only expected characters', () => {
+    const pwd = generateSecurePassword();
+    expect(pwd).toMatch(/^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{}]+$/);
+  });
+});
+
+describe('validatePassword with translator', () => {
+  it('uses translator when provided', () => {
+    const mockT = jest.fn((key: string, fallback: string) => `[translated] ${fallback}`);
+    const result = validatePassword('MyStr0ng!P@ss', mockT);
+    expect(mockT).toHaveBeenCalled();
+    // All labels should be translated
+    expect(result.requirements[0].label).toContain('[translated]');
+  });
+
+  it('falls back to Russian when translator returns empty', () => {
+    const mockT = jest.fn(() => '');
+    const result = validatePassword('MyStr0ng!P@ss', mockT);
+    expect(result.requirements[0].label).toBeDefined();
+    expect(result.requirements[0].label.length).toBeGreaterThan(0);
+  });
+});
+
+describe('validateEmail expanded', () => {
+  it('detects hotmail typo', () => {
+    const result = validateEmail('user@hotmial.com');
+    expect(result.isValid).toBe(false);
+    expect(result.suggestion).toBe('user@hotmail.com');
+  });
+
+  it('detects outlook typo', () => {
+    const result = validateEmail('user@outloo.com');
+    expect(result.isValid).toBe(false);
+    expect(result.suggestion).toBe('user@outlook.com');
+  });
+
+  it('rejects email without valid format', () => {
+    const result = validateEmail('user@example');
+    expect(result.isValid).toBe(false);
+    expect(result.feedback?.message).toContain('Неверный формат');
+  });
+
+  it('suggests proper format for invalid email', () => {
+    const result = validateEmail('user@example');
+    expect(result.suggestion).toContain('user@example.com');
+  });
+
+  it('returns info for empty email', () => {
+    const result = validateEmail('');
+    expect(result.feedback?.type).toBe('info');
+  });
+
+  it('returns error for invalid format', () => {
+    const result = validateEmail('not-an-email');
+    expect(result.feedback?.type).toBe('error');
+  });
+
+  it('returns success for valid email with suggestion', () => {
+    const result = validateEmail('test@example.com');
+    expect(result.isValid).toBe(true);
+    expect(result.feedback?.type).toBe('success');
+  });
+
+  it('corrects gmail.com typo - gmial', () => {
+    expect(validateEmail('x@gmial.com').suggestion).toBe('x@gmail.com');
+  });
+
+  it('corrects gmail.com typo - gmai', () => {
+    expect(validateEmail('x@gmai.com').suggestion).toBe('x@gmail.com');
+  });
+
+  it('corrects gmail.com typo - gmil', () => {
+    expect(validateEmail('x@gmil.com').suggestion).toBe('x@gmail.com');
+  });
+
+  it('corrects yahoo.com typo - yahooo', () => {
+    expect(validateEmail('x@yahooo.com').suggestion).toBe('x@yahoo.com');
+  });
+
+  it('corrects outlook.com typo - outlok', () => {
+    expect(validateEmail('x@outlok.com').suggestion).toBe('x@outlook.com');
   });
 });
