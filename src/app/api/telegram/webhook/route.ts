@@ -8,9 +8,9 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 const REPLIES = {
   en: {
     subscribed: '🎉 Subscribed! Every Monday you will receive an AI-generated HR digest.',
-    already: '✅ You are already subscribed to HR Office Weekly Digest!',
+    already: '✅ You are already subscribed to Strata Weekly Digest!',
     stopped: '👋 Unsubscribed. Send /start to subscribe again.',
-    help: '📬 <b>HR Office Newsletter Bot</b>\n\n/start — subscribe\n/stop — unsubscribe\n/lang [en|ru] — change language\n/topics — choose topics\n/pause [1-4] — pause for N weeks\n/digest — get latest digest now\n/invite — get referral link',
+    help: '📬 <b>Strata Newsletter Bot</b>\n\n/start — subscribe\n/stop — unsubscribe\n/lang [en|ru] — change language\n/topics — choose topics\n/pause [1-4] — pause for N weeks\n/digest — get latest digest now\n/invite — get referral link',
     langUpdated: '✅ Language updated to: ',
     topicsPrompt:
       '📋 Send topics separated by comma:\nhr-tips, leadership, wellness, tech\n\nExample: /topics hr-tips, tech',
@@ -25,7 +25,7 @@ const REPLIES = {
     subscribed: '🎉 Подписка оформлена! Каждый понедельник — AI-дайджест.',
     already: '✅ Вы уже подписаны!',
     stopped: '👋 Отписаны. /start чтобы вернуться.',
-    help: '📬 <b>HR Office Newsletter Bot</b>\n\n/start — подписаться\n/stop — отписаться\n/lang [en|ru] — сменить язык\n/topics — выбрать темы\n/pause [1-4] — пауза на N недель\n/digest — получить дайджест сейчас\n/invite — реферальная ссылка',
+    help: '📬 <b>Strata Newsletter Bot</b>\n\n/start — подписаться\n/stop — отписаться\n/lang [en|ru] — сменить язык\n/topics — выбрать темы\n/pause [1-4] — пауза на N недель\n/digest — получить дайджест сейчас\n/invite — реферальная ссылка',
     langUpdated: '✅ Язык изменён на: ',
     topicsPrompt:
       '📋 Отправьте темы через запятую:\nhr-tips, leadership, wellness, tech\n\nПример: /topics hr-tips, tech',
@@ -256,8 +256,8 @@ async function getAIResponse(
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return language === 'ru'
-      ? '🤖 Я AI-ассистент HR Office бота. Напишите любой вопрос о боте или используйте команды из /help'
-      : "🤖 I'm the HR Office bot AI assistant. Ask me anything about the bot or use commands from /help";
+      ? '🤖 Я AI-ассистент Strata бота. Напишите любой вопрос о боте или используйте команды из /help'
+      : "🤖 I'm the Strata bot AI assistant. Ask me anything about the bot or use commands from /help";
   }
 
   try {

@@ -155,6 +155,8 @@
     "employeesDesc": "Управление командой",
     "settings": "Настройки",
     "settingsDesc": "Конфигурация",
+    "strategy": "Стратегия",
+    "strategyDesc": "OKR каскад и карта стратегии",
     "shortcuts": {
       "hint": "Горячие клавиши"
     },
@@ -362,5 +364,46 @@
     "paidLeave": "Оплачиваемый отпуск",
     "sickLeave": "Больничный",
     "familyLeave": "Семейный отпуск"
+  },
+  "tasksClient": {
+    "linkedObjective": "Связанная цель",
+    "linkedObjectiveDesc": "Эта задача способствует достижению следующего OKR"
+  },
+  "goals": {
+    "linkedTasks": "Связанные задачи",
+    "linkedTasksDesc": "Задачи, которые способствуют достижению этой цели",
+    "noLinkedTasks": "Связанных задач пока нет",
+    "createLinkedTask": "Создать задачу"
+  },
+  "strategyMap": {
+    "tasksLinked": "Задачи → Цели",
+    "tasks": "задачи",
+    "doneTasks": "выполнено",
+    "objectivesWithTasks": "целей с задачами",
+    "viewDetails": "Просмотр",
+    "avgProgress": "Ср. прогресс",
+    "onTrack": "В графике",
+    "atRisk": "Под риском",
+    "behind": "Отстаёт",
+    "completed": "Готово",
+    "needsAttention": "требуют внимания",
+    "allGood": "Все цели в графике",
+    "manageOkrs": "Управлять OKR",
+    "totalObjectives": "целей",
+    "title": "Карта стратегии"
+  },
+  "taskWizard": {
+    "steps": {
+      "objectiveLink": {
+        "title": "Привязать к цели",
+        "description": "Согласовать задачу с OKR",
+        "objectiveLabel": "Цель",
+        "objectivePlaceholder": "Выберите цель (опционально)",
+        "objectiveHint": "Привяжите задачу к стратегической цели",
+        "keyResultLabel": "Ключевой результат",
+        "keyResultPlaceholder": "Выберите KR (опционально)",
+        "keyResultHint": "Привязать к конкретному ключевому результату"
+      }
+    }
   }
 }

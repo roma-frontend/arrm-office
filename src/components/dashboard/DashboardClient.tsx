@@ -18,6 +18,7 @@ import { SecurityWidget } from '@/components/dashboard/SecurityWidget';
 import { LeaveCharts } from '@/components/dashboard/LeaveCharts';
 import { RecentLeavesCard } from '@/components/dashboard/RecentLeavesCard';
 import { EnterpriseWidgets } from '@/components/dashboard/EnterpriseWidgets';
+import StrategyDashboardWidget from '@/components/dashboard/StrategyDashboardWidget';
 import LeaveStats from '@/components/dashboard/LeaveStats';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 
@@ -208,6 +209,11 @@ export default function DashboardClient() {
           </motion.div>
         )}
       </div>
+
+      {/* Strategy OKR Widget */}
+      <motion.div variants={itemVariants}>
+        <StrategyDashboardWidget />
+      </motion.div>
 
       <motion.div variants={itemVariants} data-tour="quick-actions" className="lg:col-span-2">
         <QuickActions />

@@ -27,6 +27,8 @@ import {
   Tag,
   Paperclip,
   MessageSquare,
+  Target,
+  Layers,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -116,6 +118,12 @@ export default function TaskDetailClient() {
   const currentUser = useQuery(
     api.users.queries.getUserById,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
+  );
+
+  // Fetch linked objective if task has one
+  const linkedObjective = useQuery(
+    api.goals.getObjective,
+    task?.objectiveId ? { objectiveId: task.objectiveId as Id<'objectives'> } : 'skip',
   );
 
   const [isUpdating, setIsUpdating] = useState(false);
@@ -309,6 +317,58 @@ export default function TaskDetailClient() {
                   </Button>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Linked Objective Card */}
+      {linkedObjective && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-purple-500" />
+              {t('tasksClient.linkedObjective', 'Linked Goal')}
+            </CardTitle>
+            <CardDescription>
+              {t('tasksClient.linkedObjectiveDesc', 'This task contributes to the following OKR')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="flex items-center justify-between p-3 rounded-lg border border-blue-500/20 bg-blue-500/5
+                hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-200 cursor-pointer"
+              onClick={() => router.push(`/goals/${linkedObjective._id}`)}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
+                  <Target className="w-4 h-4 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{linkedObjective.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {linkedObjective.ownerName} · {linkedObjective.periodType}{' '}
+                    {linkedObjective.periodYear}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        linkedObjective.progress >= 70
+                          ? 'bg-emerald-500'
+                          : linkedObjective.progress >= 40
+                            ? 'bg-amber-500'
+                            : 'bg-red-500'
+                      }`}
+                      style={{ width: `${linkedObjective.progress}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-medium">{linkedObjective.progress}%</span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

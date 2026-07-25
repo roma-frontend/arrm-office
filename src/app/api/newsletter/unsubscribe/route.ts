@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(
       htmlPage(
         'Unsubscribed',
-        "You've been successfully unsubscribed from the HR Office newsletter. We're sorry to see you go!",
+        "You've been successfully unsubscribed from the Strata newsletter. We're sorry to see you go!",
       ),
       { status: 200, headers: { 'Content-Type': 'text/html' } },
     );
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 function htmlPage(title: string, message: string): string {
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} - HR Office</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} - Strata</title></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f1f5f9;margin:0;padding:60px 20px;text-align:center;color:#1e293b;">
   <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:48px 32px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
     <h1 style="font-size:24px;margin:0 0 16px;">${title}</h1>

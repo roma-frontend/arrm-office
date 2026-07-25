@@ -669,7 +669,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
             className="text-center text-[10px] font-medium pt-1"
             style={{ color: 'var(--landing-text-muted)' }}
           >
-            ShieldOffice v2.0 • {t('mobileMenu.secure', 'Secure & Private')}
+            Strata v2.0 • {t('mobileMenu.secure', 'Secure & Private')}
           </p>
         </div>
       </div>

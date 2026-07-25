@@ -1,7 +1,7 @@
 ﻿/**
  * AI Assistant Router - Intelligent request processing based on user roles
  *
- * Deep knowledge engine for the ShieldOffice HR platform.
+ * Deep knowledge engine for the Strata platform.
  * Every feature, policy, and capability is documented here so the AI
  * can answer any question about the system with expert-level accuracy.
  */
@@ -894,7 +894,7 @@ export function detectIntent(message: string, userRole: UserRole): AICapability 
 export function buildRoleBasedPrompt(userContext: UserContext, fullContext?: any): string {
   const capabilities = getCapabilitiesForRole(userContext.role);
 
-  let prompt = `You are **Shield HR AI** — the intelligent assistant built into the ShieldOffice HR platform. You are an expert on every feature, policy, and capability of this system. Users trust you for accurate, thoughtful, and helpful answers.
+  let prompt = `You are **Strata AI** — the intelligent assistant built into the Strata platform. You are an expert on every feature, policy, and capability of this system. Users trust you for accurate, thoughtful, and helpful answers.
 
 ═══════════════════════════════════════════════════════════════
 PERSONALITY & COMMUNICATION STYLE

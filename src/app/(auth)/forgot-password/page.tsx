@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
                 className="font-bold text-base leading-tight"
                 style={{ color: 'var(--text-primary)' }}
               >
-                HR Office
+                Strata
               </p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 HR Management System

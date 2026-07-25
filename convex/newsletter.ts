@@ -28,7 +28,7 @@ function getPublicAppUrl(): string {
   const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (!raw) return fallback;
   // Ignore the old marketing domain that is no longer in use
-  if (/hroffice\.com/i.test(raw)) return fallback;
+  if (/strata\.work/i.test(raw)) return fallback;
   return raw.replace(/\/+$/, '');
 }
 
@@ -195,7 +195,7 @@ export const generateWeeklyContent = internalAction({
 - tips: array of 3 objects with {title, body, emoji} - practical HR tips
 - trends: array of 2 objects with {title, body} - current HR industry trends
 - quote: object with {text, author} - inspirational leadership quote
-- promo: object with {title, body, cta, link} - call to action for HR Office platform. The link MUST be: ${appUrl}
+- promo: object with {title, body, cta, link} - call to action for Strata platform. The link MUST be: ${appUrl}
 
 Keep content professional, actionable, and concise. Return ONLY valid JSON.`;
 
@@ -205,7 +205,7 @@ Keep content professional, actionable, and concise. Return ONLY valid JSON.`;
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        'X-Title': 'HR Office',
+        'X-Title': 'Strata',
       },
       body: JSON.stringify({
         model: 'meta-llama/llama-3.3-70b-instruct',
@@ -270,7 +270,7 @@ export const sendWeeklyDigest = internalAction({
         for (let i = 0; i < emailSubs.length; i += 100) {
           const batch = emailSubs.slice(i, i + 100);
           const emails = batch.map((sub) => ({
-            from: 'HR Office <onboarding@resend.dev>',
+            from: 'Strata <onboarding@resend.dev>',
             to: sub.email,
             subject: content.subject,
             react: WeeklyDigestEmail({
@@ -324,15 +324,15 @@ export const updateLastSent = internalMutation({
 // === DRIP CAMPAIGN ===
 const DRIP_MESSAGES = {
   en: [
-    "👋 <b>Welcome to HR Office!</b>\n\nWe're thrilled to have you. HR Office is an all-in-one platform for managing employees, leaves, attendance, and more.\n\n🚀 Get started: https://hr-project-sigma.vercel.app",
-    '💡 <b>Did you know?</b>\n\nHR Office features:\n• Face recognition attendance\n• AI-powered analytics\n• Real-time team chat\n• Automated leave workflows\n\nExplore all features in your dashboard!',
-    '📊 <b>Success Story</b>\n\nCompanies using HR Office report:\n• 60% less time on admin tasks\n• 95% employee satisfaction with self-service\n• Zero payroll errors\n\nReady to transform your HR?',
+    "👋 <b>Welcome to Strata!</b>\n\nWe're thrilled to have you. Strata is a platform for aligning strategy with daily execution through OKRs, goals, and performance tracking.\n\n🚀 Get started: https://strata.work",
+    '💡 <b>Did you know?</b>\n\nStrata features:\n• Strategy Maps with OKR cascade\n• AI-powered analytics\n• Real-time team chat\n• Goal alignment & performance tracking\n\nExplore all features in your dashboard!',
+    '📊 <b>Success Story</b>\n\nCompanies using Strata report:\n• 60% better OKR alignment\n• 95% employee goal engagement\n• Zero strategic drift\n\nReady to transform your strategy?',
     "🎉 <b>Your first digest arrives Monday!</b>\n\nEvery week you'll get AI-curated HR tips, trends, and insights personalized to your interests.\n\nReply /topics to customize what you receive.",
   ],
   ru: [
-    '👋 <b>Добро пожаловать в HR Office!</b>\n\nМы рады вас видеть. HR Office — это единая платформа для управления сотрудниками, отпусками, посещаемостью и многим другим.\n\n🚀 Начать: https://hr-project-sigma.vercel.app',
-    '💡 <b>Знаете ли вы?</b>\n\nВозможности HR Office:\n• Распознавание лиц для учёта посещаемости\n• AI-аналитика\n• Командный чат в реальном времени\n• Автоматизация отпусков\n\nИсследуйте все функции!',
-    '📊 <b>История успеха</b>\n\nКомпании с HR Office отмечают:\n• На 60% меньше времени на рутину\n• 95% удовлетворённость сотрудников\n• Ноль ошибок в расчётах\n\nГотовы трансформировать HR?',
+    '👋 <b>Добро пожаловать в Strata!</b>\n\nМы рады вас видеть. Strata — это платформа для объединения стратегии с ежедневной работой через OKR, цели и отслеживание результатов.\n\n🚀 Начать: https://strata.work',
+    '💡 <b>Знаете ли вы?</b>\n\nВозможности Strata:\n• Стратегические карты с каскадированием OKR\n• AI-аналитика\n• Командный чат в реальном времени\n• Согласование целей и отслеживание результатов\n\nИсследуйте все функции!',
+    '📊 <b>История успеха</b>\n\nКомпании с Strata отмечают:\n• На 60% лучшее согласование OKR\n• 95% вовлечённость в цели\n• Ноль стратегического дрейфа\n\nГотовы трансформировать стратегию?',
     '🎉 <b>Ваш первый дайджест придёт в понедельник!</b>\n\nКаждую неделю вы будете получать AI-подборку HR советов и трендов.\n\nОтправьте /topics чтобы настроить темы.',
   ],
 };
@@ -547,7 +547,7 @@ export const sendTestEmail = action({
 
 function formatTelegramNewsletter(content: any): string {
   const appUrl = getPublicAppUrl();
-  let msg = `🏢 <b>HR Office Weekly Digest</b>\n\n`;
+  let msg = `🎯 <b>Strata Weekly Digest</b>\n\n`;
   msg += `${content.greeting}\n\n`;
   msg += `💡 <b>Tips of the Week</b>\n`;
   for (const tip of content.tips || []) {

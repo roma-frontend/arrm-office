@@ -27,6 +27,8 @@ import {
   Target,
   TrendingUp,
   BarChart3,
+  CheckSquare,
+  ListChecks,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -88,6 +90,12 @@ export default function GoalDetailClient() {
   const currentUser = useQuery(
     api.users.queries.getUserById,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
+  );
+
+  // Fetch linked tasks for this objective
+  const linkedTasks = useQuery(
+    api.goals.getTasksByObjective,
+    goalId ? { objectiveId: goalId } : 'skip',
   );
 
   const completeGoal = useMutation(api.goals.completeObjective);
@@ -357,6 +365,107 @@ export default function GoalDetailClient() {
           </CardContent>
         </Card>
       )}
+
+      {/* Linked Tasks Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ListChecks className="h-5 w-5" />
+            {t('goals.linkedTasks', 'Linked Tasks')}
+            {linkedTasks && linkedTasks.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {linkedTasks.length}
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            {t('goals.linkedTasksDesc', 'Tasks that contribute to this objective')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!linkedTasks ? (
+            <div className="space-y-3">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : linkedTasks.length === 0 ? (
+            <div className="text-center py-8">
+              <CheckSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {t('goals.noLinkedTasks', 'No linked tasks yet')}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => router.push('/tasks')}
+              >
+                {t('goals.createLinkedTask', 'Create a task')}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {linkedTasks.map((task: any) => {
+                const statusColors: Record<string, string> = {
+                  pending: 'border-l-yellow-500',
+                  in_progress: 'border-l-blue-500',
+                  review: 'border-l-purple-500',
+                  completed: 'border-l-green-500',
+                  cancelled: 'border-l-gray-500',
+                };
+                const isOverdue =
+                  task.deadline &&
+                  new Date(task.deadline) < new Date() &&
+                  task.status !== 'completed';
+                return (
+                  <div
+                    key={task._id}
+                    className={`flex items-center justify-between p-3 rounded-lg border border-l-4 cursor-pointer
+                      hover:bg-muted/50 transition-colors ${statusColors[task.status] || 'border-l-gray-500'}`}
+                    onClick={() => router.push(`/tasks/${task._id}`)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <CheckSquare className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{task.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {task.assignedToUser?.name ?? 'Unassigned'}
+                          {isOverdue && ` · ${t('tasksClient.overdueTag', 'Overdue')}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          task.status === 'completed'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : task.status === 'in_progress'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                              : task.status === 'review'
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                : task.status === 'cancelled'
+                                  ? 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                                  : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        }`}
+                      >
+                        {task.status === 'completed'
+                          ? t('taskStatus.completed')
+                          : task.status === 'in_progress'
+                            ? t('taskStatus.inProgress')
+                            : task.status === 'review'
+                              ? t('taskStatus.inReview')
+                              : task.status === 'cancelled'
+                                ? t('taskStatus.cancelled')
+                                : t('taskStatus.pending')}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -5,10 +5,10 @@ import { IdleTimeoutModal } from '@/components/auth/IdleTimeoutModal';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Dashboard | HR Office',
-    template: '%s | HR Office',
+    default: 'Dashboard | Strata',
+    template: '%s | Strata',
   },
-  description: 'HR Office - Manage attendance, leaves, tasks and employees in real-time.',
+  description: 'Strata - From strategy to results. Align, track, and achieve your OKRs.',
   // Dashboard is noindex by default (private app). Set NEXT_PUBLIC_DASHBOARD_INDEXABLE=true to allow indexing.
   robots:
     process.env.NEXT_PUBLIC_DASHBOARD_INDEXABLE === 'true'

@@ -142,7 +142,7 @@ describe('offerLetterTemplate', () => {
 
   it('returns correct subject', () => {
     const result = offerLetterTemplate(baseArgs);
-    expect(result.subject).toBe('Job Offer — Engineering Lead at HR Office');
+    expect(result.subject).toBe('Job Offer — Engineering Lead at Strata');
   });
 
   it('includes congratulations message', () => {

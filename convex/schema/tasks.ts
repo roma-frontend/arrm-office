@@ -37,6 +37,9 @@ export const tasks = {
         }),
       ),
     ),
+    // Goals ↔ Tasks linkage
+    objectiveId: v.optional(v.id('objectives')),
+    keyResultId: v.optional(v.id('keyResults')),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -46,7 +49,9 @@ export const tasks = {
     .index('by_status', ['status'])
     .index('by_deadline', ['deadline'])
     .index('by_assigned_status', ['assignedTo', 'status'])
-    .index('by_org_deadline', ['organizationId', 'deadline']),
+    .index('by_org_deadline', ['organizationId', 'deadline'])
+    .index('by_objective', ['objectiveId'])
+    .index('by_key_result', ['keyResultId']),
 
   taskComments: defineTable({
     taskId: v.id('tasks'),

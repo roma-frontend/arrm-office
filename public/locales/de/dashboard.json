@@ -155,6 +155,8 @@
     "employeesDesc": "Team verwalten",
     "settings": "Einstellungen",
     "settingsDesc": "Konfiguration",
+    "strategy": "Strategie",
+    "strategyDesc": "OKR-Kaskade & Strategiekarte",
     "shortcuts": {
       "hint": "Tastenkombinationen"
     },
@@ -362,5 +364,46 @@
     "paidLeave": "Bezahlter Urlaub",
     "sickLeave": "Krankheit",
     "familyLeave": "Familienurlaub"
+  },
+  "tasksClient": {
+    "linkedObjective": "Verknüpftes Ziel",
+    "linkedObjectiveDesc": "Diese Aufgabe trägt zum folgenden OKR bei"
+  },
+  "goals": {
+    "linkedTasks": "Verknüpfte Aufgaben",
+    "linkedTasksDesc": "Aufgaben, die zu diesem Ziel beitragen",
+    "noLinkedTasks": "Noch keine verknüpften Aufgaben",
+    "createLinkedTask": "Aufgabe erstellen"
+  },
+  "strategyMap": {
+    "tasksLinked": "Aufgaben → Ziele",
+    "tasks": "Aufgaben",
+    "doneTasks": "erledigt",
+    "objectivesWithTasks": "Ziele mit Aufgaben",
+    "viewDetails": "Anzeigen",
+    "avgProgress": "Durchschn. Fortschritt",
+    "onTrack": "Im Zeitplan",
+    "atRisk": "Gefährdet",
+    "behind": "Im Rückstand",
+    "completed": "Erledigt",
+    "needsAttention": "benötigen Aufmerksamkeit",
+    "allGood": "Alle Ziele im Zeitplan",
+    "manageOkrs": "OKRs verwalten",
+    "totalObjectives": "Ziele",
+    "title": "Strategiekarte"
+  },
+  "taskWizard": {
+    "steps": {
+      "objectiveLink": {
+        "title": "Mit Ziel verknüpfen",
+        "description": "Aufgabe mit OKR abstimmen",
+        "objectiveLabel": "Ziel",
+        "objectivePlaceholder": "Ziel auswählen (optional)",
+        "objectiveHint": "Aufgabe mit strategischem Ziel verknüpfen",
+        "keyResultLabel": "Schlüsselergebnis",
+        "keyResultPlaceholder": "KR auswählen (optional)",
+        "keyResultHint": "Mit konkretem Schlüsselergebnis verknüpfen"
+      }
+    }
   }
 }

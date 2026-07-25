@@ -45,7 +45,7 @@ const notoSansArmenian = Noto_Sans_Armenian({
   fallback: ['sans-serif'],
 });
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://hroffice.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://strata.work';
 
 export const viewport: Viewport = {
   themeColor: [
@@ -70,7 +70,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(APP_URL),
     title: {
       default: t('meta.home.title'),
-      template: '%s | HR Office',
+      template: '%s | Strata',
     },
     description: t('meta.home.description'),
     keywords: [
@@ -91,9 +91,9 @@ export async function generateMetadata(): Promise<Metadata> {
       'remote work tracking',
       'performance management',
     ],
-    authors: [{ name: 'HR Office Team', url: APP_URL }],
-    creator: 'HR Office',
-    publisher: 'HR Office',
+    authors: [{ name: 'Strata Team', url: APP_URL }],
+    creator: 'Strata',
+    publisher: 'Strata',
     category: 'Business Software',
     openGraph: {
       type: 'website',
@@ -101,7 +101,7 @@ export async function generateMetadata(): Promise<Metadata> {
       url: APP_URL,
       title: t('meta.home.ogTitle'),
       description: t('meta.home.ogDescription'),
-      siteName: 'HR Office',
+      siteName: 'Strata',
       images: [
         {
           url: '/opengraph-image',
@@ -117,7 +117,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: t('meta.home.ogTitle'),
       description: t('meta.home.ogDescription'),
       images: ['/opengraph-image'],
-      creator: '@hrofficeapp',
+      creator: '@strata',
     },
     robots: {
       index: true,

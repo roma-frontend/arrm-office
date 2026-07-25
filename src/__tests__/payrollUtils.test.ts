@@ -6,6 +6,8 @@ import {
   formatCurrency,
   formatDate,
   formatDateTime,
+  exportToCSV,
+  downloadCSV,
 } from '@/lib/payrollUtils';
 
 describe('calculateEffectiveTaxRate', () => {
@@ -161,5 +163,215 @@ describe('formatDateTime', () => {
   it('formats timestamp to locale date and time', () => {
     const result = formatDateTime(1704067200000);
     expect(result.length).toBeGreaterThan(formatDate(1704067200000).length);
+  });
+
+  it('handles Russian locale', () => {
+    const result = formatDateTime(1704067200000, 'ru');
+    expect(result).toBeDefined();
+  });
+
+  it('handles Armenian locale', () => {
+    const result = formatDateTime(1704067200000, 'hy');
+    expect(result).toBeDefined();
+  });
+
+  it('includes time component', () => {
+    const dateResult = formatDate(1704067200000);
+    const dateTimeResult = formatDateTime(1704067200000);
+    expect(dateTimeResult).not.toBe(dateResult);
+  });
+});
+
+describe('exportToCSV', () => {
+  const mockRecords = [
+    {
+      user: { name: 'John Doe', email: 'john@example.com' },
+      period: '2024-01',
+      baseSalary: 100000,
+      grossSalary: 120000,
+      netSalary: 96000,
+      bonuses: 20000,
+      overtimePay: 5000,
+      deductions: { incomeTax: 20000, socialSecurity: 5000, total: 25000 },
+      status: 'paid',
+      createdAt: 1704067200000,
+    },
+    {
+      user: { name: 'Jane Smith', email: 'jane@example.com' },
+      period: '2024-01',
+      baseSalary: 150000,
+      grossSalary: 180000,
+      netSalary: 144000,
+      bonuses: 30000,
+      overtimePay: 0,
+      deductions: { incomeTax: 30000, socialSecurity: 7500, total: 37500 },
+      status: 'pending',
+      createdAt: 1704067200000,
+    },
+  ];
+
+  it('returns CSV string with headers', () => {
+    const csv = exportToCSV(mockRecords);
+    expect(csv).toContain('Employee,Email,Period,Base Salary,Gross Salary,Net Salary');
+  });
+
+  it('includes all record data in CSV', () => {
+    const csv = exportToCSV(mockRecords);
+    expect(csv).toContain('John Doe');
+    expect(csv).toContain('Jane Smith');
+    expect(csv).toContain('john@example.com');
+    expect(csv).toContain('jane@example.com');
+  });
+
+  it('quotes cell values', () => {
+    const csv = exportToCSV(mockRecords);
+    const lines = csv.split('\n');
+    expect(lines[1]).toContain('"');
+  });
+
+  it('handles unknown user gracefully', () => {
+    const records = [
+      {
+        period: '2024-01',
+        baseSalary: 0,
+        grossSalary: 0,
+        netSalary: 0,
+        deductions: { total: 0 },
+        status: 'draft',
+        createdAt: 1704067200000,
+      },
+    ];
+    const csv = exportToCSV(records);
+    expect(csv).toContain('Unknown');
+  });
+
+  it('handles empty records', () => {
+    const csv = exportToCSV([]);
+    expect(csv).toContain('Employee');
+    const lines = csv.trim().split('\n');
+    expect(lines).toHaveLength(1); // Only header
+  });
+});
+
+describe('downloadCSV', () => {
+  let originalCreateObjectURL: typeof URL.createObjectURL;
+
+  beforeAll(() => {
+    originalCreateObjectURL = global.URL.createObjectURL;
+    global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+    global.URL.revokeObjectURL = jest.fn();
+  });
+
+  afterAll(() => {
+    global.URL.createObjectURL = originalCreateObjectURL;
+    delete (global.URL as any).revokeObjectURL;
+  });
+
+  it('creates an anchor element and appends it to body', () => {
+    const anchor = document.createElement('a');
+    const createElementSpy = jest.spyOn(document, 'createElement').mockReturnValue(anchor);
+    const clickSpy = jest.spyOn(anchor, 'click');
+
+    downloadCSV('test,csv', 'test.csv');
+
+    expect(createElementSpy).toHaveBeenCalledWith('a');
+    expect(anchor.getAttribute('href')).toBe('blob:mock-url');
+    expect(anchor.getAttribute('download')).toBe('test.csv');
+    expect(clickSpy).toHaveBeenCalled();
+
+    createElementSpy.mockRestore();
+    clickSpy.mockRestore();
+  });
+
+  it('handles empty CSV content', () => {
+    expect(() => downloadCSV('', 'empty.csv')).not.toThrow();
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// PARAMETERIZED EXPANSION (+20 tests)
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('calculateEffectiveTaxRate - parameterized', () => {
+  const cases = [
+    [100000, 0, 0],
+    [100000, 10000, 10],
+    [100000, 25000, 25],
+    [50000, 50000, 100],
+    [0, 5000, 0],
+    [100000, 12345, 12.35],
+    [100000, 12346, 12.35],
+    [1, 1, 100],
+  ];
+  test.each(cases)('gross=%s tax=%s -> %s%%', (gross, tax, expected) => {
+    expect(calculateEffectiveTaxRate(gross as number, tax as number)).toBe(expected);
+  });
+});
+
+describe('getPayrollSummary - parameterized', () => {
+  it('handles single employee', () => {
+    const summary = getPayrollSummary([
+      { grossSalary: 50000, netSalary: 40000, deductions: { total: 10000 } },
+    ]);
+    expect(summary.employeeCount).toBe(1);
+    expect(summary.totalGross).toBe(50000);
+    expect(summary.averageSalary).toBe(40000);
+  });
+  it('handles many employees', () => {
+    const records = Array.from({ length: 10 }, (_, i) => ({
+      grossSalary: (i + 1) * 50000,
+      netSalary: (i + 1) * 40000,
+      deductions: { total: (i + 1) * 10000 },
+    }));
+    const summary = getPayrollSummary(records);
+    expect(summary.employeeCount).toBe(10);
+    expect(summary.totalGross).toBe(50000 * 55);
+    expect(summary.lowestSalary).toBe(40000);
+    expect(summary.highestSalary).toBe(400000);
+  });
+});
+
+describe('filterPayrollRuns - parameterized', () => {
+  const runs = [
+    { status: 'completed', period: '2024-01', notes: 'Alpha payroll', createdAt: 1 },
+    { status: 'pending', period: '2024-02', notes: 'Beta payroll', createdAt: 2 },
+    { status: 'completed', period: '2024-03', notes: 'Gamma payroll', createdAt: 3 },
+  ];
+  const filterCases = [
+    [{ status: 'completed' }, 2],
+    [{ status: 'pending' }, 1],
+    [{ status: 'draft' }, 0],
+    [{ period: '2024-02' }, 1],
+    [{ search: 'alpha' }, 1],
+    [{ search: 'payroll' }, 3],
+  ];
+  test.each(filterCases)('filter %j returns %s results', (filters, expected) => {
+    expect(filterPayrollRuns(runs, filters)).toHaveLength(expected as number);
+  });
+});
+
+describe('getStatusColor - parameterized', () => {
+  const cases = [
+    ['paid', 'emerald'],
+    ['calculated', 'blue'],
+    ['cancelled', 'red'],
+    ['draft', 'gray'],
+    ['approved', 'green'],
+    ['unknown', 'gray'],
+    ['pending', 'gray'],
+    ['', 'gray'],
+  ];
+  test.each(cases)('status %s returns color containing %s', (status, colorHint) => {
+    const result = getStatusColor(status);
+    expect(result).toContain(colorHint);
+  });
+});
+
+describe('formatCurrency - parameterized', () => {
+  const cases = [0, 100, 1000, 100000, 999999];
+  test.each(cases)('formats amount %s without throwing', (amount) => {
+    const result = formatCurrency(amount);
+    expect(result).toBeDefined();
+    expect(typeof result).toBe('string');
   });
 });

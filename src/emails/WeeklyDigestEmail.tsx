@@ -68,7 +68,7 @@ export function WeeklyDigestEmail({ name, content, unsubscribeUrl }: WeeklyDiges
                 margin: '0 0 8px',
               },
             },
-            '🏢 HR Office',
+            '🎯 Strata',
           ),
           React.createElement(
             'p',
@@ -229,7 +229,7 @@ export function WeeklyDigestEmail({ name, content, unsubscribeUrl }: WeeklyDiges
           React.createElement(
             'p',
             { style: { margin: '0 0 8px' } },
-            `© ${new Date().getFullYear()} HR Office • HR Management Platform`,
+            `© ${new Date().getFullYear()} Strata • From Strategy to Results`,
           ),
           React.createElement(
             'a',

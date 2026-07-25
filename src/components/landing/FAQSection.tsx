@@ -159,7 +159,7 @@ export default function FAQSection() {
             {t('faq.stillHaveQuestions')}
           </p>
           <a
-            href="mailto:support@hroffice.io"
+            href="mailto:support@strata.work"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border transition-all font-medium hover:bg-[var(--card-hover)] hover:text-(--primary)"
             style={{
               backgroundColor: 'var(--landing-card-bg)',

@@ -47,13 +47,13 @@ export function WebAuthnButton({ mode, userId, onSuccess, disabled }: WebAuthnBu
         publicKey: {
           challenge,
           rp: {
-            name: 'HR Office',
+            name: 'Strata',
             id: window.location.hostname,
           },
           user: {
             id: new TextEncoder().encode(userId),
             name: userId,
-            displayName: 'HR Office User',
+            displayName: 'Strata User',
           },
           pubKeyCredParams: [
             { alg: -7, type: 'public-key' }, // ES256

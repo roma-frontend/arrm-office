@@ -179,8 +179,8 @@ export default function ContactClient() {
               {[
                 {
                   icon: <Mail size={15} />,
-                  label: 'sales@hroffice.io',
-                  href: 'mailto:sales@hroffice.io',
+                  label: 'sales@strata.work',
+                  href: 'mailto:sales@strata.work',
                 },
                 { icon: <Phone size={15} />, label: '+1 (800) 555-0199', href: 'tel:+18005550199' },
               ].map(({ icon, label, href }) => (

@@ -5,7 +5,7 @@ import { trace, context as otelContext, SpanStatusCode } from '@opentelemetry/ap
  * Helps track performance and errors at different layers
  */
 
-const tracer = trace.getTracer('hr-office-api');
+const tracer = trace.getTracer('strata-api');
 
 /**
  * Wrap API route handlers with tracing

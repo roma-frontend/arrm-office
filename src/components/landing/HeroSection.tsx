@@ -143,7 +143,7 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
       </h1>
 
       {/* Subtitle */}
-      <div className="hero-fade-3 max-w-3xl mx-auto mb-12">
+      <div className="hero-fade-3 max-w-3xl mx-auto mb-8">
         <div className="flex items-center justify-center gap-3 mb-6">
           <div
             className="w-16 h-[1px]"
@@ -164,21 +164,63 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
         >
           {t('landing.heroSubtitle')}
         </p>
-        <div className="flex items-center justify-center gap-2 mt-6">
-          {[0, 1, 2, 1, 0].map((size, idx) => (
+      </div>
+
+      {/* Strategy Cascade Steps — VISUAL HOOK */}
+      <div className="hero-fade-3 max-w-5xl mx-auto mb-10 grid grid-cols-2 md:grid-cols-4 gap-3">
+        {['mission', 'align', 'execute', 'succeed'].map((step, idx) => (
+          <div
+            key={step}
+            className="group relative rounded-2xl p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+            style={{
+              background: 'var(--landing-card-bg)',
+              border: '1px solid var(--landing-card-border)',
+            }}
+          >
             <div
-              key={idx}
-              className="rounded-full pulse-dot"
+              className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               style={{
-                backgroundColor: 'var(--primary)',
-                width: size === 0 ? 4 : size === 1 ? 6 : 8,
-                height: size === 0 ? 4 : size === 1 ? 6 : 8,
-                animationDelay: `${idx * 0.15}s`,
-                opacity: 0.6 + size * 0.15,
+                background:
+                  'linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(139,92,246,0.04) 100%)',
               }}
             />
-          ))}
-        </div>
+            <div className="relative">
+              <div
+                className="mx-auto w-10 h-10 rounded-xl flex items-center justify-center mb-2 text-lg font-bold"
+                style={{
+                  background:
+                    idx === 0
+                      ? 'linear-gradient(135deg, #8b5cf6, #a78bfa)'
+                      : idx === 1
+                        ? 'linear-gradient(135deg, #3b82f6, #60a5fa)'
+                        : idx === 2
+                          ? 'linear-gradient(135deg, #f59e0b, #fbbf24)'
+                          : 'linear-gradient(135deg, #10b981, #34d399)',
+                  color: '#fff',
+                }}
+              >
+                {idx + 1}
+              </div>
+              <p
+                className="text-xs font-semibold leading-tight"
+                style={{ color: 'var(--landing-text-primary)' }}
+              >
+                {t(`landing.${step}`)}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Arrow connecting the steps */}
+      <div className="hidden md:flex justify-center mb-8">
+        <div
+          className="h-px w-48"
+          style={{
+            background: 'linear-gradient(to right, var(--primary), transparent 80%)',
+            opacity: 0.3,
+          }}
+        />
       </div>
 
       {/* CTA Buttons — Client Island */}

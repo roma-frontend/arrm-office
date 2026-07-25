@@ -56,11 +56,11 @@ export async function POST(req: NextRequest) {
         process.env.RESEND_TEST_EMAIL || process.env.BOOTSTRAP_SUPERADMIN_EMAIL || '';
       const toEmail = isDomainVerified ? result.email : testEmail;
       const fromEmail = isDomainVerified
-        ? 'HR Office <hr@adb.org>'
-        : 'HR Office <onboarding@resend.dev>';
+        ? 'Strata <hr@strata.work>'
+        : 'Strata <onboarding@resend.dev>';
       const subject = isDomainVerified
-        ? 'Reset your HR Office password'
-        : `[For ${result.email}] Password Reset - HR Office`;
+        ? 'Reset your Strata password'
+        : `[For ${result.email}] Password Reset - Strata`;
       logger.log('Sending email:', { from: fromEmail, to: toEmail, target: result.email });
       const sendResult = await resend.emails.send({
         from: fromEmail,
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
               <!-- Logo -->
               <div style="text-align: center; margin-bottom: 32px;">
                 <div style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #2563eb, #0ea5e9); padding: 12px 20px; border-radius: 12px;">
-                  <span style="color: white; font-weight: 700; font-size: 18px;">🏢 HR Office</span>
+                  <span style="color: white; font-weight: 700; font-size: 18px;">🎯 Strata</span>
                 </div>
               </div>
 
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
 
               <!-- Footer -->
               <p style="text-align: center; color: #4b5563; font-size: 12px; margin-top: 24px;">
-                © ${new Date().getFullYear()} HR Office • HR Management System
+                © ${new Date().getFullYear()} Strata • From Strategy to Results
               </p>
             </div>
           </body>

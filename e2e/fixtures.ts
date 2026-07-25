@@ -1,7 +1,7 @@
 import { test as base, expect, type Page } from '@playwright/test';
 
 // Test credentials from env
-const TEST_EMAIL = process.env.E2E_USER_EMAIL || 'test@hroffice.io';
+const TEST_EMAIL = process.env.E2E_USER_EMAIL || 'test@strata.work';
 const TEST_PASSWORD = process.env.E2E_USER_PASSWORD || 'Test123!@#';
 
 /**

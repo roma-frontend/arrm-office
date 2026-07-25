@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const secret = generateSecret();
 
     // Generate QR code
-    const issuer = 'HR Office';
+    const issuer = 'Strata';
     const otpAuthUrl = generateURI({
       strategy: 'totp',
       label: payload.email,

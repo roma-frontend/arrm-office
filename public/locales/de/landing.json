@@ -2,9 +2,9 @@
   "landing": {
     "scroll": "Scrollen Sie nach unten, um mehr zu entdecken",
     "leaveTypes": "Abwesenheitstypen",
-    "hrLeave": "HR Office",
-    "heroTitle": "Vereinfachen Sie HR mit AI",
-    "heroSubtitle": "Eine universelle Plattform für Urlaubsverwaltung, Anwesenheitsverfolgung und Teamarbeit",
+    "hrLeave": "Strata",
+    "heroTitle": "Von der Strategie zum Ergebnis",
+    "heroSubtitle": "Verbinden Sie die Unternehmensvision mit der täglichen Arbeit. Kaskadieren Sie OKRs vom Vorstand bis zu jedem Mitarbeiter, verfolgen Sie den Fortschritt in Echtzeit und erzielen Sie Ergebnisse.",
     "getStartedFree": "Kostenlos starten",
     "watchDemo": "Demo ansehen",
     "trustedBy": "Vertrauen von über 500 Unternehmen weltweit",
@@ -36,6 +36,24 @@
     "generateReports": "Berichte erstellen",
     "integrateTools": "Tools integrieren",
     "customizeWorkflows": "Workflows anpassen",
+    "mission": "Mission definieren",
+    "align": "Teams ausrichten",
+    "execute": "Ausführen und verfolgen",
+    "succeed": "Gemeinsam erfolgreich",
+    "strategyCascadeTitle": "Von der Vision zur Aktion",
+    "strategyCascadeSubtitle": "Eine Plattform zur Definition, Ausrichtung, Verfolgung und Erreichung Ihrer strategischen Ziele — auf jeder Ebene Ihrer Organisation.",
+    "strategyStep1Title": "🎯 Mission und Strategie",
+    "strategyStep1Desc": "Definieren Sie den Nordstern Ihres Unternehmens. Setzen Sie langfristige strategische Ziele, hinter denen jedes Team stehen kann.",
+    "strategyStep2Title": "📊 Unternehmens-OKRs",
+    "strategyStep2Desc": "Brechen Sie die Strategie in messbare vierteljährliche OKRs herunter. Jedes Ziel hat klare Schlüsselergebnisse mit Zielmetriken.",
+    "strategyStep3Title": "👥 Teamausrichtung",
+    "strategyStep3Desc": "Teams erstellen ihre eigenen OKRs, die auf die Unternehmensziele einzahlen. Jedes Team weiß genau, wie es zum Gesamterfolg beiträgt.",
+    "strategyStep4Title": "✨ Individuelle Ziele",
+    "strategyStep4Desc": "Jeder Mitarbeiter hat Ziele, die auf die Ziele seines Teams abgestimmt sind. Persönliche Schlüsselergebnisse mit wöchentlichen Check-ins.",
+    "strategyStep5Title": "🔄 Echtzeit-Verfolgung",
+    "strategyStep5Desc": "Live-Strategiekarte mit Gesundheitsindikatoren. Auf einen Blick sehen, welche Ziele auf Kurs, gefährdet oder im Rückstand sind.",
+    "strategyStep6Title": "🏆 Leistung und Wachstum",
+    "strategyStep6Desc": "Verknüpfen Sie OKR-Erfolge mit Leistungsbeurteilungen, Anerkennung und Karriereentwicklung. Schaffen Sie eine Kultur der Leistung.",
     "footer": {
       "product": "Produkt",
       "company": "Unternehmen",
@@ -86,13 +104,13 @@
     "highRiskAlerts": "Hohe Risiken",
     "footerCookies": "Cookie-Richtlinie",
     "footerGdpr": "DSGVO",
-    "footerCopyright": "© {{year}} HR Office. Alle Rechte vorbehalten.",
+    "footerCopyright": "© {{year}} Strata. Alle Rechte vorbehalten.",
     "footerSsl": "SSL Gesichert",
     "footerGdprCompliant": "DSGVO-konform",
     "footerSoc2": "SOC 2 zertifiziert",
     "ctaTitle": "Bereit, Ihre",
     "ctaTitleHighlight": "HR-Operationen zu verbessern?",
-    "ctaSubtitle": "Schließen Sie sich den führenden HR-Spezialisten an, die HR Office vertrauen, um ihre Teams zu verwalten.",
+    "ctaSubtitle": "Schließen Sie sich den führenden HR-Spezialisten an, die Strata vertrauen, um ihre Teams zu verwalten.",
     "statsEmployees": "Verfolgte Mitarbeiter",
     "statsAccuracy": "Genauigkeitsprozentsatz",
     "statsRealtime": "Echtzeit-Tracking",
@@ -290,7 +308,7 @@
       "name": "Sara Johnson",
       "role": "HR-Direktorin",
       "company": "Google",
-      "text": "HR Office hat unseren Personalverwaltungsprozess revolutioniert. Was früher Stunden dauerte, dauert jetzt Minuten. Die Analysen sind unglaublich!"
+      "text": "Strata hat unseren Personalverwaltungsprozess revolutioniert. Was früher Stunden dauerte, dauert jetzt Minuten. Die Analysen sind unglaublich!"
     },
     "testimonial2": {
       "name": "Michael Chen",
@@ -320,14 +338,14 @@
       "name": "James Wilson",
       "role": "Geschäftsführer",
       "company": "TechBridge",
-      "text": "Wir sind von einem veralteten HR-System auf HR Office umgestiegen und haben sofort Verbesserungen in der Mitarbeiterzufriedenheit und der Produktivität der Manager festgestellt."
+      "text": "Wir sind von einem veralteten HR-System auf Strata umgestiegen und haben sofort Verbesserungen in der Mitarbeiterzufriedenheit und der Produktivität der Manager festgestellt."
     }
   },
   "faq": {
     "title": "Häufig gestellte Fragen",
     "subtitle": "Häufig gestellte",
     "subtitleHighlight": "Fragen mit Antworten",
-    "description": "Alles, was Sie über HR Office wissen müssen und wie es funktioniert.",
+    "description": "Alles, was Sie über Strata wissen müssen und wie es funktioniert.",
     "q1": "Wie funktioniert die kostenlose Testversion?",
     "a1": "Starten Sie mit einer 14-tägigen kostenlosen Testversion - keine Kreditkarte erforderlich. Zugriff auf alle Funktionen des Starter-Plans. Jederzeit ohne Verpflichtungen kündbar.",
     "q2": "Kann ich später den Plan ändern?",
@@ -463,7 +481,7 @@
     "platformTitle": "Für moderne Teams entwickelt",
     "platformSubtitle": "Funktionen auf Unternehmensebene, die mit Ihrer Organisation skalieren",
     "ctaTitle": "Bereit, HR zu transformieren?",
-    "ctaSubtitle": "Schließen Sie sich Tausenden von Teams an, die HR Office bereits für effektives Personalmanagement nutzen.",
+    "ctaSubtitle": "Schließen Sie sich Tausenden von Teams an, die Strata bereits für effektives Personalmanagement nutzen.",
     "ctaButton": "Kostenlos starten",
     "ctaContact": "Kontaktieren Sie uns für eine Demo",
     "modules": {
@@ -660,14 +678,14 @@
     "infoWeCollect": "Informationen, die wir sammeln",
     "infoWeCollectDesc": "Wir sammeln Informationen, die Sie uns direkt zur Verfügung stellen, einschließlich:",
     "intellectualProperty": "Geistiges Eigentum",
-    "intellectualPropertyDesc": "Alle Inhalte, Funktionen und Funktionalitäten der Plattform gehören ShieldOffice und sind durch internationales Urheberrecht geschützt.",
+    "intellectualPropertyDesc": "Alle Inhalte, Funktionen und Funktionalitäten der Plattform gehören Strata und sind durch internationales Urheberrecht geschützt.",
     "lastUpdated": "Zuletzt aktualisiert",
     "leaveManagement": "Urlaubsverwaltung",
     "leaveRequests": "Urlaubsanfragen",
     "legal": "Rechtliche Informationen",
     "legalEmail": "legal@shieldoffice.com",
     "limitationLiability": "Haftungsbeschränkung",
-    "limitationLiabilityDesc": "ShieldOffice haftet nicht für indirekte, zufällige, spezielle oder Folgeschäden, die sich aus der Nutzung der Plattform ergeben.",
+    "limitationLiabilityDesc": "Strata haftet nicht für indirekte, zufällige, spezielle oder Folgeschäden, die sich aus der Nutzung der Plattform ergeben.",
     "maintainConfidentiality": "Vertraulichkeit Ihrer Kontodaten gewährleisten",
     "maintainSession": "Sicherstellen Ihrer Sitzung und Präferenzen",
     "manageAccess": "Verwalten des Zugriffs und der Berechtigungen der Mitarbeiter",
@@ -698,7 +716,7 @@
     "useOfServices": "Nutzung der Dienste",
     "useOfServicesDesc": "Sie stimmen zu, unsere Plattform in Übereinstimmung mit den geltenden Gesetzen und diesen Bedingungen zu nutzen. Sie sind verpflichtet:",
     "userResponsibilities": "Verantwortlichkeiten des Benutzers",
-    "userResponsibilitiesDesc": "Als Benutzer von ShieldOffice stimmen Sie zu:",
+    "userResponsibilitiesDesc": "Als Benutzer von Strata stimmen Sie zu:",
     "vectors": "Überwachung von Angriffsvektoren und Missbrauch"
   },
   "cookies": {
@@ -741,27 +759,27 @@
   },
   "meta": {
     "features": {
-      "title": "Funktionen — HR Office Module",
-      "description": "Entdecken Sie HR Office Module: Mitarbeiterverwaltung, Urlaubsverfolgung, Anwesenheit mit Gesichtserkennung, Aufgabenverwaltung, KI-Analytik und mehr.",
-      "ogTitle": "Funktionen — HR Office",
+      "title": "Funktionen — Strata Module",
+      "description": "Entdecken Sie Strata Module: Mitarbeiterverwaltung, Urlaubsverfolgung, Anwesenheit mit Gesichtserkennung, Aufgabenverwaltung, KI-Analytik und mehr.",
+      "ogTitle": "Funktionen — Strata",
       "ogDescription": "All-in-One HR-Plattform mit 10+ Modulen."
     },
     "contact": {
       "title": "Kontakt — Unternehmensvertrieb",
-      "description": "Kontaktieren Sie HR Office für Enterprise-Pläne, Integrationen und Support.",
-      "ogTitle": "Kontakt — HR Office",
+      "description": "Kontaktieren Sie Strata für Enterprise-Pläne, Integrationen und Support.",
+      "ogTitle": "Kontakt — Strata",
       "ogDescription": "Kontaktieren Sie uns für Enterprise HR-Lösungen."
     },
     "careers": {
       "title": "Karriere — Offene Stellen",
-      "description": "Durchsuchen Sie offene Stellen bei Organisationen, die HR Office nutzen.",
-      "ogTitle": "Karriere — HR Office",
-      "ogDescription": "Finden Sie offene Stellen und bewerben Sie sich über HR Office."
+      "description": "Durchsuchen Sie offene Stellen bei Organisationen, die Strata nutzen.",
+      "ogTitle": "Karriere — Strata",
+      "ogDescription": "Finden Sie offene Stellen und bewerben Sie sich über Strata."
     },
     "home": {
-      "title": "HR Office — All-in-One HR-Management-Plattform",
-      "description": "HR Office ist eine leistungsstarke HR-Plattform mit Echtzeit-Anwesenheit, Urlaubsverwaltung, Aufgabenmanagement, Mitarbeiteranalytik, Gesichtserkennung und KI-Assistent.",
-      "ogTitle": "HR Office — All-in-One HR-Plattform",
+      "title": "Strata — All-in-One HR-Management-Plattform",
+      "description": "Strata ist eine leistungsstarke HR-Plattform mit Echtzeit-Anwesenheit, Urlaubsverwaltung, Aufgabenmanagement, Mitarbeiteranalytik, Gesichtserkennung und KI-Assistent.",
+      "ogTitle": "Strata — All-in-One HR-Plattform",
       "ogDescription": "Verwalten Sie Ihre Belegschaft mit KI-Analytik, Anwesenheitserfassung und Aufgabenmanagement."
     }
   }

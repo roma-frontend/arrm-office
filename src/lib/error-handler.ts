@@ -1,5 +1,5 @@
 /**
- * Centralized Error Handling for HR Office
+ * Centralized Error Handling for Strata
  *
  * Provides standardized error types, handlers, and utilities
  * to replace ad-hoc error: any patterns across the codebase.

@@ -1,6 +1,6 @@
 {
-  "name": "HR Office",
-  "short_name": "HR Office",
+  "name": "Strata",
+  "short_name": "Strata",
   "description": "All-in-One HR Management Platform",
   "start_url": "/dashboard",
   "display": "standalone",

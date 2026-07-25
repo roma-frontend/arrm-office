@@ -3,15 +3,15 @@
  * Includes: SoftwareApplication, Organization, FAQPage schemas
  */
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hroffice.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://strata.work';
 
 export function SoftwareApplicationJsonLd() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'HR Office',
+    name: 'Strata',
     description:
-      'All-in-one HR management platform with real-time attendance tracking, leave management, task management, employee analytics, face recognition check-in, and AI assistant.',
+      'From strategy to results — align, track, and achieve your OKRs, with real-time attendance tracking, leave management, task management, employee analytics, face recognition check-in, and AI assistant.',
     url: APP_URL,
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
@@ -30,7 +30,7 @@ export function SoftwareApplicationJsonLd() {
     },
     author: {
       '@type': 'Organization',
-      name: 'HR Office Team',
+      name: 'Strata Team',
       url: APP_URL,
     },
   };
@@ -47,18 +47,18 @@ export function OrganizationJsonLd() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'HR Office',
+    name: 'Strata',
     url: APP_URL,
-    logo: 'https://hroffice.app/favicon.svg',
+    logo: 'https://strata.work/favicon.svg',
     sameAs: [
-      'https://twitter.com/hrofficeapp',
-      'https://linkedin.com/company/hroffice',
+      'https://twitter.com/strata',
+      'https://linkedin.com/company/strata',
       'https://github.com/roma-frontend/hr-project',
     ],
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
-      email: 'support@hroffice.app',
+      email: 'support@strata.work',
     },
   };
 

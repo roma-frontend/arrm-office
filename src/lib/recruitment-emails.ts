@@ -40,7 +40,7 @@ interface RejectionNoticeArgs extends EmailTemplateArgs {
 }
 
 function getCompanyName(): string {
-  return process.env.NEXT_PUBLIC_COMPANY_NAME || 'HR Office';
+  return process.env.NEXT_PUBLIC_COMPANY_NAME || 'Strata';
 }
 
 function getAccentColor(): string {

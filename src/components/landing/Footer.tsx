@@ -156,7 +156,7 @@ export default function Footer() {
           style={{ borderColor: 'var(--landing-card-border)' }}
         >
           <p className="text-xs" style={{ color: 'var(--landing-text-muted)' }}>
-            © {new Date().getFullYear()} HROffice. {t('landingExtra.footerRights')}
+            © {new Date().getFullYear()} Strata. {t('landingExtra.footerRights')}
           </p>
           <div className="flex items-center gap-4">
             {/* Social icons */}

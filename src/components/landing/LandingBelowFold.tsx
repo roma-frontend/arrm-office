@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import LandingExtras from './LandingExtras';
+import StrategyCascadeSection from './StrategyCascadeSection';
 
 // Below-fold sections - lazy loaded for performance with SSR
 const TestimonialsSection = dynamic(() => import('./TestimonialsSection'), {
@@ -100,6 +101,9 @@ export default function LandingBelowFold() {
         </div>
         <div className="section-lazy">
           <StatsSection />
+        </div>
+        <div className="section-lazy">
+          <StrategyCascadeSection />
         </div>
         <div className="section-lazy">
           <FeaturesSection />

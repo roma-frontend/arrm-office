@@ -105,10 +105,27 @@ export const createTask = mutation({
     ),
     deadline: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
+    // Goals ↔ Tasks linkage
+    objectiveId: v.optional(v.id('objectives')),
+    keyResultId: v.optional(v.id('keyResults')),
   },
   handler: async (ctx, args) => {
     const assigner = await ctx.db.get(args.assignedBy);
     const organizationId = assigner?.organizationId;
+
+    // Validate objective link if provided
+    if (args.objectiveId) {
+      const obj = await ctx.db.get(args.objectiveId);
+      if (!obj) throw new Error('Linked objective not found');
+      // If keyResultId also provided, validate it belongs to the objective
+      if (args.keyResultId) {
+        const kr = await ctx.db.get(args.keyResultId);
+        if (!kr) throw new Error('Linked key result not found');
+        if (kr.objectiveId !== args.objectiveId) {
+          throw new Error('Key result does not belong to the specified objective');
+        }
+      }
+    }
 
     const now = Date.now();
     const taskId = await ctx.db.insert('tasks', {
@@ -121,6 +138,8 @@ export const createTask = mutation({
       priority: args.priority,
       deadline: args.deadline,
       tags: args.tags,
+      objectiveId: args.objectiveId,
+      keyResultId: args.keyResultId,
       createdAt: now,
       updatedAt: now,
     });

@@ -5,7 +5,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import {
@@ -14,7 +14,7 @@ import {
   SelectStep,
   FileUploadStep,
 } from '@/components/ui/wizard-step-components';
-import { CheckSquare, User, AlertCircle, Tag, Paperclip } from 'lucide-react';
+import { CheckSquare, User, AlertCircle, Tag, Paperclip, Target } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { useOptimisticCreateTask } from '@/hooks/useOptimisticActions';
 import { api } from '@/convex/_generated/api';
@@ -56,6 +56,22 @@ export function CreateTaskWizard({
   );
 
   const availableEmployees = userRole === 'admin' ? employees : myEmployees;
+
+  // Goals linkage: fetch active objectives for task linking
+  const userForQuery = useQuery(
+    api.users.queries.getUserById,
+    safeUserId ? { userId: safeUserId } : 'skip',
+  );
+  const objectivesForLinking = useQuery(
+    api.goals.getObjectivesForTaskCreation,
+    userForQuery?.organizationId
+      ? { organizationId: userForQuery.organizationId as Id<'organizations'>, userId: safeUserId! }
+      : 'skip',
+  );
+
+  // Get KRs for selected objective
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState<string | null>(null);
+  const selectedObjective = objectivesForLinking?.find((o: any) => o._id === selectedObjectiveId);
 
   const steps: WizardStep[] = [
     {
@@ -146,6 +162,53 @@ export function CreateTaskWizard({
       ),
     },
     {
+      id: 'objectiveLink',
+      title: t('taskWizard.steps.objectiveLink.title', 'Link to Goal'),
+      description: t('taskWizard.steps.objectiveLink.description', 'Align this task with an OKR'),
+      icon: <Target className="w-5 h-5" />,
+      validation: () => true,
+      content: (
+        <div className="space-y-4">
+          <SelectStep
+            field="objectiveId"
+            label={t('taskWizard.steps.objectiveLink.objectiveLabel', 'Objective')}
+            options={
+              objectivesForLinking?.map((obj: any) => ({
+                value: obj._id,
+                label: `${obj.title} (${obj.periodType} ${obj.periodYear})`,
+              })) || []
+            }
+            placeholder={t(
+              'taskWizard.steps.objectiveLink.objectivePlaceholder',
+              'Select an objective (optional)',
+            )}
+            description={t(
+              'taskWizard.steps.objectiveLink.objectiveHint',
+              'Link this task to a strategic goal',
+            )}
+          />
+          {selectedObjective && selectedObjective.keyResults.length > 0 && (
+            <SelectStep
+              field="keyResultId"
+              label={t('taskWizard.steps.objectiveLink.keyResultLabel', 'Key Result')}
+              options={selectedObjective.keyResults.map((kr: any) => ({
+                value: kr._id,
+                label: `${kr.title} (${kr.completionPercent}%)`,
+              }))}
+              placeholder={t(
+                'taskWizard.steps.objectiveLink.keyResultPlaceholder',
+                'Select a key result (optional)',
+              )}
+              description={t(
+                'taskWizard.steps.objectiveLink.keyResultHint',
+                'Link to a specific key result',
+              )}
+            />
+          )}
+        </div>
+      ),
+    },
+    {
       id: 'attachments',
       title: t('task.attachments', 'Attachments'),
       description: t('task.attachmentsHint', 'optional'),
@@ -172,6 +235,13 @@ export function CreateTaskWizard({
         .map((t) => t.trim())
         .filter(Boolean);
 
+      const objectiveId = data.objectiveId
+        ? (String(data.objectiveId) as Id<'objectives'>)
+        : undefined;
+      const keyResultId = data.keyResultId
+        ? (String(data.keyResultId) as Id<'keyResults'>)
+        : undefined;
+
       const taskId = await createTask({
         assignedTo: String(data.assigneeId) as Id<'users'>,
         assignedBy: currentUserId,
@@ -180,6 +250,8 @@ export function CreateTaskWizard({
         priority: (String(data.priority) || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
         deadline: data.deadline ? new Date(String(data.deadline)).getTime() : undefined,
         tags: tags.length > 0 ? tags : undefined,
+        objectiveId,
+        keyResultId,
       });
 
       const attachmentsJson = data.attachments as string | undefined;

@@ -23,6 +23,7 @@ import {
   Settings2,
   Zap,
   ArrowUpRight,
+  Layers,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthUser } from '@/store/useAuthStore';
@@ -98,6 +99,15 @@ export function QuickActions() {
 
     const managerActions: QuickAction[] = [
       {
+        id: 'strategy',
+        label: t('quickActions.strategy') || 'Strategy',
+        icon: Layers,
+        href: '/strategy',
+        description: t('quickActions.strategyDesc') || 'OKR cascade',
+        gradientClass: 'quick-action-purple',
+        role: ['admin', 'supervisor', 'superadmin'],
+      },
+      {
         id: 'approvals',
         label: t('quickActions.approvals'),
         icon: ShieldCheck,
@@ -140,7 +150,9 @@ export function QuickActions() {
 
     return [
       ...commonActions,
-      ...(user?.role === 'admin' || user?.role === 'supervisor' ? managerActions : []),
+      ...(user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin'
+        ? managerActions
+        : []),
       ...(user?.role === 'admin' || user?.role === 'superadmin' ? adminActions : []),
     ];
   }, [user?.role, t]);

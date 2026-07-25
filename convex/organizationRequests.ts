@@ -86,7 +86,7 @@ export const createStarterOrganization = mutation({
       organizationId: orgId,
       userId,
       type: 'system',
-      title: '🎉 Welcome to OfficeHub!',
+      title: '🎉 Welcome to Strata!',
       message: `Your organization "${args.name}" has been created successfully. You're on the Starter plan (10 employees max).`,
       isRead: false,
       route: '/organization',

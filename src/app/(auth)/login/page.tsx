@@ -629,7 +629,7 @@ export default function LoginPage() {
                     <Building2 className="w-6 h-6 text-white" />
                   </div>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    {mounted ? t('auth.signInToHROffice') : 'Sign in to HR Office'}
+                    {mounted ? t('auth.signInToHROffice') : 'Sign in to Strata'}
                   </p>
                 </Link>
 

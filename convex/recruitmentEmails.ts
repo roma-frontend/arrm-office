@@ -44,7 +44,7 @@ export const sendApplicationConfirmation = action({
 
     try {
       await resend.emails.send({
-        from: 'HR Office <onboarding@resend.dev>',
+        from: 'Strata <onboarding@resend.dev>',
         to: args.candidateEmail,
         subject,
         html,
@@ -98,7 +98,7 @@ export const sendInterviewInvitation = action({
 
     try {
       await resend.emails.send({
-        from: 'HR Office <onboarding@resend.dev>',
+        from: 'Strata <onboarding@resend.dev>',
         to: args.candidateEmail,
         subject,
         html,
@@ -146,7 +146,7 @@ export const sendOfferLetter = action({
 
     try {
       await resend.emails.send({
-        from: 'HR Office <onboarding@resend.dev>',
+        from: 'Strata <onboarding@resend.dev>',
         to: args.candidateEmail,
         subject,
         html,
@@ -186,7 +186,7 @@ export const sendRejectionNotice = action({
 
     try {
       await resend.emails.send({
-        from: 'HR Office <onboarding@resend.dev>',
+        from: 'Strata <onboarding@resend.dev>',
         to: args.candidateEmail,
         subject,
         html,

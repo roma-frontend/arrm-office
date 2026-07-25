@@ -2,7 +2,7 @@
 
 export const runtime = 'edge';
 
-export const alt = 'HR Office — All-in-One HR Management Platform';
+export const alt = 'Strata — From Strategy to Results';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -51,7 +51,7 @@ export default function Image() {
           marginBottom: 16,
         }}
       >
-        HR Office
+        Strata
       </div>
 
       {/* Subtitle */}
@@ -94,7 +94,7 @@ export default function Image() {
           gap: 8,
         }}
       >
-        hroffice.app
+        strata.work
       </div>
     </div>,
     {

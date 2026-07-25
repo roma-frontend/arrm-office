@@ -155,6 +155,8 @@
     "employeesDesc": "Team management",
     "settings": "Settings",
     "settingsDesc": "Configuration",
+    "strategy": "Strategy",
+    "strategyDesc": "OKR cascade & strategy map",
     "shortcuts": {
       "hint": "Keyboard shortcuts"
     },
@@ -362,5 +364,46 @@
     "paidLeave": "Paid Leave",
     "sickLeave": "Sick Leave",
     "familyLeave": "Family Leave"
+  },
+  "tasksClient": {
+    "linkedObjective": "Linked Goal",
+    "linkedObjectiveDesc": "This task contributes to the following OKR"
+  },
+  "goals": {
+    "linkedTasks": "Linked Tasks",
+    "linkedTasksDesc": "Tasks that contribute to this objective",
+    "noLinkedTasks": "No linked tasks yet",
+    "createLinkedTask": "Create a task"
+  },
+  "strategyMap": {
+    "tasksLinked": "Tasks → Goals",
+    "tasks": "tasks",
+    "doneTasks": "done",
+    "objectivesWithTasks": "objectives with tasks",
+    "viewDetails": "View",
+    "avgProgress": "Avg Progress",
+    "onTrack": "On Track",
+    "atRisk": "At Risk",
+    "behind": "Behind",
+    "completed": "Done",
+    "needsAttention": "need attention",
+    "allGood": "All objectives on track",
+    "manageOkrs": "Manage OKRs",
+    "totalObjectives": "objectives",
+    "title": "Strategy Map"
+  },
+  "taskWizard": {
+    "steps": {
+      "objectiveLink": {
+        "title": "Link to Goal",
+        "description": "Align this task with an OKR",
+        "objectiveLabel": "Objective",
+        "objectivePlaceholder": "Select an objective (optional)",
+        "objectiveHint": "Link this task to a strategic goal",
+        "keyResultLabel": "Key Result",
+        "keyResultPlaceholder": "Select a key result (optional)",
+        "keyResultHint": "Link to a specific key result"
+      }
+    }
   }
 }

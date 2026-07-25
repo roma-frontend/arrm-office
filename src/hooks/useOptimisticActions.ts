@@ -326,6 +326,8 @@ export function useOptimisticCreateTask() {
       priority: 'low' | 'medium' | 'high' | 'urgent';
       deadline?: number;
       tags?: string[];
+      objectiveId?: Id<'objectives'>;
+      keyResultId?: Id<'keyResults'>;
     }) => {
       const now = Date.now();
       const optimisticTask: OptimisticTask = {

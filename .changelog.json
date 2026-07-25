@@ -1,5 +1,5 @@
 {
-  "header": "# Changelog\n\nAll notable changes to HR Office.\n",
+  "header": "# Changelog\n\nAll notable changes to Strata.\n",
   "types": [
     { "type": "feat", "section": "✨ Features" },
     { "type": "fix", "section": "🐛 Bug Fixes" },

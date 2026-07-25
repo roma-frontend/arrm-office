@@ -155,6 +155,8 @@
     "employees": "Աշխատակիցներ",
     "employeesDesc": "Թիմի կառավարում",
     "settingsDesc": "Կարգավորումներ",
+    "strategy": "Ռազմավարություն",
+    "strategyDesc": "OKR կասկադ և ռազմավարական քարտեզ",
     "toast": {
       "success": "Բացվում է..."
     },
@@ -362,5 +364,46 @@
     "paidLeave": "Վճարովի արձակուրդ",
     "sickLeave": "Հիվանդության արձակուրդ",
     "familyLeave": "Ընտանեկան արձակուրդ"
+  },
+  "tasksClient": {
+    "linkedObjective": "Կապակցված նպատակ",
+    "linkedObjectiveDesc": "Այս առաջադրանքը նպաստում է հետևյալ OKR-ին"
+  },
+  "goals": {
+    "linkedTasks": "Կապակցված առաջադրանքներ",
+    "linkedTasksDesc": "Առաջադրանքներ, որոնք նպաստում են այս նպատակին",
+    "noLinkedTasks": "Կապակցված առաջադրանքներ դեռ չկան",
+    "createLinkedTask": "Ստեղծել առաջադրանք"
+  },
+  "strategyMap": {
+    "tasksLinked": "Առաջադրանքներ → Նպատակներ",
+    "tasks": "առաջադրանք",
+    "doneTasks": "կատարված",
+    "objectivesWithTasks": "նպատակներ առաջադրանքներով",
+    "viewDetails": "Դիտել",
+    "avgProgress": "Միջ. առաջընթաց",
+    "onTrack": "Ըստ գրաֆիկի",
+    "atRisk": "Ռիսկի տակ",
+    "behind": "Հետ է մնում",
+    "completed": "Պատրաստ է",
+    "needsAttention": "ուշադրություն են պահանջում",
+    "allGood": "Բոլոր նպատակներն ըստ գրաֆիկի",
+    "manageOkrs": "Կառավարել OKR",
+    "totalObjectives": "նպատակ",
+    "title": "Ռազմավարական քարտեզ"
+  },
+  "taskWizard": {
+    "steps": {
+      "objectiveLink": {
+        "title": "Կապել նպատակին",
+        "description": "Համապատասխանեցնել առաջադրանքը OKR-ին",
+        "objectiveLabel": "Նպատակ",
+        "objectivePlaceholder": "Ընտրել նպատակը (ըստ ցանկության)",
+        "objectiveHint": "Կապել առաջադրանքը ռազմավարական նպատակին",
+        "keyResultLabel": "Հիմնական արդյունք",
+        "keyResultPlaceholder": "Ընտրել KR (ըստ ցանկության)",
+        "keyResultHint": "Կապել կոնկրետ հիմնական արդյունքին"
+      }
+    }
   }
 }

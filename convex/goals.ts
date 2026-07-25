@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { query, mutation, internalMutation } from './_generated/server';
+import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 
@@ -582,6 +583,142 @@ export const cancelObjective = mutation({
     if (obj.status === 'completed') throw new Error('Cannot cancel a completed objective');
 
     await ctx.db.patch(objectiveId, { status: 'cancelled', updatedAt: Date.now() });
+  },
+});
+
+// ── Get task stats across all objectives for dashboard ───────────────────
+export const getObjectiveTaskStats = query({
+  args: {
+    organizationId: v.id('organizations'),
+    periodYear: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { organizationId, periodYear } = args;
+
+    let objectives = await ctx.db
+      .query('objectives')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    if (periodYear) {
+      objectives = objectives.filter((o: any) => o.periodYear === periodYear);
+    }
+
+    // For each objective, count linked tasks
+    let totalLinked = 0;
+    let totalCompleted = 0;
+    let objectivesWithTasks = 0;
+
+    for (const obj of objectives) {
+      const tasks = await ctx.db
+        .query('tasks')
+        .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
+        .take(SMALL_LIST_CAP);
+
+      if (tasks.length > 0) {
+        objectivesWithTasks++;
+        totalLinked += tasks.length;
+        totalCompleted += tasks.filter((t: any) => t.status === 'completed').length;
+      }
+    }
+
+    return {
+      totalLinked,
+      totalCompleted,
+      objectivesWithTasks,
+      totalObjectives: objectives.length,
+    };
+  },
+});
+
+// ── Get tasks linked to an objective ──────────────────────────────────────
+// OPTIMIZED: Batch loads user data for linked tasks
+export const getTasksByObjective = query({
+  args: { objectiveId: v.id('objectives') },
+  handler: async (ctx, args) => {
+    const tasks = await ctx.db
+      .query('tasks')
+      .withIndex('by_objective', (q) => q.eq('objectiveId', args.objectiveId))
+      .order('desc')
+      .take(DEFAULT_LIST_CAP);
+
+    if (tasks.length === 0) return [];
+
+    // Batch load assignee users
+    const userIds = [...new Set(tasks.map((t: any) => t.assignedTo))];
+    const users = await Promise.all(userIds.map((id: Id<'users'>) => ctx.db.get(id)));
+    const userMap = new Map(users.map((u: any) => [u?._id, u]));
+
+    return tasks.map((task: any) => {
+      const assignedTo = userMap.get(task.assignedTo);
+      return {
+        ...task,
+        assignedToUser: assignedTo
+          ? { _id: assignedTo._id, name: assignedTo.name, avatarUrl: assignedTo.avatarUrl }
+          : null,
+      };
+    });
+  },
+});
+
+// ── Get active objectives for task creation (dropdown selector) ────────────
+export const getObjectivesForTaskCreation = query({
+  args: {
+    organizationId: v.id('organizations'),
+    userId: v.optional(v.id('users')),
+  },
+  handler: async (ctx, args) => {
+    const { organizationId, userId } = args;
+    let objectives = await ctx.db
+      .query('objectives')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    // Only active objectives
+    objectives = objectives.filter((o: any) => o.status === 'active');
+
+    // If userId provided, prefer objectives where user is owner or has tasks
+    const enriched = await Promise.all(
+      objectives.map(async (obj) => {
+        const krs = await ctx.db
+          .query('keyResults')
+          .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
+          .take(10);
+        const owner = await ctx.db.get(obj.ownerId);
+        return {
+          _id: obj._id,
+          title: obj.title,
+          level: obj.level,
+          ownerName: owner?.name ?? 'Unknown',
+          progress: obj.progress,
+          periodType: obj.periodType,
+          periodYear: obj.periodYear,
+          keyResults: krs.map((kr) => ({
+            _id: kr._id,
+            title: kr.title,
+            completionPercent: computeKRProgress(
+              kr.startValue,
+              kr.targetValue,
+              kr.currentValue,
+              kr.direction,
+              kr.metricType,
+            ),
+          })),
+        };
+      }),
+    );
+
+    // Sort: user's objectives first, then by progress desc
+    enriched.sort((a, b) => {
+      if (userId) {
+        const aIsMine = objectives.find((o: any) => o._id === a._id)?.ownerId === userId ? 0 : 1;
+        const bIsMine = objectives.find((o: any) => o._id === b._id)?.ownerId === userId ? 0 : 1;
+        if (aIsMine !== bIsMine) return aIsMine - bIsMine;
+      }
+      return b.progress - a.progress;
+    });
+
+    return enriched;
   },
 });
 

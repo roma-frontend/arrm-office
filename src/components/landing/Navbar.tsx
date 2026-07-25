@@ -157,7 +157,7 @@ export default function Navbar() {
             className="font-bold text-lg tracking-tight transition-colors"
             style={{ color: 'var(--landing-text-primary)' }}
           >
-            HR<span style={{ color: 'var(--primary)' }}>Office</span>
+            <span style={{ color: 'var(--primary)' }}>Strata</span>
           </span>
         </Link>
 

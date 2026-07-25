@@ -1914,6 +1914,7 @@ input[type='date']:focus {
 .quick-action-chat,
 .quick-action-warning,
 .quick-action-indigo,
+.quick-action-purple,
 .quick-action-rose,
 .quick-action-cyan,
 .quick-action-slate {
@@ -1941,6 +1942,7 @@ input[type='date']:focus {
 .quick-action-chat:hover,
 .quick-action-warning:hover,
 .quick-action-indigo:hover,
+.quick-action-purple:hover,
 .quick-action-rose:hover,
 .quick-action-cyan:hover,
 .quick-action-slate:hover {
@@ -1997,6 +1999,13 @@ input[type='date']:focus {
 }
 .quick-action-cyan:hover {
   background: linear-gradient(135deg, var(--accent), #0891b2);
+}
+
+.quick-action-purple {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(124, 58, 237, 0.9));
+}
+.quick-action-purple:hover {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
 }
 
 .quick-action-slate {

@@ -57,7 +57,7 @@ export default function PendingPage() {
             {t('auth.pending.title', 'Request Submitted!')}
           </h1>
           <p className="text-lg mb-8" style={{ color: 'var(--text-secondary)' }}>
-            {t('auth.pending.subtitle', 'Thank you for your interest in OfficeHub.')}
+            {t('auth.pending.subtitle', 'Thank you for your interest in Strata.')}
           </p>
 
           {/* Timeline */}
