@@ -1197,7 +1197,12 @@ export const cancelMaintenance = mutation({
       notes: args.notes ?? record.notes,
     });
 
-    await restoreAssetAfterMaintenance(ctx, record.assetId, args.cancelledBy, 'maintenance_cancelled');
+    await restoreAssetAfterMaintenance(
+      ctx,
+      record.assetId,
+      args.cancelledBy,
+      'maintenance_cancelled',
+    );
   },
 });
 

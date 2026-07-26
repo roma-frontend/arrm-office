@@ -33,6 +33,7 @@ import {
   LayoutGrid,
   List,
   MapPin,
+  QrCode,
 } from 'lucide-react';
 import { useQuery, useMutation } from 'convex/react';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
@@ -79,6 +80,7 @@ import {
   type DocumentLabels,
 } from '@/lib/exportDocument';
 import type { AccentColor } from '@/lib/documentCatalog';
+import QRCodeModal from './QRCodeModal';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -489,12 +491,14 @@ function AssetDetailCard({
   onReturn,
   onClose,
   userId,
+  setQrCodeAsset,
 }: {
   asset: any;
   onAssign: () => void;
   onReturn?: () => void;
   onClose: () => void;
   userId: Id<'users'>;
+  setQrCodeAsset: (a: any) => void;
 }) {
   const { t } = useTranslation();
   const cfg = getCategoryCfg(asset.category);
@@ -603,6 +607,7 @@ function AssetDetailCard({
           </div>
           <div className="flex items-center gap-2">
             {getStatusBadge(asset.status, t)}
+            <QRButton asset={asset} setQrCodeAsset={setQrCodeAsset} t={t} />
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-4 h-4" />
             </Button>
@@ -884,6 +889,42 @@ function AssetDetailCard({
   );
 }
 
+// ──────────── QR CODE BUTTON (used in multiple places) ────────────
+/** Small ghost button that opens the QR-code sticker modal for a given asset. */
+function QRButton({
+  asset,
+  setQrCodeAsset,
+  t,
+}: {
+  asset: any;
+  setQrCodeAsset: (a: any) => void;
+  t: any;
+}) {
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      className="h-7 text-xs"
+      onClick={(e) => {
+        e.stopPropagation();
+        setQrCodeAsset({
+          _id: asset._id,
+          name: asset.name,
+          serialNumber: asset.serialNumber,
+          assetTag: asset.assetTag,
+          category: asset.category,
+          brand: asset.brand,
+          model: asset.model,
+        });
+      }}
+      title={t('assets.qr.show', 'Show QR Code')}
+    >
+      <QrCode className="w-3.5 h-3.5 mr-1" />
+      QR
+    </Button>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
@@ -922,6 +963,7 @@ export default function AssetsClient() {
   const [assignDialogAsset, setAssignDialogAsset] = useState<any>(null);
   const [returnDialogAssignment, setReturnDialogAssignment] = useState<any>(null);
   const [deleteConfirmAsset, setDeleteConfirmAsset] = useState<any>(null);
+  const [qrCodeAsset, setQrCodeAsset] = useState<any>(null);
 
   // Queries
   const _useQuery = useQuery as unknown as (...args: any[]) => any;
@@ -1055,6 +1097,18 @@ export default function AssetsClient() {
 
       {paramsAvailable && (
         <>
+          {/* QR Code Modal */}
+          {orgId && qrCodeAsset && (
+            <QRCodeModal
+              open={!!qrCodeAsset}
+              onOpenChange={(v) => {
+                if (!v) setQrCodeAsset(null);
+              }}
+              asset={qrCodeAsset}
+              organizationId={orgId}
+            />
+          )}
+
           {/* ── Stats Cards ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 my-4">
             <motion.div variants={itemVariants}>
@@ -1236,6 +1290,7 @@ export default function AssetsClient() {
                     }}
                     onClose={() => setSelectedAsset(null)}
                     userId={user?.id as Id<'users'>}
+                    setQrCodeAsset={setQrCodeAsset}
                   />
                 ) : viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -1318,6 +1373,7 @@ export default function AssetsClient() {
                             {isSuperuser && (
                               <div className="px-5 py-2.5 bg-(--background-subtle)/50 border-t border-(--border) flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
                                 <div className="flex gap-1">
+                                  <QRButton asset={asset} setQrCodeAsset={setQrCodeAsset} t={t} />
                                   {asset.status === 'available' && (
                                     <Button
                                       size="sm"
@@ -1446,6 +1502,11 @@ export default function AssetsClient() {
                                 {isSuperuser && (
                                   <td className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-1">
+                                      <QRButton
+                                        asset={asset}
+                                        setQrCodeAsset={setQrCodeAsset}
+                                        t={t}
+                                      />
                                       {asset.status === 'available' && (
                                         <Button
                                           size="sm"
@@ -1616,6 +1677,19 @@ export default function AssetsClient() {
                                       {t('assets.returnBy')} {formatDate(a.expectedReturnAt)}
                                     </span>
                                   )}
+                                  <QRButton
+                                    asset={{
+                                      _id: a.assetId,
+                                      name: a.assetName,
+                                      serialNumber: a.assetSerialNumber,
+                                      assetTag: a.assetTag,
+                                      category: a.assetCategory,
+                                      brand: a.assetBrand,
+                                      model: a.assetModel,
+                                    }}
+                                    setQrCodeAsset={setQrCodeAsset}
+                                    t={t}
+                                  />
                                   {isSuperuser && (
                                     <Button
                                       size="sm"

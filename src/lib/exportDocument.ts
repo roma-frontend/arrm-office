@@ -104,9 +104,7 @@ async function ensureDejaVu(pdfMake: any): Promise<boolean> {
     dejaVuReady = (async () => {
       try {
         const entries = await Promise.all(
-          Object.values(DEJAVU_FILES).map(
-            async (f) => [f, await fetchFontBase64(f)] as const,
-          ),
+          Object.values(DEJAVU_FILES).map(async (f) => [f, await fetchFontBase64(f)] as const),
         );
         for (const [file, b64] of entries) pdfMake.vfs[file] = b64;
         pdfMake.fonts = { ...(pdfMake.fonts || {}), DejaVuSans: { ...DEJAVU_FILES } };

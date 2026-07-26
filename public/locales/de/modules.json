@@ -309,6 +309,13 @@
       "name": "Name",
       "date": "Datum",
       "transferDate": "Übergabedatum"
+    },
+    "qr": {
+      "title": "QR-Code",
+      "subtitle": "Scannen, um Asset-Details zu öffnen",
+      "show": "QR-Code anzeigen",
+      "downloaded": "QR-Code heruntergeladen",
+      "linkCopied": "Link in die Zwischenablage kopiert"
     }
   },
   "news": {

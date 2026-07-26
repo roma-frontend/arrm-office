@@ -169,11 +169,14 @@ describe('renderDocumentPdfBase64', () => {
     const promise = renderDocumentPdfBase64(baseDoc);
 
     // Flush microtasks so the async function awaits loadPdfMake and sets up setTimeout
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    // Need enough flushes for the full loadPdfMakeWithFonts chain
+    for (let i = 0; i < 20; i++) {
+      await Promise.resolve();
+    }
 
     jest.advanceTimersByTime(31000);
+    // Flush any microtasks queued by timer callbacks
+    await Promise.resolve();
 
     await expect(promise).rejects.toThrow('timed out');
     jest.useRealTimers();

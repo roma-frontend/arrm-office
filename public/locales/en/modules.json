@@ -115,7 +115,6 @@
     "noRecordsYet": "No attendance records yet",
     "early": "Early"
   },
-
   "assets": {
     "title": "Asset Management",
     "subtitle": "Track and manage company equipment",
@@ -310,6 +309,13 @@
       "name": "Name",
       "date": "Date",
       "transferDate": "Transfer Date"
+    },
+    "qr": {
+      "title": "QR Code",
+      "subtitle": "Scan to open asset details",
+      "show": "Show QR Code",
+      "downloaded": "QR code downloaded",
+      "linkCopied": "Link copied to clipboard"
     }
   },
   "news": {
