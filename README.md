@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏢 HR Office Platform
+# 🏢 Strata Platform
 
 [![Build](https://img.shields.io/github/actions/workflow/status/roma-frontend/hr-project/ci.yml?branch=main&label=CI%2FCD)](https://github.com/roma-frontend/hr-project/actions)
 [![Coverage](https://img.shields.io/badge/coverage-baseline_10%25-yellow)]()
@@ -40,7 +40,7 @@
 
 ## 🎯 About
 
-**HR Office** is a comprehensive, enterprise-grade HR management platform that centralizes all HR operations into a single, real-time application. Built for organizations that need modern workforce management — from employee lifecycle and attendance tracking (with face recognition) to AI-powered analytics and Microsoft 365 integration.
+**Strata** is a comprehensive, enterprise-grade HR management platform that centralizes all HR operations into a single, real-time application. Built for organizations that need modern workforce management — from employee lifecycle and attendance tracking (with face recognition) to AI-powered analytics and Microsoft 365 integration.
 
 ### The Problem
 
@@ -53,7 +53,7 @@ HR processes are typically fragmented across multiple disconnected tools:
 
 ### The Solution
 
-HR Office replaces all fragmented tools with a **unified platform** — zero manual data entry, single source of truth synced from SharePoint, and automated Outlook Calendar integration for approved leaves.
+Strata replaces all fragmented tools with a **unified platform** — zero manual data entry, single source of truth synced from SharePoint, and automated Outlook Calendar integration for approved leaves.
 
 ---
 
@@ -189,10 +189,10 @@ graph TB
 
 ```
 Flow A (Employee Sync):
-SharePoint List → Microsoft Graph API → Convex DB → HR Office UI
+SharePoint List → Microsoft Graph API → Convex DB → Strata UI
 
 Flow B (Leave Calendar Sync):
-HR Office (Leave Approved) → Convex Action → Microsoft Graph API → Outlook Calendar Event
+Strata (Leave Approved) → Convex Action → Microsoft Graph API → Outlook Calendar Event
 ```
 
 ---

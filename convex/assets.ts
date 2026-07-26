@@ -1,0 +1,1293 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
+
+import { query, mutation, internalMutation } from './_generated/server';
+import { v } from 'convex/values';
+import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+
+import { internal } from './_generated/api';
+
+// ═══════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function getCategoryIcon(category: string): string {
+  const icons: Record<string, string> = {
+    laptop: '💻',
+    monitor: '🖥️',
+    phone: '📱',
+    tablet: '📲',
+    peripheral: '🖱️',
+    furniture: '🪑',
+    software_license: '🔑',
+    vehicle: '🚗',
+    other: '📦',
+  };
+  return icons[category] || '📦';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  QUERIES
+// ═══════════════════════════════════════════════════════════════
+
+// ── Asset Catalog ──────────────────────────────────────────
+
+export const listAssets = query({
+  args: {
+    organizationId: v.id('organizations'),
+    category: v.optional(
+      v.union(
+        v.literal('laptop'),
+        v.literal('monitor'),
+        v.literal('phone'),
+        v.literal('tablet'),
+        v.literal('peripheral'),
+        v.literal('furniture'),
+        v.literal('software_license'),
+        v.literal('vehicle'),
+        v.literal('other'),
+      ),
+    ),
+    status: v.optional(
+      v.union(
+        v.literal('available'),
+        v.literal('assigned'),
+        v.literal('maintenance'),
+        v.literal('retired'),
+        v.literal('lost'),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    let q = ctx.db.query('assetCatalog').withIndex('by_org', (q) =>
+      q.eq('organizationId', args.organizationId),
+    );
+
+    if (args.category) {
+      q = q.filter((q: any) => q.eq(q.field('category'), args.category));
+    }
+    if (args.status) {
+      q = q.filter((q: any) => q.eq(q.field('status'), args.status));
+    }
+
+    const assets = await q.order('desc').take(DEFAULT_LIST_CAP);
+
+    // Enrich with current assignment info
+    return await Promise.all(
+      assets.map(async (asset) => {
+        const activeAssignment = await ctx.db
+          .query('assetAssignments')
+          .withIndex('by_asset_active', (q) =>
+            q.eq('assetId', asset._id).eq('status', 'active'),
+          )
+          .first();
+
+        let assignedToUser = null;
+        if (activeAssignment) {
+          const user = await ctx.db.get(activeAssignment.assignedTo);
+          assignedToUser = user ? { _id: user._id, name: user.name, email: user.email } : null;
+        }
+
+        // Count maintenance history
+        const maintenanceCount = await ctx.db
+          .query('assetMaintenance')
+          .withIndex('by_asset', (q) => q.eq('assetId', asset._id))
+          .filter((q: any) => q.eq(q.field('status'), 'completed'))
+          .take(SMALL_LIST_CAP);
+
+        return {
+          ...asset,
+          icon: getCategoryIcon(asset.category),
+          currentUser: assignedToUser,
+          maintenanceCount: maintenanceCount.length,
+          isAssigned: activeAssignment !== null,
+        };
+      }),
+    );
+  },
+});
+
+export const getAsset = query({
+  args: { assetId: v.id('assetCatalog') },
+  handler: async (ctx, args) => {
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset) return null;
+
+    // Get full assignment history
+    const assignments = await ctx.db
+      .query('assetAssignments')
+      .withIndex('by_asset', (q) => q.eq('assetId', args.assetId))
+      .order('desc')
+      .take(SMALL_LIST_CAP);
+
+    const assignmentsWithUsers = await Promise.all(
+      assignments.map(async (a) => {
+        const user = await ctx.db.get(a.assignedTo);
+        const assigner = await ctx.db.get(a.assignedBy);
+        const returner = a.returnedBy ? await ctx.db.get(a.returnedBy) : null;
+        return { ...a, userName: user?.name, assignedByName: assigner?.name, returnedByName: returner?.name };
+      }),
+    );
+
+    // Get maintenance history
+    const maintenance = await ctx.db
+      .query('assetMaintenance')
+      .withIndex('by_asset', (q) => q.eq('assetId', args.assetId))
+      .order('desc')
+      .take(SMALL_LIST_CAP);
+
+    // Get current assignment
+    let currentAssignment = assignmentsWithUsers.find((a: any) => a.status === 'active');
+
+    const creator = await ctx.db.get(asset.createdBy);
+
+    // Reconcile movement form status with actual signature document if possible
+    // (read-only check; the actual status update happens via the scheduler when signed)
+    if (currentAssignment?.movementFormDocId) {
+      const sigDoc = await ctx.db.get(currentAssignment.movementFormDocId);
+      if (sigDoc && sigDoc.status === 'completed' && currentAssignment.movementFormStatus !== 'signed') {
+        currentAssignment = { ...currentAssignment, movementFormStatus: 'signed' } as typeof currentAssignment;
+      }
+    }
+
+    return {
+      ...asset,
+      icon: getCategoryIcon(asset.category),
+      currentAssignment,
+      assignments: assignmentsWithUsers,
+      maintenanceHistory: maintenance,
+      creatorName: creator?.name,
+    };
+  },
+});
+
+export const getAssetStats = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query('assetCatalog')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    const stats = {
+      total: all.length,
+      available: all.filter((a) => a.status === 'available').length,
+      assigned: all.filter((a) => a.status === 'assigned').length,
+      maintenance: all.filter((a) => a.status === 'maintenance').length,
+      retired: all.filter((a) => a.status === 'retired').length,
+      lost: all.filter((a) => a.status === 'lost').length,
+      byCategory: {} as Record<string, number>,
+      totalValue: 0,
+    };
+
+    for (const asset of all) {
+      stats.byCategory[asset.category] = (stats.byCategory[asset.category] || 0) + 1;
+      if (asset.purchasePrice) stats.totalValue += asset.purchasePrice;
+    }
+
+    // Count active assignments
+    const activeAssignments = await ctx.db
+      .query('assetAssignments')
+      .withIndex('by_org_status', (q) =>
+        q.eq('organizationId', args.organizationId).eq('status', 'active'),
+      )
+      .take(DEFAULT_LIST_CAP);
+
+    // Count pending requests
+    const pendingRequests = await ctx.db
+      .query('assetRequests')
+      .withIndex('by_org_status', (q) =>
+        q.eq('organizationId', args.organizationId).eq('status', 'pending'),
+      )
+      .take(DEFAULT_LIST_CAP);
+
+    return {
+      ...stats,
+      activeAssignments: activeAssignments.length,
+      pendingRequests: pendingRequests.length,
+    };
+  },
+});
+
+export const searchAssets = query({
+  args: {
+    organizationId: v.id('organizations'),
+    query: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!args.query.trim()) return [];
+    const q = args.query.toLowerCase();
+    const all = await ctx.db
+      .query('assetCatalog')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    return all.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        (a.serialNumber && a.serialNumber.toLowerCase().includes(q)) ||
+        (a.assetTag && a.assetTag.toLowerCase().includes(q)) ||
+        (a.brand && a.brand.toLowerCase().includes(q)) ||
+        (a.model && a.model.toLowerCase().includes(q)),
+    );
+  },
+});
+
+// ── Assignments ────────────────────────────────────────────
+
+export const listEmployeeAssets = query({
+  args: {
+    organizationId: v.id('organizations'),
+    employeeId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const assignments = await ctx.db
+      .query('assetAssignments')
+      .withIndex('by_assignee_org', (q) =>
+        q.eq('organizationId', args.organizationId).eq('assignedTo', args.employeeId),
+      )
+      .order('desc')
+      .take(DEFAULT_LIST_CAP);
+
+    return await Promise.all(
+      assignments.map(async (a) => {
+        const asset = await ctx.db.get(a.assetId);
+        // Reconcile movement form status with actual signature document
+        let movementFormStatus = a.movementFormStatus;
+        if (movementFormStatus === 'pending' && a.movementFormDocId) {
+          const sigDoc = await ctx.db.get(a.movementFormDocId);
+          if (sigDoc?.status === 'completed') {
+            movementFormStatus = 'signed';
+          }
+        }
+        // Reconcile return form status
+        let returnFormStatus = a.returnFormStatus;
+        if (returnFormStatus === 'pending' && a.returnFormDocId) {
+          const sigDoc = await ctx.db.get(a.returnFormDocId);
+          if (sigDoc?.status === 'completed') {
+            returnFormStatus = 'signed';
+          }
+        }
+        return {
+          ...a,
+          movementFormStatus,
+          returnFormStatus,
+          assetName: asset?.name ?? 'Unknown',
+          assetCategory: asset?.category ?? 'other',
+          assetIcon: getCategoryIcon(asset?.category ?? 'other'),
+          assetStatus: asset?.status,
+        };
+      }),
+    );
+  },
+});
+
+// ── Maintenance ────────────────────────────────────────────
+
+export const listMaintenance = query({
+  args: {
+    organizationId: v.id('organizations'),
+    status: v.optional(
+      v.union(
+        v.literal('scheduled'),
+        v.literal('in_progress'),
+        v.literal('completed'),
+        v.literal('cancelled'),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    let q = ctx.db
+      .query('assetMaintenance')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
+
+    if (args.status) {
+      q = q.filter((q: any) => q.eq(q.field('status'), args.status));
+    }
+
+    const records = await q.order('desc').take(DEFAULT_LIST_CAP);
+
+    return await Promise.all(
+      records.map(async (r) => {
+        const asset = await ctx.db.get(r.assetId);
+        return {
+          ...r,
+          assetName: asset?.name ?? 'Unknown',
+          assetIcon: getCategoryIcon(asset?.category ?? 'other'),
+        };
+      }),
+    );
+  },
+});
+
+// ── Requests ───────────────────────────────────────────────
+
+export const listAssetRequests = query({
+  args: {
+    organizationId: v.id('organizations'),
+    status: v.optional(
+      v.union(
+        v.literal('pending'),
+        v.literal('approved'),
+        v.literal('fulfilled'),
+        v.literal('rejected'),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    let q = ctx.db
+      .query('assetRequests')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
+
+    if (args.status) {
+      q = q.filter((q: any) => q.eq(q.field('status'), args.status));
+    }
+
+    const requests = await q.order('desc').take(DEFAULT_LIST_CAP);
+
+    return await Promise.all(
+      requests.map(async (r) => {
+        const requester = await ctx.db.get(r.requestedBy);
+        const approver = r.approvedBy ? await ctx.db.get(r.approvedBy) : null;
+        const fulfilledAsset = r.fulfilledBy ? await ctx.db.get(r.fulfilledBy) : null;
+        return {
+          ...r,
+          requesterName: requester?.name ?? 'Unknown',
+          requesterEmail: requester?.email,
+          approverName: approver?.name,
+          fulfilledAssetName: fulfilledAsset?.name,
+        };
+      }),
+    );
+  },
+});
+
+export const getMyAssetRequests = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, args) => {
+    const requests = await ctx.db
+      .query('assetRequests')
+      .withIndex('by_requestor', (q) => q.eq('requestedBy', args.userId))
+      .order('desc')
+      .take(DEFAULT_LIST_CAP);
+
+    return await Promise.all(
+      requests.map(async (r) => {
+        const fulfilledAsset = r.fulfilledBy ? await ctx.db.get(r.fulfilledBy) : null;
+        return { ...r, fulfilledAssetName: fulfilledAsset?.name };
+      }),
+    );
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  QUERIES — Movement Form
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Check if a specific assignment has a movement form and its signing status.
+ */
+export const getMovementFormStatus = query({
+  args: { assignmentId: v.id('assetAssignments') },
+  handler: async (ctx, args) => {
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment) return null;
+
+    const status = assignment.movementFormStatus || 'not_sent';
+
+    let signatureDoc = null;
+    if (assignment.movementFormDocId) {
+      signatureDoc = await ctx.db.get(assignment.movementFormDocId);
+    }
+
+    // If the signature document exists, check its real status
+    let effectiveStatus = status;
+    if (signatureDoc) {
+      if (signatureDoc.status === 'completed') {
+        effectiveStatus = 'signed';
+      } else if (signatureDoc.status === 'pending' || signatureDoc.status === 'partially_signed') {
+        effectiveStatus = 'pending';
+      }
+    }
+
+    return {
+      assignmentId: args.assignmentId,
+      status: effectiveStatus,
+      documentId: assignment.movementFormDocId,
+      documentStatus: signatureDoc?.status || null,
+      signedPdfUrl: signatureDoc?.signedPdfUrl || null,
+      signedPdfName: signatureDoc?.signedPdfName || null,
+      documentTitle: signatureDoc?.title || null,
+    };
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  MUTATIONS — Asset Catalog
+// ═══════════════════════════════════════════════════════════════
+
+export const createAsset = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    name: v.string(),
+    category: v.union(
+      v.literal('laptop'),
+      v.literal('monitor'),
+      v.literal('phone'),
+      v.literal('tablet'),
+      v.literal('peripheral'),
+      v.literal('furniture'),
+      v.literal('software_license'),
+      v.literal('vehicle'),
+      v.literal('other'),
+    ),
+    serialNumber: v.optional(v.string()),
+    assetTag: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    model: v.optional(v.string()),
+    purchaseDate: v.optional(v.number()),
+    purchasePrice: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    warrantyExpiry: v.optional(v.number()),
+    vendor: v.optional(v.string()),
+    invoiceNumber: v.optional(v.string()),
+    expenseId: v.optional(v.id('expenses')),
+    condition: v.optional(
+      v.union(v.literal('new'), v.literal('good'), v.literal('fair'), v.literal('poor'), v.literal('damaged')),
+    ),
+    location: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    createdBy: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const { createdBy, ...fields } = args;
+    const now = Date.now();
+    return await ctx.db.insert('assetCatalog', {
+      ...fields,
+      condition: fields.condition ?? 'new',
+      status: 'available',
+      createdBy,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const updateAsset = mutation({
+  args: {
+    assetId: v.id('assetCatalog'),
+    name: v.optional(v.string()),
+    category: v.optional(
+      v.union(
+        v.literal('laptop'),
+        v.literal('monitor'),
+        v.literal('phone'),
+        v.literal('tablet'),
+        v.literal('peripheral'),
+        v.literal('furniture'),
+        v.literal('software_license'),
+        v.literal('vehicle'),
+        v.literal('other'),
+      ),
+    ),
+    serialNumber: v.optional(v.string()),
+    assetTag: v.optional(v.string()),
+    brand: v.optional(v.string()),
+    model: v.optional(v.string()),
+    purchaseDate: v.optional(v.number()),
+    purchasePrice: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    warrantyExpiry: v.optional(v.number()),
+    vendor: v.optional(v.string()),
+    condition: v.optional(
+      v.union(v.literal('new'), v.literal('good'), v.literal('fair'), v.literal('poor'), v.literal('damaged')),
+    ),
+    location: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    imageStorageId: v.optional(v.id('_storage')),
+    imageUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { assetId, ...fields } = args;
+    const update: Record<string, unknown> = { updatedAt: Date.now() };
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) update[key] = value;
+    }
+    await ctx.db.patch(assetId, update);
+  },
+});
+
+export const deleteAsset = mutation({
+  args: { assetId: v.id('assetCatalog') },
+  handler: async (ctx, args) => {
+    // Check no active assignments
+    const activeAssignment = await ctx.db
+      .query('assetAssignments')
+      .withIndex('by_asset_active', (q) =>
+        q.eq('assetId', args.assetId).eq('status', 'active'),
+      )
+      .first();
+    if (activeAssignment) {
+      throw new Error('Cannot delete an asset with active assignment. Return it first.');
+    }
+    await ctx.db.delete(args.assetId);
+  },
+});
+
+export const changeAssetStatus = mutation({
+  args: {
+    assetId: v.id('assetCatalog'),
+    status: v.union(
+      v.literal('available'),
+      v.literal('assigned'),
+      v.literal('maintenance'),
+      v.literal('retired'),
+      v.literal('lost'),
+    ),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { assetId, status, notes } = args;
+    const update: Record<string, unknown> = { status, updatedAt: Date.now() };
+    if (notes !== undefined) update.notes = notes;
+    await ctx.db.patch(assetId, update);
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  MUTATIONS — Assignments
+// ═══════════════════════════════════════════════════════════════
+
+export const assignAsset = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    assetId: v.id('assetCatalog'),
+    assignedTo: v.id('users'),
+    assignedBy: v.id('users'),
+    expectedReturnAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset) throw new Error('Asset not found');
+    if (asset.status !== 'available') {
+      throw new Error(`Asset is not available (current: ${asset.status})`);
+    }
+
+    const now = Date.now();
+
+    // Create assignment
+    const lastAssignmentId = await ctx.db.insert('assetAssignments', {
+      organizationId: args.organizationId,
+      assetId: args.assetId,
+      assignedTo: args.assignedTo,
+      assignedBy: args.assignedBy,
+      assignedAt: now,
+      expectedReturnAt: args.expectedReturnAt,
+      notes: args.notes,
+      status: 'active',
+    });
+
+    // Update asset status
+    await ctx.db.patch(args.assetId, { status: 'assigned', updatedAt: now });
+
+    // Create movement form synchronously so movementFormDocId is set immediately
+    // and the UI never shows a "Send" button when a document is already pending.
+    // Using scheduler.runAfter here would create a race condition where the user
+    // could click "Send" before the deferred job runs, creating duplicate documents.
+    await ctx.runMutation(internal.assets.createAssetMovementForm, {
+      organizationId: args.organizationId,
+      assignmentId: lastAssignmentId,
+      assetId: args.assetId,
+      assetName: asset.name,
+      assignedTo: args.assignedTo,
+      assignedBy: args.assignedBy,
+    });
+
+    // Send notification
+    await ctx.scheduler.runAfter(0, internal.assets.sendAssignmentNotification, {
+      organizationId: args.organizationId,
+      assetId: args.assetId,
+      assignedTo: args.assignedTo,
+      assignedBy: args.assignedBy,
+      assetName: asset.name,
+    });
+  },
+});
+
+export const returnAsset = mutation({
+  args: {
+    assignmentId: v.id('assetAssignments'),
+    returnedBy: v.id('users'),
+    condition: v.optional(
+      v.union(v.literal('good'), v.literal('fair'), v.literal('poor'), v.literal('damaged')),
+    ),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment) throw new Error('Assignment not found');
+    if (assignment.status !== 'active') throw new Error('Assignment is not active');
+
+    const now = Date.now();
+
+    // Update assignment
+    await ctx.db.patch(args.assignmentId, {
+      status: 'returned',
+      returnedAt: now,
+      returnedBy: args.returnedBy,
+      conditionOnReturn: args.condition,
+      notes: args.notes ?? undefined,
+    });
+
+    // Update asset status back to available
+    await ctx.db.patch(assignment.assetId, {
+      status: 'available',
+      condition: args.condition ?? 'good',
+      updatedAt: now,
+    });
+
+    // Get asset info for the return form
+    const returnedAsset = await ctx.db.get(assignment.assetId);
+
+    // Auto-create return movement form (async)
+    await ctx.scheduler.runAfter(0, internal.assets.createReturnMovementForm, {
+      organizationId: assignment.organizationId,
+      assignmentId: args.assignmentId,
+      assetId: assignment.assetId,
+      assetName: returnedAsset?.name || 'Asset',
+      assignedTo: assignment.assignedTo,
+      returnedBy: args.returnedBy,
+      condition: args.condition,
+    });
+  },
+});
+
+export const markAssignmentLost = mutation({
+  args: {
+    assignmentId: v.id('assetAssignments'),
+    returnedBy: v.id('users'),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment) throw new Error('Assignment not found');
+
+    await ctx.db.patch(args.assignmentId, { status: 'lost', returnedBy: args.returnedBy, notes: args.notes });
+    await ctx.db.patch(assignment.assetId, { status: 'lost', updatedAt: Date.now() });
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  MUTATIONS — Maintenance
+// ═══════════════════════════════════════════════════════════════
+
+export const scheduleMaintenance = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    assetId: v.id('assetCatalog'),
+    type: v.union(
+      v.literal('scheduled'),
+      v.literal('repair'),
+      v.literal('upgrade'),
+      v.literal('inspection'),
+    ),
+    description: v.string(),
+    scheduledDate: v.optional(v.number()),
+    cost: v.optional(v.number()),
+    performedBy: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    createdBy: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const { createdBy, ...fields } = args;
+
+    // Create maintenance record
+    await ctx.db.insert('assetMaintenance', {
+      ...fields,
+      status: 'scheduled',
+      createdBy,
+      createdAt: Date.now(),
+    });
+
+    // Update asset status
+    await ctx.db.patch(args.assetId, { status: 'maintenance', updatedAt: Date.now() });
+  },
+});
+
+export const completeMaintenance = mutation({
+  args: {
+    maintenanceId: v.id('assetMaintenance'),
+    completedDate: v.number(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db.get(args.maintenanceId);
+    if (!record) throw new Error('Maintenance record not found');
+
+    await ctx.db.patch(args.maintenanceId, {
+      status: 'completed',
+      completedDate: args.completedDate,
+      notes: args.notes,
+    });
+
+    // Return asset to available (or check if it should be reassigned)
+    const asset = await ctx.db.get(record.assetId);
+    if (asset && asset.status === 'maintenance') {
+      const previousAssignment = await ctx.db
+        .query('assetAssignments')
+        .withIndex('by_asset_active', (q) => q.eq('assetId', record.assetId).eq('status', 'active'))
+        .first();
+
+      // If there was a previous assignment, keep it assigned
+      if (previousAssignment) {
+        await ctx.db.patch(record.assetId, { status: 'assigned', updatedAt: Date.now() });
+      } else {
+        await ctx.db.patch(record.assetId, { status: 'available', updatedAt: Date.now() });
+      }
+    }
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  MUTATIONS — Requests
+// ═══════════════════════════════════════════════════════════════
+
+export const createAssetRequest = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    requestedBy: v.id('users'),
+    category: v.union(
+      v.literal('laptop'),
+      v.literal('monitor'),
+      v.literal('phone'),
+      v.literal('peripheral'),
+      v.literal('software'),
+      v.literal('other'),
+    ),
+    reason: v.string(),
+    urgency: v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert('assetRequests', {
+      ...args,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const approveAssetRequest = mutation({
+  args: {
+    requestId: v.id('assetRequests'),
+    approvedBy: v.id('users'),
+    fulfilledBy: v.optional(v.id('assetCatalog')),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const update: Record<string, unknown> = {
+      status: 'approved',
+      approvedBy: args.approvedBy,
+      approvedAt: now,
+      updatedAt: now,
+    };
+    if (args.fulfilledBy) {
+      update.status = 'fulfilled';
+      update.fulfilledBy = args.fulfilledBy;
+    }
+    await ctx.db.patch(args.requestId, update);
+  },
+});
+
+export const rejectAssetRequest = mutation({
+  args: {
+    requestId: v.id('assetRequests'),
+    approvedBy: v.id('users'),
+    rejectionReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.requestId, {
+      status: 'rejected',
+      approvedBy: args.approvedBy,
+      rejectionReason: args.rejectionReason,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const fulfillAssetRequest = mutation({
+  args: {
+    requestId: v.id('assetRequests'),
+    fulfilledBy: v.id('assetCatalog'),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.requestId, {
+      status: 'fulfilled',
+      fulfilledBy: args.fulfilledBy,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  INTERNAL — Notifications
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Create an e-signature movement form for an asset assignment.
+ * The employee receives a signing request in their E-Signatures tab.
+ */
+export const createAssetMovementForm = internalMutation({
+  args: {
+    organizationId: v.id('organizations'),
+    assignmentId: v.id('assetAssignments'),
+    assetId: v.id('assetCatalog'),
+    assetName: v.string(),
+    assignedTo: v.id('users'),
+    assignedBy: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const assigner = await ctx.db.get(args.assignedBy);
+    const assignee = await ctx.db.get(args.assignedTo);
+    if (!assignee) return;
+
+    const now = Date.now();
+
+    // Build the movement form content — locale-agnostic structured JSON
+    const dateStr = new Date(now).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    });
+
+    const formData = {
+      _type: 'movement',
+      assetName: args.assetName,
+      assigneeName: assignee.name || 'Employee',
+      assignerName: assigner?.name || 'Admin',
+      date: dateStr,
+    };
+    const content = `__MF__${JSON.stringify(formData)}`;
+
+    const fieldDefinitions = [
+      {
+        id: 'employee_name',
+        label: 'Employee Name',
+        type: 'text' as const,
+        required: true,
+        placeholder: assignee.name || '',
+      },
+      {
+        id: 'date_received',
+        label: 'Date Received',
+        type: 'date' as const,
+        required: true,
+        placeholder: dateStr,
+      },
+      {
+        id: 'employee_signature',
+        label: 'Employee Signature',
+        type: 'signature' as const,
+        required: true,
+        placeholder: '',
+      },
+    ];
+
+    const fieldValues = [
+      { fieldId: 'employee_name', value: assignee.name || '' },
+      { fieldId: 'date_received', value: dateStr },
+    ];
+
+    // Create signature document
+    const documentId = await ctx.db.insert('signatureDocuments', {
+      organizationId: args.organizationId,
+      title: 'Movement Form - ' + args.assetName,
+      content,
+      status: 'pending',
+      fieldDefinitions,
+      fieldValues,
+      createdBy: args.assignedBy,
+      createdAt: now,
+    });
+
+    // Create signature request for the employee (sequential, order 1)
+    await ctx.db.insert('signatureRequests', {
+      documentId,
+      organizationId: args.organizationId,
+      signerId: args.assignedTo,
+      signerName: assignee.name || 'Employee',
+      signerEmail: assignee.email || '',
+      order: 1,
+      status: 'pending',
+      createdAt: now,
+    });
+
+    // Also create a request for admin (sequential, order 2)
+    await ctx.db.insert('signatureRequests', {
+      documentId,
+      organizationId: args.organizationId,
+      signerId: args.assignedBy,
+      signerName: assigner?.name || 'Admin',
+      signerEmail: assigner?.email || '',
+      order: 2,
+      status: 'pending',
+      createdAt: now,
+    });
+
+    // Audit log
+    await ctx.db.insert('signatureAuditLog', {
+      documentId,
+      organizationId: args.organizationId,
+      userId: args.assignedBy,
+      action: 'created',
+      timestamp: now,
+    });
+    await ctx.db.insert('signatureAuditLog', {
+      documentId,
+      organizationId: args.organizationId,
+      userId: args.assignedBy,
+      action: 'sent',
+      metadata: JSON.stringify({ signerCount: 2 }),
+      timestamp: now + 1,
+    });
+
+    // Update assignment with movement form reference
+    await ctx.db.patch(args.assignmentId, {
+      movementFormDocId: documentId,
+      movementFormStatus: 'pending',
+    });
+
+    // Send notification to employee
+    await ctx.db.insert('notifications', {
+      organizationId: args.organizationId,
+      userId: args.assignedTo,
+      type: 'system',
+      title: '📄 Movement Form Ready for Signing',
+      message: 'Please sign the movement form for "' + args.assetName + '" in the E-Signatures section.',
+      isRead: false,
+      relatedId: documentId,
+      route: '/signatures',
+      createdAt: now,
+    });
+  },
+});
+
+/**
+ * Send (or resend) a movement form for an assignment.
+ * Public wrapper that the UI can call directly.
+ */
+
+/**
+ * Create an e-signature return form for an asset return.
+ * The employee and admin sign to acknowledge the return.
+ */
+export const createReturnMovementForm = internalMutation({
+  args: {
+    organizationId: v.id('organizations'),
+    assignmentId: v.id('assetAssignments'),
+    assetId: v.id('assetCatalog'),
+    assetName: v.string(),
+    assignedTo: v.id('users'),
+    returnedBy: v.id('users'),
+    condition: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const returner = await ctx.db.get(args.returnedBy);
+    const assignee = await ctx.db.get(args.assignedTo);
+    if (!assignee) return;
+
+    const now = Date.now();
+
+    // Build the return form content — locale-agnostic structured JSON
+    const dateStr = new Date(now).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    });
+
+    const formData = {
+      _type: 'return',
+      assetName: args.assetName,
+      assigneeName: assignee.name || 'Employee',
+      returnerName: returner?.name || 'Admin',
+      date: dateStr,
+      condition: args.condition || 'good',
+    };
+    const content = `__RF__${JSON.stringify(formData)}`;
+
+    const fieldDefinitions = [
+      {
+        id: 'employee_name',
+        label: 'Employee Name',
+        type: 'text' as const,
+        required: true,
+        placeholder: assignee.name || '',
+      },
+      {
+        id: 'date_returned',
+        label: 'Date Returned',
+        type: 'date' as const,
+        required: true,
+        placeholder: dateStr,
+      },
+      {
+        id: 'employee_signature',
+        label: 'Employee Signature',
+        type: 'signature' as const,
+        required: true,
+        placeholder: '',
+      },
+    ];
+
+    const fieldValues = [
+      { fieldId: 'employee_name', value: assignee.name || '' },
+      { fieldId: 'date_returned', value: dateStr },
+    ];
+
+    // Create signature document
+    const documentId = await ctx.db.insert('signatureDocuments', {
+      organizationId: args.organizationId,
+      title: 'Return Form - ' + args.assetName,
+      content,
+      status: 'pending',
+      fieldDefinitions,
+      fieldValues,
+      createdBy: args.returnedBy,
+      createdAt: now,
+    });
+
+    // Create signature request for the returning employee (sequential, order 1)
+    await ctx.db.insert('signatureRequests', {
+      documentId,
+      organizationId: args.organizationId,
+      signerId: args.assignedTo,
+      signerName: assignee.name || 'Employee',
+      signerEmail: assignee.email || '',
+      order: 1,
+      status: 'pending',
+      createdAt: now,
+    });
+
+    // Also create a request for admin (sequential, order 2)
+    await ctx.db.insert('signatureRequests', {
+      documentId,
+      organizationId: args.organizationId,
+      signerId: args.returnedBy,
+      signerName: returner?.name || 'Admin',
+      signerEmail: returner?.email || '',
+      order: 2,
+      status: 'pending',
+      createdAt: now,
+    });
+
+    // Audit log
+    await ctx.db.insert('signatureAuditLog', {
+      documentId,
+      organizationId: args.organizationId,
+      userId: args.returnedBy,
+      action: 'created',
+      timestamp: now,
+    });
+    await ctx.db.insert('signatureAuditLog', {
+      documentId,
+      organizationId: args.organizationId,
+      userId: args.returnedBy,
+      action: 'sent',
+      metadata: JSON.stringify({ signerCount: 2 }),
+      timestamp: now + 1,
+    });
+
+    // Update assignment with return form reference
+    await ctx.db.patch(args.assignmentId, {
+      returnFormDocId: documentId,
+      returnFormStatus: 'pending',
+    });
+
+    // Send notification to employee
+    await ctx.db.insert('notifications', {
+      organizationId: args.organizationId,
+      userId: args.assignedTo,
+      type: 'system',
+      title: '📄 Return Form Ready for Signing',
+      message: 'Please sign the return form for "' + args.assetName + '" in the E-Signatures section.',
+      isRead: false,
+      relatedId: documentId,
+      route: '/signatures',
+      createdAt: now,
+    });
+  },
+});
+
+/**
+ * Send (or resend) a movement form for an assignment.
+ * - If a movement form already exists → resend (send reminder notification only).
+ * - If no movement form yet → create one directly (inline, not via scheduler, to
+ *   avoid a duplicate with the deferred scheduler job from assignAsset).
+ */
+export const sendMovementForm = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    assignmentId: v.id('assetAssignments'),
+    assetId: v.id('assetCatalog'),
+    assetName: v.string(),
+    assignedTo: v.id('users'),
+    assignedBy: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    // Check if a movement form already exists for this assignment
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment) throw new Error('Assignment not found');
+
+    if (assignment.movementFormDocId) {
+      // Already has a document — just resend notification (reminder)
+      const assignee = await ctx.db.get(args.assignedTo);
+      if (assignee) {
+        await ctx.db.insert('notifications', {
+          organizationId: args.organizationId,
+          userId: args.assignedTo,
+          type: 'system',
+          title: '📄 Movement Form Reminder',
+          message: 'Please sign the movement form for "' + args.assetName + '" in the E-Signatures section.',
+          isRead: false,
+          relatedId: assignment.movementFormDocId,
+          route: '/signatures',
+          createdAt: Date.now(),
+        });
+      }
+      return; // Don't create a duplicate
+    }
+
+    // No existing document — create inline (not via scheduler) so the UI sees
+    // the new documentId immediately and doesn't allow another "Send" click.
+    await ctx.scheduler.runAfter(0, internal.assets.createAssetMovementForm, args);
+  },
+});
+
+export const sendAssignmentNotification = internalMutation({
+  args: {
+    organizationId: v.id('organizations'),
+    assetId: v.id('assetCatalog'),
+    assignedTo: v.id('users'),
+    assignedBy: v.id('users'),
+    assetName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const assigner = await ctx.db.get(args.assignedBy);
+    const now = Date.now();
+
+    // Notify the assignee
+    await ctx.db.insert('notifications', {
+      organizationId: args.organizationId,
+      userId: args.assignedTo,
+      type: 'system',
+      title: '📦 Equipment Assigned',
+      message: `You have been assigned "${args.assetName}" by ${assigner?.name ?? 'admin'}.`,
+      isRead: false,
+      relatedId: args.assetId,
+      route: '/assets',
+      createdAt: now,
+    });
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  INTEGRATIONS — called from onboarding / offboarding
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Called from onboarding when a task with category='equipment' is created.
+ * This creates an asset request so IT knows to prepare the equipment.
+ */
+export const autoCreateRequestFromOnboarding = internalMutation({
+  args: {
+    organizationId: v.id('organizations'),
+    employeeId: v.id('users'),
+    reason: v.string(),
+    category: v.union(
+      v.literal('laptop'),
+      v.literal('monitor'),
+      v.literal('phone'),
+      v.literal('peripheral'),
+      v.literal('software'),
+      v.literal('other'),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ctx.db.insert('assetRequests', {
+      organizationId: args.organizationId,
+      requestedBy: args.employeeId,
+      category: args.category,
+      reason: `[Onboarding] ${args.reason}`,
+      urgency: 'high',
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+/**
+ * Called from offboarding to check for active assignments.
+ * Returns active assets so the offboarding UI can show what needs to be returned.
+ */
+export const checkActiveAssignmentsForEmployee = query({
+  args: {
+    organizationId: v.id('organizations'),
+    employeeId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const assignments = await ctx.db
+      .query('assetAssignments')
+      .withIndex('by_assignee_org', (q) =>
+        q.eq('organizationId', args.organizationId).eq('assignedTo', args.employeeId),
+      )
+      .filter((q: any) => q.eq(q.field('status'), 'active'))
+      .take(SMALL_LIST_CAP);
+
+    return await Promise.all(
+      assignments.map(async (a) => {
+        const asset = await ctx.db.get(a.assetId);
+        return {
+          assignmentId: a._id,
+          assetId: a.assetId,
+          assetName: asset?.name ?? 'Unknown',
+          category: asset?.category ?? 'other',
+          icon: getCategoryIcon(asset?.category ?? 'other'),
+          assignedAt: a.assignedAt,
+        };
+      }),
+    );
+  },
+});
+
+/**
+ * Auto-unassign all assets for an employee during offboarding.
+ * Called when offboarding completes.
+ */
+export const autoReturnEmployeeAssets = internalMutation({
+  args: {
+    organizationId: v.id('organizations'),
+    employeeId: v.id('users'),
+    returnedBy: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const activeAssignments = await ctx.db
+      .query('assetAssignments')
+      .withIndex('by_assignee_org', (q) =>
+        q.eq('organizationId', args.organizationId).eq('assignedTo', args.employeeId),
+      )
+      .filter((q: any) => q.eq(q.field('status'), 'active'))
+      .take(SMALL_LIST_CAP);
+
+    const now = Date.now();
+    for (const a of activeAssignments) {
+      await ctx.db.patch(a._id, {
+        status: 'returned',
+        returnedAt: now,
+        returnedBy: args.returnedBy,
+      });
+      const asset = await ctx.db.get(a.assetId);
+      if (asset && asset.status === 'assigned') {
+        await ctx.db.patch(asset._id, { status: 'available', updatedAt: now });
+      }
+    }
+  },
+});

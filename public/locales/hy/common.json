@@ -232,7 +232,9 @@
     "signatures": "Էլ. ստորագրություններ",
     "documentLibrary": "Փաստաթղթերի գրադարան",
     "reportBuilder": "Հաշվետվությունների կազմող",
-    "aiGovernance": "AI Կառավարում"
+    "aiGovernance": "AI Կառավարում",
+    "news": "Նորություններ",
+    "assets": "Ակտիվներ"
   },
   "docLibrary": {
     "title": "Փաստաթղթերի գրադարան",
@@ -995,6 +997,7 @@
     "pageNotFound": "Էջը չի գտնվել",
     "pageNotFoundDesc": "Կներեք, էջը չի գտնվել:",
     "goHome": "Գնալ գլխավոր էջ",
+    "backToDashboard": "Վերադառնալ վահանակ",
     "errorDescription": "Սխալ տեղի ունեցավ:",
     "errorReference": "Հղում:"
   },

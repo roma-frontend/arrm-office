@@ -234,7 +234,9 @@
     "documents": "Dokumente",
     "documentLibrary": "Dokumentbibliothek",
     "reportBuilder": "Berichts-Baukasten",
-    "aiGovernance": "KI-Governance"
+    "aiGovernance": "KI-Governance",
+    "news": "Neuigkeiten",
+    "assets": "Anlagen"
   },
   "docLibrary": {
     "title": "Dokumentbibliothek",

@@ -338,12 +338,32 @@ export const startOnboarding = mutation({
             assignedTo: assigneeId || args.employeeId,
             assignedBy: args.createdBy,
             status: 'pending',
-            priority: t.category === 'documentation' ? 'high' : 'medium',
+            priority: t.category === 'documentation' || t.category === 'equipment' ? 'high' : 'medium',
             deadline: dueDate,
             tags: [`onboarding`, t.category, t.assigneeType],
             createdAt: Date.now(),
             updatedAt: Date.now(),
           });
+
+          // Auto-create asset request for equipment tasks
+          if (t.category === 'equipment') {
+            const assetCategory = t.title.toLowerCase().includes('laptop')
+              ? 'laptop'
+              : t.title.toLowerCase().includes('monitor')
+                ? 'monitor'
+                : t.title.toLowerCase().includes('phone')
+                  ? 'phone'
+                  : t.title.toLowerCase().includes('software')
+                    ? 'software'
+                    : t.title.toLowerCase().includes('peripheral')
+                      ? 'peripheral'
+                      : 'other';
+            await ctx.scheduler.runAfter(0, internal.assets.autoCreateRequestFromOnboarding, {
+              organizationId: args.organizationId,
+              employeeId: args.employeeId,
+              reason: `${t.title} (onboarding task)`, category: assetCategory,
+            });
+          }
 
           await ctx.db.insert('onboardingTasks', {
             organizationId: args.organizationId,

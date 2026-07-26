@@ -47,6 +47,8 @@ import {
   Receipt,
   Key,
   Layers,
+  Megaphone,
+  Package,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -213,6 +215,12 @@ const navItems: NavEntry[] = [
         roles: ['superadmin', 'admin'],
       },
       {
+        href: '/assets',
+        labelKey: 'nav.assets',
+        icon: Package,
+        roles: ['superadmin', 'admin', 'supervisor', 'employee'],
+      },
+      {
         href: '/admin/events',
         labelKey: 'nav.events',
         icon: Calendar,
@@ -239,8 +247,14 @@ const navItems: NavEntry[] = [
     ],
   },
 
-  // ── Approvals ──
+  // ── Communication ──
   { type: 'separator', labelKey: 'nav.groups.communication' },
+  {
+    href: '/news',
+    labelKey: 'nav.news',
+    icon: Megaphone,
+    roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
+  },
   {
     href: '/approvals',
     labelKey: 'nav.approvals',

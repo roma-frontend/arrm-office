@@ -1,5 +1,6 @@
 import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
+import { internal } from './_generated/api';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 
 // ─── Default offboarding tasks ───────────────────────────────
@@ -355,9 +356,19 @@ export const completeProgram = mutation({
   args: { programId: v.id('offboardingPrograms') },
   handler: async (ctx, args) => {
     const { programId } = args;
+    const program = await ctx.db.get(programId);
+    if (!program) throw new Error('Program not found');
+
     await ctx.db.patch(programId, {
       status: 'completed',
       completedAt: Date.now(),
+    });
+
+    // Auto-return all active asset assignments for this employee
+    await ctx.scheduler.runAfter(0, internal.assets.autoReturnEmployeeAssets, {
+      organizationId: program.organizationId,
+      employeeId: program.employeeId,
+      returnedBy: program.createdBy,
     });
   },
 });

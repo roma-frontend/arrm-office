@@ -9,6 +9,7 @@ import {
   BarChart3,
   Users,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Send,
@@ -482,9 +483,21 @@ function FillReviewDialog({
   const [improvements, setImprovements] = useState('');
   const [generalComments, setGeneralComments] = useState('');
   const [sending, setSending] = useState(false);
+  const [showObjectives, setShowObjectives] = useState(false);
 
   const submitReview = useMutation(api.performance.submitReview);
   const competencies: CompetencyDraft[] = assignment?.competencies || [];
+
+  // Fetch reviewee's OKRs linked to this review period
+  const revieweeObjectives = useQuery(
+    api.goals.getRevieweeObjectivesWithReviews,
+    assignment?.organizationId && assignment?.revieweeId
+      ? {
+          organizationId: assignment.organizationId,
+          userId: assignment.revieweeId,
+        }
+      : 'skip',
+  );
 
   const allRated = competencies.every((c) => ratings[c.id] && ratings[c.id]! >= 1);
 
@@ -534,6 +547,94 @@ function FillReviewDialog({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Aligned Objectives */}
+          {revieweeObjectives && revieweeObjectives.length > 0 && (
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+              <button
+                onClick={() => setShowObjectives(!showObjectives)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-semibold">
+                    {t('goals.title')} ({revieweeObjectives.length})
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${
+                    showObjectives ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {showObjectives && (
+                <div className="mt-3 space-y-2">
+                  {revieweeObjectives.map((obj: any) => (
+                    <div
+                      key={obj._id}
+                      className="rounded-lg bg-background border border-border/50 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate">{obj.title}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">
+                              {t(`goals.level.${obj.level}`)}
+                            </Badge>
+                            <span>{obj.periodType} {obj.periodYear}</span>
+                            <span>·</span>
+                            <span>{obj.keyResultsCount} {t('goals.stats.keyResults')}</span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={`text-sm font-bold ${
+                            obj.progress >= 70 ? 'text-emerald-600' :
+                            obj.progress >= 40 ? 'text-amber-600' :
+                            'text-red-600'
+                          }`}>
+                            {obj.progress}%
+                          </p>
+                          <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden mt-0.5">
+                            <div
+                              className={`h-full rounded-full ${
+                                obj.progress >= 70 ? 'bg-emerald-500' :
+                                obj.progress >= 40 ? 'bg-amber-500' :
+                                'bg-red-500'
+                              }`}
+                              style={{ width: `${obj.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Key results mini list */}
+                      {obj.keyResults?.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {obj.keyResults.slice(0, 3).map((kr: any) => (
+                            <div key={kr._id} className="flex items-center gap-2 text-[10px]">
+                              <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                              <span className="text-muted-foreground flex-1 truncate">
+                                {kr.title}
+                              </span>
+                              <span className="font-medium">{kr.progress}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Task stats */}
+                      {obj.taskCount > 0 && (
+                        <div className="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <span>📋 {obj.completedTaskCount}/{obj.taskCount} {t('tasks.title').toLowerCase()}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Competency Ratings */}
           {competencies.map((comp) => (
             <div key={comp.id} className="space-y-2">

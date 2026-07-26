@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   PenTool,
   FileText,
@@ -72,6 +73,93 @@ function useDocumentLabels(): DocumentLabels {
   };
 }
 
+// ============ MOVEMENT / RETURN FORM HELPERS ============
+
+/**
+ * Parse structured form content stored in the database.
+ * New forms store locale-agnostic JSON prefixed with __MF__ (movement)
+ * or __RF__ (return). Old forms store English markdown — return null.
+ */
+function parseFormContent(content: string): {
+  type: 'movement' | 'return';
+  data: Record<string, string>;
+} | null {
+  if (content.startsWith('__MF__')) {
+    try {
+      const data = JSON.parse(content.slice(6));
+      return { type: 'movement', data };
+    } catch { return null; }
+  }
+  if (content.startsWith('__RF__')) {
+    try {
+      const data = JSON.parse(content.slice(6));
+      return { type: 'return', data };
+    } catch { return null; }
+  }
+  return null;
+}
+
+/** Build a clean localized body string for a structured movement/return form. */
+function buildFormBody(
+  parsed: NonNullable<ReturnType<typeof parseFormContent>>,
+  t: TFunction,
+): string {
+  const { type, data } = parsed;
+  const isReturn = type === 'return';
+  const date = data.date || '';
+  const assignee = data.assigneeName || data.returnerName || '';
+  const assigner = data.assignerName || data.returnerName || '';
+
+  const lines: string[] = [
+    isReturn ? t('assets.pdf.returnForm', 'Asset Return Form') : t('assets.pdf.movementForm', 'Asset Movement Form'),
+    '',
+    t('assets.pdf.date', 'Date') + ': ' + date,
+    '',
+    t('assets.pdf.assetDetails', 'Asset Details'),
+    '- ' + t('assets.pdf.asset', 'Asset') + ': ' + (data.assetName || ''),
+    '- ' + t('assets.pdf.type', 'Type') + ': ' + (isReturn ? t('assets.pdf.equipmentReturn', 'Equipment Return') : t('assets.pdf.equipmentTransfer', 'Equipment Transfer')),
+    '',
+  ];
+
+  if (isReturn) {
+    lines.push(
+      t('assets.pdf.returnDetails', 'Return Details'),
+      '- ' + t('assets.pdf.returnedBy', 'Returned By') + ': ' + assignee,
+      '- ' + t('assets.pdf.receivedBy', 'Received By') + ': ' + assigner,
+      '- ' + t('assets.pdf.dateOfReturn', 'Date of Return') + ': ' + date,
+      '- ' + t('assets.pdf.condition', 'Condition on Return') + ': ' + (data.condition || t('common.good', 'Good')),
+      '',
+      t('assets.pdf.acknowledgement', 'Acknowledgement'),
+      t('assets.pdf.ackBody', 'I confirm that I have returned the above equipment. The asset has been received in the condition noted above and I am released from further responsibility for this item.'),
+      '',
+    );
+  } else {
+    lines.push(
+      t('assets.pdf.handoverDetails', 'Handover Details'),
+      '- ' + t('assets.pdf.handedTo', 'Handed To') + ': ' + assignee,
+      '- ' + t('assets.pdf.handedBy', 'Handed By') + ': ' + assigner,
+      '- ' + t('assets.pdf.date', 'Date of Transfer') + ': ' + date,
+      '',
+      t('assets.pdf.terms', 'Terms and Conditions'),
+      t('assets.pdf.termsBody', 'I confirm that I have received the above equipment in good condition. I agree to take full responsibility for the item and will return it upon request or at the end of my employment.'),
+      '',
+    );
+  }
+
+  lines.push(
+    t('assets.pdf.signatures', 'Signatures'),
+    t('assets.pdf.employeeSignature', 'Employee Signature') + ': ___________________________',
+    t('assets.pdf.name', 'Name') + ': ' + assignee,
+    t('assets.pdf.date', 'Date') + ': ' + date,
+    '',
+    t('assets.pdf.adminSignature', 'Admin Signature') + ': ___________________________',
+    t('assets.pdf.name', 'Name') + ': ' + assigner,
+    t('assets.pdf.date', 'Date') + ': ' + date,
+  );
+
+  return lines.join('\n');
+}
+
 // ============ THEMED RENDER HELPERS ============
 
 /**
@@ -81,15 +169,21 @@ function useDocumentLabels(): DocumentLabels {
  * report. Falls back to sensible defaults for documents created before the
  * theme was persisted.
  */
-function toRenderableDocument(doc: any, labels: DocumentLabels): RenderableDocument {
+function toRenderableDocument(doc: any, labels: DocumentLabels, t?: TFunction): RenderableDocument {
   // The primary signed request supplies the signature image + signer name/date.
   const signedReq = (doc.requests || [])
     .filter((r: any) => r.status === 'signed' && r.signatureData)
     .sort((a: any, b: any) => a.order - b.order)[0];
 
+  // Detect structured movement/return forms and build localized body
+  const parsed = doc.content ? parseFormContent(doc.content) : null;
+  const body = parsed && t
+    ? buildFormBody(parsed, t)
+    : doc.content;
+
   return {
     title: doc.title,
-    body: doc.content,
+    body,
     accent: (doc.accent as AccentColor) || 'blue',
     // Show the signature block if the doc was themed with one, or if we have a
     // signature to place (legacy docs have no `signatureBlock` flag).
@@ -122,11 +216,12 @@ async function archiveSignedDocument(
   documentId: Id<'signatureDocuments'>,
   userId: Id<'users'>,
   labels: DocumentLabels,
+  t: TFunction,
 ): Promise<boolean> {
   const doc = await convex.query(api.signatures.getDocument, { documentId });
   if (!doc || doc.status !== 'completed' || doc.signedPdfUrl) return false;
 
-  const base64 = await renderDocumentPdfBase64(toRenderableDocument(doc, labels));
+  const base64 = await renderDocumentPdfBase64(toRenderableDocument(doc, labels, t));
 
   const fileName = `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`;
   const uploaded = await uploadDocument(base64, fileName, 'application/pdf');
@@ -838,6 +933,11 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
     api.signatures.getDocument,
     request ? { documentId: request.documentId } : 'skip',
   );
+
+  // For structured movement/return forms, build localized display body
+  const formParsed = doc?.content ? parseFormContent(doc.content) : null;
+  const displayBody = formParsed ? buildFormBody(formParsed, t) : (doc?.content || '');
+
   const signMutation = useMutation(api.signatures.signDocument);
   const declineMutation = useMutation(api.signatures.declineDocument);
   const attachSignedPdf = useMutation(api.signatures.attachSignedPdf);
@@ -864,6 +964,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
             request.documentId,
             userId,
             labels,
+            t,
           );
           if (archived) {
             toast.success(t('signatures.archived', 'Signed document archived'));
@@ -919,7 +1020,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
               <div>
                 <h3 className="font-semibold">{doc.title}</h3>
                 <div className="mt-2 p-3 bg-muted/50 rounded-lg text-sm whitespace-pre-wrap max-h-[200px] overflow-y-auto">
-                  {doc.content}
+                  {displayBody}
                 </div>
               </div>
 
@@ -1017,6 +1118,10 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
   const labels = useDocumentLabels();
   const [archiving, setArchiving] = useState(false);
 
+  // For structured movement/return forms, build localized display body
+  const formParsed = doc?.content ? parseFormContent(doc.content) : null;
+  const displayBody = formParsed ? buildFormBody(formParsed, t) : (doc?.content || '');
+
   const handleArchive = async () => {
     if (!documentId) return;
     setArchiving(true);
@@ -1027,6 +1132,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
         documentId,
         userId,
         labels,
+        t,
       );
       toast.success(
         archived
@@ -1074,7 +1180,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
       // Export the themed document with the signature baked in — the same copy
       // HR archives — instead of a generic audit report.
       await exportDocumentToPDF(
-        toRenderableDocument(doc, labels),
+        toRenderableDocument(doc, labels, t),
         `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`,
       );
       toast.success(t('signatures.pdfExported', 'PDF exported successfully'));
@@ -1124,9 +1230,9 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
                 )}
               </div>
 
-              {/* Content Preview */}
+              {/* Content Preview — localized for movement/return forms */}
               <div className="p-3 bg-muted/50 rounded-lg text-sm whitespace-pre-wrap max-h-[150px] overflow-y-auto">
-                {doc.content}
+                {displayBody}
               </div>
 
               {/* Signers */}
@@ -1420,7 +1526,7 @@ export function ESignaturesClient() {
 
   const documents = useQuery(
     api.signatures.listDocuments,
-    organizationId ? { organizationId } : 'skip',
+    organizationId && userId ? { organizationId, userId } : 'skip',
   );
   const myPending = useQuery(
     api.signatures.getMyPendingSignatures,

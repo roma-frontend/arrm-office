@@ -33,6 +33,7 @@ export const listTemplates = query({
 export const listDocuments = query({
   args: {
     organizationId: v.id('organizations'),
+    userId: v.id('users'),
     status: v.optional(
       v.union(
         v.literal('draft'),
@@ -45,21 +46,48 @@ export const listDocuments = query({
     ),
   },
   handler: async (ctx, args) => {
-    const { organizationId, status } = args;
-    if (status) {
-      return await ctx.db
-        .query('signatureDocuments')
-        .withIndex('by_org_status', (q) =>
-          q.eq('organizationId', organizationId).eq('status', status),
-        )
-        .order('desc')
-        .take(DEFAULT_LIST_CAP);
-    }
-    return await ctx.db
+    const { organizationId, userId, status } = args;
+
+    // Documents where user is the creator
+    const createdDocs = await ctx.db
       .query('signatureDocuments')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .withIndex('by_creator', (q) => q.eq('createdBy', userId))
+      .filter((q) => q.eq(q.field('organizationId'), organizationId))
       .order('desc')
       .take(DEFAULT_LIST_CAP);
+
+    // Documents where user is a signer
+    const myRequests = await ctx.db
+      .query('signatureRequests')
+      .withIndex('by_signer', (q) => q.eq('signerId', userId))
+      .take(DEFAULT_LIST_CAP);
+
+    const signerDocIds = [...new Set(myRequests.map((r) => r.documentId))];
+
+    const signerDocs = await Promise.all(
+      signerDocIds.map((docId) => ctx.db.get(docId)),
+    );
+
+    // Merge and deduplicate by _id
+    const allDocs: any[] = [...createdDocs, ...signerDocs.filter((d): d is NonNullable<typeof d> => d != null)];
+    const seen = new Set<string>();
+    const merged = allDocs.filter((doc): doc is NonNullable<typeof doc> => {
+      if (!doc) return false;
+      const key = doc._id.toString();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by createdAt desc
+    merged.sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+
+    // Apply optional status filter
+    if (status) {
+      return merged.filter((doc) => doc.status === status);
+    }
+
+    return merged;
   },
 });
 
@@ -339,6 +367,29 @@ export const signDocument = mutation({
         status: 'completed',
         completedAt: now,
       });
+
+      // ── Sync asset assignment status ─────────────────────────────
+      // When a movement/return form is fully signed, update the linked
+      // assetAssignment so the UI shows 'signed' everywhere (not just in
+      // getAsset — which had a temporary reconciliation that never
+      // persisted to the DB).
+      const movementAssignment = await ctx.db
+        .query('assetAssignments')
+        .withIndex('by_org', (q) => q.eq('organizationId', request.organizationId))
+        .filter((q) => q.eq(q.field('movementFormDocId'), request.documentId))
+        .first();
+      if (movementAssignment) {
+        await ctx.db.patch(movementAssignment._id, { movementFormStatus: 'signed' });
+      }
+
+      const returnAssignment = await ctx.db
+        .query('assetAssignments')
+        .withIndex('by_org', (q) => q.eq('organizationId', request.organizationId))
+        .filter((q) => q.eq(q.field('returnFormDocId'), request.documentId))
+        .first();
+      if (returnAssignment) {
+        await ctx.db.patch(returnAssignment._id, { returnFormStatus: 'signed' });
+      }
     } else {
       // Partially signed
       await ctx.db.patch(request.documentId, {

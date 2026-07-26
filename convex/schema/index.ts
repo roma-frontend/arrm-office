@@ -42,6 +42,8 @@ import { expenses } from './expenses';
 import { userSettings } from './userSettings';
 import { userProfiles } from './userProfiles';
 import { newsletter } from './newsletter';
+import { news } from './news';
+import { assets } from './assets';
 
 export default defineSchema({
   ...organizations,
@@ -87,6 +89,8 @@ export default defineSchema({
   ...userSettings,
   ...userProfiles,
   ...newsletter,
+  ...news,
+  ...assets,
 });
 
 export {
@@ -133,4 +137,6 @@ export {
   userSettings,
   userProfiles,
   newsletter,
+  news,
+  assets,
 };

@@ -669,6 +669,116 @@ export const getTasksByObjective = query({
   },
 });
 
+// ── Get objectives for a reviewee with their latest review scores ─────────
+export const getRevieweeObjectivesWithReviews = query({
+  args: {
+    organizationId: v.id('organizations'),
+    userId: v.id('users'),
+    /** Optional start of review period to filter objectives */
+    periodStart: v.optional(v.number()),
+    /** Optional end of review period to filter objectives */
+    periodEnd: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { organizationId, userId, periodStart, periodEnd } = args;
+
+    // Get all objectives owned by this user
+    const objectives = await ctx.db
+      .query('objectives')
+      .withIndex('by_org_owner', (q) =>
+        q.eq('organizationId', organizationId).eq('ownerId', userId),
+      )
+      .take(DEFAULT_LIST_CAP);
+
+    // If period filters provided, only include objectives that overlap
+    let filtered = objectives;
+    if (periodStart || periodEnd) {
+      filtered = objectives.filter((o) => {
+        const objStart = o.periodStart ?? 0;
+        const objEnd = o.periodEnd ?? 0;
+        // No overlap if one period ends before the other starts
+        if (periodStart && objEnd && objEnd < periodStart) return false;
+        if (periodEnd && objStart && objStart > periodEnd) return false;
+        return true;
+      });
+    }
+
+    // Get active + completed only
+    filtered = filtered.filter((o) => o.status === 'active' || o.status === 'completed');
+
+    // Enrich with key results, tasks, and recent review scores
+    const enriched = await Promise.all(
+      filtered.slice(0, 20).map(async (obj) => {
+        const krs = await ctx.db
+          .query('keyResults')
+          .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
+          .take(DEFAULT_LIST_CAP);
+
+        // Get linked tasks
+        const tasks = await ctx.db
+          .query('tasks')
+          .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
+          .take(DEFAULT_LIST_CAP);
+
+        const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
+
+        // Get latest review response for this reviewee
+        const reviews = await ctx.db
+          .query('reviewResponses')
+          .withIndex('by_reviewee', (q) => q.eq('revieweeId', userId))
+          .order('desc')
+          .take(3);
+
+        const latestReview = reviews.length > 0
+          ? {
+              overallScore: reviews[0]!.overallScore,
+              type: reviews[0]!.type,
+              submittedAt: reviews[0]!.submittedAt,
+            }
+          : null;
+
+        return {
+          _id: obj._id,
+          title: obj.title,
+          level: obj.level,
+          progress: obj.progress,
+          status: obj.status,
+          periodType: obj.periodType,
+          periodYear: obj.periodYear,
+          keyResultsCount: krs.length,
+          keyResults: krs.map((kr) => ({
+            _id: kr._id,
+            title: kr.title,
+            progress: computeKRProgress(
+              kr.startValue,
+              kr.targetValue,
+              kr.currentValue,
+              kr.direction,
+              kr.metricType,
+            ),
+            currentValue: kr.currentValue,
+            targetValue: kr.targetValue,
+            unit: kr.unit,
+            direction: kr.direction,
+          })),
+          taskCount: tasks.length,
+          completedTaskCount: completedTasks,
+          latestReview,
+        };
+      }),
+    );
+
+    // Sort: active first, then by progress desc
+    enriched.sort((a, b) => {
+      if (a.status === 'active' && b.status !== 'active') return -1;
+      if (a.status !== 'active' && b.status === 'active') return 1;
+      return b.progress - a.progress;
+    });
+
+    return enriched;
+  },
+});
+
 // ── Get active objectives for task creation (dropdown selector) ────────────
 export const getObjectivesForTaskCreation = query({
   args: {

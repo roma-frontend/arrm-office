@@ -232,7 +232,9 @@
     "documents": "Documents",
     "documentLibrary": "Document Library",
     "reportBuilder": "Report Builder",
-    "aiGovernance": "AI Governance"
+    "aiGovernance": "AI Governance",
+    "news": "News",
+    "assets": "Assets"
   },
   "docLibrary": {
     "title": "Document Library",

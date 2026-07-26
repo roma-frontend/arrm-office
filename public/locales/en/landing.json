@@ -104,13 +104,13 @@
     "highRiskAlerts": "high risk",
     "footerCookies": "Cookie Policy",
     "footerGdpr": "GDPR",
-    "footerCopyright": "© {{year}} HR Office. All rights reserved.",
+    "footerCopyright": "© {{year}} Strata. All rights reserved.",
     "footerSsl": "SSL Secured",
     "footerGdprCompliant": "GDPR Compliant",
     "footerSoc2": "SOC 2 Certified",
     "ctaTitle": "Ready to elevate your",
     "ctaTitleHighlight": "HR operations?",
-    "ctaSubtitle": "Join elite HR professionals who rely on HR Office to manage their teams with sophistication.",
+    "ctaSubtitle": "Join elite HR professionals who rely on Strata to manage their teams with sophistication.",
     "statsEmployees": "Employees Tracked",
     "statsAccuracy": "Accuracy Rate",
     "statsRealtime": "Real-time Tracking",
@@ -307,7 +307,7 @@
       "name": "Sarah Johnson",
       "role": "HR Director",
       "company": "TechCorp Inc.",
-      "text": "HR Office transformed our HR management process. What used to take hours now takes minutes. The analytics are incredible!"
+      "text": "Strata transformed our HR management process. What used to take hours now takes minutes. The analytics are incredible!"
     },
     "testimonial2": {
       "name": "Michael Chen",
@@ -344,7 +344,7 @@
     "title": "FAQ",
     "subtitle": "Frequently Asked",
     "subtitleHighlight": "Questions",
-    "description": "Everything you need to know about HR Office and how it works.",
+    "description": "Everything you need to know about Strata and how it works.",
     "q1": "How does the leave management system work?",
     "a1": "Our platform streamlines the entire leave request process. Employees can submit requests through an intuitive interface, managers receive instant notifications for approval, and all leave balances are automatically tracked and updated in real-time.",
     "q2": "Can I integrate this with my existing HR tools?",
@@ -480,7 +480,7 @@
     "platformTitle": "Built for modern teams",
     "platformSubtitle": "Enterprise-grade features that scale with your organization",
     "ctaTitle": "Ready to transform your HR?",
-    "ctaSubtitle": "Join thousands of teams already using HR Office to manage their people effectively.",
+    "ctaSubtitle": "Join thousands of teams already using Strata to manage their people effectively.",
     "ctaButton": "Start free trial",
     "ctaContact": "Contact sales",
     "modules": {
@@ -760,27 +760,27 @@
   },
   "meta": {
     "features": {
-      "title": "Features — HR Office Modules",
-      "description": "Explore HR Office modules: employee management, leave tracking, attendance with face recognition, task management, AI analytics, and more.",
-      "ogTitle": "Features — HR Office",
+      "title": "Features — Strata Modules",
+      "description": "Explore Strata modules: employee management, leave tracking, attendance with face recognition, task management, AI analytics, and more.",
+      "ogTitle": "Features — Strata",
       "ogDescription": "All-in-one HR platform with 10+ modules for modern workforce management."
     },
     "contact": {
       "title": "Contact — Enterprise Sales",
-      "description": "Contact HR Office for enterprise plans, custom integrations, and dedicated support.",
-      "ogTitle": "Contact — HR Office",
+      "description": "Contact Strata for enterprise plans, custom integrations, and dedicated support.",
+      "ogTitle": "Contact — Strata",
       "ogDescription": "Get in touch for enterprise HR solutions."
     },
     "careers": {
       "title": "Careers — Open Positions",
-      "description": "Browse open positions across organizations using HR Office. Find your next opportunity.",
-      "ogTitle": "Careers — HR Office",
-      "ogDescription": "Find open positions and apply directly through HR Office."
+      "description": "Browse open positions across organizations using Strata. Find your next opportunity.",
+      "ogTitle": "Careers — Strata",
+      "ogDescription": "Find open positions and apply directly through Strata."
     },
     "home": {
-      "title": "HR Office — All-in-One HR Management Platform",
-      "description": "HR Office is a powerful all-in-one HR platform with real-time attendance tracking, leave management, task management, employee analytics, face recognition check-in, and AI assistant. Built for modern teams.",
-      "ogTitle": "HR Office — All-in-One HR Management Platform",
+      "title": "Strata — All-in-One HR Management Platform",
+      "description": "Strata is a powerful all-in-one HR platform with real-time attendance tracking, leave management, task management, employee analytics, face recognition check-in, and AI assistant. Built for modern teams.",
+      "ogTitle": "Strata — All-in-One HR Management Platform",
       "ogDescription": "Manage your entire workforce with real-time attendance, AI-powered analytics, task management, and smart leave tracking."
     }
   }

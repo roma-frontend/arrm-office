@@ -234,7 +234,9 @@
     "documents": "Документы",
     "documentLibrary": "Библиотека документов",
     "reportBuilder": "Конструктор отчетов",
-    "aiGovernance": "AI Управление"
+    "aiGovernance": "AI Управление",
+    "news": "Новости",
+    "assets": "Активы"
   },
   "docLibrary": {
     "title": "Библиотека документов",

@@ -531,7 +531,7 @@ export const sendTestEmail = action({
     const appUrl = getPublicAppUrl();
 
     await resend.emails.send({
-      from: 'HR Office <onboarding@resend.dev>',
+      from: 'Strata <onboarding@resend.dev>',
       to: args.email,
       subject: content.subject,
       react: WeeklyDigestEmail({

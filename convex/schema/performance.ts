@@ -122,7 +122,8 @@ export const performance = {
     .index('by_assignment', ['assignmentId'])
     .index('by_cycle_reviewee', ['cycleId', 'revieweeId'])
     .index('by_cycle_reviewer', ['cycleId', 'reviewerId'])
-    .index('by_cycle_type', ['cycleId', 'type']),
+    .index('by_cycle_type', ['cycleId', 'type'])
+    .index('by_reviewee', ['revieweeId']),
 
   // Individual competency ratings (normalized for analytics)
   reviewRatings: defineTable({

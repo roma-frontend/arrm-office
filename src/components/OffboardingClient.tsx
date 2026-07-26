@@ -33,6 +33,8 @@ import {
   ChevronLeft,
   Star,
   BarChart3,
+  Package,
+  ArrowDownLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -324,6 +326,16 @@ function ProgramDetailDialog({
   const submitExit = useMutation(api.offboarding.submitExitInterview);
   const isAdmin = user?.role === 'admin' || user?.role === 'supervisor';
 
+  const activeAssets = useQuery(
+    api.assets.checkActiveAssignmentsForEmployee,
+    program?.organizationId && program?.employeeId
+      ? {
+          organizationId: program.organizationId as Id<'organizations'>,
+          employeeId: program.employeeId as Id<'users'>,
+        }
+      : 'skip',
+  );
+
   const [showExitForm, setShowExitForm] = useState(false);
   const [exitForm, setExitForm] = useState({
     experience: 3,
@@ -466,6 +478,34 @@ function ProgramDetailDialog({
                 </div>
               ))}
             </div>
+
+            {/* Active Assets */}
+            {activeAssets && activeAssets.length > 0 && (
+              <div className="pt-2 border-t space-y-2">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  {t('assets.title', 'Assets to Return')} ({activeAssets.length})
+                </p>
+                {activeAssets.map((a: any) => (
+                  <div
+                    key={a.assignmentId}
+                    className="flex items-center gap-3 p-2.5 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <ArrowDownLeft className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{a.assetName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.icon} {t(`assets.category.${a.category}`, a.category)} ·{' '}
+                        {t('assets.assignedAt', 'Assigned')}:{' '}
+                        {new Date(a.assignedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Exit Interview */}
             {program.exitInterview && (

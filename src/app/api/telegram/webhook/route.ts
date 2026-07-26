@@ -213,8 +213,8 @@ export async function POST(req: Request) {
   }
 }
 
-const BOT_CONTEXT = `You are the AI assistant for HR Office Newsletter Telegram Bot (@hremailbot).
-You know everything about this bot and the HR Office platform. Answer user questions helpfully and concisely.
+const BOT_CONTEXT = `You are the AI assistant for Strata Newsletter Telegram Bot (@hremailbot).
+You know everything about this bot and the Strata platform. Answer user questions helpfully and concisely.
 
 BOT COMMANDS:
 - /start — subscribe to weekly AI-generated HR digest (every Monday)
@@ -234,7 +234,7 @@ BOT FEATURES:
 - Pause/resume without losing subscription
 - Delivery analytics tracked per subscriber
 
-HR OFFICE PLATFORM:
+Strata PLATFORM:
 - All-in-one HR management SaaS (employees, leaves, attendance, tasks, chat, AI analytics)
 - Face recognition attendance, Microsoft 365 integration, Stripe billing
 - 5 roles: Superadmin, Admin, Supervisor, Employee, Driver

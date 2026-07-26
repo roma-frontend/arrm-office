@@ -1,4 +1,4 @@
-# HR Office — Project Roadmap & Status
+# Strata — Project Roadmap & Status
 
 > **Last updated:** 2026-05-10 (Full audit completed, Recruitment emails implemented, Cron jobs verified)
 > **Stack:** Next.js 16 (App Router) + Convex + Shadcn/ui + Tailwind CSS

@@ -252,7 +252,7 @@ export default function BrandingSettingsPage() {
                   className="h-7 text-xs"
                   onClick={() => setSettings((prev) => ({ ...prev, [key]: defaultColor }))}
                 >
-                  {t('common.reset', 'Reset')}
+                  {t('branding.reset', 'Reset')}
                 </Button>
               </div>
             ))}

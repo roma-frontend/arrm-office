@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to HR Office.
+All notable changes to Strata.
 
 ## [Unreleased] — 2026-05-16
 

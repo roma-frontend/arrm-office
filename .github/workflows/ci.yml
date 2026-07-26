@@ -1,4 +1,4 @@
-# HR Office Platform — CI/CD Pipeline
+# Strata Platform — CI/CD Pipeline
 # Recommended branch protection: require PR, 1+ approvals, required status checks
 
 name: CI/CD Pipeline

@@ -29,6 +29,7 @@ export const notifications = {
       v.literal('onboarding_manager_assigned'),
       v.literal('onboarding_buddy_assigned'),
       v.literal('onboarding_task_overdue'),
+      v.literal('asset_assigned'),
     ),
     title: v.string(),
     message: v.string(),
