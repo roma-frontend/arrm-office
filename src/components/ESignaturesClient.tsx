@@ -76,9 +76,29 @@ function useDocumentLabels(): DocumentLabels {
 // ============ MOVEMENT / RETURN FORM HELPERS ============
 
 /**
- * Parse structured form content stored in the database.
- * New forms store locale-agnostic JSON prefixed with __MF__ (movement)
- * or __RF__ (return). Old forms store English markdown — return null.
+ * Pull the value of a `**Label:**` field out of a legacy markdown form. The
+ * legacy body is a single flattened line, so a value runs until the next
+ * structural token: another bold field (`**`), a heading (`##`), a rule
+ * (`---`), or a bullet separator (` - `). Returns '' when the field is absent.
+ */
+function extractLegacyField(md: string, label: string): string {
+  const m = md.match(new RegExp('\\*\\*\\s*' + label + '\\s*:\\*\\*\\s*(.+)'));
+  if (!m || !m[1]) return '';
+  // Cut at the first structural delimiter that follows the value.
+  const value = m[1].split(/\s+(?:\*\*|#{1,3}\s|-{2,}|-\s)/)[0] ?? '';
+  return value.trim();
+}
+
+/**
+ * Parse structured form content stored in the database into a locale-agnostic
+ * shape so {@link buildFormBody} can re-render it cleanly in the active language.
+ *
+ * Three storage generations are handled:
+ *  - New forms: JSON prefixed with `__MF__` (movement) / `__RF__` (return).
+ *  - Legacy forms: raw English markdown (`# Asset Movement Form`, `**Handed
+ *    To:**`, …). We regex out the fields so old documents localize too instead
+ *    of leaking literal `#`/`**`/`---` markup in a single language.
+ *  - Anything else (generic documents): return null → caller shows raw content.
  */
 function parseFormContent(content: string): {
   type: 'movement' | 'return';
@@ -88,15 +108,49 @@ function parseFormContent(content: string): {
     try {
       const data = JSON.parse(content.slice(6));
       return { type: 'movement', data };
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
   if (content.startsWith('__RF__')) {
     try {
       const data = JSON.parse(content.slice(6));
       return { type: 'return', data };
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
-  return null;
+
+  // ── Legacy markdown forms ──
+  // Only treat content as a form when it carries the tell-tale field markers,
+  // so unrelated documents pass through untouched (parsed = null).
+  const isReturnForm = /Return Form/i.test(content) || /\*\*\s*Returned By\s*:\*\*/i.test(content);
+  const isMovementForm =
+    /Movement Form/i.test(content) || /\*\*\s*Handed To\s*:\*\*/i.test(content);
+  if (!isReturnForm && !isMovementForm) return null;
+
+  const assetName = extractLegacyField(content, 'Asset');
+  if (isReturnForm) {
+    return {
+      type: 'return',
+      data: {
+        assetName,
+        returnerName: extractLegacyField(content, 'Returned By'),
+        assignerName: extractLegacyField(content, 'Received By'),
+        condition: extractLegacyField(content, 'Condition'),
+        date: extractLegacyField(content, 'Date of Return') || extractLegacyField(content, 'Date'),
+      },
+    };
+  }
+  return {
+    type: 'movement',
+    data: {
+      assetName,
+      assigneeName: extractLegacyField(content, 'Handed To'),
+      assignerName: extractLegacyField(content, 'Handed By'),
+      date: extractLegacyField(content, 'Date of Transfer') || extractLegacyField(content, 'Date'),
+    },
+  };
 }
 
 /** Build a clean localized body string for a structured movement/return form. */
@@ -111,13 +165,20 @@ function buildFormBody(
   const assigner = data.assignerName || data.returnerName || '';
 
   const lines: string[] = [
-    isReturn ? t('assets.pdf.returnForm', 'Asset Return Form') : t('assets.pdf.movementForm', 'Asset Movement Form'),
+    isReturn
+      ? t('assets.pdf.returnForm', 'Asset Return Form')
+      : t('assets.pdf.movementForm', 'Asset Movement Form'),
     '',
     t('assets.pdf.date', 'Date') + ': ' + date,
     '',
     t('assets.pdf.assetDetails', 'Asset Details'),
     '- ' + t('assets.pdf.asset', 'Asset') + ': ' + (data.assetName || ''),
-    '- ' + t('assets.pdf.type', 'Type') + ': ' + (isReturn ? t('assets.pdf.equipmentReturn', 'Equipment Return') : t('assets.pdf.equipmentTransfer', 'Equipment Transfer')),
+    '- ' +
+      t('assets.pdf.type', 'Type') +
+      ': ' +
+      (isReturn
+        ? t('assets.pdf.equipmentReturn', 'Equipment Return')
+        : t('assets.pdf.equipmentTransfer', 'Equipment Transfer')),
     '',
   ];
 
@@ -127,10 +188,16 @@ function buildFormBody(
       '- ' + t('assets.pdf.returnedBy', 'Returned By') + ': ' + assignee,
       '- ' + t('assets.pdf.receivedBy', 'Received By') + ': ' + assigner,
       '- ' + t('assets.pdf.dateOfReturn', 'Date of Return') + ': ' + date,
-      '- ' + t('assets.pdf.condition', 'Condition on Return') + ': ' + (data.condition || t('common.good', 'Good')),
+      '- ' +
+        t('assets.pdf.condition', 'Condition on Return') +
+        ': ' +
+        (data.condition || t('common.good', 'Good')),
       '',
       t('assets.pdf.acknowledgement', 'Acknowledgement'),
-      t('assets.pdf.ackBody', 'I confirm that I have returned the above equipment. The asset has been received in the condition noted above and I am released from further responsibility for this item.'),
+      t(
+        'assets.pdf.ackBody',
+        'I confirm that I have returned the above equipment. The asset has been received in the condition noted above and I am released from further responsibility for this item.',
+      ),
       '',
     );
   } else {
@@ -141,7 +208,10 @@ function buildFormBody(
       '- ' + t('assets.pdf.date', 'Date of Transfer') + ': ' + date,
       '',
       t('assets.pdf.terms', 'Terms and Conditions'),
-      t('assets.pdf.termsBody', 'I confirm that I have received the above equipment in good condition. I agree to take full responsibility for the item and will return it upon request or at the end of my employment.'),
+      t(
+        'assets.pdf.termsBody',
+        'I confirm that I have received the above equipment in good condition. I agree to take full responsibility for the item and will return it upon request or at the end of my employment.',
+      ),
       '',
     );
   }
@@ -177,9 +247,7 @@ function toRenderableDocument(doc: any, labels: DocumentLabels, t?: TFunction): 
 
   // Detect structured movement/return forms and build localized body
   const parsed = doc.content ? parseFormContent(doc.content) : null;
-  const body = parsed && t
-    ? buildFormBody(parsed, t)
-    : doc.content;
+  const body = parsed && t ? buildFormBody(parsed, t) : doc.content;
 
   return {
     title: doc.title,
@@ -936,7 +1004,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
 
   // For structured movement/return forms, build localized display body
   const formParsed = doc?.content ? parseFormContent(doc.content) : null;
-  const displayBody = formParsed ? buildFormBody(formParsed, t) : (doc?.content || '');
+  const displayBody = formParsed ? buildFormBody(formParsed, t) : doc?.content || '';
 
   const signMutation = useMutation(api.signatures.signDocument);
   const declineMutation = useMutation(api.signatures.declineDocument);
@@ -1120,7 +1188,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
 
   // For structured movement/return forms, build localized display body
   const formParsed = doc?.content ? parseFormContent(doc.content) : null;
-  const displayBody = formParsed ? buildFormBody(formParsed, t) : (doc?.content || '');
+  const displayBody = formParsed ? buildFormBody(formParsed, t) : doc?.content || '';
 
   const handleArchive = async () => {
     if (!documentId) return;
