@@ -69,7 +69,58 @@ function formatDate(ts: number): string {
 // PDF (pdfmake)
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function loadPdfMakeWithFonts(): Promise<any> {
+// The built-in Roboto font (from vfs_fonts) covers Latin + Cyrillic but has NO
+// Armenian glyphs, so `hy` documents render as tofu (□□□). DejaVu Sans covers
+// Latin + Cyrillic + Armenian in a single face — required because our forms mix
+// scripts within one text run (e.g. "Հանձնված է՝ Cane Corso") and pdfmake has no
+// per-glyph font fallback. Loaded from /public/fonts at runtime (PDF rendering
+// is client-only) so the ~2.8 MB of TTFs never enter the JS bundle.
+const DEJAVU_FILES = {
+  normal: 'DejaVuSans.ttf',
+  bold: 'DejaVuSans-Bold.ttf',
+  italics: 'DejaVuSans-Oblique.ttf',
+  bolditalics: 'DejaVuSans-BoldOblique.ttf',
+} as const;
+
+/** Fetch a font file and base64-encode it for pdfmake's virtual file system. */
+async function fetchFontBase64(file: string): Promise<string> {
+  const res = await fetch(`/fonts/${file}`);
+  if (!res.ok) throw new Error(`font ${file}: HTTP ${res.status}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  let binary = '';
+  const CHUNK = 0x8000; // avoid arg-count limits on String.fromCharCode
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
+// Registration is attempted once and cached; a failure falls back to Roboto so
+// exports never break (e.g. in tests/jsdom where fetch of /fonts is unavailable).
+let dejaVuReady: Promise<boolean> | null = null;
+
+async function ensureDejaVu(pdfMake: any): Promise<boolean> {
+  if (!dejaVuReady) {
+    dejaVuReady = (async () => {
+      try {
+        const entries = await Promise.all(
+          Object.values(DEJAVU_FILES).map(
+            async (f) => [f, await fetchFontBase64(f)] as const,
+          ),
+        );
+        for (const [file, b64] of entries) pdfMake.vfs[file] = b64;
+        pdfMake.fonts = { ...(pdfMake.fonts || {}), DejaVuSans: { ...DEJAVU_FILES } };
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+  }
+  return dejaVuReady;
+}
+
+/** Load pdfmake with a Unicode-capable font; returns the font family to use. */
+async function loadPdfMakeWithFonts(): Promise<{ pdfMake: any; font: string }> {
   const pdfMake: any = await loadPdfMake();
   // vfs_fonts registers the default Roboto font family used by pdfmake. In
   // pdfmake 0.3.x the module *is* the vfs map (top-level *.ttf keys); older
@@ -79,7 +130,8 @@ async function loadPdfMakeWithFonts(): Promise<any> {
     const pdfFonts: any = await import('pdfmake/build/vfs_fonts');
     pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs || pdfFonts.default || pdfFonts;
   }
-  return pdfMake;
+  const hasDejaVu = await ensureDejaVu(pdfMake);
+  return { pdfMake, font: hasDejaVu ? 'DejaVuSans' : 'Roboto' };
 }
 
 /**
@@ -185,7 +237,7 @@ function buildBodyContent(body: string): any[] {
 }
 
 /** Build the pdfmake document definition shared by the download and render paths. */
-function buildDocDefinition(doc: RenderableDocument): any {
+function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
   const accent = ACCENT_HEX[doc.accent];
   const PAGE_WIDTH = 495; // A4 at default margins
 
@@ -348,7 +400,7 @@ function buildDocDefinition(doc: RenderableDocument): any {
       sigPlaceholder: { fontSize: 10, color: '#64748b', margin: [0, 2, 0, 0] },
       footer: { fontSize: 7, color: '#94a3b8' },
     },
-    defaultStyle: { font: 'Roboto', fontSize: 10, color: '#334155' },
+    defaultStyle: { font, fontSize: 10, color: '#334155' },
     pageMargins: [60, 48, 60, 64],
     pageSize: 'A4',
   };
@@ -358,8 +410,8 @@ export async function exportDocumentToPDF(
   doc: RenderableDocument,
   filename = 'document.pdf',
 ): Promise<{ success: boolean }> {
-  const pdfMake = await loadPdfMakeWithFonts();
-  pdfMake.createPdf(buildDocDefinition(doc)).download(filename);
+  const { pdfMake, font } = await loadPdfMakeWithFonts();
+  pdfMake.createPdf(buildDocDefinition(doc, font)).download(filename);
   return { success: true };
 }
 
@@ -369,7 +421,7 @@ export async function exportDocumentToPDF(
  * pdfmake never invokes its callback — e.g. if fonts fail to load.
  */
 export async function renderDocumentPdfBase64(doc: RenderableDocument): Promise<string> {
-  const pdfMake = await loadPdfMakeWithFonts();
+  const { pdfMake, font } = await loadPdfMakeWithFonts();
   return new Promise((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(() => {
@@ -379,7 +431,7 @@ export async function renderDocumentPdfBase64(doc: RenderableDocument): Promise<
     }, 30000);
 
     try {
-      pdfMake.createPdf(buildDocDefinition(doc)).getBase64((data: string) => {
+      pdfMake.createPdf(buildDocDefinition(doc, font)).getBase64((data: string) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);

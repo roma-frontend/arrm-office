@@ -55,4 +55,20 @@ crons.weekly(
 // Newsletter drip campaign (every 12 hours)
 crons.interval('newsletter-drip', { hours: 12 }, internal.newsletter.processDripCampaign);
 
+// ── Asset Management Reminders ────────────────────────────
+
+// Check for assets with warranty expiring in the next 30 days (daily at 8 AM)
+crons.daily(
+  'asset-warranty-reminders',
+  { hourUTC: 8, minuteUTC: 0 },
+  internal.assets.checkWarrantyReminders,
+);
+
+// Check for scheduled maintenance due today (daily at 8 AM)
+crons.daily(
+  'asset-maintenance-reminders',
+  { hourUTC: 8, minuteUTC: 30 },
+  internal.assets.checkMaintenanceReminders,
+);
+
 export default crons;

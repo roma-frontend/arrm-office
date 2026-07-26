@@ -2,7 +2,7 @@
 
 import { query, mutation, internalMutation } from './_generated/server';
 import { v } from 'convex/values';
-import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 
 import { internal } from './_generated/api';
 
@@ -23,6 +23,115 @@ function getCategoryIcon(category: string): string {
     other: '📦',
   };
   return icons[category] || '📦';
+}
+
+/**
+ * Append an entry to the asset audit trail (assetHistory).
+ * Resolves the actor's display name so the history reads well without joins.
+ */
+async function logAssetHistory(
+  ctx: any,
+  entry: {
+    organizationId: any;
+    assetId: any;
+    action: string;
+    fromStatus?: string;
+    toStatus?: string;
+    note?: string;
+    actorId?: any;
+  },
+): Promise<void> {
+  let actorName: string | undefined;
+  if (entry.actorId) {
+    const actor = await ctx.db.get(entry.actorId);
+    actorName = actor?.name ?? undefined;
+  }
+  await ctx.db.insert('assetHistory', {
+    organizationId: entry.organizationId,
+    assetId: entry.assetId,
+    action: entry.action,
+    fromStatus: entry.fromStatus,
+    toStatus: entry.toStatus,
+    note: entry.note,
+    actorId: entry.actorId,
+    actorName,
+    createdAt: Date.now(),
+  });
+}
+
+/**
+ * Ensure serialNumber / assetTag are unique within an organization.
+ * Pass `excludeAssetId` when updating so the asset doesn't clash with itself.
+ * Throws a user-facing error on the first collision found.
+ */
+async function assertUniqueIdentifiers(
+  ctx: any,
+  organizationId: any,
+  fields: { serialNumber?: string; assetTag?: string },
+  excludeAssetId?: any,
+): Promise<void> {
+  const serial = fields.serialNumber?.trim();
+  const tag = fields.assetTag?.trim();
+  if (!serial && !tag) return;
+
+  // Bounded scan of the org catalog; DEFAULT_LIST_CAP covers 99% of tenants.
+  const existing = await ctx.db
+    .query('assetCatalog')
+    .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
+    .take(DEFAULT_LIST_CAP);
+
+  for (const a of existing) {
+    if (excludeAssetId && a._id === excludeAssetId) continue;
+    if (serial && a.serialNumber && a.serialNumber.trim().toLowerCase() === serial.toLowerCase()) {
+      throw new Error(`An asset with serial number "${serial}" already exists.`);
+    }
+    if (tag && a.assetTag && a.assetTag.trim().toLowerCase() === tag.toLowerCase()) {
+      throw new Error(`An asset with asset tag "${tag}" already exists.`);
+    }
+  }
+}
+
+/**
+ * When a maintenance record completes or is cancelled, bring the asset back
+ * into service — but only if it's still sitting in 'maintenance'. Restores to
+ * 'assigned' when an active assignment exists, otherwise 'available'.
+ */
+async function restoreAssetAfterMaintenance(
+  ctx: any,
+  assetId: any,
+  actorId: any,
+  action: string,
+): Promise<void> {
+  const asset = await ctx.db.get(assetId);
+  if (!asset) return;
+
+  // Only restore if this asset is actually parked in maintenance. If the asset
+  // was retired/lost or already back in service, leave it alone.
+  if (asset.status !== 'maintenance') {
+    await logAssetHistory(ctx, {
+      organizationId: asset.organizationId,
+      assetId,
+      action,
+      actorId,
+    });
+    return;
+  }
+
+  const activeAssignment = await ctx.db
+    .query('assetAssignments')
+    .withIndex('by_asset_active', (q: any) => q.eq('assetId', assetId).eq('status', 'active'))
+    .first();
+
+  const toStatus = activeAssignment ? 'assigned' : 'available';
+  await ctx.db.patch(assetId, { status: toStatus, updatedAt: Date.now() });
+  await logAssetHistory(ctx, {
+    organizationId: asset.organizationId,
+    assetId,
+    action,
+    fromStatus: 'maintenance',
+    toStatus,
+    actorId,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -170,13 +279,145 @@ export const getAsset = query({
   },
 });
 
-export const getAssetStats = query({
+/**
+ * Full audit trail for a single asset (created, status changes, assignments,
+ * maintenance, retirement, loss) — most recent first.
+ */
+export const getAssetHistory = query({
+  args: { assetId: v.id('assetCatalog') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('assetHistory')
+      .withIndex('by_asset_time', (q) => q.eq('assetId', args.assetId))
+      .order('desc')
+      .take(SMALL_LIST_CAP);
+  },
+});
+
+/**
+ * Generate QR code payload data for an asset.
+ * The frontend can use this data with the qrcode library (already dynamically
+ * imported via src/lib/dynamic-imports) to render scannable QR codes for
+ * physical asset labels and inventory tracking.
+ */
+export const getAssetQRData = query({
+  args: {
+    organizationId: v.id('organizations'),
+    assetId: v.id('assetCatalog'),
+  },
+  handler: async (ctx, args) => {
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset) return null;
+
+    // Build a deep-link URL for the asset detail page.
+    // When scanned from a mobile device this opens the asset card directly.
+    // NOTE: Convex queries run server-side, so window is not available.
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+
+    return {
+      assetId: asset._id,
+      name: asset.name,
+      serialNumber: asset.serialNumber ?? null,
+      assetTag: asset.assetTag ?? null,
+      category: asset.category,
+      url: `${baseUrl}/assets/${asset._id}`,
+    };
+  },
+});
+
+/**
+ * Straight-line depreciation / book value for the org's assets.
+ * Assumes a per-category useful life (in years) and zero salvage value.
+ * Assets without purchaseDate/purchasePrice are reported as unknown.
+ */
+export const getDepreciation = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
+    // Default useful life in years by category (industry-typical starting points).
+    const usefulLifeYears: Record<string, number> = {
+      laptop: 3,
+      monitor: 5,
+      phone: 2,
+      tablet: 3,
+      peripheral: 3,
+      furniture: 7,
+      software_license: 1,
+      vehicle: 5,
+      other: 5,
+    };
+
     const all = await ctx.db
       .query('assetCatalog')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .take(DEFAULT_LIST_CAP);
+      .take(XLARGE_LIST_CAP);
+
+    const now = Date.now();
+    const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+    let totalPurchase = 0;
+    let totalBookValue = 0;
+    let totalDepreciated = 0;
+
+    const items = all.map((asset) => {
+      const price = asset.purchasePrice ?? null;
+      const start = asset.purchaseDate ?? null;
+      const lifeYears = usefulLifeYears[asset.category] ?? 5;
+
+      // Retired/lost assets carry zero book value.
+      const writtenOff = asset.status === 'retired' || asset.status === 'lost';
+
+      let bookValue: number | null = null;
+      let depreciated: number | null = null;
+      let ageYears: number | null = null;
+
+      if (price != null && start != null) {
+        ageYears = Math.max(0, (now - start) / YEAR_MS);
+        const fraction = Math.min(1, ageYears / lifeYears);
+        depreciated = writtenOff ? price : price * fraction;
+        bookValue = writtenOff ? 0 : price - depreciated;
+
+        totalPurchase += price;
+        totalBookValue += bookValue;
+        totalDepreciated += depreciated;
+      }
+
+      return {
+        assetId: asset._id,
+        name: asset.name,
+        category: asset.category,
+        icon: getCategoryIcon(asset.category),
+        status: asset.status,
+        purchasePrice: price,
+        purchaseDate: start,
+        currency: asset.currency ?? null,
+        usefulLifeYears: lifeYears,
+        ageYears: ageYears != null ? Math.round(ageYears * 10) / 10 : null,
+        depreciated: depreciated != null ? Math.round(depreciated * 100) / 100 : null,
+        bookValue: bookValue != null ? Math.round(bookValue * 100) / 100 : null,
+        fullyDepreciated: bookValue != null ? bookValue <= 0 : null,
+      };
+    });
+
+    return {
+      items,
+      summary: {
+        totalPurchase: Math.round(totalPurchase * 100) / 100,
+        totalBookValue: Math.round(totalBookValue * 100) / 100,
+        totalDepreciated: Math.round(totalDepreciated * 100) / 100,
+      },
+    };
+  },
+});
+
+export const getAssetStats = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, args) => {
+    // Stats are a full-fleet aggregate — use the large cap so totalValue and
+    // counts don't silently under-report on bigger tenants (was DEFAULT_LIST_CAP).
+    const all = await ctx.db
+      .query('assetCatalog')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .take(XLARGE_LIST_CAP);
 
     const stats = {
       total: all.length,
@@ -187,11 +428,24 @@ export const getAssetStats = query({
       lost: all.filter((a) => a.status === 'lost').length,
       byCategory: {} as Record<string, number>,
       totalValue: 0,
+      warrantyExpiringSoon: 0,
     };
 
+    const now = Date.now();
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
     for (const asset of all) {
       stats.byCategory[asset.category] = (stats.byCategory[asset.category] || 0) + 1;
-      if (asset.purchasePrice) stats.totalValue += asset.purchasePrice;
+      // Only count value of assets still on the books (exclude retired/lost).
+      if (asset.purchasePrice && asset.status !== 'retired' && asset.status !== 'lost') {
+        stats.totalValue += asset.purchasePrice;
+      }
+      if (
+        asset.warrantyExpiry &&
+        asset.warrantyExpiry >= now &&
+        asset.warrantyExpiry <= now + THIRTY_DAYS
+      ) {
+        stats.warrantyExpiringSoon += 1;
+      }
     }
 
     // Count active assignments
@@ -200,7 +454,7 @@ export const getAssetStats = query({
       .withIndex('by_org_status', (q) =>
         q.eq('organizationId', args.organizationId).eq('status', 'active'),
       )
-      .take(DEFAULT_LIST_CAP);
+      .take(XLARGE_LIST_CAP);
 
     // Count pending requests
     const pendingRequests = await ctx.db
@@ -476,8 +730,12 @@ export const createAsset = mutation({
   },
   handler: async (ctx, args) => {
     const { createdBy, ...fields } = args;
+    await assertUniqueIdentifiers(ctx, args.organizationId, {
+      serialNumber: fields.serialNumber,
+      assetTag: fields.assetTag,
+    });
     const now = Date.now();
-    return await ctx.db.insert('assetCatalog', {
+    const assetId = await ctx.db.insert('assetCatalog', {
       ...fields,
       condition: fields.condition ?? 'new',
       status: 'available',
@@ -485,6 +743,14 @@ export const createAsset = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    await logAssetHistory(ctx, {
+      organizationId: args.organizationId,
+      assetId,
+      action: 'created',
+      toStatus: 'available',
+      actorId: createdBy,
+    });
+    return assetId;
   },
 });
 
@@ -514,6 +780,8 @@ export const updateAsset = mutation({
     currency: v.optional(v.string()),
     warrantyExpiry: v.optional(v.number()),
     vendor: v.optional(v.string()),
+    invoiceNumber: v.optional(v.string()),
+    expenseId: v.optional(v.id('expenses')),
     condition: v.optional(
       v.union(
         v.literal('new'),
@@ -530,6 +798,25 @@ export const updateAsset = mutation({
   },
   handler: async (ctx, args) => {
     const { assetId, ...fields } = args;
+    const asset = await ctx.db.get(assetId);
+    if (!asset) throw new Error('Asset not found');
+
+    // Re-check identifier uniqueness only when they actually change.
+    if (
+      (fields.serialNumber !== undefined && fields.serialNumber !== asset.serialNumber) ||
+      (fields.assetTag !== undefined && fields.assetTag !== asset.assetTag)
+    ) {
+      await assertUniqueIdentifiers(
+        ctx,
+        asset.organizationId,
+        {
+          serialNumber: fields.serialNumber ?? asset.serialNumber,
+          assetTag: fields.assetTag ?? asset.assetTag,
+        },
+        assetId,
+      );
+    }
+
     const update: Record<string, unknown> = { updatedAt: Date.now() };
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) update[key] = value;
@@ -549,6 +836,16 @@ export const deleteAsset = mutation({
     if (activeAssignment) {
       throw new Error('Cannot delete an asset with active assignment. Return it first.');
     }
+
+    // Clean up the audit trail so deleted assets don't leave orphaned history.
+    const history = await ctx.db
+      .query('assetHistory')
+      .withIndex('by_asset', (q) => q.eq('assetId', args.assetId))
+      .take(DEFAULT_LIST_CAP);
+    for (const h of history) {
+      await ctx.db.delete(h._id);
+    }
+
     await ctx.db.delete(args.assetId);
   },
 });
@@ -563,13 +860,30 @@ export const changeAssetStatus = mutation({
       v.literal('retired'),
       v.literal('lost'),
     ),
-    notes: v.optional(v.string()),
+    // Reason for the status change — recorded in the audit trail, NOT written
+    // over the asset's descriptive `notes` field (previous bug).
+    reason: v.optional(v.string()),
+    changedBy: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
-    const { assetId, status, notes } = args;
-    const update: Record<string, unknown> = { status, updatedAt: Date.now() };
-    if (notes !== undefined) update.notes = notes;
-    await ctx.db.patch(assetId, update);
+    const { assetId, status, reason, changedBy } = args;
+    const asset = await ctx.db.get(assetId);
+    if (!asset) throw new Error('Asset not found');
+
+    const fromStatus = asset.status;
+    if (fromStatus === status) return; // no-op, nothing to log
+
+    await ctx.db.patch(assetId, { status, updatedAt: Date.now() });
+
+    await logAssetHistory(ctx, {
+      organizationId: asset.organizationId,
+      assetId,
+      action: status === 'retired' ? 'retired' : 'status_changed',
+      fromStatus,
+      toStatus: status,
+      note: reason,
+      actorId: changedBy,
+    });
   },
 });
 
@@ -587,52 +901,84 @@ export const assignAsset = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const asset = await ctx.db.get(args.assetId);
-    if (!asset) throw new Error('Asset not found');
-    if (asset.status !== 'available') {
-      throw new Error(`Asset is not available (current: ${asset.status})`);
-    }
-
-    const now = Date.now();
-
-    // Create assignment
-    const lastAssignmentId = await ctx.db.insert('assetAssignments', {
-      organizationId: args.organizationId,
-      assetId: args.assetId,
-      assignedTo: args.assignedTo,
-      assignedBy: args.assignedBy,
-      assignedAt: now,
-      expectedReturnAt: args.expectedReturnAt,
-      notes: args.notes,
-      status: 'active',
-    });
-
-    // Update asset status
-    await ctx.db.patch(args.assetId, { status: 'assigned', updatedAt: now });
-
-    // Create movement form synchronously so movementFormDocId is set immediately
-    // and the UI never shows a "Send" button when a document is already pending.
-    // Using scheduler.runAfter here would create a race condition where the user
-    // could click "Send" before the deferred job runs, creating duplicate documents.
-    await ctx.runMutation(internal.assets.createAssetMovementForm, {
-      organizationId: args.organizationId,
-      assignmentId: lastAssignmentId,
-      assetId: args.assetId,
-      assetName: asset.name,
-      assignedTo: args.assignedTo,
-      assignedBy: args.assignedBy,
-    });
-
-    // Send notification
-    await ctx.scheduler.runAfter(0, internal.assets.sendAssignmentNotification, {
-      organizationId: args.organizationId,
-      assetId: args.assetId,
-      assignedTo: args.assignedTo,
-      assignedBy: args.assignedBy,
-      assetName: asset.name,
-    });
+    return await performAssignment(ctx, args);
   },
 });
+
+/**
+ * Core assignment routine shared by assignAsset (direct) and request
+ * fulfillment. Validates availability, creates the assignment, flips the
+ * asset to 'assigned', logs history, generates the movement form, and
+ * notifies the assignee. Returns the new assignment id.
+ */
+async function performAssignment(
+  ctx: any,
+  args: {
+    organizationId: any;
+    assetId: any;
+    assignedTo: any;
+    assignedBy: any;
+    expectedReturnAt?: number;
+    notes?: string;
+  },
+): Promise<any> {
+  const asset = await ctx.db.get(args.assetId);
+  if (!asset) throw new Error('Asset not found');
+  if (asset.status !== 'available') {
+    throw new Error(`Asset is not available (current: ${asset.status})`);
+  }
+
+  const now = Date.now();
+
+  // Create assignment
+  const assignmentId = await ctx.db.insert('assetAssignments', {
+    organizationId: args.organizationId,
+    assetId: args.assetId,
+    assignedTo: args.assignedTo,
+    assignedBy: args.assignedBy,
+    assignedAt: now,
+    expectedReturnAt: args.expectedReturnAt,
+    notes: args.notes,
+    status: 'active',
+  });
+
+  // Update asset status
+  await ctx.db.patch(args.assetId, { status: 'assigned', updatedAt: now });
+
+  await logAssetHistory(ctx, {
+    organizationId: args.organizationId,
+    assetId: args.assetId,
+    action: 'assigned',
+    fromStatus: asset.status,
+    toStatus: 'assigned',
+    note: args.notes,
+    actorId: args.assignedBy,
+  });
+
+  // Create movement form synchronously so movementFormDocId is set immediately
+  // and the UI never shows a "Send" button when a document is already pending.
+  // Using scheduler.runAfter here would create a race condition where the user
+  // could click "Send" before the deferred job runs, creating duplicate documents.
+  await ctx.runMutation(internal.assets.createAssetMovementForm, {
+    organizationId: args.organizationId,
+    assignmentId,
+    assetId: args.assetId,
+    assetName: asset.name,
+    assignedTo: args.assignedTo,
+    assignedBy: args.assignedBy,
+  });
+
+  // Send notification
+  await ctx.scheduler.runAfter(0, internal.assets.sendAssignmentNotification, {
+    organizationId: args.organizationId,
+    assetId: args.assetId,
+    assignedTo: args.assignedTo,
+    assignedBy: args.assignedBy,
+    assetName: asset.name,
+  });
+
+  return assignmentId;
+}
 
 export const returnAsset = mutation({
   args: {
@@ -650,24 +996,39 @@ export const returnAsset = mutation({
 
     const now = Date.now();
 
-    // Update assignment
+    // Update assignment. Preserve the assignment's original notes when the
+    // caller doesn't provide return notes (avoid wiping handover context).
     await ctx.db.patch(args.assignmentId, {
       status: 'returned',
       returnedAt: now,
       returnedBy: args.returnedBy,
       conditionOnReturn: args.condition,
-      notes: args.notes ?? undefined,
+      notes: args.notes ?? assignment.notes,
     });
 
-    // Update asset status back to available
+    // Update asset status back to available. Only overwrite the asset's
+    // condition when a condition was actually assessed on return — otherwise
+    // keep whatever the asset already had (previously defaulted to 'good',
+    // silently "healing" damaged items).
+    const assetForReturn = await ctx.db.get(assignment.assetId);
     await ctx.db.patch(assignment.assetId, {
       status: 'available',
-      condition: args.condition ?? 'good',
+      condition: args.condition ?? assetForReturn?.condition ?? 'good',
       updatedAt: now,
     });
 
+    await logAssetHistory(ctx, {
+      organizationId: assignment.organizationId,
+      assetId: assignment.assetId,
+      action: 'returned',
+      fromStatus: assetForReturn?.status,
+      toStatus: 'available',
+      note: args.condition ? `Condition on return: ${args.condition}` : args.notes,
+      actorId: args.returnedBy,
+    });
+
     // Get asset info for the return form
-    const returnedAsset = await ctx.db.get(assignment.assetId);
+    const returnedAsset = assetForReturn;
 
     // Auto-create return movement form (async)
     await ctx.scheduler.runAfter(0, internal.assets.createReturnMovementForm, {
@@ -692,12 +1053,26 @@ export const markAssignmentLost = mutation({
     const assignment = await ctx.db.get(args.assignmentId);
     if (!assignment) throw new Error('Assignment not found');
 
+    const now = Date.now();
+    const asset = await ctx.db.get(assignment.assetId);
+
     await ctx.db.patch(args.assignmentId, {
       status: 'lost',
+      returnedAt: now,
       returnedBy: args.returnedBy,
-      notes: args.notes,
+      notes: args.notes ?? assignment.notes,
     });
-    await ctx.db.patch(assignment.assetId, { status: 'lost', updatedAt: Date.now() });
+    await ctx.db.patch(assignment.assetId, { status: 'lost', updatedAt: now });
+
+    await logAssetHistory(ctx, {
+      organizationId: assignment.organizationId,
+      assetId: assignment.assetId,
+      action: 'lost',
+      fromStatus: asset?.status,
+      toStatus: 'lost',
+      note: args.notes,
+      actorId: args.returnedBy,
+    });
   },
 });
 
@@ -724,17 +1099,132 @@ export const scheduleMaintenance = mutation({
   },
   handler: async (ctx, args) => {
     const { createdBy, ...fields } = args;
+    const now = Date.now();
+
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset) throw new Error('Asset not found');
+
+    // Only take the asset out of service NOW when the work starts now — i.e.
+    // there is no scheduledDate, or it is due today/overdue. Future-dated
+    // maintenance stays 'scheduled' and the asset remains usable until then.
+    const startsNow = !fields.scheduledDate || fields.scheduledDate <= now;
 
     // Create maintenance record
     await ctx.db.insert('assetMaintenance', {
       ...fields,
-      status: 'scheduled',
+      status: startsNow ? 'in_progress' : 'scheduled',
       createdBy,
-      createdAt: Date.now(),
+      createdAt: now,
     });
 
-    // Update asset status
-    await ctx.db.patch(args.assetId, { status: 'maintenance', updatedAt: Date.now() });
+    if (startsNow && asset.status !== 'maintenance') {
+      await ctx.db.patch(args.assetId, { status: 'maintenance', updatedAt: now });
+      await logAssetHistory(ctx, {
+        organizationId: args.organizationId,
+        assetId: args.assetId,
+        action: 'maintenance_started',
+        fromStatus: asset.status,
+        toStatus: 'maintenance',
+        note: fields.description,
+        actorId: createdBy,
+      });
+    } else {
+      await logAssetHistory(ctx, {
+        organizationId: args.organizationId,
+        assetId: args.assetId,
+        action: 'maintenance_scheduled',
+        note: fields.description,
+        actorId: createdBy,
+      });
+    }
+  },
+});
+
+/**
+ * Move a scheduled maintenance record into 'in_progress' and take the asset
+ * out of service. Used when a future-dated maintenance actually begins.
+ */
+export const startMaintenance = mutation({
+  args: {
+    maintenanceId: v.id('assetMaintenance'),
+    startedBy: v.optional(v.id('users')),
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db.get(args.maintenanceId);
+    if (!record) throw new Error('Maintenance record not found');
+    if (record.status !== 'scheduled') {
+      throw new Error(`Maintenance is not scheduled (current: ${record.status})`);
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.maintenanceId, { status: 'in_progress' });
+
+    const asset = await ctx.db.get(record.assetId);
+    if (asset && asset.status !== 'maintenance') {
+      await ctx.db.patch(record.assetId, { status: 'maintenance', updatedAt: now });
+      await logAssetHistory(ctx, {
+        organizationId: record.organizationId,
+        assetId: record.assetId,
+        action: 'maintenance_started',
+        fromStatus: asset.status,
+        toStatus: 'maintenance',
+        note: record.description,
+        actorId: args.startedBy,
+      });
+    }
+  },
+});
+
+/**
+ * Cancel a scheduled/in-progress maintenance. If the asset was pulled into
+ * 'maintenance' for this record, restore it (to assigned or available).
+ */
+export const cancelMaintenance = mutation({
+  args: {
+    maintenanceId: v.id('assetMaintenance'),
+    cancelledBy: v.optional(v.id('users')),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db.get(args.maintenanceId);
+    if (!record) throw new Error('Maintenance record not found');
+    if (record.status === 'completed' || record.status === 'cancelled') {
+      throw new Error(`Maintenance is already ${record.status}`);
+    }
+
+    await ctx.db.patch(args.maintenanceId, {
+      status: 'cancelled',
+      notes: args.notes ?? record.notes,
+    });
+
+    await restoreAssetAfterMaintenance(ctx, record.assetId, args.cancelledBy, 'maintenance_cancelled');
+  },
+});
+
+/**
+ * Edit an existing maintenance record's mutable fields.
+ */
+export const updateMaintenance = mutation({
+  args: {
+    maintenanceId: v.id('assetMaintenance'),
+    description: v.optional(v.string()),
+    scheduledDate: v.optional(v.number()),
+    cost: v.optional(v.number()),
+    performedBy: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { maintenanceId, ...fields } = args;
+    const record = await ctx.db.get(maintenanceId);
+    if (!record) throw new Error('Maintenance record not found');
+
+    const update: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) update[key] = value;
+    }
+    if (Object.keys(update).length > 0) {
+      await ctx.db.patch(maintenanceId, update);
+    }
   },
 });
 
@@ -742,33 +1232,28 @@ export const completeMaintenance = mutation({
   args: {
     maintenanceId: v.id('assetMaintenance'),
     completedDate: v.number(),
+    cost: v.optional(v.number()),
     notes: v.optional(v.string()),
+    completedBy: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
     const record = await ctx.db.get(args.maintenanceId);
     if (!record) throw new Error('Maintenance record not found');
+    if (record.status === 'completed') throw new Error('Maintenance is already completed');
 
     await ctx.db.patch(args.maintenanceId, {
       status: 'completed',
       completedDate: args.completedDate,
-      notes: args.notes,
+      cost: args.cost ?? record.cost,
+      notes: args.notes ?? record.notes,
     });
 
-    // Return asset to available (or check if it should be reassigned)
-    const asset = await ctx.db.get(record.assetId);
-    if (asset && asset.status === 'maintenance') {
-      const previousAssignment = await ctx.db
-        .query('assetAssignments')
-        .withIndex('by_asset_active', (q) => q.eq('assetId', record.assetId).eq('status', 'active'))
-        .first();
-
-      // If there was a previous assignment, keep it assigned
-      if (previousAssignment) {
-        await ctx.db.patch(record.assetId, { status: 'assigned', updatedAt: Date.now() });
-      } else {
-        await ctx.db.patch(record.assetId, { status: 'available', updatedAt: Date.now() });
-      }
-    }
+    await restoreAssetAfterMaintenance(
+      ctx,
+      record.assetId,
+      args.completedBy,
+      'maintenance_completed',
+    );
   },
 });
 
@@ -809,6 +1294,9 @@ export const approveAssetRequest = mutation({
     fulfilledBy: v.optional(v.id('assetCatalog')),
   },
   handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) throw new Error('Request not found');
+
     const now = Date.now();
     const update: Record<string, unknown> = {
       status: 'approved',
@@ -816,7 +1304,18 @@ export const approveAssetRequest = mutation({
       approvedAt: now,
       updatedAt: now,
     };
+
+    // If an asset is chosen at approval time, actually assign it to the
+    // requester (creates the assignment + movement form) rather than just
+    // stamping fulfilledBy on the request.
     if (args.fulfilledBy) {
+      await performAssignment(ctx, {
+        organizationId: request.organizationId,
+        assetId: args.fulfilledBy,
+        assignedTo: request.requestedBy,
+        assignedBy: args.approvedBy,
+        notes: `Fulfilling asset request: ${request.reason}`,
+      });
       update.status = 'fulfilled';
       update.fulfilledBy = args.fulfilledBy;
     }
@@ -844,8 +1343,25 @@ export const fulfillAssetRequest = mutation({
   args: {
     requestId: v.id('assetRequests'),
     fulfilledBy: v.id('assetCatalog'),
+    fulfilledByUser: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    const request = await ctx.db.get(args.requestId);
+    if (!request) throw new Error('Request not found');
+    if (request.status === 'fulfilled') throw new Error('Request is already fulfilled');
+    if (request.status === 'rejected') throw new Error('Cannot fulfill a rejected request');
+
+    // Actually assign the asset to the requester. The assignee is the person
+    // who created the request; assignedBy defaults to the requester when no
+    // acting admin is supplied (keeps the audit trail non-null).
+    await performAssignment(ctx, {
+      organizationId: request.organizationId,
+      assetId: args.fulfilledBy,
+      assignedTo: request.requestedBy,
+      assignedBy: args.fulfilledByUser ?? request.approvedBy ?? request.requestedBy,
+      notes: `Fulfilling asset request: ${request.reason}`,
+    });
+
     await ctx.db.patch(args.requestId, {
       status: 'fulfilled',
       fulfilledBy: args.fulfilledBy,
@@ -1320,6 +1836,93 @@ export const autoReturnEmployeeAssets = internalMutation({
       const asset = await ctx.db.get(a.assetId);
       if (asset && asset.status === 'assigned') {
         await ctx.db.patch(asset._id, { status: 'available', updatedAt: now });
+      }
+    }
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  CRON — Scheduled Reminders
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Daily cron: find assets with warranty expiring in the next 30 days
+ * and notify the `createdBy` user of each asset.
+ */
+export const checkWarrantyReminders = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+    const in30 = now + THIRTY_DAYS;
+
+    // Iterate all orgs to find assets with warrantyExpiry in range.
+    // The cron runs once daily so a bounded scan is acceptable.
+    const orgs = await ctx.db.query('organizations').take(DEFAULT_LIST_CAP);
+
+    for (const org of orgs) {
+      const assets = await ctx.db
+        .query('assetCatalog')
+        .withIndex('by_org', (q: any) => q.eq('organizationId', org._id))
+        .take(DEFAULT_LIST_CAP);
+
+      for (const asset of assets) {
+        if (!asset.warrantyExpiry) continue;
+        if (asset.warrantyExpiry >= now && asset.warrantyExpiry <= in30) {
+          const daysLeft = Math.ceil((asset.warrantyExpiry - now) / (24 * 60 * 60 * 1000));
+          await ctx.db.insert('notifications', {
+            organizationId: org._id,
+            userId: asset.createdBy,
+            type: 'system',
+            title: '🔔 Warranty Expiring Soon',
+            message: `Warranty for "${asset.name}" expires in ${daysLeft} day(s).`,
+            isRead: false,
+            relatedId: asset._id,
+            route: '/assets',
+            createdAt: now,
+          });
+        }
+      }
+    }
+  },
+});
+
+/**
+ * Daily cron: find scheduled maintenance that's due today (or overdue)
+ * and send reminders to the person who created the record.
+ */
+export const checkMaintenanceReminders = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const todayEnd = now + 24 * 60 * 60 * 1000;
+
+    const orgs = await ctx.db.query('organizations').take(DEFAULT_LIST_CAP);
+
+    for (const org of orgs) {
+      const records = await ctx.db
+        .query('assetMaintenance')
+        .withIndex('by_org', (q: any) => q.eq('organizationId', org._id))
+        .take(DEFAULT_LIST_CAP);
+
+      for (const record of records) {
+        if (record.status !== 'scheduled') continue;
+        if (!record.scheduledDate || record.scheduledDate > todayEnd) continue;
+
+        const asset = await ctx.db.get(record.assetId);
+        const assetName = asset?.name ?? 'Unknown Asset';
+
+        await ctx.db.insert('notifications', {
+          organizationId: org._id,
+          userId: record.createdBy,
+          type: 'system',
+          title: '🔧 Maintenance Due',
+          message: `Scheduled maintenance "${record.description}" for ${assetName} is due.`,
+          isRead: false,
+          relatedId: record._id,
+          route: '/assets',
+          createdAt: now,
+        });
       }
     }
   },

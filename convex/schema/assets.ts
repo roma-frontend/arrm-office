@@ -132,6 +132,37 @@ export const assets = {
     .index('by_asset_date', ['assetId', 'scheduledDate'])
     .index('by_org_status', ['organizationId', 'status']),
 
+  // ── Asset History (audit trail for the asset itself) ───────
+  // Assignments already track who-had-what; this table records
+  // catalog-level lifecycle events (created, status changes,
+  // maintenance, retirement, loss) with the acting user.
+  assetHistory: defineTable({
+    organizationId: v.id('organizations'),
+    assetId: v.id('assetCatalog'),
+    action: v.union(
+      v.literal('created'),
+      v.literal('updated'),
+      v.literal('status_changed'),
+      v.literal('assigned'),
+      v.literal('returned'),
+      v.literal('lost'),
+      v.literal('maintenance_scheduled'),
+      v.literal('maintenance_started'),
+      v.literal('maintenance_completed'),
+      v.literal('maintenance_cancelled'),
+      v.literal('retired'),
+    ),
+    fromStatus: v.optional(v.string()),
+    toStatus: v.optional(v.string()),
+    note: v.optional(v.string()),
+    actorId: v.optional(v.id('users')),
+    actorName: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_asset', ['assetId'])
+    .index('by_asset_time', ['assetId', 'createdAt'])
+    .index('by_org', ['organizationId']),
+
   // ── Asset Requests from employees ──────────────────────────
   assetRequests: defineTable({
     organizationId: v.id('organizations'),
