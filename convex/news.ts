@@ -487,9 +487,7 @@ export const getNewsFeed = query({
           .take(DEFAULT_LIST_CAP);
 
         // Get user names for reactions
-        const reactionUsers = await Promise.all(
-          reactions.map((r) => ctx.db.get(r.userId)),
-        );
+        const reactionUsers = await Promise.all(reactions.map((r) => ctx.db.get(r.userId)));
         const reactionMap = new Map(
           reactionUsers
             .filter((u): u is NonNullable<typeof u> => u !== null)
@@ -497,7 +495,10 @@ export const getNewsFeed = query({
         );
 
         // Aggregate reactions by emoji (array format to avoid emoji field names)
-        const reactionsByEmojiMap: Record<string, Array<{ userId: Id<'users'>; userName: string }>> = {};
+        const reactionsByEmojiMap: Record<
+          string,
+          Array<{ userId: Id<'users'>; userName: string }>
+        > = {};
         for (const r of reactions) {
           if (!reactionsByEmojiMap[r.emoji]) reactionsByEmojiMap[r.emoji] = [];
           reactionsByEmojiMap[r.emoji]!.push({
@@ -505,7 +506,10 @@ export const getNewsFeed = query({
             userName: reactionMap.get(r.userId) ?? 'Unknown',
           });
         }
-        const reactionsByEmoji = Object.entries(reactionsByEmojiMap).map(([emoji, users]) => ({ emoji, users }));
+        const reactionsByEmoji = Object.entries(reactionsByEmojiMap).map(([emoji, users]) => ({
+          emoji,
+          users,
+        }));
 
         // Get latest 3 comments
         const comments = await ctx.db
@@ -560,16 +564,17 @@ export const getAnnouncement = query({
       .withIndex('by_announcement', (q) => q.eq('announcementId', announcement._id))
       .take(DEFAULT_LIST_CAP);
 
-    const reactionUsers = await Promise.all(
-      reactions.map((r) => ctx.db.get(r.userId)),
-    );
+    const reactionUsers = await Promise.all(reactions.map((r) => ctx.db.get(r.userId)));
     const reactionMap = new Map(
       reactionUsers
         .filter((u): u is NonNullable<typeof u> => u !== null)
         .map((u) => [u._id, u.name]),
     );
 
-    const reactionsByEmojiMap: Record<string, Array<{ userId: Id<'users'>; userName: string }>> = {};
+    const reactionsByEmojiMap: Record<
+      string,
+      Array<{ userId: Id<'users'>; userName: string }>
+    > = {};
     for (const r of reactions) {
       if (!reactionsByEmojiMap[r.emoji]) reactionsByEmojiMap[r.emoji] = [];
       reactionsByEmojiMap[r.emoji]!.push({
@@ -577,7 +582,10 @@ export const getAnnouncement = query({
         userName: reactionMap.get(r.userId) ?? 'Unknown',
       });
     }
-    const reactionsByEmoji = Object.entries(reactionsByEmojiMap).map(([emoji, users]) => ({ emoji, users }));
+    const reactionsByEmoji = Object.entries(reactionsByEmojiMap).map(([emoji, users]) => ({
+      emoji,
+      users,
+    }));
 
     // Get all comments
     const allComments = await ctx.db

@@ -22,13 +22,17 @@ export const news = {
     /** If set, only visible to specific department */
     targetDepartment: v.optional(v.id('departments')),
     /** If set, only visible to specific roles */
-    targetRoles: v.optional(v.array(v.union(
-      v.literal('superadmin'),
-      v.literal('admin'),
-      v.literal('supervisor'),
-      v.literal('employee'),
-      v.literal('driver'),
-    ))),
+    targetRoles: v.optional(
+      v.array(
+        v.union(
+          v.literal('superadmin'),
+          v.literal('admin'),
+          v.literal('supervisor'),
+          v.literal('employee'),
+          v.literal('driver'),
+        ),
+      ),
+    ),
     tags: v.optional(v.array(v.string())),
     imageUrl: v.optional(v.string()),
     publishedAt: v.number(),

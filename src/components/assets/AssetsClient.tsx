@@ -97,7 +97,11 @@ const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 
 const CATEGORY_CONFIG: Record<
   string,
-  { icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; label: string; color: string }
+  {
+    icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+    label: string;
+    color: string;
+  }
 > = {
   laptop: { icon: Laptop, label: 'Laptop', color: '#2563eb' },
   monitor: { icon: Monitor, label: 'Monitor', color: '#10b981' },
@@ -131,32 +135,30 @@ function getCategoryCfg(category: string): (typeof CATEGORY_CONFIG)['laptop'] {
   return (CATEGORY_CONFIG[category] ?? CATEGORY_CONFIG.other) as (typeof CATEGORY_CONFIG)['laptop'];
 }
 
-function getStatusBadge(
-  status: string,
-  t: (key: string) => string,
-): React.ReactNode {
-  const variants: Record<string, 'success' | 'warning' | 'destructive' | 'secondary' | 'default'> = {
-    available: 'success',
-    assigned: 'default',
-    maintenance: 'warning',
-    retired: 'secondary',
-    lost: 'destructive',
-    new: 'success',
-    good: 'success',
-    fair: 'warning',
-    poor: 'destructive',
-    damaged: 'destructive',
-    active: 'success',
-    returned: 'secondary',
-    pending: 'warning',
-    approved: 'success',
-    fulfilled: 'success',
-    rejected: 'destructive',
-    scheduled: 'secondary',
-    in_progress: 'warning',
-    completed: 'success',
-    cancelled: 'destructive',
-  };
+function getStatusBadge(status: string, t: (key: string) => string): React.ReactNode {
+  const variants: Record<string, 'success' | 'warning' | 'destructive' | 'secondary' | 'default'> =
+    {
+      available: 'success',
+      assigned: 'default',
+      maintenance: 'warning',
+      retired: 'secondary',
+      lost: 'destructive',
+      new: 'success',
+      good: 'success',
+      fair: 'warning',
+      poor: 'destructive',
+      damaged: 'destructive',
+      active: 'success',
+      returned: 'secondary',
+      pending: 'warning',
+      approved: 'success',
+      fulfilled: 'success',
+      rejected: 'destructive',
+      scheduled: 'secondary',
+      in_progress: 'warning',
+      completed: 'success',
+      cancelled: 'destructive',
+    };
 
   return (
     <Badge variant={variants[status] || 'secondary'} className="capitalize">
@@ -190,14 +192,38 @@ function buildLocalizedFormBody(params: {
   condition?: string;
   t: (key: string, defaultValue?: string) => string;
 }): string {
-  const { isReturn, assetName, assetSerial, categoryLabel, employeeName, adminName, date, condition, t } = params;
-  const typeLabel = isReturn ? t('assets.pdf.returnForm', 'Asset Return Form') : t('assets.pdf.movementForm', 'Asset Movement Form');
-  const typeSub = isReturn ? t('assets.pdf.equipmentReturn', 'Equipment Return') : t('assets.pdf.equipmentTransfer', 'Equipment Transfer');
-  const detailsTitle = isReturn ? t('assets.pdf.returnDetails', 'Return Details') : t('assets.pdf.handoverDetails', 'Handover Details');
-  const personLabel = isReturn ? t('assets.pdf.returnedBy', 'Returned By') : t('assets.pdf.handedTo', 'Handed To');
+  const {
+    isReturn,
+    assetName,
+    assetSerial,
+    categoryLabel,
+    employeeName,
+    adminName,
+    date,
+    condition,
+    t,
+  } = params;
+  const typeLabel = isReturn
+    ? t('assets.pdf.returnForm', 'Asset Return Form')
+    : t('assets.pdf.movementForm', 'Asset Movement Form');
+  const typeSub = isReturn
+    ? t('assets.pdf.equipmentReturn', 'Equipment Return')
+    : t('assets.pdf.equipmentTransfer', 'Equipment Transfer');
+  const detailsTitle = isReturn
+    ? t('assets.pdf.returnDetails', 'Return Details')
+    : t('assets.pdf.handoverDetails', 'Handover Details');
+  const personLabel = isReturn
+    ? t('assets.pdf.returnedBy', 'Returned By')
+    : t('assets.pdf.handedTo', 'Handed To');
   const termsText = isReturn
-    ? t('assets.pdf.returnTerms', 'I confirm that I have returned the above equipment. The asset has been received in the noted condition and I am released from further responsibility for this item.')
-    : t('assets.pdf.assignTerms', 'I confirm that I have received the above equipment in good condition. I agree to take full responsibility for the item and will return it upon request or at the end of my employment.');
+    ? t(
+        'assets.pdf.returnTerms',
+        'I confirm that I have returned the above equipment. The asset has been received in the noted condition and I am released from further responsibility for this item.',
+      )
+    : t(
+        'assets.pdf.assignTerms',
+        'I confirm that I have received the above equipment in good condition. I agree to take full responsibility for the item and will return it upon request or at the end of my employment.',
+      );
   const lines = [
     typeLabel + ' — ' + assetName,
     '',
@@ -257,27 +283,20 @@ function AssignDialog({
   const [assigning, setAssigning] = useState(false);
 
   // Получаем список всех пользователей организации для выбора
-  const allUsers = useQuery(
-    api.tasks.getUsersForAssignment,
-    userId ? {} : 'skip',
-  );
+  const allUsers = useQuery(api.tasks.getUsersForAssignment, userId ? {} : 'skip');
 
   const filteredUsers = useMemo(() => {
     if (!allUsers) return [];
     if (!searchQuery.trim()) return allUsers;
     const q = searchQuery.toLowerCase();
-    return allUsers.filter(
-      (u: any) => u.name && u.name.toLowerCase().includes(q),
-    );
+    return allUsers.filter((u: any) => u.name && u.name.toLowerCase().includes(q));
   }, [allUsers, searchQuery]);
 
   const handleAssign = async () => {
     if (!selectedUserId) return;
     setAssigning(true);
     try {
-      const expectedReturnAt = expectedReturn
-        ? new Date(expectedReturn).getTime()
-        : undefined;
+      const expectedReturnAt = expectedReturn ? new Date(expectedReturn).getTime() : undefined;
       await assignAsset({
         organizationId: orgId,
         assetId: asset._id,
@@ -350,7 +369,8 @@ function AssignDialog({
           </div>
           <div>
             <label className="text-sm font-medium text-foreground">
-              {t('assets.expectedReturn')} <span className="text-muted-foreground">({t('common.optional')})</span>
+              {t('assets.expectedReturn')}{' '}
+              <span className="text-muted-foreground">({t('common.optional')})</span>
             </label>
             <Input
               type="date"
@@ -423,7 +443,9 @@ function ReturnDialog({
 
         <div className="space-y-4 py-4">
           <div>
-            <label className="text-sm font-medium text-foreground">{t('assets.conditionLabel', 'Condition')}</label>
+            <label className="text-sm font-medium text-foreground">
+              {t('assets.conditionLabel', 'Condition')}
+            </label>
             <Select value={condition} onValueChange={setCondition}>
               <SelectContent>
                 <SelectItem value="good">{t('assets.condition.good')}</SelectItem>
@@ -435,7 +457,8 @@ function ReturnDialog({
           </div>
           <div>
             <label className="text-sm font-medium text-foreground">
-              {t('assets.notes')} <span className="text-muted-foreground">({t('common.optional')})</span>
+              {t('assets.notes')}{' '}
+              <span className="text-muted-foreground">({t('common.optional')})</span>
             </label>
             <Input
               className="mt-1"
@@ -480,7 +503,9 @@ function AssetDetailCard({
 
   const _sendMovementForm = useMutation(api.assets.sendMovementForm);
   const [sending, setSending] = useState(false);
-  const mfDocId = asset.currentAssignment?.movementFormDocId as Id<'signatureDocuments'> | undefined;
+  const mfDocId = asset.currentAssignment?.movementFormDocId as
+    | Id<'signatureDocuments'>
+    | undefined;
   const sigDoc = useQuery(
     api.signatures.getDocument,
     mfDocId ? { documentId: mfDocId } : 'skip',
@@ -494,20 +519,29 @@ function AssetDetailCard({
     try {
       const isReturn = sigDoc.title?.toLowerCase().includes('return');
       const date = new Date().toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
       const categoryLabel = t(`assets.category.${asset.category}`) || asset.category;
       const employeeName = asset.currentUser?.name || t('common.unknown');
       const adminName = asset.currentAssignment?.assignedByName || t('common.unknown');
       const body = buildLocalizedFormBody({
-        isReturn, assetName: asset.name, assetSerial: asset.serialNumber,
-        categoryLabel, employeeName, adminName, date, t: t as (key: string, defaultValue?: string) => string,
+        isReturn,
+        assetName: asset.name,
+        assetSerial: asset.serialNumber,
+        categoryLabel,
+        employeeName,
+        adminName,
+        date,
+        t: t as (key: string, defaultValue?: string) => string,
       });
       const title = isReturn
         ? `${t('assets.movementForm.title', 'Return Form')} — ${asset.name}`
         : `${t('assets.movementForm.title', 'Movement Form')} — ${asset.name}`;
       const renderable: RenderableDocument = {
-        title, body,
+        title,
+        body,
         accent: (sigDoc.accent as AccentColor) || 'blue',
         signature: true,
         orgName: sigDoc.orgName || '',
@@ -522,7 +556,7 @@ function AssetDetailCard({
     } finally {
       setDownloading(false);
     }
-  };;
+  };
 
   const handleSendForm = async () => {
     setSending(true);
@@ -562,8 +596,7 @@ function AssetDetailCard({
             <div>
               <h3 className="text-xl font-bold text-foreground">{asset.name}</h3>
               <p className="text-sm text-muted-foreground">
-                {t(`assets.category.${asset.category}`)}{' '}
-                {asset.brand && `· ${asset.brand}`}
+                {t(`assets.category.${asset.category}`)} {asset.brand && `· ${asset.brand}`}
                 {asset.model && ` ${asset.model}`}
               </p>
             </div>
@@ -582,18 +615,16 @@ function AssetDetailCard({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-background-subtle rounded-xl p-3">
             <p className="text-xs text-muted-foreground mb-1">{t('assets.serialNumber')}</p>
-            <p className="text-sm font-medium text-foreground">
-              {asset.serialNumber || '—'}
-            </p>
+            <p className="text-sm font-medium text-foreground">{asset.serialNumber || '—'}</p>
           </div>
           <div className="bg-background-subtle rounded-xl p-3">
             <p className="text-xs text-muted-foreground mb-1">{t('assets.location')}</p>
-            <p className="text-sm font-medium text-foreground">
-              {asset.location || '—'}
-            </p>
+            <p className="text-sm font-medium text-foreground">{asset.location || '—'}</p>
           </div>
           <div className="bg-background-subtle rounded-xl p-3">
-            <p className="text-xs text-muted-foreground mb-1">{t('assets.conditionLabel', 'Condition')}</p>
+            <p className="text-xs text-muted-foreground mb-1">
+              {t('assets.conditionLabel', 'Condition')}
+            </p>
             <p className="text-sm font-medium text-foreground capitalize">
               {t(`assets.condition.${asset.condition}`) || asset.condition}
             </p>
@@ -601,9 +632,7 @@ function AssetDetailCard({
           <div className="bg-background-subtle rounded-xl p-3">
             <p className="text-xs text-muted-foreground mb-1">{t('assets.purchasePrice')}</p>
             <p className="text-sm font-medium text-foreground">
-              {asset.purchasePrice
-                ? formatCurrency(asset.purchasePrice, asset.currency)
-                : '—'}
+              {asset.purchasePrice ? formatCurrency(asset.purchasePrice, asset.currency) : '—'}
             </p>
           </div>
         </div>
@@ -621,9 +650,7 @@ function AssetDetailCard({
                     {t('assets.assignedTo')}:{' '}
                     <strong>{asset.currentUser?.name || t('common.unknown')}</strong>
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {asset.currentUser?.email}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{asset.currentUser?.email}</p>
                 </div>
               </div>
             </div>
@@ -643,12 +670,24 @@ function AssetDetailCard({
               {(() => {
                 const mfStatus = asset.currentAssignment?.movementFormStatus || 'not_sent';
                 if (mfStatus === 'signed') {
-                  return <Badge variant="success" className="text-xs">{t('assets.movementForm.status.signed')}</Badge>;
+                  return (
+                    <Badge variant="success" className="text-xs">
+                      {t('assets.movementForm.status.signed')}
+                    </Badge>
+                  );
                 }
                 if (mfStatus === 'pending') {
-                  return <Badge variant="warning" className="text-xs">{t('assets.movementForm.status.pending')}</Badge>;
+                  return (
+                    <Badge variant="warning" className="text-xs">
+                      {t('assets.movementForm.status.pending')}
+                    </Badge>
+                  );
                 }
-                return <Badge variant="secondary" className="text-xs">{t('assets.movementForm.status.not_sent')}</Badge>;
+                return (
+                  <Badge variant="secondary" className="text-xs">
+                    {t('assets.movementForm.status.not_sent')}
+                  </Badge>
+                );
               })()}
             </div>
             <div className="p-3 space-y-3">
@@ -700,7 +739,9 @@ function AssetDetailCard({
                           disabled={sending}
                         >
                           <Send className="w-3 h-3 mr-1" />
-                          {sending ? t('common.sending', 'Sending...') : t('assets.movementForm.resend', 'Resend')}
+                          {sending
+                            ? t('common.sending', 'Sending...')
+                            : t('assets.movementForm.resend', 'Resend')}
                         </Button>
                         {sigDoc && (
                           <Button
@@ -721,7 +762,10 @@ function AssetDetailCard({
                 return (
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                     <p className="text-xs text-muted-foreground">
-                      {t('assets.movementForm.notSentHint', 'The movement form will be generated automatically after assignment.')}
+                      {t(
+                        'assets.movementForm.notSentHint',
+                        'The movement form will be generated automatically after assignment.',
+                      )}
                     </p>
                     <div className="flex items-center gap-2">
                       <Button
@@ -732,7 +776,9 @@ function AssetDetailCard({
                         className="h-7 text-xs"
                       >
                         <Send className="w-3 h-3 mr-1" />
-                        {sending ? t('common.sending', 'Sending...') : t('assets.movementForm.send')}
+                        {sending
+                          ? t('common.sending', 'Sending...')
+                          : t('assets.movementForm.send')}
                       </Button>
                       {sigDoc && (
                         <Button
@@ -769,10 +815,7 @@ function AssetDetailCard({
             </Button>
           )}
           {isAssigned && onReturn && (
-            <Button
-              variant="outline"
-              onClick={onReturn}
-            >
+            <Button variant="outline" onClick={onReturn}>
               <ArrowDownLeft className="w-4 h-4 mr-2" />
               {t('assets.return')}
             </Button>
@@ -826,12 +869,11 @@ function AssetDetailCard({
                   <div>
                     <p className="text-foreground font-medium">{m.description}</p>
                     <p className="text-xs text-muted-foreground">
-                      {t(`assets.maintenanceType.${m.type}`)} — {m.performedBy || t('common.unknown')}
+                      {t(`assets.maintenanceType.${m.type}`)} —{' '}
+                      {m.performedBy || t('common.unknown')}
                     </p>
                   </div>
-                  <div className="text-right text-xs">
-                    {getStatusBadge(m.status, t)}
-                  </div>
+                  <div className="text-right text-xs">{getStatusBadge(m.status, t)}</div>
                 </div>
               ))}
             </div>
@@ -866,7 +908,9 @@ export default function AssetsClient() {
     | undefined;
 
   // State
-  const [activeTab, setActiveTab] = useState<'catalog' | 'myAssets' | 'requests' | 'maintenance'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'myAssets' | 'requests' | 'maintenance'>(
+    'catalog',
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -883,10 +927,7 @@ export default function AssetsClient() {
   const _useQuery = useQuery as unknown as (...args: any[]) => any;
   const _useMutation = useMutation as unknown as (...args: any[]) => any;
 
-  const stats = _useQuery(
-    api.assets.getAssetStats,
-    orgId ? { organizationId: orgId } : 'skip',
-  );
+  const stats = _useQuery(api.assets.getAssetStats, orgId ? { organizationId: orgId } : 'skip');
 
   const assets = _useQuery(
     api.assets.listAssets,
@@ -901,9 +942,7 @@ export default function AssetsClient() {
 
   const employeeAssets = _useQuery(
     api.assets.listEmployeeAssets,
-    orgId && user?.id
-      ? { organizationId: orgId, employeeId: user.id as Id<'users'> }
-      : 'skip',
+    orgId && user?.id ? { organizationId: orgId, employeeId: user.id as Id<'users'> } : 'skip',
   );
 
   const requests = _useQuery(
@@ -1061,10 +1100,7 @@ export default function AssetsClient() {
           </div>
 
           {/* ── Tabs ── */}
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as typeof activeTab)}
-          >
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
             <TabsList className="w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2 md:grid-cols-4">
               <TabsTrigger
                 className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
@@ -1166,9 +1202,13 @@ export default function AssetsClient() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">{t('assets.allStatuses')}</SelectItem>
-                            <SelectItem value="available">{t('assets.status.available')}</SelectItem>
+                            <SelectItem value="available">
+                              {t('assets.status.available')}
+                            </SelectItem>
                             <SelectItem value="assigned">{t('assets.status.assigned')}</SelectItem>
-                            <SelectItem value="maintenance">{t('assets.status.maintenance')}</SelectItem>
+                            <SelectItem value="maintenance">
+                              {t('assets.status.maintenance')}
+                            </SelectItem>
                             <SelectItem value="retired">{t('assets.status.retired')}</SelectItem>
                             <SelectItem value="lost">{t('assets.status.lost')}</SelectItem>
                           </SelectContent>
@@ -1201,8 +1241,7 @@ export default function AssetsClient() {
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredAssets.length > 0 ? (
                       filteredAssets.map((asset: any) => {
-                        const cfg =
-                          getCategoryCfg(asset.category);
+                        const cfg = getCategoryCfg(asset.category);
                         const Icon = cfg.icon;
                         return (
                           <motion.div
@@ -1222,10 +1261,7 @@ export default function AssetsClient() {
                                     className="w-12 h-12 rounded-xl flex items-center justify-center"
                                     style={{ backgroundColor: `${cfg.color}15` }}
                                   >
-                                    <Icon
-                                      className="w-6 h-6"
-                                      style={{ color: cfg.color }}
-                                    />
+                                    <Icon className="w-6 h-6" style={{ color: cfg.color }} />
                                   </div>
                                   <div>
                                     <p className="font-semibold text-(--text-primary) group-hover:text-(--primary) transition-colors">
@@ -1242,7 +1278,9 @@ export default function AssetsClient() {
 
                               <div className="space-y-1.5 text-sm">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-(--text-muted)">{t('assets.categoryLabel')}</span>
+                                  <span className="text-(--text-muted)">
+                                    {t('assets.categoryLabel')}
+                                  </span>
                                   <span className="text-(--text-primary)">
                                     {t(`assets.category.${asset.category}`)}
                                   </span>
@@ -1318,10 +1356,7 @@ export default function AssetsClient() {
                         <p className="text-lg font-medium mb-1">{t('assets.emptyCatalog')}</p>
                         <p className="text-sm mb-4">{t('assets.emptyCatalogHint')}</p>
                         {isSuperuser && (
-                          <Button
-                            variant="outline"
-                            onClick={() => setCreateDialogOpen(true)}
-                          >
+                          <Button variant="outline" onClick={() => setCreateDialogOpen(true)}>
                             <Plus className="w-4 h-4 mr-2" />
                             {t('assets.addFirst')}
                           </Button>
@@ -1334,13 +1369,29 @@ export default function AssetsClient() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-(--background-subtle) border-b border-(--border)">
-                          <th className="text-left px-4 py-3 font-semibold text-(--text-primary)">{t('assets.name')}</th>
-                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">{t('assets.categoryLabel')}</th>
-                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">{t('assets.serialNumber')}</th>
-                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">{t('assets.assignedTo')}</th>
-                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">{t('assets.location')}</th>
-                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">{t('assets.statusLabel', 'Status')}</th>
-                          {isSuperuser && <th className="text-right px-4 py-3 font-semibold text-(--text-muted)">{t('common.actions')}</th>}
+                          <th className="text-left px-4 py-3 font-semibold text-(--text-primary)">
+                            {t('assets.name')}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">
+                            {t('assets.categoryLabel')}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">
+                            {t('assets.serialNumber')}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">
+                            {t('assets.assignedTo')}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">
+                            {t('assets.location')}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold text-(--text-muted)">
+                            {t('assets.statusLabel', 'Status')}
+                          </th>
+                          {isSuperuser && (
+                            <th className="text-right px-4 py-3 font-semibold text-(--text-muted)">
+                              {t('common.actions')}
+                            </th>
+                          )}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-(--border)">
@@ -1363,9 +1414,12 @@ export default function AssetsClient() {
                                       <Icon className="w-4 h-4" style={{ color: cfg.color }} />
                                     </div>
                                     <div>
-                                      <p className="font-medium text-(--text-primary)">{asset.name}</p>
+                                      <p className="font-medium text-(--text-primary)">
+                                        {asset.name}
+                                      </p>
                                       <p className="text-xs text-(--text-muted)">
-                                        {asset.brand && `${asset.brand} `}{asset.model}
+                                        {asset.brand && `${asset.brand} `}
+                                        {asset.model}
                                       </p>
                                     </div>
                                   </div>
@@ -1388,9 +1442,7 @@ export default function AssetsClient() {
                                     {asset.location || '—'}
                                   </div>
                                 </td>
-                                <td className="px-4 py-3">
-                                  {getStatusBadge(asset.status, t)}
-                                </td>
+                                <td className="px-4 py-3">{getStatusBadge(asset.status, t)}</td>
                                 {isSuperuser && (
                                   <td className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-1">
@@ -1427,15 +1479,15 @@ export default function AssetsClient() {
                           })
                         ) : (
                           <tr>
-                            <td colSpan={isSuperuser ? 7 : 6} className="text-center py-16 text-(--text-muted)">
+                            <td
+                              colSpan={isSuperuser ? 7 : 6}
+                              className="text-center py-16 text-(--text-muted)"
+                            >
                               <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
                               <p className="text-lg font-medium mb-1">{t('assets.emptyCatalog')}</p>
                               <p className="text-sm mb-4">{t('assets.emptyCatalogHint')}</p>
                               {isSuperuser && (
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setCreateDialogOpen(true)}
-                                >
+                                <Button variant="outline" onClick={() => setCreateDialogOpen(true)}>
                                   <Plus className="w-4 h-4 mr-2" />
                                   {t('assets.addFirst')}
                                 </Button>
@@ -1449,13 +1501,18 @@ export default function AssetsClient() {
                     {filteredAssets.length > 0 && (
                       <div className="px-4 py-2.5 border-t border-(--border) bg-(--background-subtle)/30 text-xs text-(--text-muted) flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span>{filteredAssets.length} {t('assets.assets', 'assets')}</span>
+                          <span>
+                            {filteredAssets.length} {t('assets.assets', 'assets')}
+                          </span>
                           <span className="text-(--border)">|</span>
                           <span className="flex items-center gap-1">
                             {t('assets.show', 'Show')}
                             <select
                               value={pageSize}
-                              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}
+                              onChange={(e) => {
+                                setPageSize(Number(e.target.value));
+                                setPage(0);
+                              }}
                               className="bg-(--card) border border-(--border) rounded px-1 py-0.5 text-xs text-(--text-primary)"
                             >
                               <option value={25}>25</option>
@@ -1529,9 +1586,12 @@ export default function AssetsClient() {
                                     <Icon className="w-5 h-5" style={{ color: cfg.color }} />
                                   </div>
                                   <div>
-                                    <p className="font-medium text-(--text-primary)">{a.assetName}</p>
+                                    <p className="font-medium text-(--text-primary)">
+                                      {a.assetName}
+                                    </p>
                                     <p className="text-xs text-(--text-muted)">
-                                      {t(`assets.category.${a.assetCategory}`)} · {formatDate(a.assignedAt)}
+                                      {t(`assets.category.${a.assetCategory}`)} ·{' '}
+                                      {formatDate(a.assignedAt)}
                                     </p>
                                   </div>
                                 </div>
@@ -1593,9 +1653,7 @@ export default function AssetsClient() {
                                     <div className="flex items-center gap-3 text-xs text-(--text-muted)">
                                       <span>{formatDate(a.assignedAt)}</span>
                                       <span>→</span>
-                                      <span>
-                                        {a.returnedAt ? formatDate(a.returnedAt) : '—'}
-                                      </span>
+                                      <span>{a.returnedAt ? formatDate(a.returnedAt) : '—'}</span>
                                     </div>
                                   </div>
                                 ))}
@@ -1668,7 +1726,8 @@ export default function AssetsClient() {
                                 </div>
                                 <div className="min-w-0">
                                   <p className="font-medium text-(--text-primary) truncate">
-                                    {t(`assets.requestCategory.${req.category}`)} — {req.requesterName}
+                                    {t(`assets.requestCategory.${req.category}`)} —{' '}
+                                    {req.requesterName}
                                   </p>
                                   <p className="text-sm text-(--text-muted) truncate">
                                     {req.reason}
@@ -1833,18 +1892,48 @@ export default function AssetsClient() {
                     <div className="flex items-center justify-center h-[300px]">
                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 w-full px-4">
                         {[
-                          { label: t('assets.status.available'), value: stats.available || 0, color: '#10b981' },
-                          { label: t('assets.status.assigned'), value: stats.assigned || 0, color: '#3b82f6' },
-                          { label: t('assets.status.maintenance'), value: stats.maintenance || 0, color: '#f59e0b' },
-                          { label: t('assets.status.retired'), value: stats.retired || 0, color: '#64748b' },
-                          { label: t('assets.status.lost'), value: stats.lost || 0, color: '#ef4444' },
-                        ].filter((d) => d.value > 0).map((d) => (
-                          <div key={d.label} className="flex flex-col items-center gap-2 p-4 rounded-xl bg-background-subtle border border-border">
-                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: d.color }} />
-                            <span className="text-2xl font-bold text-foreground">{d.value}</span>
-                            <span className="text-xs text-muted-foreground text-center">{d.label}</span>
-                          </div>
-                        ))}
+                          {
+                            label: t('assets.status.available'),
+                            value: stats.available || 0,
+                            color: '#10b981',
+                          },
+                          {
+                            label: t('assets.status.assigned'),
+                            value: stats.assigned || 0,
+                            color: '#3b82f6',
+                          },
+                          {
+                            label: t('assets.status.maintenance'),
+                            value: stats.maintenance || 0,
+                            color: '#f59e0b',
+                          },
+                          {
+                            label: t('assets.status.retired'),
+                            value: stats.retired || 0,
+                            color: '#64748b',
+                          },
+                          {
+                            label: t('assets.status.lost'),
+                            value: stats.lost || 0,
+                            color: '#ef4444',
+                          },
+                        ]
+                          .filter((d) => d.value > 0)
+                          .map((d) => (
+                            <div
+                              key={d.label}
+                              className="flex flex-col items-center gap-2 p-4 rounded-xl bg-background-subtle border border-border"
+                            >
+                              <div
+                                className="w-4 h-4 rounded-full"
+                                style={{ backgroundColor: d.color }}
+                              />
+                              <span className="text-2xl font-bold text-foreground">{d.value}</span>
+                              <span className="text-xs text-muted-foreground text-center">
+                                {d.label}
+                              </span>
+                            </div>
+                          ))}
                       </div>
                     </div>
                   </CardContent>
@@ -1895,7 +1984,9 @@ export default function AssetsClient() {
       {/* Delete Confirm Dialog */}
       <Dialog
         open={!!deleteConfirmAsset}
-        onOpenChange={(v) => { if (!v) setDeleteConfirmAsset(null); }}
+        onOpenChange={(v) => {
+          if (!v) setDeleteConfirmAsset(null);
+        }}
       >
         <DialogContent className="sm:max-w-[440px]">
           {deleteConfirmAsset?.isAssigned ? (
@@ -1906,7 +1997,10 @@ export default function AssetsClient() {
                   {t('assets.cannotDelete', 'Cannot Delete')}
                 </DialogTitle>
                 <DialogDescription>
-                  {t('assets.deleteAssignedWarning', 'This asset is currently assigned to a user. Please return it first, then delete.')}
+                  {t(
+                    'assets.deleteAssignedWarning',
+                    'This asset is currently assigned to a user. Please return it first, then delete.',
+                  )}
                 </DialogDescription>
               </DialogHeader>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 my-4">
@@ -1919,7 +2013,8 @@ export default function AssetsClient() {
                       <strong>{deleteConfirmAsset.name}</strong>
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {t('assets.assignedTo')}: <strong>{deleteConfirmAsset.currentUser?.name || t('common.unknown')}</strong>
+                      {t('assets.assignedTo')}:{' '}
+                      <strong>{deleteConfirmAsset.currentUser?.name || t('common.unknown')}</strong>
                     </p>
                   </div>
                 </div>
@@ -1949,7 +2044,10 @@ export default function AssetsClient() {
                   {t('assets.confirmDelete', 'Delete Asset')}
                 </DialogTitle>
                 <DialogDescription>
-                  {t('assets.deleteConfirmMessage', 'Are you sure you want to delete this asset? This action cannot be undone.')}
+                  {t(
+                    'assets.deleteConfirmMessage',
+                    'Are you sure you want to delete this asset? This action cannot be undone.',
+                  )}
                 </DialogDescription>
               </DialogHeader>
               <div className="bg-background-subtle rounded-xl p-4 my-4">
@@ -1964,10 +2062,7 @@ export default function AssetsClient() {
                 <Button variant="outline" onClick={() => setDeleteConfirmAsset(null)}>
                   {t('common.cancel')}
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => handleDelete(deleteConfirmAsset._id)}
-                >
+                <Button variant="destructive" onClick={() => handleDelete(deleteConfirmAsset._id)}>
                   <X className="w-4 h-4 mr-2" />
                   {t('common.delete')}
                 </Button>

@@ -125,15 +125,15 @@
     "namePlaceholder": "z.B. MacBook Pro 16\"",
     "categoryLabel": "Kategorie",
     "category": {
-        "laptop": "Laptop",
-        "monitor": "Monitor",
-        "phone": "Telefon",
-        "tablet": "Tablet",
-        "peripheral": "Peripherie",
-        "furniture": "Möbel",
-        "software_license": "Software-Lizenz",
-        "vehicle": "Fahrzeug",
-        "other": "Sonstiges"
+      "laptop": "Laptop",
+      "monitor": "Monitor",
+      "phone": "Telefon",
+      "tablet": "Tablet",
+      "peripheral": "Peripherie",
+      "furniture": "Möbel",
+      "software_license": "Software-Lizenz",
+      "vehicle": "Fahrzeug",
+      "other": "Sonstiges"
     },
     "brand": "Marke",
     "brandPlaceholder": "z.B. Apple",
@@ -147,11 +147,11 @@
     "purchasePrice": "Kaufpreis",
     "conditionLabel": "Zustand",
     "condition": {
-        "new": "Neu",
-        "good": "Gut",
-        "fair": "Befriedigend",
-        "poor": "Schlecht",
-        "damaged": "Beschädigt"
+      "new": "Neu",
+      "good": "Gut",
+      "fair": "Befriedigend",
+      "poor": "Schlecht",
+      "damaged": "Beschädigt"
     },
     "notes": "Notizen",
     "notesPlaceholder": "Zusätzliche Notizen...",
@@ -213,21 +213,21 @@
     "listView": "Liste",
     "statusLabel": "Status",
     "status": {
-        "available": "Verfügbar",
-        "assigned": "Zugewiesen",
-        "maintenance": "In Wartung",
-        "retired": "Ausgemustert",
-        "lost": "Verloren",
-        "active": "Aktiv",
-        "returned": "Zurückgegeben",
-        "pending": "Ausstehend",
-        "approved": "Genehmigt",
-        "fulfilled": "Erfüllt",
-        "rejected": "Abgelehnt",
-        "scheduled": "Geplant",
-        "in_progress": "In Bearbeitung",
-        "completed": "Abgeschlossen",
-        "cancelled": "Storniert"
+      "available": "Verfügbar",
+      "assigned": "Zugewiesen",
+      "maintenance": "In Wartung",
+      "retired": "Ausgemustert",
+      "lost": "Verloren",
+      "active": "Aktiv",
+      "returned": "Zurückgegeben",
+      "pending": "Ausstehend",
+      "approved": "Genehmigt",
+      "fulfilled": "Erfüllt",
+      "rejected": "Abgelehnt",
+      "scheduled": "Geplant",
+      "in_progress": "In Bearbeitung",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert"
     },
     "movementForm": {
       "title": "Übergabeformular",
@@ -247,17 +247,17 @@
       }
     },
     "stats": {
-        "total": "Gesamtanlagen",
-        "available": "Verfügbar",
-        "assigned": "Zugewiesen",
-        "maintenance": "In Wartung",
-        "pendingRequests": "Ausstehende Anfragen"
+      "total": "Gesamtanlagen",
+      "available": "Verfügbar",
+      "assigned": "Zugewiesen",
+      "maintenance": "In Wartung",
+      "pendingRequests": "Ausstehende Anfragen"
     },
     "tabs": {
-        "catalog": "Katalog",
-        "myAssets": "Meine Anlagen",
-        "requests": "Anfragen",
-        "maintenance": "Wartung"
+      "catalog": "Katalog",
+      "myAssets": "Meine Anlagen",
+      "requests": "Anfragen",
+      "maintenance": "Wartung"
     },
     "selectCategory": "Kategorie auswählen",
     "assetCreated": "Anlage erstellt",
@@ -272,7 +272,7 @@
       "step4": "Überprüfung",
       "step4Desc": "Bestätigen Sie die Asset-Daten vor der Erstellung",
       "reviewHint": "Bitte überprüfen Sie die Asset-Details vor der Erstellung."
-  },
+    },
     "byStatus": "Nach Status",
     "createTitle": "Anlage erstellen",
     "createDescription": "Füllen Sie die Gerätedaten aus",

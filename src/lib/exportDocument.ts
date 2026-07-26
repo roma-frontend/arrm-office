@@ -195,7 +195,16 @@ function buildDocDefinition(doc: RenderableDocument): any {
     {
       canvas: [
         { type: 'line', x1: 0, y1: 0, x2: PAGE_WIDTH, y2: 0, lineWidth: 3, lineColor: accent },
-        { type: 'line', x1: 0, y1: 4, x2: PAGE_WIDTH, y2: 4, lineWidth: 0.5, lineColor: accent, opacity: 0.3 },
+        {
+          type: 'line',
+          x1: 0,
+          y1: 4,
+          x2: PAGE_WIDTH,
+          y2: 4,
+          lineWidth: 0.5,
+          lineColor: accent,
+          opacity: 0.3,
+        },
       ],
       margin: [0, 0, 0, 18],
     },
@@ -204,12 +213,14 @@ function buildDocDefinition(doc: RenderableDocument): any {
     // Title
     { text: doc.title, style: 'title' },
     // Meta: generated date
-    { text: `${doc.labels.generatedOn} ${formatDate(doc.now)}`, style: 'meta', margin: [0, 4, 0, 0] },
+    {
+      text: `${doc.labels.generatedOn} ${formatDate(doc.now)}`,
+      style: 'meta',
+      margin: [0, 4, 0, 0],
+    },
     // Decorative accent divider (short)
     {
-      canvas: [
-        { type: 'line', x1: 0, y1: 0, x2: 70, y2: 0, lineWidth: 2, lineColor: accent },
-      ],
+      canvas: [{ type: 'line', x1: 0, y1: 0, x2: 70, y2: 0, lineWidth: 2, lineColor: accent }],
       margin: [0, 22, 0, 28],
     },
   ];
@@ -223,7 +234,16 @@ function buildDocDefinition(doc: RenderableDocument): any {
     // Accent divider before signature
     content.push({
       canvas: [
-        { type: 'line', x1: 0, y1: 0, x2: PAGE_WIDTH, y2: 0, lineWidth: 0.5, lineColor: accent, opacity: 0.3 },
+        {
+          type: 'line',
+          x1: 0,
+          y1: 0,
+          x2: PAGE_WIDTH,
+          y2: 0,
+          lineWidth: 0.5,
+          lineColor: accent,
+          opacity: 0.3,
+        },
       ],
       margin: [0, 28, 0, 20],
     });
@@ -295,7 +315,8 @@ function buildDocDefinition(doc: RenderableDocument): any {
 
   // ── Footer ────────────────────────────────────────────────────────────────
   const footerParts = [`${doc.labels.generatedOn} ${formatDate(doc.now)}`];
-  if (doc.contentHash) footerParts.push(`${doc.labels.integrity}: ${doc.contentHash?.slice(0, 16)}…`);
+  if (doc.contentHash)
+    footerParts.push(`${doc.labels.integrity}: ${doc.contentHash?.slice(0, 16)}…`);
 
   return {
     content,

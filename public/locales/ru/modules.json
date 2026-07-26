@@ -124,15 +124,15 @@
     "namePlaceholder": "например MacBook Pro 16\"",
     "categoryLabel": "Категория",
     "category": {
-        "laptop": "Ноутбук",
-        "monitor": "Монитор",
-        "phone": "Телефон",
-        "tablet": "Планшет",
-        "peripheral": "Периферия",
-        "furniture": "Мебель",
-        "software_license": "Лицензия ПО",
-        "vehicle": "Транспорт",
-        "other": "Другое"
+      "laptop": "Ноутбук",
+      "monitor": "Монитор",
+      "phone": "Телефон",
+      "tablet": "Планшет",
+      "peripheral": "Периферия",
+      "furniture": "Мебель",
+      "software_license": "Лицензия ПО",
+      "vehicle": "Транспорт",
+      "other": "Другое"
     },
     "brand": "Бренд",
     "brandPlaceholder": "например Apple",
@@ -146,11 +146,11 @@
     "purchasePrice": "Цена покупки",
     "conditionLabel": "Состояние",
     "condition": {
-        "new": "Новый",
-        "good": "Хорошее",
-        "fair": "Удовлетворительное",
-        "poor": "Плохое",
-        "damaged": "Повреждён"
+      "new": "Новый",
+      "good": "Хорошее",
+      "fair": "Удовлетворительное",
+      "poor": "Плохое",
+      "damaged": "Повреждён"
     },
     "notes": "Заметки",
     "notesPlaceholder": "Дополнительно...",
@@ -212,21 +212,21 @@
     "listView": "Список",
     "statusLabel": "Статус",
     "status": {
-        "available": "Доступен",
-        "assigned": "Назначен",
-        "maintenance": "На обслуживании",
-        "retired": "Списан",
-        "lost": "Утерян",
-        "active": "Активен",
-        "returned": "Возвращён",
-        "pending": "Ожидает",
-        "approved": "Одобрено",
-        "fulfilled": "Выполнено",
-        "rejected": "Отклонено",
-        "scheduled": "Запланировано",
-        "in_progress": "В процессе",
-        "completed": "Завершено",
-        "cancelled": "Отменено"
+      "available": "Доступен",
+      "assigned": "Назначен",
+      "maintenance": "На обслуживании",
+      "retired": "Списан",
+      "lost": "Утерян",
+      "active": "Активен",
+      "returned": "Возвращён",
+      "pending": "Ожидает",
+      "approved": "Одобрено",
+      "fulfilled": "Выполнено",
+      "rejected": "Отклонено",
+      "scheduled": "Запланировано",
+      "in_progress": "В процессе",
+      "completed": "Завершено",
+      "cancelled": "Отменено"
     },
     "movementForm": {
       "title": "Акт приёма-передачи",
@@ -246,17 +246,17 @@
       }
     },
     "stats": {
-        "total": "Всего активов",
-        "available": "Доступно",
-        "assigned": "Назначено",
-        "maintenance": "На обслуживании",
-        "pendingRequests": "Ожидают заявки"
+      "total": "Всего активов",
+      "available": "Доступно",
+      "assigned": "Назначено",
+      "maintenance": "На обслуживании",
+      "pendingRequests": "Ожидают заявки"
     },
     "tabs": {
-        "catalog": "Каталог",
-        "myAssets": "Мои активы",
-        "requests": "Заявки",
-        "maintenance": "Обслуживание"
+      "catalog": "Каталог",
+      "myAssets": "Мои активы",
+      "requests": "Заявки",
+      "maintenance": "Обслуживание"
     },
     "selectCategory": "Выберите категорию",
     "assetCreated": "Актив создан",
@@ -271,7 +271,7 @@
       "step4": "Проверка",
       "step4Desc": "Подтвердите данные перед созданием",
       "reviewHint": "Пожалуйста, проверьте данные актива перед созданием."
-  },
+    },
     "byStatus": "По статусу",
     "createTitle": "Создать актив",
     "createDescription": "Заполните информацию об оборудовании",

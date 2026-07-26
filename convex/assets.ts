@@ -58,9 +58,9 @@ export const listAssets = query({
     ),
   },
   handler: async (ctx, args) => {
-    let q = ctx.db.query('assetCatalog').withIndex('by_org', (q) =>
-      q.eq('organizationId', args.organizationId),
-    );
+    let q = ctx.db
+      .query('assetCatalog')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
 
     if (args.category) {
       q = q.filter((q: any) => q.eq(q.field('category'), args.category));
@@ -76,9 +76,7 @@ export const listAssets = query({
       assets.map(async (asset) => {
         const activeAssignment = await ctx.db
           .query('assetAssignments')
-          .withIndex('by_asset_active', (q) =>
-            q.eq('assetId', asset._id).eq('status', 'active'),
-          )
+          .withIndex('by_asset_active', (q) => q.eq('assetId', asset._id).eq('status', 'active'))
           .first();
 
         let assignedToUser = null;
@@ -124,7 +122,12 @@ export const getAsset = query({
         const user = await ctx.db.get(a.assignedTo);
         const assigner = await ctx.db.get(a.assignedBy);
         const returner = a.returnedBy ? await ctx.db.get(a.returnedBy) : null;
-        return { ...a, userName: user?.name, assignedByName: assigner?.name, returnedByName: returner?.name };
+        return {
+          ...a,
+          userName: user?.name,
+          assignedByName: assigner?.name,
+          returnedByName: returner?.name,
+        };
       }),
     );
 
@@ -144,8 +147,15 @@ export const getAsset = query({
     // (read-only check; the actual status update happens via the scheduler when signed)
     if (currentAssignment?.movementFormDocId) {
       const sigDoc = await ctx.db.get(currentAssignment.movementFormDocId);
-      if (sigDoc && sigDoc.status === 'completed' && currentAssignment.movementFormStatus !== 'signed') {
-        currentAssignment = { ...currentAssignment, movementFormStatus: 'signed' } as typeof currentAssignment;
+      if (
+        sigDoc &&
+        sigDoc.status === 'completed' &&
+        currentAssignment.movementFormStatus !== 'signed'
+      ) {
+        currentAssignment = {
+          ...currentAssignment,
+          movementFormStatus: 'signed',
+        } as typeof currentAssignment;
       }
     }
 
@@ -452,7 +462,13 @@ export const createAsset = mutation({
     invoiceNumber: v.optional(v.string()),
     expenseId: v.optional(v.id('expenses')),
     condition: v.optional(
-      v.union(v.literal('new'), v.literal('good'), v.literal('fair'), v.literal('poor'), v.literal('damaged')),
+      v.union(
+        v.literal('new'),
+        v.literal('good'),
+        v.literal('fair'),
+        v.literal('poor'),
+        v.literal('damaged'),
+      ),
     ),
     location: v.optional(v.string()),
     notes: v.optional(v.string()),
@@ -499,7 +515,13 @@ export const updateAsset = mutation({
     warrantyExpiry: v.optional(v.number()),
     vendor: v.optional(v.string()),
     condition: v.optional(
-      v.union(v.literal('new'), v.literal('good'), v.literal('fair'), v.literal('poor'), v.literal('damaged')),
+      v.union(
+        v.literal('new'),
+        v.literal('good'),
+        v.literal('fair'),
+        v.literal('poor'),
+        v.literal('damaged'),
+      ),
     ),
     location: v.optional(v.string()),
     notes: v.optional(v.string()),
@@ -522,9 +544,7 @@ export const deleteAsset = mutation({
     // Check no active assignments
     const activeAssignment = await ctx.db
       .query('assetAssignments')
-      .withIndex('by_asset_active', (q) =>
-        q.eq('assetId', args.assetId).eq('status', 'active'),
-      )
+      .withIndex('by_asset_active', (q) => q.eq('assetId', args.assetId).eq('status', 'active'))
       .first();
     if (activeAssignment) {
       throw new Error('Cannot delete an asset with active assignment. Return it first.');
@@ -672,7 +692,11 @@ export const markAssignmentLost = mutation({
     const assignment = await ctx.db.get(args.assignmentId);
     if (!assignment) throw new Error('Assignment not found');
 
-    await ctx.db.patch(args.assignmentId, { status: 'lost', returnedBy: args.returnedBy, notes: args.notes });
+    await ctx.db.patch(args.assignmentId, {
+      status: 'lost',
+      returnedBy: args.returnedBy,
+      notes: args.notes,
+    });
     await ctx.db.patch(assignment.assetId, { status: 'lost', updatedAt: Date.now() });
   },
 });
@@ -856,7 +880,9 @@ export const createAssetMovementForm = internalMutation({
 
     // Build the movement form content — locale-agnostic structured JSON
     const dateStr = new Date(now).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
 
     const formData = {
@@ -962,7 +988,8 @@ export const createAssetMovementForm = internalMutation({
       userId: args.assignedTo,
       type: 'system',
       title: '📄 Movement Form Ready for Signing',
-      message: 'Please sign the movement form for "' + args.assetName + '" in the E-Signatures section.',
+      message:
+        'Please sign the movement form for "' + args.assetName + '" in the E-Signatures section.',
       isRead: false,
       relatedId: documentId,
       route: '/signatures',
@@ -999,7 +1026,9 @@ export const createReturnMovementForm = internalMutation({
 
     // Build the return form content — locale-agnostic structured JSON
     const dateStr = new Date(now).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
 
     const formData = {
@@ -1106,7 +1135,8 @@ export const createReturnMovementForm = internalMutation({
       userId: args.assignedTo,
       type: 'system',
       title: '📄 Return Form Ready for Signing',
-      message: 'Please sign the return form for "' + args.assetName + '" in the E-Signatures section.',
+      message:
+        'Please sign the return form for "' + args.assetName + '" in the E-Signatures section.',
       isRead: false,
       relatedId: documentId,
       route: '/signatures',
@@ -1144,7 +1174,10 @@ export const sendMovementForm = mutation({
           userId: args.assignedTo,
           type: 'system',
           title: '📄 Movement Form Reminder',
-          message: 'Please sign the movement form for "' + args.assetName + '" in the E-Signatures section.',
+          message:
+            'Please sign the movement form for "' +
+            args.assetName +
+            '" in the E-Signatures section.',
           isRead: false,
           relatedId: assignment.movementFormDocId,
           route: '/signatures',

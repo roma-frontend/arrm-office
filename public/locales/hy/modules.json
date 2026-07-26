@@ -125,15 +125,15 @@
     "namePlaceholder": "օր. MacBook Pro 16\"",
     "categoryLabel": "Կատեգորիա",
     "category": {
-        "laptop": "Նոթբուք",
-        "monitor": "Մոնիտոր",
-        "phone": "Հեռախոս",
-        "tablet": "Պլանշետ",
-        "peripheral": "Պերիֆերիա",
-        "furniture": "Կահույք",
-        "software_license": "Ծրագրային ապահովման լիցենզիա",
-        "vehicle": "Տրանսպորտ",
-        "other": "Այլ"
+      "laptop": "Նոթբուք",
+      "monitor": "Մոնիտոր",
+      "phone": "Հեռախոս",
+      "tablet": "Պլանշետ",
+      "peripheral": "Պերիֆերիա",
+      "furniture": "Կահույք",
+      "software_license": "Ծրագրային ապահովման լիցենզիա",
+      "vehicle": "Տրանսպորտ",
+      "other": "Այլ"
     },
     "brand": "Բրենդ",
     "brandPlaceholder": "օր. Apple",
@@ -147,11 +147,11 @@
     "purchasePrice": "Գնման գին",
     "conditionLabel": "Վիճակ",
     "condition": {
-        "new": "Նոր",
-        "good": "Լավ",
-        "fair": "Բավարար",
-        "poor": "Վատ",
-        "damaged": "Վնասված"
+      "new": "Նոր",
+      "good": "Լավ",
+      "fair": "Բավարար",
+      "poor": "Վատ",
+      "damaged": "Վնասված"
     },
     "notes": "Նշումներ",
     "notesPlaceholder": "Լրացուցիչ նշումներ...",
@@ -213,21 +213,21 @@
     "listView": "Ցուցակ",
     "statusLabel": "Կարգավիճակ",
     "status": {
-        "available": "Հասանելի",
-        "assigned": "Նշանակված",
-        "maintenance": "Սպասարկման մեջ",
-        "retired": "Դուրս գրված",
-        "lost": "Կորած",
-        "active": "Ակտիվ",
-        "returned": "Վերադարձված",
-        "pending": "Սպասման մեջ",
-        "approved": "Հաստատված",
-        "fulfilled": "Կատարված",
-        "rejected": "Մերժված",
-        "scheduled": "Նախատեսված",
-        "in_progress": "Ընթացքի մեջ",
-        "completed": "Ավարտված",
-        "cancelled": "Չեղարկված"
+      "available": "Հասանելի",
+      "assigned": "Նշանակված",
+      "maintenance": "Սպասարկման մեջ",
+      "retired": "Դուրս գրված",
+      "lost": "Կորած",
+      "active": "Ակտիվ",
+      "returned": "Վերադարձված",
+      "pending": "Սպասման մեջ",
+      "approved": "Հաստատված",
+      "fulfilled": "Կատարված",
+      "rejected": "Մերժված",
+      "scheduled": "Նախատեսված",
+      "in_progress": "Ընթացքի մեջ",
+      "completed": "Ավարտված",
+      "cancelled": "Չեղարկված"
     },
     "movementForm": {
       "title": "Շարժման ձև",
@@ -247,17 +247,17 @@
       }
     },
     "stats": {
-        "total": "Ընդհանուր ակտիվներ",
-        "available": "Հասանելի",
-        "assigned": "Նշանակված",
-        "maintenance": "Սպասարկման մեջ",
-        "pendingRequests": "Սպասման հարցումներ"
+      "total": "Ընդհանուր ակտիվներ",
+      "available": "Հասանելի",
+      "assigned": "Նշանակված",
+      "maintenance": "Սպասարկման մեջ",
+      "pendingRequests": "Սպասման հարցումներ"
     },
     "tabs": {
-        "catalog": "Կատալոգ",
-        "myAssets": "Իմ ակտիվները",
-        "requests": "Հարցումներ",
-        "maintenance": "Սպասարկում"
+      "catalog": "Կատալոգ",
+      "myAssets": "Իմ ակտիվները",
+      "requests": "Հարցումներ",
+      "maintenance": "Սպասարկում"
     },
     "selectCategory": "Ընտրել կատեգորիա",
     "assetCreated": "Ակտիվը ստեղծվել է",
@@ -272,7 +272,7 @@
       "step4": "Ստուգում",
       "step4Desc": "Հաստատեք ակտիվի տվյալները ստեղծելուց առաջ",
       "reviewHint": "Խնդրում ենք ստուգել ակտիվի տվյալները ստեղծելուց առաջ։"
-  },
+    },
     "byStatus": "Ըստ կարգավիճակի",
     "createTitle": "Ստեղծել ակտիվ",
     "createDescription": "Լրացրեք սարքավորման տվյալները",

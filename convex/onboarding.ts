@@ -338,7 +338,8 @@ export const startOnboarding = mutation({
             assignedTo: assigneeId || args.employeeId,
             assignedBy: args.createdBy,
             status: 'pending',
-            priority: t.category === 'documentation' || t.category === 'equipment' ? 'high' : 'medium',
+            priority:
+              t.category === 'documentation' || t.category === 'equipment' ? 'high' : 'medium',
             deadline: dueDate,
             tags: [`onboarding`, t.category, t.assigneeType],
             createdAt: Date.now(),
@@ -361,7 +362,8 @@ export const startOnboarding = mutation({
             await ctx.scheduler.runAfter(0, internal.assets.autoCreateRequestFromOnboarding, {
               organizationId: args.organizationId,
               employeeId: args.employeeId,
-              reason: `${t.title} (onboarding task)`, category: assetCategory,
+              reason: `${t.title} (onboarding task)`,
+              category: assetCategory,
             });
           }
 

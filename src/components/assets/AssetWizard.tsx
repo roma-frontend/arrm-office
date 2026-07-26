@@ -7,21 +7,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Wizard, WizardStep, useWizardContext } from '@/components/ui/wizard';
-import {
-  TextInputStep,
-  SelectStep,
-  TextareaStep,
-} from '@/components/ui/wizard-step-components';
-import {
-  Monitor,
-  Laptop,
-  Smartphone,
-  Mouse,
-  Sofa,
-  Key,
-  Car,
-  Package,
-} from 'lucide-react';
+import { TextInputStep, SelectStep, TextareaStep } from '@/components/ui/wizard-step-components';
+import { Monitor, Laptop, Smartphone, Mouse, Sofa, Key, Car, Package } from 'lucide-react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -40,9 +27,17 @@ const CATEGORY_OPTIONS = [
   { value: 'monitor', labelKey: 'assets.category.monitor', icon: <Monitor className="w-5 h-5" /> },
   { value: 'phone', labelKey: 'assets.category.phone', icon: <Smartphone className="w-5 h-5" /> },
   { value: 'tablet', labelKey: 'assets.category.tablet', icon: <Smartphone className="w-5 h-5" /> },
-  { value: 'peripheral', labelKey: 'assets.category.peripheral', icon: <Mouse className="w-5 h-5" /> },
+  {
+    value: 'peripheral',
+    labelKey: 'assets.category.peripheral',
+    icon: <Mouse className="w-5 h-5" />,
+  },
   { value: 'furniture', labelKey: 'assets.category.furniture', icon: <Sofa className="w-5 h-5" /> },
-  { value: 'software_license', labelKey: 'assets.category.software_license', icon: <Key className="w-5 h-5" /> },
+  {
+    value: 'software_license',
+    labelKey: 'assets.category.software_license',
+    icon: <Key className="w-5 h-5" />,
+  },
   { value: 'vehicle', labelKey: 'assets.category.vehicle', icon: <Car className="w-5 h-5" /> },
   { value: 'other', labelKey: 'assets.category.other', icon: <Package className="w-5 h-5" /> },
 ];
@@ -135,11 +130,7 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
       content: (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <TextInputStep
-              field="purchaseDate"
-              label={t('assets.purchaseDate')}
-              type="date"
-            />
+            <TextInputStep field="purchaseDate" label={t('assets.purchaseDate')} type="date" />
             <TextInputStep
               field="purchasePrice"
               label={t('assets.purchasePrice')}
@@ -169,9 +160,7 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
       id: 'review',
       title: t('assets.wizard.step4', 'Review'),
       description: t('assets.wizard.step4Desc', 'Confirm asset details before creating'),
-      content: (
-        <AssetWizardReview />
-      ),
+      content: <AssetWizardReview />,
     },
   ];
 
@@ -182,7 +171,7 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
       await createAsset({
         organizationId: orgId,
         name: String(data.name).trim(),
-        category: (String(data.category || 'laptop')) as any,
+        category: String(data.category || 'laptop') as any,
         brand: data.brand ? String(data.brand).trim() : undefined,
         model: data.model ? String(data.model).trim() : undefined,
         serialNumber: data.serialNumber ? String(data.serialNumber).trim() : undefined,
@@ -217,9 +206,9 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
 function AssetWizardReview() {
   const { t } = useTranslation();
   const { stepData } = useWizardContext();
-  
+
   const categoryLabel = t(`assets.category.${stepData.category || 'other'}`);
-  
+
   return (
     <Card>
       <CardContent className="p-4 space-y-3">
@@ -231,7 +220,10 @@ function AssetWizardReview() {
           <ReviewCard label={t('assets.categoryLabel')} value={categoryLabel} />
           <ReviewCard label={t('assets.brand')} value={String(stepData.brand || '')} />
           <ReviewCard label={t('assets.model')} value={String(stepData.model || '')} />
-          <ReviewCard label={t('assets.serialNumber')} value={String(stepData.serialNumber || '')} />
+          <ReviewCard
+            label={t('assets.serialNumber')}
+            value={String(stepData.serialNumber || '')}
+          />
           <ReviewCard label={t('assets.location')} value={String(stepData.location || '')} />
           <ReviewCard
             label={t('assets.purchaseDate')}

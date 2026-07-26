@@ -64,12 +64,13 @@ export const listDocuments = query({
 
     const signerDocIds = [...new Set(myRequests.map((r) => r.documentId))];
 
-    const signerDocs = await Promise.all(
-      signerDocIds.map((docId) => ctx.db.get(docId)),
-    );
+    const signerDocs = await Promise.all(signerDocIds.map((docId) => ctx.db.get(docId)));
 
     // Merge and deduplicate by _id
-    const allDocs: any[] = [...createdDocs, ...signerDocs.filter((d): d is NonNullable<typeof d> => d != null)];
+    const allDocs: any[] = [
+      ...createdDocs,
+      ...signerDocs.filter((d): d is NonNullable<typeof d> => d != null),
+    ];
     const seen = new Set<string>();
     const merged = allDocs.filter((doc): doc is NonNullable<typeof doc> => {
       if (!doc) return false;

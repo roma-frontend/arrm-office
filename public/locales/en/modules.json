@@ -273,7 +273,7 @@
       "step4": "Review",
       "step4Desc": "Confirm asset details before creating",
       "reviewHint": "Please review the asset details before creating."
-  },
+    },
     "byStatus": "By Status",
     "createTitle": "Create Asset",
     "createDescription": "Fill in the equipment details",

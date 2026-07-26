@@ -729,13 +729,14 @@ export const getRevieweeObjectivesWithReviews = query({
           .order('desc')
           .take(3);
 
-        const latestReview = reviews.length > 0
-          ? {
-              overallScore: reviews[0]!.overallScore,
-              type: reviews[0]!.type,
-              submittedAt: reviews[0]!.submittedAt,
-            }
-          : null;
+        const latestReview =
+          reviews.length > 0
+            ? {
+                overallScore: reviews[0]!.overallScore,
+                type: reviews[0]!.type,
+                submittedAt: reviews[0]!.submittedAt,
+              }
+            : null;
 
         return {
           _id: obj._id,

@@ -581,25 +581,35 @@ function FillReviewDialog({
                             <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5">
                               {t(`goals.level.${obj.level}`)}
                             </Badge>
-                            <span>{obj.periodType} {obj.periodYear}</span>
+                            <span>
+                              {obj.periodType} {obj.periodYear}
+                            </span>
                             <span>·</span>
-                            <span>{obj.keyResultsCount} {t('goals.stats.keyResults')}</span>
+                            <span>
+                              {obj.keyResultsCount} {t('goals.stats.keyResults')}
+                            </span>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className={`text-sm font-bold ${
-                            obj.progress >= 70 ? 'text-emerald-600' :
-                            obj.progress >= 40 ? 'text-amber-600' :
-                            'text-red-600'
-                          }`}>
+                          <p
+                            className={`text-sm font-bold ${
+                              obj.progress >= 70
+                                ? 'text-emerald-600'
+                                : obj.progress >= 40
+                                  ? 'text-amber-600'
+                                  : 'text-red-600'
+                            }`}
+                          >
                             {obj.progress}%
                           </p>
                           <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden mt-0.5">
                             <div
                               className={`h-full rounded-full ${
-                                obj.progress >= 70 ? 'bg-emerald-500' :
-                                obj.progress >= 40 ? 'bg-amber-500' :
-                                'bg-red-500'
+                                obj.progress >= 70
+                                  ? 'bg-emerald-500'
+                                  : obj.progress >= 40
+                                    ? 'bg-amber-500'
+                                    : 'bg-red-500'
                               }`}
                               style={{ width: `${obj.progress}%` }}
                             />
@@ -625,7 +635,10 @@ function FillReviewDialog({
                       {/* Task stats */}
                       {obj.taskCount > 0 && (
                         <div className="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground">
-                          <span>📋 {obj.completedTaskCount}/{obj.taskCount} {t('tasks.title').toLowerCase()}</span>
+                          <span>
+                            📋 {obj.completedTaskCount}/{obj.taskCount}{' '}
+                            {t('tasks.title').toLowerCase()}
+                          </span>
                         </div>
                       )}
                     </div>

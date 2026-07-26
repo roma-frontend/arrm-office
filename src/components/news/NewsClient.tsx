@@ -56,7 +56,11 @@ import { toast } from 'sonner';
 
 const CATEGORY_CONFIG: Record<
   string,
-  {  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; color: string; labelKey: string }
+  {
+    icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+    color: string;
+    labelKey: string;
+  }
 > = {
   news: { icon: Newspaper, color: '#3b82f6', labelKey: 'news.category.news' },
   announcement: { icon: Megaphone, color: '#8b5cf6', labelKey: 'news.category.announcement' },
@@ -114,7 +118,14 @@ function CreateAnnouncementDialog({
         authorId: userId,
         title: title.trim(),
         content: content.trim(),
-        category: category as 'news' | 'announcement' | 'event' | 'birthday' | 'achievement' | 'policy' | 'general',
+        category: category as
+          | 'news'
+          | 'announcement'
+          | 'event'
+          | 'birthday'
+          | 'achievement'
+          | 'policy'
+          | 'general',
         isPinned,
         isUrgent,
       });
@@ -155,7 +166,9 @@ function CreateAnnouncementDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium mb-1 block">{t('news.selectCategory', 'Category')}</label>
+              <label className="text-sm font-medium mb-1 block">
+                {t('news.selectCategory', 'Category')}
+              </label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger>
                   <SelectValue />
@@ -375,10 +388,7 @@ function AnnouncementCard({
   const isAdmin = userRole === 'admin' || userRole === 'superadmin';
 
   const reactionsList = announcement.reactionsByEmoji ?? [];
-  const _totalReactions = reactionsList.reduce(
-    (sum: number, r: any) => sum + r.users.length,
-    0,
-  );
+  const _totalReactions = reactionsList.reduce((sum: number, r: any) => sum + r.users.length, 0);
 
   const _hasMyReaction = reactionsList.some((r: any) =>
     r.users.some((u: any) => u.userId === userId),
@@ -460,9 +470,7 @@ function AnnouncementCard({
             {isAdmin && (
               <div className="flex items-center gap-1 shrink-0">
                 <button
-                  onClick={() =>
-                    togglePin({ announcementId: announcement._id, userId })
-                  }
+                  onClick={() => togglePin({ announcementId: announcement._id, userId })}
                   className="p-1.5 rounded-lg hover:bg-muted transition-colors"
                   title={announcement.isPinned ? t('news.unpin') : t('news.pin')}
                 >
@@ -506,7 +514,9 @@ function AnnouncementCard({
           <div className="flex items-center gap-1.5 mt-3 flex-wrap">
             {/* Emoji reaction buttons */}
             {EMOJI_REACTIONS.map((emoji) => {
-              const reactors = (announcement.reactionsByEmoji ?? []).find((r: any) => r.emoji === emoji)?.users ?? [];
+              const reactors =
+                (announcement.reactionsByEmoji ?? []).find((r: any) => r.emoji === emoji)?.users ??
+                [];
               const count = reactors.length;
               const isActive = reactors.some((r: any) => r.userId === userId);
               return (
@@ -583,10 +593,7 @@ export default function NewsClient() {
       : 'skip',
   );
 
-  const newsStats = useQuery(
-    api.news.getNewsStats,
-    organizationId ? { organizationId } : 'skip',
-  );
+  const newsStats = useQuery(api.news.getNewsStats, organizationId ? { organizationId } : 'skip');
 
   const deleteAnnouncement = useMutation(api.news.deleteAnnouncement);
 
@@ -605,7 +612,12 @@ export default function NewsClient() {
   if (!user || !organizationId) return <ShieldLoader />;
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
