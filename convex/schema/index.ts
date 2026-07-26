@@ -20,6 +20,7 @@ import { settings } from './settings';
 import { corporate } from './corporate';
 import { conflicts } from './conflicts';
 import { ai } from './ai';
+import { aiGovernance } from './aiGovernance';
 import { payroll } from './payroll';
 import { recognition } from './recognition';
 import { surveys } from './surveys';
@@ -64,6 +65,7 @@ export default defineSchema({
   ...corporate,
   ...conflicts,
   ...ai,
+  ...aiGovernance,
   ...payroll,
   ...recognition,
   ...surveys,
@@ -109,6 +111,7 @@ export {
   corporate,
   conflicts,
   ai,
+  aiGovernance,
   payroll,
   recognition,
   surveys,

@@ -1373,10 +1373,10 @@
   },
   "aiGovernance": {
     "title": "KI-Governance",
-    "subtitle": "KI-Agenten überwachen",
+    "subtitle": "KI-Agenten-Aktivität überwachen, steuern und prüfen",
     "overview": "Übersicht",
     "agents": "Agenten",
-    "guardrails": "Schutzmassnahmen",
+    "guardrails": "Schutzmaßnahmen",
     "audit": "Prüfung",
     "policies": "Richtlinien",
     "totalRequests": "KI-Anfragen gesamt",
@@ -1386,7 +1386,7 @@
     "allSystemsOperational": "Alle Systeme betriebsbereit",
     "recentActivity": "Letzte Aktivität",
     "agentHealth": "Agentenstatus",
-    "guardrailSettings": "Schutzmassnahmen",
+    "guardrailSettings": "Schutzmaßnahmen-Einstellungen",
     "inputFiltering": "Eingabefilter",
     "outputFiltering": "Ausgabefilter",
     "piiDetection": "PII-Erkennung",
@@ -1444,7 +1444,15 @@
     "actionCandidatesSearch": "Kandidatensuche",
     "actionPolicyLookup": "Richtlinien-Nachschlagung",
     "actionGeneralQa": "Allgemeine Fragen",
-    "actionPayrollCalc": "Gehaltsabrechnung"
+    "actionPayrollCalc": "Gehaltsabrechnung",
+    "humanApprovalRequired": "Menschliche Kontrolle",
+    "humanApprovalRequiredDesc": "Erfordert menschliche Freigabe für KI-Aktionen, die Daten ändern, Datensätze erstellen oder die Gehaltsabrechnung betreffen",
+    "agentAnalytics": "Analytics-Agent",
+    "analyticsAgentDesc": "Datenanalyse, Berichte und Dashboards",
+    "statusIdle": "inaktiv",
+    "noActivity": "Noch keine KI-Aktivität",
+    "noAgentData": "Noch kein Agenten-Traffic",
+    "noAuditEntries": "Noch keine Audit-Einträge"
   },
   "branding": {
     "title": "Branding",
@@ -1475,7 +1483,8 @@
     "previewButton": "Primäre Aktion",
     "previewButton2": "Sekundäre Aktion",
     "yourCompany": "Ihr Unternehmen",
-    "customDomainPlaceholder": "app.ihrunternehmen.de"
+    "customDomainPlaceholder": "app.ihrunternehmen.de",
+    "reset": "Zurücksetzen"
   },
   "auditLog": {
     "title": "Prüfprotokoll",

@@ -1411,7 +1411,15 @@
     "actionCandidatesSearch": "Candidate search",
     "actionPolicyLookup": "Policy lookup",
     "actionGeneralQa": "General Q&A",
-    "actionPayrollCalc": "Payroll calculation"
+    "actionPayrollCalc": "Payroll calculation",
+    "humanApprovalRequired": "Human-in-the-Loop",
+    "humanApprovalRequiredDesc": "Require human approval for AI actions that modify data, create records, or affect payroll",
+    "agentAnalytics": "Analytics Agent",
+    "analyticsAgentDesc": "Data analysis, reports, and dashboards",
+    "statusIdle": "idle",
+    "noActivity": "No AI activity yet",
+    "noAgentData": "No agent traffic yet",
+    "noAuditEntries": "No audit entries yet"
   },
   "branding": {
     "title": "Branding & White-Label",
@@ -1442,7 +1450,8 @@
     "previewButton": "Primary Action",
     "previewButton2": "Secondary Action",
     "yourCompany": "Your Company",
-    "customDomainPlaceholder": "app.yourcompany.com"
+    "customDomainPlaceholder": "app.yourcompany.com",
+    "reset": "Reset"
   },
   "auditLog": {
     "title": "Audit Trail",

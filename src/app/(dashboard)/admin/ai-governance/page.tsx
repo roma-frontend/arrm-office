@@ -1,6 +1,8 @@
+'use client';
+
 import nextDynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/Skeleton';
 import { ShieldCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +21,7 @@ const AIGovernancePanel = nextDynamic(() => import('@/components/ai/AIGovernance
 });
 
 export default function AIGovernancePage() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-6 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
@@ -26,10 +29,10 @@ export default function AIGovernancePage() {
           <ShieldCheck className="w-6 h-6 text-blue-500" />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--text-primary)">
-              AI Governance
+              {t('aiGovernance.title', 'AI Governance')}
             </h1>
             <p className="text-sm text-(--text-muted) mt-1">
-              Monitor, control, and audit AI agent activity
+              {t('aiGovernance.subtitle', 'Monitor, control, and audit AI agent activity')}
             </p>
           </div>
         </div>

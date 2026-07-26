@@ -9,14 +9,33 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock convex/react — component uses useQuery/useMutation
+// Convex query results are driven per-test through this map, keyed by the
+// query function reference's `_name` (set on the mocked api below).
+let queryResults: Record<string, unknown> = {};
+const mockMutation = jest.fn();
+
 jest.mock('convex/react', () => ({
-  useQuery: () => [],
-  useMutation: () => jest.fn(),
+  useQuery: (ref: { _name?: string }) => queryResults[ref?._name ?? ''],
+  useMutation: () => mockMutation,
 }));
 
-// Convex generated api must be virtual — real file imports convex/server which can't resolve in jest
-jest.mock('@/convex/_generated/api', () => ({ api: {} }), { virtual: true });
+// Each api entry carries a `_name` so the useQuery mock can resolve its result.
+jest.mock(
+  '@/convex/_generated/api',
+  () => ({
+    api: {
+      aiGovernance: {
+        getStats: { _name: 'getStats' },
+        getRecentActivity: { _name: 'getRecentActivity' },
+        getAgentHealth: { _name: 'getAgentHealth' },
+        getAuditLog: { _name: 'getAuditLog' },
+        getGuardrails: { _name: 'getGuardrails' },
+        updateGuardrail: { _name: 'updateGuardrail' },
+      },
+    },
+  }),
+  { virtual: true },
+);
 
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: () => ({ user: { id: 'u1', role: 'admin', organizationId: 'o1' } }),
@@ -29,22 +48,34 @@ jest.mock('@/components/ui/badge', () => ({
   Badge: ({ children }: any) => <span>{children}</span>,
 }));
 jest.mock('@/components/ui/card', () => ({ Card: ({ children }: any) => <div>{children}</div> }));
-jest.mock('@/components/ui/switch', () => ({ Switch: () => <input type="checkbox" /> }));
+jest.mock('@/components/ui/switch', () => ({
+  Switch: ({ onCheckedChange, checked }: any) => (
+    <input
+      type="checkbox"
+      checked={!!checked}
+      onChange={(e) => onCheckedChange?.(e.target.checked)}
+    />
+  ),
+}));
 
 // ── Module under test ──
 import AIGovernancePanel from '@/components/ai/AIGovernancePanel';
 
 describe('AIGovernancePanel', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    queryResults = {};
+  });
 
-  it('renders without crashing', () => {
+  it('renders without crashing while data is loading', () => {
     const { container } = render(<AIGovernancePanel />);
     expect(container).toBeTruthy();
   });
 
-  it('renders title', () => {
+  it('renders the overview tab by default', () => {
     render(<AIGovernancePanel />);
-    expect(screen.getByText('AI Governance')).toBeInTheDocument();
+    // The page header owns the "AI Governance" title; the panel starts with tabs.
+    expect(screen.getByText('aiGovernance » overview')).toBeInTheDocument();
   });
 
   it('renders all 5 tab buttons', () => {
@@ -56,11 +87,27 @@ describe('AIGovernancePanel', () => {
     expect(screen.getByText('aiGovernance » policies')).toBeInTheDocument();
   });
 
-  it('renders stat cards', () => {
+  it('shows placeholder stats before data loads', () => {
     render(<AIGovernancePanel />);
     expect(screen.getByText('Total AI Requests')).toBeInTheDocument();
-    expect(screen.getByText('Blocked Requests')).toBeInTheDocument();
-    expect(screen.getByText('Active Agents')).toBeInTheDocument();
-    expect(screen.getByText('Avg Response')).toBeInTheDocument();
+    // Undefined query result → placeholder dashes, not fabricated numbers.
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
+
+  it('renders real stats from the query result', () => {
+    queryResults.getStats = { total: 1247, blocked: 23, activeAgents: 5, avgLatencyMs: 1200 };
+    render(<AIGovernancePanel />);
+    expect(screen.getByText('1,247')).toBeInTheDocument();
+    expect(screen.getByText('23')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('1.2s')).toBeInTheDocument();
+  });
+
+  it('shows empty-state when there is no AI activity', () => {
+    queryResults.getRecentActivity = [];
+    queryResults.getAgentHealth = [];
+    render(<AIGovernancePanel />);
+    expect(screen.getByText('No AI activity yet')).toBeInTheDocument();
+    expect(screen.getByText('No agent traffic yet')).toBeInTheDocument();
   });
 });

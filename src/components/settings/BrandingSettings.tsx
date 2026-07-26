@@ -110,7 +110,7 @@ export default function BrandingSettingsPage() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5">
             <RotateCcw className="w-3.5 h-3.5" />
-            {t('common.reset', 'Reset')}
+            {t('branding.reset', 'Reset')}
           </Button>
           <Button
             variant="default"

@@ -13,6 +13,50 @@ import { z } from 'zod';
 import { fetchAllContexts } from '@/lib/chat-context';
 import { logger } from '@/lib/logger';
 
+const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
+
+/** Human-readable action label per agent for the AI Governance audit log. */
+const AGENT_ACTION_LABEL: Record<AgentType, string> = {
+  recruitment: 'Candidate query',
+  policy: 'Policy lookup',
+  analytics: 'Analytics query',
+  kpi: 'KPI query',
+  general: 'General Q&A',
+};
+
+/**
+ * Fire-and-forget: record an AI request for the AI Governance panel. Never
+ * awaited by the request path and never throws outward — telemetry must not
+ * break or slow down chat. Skips silently if the org is unknown.
+ */
+function logAiRequest(args: {
+  organizationId: string;
+  userId?: string;
+  userName: string;
+  agent: AgentType;
+  tokens: number;
+  latencyMs: number;
+}): void {
+  if (!CONVEX_URL || !args.organizationId) return;
+  void fetch(`${CONVEX_URL}/api/mutation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      path: 'aiGovernance:logRequest',
+      args: {
+        organizationId: args.organizationId,
+        userId: args.userId || undefined,
+        userName: args.userName || 'Unknown',
+        agent: args.agent,
+        action: AGENT_ACTION_LABEL[args.agent],
+        status: 'allowed',
+        tokens: args.tokens,
+        latencyMs: args.latencyMs,
+      },
+    }),
+  }).catch((err) => logger.log('AI governance log failed (non-fatal):', String(err)));
+}
+
 // Lazily construct the OpenRouter client. The OpenAI SDK constructor throws when
 // no API key is present, so instantiating at module scope would break the
 // production build's page-data collection (where the key is absent). Create it
@@ -243,6 +287,15 @@ FORMAT RULES:
       });
 
       logger.log(`✅ Groq response streamed in ${Date.now() - startTime}ms`);
+      logAiRequest({
+        organizationId: authOrgId,
+        userId: userId || auth.userId,
+        userName: contexts.userName,
+        agent: selectedAgent,
+        // Rough token estimate (~4 chars/token) until provider usage is wired.
+        tokens: Math.round((systemPrompt.length + JSON.stringify(messages).length) / 4),
+        latencyMs: Date.now() - startTime,
+      });
       return result.toTextStreamResponse();
     } catch (groqError) {
       const groqErrorMessage = groqError instanceof Error ? groqError.message : 'Groq failed';
@@ -269,6 +322,14 @@ FORMAT RULES:
         });
 
         logger.log(`✅ OpenRouter response streamed in ${Date.now() - startTime}ms`);
+        logAiRequest({
+          organizationId: authOrgId,
+          userId: userId || auth.userId,
+          userName: contexts.userName,
+          agent: selectedAgent,
+          tokens: Math.round((systemPrompt.length + JSON.stringify(messages).length) / 4),
+          latencyMs: Date.now() - startTime,
+        });
         return new Response(readableStream, {
           headers: { 'Content-Type': 'text/plain; charset=utf-8' },
         });
