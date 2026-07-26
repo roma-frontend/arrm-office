@@ -198,15 +198,9 @@ body.lang-switching #main-content {
   background-clip: text;
 }
 
-/* 8. Dark mode depth — subtle noise + layered shadows */
-@media (prefers-color-scheme: dark) {
-  .depth-card {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.3),
-      0 4px 8px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03);
-  }
-}
+/* 8. Dark mode depth — subtle noise + layered shadows.
+   Class-driven only (see @custom-variant dark below); no prefers-color-scheme
+   block so OS dark mode doesn't leak into the in-app Light theme. */
 [data-theme='dark'] .depth-card,
 .dark .depth-card {
   box-shadow:
@@ -223,6 +217,13 @@ body[data-scroll-locked] {
 
 @import 'tailwindcss';
 @import '../styles/animations.css';
+
+/* Drive Tailwind's `dark:` variant off the app's `.dark` class (toggled by
+   ThemeProvider on <html>) instead of the browser's prefers-color-scheme.
+   Without this, Tailwind v4 defaults `dark:` to @media (prefers-color-scheme:
+   dark), so dark utilities followed the OS setting even when the in-app theme
+   was Light. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ═══════════════════════════════════════════════════════════════
    TAILWIND V4 THEME MAPPINGS

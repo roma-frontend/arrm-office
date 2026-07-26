@@ -133,53 +133,20 @@ export function Wizard({
               />
             </div>
 
-            {/* Steps */}
-            <div className="flex items-center justify-between gap-1">
+            {/* Steps — each step is an equal-width column. The connector is
+                pinned to the circle's vertical centre (top-[14px]/[18px] = half
+                the circle height) and drawn *behind* the circle, so it never
+                crosses the labels no matter how many steps there are or how many
+                lines a title wraps to. */}
+            <div className="flex items-start">
               {steps.map((step, index) => {
                 const isCompleted = index < currentStep;
                 const isCurrent = index === currentStep;
 
                 return (
-                  <React.Fragment key={step.id}>
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <motion.div
-                        className={cn(
-                          'w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center border-2 transition-colors shrink-0',
-                          isCompleted
-                            ? 'bg-blue-500 border-blue-500 text-white'
-                            : isCurrent
-                              ? 'border-blue-500 bg-(--background) text-blue-500'
-                              : 'border-(--border) bg-(--background) text-(--muted-foreground)',
-                        )}
-                        initial={{ scale: 1 }}
-                        animate={{ scale: isCurrent ? 1.1 : 1 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        {isCompleted ? (
-                          <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                        ) : (
-                          <span className="text-[11px] md:text-xs font-semibold">{index + 1}</span>
-                        )}
-                      </motion.div>
-                      <div className="mt-1.5 md:mt-2 text-center w-full px-1">
-                        <p
-                          className={cn(
-                            'text-[10px] md:text-xs font-medium transition-colors leading-tight',
-                            isCurrent ? 'text-(--primary)' : 'text-(--muted-foreground)',
-                          )}
-                        >
-                          {step.title}
-                        </p>
-                        {step.description && (
-                          <p className="text-[9px] md:text-[10px] text-(--muted-foreground) mt-0.5 hidden sm:block truncate">
-                            {step.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
+                  <div key={step.id} className="relative flex flex-col items-center flex-1 min-w-0">
                     {index < steps.length - 1 && (
-                      <div className="flex-1 h-0.5 bg-(--border) mx-1 md:mx-2 max-w-6 md:max-w-none">
+                      <div className="absolute top-[14px] md:top-[18px] left-1/2 w-full h-0.5 bg-(--border) overflow-hidden">
                         <motion.div
                           className={cn(
                             'h-full transition-colors',
@@ -191,7 +158,45 @@ export function Wizard({
                         />
                       </div>
                     )}
-                  </React.Fragment>
+                    <motion.div
+                      className={cn(
+                        'relative z-10 w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center border-2 transition-colors shrink-0',
+                        isCompleted
+                          ? 'bg-blue-500 border-blue-500 text-white'
+                          : isCurrent
+                            ? 'border-blue-500 bg-(--background) text-blue-500'
+                            : 'border-(--border) bg-(--background) text-(--muted-foreground)',
+                      )}
+                      initial={{ scale: 1 }}
+                      animate={{ scale: isCurrent ? 1.1 : 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                      ) : (
+                        <span className="text-[11px] md:text-xs font-semibold">{index + 1}</span>
+                      )}
+                    </motion.div>
+                    <div className="mt-1.5 md:mt-2 text-center w-full px-0.5 md:px-1">
+                      <p
+                        className={cn(
+                          'text-[10px] md:text-xs font-medium transition-colors leading-tight line-clamp-2',
+                          isCurrent
+                            ? 'text-(--primary)'
+                            : isCompleted
+                              ? 'text-(--text-primary)'
+                              : 'text-(--muted-foreground)',
+                        )}
+                      >
+                        {step.title}
+                      </p>
+                      {step.description && (
+                        <p className="text-[9px] md:text-[10px] text-(--muted-foreground) mt-0.5 hidden sm:block line-clamp-1">
+                          {step.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             </div>

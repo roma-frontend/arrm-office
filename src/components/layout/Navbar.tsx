@@ -554,7 +554,7 @@ export function Navbar() {
                     e.stopPropagation();
                     setStatusExpanded(!statusExpanded);
                   }}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-all duration-200 hover:bg-(--background-subtle)/60 hover:pl-2.5 cursor-pointer"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-all duration-200 hover:bg-(--background-subtle)/60 hover:translate-x-0.5 cursor-pointer"
                 >
                   <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${presenceCfg.dot}`} />
                   <span className="flex-1 text-left font-medium text-(--text-primary)">
