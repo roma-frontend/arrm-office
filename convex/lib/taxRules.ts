@@ -182,6 +182,40 @@ export function getTaxRule(country?: string | null): CountryTaxRule {
   return TAX_RULES[code] ?? TAX_RULES.armenia;
 }
 
+/**
+ * Org-editable override of a country rule. Every field is optional: an absent field
+ * keeps the country default, a provided field replaces it wholesale. Providing an
+ * empty contributions array is meaningful — it removes all contributions of that side.
+ */
+export interface TaxRuleOverride {
+  taxFreeAllowance?: number;
+  incomeTaxBrackets?: TaxBracket[];
+  employeeContributions?: Contribution[];
+  employerContributions?: Contribution[];
+}
+
+/**
+ * Merge an org override on top of a base country rule. The result is a full, valid
+ * CountryTaxRule the engine can consume unchanged. `code`/`currency`/`locale`/`label`
+ * are never overridable (they identify the jurisdiction, not its rates).
+ */
+export function applyTaxRuleOverride(
+  base: CountryTaxRule,
+  override?: TaxRuleOverride | null,
+): CountryTaxRule {
+  if (!override) return base;
+  return {
+    ...base,
+    taxFreeAllowance: override.taxFreeAllowance ?? base.taxFreeAllowance,
+    incomeTaxBrackets:
+      override.incomeTaxBrackets && override.incomeTaxBrackets.length > 0
+        ? override.incomeTaxBrackets
+        : base.incomeTaxBrackets,
+    employeeContributions: override.employeeContributions ?? base.employeeContributions,
+    employerContributions: override.employerContributions ?? base.employerContributions,
+  };
+}
+
 /** Normalize a free-text country string to a CountryCode (or undefined if unknown). */
 export function toCountryCode(country?: string | null): CountryCode | undefined {
   const code = (country ?? '').toLowerCase();

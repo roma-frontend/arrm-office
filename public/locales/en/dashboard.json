@@ -405,5 +405,27 @@
         "keyResultHint": "Link to a specific key result"
       }
     }
+  },
+  "dashboardWidgets": {
+    "myTasks": "My Tasks",
+    "viewAll": "View all",
+    "noTasks": "No active tasks — you are all caught up!",
+    "overdue": "Overdue",
+    "dueIn": "Due in {{time}}",
+    "viewAllTasks": "View all {{count}} tasks",
+    "upcomingBirthdays": "Upcoming Birthdays",
+    "noBirthdays": "No birthdays in the next 30 days",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "inDays": "in {{count}}d",
+    "outOfOffice": "Out of Office",
+    "everyoneIn": "Everyone is in this week",
+    "outNow": "Out now",
+    "reportingLine": "Reporting Line",
+    "reportsTo": "Reports to",
+    "directReports": "Direct reports",
+    "noDirectReports": "No direct reports",
+    "noReportingData": "No reporting data available",
+    "notInHierarchy": "You are not linked in the org hierarchy yet"
   }
 }

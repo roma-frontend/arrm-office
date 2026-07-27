@@ -405,5 +405,27 @@
         "keyResultHint": "Mit konkretem Schlüsselergebnis verknüpfen"
       }
     }
+  },
+  "dashboardWidgets": {
+    "myTasks": "Meine Aufgaben",
+    "viewAll": "Alle anzeigen",
+    "noTasks": "Keine aktiven Aufgaben — alles erledigt!",
+    "overdue": "Überfällig",
+    "dueIn": "Fällig in {{time}}",
+    "viewAllTasks": "Alle {{count}} Aufgaben anzeigen",
+    "upcomingBirthdays": "Bevorstehende Geburtstage",
+    "noBirthdays": "Keine Geburtstage in den nächsten 30 Tagen",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "inDays": "in {{count}} T",
+    "outOfOffice": "Abwesend",
+    "everyoneIn": "Diese Woche sind alle da",
+    "outNow": "Jetzt abwesend",
+    "reportingLine": "Berichtsstruktur",
+    "reportsTo": "Berichtet an",
+    "directReports": "Direkt unterstellt",
+    "noDirectReports": "Keine direkt unterstellten Mitarbeiter",
+    "noReportingData": "Keine Berichtsdaten verfügbar",
+    "notInHierarchy": "Sie sind noch nicht in der Organisationsstruktur verknüpft"
   }
 }

@@ -1,13 +1,15 @@
 import {
   TAX_RULES,
   getTaxRule,
+  applyTaxRuleOverride,
   type CountryCode,
   type CountryTaxRule,
   type TaxBracket,
+  type TaxRuleOverride,
   type DeductionField,
 } from './taxRules';
 
-export type { TaxBracket, CountryCode } from './taxRules';
+export type { TaxBracket, CountryCode, TaxRuleOverride } from './taxRules';
 
 export interface Deductions {
   incomeTax: number;
@@ -36,6 +38,8 @@ export interface PayrollInput {
   bonuses?: number;
   overtimeHours?: number;
   hourlyRate?: number;
+  /** Org-level override of the country's rates/brackets (from salarySettings). */
+  taxOverride?: TaxRuleOverride | null;
 }
 
 function round2(n: number): number {
@@ -104,8 +108,15 @@ function computeEmployerContributions(grossSalary: number, rule: CountryTaxRule)
 }
 
 export function calculatePayroll(input: PayrollInput): PayrollCalculation {
-  const { country, baseSalary, bonuses = 0, overtimeHours = 0, hourlyRate = 0 } = input;
-  const rule = getTaxRule(country);
+  const {
+    country,
+    baseSalary,
+    bonuses = 0,
+    overtimeHours = 0,
+    hourlyRate = 0,
+    taxOverride = null,
+  } = input;
+  const rule = applyTaxRuleOverride(getTaxRule(country), taxOverride);
 
   const overtimePay =
     overtimeHours > 0 && hourlyRate > 0 ? calculateOvertimePay(overtimeHours, hourlyRate) : 0;
@@ -136,6 +147,7 @@ export interface GrossFromNetInput {
   bonuses?: number;
   overtimeHours?: number;
   hourlyRate?: number;
+  taxOverride?: TaxRuleOverride | null;
 }
 
 /**
@@ -146,7 +158,14 @@ export interface GrossFromNetInput {
  * truth. Returns the full self-consistent breakdown for the resolved gross.
  */
 export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculation {
-  const { country, net, bonuses = 0, overtimeHours = 0, hourlyRate = 0 } = input;
+  const {
+    country,
+    net,
+    bonuses = 0,
+    overtimeHours = 0,
+    hourlyRate = 0,
+    taxOverride = null,
+  } = input;
 
   const overtimePay =
     overtimeHours > 0 && hourlyRate > 0 ? calculateOvertimePay(overtimeHours, hourlyRate) : 0;
@@ -154,7 +173,8 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
 
   // netForBase(base) using the same forward engine.
   const netForBase = (base: number): number =>
-    calculatePayroll({ country, baseSalary: base, bonuses, overtimeHours, hourlyRate }).netSalary;
+    calculatePayroll({ country, baseSalary: base, bonuses, overtimeHours, hourlyRate, taxOverride })
+      .netSalary;
 
   if (net <= 0) {
     return calculatePayroll({
@@ -163,6 +183,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
       bonuses,
       overtimeHours,
       hourlyRate,
+      taxOverride,
     });
   }
 
@@ -187,7 +208,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
   }
 
   const baseSalary = round2(lo);
-  return calculatePayroll({ country, baseSalary, bonuses, overtimeHours, hourlyRate });
+  return calculatePayroll({ country, baseSalary, bonuses, overtimeHours, hourlyRate, taxOverride });
 }
 
 export function formatCurrency(amount: number, country: CountryCode): string {
