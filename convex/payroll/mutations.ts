@@ -4,9 +4,10 @@ import { mutation } from '../_generated/server';
 import type { MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { calculatePayroll } from '../lib/payrollCalculator';
-import { toCountryCode } from '../lib/taxRules';
+import { toCountryCode, type TaxRuleOverride } from '../lib/taxRules';
 import { requireOrgAdmin } from '../lib/rbac';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
+import { TAX_RULE_OVERRIDE } from '../schema/payroll';
 
 type RunTotals = {
   totalGross: number;
@@ -52,6 +53,36 @@ async function recomputeRunTotals(ctx: any, payrollRunId: Id<'payrollRuns'>): Pr
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * Guard org-supplied tax overrides against nonsensical values before they reach the
+ * calculator. Rates are fractions in [0, 1]; brackets must be non-negative and ordered
+ * (min < max within a bracket). Throws a user-facing Error on the first violation.
+ */
+function validateTaxRuleOverride(o: TaxRuleOverride): void {
+  const isRate = (r: number) => Number.isFinite(r) && r >= 0 && r <= 1;
+
+  if (
+    o.taxFreeAllowance !== undefined &&
+    (!Number.isFinite(o.taxFreeAllowance) || o.taxFreeAllowance < 0)
+  ) {
+    throw new Error('Tax-free allowance cannot be negative');
+  }
+  for (const b of o.incomeTaxBrackets ?? []) {
+    if (!Number.isFinite(b.min) || b.min < 0) throw new Error('Bracket min cannot be negative');
+    if (b.max !== undefined && (!Number.isFinite(b.max) || b.max <= b.min)) {
+      throw new Error('Bracket max must be greater than its min');
+    }
+    if (!isRate(b.rate)) throw new Error('Bracket rate must be between 0 and 1');
+  }
+  for (const c of [...(o.employeeContributions ?? []), ...(o.employerContributions ?? [])]) {
+    if (!c.name.trim()) throw new Error('Contribution name is required');
+    if (!isRate(c.rate)) throw new Error('Contribution rate must be between 0 and 1');
+    if (c.cap !== undefined && (!Number.isFinite(c.cap) || c.cap < 0)) {
+      throw new Error('Contribution cap cannot be negative');
+    }
+  }
 }
 
 // Verified caller id from JWT (never trust a client-supplied requesterId).
@@ -217,6 +248,7 @@ export const calculatePayrollRun = mutation({
         bonuses,
         overtimeHours,
         hourlyRate,
+        taxOverride: settings?.taxRuleOverride ?? null,
       });
 
       await ctx.db.insert('payrollRecords', {
@@ -590,6 +622,7 @@ export const updatePayrollRecord = mutation({
         bonuses: args.bonuses ?? record.bonuses ?? 0,
         overtimeHours: newOvertime,
         hourlyRate: newBase / 160,
+        taxOverride: settings?.taxRuleOverride ?? null,
       });
 
       updates.grossSalary = calculation.grossSalary;
@@ -729,6 +762,7 @@ export const saveSalarySettings = mutation({
     accountingSystem: v.optional(v.string()),
     paymentMethod: v.optional(v.string()),
     bankName: v.optional(v.string()),
+    taxRuleOverride: v.optional(TAX_RULE_OVERRIDE),
   },
   handler: async (ctx, args) => {
     const requesterId = await callerId(ctx);
@@ -739,6 +773,9 @@ export const saveSalarySettings = mutation({
     }
     if (args.maximumOvertime !== undefined && args.maximumOvertime < 0) {
       throw new Error('Maximum overtime cannot be negative');
+    }
+    if (args.taxRuleOverride) {
+      validateTaxRuleOverride(args.taxRuleOverride);
     }
 
     const settingsArgs = args;

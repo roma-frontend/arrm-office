@@ -273,6 +273,37 @@
     "grossMode": "Гросс",
     "salaryModeHint": "Введите сумму на руки или гросс — остальное система рассчитает сама.",
     "employeeContributions": "Взносы сотрудника",
-    "employerCost": "Взносы работодателя"
+    "employerCost": "Взносы работодателя",
+    "taxEditor": {
+      "title": "Ставки налогов и взносы",
+      "customActive": "Для организации действуют настраиваемые ставки",
+      "usingDefaults": "Используются ставки по умолчанию для {{country}}",
+      "resetDefaults": "Сбросить к значениям по умолчанию",
+      "approximateWarning": "Значения по умолчанию для этой страны приблизительные — проверьте с бухгалтером перед использованием.",
+      "taxFreeAllowance": "Необлагаемый минимум",
+      "incomeTaxBrackets": "Прогрессивные ставки подоходного налога",
+      "addBracket": "Добавить порог",
+      "from": "От",
+      "to": "До (пусто = ∞)",
+      "ratePct": "Ставка %",
+      "employeeContributions": "Взносы сотрудника",
+      "employerContributions": "Взносы работодателя",
+      "addContribution": "Добавить",
+      "noContributions": "Нет",
+      "contributionName": "Название",
+      "mapsTo": "Категория",
+      "preview": "Предпросмотр",
+      "sampleGross": "Пример начисления",
+      "gross": "Начислено",
+      "incomeTax": "Подоходный налог",
+      "deductionsTotal": "Всего удержаний",
+      "net": "К выплате",
+      "field": {
+        "socialSecurity": "Соцстрахование",
+        "healthInsurance": "Медстрахование",
+        "pension": "Пенсия",
+        "other": "Прочее"
+      }
+    }
   }
 }

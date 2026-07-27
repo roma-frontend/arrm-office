@@ -13,6 +13,37 @@ const TAX_COUNTRY = v.union(
   v.literal('usa'),
 );
 
+// One progressive income-tax bracket. `max` absent = open-ended top bracket.
+const TAX_BRACKET = v.object({
+  min: v.number(),
+  max: v.optional(v.number()),
+  rate: v.number(),
+});
+
+// One employee/employer contribution line. Mirrors Contribution in convex/lib/taxRules.ts.
+const CONTRIBUTION = v.object({
+  name: v.string(),
+  rate: v.number(),
+  cap: v.optional(v.number()),
+  field: v.optional(
+    v.union(
+      v.literal('socialSecurity'),
+      v.literal('healthInsurance'),
+      v.literal('pension'),
+      v.literal('other'),
+    ),
+  ),
+});
+
+// Org-editable override of a country rule. Every field optional; mirrors
+// TaxRuleOverride in convex/lib/taxRules.ts. Exported for reuse in mutation args.
+export const TAX_RULE_OVERRIDE = v.object({
+  taxFreeAllowance: v.optional(v.number()),
+  incomeTaxBrackets: v.optional(v.array(TAX_BRACKET)),
+  employeeContributions: v.optional(v.array(CONTRIBUTION)),
+  employerContributions: v.optional(v.array(CONTRIBUTION)),
+});
+
 export const payroll = {
   payrollRecords: defineTable({
     organizationId: v.optional(v.id('organizations')),
@@ -111,6 +142,9 @@ export const payroll = {
     currency: v.optional(v.string()),
     minimumWage: v.optional(v.number()),
     maximumOvertime: v.optional(v.number()),
+    // Org-editable override of the country's tax rates/brackets. Absent → country
+    // defaults apply. Merged onto the base rule by applyTaxRuleOverride (taxRules.ts).
+    taxRuleOverride: v.optional(TAX_RULE_OVERRIDE),
     emailNotifications: v.optional(v.boolean()),
     notifyOnCreate: v.optional(v.boolean()),
     notifyOnApprove: v.optional(v.boolean()),

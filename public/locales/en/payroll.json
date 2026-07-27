@@ -272,6 +272,37 @@
     "grossMode": "Gross",
     "salaryModeHint": "Enter net or gross - the system calculates the rest automatically.",
     "employeeContributions": "Employee contributions",
-    "employerCost": "Employer contributions"
+    "employerCost": "Employer contributions",
+    "taxEditor": {
+      "title": "Tax rates & contributions",
+      "customActive": "Custom rates are active for this organization",
+      "usingDefaults": "Using default {{country}} rates",
+      "resetDefaults": "Reset to defaults",
+      "approximateWarning": "Default values for this country are approximate — verify with an accountant before use.",
+      "taxFreeAllowance": "Tax-free allowance",
+      "incomeTaxBrackets": "Income tax brackets",
+      "addBracket": "Add bracket",
+      "from": "From",
+      "to": "To (blank = ∞)",
+      "ratePct": "Rate %",
+      "employeeContributions": "Employee contributions",
+      "employerContributions": "Employer contributions",
+      "addContribution": "Add",
+      "noContributions": "None",
+      "contributionName": "Name",
+      "mapsTo": "Maps to",
+      "preview": "Preview",
+      "sampleGross": "Sample gross",
+      "gross": "Gross",
+      "incomeTax": "Income tax",
+      "deductionsTotal": "Total deductions",
+      "net": "Net",
+      "field": {
+        "socialSecurity": "Social security",
+        "healthInsurance": "Health insurance",
+        "pension": "Pension",
+        "other": "Other"
+      }
+    }
   }
 }

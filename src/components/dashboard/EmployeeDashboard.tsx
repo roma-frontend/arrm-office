@@ -46,6 +46,33 @@ const AIRecommendationsCard = dynamic(() => import('@/components/ai/AIRecommenda
   ssr: true,
 });
 
+// First-page widgets (My Tasks / Upcoming Birthdays / Out of Office)
+const MyTasksWidget = dynamic(() => import('@/components/dashboard/widgets/MyTasksWidget'), {
+  loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
+  ssr: true,
+});
+const UpcomingBirthdaysWidget = dynamic(
+  () => import('@/components/dashboard/widgets/UpcomingBirthdaysWidget'),
+  {
+    loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
+    ssr: true,
+  },
+);
+const OutOfOfficeWidget = dynamic(
+  () => import('@/components/dashboard/widgets/OutOfOfficeWidget'),
+  {
+    loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
+    ssr: true,
+  },
+);
+const ReportingLineWidget = dynamic(
+  () => import('@/components/dashboard/widgets/ReportingLineWidget'),
+  {
+    loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
+    ssr: true,
+  },
+);
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
@@ -160,6 +187,20 @@ export function EmployeeDashboard() {
       {/* Check-In / Check-Out Widget */}
       <motion.div variants={itemVariants}>
         <CheckInOutWidget />
+      </motion.div>
+
+      {/* First-page widgets: My Tasks · Upcoming Birthdays · Out of Office */}
+      <motion.div variants={itemVariants}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <MyTasksWidget userId={user.id} />
+          <UpcomingBirthdaysWidget />
+          <OutOfOfficeWidget />
+        </div>
+      </motion.div>
+
+      {/* Reporting structure: manager chain + direct reports */}
+      <motion.div variants={itemVariants}>
+        <ReportingLineWidget />
       </motion.div>
 
       {/* AI Recommendations */}

@@ -405,5 +405,27 @@
         "keyResultHint": "Привязать к конкретному ключевому результату"
       }
     }
+  },
+  "dashboardWidgets": {
+    "myTasks": "Мои задачи",
+    "viewAll": "Все",
+    "noTasks": "Нет активных задач — всё сделано!",
+    "overdue": "Просрочено",
+    "dueIn": "Срок через {{time}}",
+    "viewAllTasks": "Показать все задачи ({{count}})",
+    "upcomingBirthdays": "Ближайшие дни рождения",
+    "noBirthdays": "Нет дней рождения в ближайшие 30 дней",
+    "today": "Сегодня",
+    "tomorrow": "Завтра",
+    "inDays": "через {{count}} дн.",
+    "outOfOffice": "Отсутствуют",
+    "everyoneIn": "На этой неделе все на месте",
+    "outNow": "Отсутствует сейчас",
+    "reportingLine": "Структура подчинения",
+    "reportsTo": "Руководитель",
+    "directReports": "Прямые подчинённые",
+    "noDirectReports": "Нет прямых подчинённых",
+    "noReportingData": "Нет данных о структуре подчинения",
+    "notInHierarchy": "Вы ещё не привязаны к оргструктуре"
   }
 }

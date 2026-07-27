@@ -22,7 +22,12 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save, Loader2, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { TAX_RULES, type CountryCode } from '../../../../../convex/lib/taxRules';
+import {
+  TAX_RULES,
+  type CountryCode,
+  type TaxRuleOverride,
+} from '../../../../../convex/lib/taxRules';
+import { TaxRuleEditor } from '@/components/payroll/TaxRuleEditor';
 
 type TaxCountry = CountryCode;
 type PayFrequency = 'monthly' | 'biweekly' | 'weekly';
@@ -60,6 +65,7 @@ export default function PayrollSettingsPage() {
     paymentMethod: '',
     bankName: '',
   });
+  const [taxRuleOverride, setTaxRuleOverride] = useState<TaxRuleOverride | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -80,6 +86,7 @@ export default function PayrollSettingsPage() {
         paymentMethod: settings.paymentMethod ?? '',
         bankName: settings.bankName ?? '',
       });
+      setTaxRuleOverride(settings.taxRuleOverride ?? null);
     }
   }, [settings]);
 
@@ -103,6 +110,7 @@ export default function PayrollSettingsPage() {
         accountingSystem: form.accountingSystem || undefined,
         paymentMethod: form.paymentMethod || undefined,
         bankName: form.bankName || undefined,
+        taxRuleOverride: taxRuleOverride ?? undefined,
       });
       toast.success(t('payroll.settingsSaved') || 'Settings saved');
     } catch (e) {
@@ -157,14 +165,17 @@ export default function PayrollSettingsPage() {
             <Label>{t('payroll.countryLabel')}</Label>
             <Select
               value={form.taxCountry}
-              onValueChange={(v) =>
+              onValueChange={(v) => {
                 setForm((p) => ({
                   ...p,
                   taxCountry: v as TaxCountry,
                   // Default the currency to the country's currency when switching.
                   currency: TAX_RULES[v as CountryCode]?.currency ?? p.currency,
-                }))
-              }
+                }));
+                // Brackets/contributions are country-specific — drop any custom
+                // override so the editor starts from the new country's defaults.
+                setTaxRuleOverride(null);
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -251,6 +262,12 @@ export default function PayrollSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <TaxRuleEditor
+        country={form.taxCountry}
+        value={taxRuleOverride}
+        onChange={setTaxRuleOverride}
+      />
 
       <Card className="opacity-70">
         <CardHeader>

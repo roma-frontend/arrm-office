@@ -272,6 +272,37 @@
     "grossMode": "Համախառն",
     "salaryModeHint": "Մուտքագրեք զուտ կամ համախառն գումարը — մնացածը համակարգը կհաշվարկի ինքնաշխատ։",
     "employeeContributions": "Աշխատողի վճարներ",
-    "employerCost": "Գործատուի վճարներ"
+    "employerCost": "Գործատուի վճարներ",
+    "taxEditor": {
+      "title": "Հարկային դրույքաչափեր և վճարներ",
+      "customActive": "Կազմակերպության համար գործում են հատուկ դրույքաչափեր",
+      "usingDefaults": "Օգտագործվում են {{country}}-ի կանխադրված դրույքաչափերը",
+      "resetDefaults": "Վերականգնել կանխադրվածը",
+      "approximateWarning": "Այս երկրի կանխադրված արժեքները մոտավոր են — օգտագործելուց առաջ ստուգեք հաշվապահի հետ։",
+      "taxFreeAllowance": "Չհարկվող նվազագույն",
+      "incomeTaxBrackets": "Եկամտահարկի սանդղակներ",
+      "addBracket": "Ավելացնել սանդղակ",
+      "from": "Սկսած",
+      "to": "Մինչև (դատարկ = ∞)",
+      "ratePct": "Դրույք %",
+      "employeeContributions": "Աշխատողի վճարներ",
+      "employerContributions": "Գործատուի վճարներ",
+      "addContribution": "Ավելացնել",
+      "noContributions": "Չկա",
+      "contributionName": "Անվանում",
+      "mapsTo": "Դասակարգում",
+      "preview": "Նախադիտում",
+      "sampleGross": "Օրինակ՝ հաշվարկված",
+      "gross": "Հաշվարկված",
+      "incomeTax": "Եկամտահարկ",
+      "deductionsTotal": "Ընդհանուր պահումներ",
+      "net": "Վճարվող",
+      "field": {
+        "socialSecurity": "Սոցիալական",
+        "healthInsurance": "Բժշկական",
+        "pension": "Կենսաթոշակ",
+        "other": "Այլ"
+      }
+    }
   }
 }

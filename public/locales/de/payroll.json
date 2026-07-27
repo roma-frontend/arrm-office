@@ -273,6 +273,37 @@
     "grossMode": "Brutto",
     "salaryModeHint": "Netto oder Brutto eingeben - das System berechnet den Rest automatisch.",
     "employeeContributions": "Arbeitnehmerbeiträge",
-    "employerCost": "Arbeitgeberbeiträge"
+    "employerCost": "Arbeitgeberbeiträge",
+    "taxEditor": {
+      "title": "Steuersätze & Beiträge",
+      "customActive": "Für diese Organisation sind benutzerdefinierte Sätze aktiv",
+      "usingDefaults": "Standardsätze für {{country}} werden verwendet",
+      "resetDefaults": "Auf Standard zurücksetzen",
+      "approximateWarning": "Die Standardwerte für dieses Land sind ungefähr — vor der Nutzung mit einem Buchhalter prüfen.",
+      "taxFreeAllowance": "Steuerfreibetrag",
+      "incomeTaxBrackets": "Einkommensteuerstufen",
+      "addBracket": "Stufe hinzufügen",
+      "from": "Von",
+      "to": "Bis (leer = ∞)",
+      "ratePct": "Satz %",
+      "employeeContributions": "Arbeitnehmerbeiträge",
+      "employerContributions": "Arbeitgeberbeiträge",
+      "addContribution": "Hinzufügen",
+      "noContributions": "Keine",
+      "contributionName": "Name",
+      "mapsTo": "Zuordnung",
+      "preview": "Vorschau",
+      "sampleGross": "Beispiel-Brutto",
+      "gross": "Brutto",
+      "incomeTax": "Einkommensteuer",
+      "deductionsTotal": "Abzüge gesamt",
+      "net": "Netto",
+      "field": {
+        "socialSecurity": "Sozialversicherung",
+        "healthInsurance": "Krankenversicherung",
+        "pension": "Rente",
+        "other": "Sonstige"
+      }
+    }
   }
 }
