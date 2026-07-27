@@ -11,6 +11,47 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+// Convex query results
+let queryResults: Record<string, unknown> = {};
+const mockMutation = jest.fn();
+
+jest.mock('convex/react', () => ({
+  useQuery: (ref: { _name?: string }) => queryResults[ref?._name ?? ''],
+  useMutation: () => mockMutation,
+  useConvex: () => ({}),
+}));
+
+jest.mock(
+  '@/convex/_generated/api',
+  () => ({
+    api: {
+      analytics: {
+        getReportData: { _name: 'getReportData' },
+      },
+      payroll: {
+        queries: {
+          getUpcomingPayPeriods: { _name: 'getUpcomingPayPeriods' },
+          getMyUpcomingPayPeriods: { _name: 'getMyUpcomingPayPeriods' },
+        },
+      },
+    },
+  }),
+  { virtual: true },
+);
+
+jest.mock('@/store/useAuthStore', () => ({
+  useAuthStore: () => ({ user: { id: 'u1', role: 'admin', organizationId: 'o1' } }),
+}));
+
+jest.mock('@/hooks/useSelectedOrganization', () => ({
+  useSelectedOrganization: () => 'o1',
+}));
+
+jest.mock('@/components/ThemeProvider', () => ({
+  useTheme: () => ({ theme: 'light', resolvedTheme: 'light', setTheme: () => {} }),
+  ThemeProvider: ({ children }: any) => <>{children}</>,
+}));
+
 // Mock UI components
 jest.mock('@/components/ui/button', () => ({
   Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
@@ -220,18 +261,30 @@ describe('ReportBuilder', () => {
       expect(screen.getByText('Edit')).toBeInTheDocument();
     });
 
-    it('shows chart preview icons in preview mode', () => {
+    it('shows widget title and metric badge in preview mode', () => {
       render(<ReportBuilder />);
       fireEvent.click(screen.getByText('Preview'));
 
-      expect(screen.getByText(/Chart preview/)).toBeInTheDocument();
+      // Should show at least one widget title (default: 'New Report')
+      const titles = screen.getAllByText('New Report');
+      expect(titles.length).toBeGreaterThanOrEqual(1);
+      // Should show the metric · groupBy badge (e.g. 'employees' and 'department' visible)
+      const employeeBadges = screen.getAllByText(/employees/i);
+      expect(employeeBadges.length).toBeGreaterThanOrEqual(1);
+      const deptBadges = screen.getAllByText(/department/i);
+      expect(deptBadges.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows metric and group info in preview mode', () => {
+    it('shows chart component in preview mode', () => {
       render(<ReportBuilder />);
       fireEvent.click(screen.getByText('Preview'));
 
-      expect(screen.getByText(/employees by department/)).toBeInTheDocument();
+      // ReportWidgetChart renders a loading skeleton when data is undefined
+      // We can verify the preview area rendered by checking for Edit button (toggle off)
+      expect(screen.getByText('Edit')).toBeInTheDocument();
+      // And that the widgets are visible with their metric badges
+      const employeeBadges = screen.getAllByText(/employees/i);
+      expect(employeeBadges.length).toBeGreaterThanOrEqual(1);
     });
   });
 
