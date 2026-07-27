@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { useTheme } from '@/components/ThemeProvider';
@@ -66,15 +66,29 @@ export default function QRCodeModal({
     open && organizationId ? { organizationId, assetId: asset._id as Id<'assetCatalog'> } : 'skip',
   );
 
+  // ─── Resolve the deep-link against the current origin ───
+  // The URL from Convex is built server-side where NEXT_PUBLIC_APP_URL is not
+  // available (Convex has its own env), so it falls back to localhost. Rewrite
+  // its origin to wherever the app is actually served from.
+  const deepLinkUrl = useMemo(() => {
+    if (!qrData?.url || typeof window === 'undefined') return null;
+    try {
+      const parsed = new URL(qrData.url);
+      return `${window.location.origin}${parsed.pathname}${parsed.search}`;
+    } catch {
+      return qrData.url;
+    }
+  }, [qrData]);
+
   // ─── Generate QR code ───
   useEffect(() => {
-    if (!qrData?.url) return;
+    if (!deepLinkUrl) return;
     let cancelled = false;
     (async () => {
       try {
         const QRCode = await loadQRCode();
         if (cancelled) return;
-        const dataUrl = await QRCode.toDataURL(qrData.url, {
+        const dataUrl = await QRCode.toDataURL(deepLinkUrl, {
           width: 280,
           margin: 1,
           color: { dark: '#1e293b', light: '#ffffff' },
@@ -87,12 +101,12 @@ export default function QRCodeModal({
     return () => {
       cancelled = true;
     };
-  }, [qrData]);
+  }, [deepLinkUrl]);
 
   // ─── Copy deep-link ───
   const handleCopyLink = () => {
-    if (!qrData?.url) return;
-    void navigator.clipboard.writeText(qrData.url);
+    if (!deepLinkUrl) return;
+    void navigator.clipboard.writeText(deepLinkUrl);
     setCopied(true);
     toast.success(t('assets.qr.linkCopied', 'Link copied to clipboard'));
     setTimeout(() => setCopied(false), 2000);
@@ -265,14 +279,14 @@ export default function QRCodeModal({
             </div>
 
             {/* ── Deep-link row ── */}
-            {qrData?.url && (
+            {deepLinkUrl && (
               <div className="w-full max-w-[300px] flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 border border-border/50">
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-0.5">
                     {t('assets.qr.deepLink', 'Deep Link')}
                   </p>
                   <code className="block text-[11px] text-muted-foreground truncate font-mono">
-                    {qrData.url}
+                    {deepLinkUrl}
                   </code>
                 </div>
                 <button
