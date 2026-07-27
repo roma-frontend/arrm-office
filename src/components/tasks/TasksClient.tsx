@@ -35,7 +35,9 @@ import { memo } from 'react';
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type Status = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
-type ViewMode = 'kanban' | 'list';
+import TimelineView from './TimelineView';
+
+type ViewMode = 'kanban' | 'list' | 'timeline';
 
 const STATUS_CONFIG: Record<
   Status,
@@ -820,6 +822,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           >
             {t('tasksClient.list')}
           </button>
+          <button
+            onClick={() => startTransition(() => setViewMode('timeline'))}
+            className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${viewMode === 'timeline' ? 'btn-gradient shadow-sm' : 'text-(--text-muted) hover:text-(--text-primary)'}`}
+          >
+            {t('tasksClient.timeline', 'Timeline')}
+          </button>
         </div>
       </div>
 
@@ -828,6 +836,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         <div className="flex items-center justify-center py-20">
           <ShieldLoader size="lg" />
         </div>
+      ) : viewMode === 'timeline' ? (
+        <TimelineView tasks={tasks} onOpen={(task) => router.push(`/tasks/${task._id}`)} />
       ) : viewMode === 'kanban' ? (
         <DndContext
           sensors={sensors}

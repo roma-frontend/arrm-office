@@ -246,6 +246,7 @@
     "paymentDetails": "Վճարման մանրամասներ",
     "bankName": "Բանկի անվանումը",
     "markPaid": "Նշել որպես վճարված",
+    "markedAsPaid": "Աշխատավարձի հաշվարկը նշվեց որպես վճարված",
     "month": "Ամիս",
     "year": "Տարի",
     "selectedPeriod": "Ընտրված ժամանակահատված",
@@ -303,6 +304,28 @@
         "pension": "Կենսաթոշակ",
         "other": "Այլ"
       }
-    }
+    },
+    "upcomingPeriods": "Առաջիկա աշխատավարձի ժամանակաշրջանները",
+    "periodEnding": "Ժամանակաշրջանի ավարտ",
+    "nextPeriod": "Հաջորդ ժամանակաշրջան",
+    "currentRun": "Ընթացիկ ժամանակաշրջան",
+    "dueToday": "Վերջնաժամկետն այսօր",
+    "daysLeft": "օր է մնացել",
+    "overdue": "Ժամկետանց",
+    "dueSoon": "Շուտով վերջնաժամկետ",
+    "approaching": "Մոտենում է",
+    "planned": "Պլանավորված",
+    "completed": "Ավարտված",
+    "monthlySchedule": "Ամսական վճարումների գրաֆիկ",
+    "biweeklySchedule": "Երկու շաբաթը մեկ գրաֆիկ",
+    "weeklySchedule": "Շաբաթական վճարումների գրաֆիկ",
+    "viewAll": "Դիտել բոլորը",
+    "calendarTitle": "Աշխատավարձի օրացույց",
+    "calendarDesc": "Աշխատավարձի ժամանակաշրջանների ամսական ակնարկ",
+    "yearTotalGross": "Տարեկան Gross",
+    "yearTotalNet": "Տարեկան Net",
+    "completedMonths": "Ավարտված",
+    "noRun": "Հաշվարկ չկա",
+    "current": "Ընթացիկ"
   }
 }

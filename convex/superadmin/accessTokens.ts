@@ -60,6 +60,9 @@ export const generateAccessToken = mutation({
       paidLeaveBalance: 0,
       sickLeaveBalance: 0,
       familyLeaveBalance: 0,
+      dayOffBalance: 0,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 0,
       createdAt: now,
     });
 

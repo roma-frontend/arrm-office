@@ -246,6 +246,7 @@
     "paymentDetails": "Payment Details",
     "bankName": "Bank Name",
     "markPaid": "Mark as Paid",
+    "markedAsPaid": "Payroll run marked as paid",
     "month": "Month",
     "year": "Year",
     "selectedPeriod": "Selected period",
@@ -303,6 +304,28 @@
         "pension": "Pension",
         "other": "Other"
       }
-    }
+    },
+    "upcomingPeriods": "Upcoming Pay Periods",
+    "periodEnding": "Period ending",
+    "nextPeriod": "Next period",
+    "currentRun": "Current Period",
+    "dueToday": "Due today",
+    "daysLeft": "days left",
+    "overdue": "Overdue",
+    "dueSoon": "Due soon",
+    "approaching": "Approaching",
+    "planned": "Planned",
+    "completed": "Completed",
+    "monthlySchedule": "Monthly payroll schedule",
+    "biweeklySchedule": "Bi-weekly payroll schedule",
+    "weeklySchedule": "Weekly payroll schedule",
+    "viewAll": "View All",
+    "calendarTitle": "Payroll Calendar",
+    "calendarDesc": "Monthly overview of pay periods and statuses",
+    "yearTotalGross": "Year Gross",
+    "yearTotalNet": "Year Net",
+    "completedMonths": "Completed",
+    "noRun": "No payroll run",
+    "current": "Current"
   }
 }

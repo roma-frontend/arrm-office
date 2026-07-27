@@ -98,6 +98,9 @@ export const createOAuthUser = mutation({
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
+      dayOffBalance: 6,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 5,
       createdAt: Date.now(),
       avatarUrl,
     });

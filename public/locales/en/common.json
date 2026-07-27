@@ -136,7 +136,8 @@
     "to": "to",
     "approved": "Approved",
     "someone": "Someone",
-    "notAssigned": "Not assigned"
+    "notAssigned": "Not assigned",
+    "exporting": "Exporting…"
   },
   "nav": {
     "home": "Home",
@@ -1164,7 +1165,11 @@
     "unpaid": "Unpaid Leave",
     "sick": "Sick Leave",
     "family": "Family Leave",
-    "doctor": "Doctor Visit"
+    "doctor": "Doctor Visit",
+    "day_off": "Day Off",
+    "maternity": "Maternity Leave",
+    "paternity": "Paternity Leave",
+    "study": "Study Leave"
   },
   "aiRecommendations": {
     "bestDates": "Best Dates for Vacation",
@@ -1499,6 +1504,16 @@
     "customRange": "Custom range",
     "noWidgetSelected": "No Widget Selected",
     "selectWidgetHint": "Select a widget from the sidebar or add a new one",
-    "previewPlaceholder": "Chart preview — connect data source"
+    "previewPlaceholder": "Chart preview — connect data source",
+    "allTime": "All time",
+    "saved": "Report saved",
+    "exported": "Report exported",
+    "exportFailed": "Export failed",
+    "livePreview": "Live Preview",
+    "noData": "No data available for this metric yet",
+    "total": "Total",
+    "groups": "groups",
+    "group": "Group",
+    "value": "Value"
   }
 }

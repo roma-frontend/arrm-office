@@ -2,7 +2,7 @@ import { query } from './_generated/server';
 import { v } from 'convex/values';
 import { isSuperadminEmail } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
-import { getProfile } from './lib/userProfile';
+import { getProfile, type UserProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
 
 // ── Get analytics overview ─────────────────────────────────────────────────
@@ -420,5 +420,203 @@ export const getRecentLeaves = query({
         userDepartment: profile?.department ?? user?.department ?? '',
       };
     });
+  },
+});
+
+// ── Report Builder: aggregate any metric by any dimension ───────────────────
+// Powers the custom widgets on /analytics/reports. Returns a normalized
+// `{ series, total, unit }` shape that every chart type can render.
+const REPORT_METRIC = v.union(
+  v.literal('employees'),
+  v.literal('leaves'),
+  v.literal('attendance'),
+  v.literal('tasks'),
+  v.literal('payroll'),
+  v.literal('performance'),
+  v.literal('recruitment'),
+);
+const REPORT_GROUP_BY = v.union(
+  v.literal('department'),
+  v.literal('team'),
+  v.literal('role'),
+  v.literal('location'),
+  v.literal('none'),
+);
+
+export const getReportData = query({
+  args: {
+    organizationId: v.optional(v.id('organizations')),
+    metric: REPORT_METRIC,
+    groupBy: REPORT_GROUP_BY,
+    rangeDays: v.optional(v.number()), // time window; omit for all-time
+  },
+  handler: async (ctx, { organizationId, metric, groupBy, rangeDays }) => {
+    const requester = await getAuthCaller(ctx);
+    const isSuperadminUser = requester ? isSuperadminEmail(requester.email) : false;
+    const orgId = isSuperadminUser ? organizationId : (organizationId ?? requester?.organizationId);
+
+    // Non-superadmins must be scoped to an org.
+    if (!isSuperadminUser && !orgId) {
+      return { series: [], total: 0, unit: 'count' as const };
+    }
+
+    const rangeStart = rangeDays ? Date.now() - rangeDays * 24 * 60 * 60 * 1000 : 0;
+
+    // Fetch rows for `table`, org-scoped when possible, capped for safety.
+    // Generic over the table name so callers get the concrete document type.
+    async function fetchByOrg<T extends 'users' | 'leaveRequests' | 'tasks' | 'payrollRecords'>(
+      table: T,
+    ) {
+      if (orgId) {
+        return ctx.db
+          .query(table)
+          .withIndex('by_org', (q) => q.eq('organizationId', orgId as never))
+          .take(DEFAULT_LIST_CAP);
+      }
+      return ctx.db.query(table).take(XLARGE_LIST_CAP);
+    }
+
+    // Resolve the grouping key for a user (via profile, falling back to the
+    // user record). Returns null for the 'none' dimension.
+    const groupKeyForUser = (
+      user: { department?: string; role?: string; location?: string } | null | undefined,
+      profile: UserProfile | null | undefined,
+    ): string => {
+      switch (groupBy) {
+        case 'department':
+          return profile?.department ?? user?.department ?? 'Unassigned';
+        case 'role':
+          return user?.role ?? 'Unknown';
+        case 'location':
+          return profile?.location ?? user?.location ?? 'Unassigned';
+        case 'team':
+          // No dedicated team field — fall back to department as a proxy.
+          return profile?.department ?? user?.department ?? 'Unassigned';
+        default:
+          return 'All';
+      }
+    };
+
+    const tally = (rows: Array<{ key: string; value: number }>) => {
+      const map = new Map<string, number>();
+      for (const r of rows) map.set(r.key, (map.get(r.key) ?? 0) + r.value);
+      const series = [...map.entries()]
+        .map(([label, value]) => ({ label, value: Math.round(value * 100) / 100 }))
+        .sort((a, b) => b.value - a.value);
+      const total = series.reduce((s, x) => s + x.value, 0);
+      return { series, total: Math.round(total * 100) / 100 };
+    };
+
+    switch (metric) {
+      case 'employees': {
+        const users = (await fetchByOrg('users')).filter((u) => u.role !== 'superadmin');
+        const profiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
+        const rows = users.map((u, i) => ({ key: groupKeyForUser(u, profiles[i]), value: 1 }));
+        return { ...tally(rows), unit: 'count' as const };
+      }
+
+      case 'leaves': {
+        let leaves = await fetchByOrg('leaveRequests');
+        if (rangeStart) leaves = leaves.filter((l) => l.createdAt >= rangeStart);
+        // Group by status when no org-dimension is requested, else by user dept.
+        if (groupBy === 'none') {
+          const rows = leaves.map((l) => ({ key: l.status, value: 1 }));
+          return { ...tally(rows), unit: 'count' as const };
+        }
+        const userIds = [...new Set(leaves.map((l) => l.userId))];
+        const profs = await Promise.all(userIds.map((id) => getProfile(ctx, id)));
+        const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+        const keyByUser = new Map(
+          userIds.map((id, i) => [id, groupKeyForUser(users[i], profs[i])]),
+        );
+        const rows = leaves.map((l) => ({
+          key: keyByUser.get(l.userId) ?? 'Unassigned',
+          value: 1,
+        }));
+        return { ...tally(rows), unit: 'count' as const };
+      }
+
+      case 'tasks': {
+        let tasks = await fetchByOrg('tasks');
+        if (rangeStart) tasks = tasks.filter((t) => t.createdAt >= rangeStart);
+        // Tasks have no dept dimension of their own — group by status.
+        const rows = tasks.map((t) => ({ key: t.status, value: 1 }));
+        return { ...tally(rows), unit: 'count' as const };
+      }
+
+      case 'payroll': {
+        let records = await fetchByOrg('payrollRecords');
+        if (rangeStart) records = records.filter((r) => r.createdAt >= rangeStart);
+        if (groupBy === 'none') {
+          const rows = records.map((r) => ({ key: r.status, value: r.netSalary }));
+          return { ...tally(rows), unit: 'currency' as const };
+        }
+        const userIds = [...new Set(records.map((r) => r.userId))];
+        const profs = await Promise.all(userIds.map((id) => getProfile(ctx, id)));
+        const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+        const keyByUser = new Map(
+          userIds.map((id, i) => [id, groupKeyForUser(users[i], profs[i])]),
+        );
+        const rows = records.map((r) => ({
+          key: keyByUser.get(r.userId) ?? 'Unassigned',
+          value: r.netSalary,
+        }));
+        return { ...tally(rows), unit: 'currency' as const };
+      }
+
+      case 'performance': {
+        // reviewAssignments has no by_org index — capped scan + field filter.
+        let assignments = await ctx.db.query('reviewAssignments').take(XLARGE_LIST_CAP);
+        if (orgId) assignments = assignments.filter((a) => a.organizationId === orgId);
+        if (rangeStart) assignments = assignments.filter((a) => a.createdAt >= rangeStart);
+        const rows = assignments.map((a) => ({ key: a.status, value: 1 }));
+        return { ...tally(rows), unit: 'count' as const };
+      }
+
+      case 'recruitment': {
+        if (!orgId) return { series: [], total: 0, unit: 'count' as const };
+        let apps = await ctx.db
+          .query('applications')
+          .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+          .take(DEFAULT_LIST_CAP);
+        if (rangeStart) apps = apps.filter((a) => a.createdAt >= rangeStart);
+        const rows = apps.map((a) => ({ key: a.stage, value: 1 }));
+        return { ...tally(rows), unit: 'count' as const };
+      }
+
+      case 'attendance': {
+        // Worked hours from the timeTracking table (clock in/out sessions).
+        let sessions = orgId
+          ? await ctx.db
+              .query('timeTracking')
+              .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+              .take(DEFAULT_LIST_CAP)
+          : await ctx.db.query('timeTracking').take(XLARGE_LIST_CAP);
+        if (rangeStart) sessions = sessions.filter((s) => s.createdAt >= rangeStart);
+
+        // Convert worked minutes → hours per session.
+        const hoursOf = (s: { totalWorkedMinutes?: number }) =>
+          Math.round(((s.totalWorkedMinutes ?? 0) / 60) * 100) / 100;
+
+        if (groupBy === 'none') {
+          const rows = sessions.map((s) => ({ key: s.status, value: hoursOf(s) }));
+          return { ...tally(rows), unit: 'hours' as const };
+        }
+        const userIds = [...new Set(sessions.map((s) => s.userId))];
+        const profs = await Promise.all(userIds.map((id) => getProfile(ctx, id)));
+        const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+        const keyByUser = new Map(
+          userIds.map((id, i) => [id, groupKeyForUser(users[i], profs[i])]),
+        );
+        const rows = sessions.map((s) => ({
+          key: keyByUser.get(s.userId) ?? 'Unassigned',
+          value: hoursOf(s),
+        }));
+        return { ...tally(rows), unit: 'hours' as const };
+      }
+
+      default:
+        return { series: [], total: 0, unit: 'count' as const };
+    }
   },
 });

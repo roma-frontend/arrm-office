@@ -94,6 +94,9 @@ export const upsertSharePointUser = mutation({
       paidLeaveBalance: 20,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
+      dayOffBalance: 6,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 5,
       createdAt: now,
     });
 
@@ -255,6 +258,9 @@ export const secureUpsertSharePointUser = mutation({
       paidLeaveBalance: 20,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
+      dayOffBalance: 6,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 5,
       createdAt: Date.now(),
     });
 

@@ -319,6 +319,14 @@ export function MotionButton({
   className = '',
   whileHover,
   whileTap,
+  // Strip framer-motion-specific props so they don't leak onto the DOM node
+  layout,
+  initial,
+  animate,
+  exit,
+  transition,
+  variants,
+  onAnimationComplete,
   ...restProps
 }: MotionProps) {
   const hoverClass = whileHover?.scale ? 'hover:scale-110 transition-transform' : '';
@@ -342,6 +350,14 @@ export function MotionSpan({
   className = '',
   whileHover,
   whileTap,
+  // Strip framer-motion-specific props so they don't leak onto the DOM node
+  layout,
+  initial,
+  animate,
+  exit,
+  transition,
+  variants,
+  onAnimationComplete,
   ...restProps
 }: MotionProps) {
   const hoverClass = whileHover?.scale ? 'hover:scale-110 transition-transform' : '';

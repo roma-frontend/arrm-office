@@ -297,6 +297,9 @@ export const register = mutation({
         paidLeaveBalance: 24,
         sickLeaveBalance: 10,
         familyLeaveBalance: 5,
+        dayOffBalance: 6,
+        maternityLeaveBalance: 0,
+        studyLeaveBalance: 5,
         createdAt: Date.now(),
       });
 
@@ -897,6 +900,9 @@ export const googleOAuthLogin = mutation({
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
+      dayOffBalance: 6,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 5,
       sessionToken: isApproved ? args.sessionToken : undefined,
       sessionExpiry: isApproved ? args.sessionExpiry : undefined,
       lastLoginAt: Date.now(),
@@ -950,6 +956,9 @@ export const googleOAuthLogin = mutation({
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
+      dayOffBalance: 6,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 5,
     };
   },
 });

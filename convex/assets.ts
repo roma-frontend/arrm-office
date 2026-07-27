@@ -320,7 +320,7 @@ export const getAssetQRData = query({
       serialNumber: asset.serialNumber ?? null,
       assetTag: asset.assetTag ?? null,
       category: asset.category,
-      url: `${baseUrl}/assets/${asset._id}`,
+      url: `${baseUrl}/assets?asset=${asset._id}`,
     };
   },
 });

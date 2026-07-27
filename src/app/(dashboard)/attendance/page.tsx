@@ -114,7 +114,7 @@ interface EmployeeNeedingRating {
 }
 
 export default function AttendancePage() {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['modules', 'common']);
   const { user } = useAuthStore();
   const selectedOrgId = useSelectedOrganization();
   const lang = i18n.language || 'en';
@@ -381,13 +381,13 @@ export default function AttendancePage() {
                                 </p>
                                 <p className="text-xs text-(--text-muted)">
                                   {record.status !== 'absent' && record.checkInTime > 0
-                                    ? `In: ${formatTime(record.checkInTime, lang, { hour: '2-digit', minute: '2-digit' })}`
+                                    ? `${t('attendance.checkIn')}: ${formatTime(record.checkInTime, lang, { hour: '2-digit', minute: '2-digit' })}`
                                     : ''}
                                   {record.checkOutTime
-                                    ? ` · Out: ${formatTime(record.checkOutTime, lang, { hour: '2-digit', minute: '2-digit' })}`
+                                    ? ` · ${t('attendance.checkOut')}: ${formatTime(record.checkOutTime, lang, { hour: '2-digit', minute: '2-digit' })}`
                                     : ''}
                                   {record.totalWorkedMinutes
-                                    ? ` · ${(record.totalWorkedMinutes / 60).toFixed(1)}h worked`
+                                    ? ` · ${(record.totalWorkedMinutes / 60).toFixed(1)}${t('time.h')} ${t('attendance.worked')}`
                                     : ''}
                                 </p>
                               </div>
@@ -395,12 +395,13 @@ export default function AttendancePage() {
                             <div className="flex items-center gap-2">
                               {record.isLate && (
                                 <Badge variant="destructive" className="text-xs">
-                                  Late {record.lateMinutes}m
+                                  {t('statuses.late')} {record.lateMinutes}
+                                  {t('attendanceExtra.minutesShort')}
                                 </Badge>
                               )}
                               {record.isEarlyLeave && (
                                 <Badge className="bg-orange-500 text-white text-xs">
-                                  Early leave
+                                  {t('attendanceIssues.early')}
                                 </Badge>
                               )}
                               {record.status === t('status.checkedIn') && (

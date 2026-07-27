@@ -13,7 +13,17 @@ import {
   TextInputStep,
   TextareaStep,
 } from '@/components/ui/wizard-step-components';
-import { Calendar, Sun, Heart, Users, Briefcase, CheckCircle } from 'lucide-react';
+import {
+  Calendar,
+  Sun,
+  Heart,
+  Users,
+  Briefcase,
+  CheckCircle,
+  Baby,
+  BookOpen,
+  Coffee,
+} from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -53,31 +63,58 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.paid'),
               description: t('leave.types.paidDesc'),
               icon: <Sun className="w-6 h-6" />,
-              color: 'bg-yellow-500/10 text-yellow-600',
+              color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
+              badge: `${user?.paidLeaveBalance ?? 24} ${t('leave.days', 'days')}`,
             },
             {
               value: 'sick',
               title: t('leave.types.sick'),
               description: t('leave.types.sickDesc'),
               icon: <Heart className="w-6 h-6" />,
-              color: 'bg-red-500/10 text-red-600',
+              color: 'bg-red-500/10 text-red-600 dark:text-red-400',
+              badge: `${user?.sickLeaveBalance ?? 10} ${t('leave.days', 'days')}`,
             },
             {
               value: 'family',
               title: t('leave.types.family'),
               description: t('leave.types.familyDesc'),
               icon: <Users className="w-6 h-6" />,
-              color: 'bg-purple-500/10 text-purple-600',
+              color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+              badge: `${user?.familyLeaveBalance ?? 5} ${t('leave.days', 'days')}`,
+            },
+            {
+              value: 'day_off',
+              title: t('leave.types.dayOff'),
+              description: t('leave.types.dayOffDesc'),
+              icon: <Coffee className="w-6 h-6" />,
+              color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
+              badge: `${user?.dayOffBalance ?? 6} ${t('leave.days', 'days')}`,
+            },
+            {
+              value: 'study',
+              title: t('leave.types.study'),
+              description: t('leave.types.studyDesc'),
+              icon: <BookOpen className="w-6 h-6" />,
+              color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+              badge: `${user?.studyLeaveBalance ?? 5} ${t('leave.days', 'days')}`,
+            },
+            {
+              value: 'maternity',
+              title: t('leave.types.maternity'),
+              description: t('leave.types.maternityDesc'),
+              icon: <Baby className="w-6 h-6" />,
+              color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
+              badge: `${t('leave.types.maternityBadge', '18 weeks')}`,
             },
             {
               value: 'unpaid',
               title: t('leave.types.unpaid'),
               description: t('leave.types.unpaidDesc'),
               icon: <Briefcase className="w-6 h-6" />,
-              color: 'bg-gray-500/10 text-gray-600',
+              color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
             },
           ]}
-          columns={2}
+          columns={3}
           required
         />
       ),
@@ -137,15 +174,59 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
             label={t('leaveWizard.steps.details.commentLabel')}
             placeholder={t('leaveWizard.steps.details.commentPlaceholder')}
             rows={4}
-          />
+          />{' '}
+          {/* Leave Balances Summary */}
           {user && (
-            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                💡{' '}
-                {t('leaveWizard.steps.details.balanceInfo', {
-                  balance: user.paidLeaveBalance ?? 24,
-                })}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-(--text-muted)">
+                {t('leave.availableBalances', 'Available Balances')}
               </p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  {
+                    key: 'paid',
+                    label: t('leave.types.paid'),
+                    balance: user.paidLeaveBalance ?? 24,
+                    color: 'bg-yellow-500',
+                  },
+                  {
+                    key: 'sick',
+                    label: t('leave.types.sick'),
+                    balance: user.sickLeaveBalance ?? 10,
+                    color: 'bg-red-500',
+                  },
+                  {
+                    key: 'day_off',
+                    label: t('leave.types.dayOff'),
+                    balance: user.dayOffBalance ?? 6,
+                    color: 'bg-teal-500',
+                  },
+                  {
+                    key: 'family',
+                    label: t('leave.types.family'),
+                    balance: user.familyLeaveBalance ?? 5,
+                    color: 'bg-purple-500',
+                  },
+                  {
+                    key: 'study',
+                    label: t('leave.types.study'),
+                    balance: user.studyLeaveBalance ?? 5,
+                    color: 'bg-sky-500',
+                  },
+                ].map(({ key, label, balance, color }) => (
+                  <div
+                    key={key}
+                    className="p-2 rounded-lg border border-(--border)/50 bg-(--background-subtle)/50"
+                  >
+                    <p className="text-[10px] text-(--text-muted) truncate">{label}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
+                      <p className="text-sm font-bold text-(--text-primary)">{balance}</p>
+                      <p className="text-[9px] text-(--text-muted)">{t('leave.days', 'days')}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

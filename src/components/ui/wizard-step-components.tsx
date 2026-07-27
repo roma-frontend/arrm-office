@@ -200,6 +200,7 @@ interface CardSelectionStepProps {
     description: string;
     icon: React.ReactNode;
     color?: string;
+    badge?: string;
   }[];
   description?: string;
   required?: boolean;
@@ -283,6 +284,12 @@ export function CardSelectionStep({
                     {option.description}
                   </p>
                 </div>
+                {/* Badge (balance info) */}
+                {option.badge && !isSelected && (
+                  <span className="text-[10px] font-medium text-(--text-muted) bg-(--background-subtle) px-2 py-0.5 rounded-full border border-(--border)">
+                    {option.badge}
+                  </span>
+                )}
                 {isSelected && (
                   <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] md:text-xs px-2 py-0.5 shadow-sm">
                     ✓{' '}

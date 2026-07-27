@@ -31,6 +31,9 @@ export const userProfiles = {
     paidLeaveBalance: v.optional(v.number()),
     sickLeaveBalance: v.optional(v.number()),
     familyLeaveBalance: v.optional(v.number()),
+    dayOffBalance: v.optional(v.number()),
+    maternityLeaveBalance: v.optional(v.number()),
+    studyLeaveBalance: v.optional(v.number()),
   })
     .index('by_user', ['userId'])
     .index('by_department', ['departmentId'])

@@ -965,6 +965,17 @@ export default function AssetsClient() {
   const [deleteConfirmAsset, setDeleteConfirmAsset] = useState<any>(null);
   const [qrCodeAsset, setQrCodeAsset] = useState<any>(null);
 
+  // Deep-link: open an asset's detail card when the URL carries `?asset=<id>`
+  // (e.g. when a QR-code sticker is scanned). Runs once on mount.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const assetIdParam = new URLSearchParams(window.location.search).get('asset');
+    if (assetIdParam) {
+      setActiveTab('catalog');
+      setSelectedAsset({ _id: assetIdParam as Id<'assetCatalog'> });
+    }
+  }, []);
+
   // Queries
   const _useQuery = useQuery as unknown as (...args: any[]) => any;
   const _useMutation = useMutation as unknown as (...args: any[]) => any;

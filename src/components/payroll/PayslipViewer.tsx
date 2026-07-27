@@ -1,0 +1,487 @@
+'use client';
+
+import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useQuery } from 'convex/react';
+import { useAuthStore } from '@/store/useAuthStore';
+import { api } from '@/convex/_generated/api';
+import {
+  FileText,
+  Printer,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Building2,
+  User,
+  Hash,
+  Calendar,
+  ChevronRight,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from '@/lib/cssMotion';
+import { ShieldLoader } from '@/components/ui/ShieldLoader';
+
+// ── Types ──
+interface Deductions {
+  incomeTax: number;
+  socialSecurity: number;
+  healthInsurance?: number;
+  pension?: number;
+  other?: number;
+  total: number;
+}
+
+interface PayslipRecord {
+  baseSalary: number;
+  grossSalary: number;
+  netSalary: number;
+  bonuses?: number;
+  overtimeHours?: number;
+  overtimePay?: number;
+  deductions?: Deductions;
+  employerContributions?: number;
+  totalCost?: number;
+  currency: string;
+  taxCountry: string;
+  status: string;
+}
+
+interface PayslipData {
+  _id: string;
+  period: string;
+  status: string;
+  generatedAt: number;
+  sentAt?: number;
+  record: PayslipRecord | null;
+  run: { status: string; period: string } | null;
+  employeeName: string;
+  employeePosition?: string;
+  employeeDepartment?: string;
+}
+
+// ── Pure helpers (no i18n) ──
+function formatCurrency(amount: number | undefined | null, currency = 'AMD'): string {
+  if (amount == null) return '\u2014';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function formatDate(ts: number, locale: string): string {
+  return new Date(ts).toLocaleDateString(
+    locale === 'ru' ? 'ru-RU' : locale === 'hy' ? 'hy-AM' : 'en-GB',
+    { year: 'numeric', month: 'long', day: 'numeric' },
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const config: Record<
+    string,
+    { variant: 'success' | 'warning' | 'secondary'; icon: typeof CheckCircle }
+  > = {
+    generated: { variant: 'secondary', icon: Clock },
+    sent: { variant: 'warning', icon: AlertCircle },
+    viewed: { variant: 'success', icon: CheckCircle },
+    paid: { variant: 'success', icon: CheckCircle },
+  };
+  const cfg = config[status];
+  if (!cfg) return <Badge variant="secondary">{status}</Badge>;
+  const Icon = cfg.icon;
+  return (
+    <Badge variant={cfg.variant} className="flex items-center gap-1 capitalize">
+      <Icon className="w-3 h-3" />
+      {status}
+    </Badge>
+  );
+}
+
+// ── Payslip Document ──
+function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: string }) {
+  const { t } = useTranslation();
+  const printRef = useRef<HTMLDivElement>(null);
+  const currency = payslip.record?.currency ?? 'AMD';
+  const deductions = payslip.record?.deductions;
+  const isOverdue =
+    payslip.status !== 'paid' &&
+    payslip.status !== 'viewed' &&
+    payslip.generatedAt < Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  const earnings = [
+    { label: 'Base Salary', value: payslip.record?.baseSalary ?? 0 },
+    ...(payslip.record?.bonuses ? [{ label: 'Bonuses', value: payslip.record.bonuses }] : []),
+    ...(payslip.record?.overtimePay
+      ? [{ label: 'Overtime', value: payslip.record.overtimePay }]
+      : []),
+  ];
+
+  const deductionItems = deductions
+    ? [
+        { label: 'Income Tax', value: deductions.incomeTax },
+        ...(deductions.socialSecurity
+          ? [{ label: 'Social Security', value: deductions.socialSecurity }]
+          : []),
+        ...(deductions.healthInsurance
+          ? [{ label: 'Health Insurance', value: deductions.healthInsurance }]
+          : []),
+        ...(deductions.pension ? [{ label: 'Pension', value: deductions.pension }] : []),
+        ...(deductions.other ? [{ label: 'Other', value: deductions.other }] : []),
+      ]
+    : [];
+
+  const totalDeductions = deductions?.total ?? 0;
+  const gross = payslip.record?.grossSalary ?? 0;
+  const net = payslip.record?.netSalary ?? 0;
+
+  return (
+    <div className="space-y-4">
+      <div
+        ref={printRef}
+        className="bg-(--card) border border-(--border) rounded-2xl shadow-sm overflow-hidden print:shadow-none print:border-gray-300 relative"
+      >
+        {payslip.status !== 'paid' && payslip.status !== 'viewed' && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.04] rotate-[-30deg] text-6xl font-black text-rose-500 select-none">
+            NOT PAID
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="relative border-b border-(--border) bg-gradient-to-r from-blue-500/5 via-transparent to-blue-500/5 p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-blue-500/10">
+                <Building2 className="w-6 h-6 text-blue-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-(--text-primary)">Payroll Slip</h2>
+                <p className="text-sm text-(--text-muted)">
+                  Period:{' '}
+                  <span className="font-medium text-(--text-primary)">{payslip.period}</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <StatusBadge status={payslip.run?.status ?? payslip.status} />
+              {isOverdue && (
+                <Badge variant="destructive" className="animate-pulse">
+                  Overdue
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 sm:p-8 space-y-8">
+          {/* Employee Info */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                icon: User,
+                label: 'Employee',
+                value: payslip.employeeName,
+                sub: payslip.employeePosition,
+              },
+              {
+                icon: Calendar,
+                label: 'Department',
+                value: payslip.employeeDepartment ?? '\u2014',
+              },
+              {
+                icon: Calendar,
+                label: 'Issue Date',
+                value: formatDate(payslip.generatedAt, locale),
+              },
+              { icon: Hash, label: 'Payslip #', value: `#${payslip._id.slice(-8).toUpperCase()}` },
+            ].map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={idx}
+                  className="p-4 rounded-xl bg-(--background-subtle)/50 border border-(--border)"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className="w-4 h-4 text-(--text-muted)" />
+                    <span className="text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                      {item.label}
+                    </span>
+                  </div>
+                  <p className="font-semibold text-(--text-primary)">{item.value}</p>
+                  {item.sub && <p className="text-xs text-(--text-muted) mt-0.5">{item.sub}</p>}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Earnings & Deductions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Earnings */}
+            <div>
+              <h3 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">
+                <div className="w-1 h-5 rounded-full bg-emerald-500" />
+                Earnings
+              </h3>
+              <div className="rounded-xl border border-(--border) overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-(--background-subtle)/70 border-b border-(--border)">
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {earnings.map((item, idx) => (
+                      <tr key={idx} className="border-b border-(--border)/50 last:border-0">
+                        <td className="px-4 py-2.5 text-(--text-primary)">{item.label}</td>
+                        <td className="px-4 py-2.5 text-right font-medium text-(--text-primary)">
+                          {formatCurrency(item.value, currency)}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="bg-emerald-500/5 border-t-2 border-emerald-500/20">
+                      <td className="px-4 py-3 font-bold text-(--text-primary)">Gross Salary</td>
+                      <td className="px-4 py-3 text-right font-bold text-emerald-600 text-base">
+                        {formatCurrency(gross, currency)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Deductions */}
+            <div>
+              <h3 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">
+                <div className="w-1 h-5 rounded-full bg-rose-500" />
+                Deductions
+              </h3>
+              <div className="rounded-xl border border-(--border) overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-(--background-subtle)/70 border-b border-(--border)">
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deductionItems.length > 0 ? (
+                      deductionItems.map((item, idx) => (
+                        <tr key={idx} className="border-b border-(--border)/50 last:border-0">
+                          <td className="px-4 py-2.5 text-(--text-primary)">{item.label}</td>
+                          <td className="px-4 py-2.5 text-right font-medium text-rose-500">
+                            -{formatCurrency(item.value, currency)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={2}
+                          className="px-4 py-4 text-center text-(--text-muted) text-sm"
+                        >
+                          No deductions
+                        </td>
+                      </tr>
+                    )}
+                    <tr className="bg-rose-500/5 border-t-2 border-rose-500/20">
+                      <td className="px-4 py-3 font-bold text-(--text-primary)">
+                        Total Deductions
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-rose-600 text-base">
+                        -{formatCurrency(totalDeductions, currency)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Net Pay */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-green-700 p-6 sm:p-8">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-white/80 mb-1">Net Pay</p>
+                <p className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                  {formatCurrency(net, currency)}
+                </p>
+                <p className="text-xs text-white/60 mt-1">
+                  {currency} &middot; After all deductions
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-white/60">Employer total cost</p>
+                <p className="text-lg font-bold text-white/90">
+                  {formatCurrency(payslip.record?.totalCost ?? gross, currency)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-(--border)">
+            <div className="flex items-center gap-2 text-xs text-(--text-muted)">
+              <FileText className="w-3.5 h-3.5" />
+              Generated: {formatDate(payslip.generatedAt, locale)}
+              {payslip.sentAt && (
+                <>
+                  <span className="mx-1">&middot;</span> Sent: {formatDate(payslip.sentAt, locale)}
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {payslip.record?.taxCountry && (
+                <Badge variant="outline" className="text-[10px]">
+                  {payslip.record.taxCountry.toUpperCase()}
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-[10px]">
+                {currency}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 print:hidden">
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
+          <Printer className="w-4 h-4" />
+          Print
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main PayslipViewer ──
+export default function PayslipViewer() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language || 'en';
+  const { user } = useAuthStore();
+  const isAdmin =
+    user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'supervisor';
+
+  const _useQuery = useQuery as unknown as (...args: any[]) => any;
+  const _payslipsRef = api.payroll.queries.getMyPayslips as unknown as never;
+
+  const myPayslips = _useQuery(_payslipsRef, !isAdmin && user?.id ? {} : 'skip') as
+    | PayslipData[]
+    | undefined;
+
+  const [selectedPayslip, setSelectedPayslip] = useState<PayslipData | null>(null);
+
+  if (isAdmin) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
+      <div>
+        <h2 className="text-xl font-bold text-(--text-primary) flex items-center gap-2">
+          <FileText className="w-5 h-5 text-blue-500" />
+          {t('payroll.myPayslips', 'My Payslips')}
+        </h2>
+        <p className="text-sm text-(--text-muted) mt-1">
+          {t('payroll.myPayslipsDesc', 'View and download your payroll slips')}
+        </p>
+      </div>
+
+      {myPayslips === undefined ? (
+        <div className="flex items-center justify-center py-12">
+          <ShieldLoader size="md" />
+        </div>
+      ) : myPayslips.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <FileText className="w-10 h-10 mx-auto mb-3 text-(--text-muted) opacity-40" />
+            <p className="font-medium text-(--text-primary)">
+              {t('payroll.noPayslips', 'No payslips yet')}
+            </p>
+            <p className="text-sm text-(--text-muted) mt-1">
+              {t(
+                'payroll.noPayslipsDesc',
+                'Payslips will appear here after payroll runs are processed',
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid gap-3">
+            {myPayslips.map((payslip) => (
+              <div
+                key={payslip._id}
+                className="group bg-(--card) border border-(--border) rounded-xl p-4 hover:shadow-md hover:border-blue-400/30 transition-all duration-200 cursor-pointer"
+                onClick={() =>
+                  setSelectedPayslip(selectedPayslip?._id === payslip._id ? null : payslip)
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-(--text-primary) group-hover:text-blue-400 transition-colors">
+                        {payslip.period}
+                      </p>
+                      <p className="text-xs text-(--text-muted)">
+                        {formatDate(payslip.generatedAt, locale)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-bold text-(--text-primary)">
+                        {formatCurrency(
+                          payslip.record?.netSalary,
+                          payslip.record?.currency ?? 'AMD',
+                        )}
+                      </p>
+                      <p className="text-xs text-(--text-muted)">Net</p>
+                    </div>
+                    <StatusBadge status={payslip.run?.status ?? payslip.status} />
+                    <ChevronRight
+                      className={`w-4 h-4 text-(--text-muted) transition-transform duration-200 ${selectedPayslip?._id === payslip._id ? 'rotate-90' : ''}`}
+                    />
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {selectedPayslip?._id === payslip._id && (
+                    <motion.div
+                      key="payslip-detail"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="mt-4 pt-4 border-t border-(--border)"
+                    >
+                      <PayslipDocument payslip={payslip} locale={locale} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}

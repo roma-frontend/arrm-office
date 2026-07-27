@@ -71,7 +71,7 @@ function formatDuration(minutes: number) {
 }
 
 export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetailModalProps) {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['modules', 'common']);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const currentMonth = new Date().toISOString().slice(0, 7); // "2026-02"
@@ -132,7 +132,7 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                       onClick={onClose}
                       variant="ghost"
                       size="icon"
-                      className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                      className="absolute! top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
                     >
                       <X className="w-4 h-4 text-white" />
                     </Button>

@@ -20,6 +20,10 @@ export const createLeave = mutation({
       v.literal('sick'),
       v.literal('family'),
       v.literal('doctor'),
+      v.literal('day_off'),
+      v.literal('maternity'),
+      v.literal('paternity'),
+      v.literal('study'),
     ),
     startDate: v.string(),
     endDate: v.string(),
@@ -206,6 +210,23 @@ export const approveLeave = mutation({
         await patchProfile(ctx, leave.userId, {
           familyLeaveBalance: Math.max(0, (user.familyLeaveBalance ?? 5) - leave.days),
         });
+      } else if (leave.type === 'day_off') {
+        await patchProfile(ctx, leave.userId, {
+          dayOffBalance: Math.max(0, (user.dayOffBalance ?? 6) - leave.days),
+        });
+      } else if (leave.type === 'study') {
+        await patchProfile(ctx, leave.userId, {
+          studyLeaveBalance: Math.max(0, (user.studyLeaveBalance ?? 5) - leave.days),
+        });
+      } else if (leave.type === 'maternity') {
+        await patchProfile(ctx, leave.userId, {
+          maternityLeaveBalance: Math.max(0, (user.maternityLeaveBalance ?? 126) - leave.days),
+        });
+      } else if (leave.type === 'paternity') {
+        // Paternity leave — deduct from paid leave or track separately.
+        await patchProfile(ctx, leave.userId, {
+          paidLeaveBalance: Math.max(0, (user.paidLeaveBalance ?? 24) - leave.days),
+        });
       }
     }
 
@@ -366,6 +387,10 @@ export const updateLeave = mutation({
         v.literal('sick'),
         v.literal('family'),
         v.literal('doctor'),
+        v.literal('day_off'),
+        v.literal('maternity'),
+        v.literal('paternity'),
+        v.literal('study'),
       ),
     ),
   },
@@ -467,6 +492,22 @@ export const deleteLeave = mutation({
         else if (leave.type === 'family')
           await patchProfile(ctx, leave.userId, {
             familyLeaveBalance: (user.familyLeaveBalance ?? 0) + leave.days,
+          });
+        else if (leave.type === 'day_off')
+          await patchProfile(ctx, leave.userId, {
+            dayOffBalance: (user.dayOffBalance ?? 0) + leave.days,
+          });
+        else if (leave.type === 'study')
+          await patchProfile(ctx, leave.userId, {
+            studyLeaveBalance: (user.studyLeaveBalance ?? 0) + leave.days,
+          });
+        else if (leave.type === 'maternity')
+          await patchProfile(ctx, leave.userId, {
+            maternityLeaveBalance: (user.maternityLeaveBalance ?? 0) + leave.days,
+          });
+        else if (leave.type === 'paternity')
+          await patchProfile(ctx, leave.userId, {
+            paidLeaveBalance: (user.paidLeaveBalance ?? 0) + leave.days,
           });
       }
     }
@@ -715,6 +756,22 @@ export const bulkApproveLeaves = mutation({
           } else if (leave.type === 'family') {
             await patchProfile(ctx, leave.userId, {
               familyLeaveBalance: Math.max(0, (user.familyLeaveBalance ?? 5) - leave.days),
+            });
+          } else if (leave.type === 'day_off') {
+            await patchProfile(ctx, leave.userId, {
+              dayOffBalance: Math.max(0, (user.dayOffBalance ?? 6) - leave.days),
+            });
+          } else if (leave.type === 'study') {
+            await patchProfile(ctx, leave.userId, {
+              studyLeaveBalance: Math.max(0, (user.studyLeaveBalance ?? 5) - leave.days),
+            });
+          } else if (leave.type === 'maternity') {
+            await patchProfile(ctx, leave.userId, {
+              maternityLeaveBalance: Math.max(0, (user.maternityLeaveBalance ?? 126) - leave.days),
+            });
+          } else if (leave.type === 'paternity') {
+            await patchProfile(ctx, leave.userId, {
+              paidLeaveBalance: Math.max(0, (user.paidLeaveBalance ?? 24) - leave.days),
             });
           }
         }

@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 
 export function CheckInOutWidget() {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['modules', 'common']);
   const dfLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
   const { user } = useAuthStore();
   const [currentTime, setCurrentTime] = useState<Date>(new Date());

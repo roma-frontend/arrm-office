@@ -246,6 +246,7 @@
     "paymentDetails": "Zahlungsdetails",
     "bankName": "Bankname",
     "markPaid": "Als bezahlt markieren",
+    "markedAsPaid": "Abrechnungslauf als bezahlt markiert",
     "month": "Monat",
     "year": "Jahr",
     "selectedPeriod": "Ausgewählter Zeitraum",
@@ -304,6 +305,28 @@
         "pension": "Rente",
         "other": "Sonstige"
       }
-    }
+    },
+    "upcomingPeriods": "Bevorstehende Gehaltsperioden",
+    "periodEnding": "Zeitraum endet",
+    "nextPeriod": "Nächster Zeitraum",
+    "currentRun": "Aktuelle Periode",
+    "dueToday": "Heute fällig",
+    "daysLeft": "Tage übrig",
+    "overdue": "Überfällig",
+    "dueSoon": "Demnächst fällig",
+    "approaching": "Nähert sich",
+    "planned": "Geplant",
+    "completed": "Abgeschlossen",
+    "monthlySchedule": "Monatlicher Gehaltsplan",
+    "biweeklySchedule": "Zweiwöchentlicher Gehaltsplan",
+    "weeklySchedule": "Wöchentlicher Gehaltsplan",
+    "viewAll": "Alle anzeigen",
+    "calendarTitle": "Gehaltskalender",
+    "calendarDesc": "Monatsübersicht der Gehaltsperioden und Status",
+    "yearTotalGross": "Jahresbrutto",
+    "yearTotalNet": "Jahresnetto",
+    "completedMonths": "Abgeschlossen",
+    "noRun": "Keine Gehaltsabrechnung",
+    "current": "Aktuell"
   }
 }

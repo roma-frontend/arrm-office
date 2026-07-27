@@ -27,6 +27,51 @@ export const employees = {
     passportExpiryDate: v.optional(v.string()),
     socialCardNumber: v.optional(v.string()),
     nationality: v.optional(v.string()),
+    // New extended fields
+    address: v.optional(v.string()),
+    emergencyContactName: v.optional(v.string()),
+    emergencyContactPhone: v.optional(v.string()),
+    emergencyContactRelation: v.optional(v.string()),
+    workFormat: v.optional(v.union(v.literal('remote'), v.literal('office'), v.literal('hybrid'))),
+    workSchedule: v.optional(
+      v.object({
+        startTime: v.string(),
+        endTime: v.string(),
+        workingDays: v.array(v.string()),
+        flexHours: v.boolean(),
+      }),
+    ),
+    socialLinks: v.optional(
+      v.object({
+        linkedin: v.optional(v.string()),
+        github: v.optional(v.string()),
+        portfolio: v.optional(v.string()),
+      }),
+    ),
+    structuredWorkHistory: v.optional(
+      v.array(
+        v.object({
+          company: v.string(),
+          position: v.string(),
+          startDate: v.string(),
+          endDate: v.optional(v.string()),
+          description: v.optional(v.string()),
+        }),
+      ),
+    ),
+    structuredEducation: v.optional(
+      v.array(
+        v.object({
+          institution: v.string(),
+          degree: v.string(),
+          field: v.string(),
+          startDate: v.string(),
+          endDate: v.optional(v.string()),
+          gpa: v.optional(v.string()),
+        }),
+      ),
+    ),
+    dateOfBirth: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

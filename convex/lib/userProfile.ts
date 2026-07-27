@@ -23,6 +23,9 @@ export interface UserProfile {
   paidLeaveBalance?: number;
   sickLeaveBalance?: number;
   familyLeaveBalance?: number;
+  dayOffBalance?: number;
+  maternityLeaveBalance?: number;
+  studyLeaveBalance?: number;
 }
 
 /** Profile field names for filtering */
@@ -42,6 +45,9 @@ export const PROFILE_FIELDS = [
   'paidLeaveBalance',
   'sickLeaveBalance',
   'familyLeaveBalance',
+  'dayOffBalance',
+  'maternityLeaveBalance',
+  'studyLeaveBalance',
 ] as const;
 
 /**
@@ -76,6 +82,9 @@ export function extractProfileFromUser(user: Doc<'users'>) {
     paidLeaveBalance: user.paidLeaveBalance,
     sickLeaveBalance: user.sickLeaveBalance,
     familyLeaveBalance: user.familyLeaveBalance,
+    dayOffBalance: user.dayOffBalance,
+    maternityLeaveBalance: user.maternityLeaveBalance,
+    studyLeaveBalance: user.studyLeaveBalance,
   };
 }
 

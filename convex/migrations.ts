@@ -57,6 +57,44 @@ export const fixDuplicateUsers = mutation({
   },
 });
 
+// ── Migration: add new balance fields to existing users ─────────────────────
+export const migrateNewBalanceFields = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query('users').take(XLARGE_LIST_CAP);
+    let updated = 0;
+
+    for (const user of users) {
+      const patch: Record<string, number> = {};
+      if (user.dayOffBalance === undefined) patch.dayOffBalance = 6;
+      if (user.maternityLeaveBalance === undefined) patch.maternityLeaveBalance = 0;
+      if (user.studyLeaveBalance === undefined) patch.studyLeaveBalance = 5;
+
+      if (Object.keys(patch).length > 0) {
+        await ctx.db.patch(user._id, patch);
+        updated++;
+      }
+
+      // Also update userProfiles if exists
+      const profile = await ctx.db
+        .query('userProfiles')
+        .withIndex('by_user', (q: any) => q.eq('userId', user._id))
+        .first();
+      if (profile) {
+        const profilePatch: Record<string, number> = {};
+        if (profile.dayOffBalance === undefined) profilePatch.dayOffBalance = 6;
+        if (profile.maternityLeaveBalance === undefined) profilePatch.maternityLeaveBalance = 0;
+        if (profile.studyLeaveBalance === undefined) profilePatch.studyLeaveBalance = 5;
+        if (Object.keys(profilePatch).length > 0) {
+          await ctx.db.patch(profile._id, profilePatch);
+        }
+      }
+    }
+
+    return { updated, total: users.length };
+  },
+});
+
 // ── Migration: copy preferences from users to userSettings ─────────────────
 export const migratePreferencesToUserSettings = internalMutation({
   args: {},
@@ -144,6 +182,9 @@ export const migrateProfilesToUserProfiles = internalMutation({
         paidLeaveBalance: user.paidLeaveBalance,
         sickLeaveBalance: user.sickLeaveBalance,
         familyLeaveBalance: user.familyLeaveBalance,
+        dayOffBalance: user.dayOffBalance ?? 6,
+        maternityLeaveBalance: user.maternityLeaveBalance ?? 0,
+        studyLeaveBalance: user.studyLeaveBalance ?? 5,
       });
       migrated++;
     }

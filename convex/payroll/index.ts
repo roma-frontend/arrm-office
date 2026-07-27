@@ -6,6 +6,10 @@ export {
   getPayslips,
   getSalarySettings,
   getPayrollRecordById,
+  getPayrollCalendar,
+  getMyPayslips,
+  getUpcomingPayPeriods,
+  getMyUpcomingPayPeriods,
   getAuditLog,
 } from './queries';
 export {

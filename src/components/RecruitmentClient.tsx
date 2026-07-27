@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Pencil,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useAction } from 'convex/react';
@@ -80,8 +81,9 @@ function CreateVacancyWizard({
   userId: Id<'users'>;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const createVacancy = useMutation(api.recruitment.createVacancy);
+  const generateDescription = useAction(api.recruitmentAI.generateVacancyDescription);
 
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
@@ -96,6 +98,7 @@ function CreateVacancyWizard({
   const [salaryMax, setSalaryMax] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [submitting, setSubmitting] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const steps = [
     t('recruitment.wizard.step1', 'Job Info'),
@@ -244,6 +247,68 @@ function CreateVacancyWizard({
 
           {step === 1 && (
             <div className="space-y-4">
+              {/* AI Generate Button */}
+              <div className="flex items-center justify-between gap-2 p-3 rounded-xl border border-blue-500/20 bg-blue-500/5">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-lg">✨</span>
+                  <div>
+                    <p className="font-medium text-blue-700 dark:text-blue-300 text-xs">
+                      {t('recruitmentAI.title', 'AI-Powered Generation')}
+                    </p>
+                    <p className="text-[11px] text-blue-600/60 dark:text-blue-400/60">
+                      {t(
+                        'recruitmentAI.hint',
+                        'Generate a professional description and requirements based on the job title',
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    if (!title.trim()) {
+                      toast.error(
+                        t('recruitmentAI.titleRequired', 'Please enter a job title first'),
+                      );
+                      return;
+                    }
+                    setAiGenerating(true);
+                    try {
+                      const lang = i18n.language || 'en';
+                      const result = await generateDescription({
+                        title: title.trim(),
+                        department: department.trim() || undefined,
+                        location: location.trim() || undefined,
+                        employmentType,
+                        language: lang as 'en' | 'ru' | 'hy' | 'de',
+                      });
+                      setDescription(result.description);
+                      setRequirements(result.requirements);
+                      toast.success(t('recruitmentAI.generated', 'Description generated!'));
+                    } catch (err: any) {
+                      toast.error(err.message || t('recruitmentAI.error', 'Generation failed'));
+                    } finally {
+                      setAiGenerating(false);
+                    }
+                  }}
+                  disabled={aiGenerating || !title.trim()}
+                  className="gap-1.5 shrink-0 bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:text-white"
+                >
+                  {aiGenerating ? (
+                    <>
+                      <ShieldLoader size="xs" variant="inline" />
+                      {t('common.loading', 'Generating...')}
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      {t('recruitmentAI.generate', 'Generate with AI')}
+                    </>
+                  )}
+                </Button>
+              </div>
+
               <div>
                 <Label>{t('recruitment.fields.description', 'Job Description')}</Label>
                 <Textarea

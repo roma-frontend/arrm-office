@@ -246,6 +246,7 @@
     "paymentDetails": "Платёжные реквизиты",
     "bankName": "Название банка",
     "markPaid": "Отметить как оплачено",
+    "markedAsPaid": "Расчёт зарплаты отмечен как оплаченный",
     "month": "Месяц",
     "year": "Год",
     "selectedPeriod": "Выбранный период",
@@ -304,6 +305,28 @@
         "pension": "Пенсия",
         "other": "Прочее"
       }
-    }
+    },
+    "upcomingPeriods": "Предстоящие зарплатные периоды",
+    "periodEnding": "Заканчивается период",
+    "nextPeriod": "Следующий период",
+    "currentRun": "Текущий период",
+    "dueToday": "Сегодня крайний срок",
+    "daysLeft": "дней осталось",
+    "overdue": "Просрочено",
+    "dueSoon": "Скоро дедлайн",
+    "approaching": "Приближается",
+    "planned": "Запланировано",
+    "completed": "Завершено",
+    "monthlySchedule": "Ежемесячный график выплат",
+    "biweeklySchedule": "График раз в две недели",
+    "weeklySchedule": "Еженедельный график выплат",
+    "viewAll": "Посмотреть всё",
+    "calendarTitle": "Календарь зарплаты",
+    "calendarDesc": "Обзор зарплатных периодов по месяцам",
+    "yearTotalGross": "Годовой Gross",
+    "yearTotalNet": "Годовой Net",
+    "completedMonths": "Завершено",
+    "noRun": "Расчёта нет",
+    "current": "Текущий"
   }
 }

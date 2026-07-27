@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useConvex } from 'convex/react';
+import { toast } from 'sonner';
 import {
   BarChart3,
   PieChart,
@@ -25,6 +27,19 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
+import type { Id } from '@/convex/_generated/dataModel';
+import { ReportWidgetChart } from '@/components/analytics/ReportWidgetChart';
+import { fetchReportSeries, downloadReportCSV } from '@/components/analytics/reportExport';
+
+// Time-window presets (in days). `undefined` ⇒ all-time.
+const RANGE_OPTIONS: { value: string; days?: number }[] = [
+  { value: 'last7', days: 7 },
+  { value: 'last30', days: 30 },
+  { value: 'lastQuarter', days: 90 },
+  { value: 'thisYear', days: 365 },
+  { value: 'all' },
+];
 
 // ── Types ──
 type ChartType = 'bar' | 'line' | 'pie' | 'area' | 'table' | 'metric';
@@ -95,13 +110,49 @@ const getDefaultWidget = (): ReportWidget => ({
   color: COLORS[0] as string,
 });
 
+const STORAGE_KEY = 'hr:report-builder:v1';
+
+interface SavedReport {
+  reportName: string;
+  rangeValue: string;
+  widgets: ReportWidget[];
+}
+
 export default function ReportBuilder() {
   const { t } = useTranslation();
+  const convex = useConvex();
+  const orgId = useSelectedOrganization() as Id<'organizations'> | null;
+
   const [widgets, setWidgets] = useState<ReportWidget[]>([getDefaultWidget()]);
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [reportName, setReportName] = useState('Untitled Report');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [rangeValue, setRangeValue] = useState('last30');
+  const [exporting, setExporting] = useState(false);
+
+  // Restore a previously saved report from localStorage (once, on mount).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as SavedReport;
+      if (saved.widgets?.length) {
+        setWidgets(saved.widgets);
+        setReportName(saved.reportName ?? 'Untitled Report');
+        setRangeValue(saved.rangeValue ?? 'last30');
+      }
+    } catch {
+      // ignore corrupt storage
+    }
+  }, []);
+
+  // Resolve the active time-window (in days) from the selected preset.
+  const rangeDays = useMemo(
+    () => RANGE_OPTIONS.find((r) => r.value === rangeValue)?.days,
+    [rangeValue],
+  );
 
   const addWidget = () => {
     setWidgets((prev) => [...prev, getDefaultWidget()]);
@@ -114,6 +165,39 @@ export default function ReportBuilder() {
 
   const updateWidget = (id: string, updates: Partial<ReportWidget>) => {
     setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, ...updates } : w)));
+  };
+
+  const handleSave = () => {
+    if (typeof window === 'undefined') return;
+    const payload: SavedReport = { reportName, rangeValue, widgets };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    toast.success(t('reportBuilder.saved', 'Report saved'));
+  };
+
+  const handleExport = async () => {
+    if (widgets.length === 0) return;
+    setExporting(true);
+    try {
+      const blocks = await Promise.all(
+        widgets.map(async (w) => ({
+          title: w.title,
+          metric: w.metric,
+          groupBy: w.groupBy,
+          result: await fetchReportSeries(convex, {
+            ...(orgId ? { organizationId: orgId } : {}),
+            metric: w.metric,
+            groupBy: w.groupBy,
+            ...(rangeDays ? { rangeDays } : {}),
+          }),
+        })),
+      );
+      downloadReportCSV(reportName, blocks);
+      toast.success(t('reportBuilder.exported', 'Report exported'));
+    } catch {
+      toast.error(t('reportBuilder.exportFailed', 'Export failed'));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const totalWidgets = widgets.length;
@@ -149,11 +233,17 @@ export default function ReportBuilder() {
             <Eye className="w-3.5 h-3.5" />
             {previewMode ? t('common.edit', 'Edit') : t('reportBuilder.preview', 'Preview')}
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={exporting || totalWidgets === 0}
+            className="gap-1.5"
+          >
             <Download className="w-3.5 h-3.5" />
-            {t('common.exportCSV', 'Export')}
+            {exporting ? t('common.exporting', 'Exporting…') : t('common.exportCSV', 'Export')}
           </Button>
-          <Button variant="default" size="sm" className="gap-1.5">
+          <Button variant="default" size="sm" onClick={handleSave} className="gap-1.5">
             <Save className="w-3.5 h-3.5" />
             {t('common.save', 'Save')}
           </Button>
@@ -177,12 +267,16 @@ export default function ReportBuilder() {
           />
         </div>
         <div className="w-px h-6 bg-(--border)" />
-        <select className="text-xs bg-transparent border-none text-(--text-muted) outline-none cursor-pointer">
-          <option>{t('reportBuilder.last7Days', 'Last 7 days')}</option>
-          <option>{t('reportBuilder.last30Days', 'Last 30 days')}</option>
-          <option>{t('reportBuilder.lastQuarter', 'Last quarter')}</option>
-          <option>{t('reportBuilder.thisYear', 'This year')}</option>
-          <option>{t('reportBuilder.customRange', 'Custom range')}</option>
+        <select
+          value={rangeValue}
+          onChange={(e) => setRangeValue(e.target.value)}
+          className="text-xs bg-transparent border-none text-(--text-muted) outline-none cursor-pointer"
+        >
+          <option value="last7">{t('reportBuilder.last7Days', 'Last 7 days')}</option>
+          <option value="last30">{t('reportBuilder.last30Days', 'Last 30 days')}</option>
+          <option value="lastQuarter">{t('reportBuilder.lastQuarter', 'Last quarter')}</option>
+          <option value="thisYear">{t('reportBuilder.thisYear', 'This year')}</option>
+          <option value="all">{t('reportBuilder.allTime', 'All time')}</option>
         </select>
       </div>
 
@@ -311,7 +405,9 @@ export default function ReportBuilder() {
                     <select
                       value={widgets.find((w) => w.id === selectedWidget)?.period || 'monthly'}
                       onChange={(e) =>
-                        updateWidget(selectedWidget, { period: e.target.value as any })
+                        updateWidget(selectedWidget, {
+                          period: e.target.value as ReportWidget['period'],
+                        })
                       }
                       className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-blue-500/50"
                     >
@@ -332,7 +428,9 @@ export default function ReportBuilder() {
                   <select
                     value={widgets.find((w) => w.id === selectedWidget)?.groupBy || 'department'}
                     onChange={(e) =>
-                      updateWidget(selectedWidget, { groupBy: e.target.value as any })
+                      updateWidget(selectedWidget, {
+                        groupBy: e.target.value as ReportWidget['groupBy'],
+                      })
                     }
                     className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-blue-500/50"
                   >
@@ -370,6 +468,28 @@ export default function ReportBuilder() {
                     })}
                   </div>
                 </div>
+
+                {/* Live preview of the widget being edited */}
+                {(() => {
+                  const w = widgets.find((x) => x.id === selectedWidget);
+                  if (!w) return null;
+                  return (
+                    <div className="pt-2">
+                      <label className="text-sm font-medium text-(--text-primary) block mb-1.5">
+                        {t('reportBuilder.livePreview', 'Live Preview')}
+                      </label>
+                      <ReportWidgetChart
+                        type={w.type}
+                        metric={w.metric}
+                        groupBy={w.groupBy}
+                        color={w.color}
+                        height={240}
+                        {...(orgId ? { organizationId: orgId } : {})}
+                        {...(rangeDays ? { rangeDays } : {})}
+                      />
+                    </div>
+                  );
+                })()}
               </div>
             </Card>
           ) : (
@@ -381,32 +501,18 @@ export default function ReportBuilder() {
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-(--text-primary)">{widget.title}</h3>
                       <Badge variant="outline" className="text-[10px]">
-                        {widget.type} · {widget.period}
+                        {widget.metric} · {widget.groupBy}
                       </Badge>
                     </div>
-                    {/* Mock chart preview */}
-                    <div className="h-48 rounded-xl bg-(--background-subtle) border border-(--border) flex items-center justify-center">
-                      <div className="text-center">
-                        {widget.type === 'bar' && (
-                          <BarChart3 className="w-10 h-10 mx-auto mb-2 text-(--text-muted)" />
-                        )}
-                        {widget.type === 'line' && (
-                          <TrendingUp className="w-10 h-10 mx-auto mb-2 text-(--text-muted)" />
-                        )}
-                        {widget.type === 'pie' && (
-                          <PieChart className="w-10 h-10 mx-auto mb-2 text-(--text-muted)" />
-                        )}
-                        <p className="text-sm text-(--text-muted)">
-                          {t(
-                            'reportBuilder.previewPlaceholder',
-                            'Chart preview — connect data source',
-                          )}
-                        </p>
-                        <Badge variant="outline" className="mt-2 text-[10px]">
-                          {widget.metric} by {widget.groupBy}
-                        </Badge>
-                      </div>
-                    </div>
+                    <ReportWidgetChart
+                      type={widget.type}
+                      metric={widget.metric}
+                      groupBy={widget.groupBy}
+                      color={widget.color}
+                      height={220}
+                      {...(orgId ? { organizationId: orgId } : {})}
+                      {...(rangeDays ? { rangeDays } : {})}
+                    />
                   </Card>
                 ))
               ) : (

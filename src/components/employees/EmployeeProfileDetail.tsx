@@ -43,6 +43,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { EditEmployeeModal } from './EditEmployeeModal';
+import { ReportingLineWidget } from './ReportingLineWidget';
+import { AssignManagerModal } from './AssignManagerModal';
+import ExtendedProfileSection from './ExtendedProfileSection';
+import EditExtendedProfileModal from './EditExtendedProfileModal';
+import EmployeeProfileHero from './EmployeeProfileHero';
 
 interface EmployeeProfileDetailProps {
   employeeId: Id<'users'>;
@@ -53,8 +58,10 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAssignManager, setShowAssignManager] = useState(false);
+  const [showExtendedEdit, setShowExtendedEdit] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const { t } = useTranslation();
+  const { t } = useTranslation(['modules', 'common']);
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
@@ -119,125 +126,49 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
 
   return (
     <div className="space-y-6">
-      {/* Header Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-linear-to-br from-[#2563eb] to-[#0ea5e9] flex items-center justify-center text-white font-bold text-2xl shrink-0">
-                {employee.avatarUrl ? (
-                  <img
-                    src={employee.avatarUrl}
-                    alt={employee.name}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  employee.name
-                    .split(' ')
-                    .map((n: any) => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2)
-                )}
-              </div>
-              <div>
-                <CardTitle className="text-2xl">{employee.name}</CardTitle>
-                <p className="text-(--text-muted) text-sm mt-1">
-                  {employee.position || t('roles.employee')}
-                </p>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  <Badge variant={employee.role === 'admin' ? 'default' : 'secondary'}>
-                    {t(`roles.${employee.role}`)}
-                  </Badge>
-                  <Badge variant="outline">{t(`employeeTypes.${employee.employeeType}`)}</Badge>
-                  <Badge variant={employee.isActive ? 'success' : 'destructive'}>
-                    {employee.isActive ? t('statuses.active') : t('statuses.inactive')}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-start sm:items-end gap-2">
-              {score && (
-                <div className="text-left sm:text-right">
-                  <p className="text-xs text-(--text-muted)">{t('employeeProfile.aiScore')}</p>
-                  <p className="text-3xl font-bold text-(--primary)">{score.overallScore}/100</p>
-                </div>
-              )}
-              <div className="flex gap-2">
-                {canEdit && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowEditModal(true)}
-                    variant="outline"
-                    className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                )}
-                {canDelete && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowDeleteDialog(true)}
-                    variant="outline"
-                    className="border-red-500/50 text-red-500 hover:bg-red-500/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-                {isAdminOrSupervisor && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowRatingForm(!showRatingForm)}
-                    className="bg-linear-to-r from-blue-600 to-sky-700 hover:from-blue-700 hover:to-sky-800 text-white"
-                  >
-                    <Star className="w-4 h-4 mr-1" />
-                    {showRatingForm
-                      ? t('employeeProfile.cancelRating')
-                      : t('employeeProfile.ratePerformance')}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center gap-3">
-            <Mail className="w-5 h-5 text-(--text-muted)" />
-            <div>
-              <p className="text-xs text-(--text-muted)">{t('employeeProfile.email')}</p>
-              <p className="text-sm font-medium">{employee.email}</p>
-            </div>
-          </div>
-          {employee.phone && (
-            <div className="flex items-center gap-3">
-              <Phone className="w-5 h-5 text-(--text-muted)" />
-              <div>
-                <p className="text-xs text-(--text-muted)">{t('employeeProfile.phone')}</p>
-                <p className="text-sm font-medium">{employee.phone}</p>
-              </div>
-            </div>
-          )}
-          {employee.department && (
-            <div className="flex items-center gap-3">
-              <Building2 className="w-5 h-5 text-(--text-muted)" />
-              <div>
-                <p className="text-xs text-(--text-muted)">{t('employeeProfile.department')}</p>
-                <p className="text-sm font-medium">{employee.department}</p>
-              </div>
-            </div>
-          )}
-          <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-(--text-muted)" />
-            <div>
-              <p className="text-xs text-(--text-muted)">{t('employeeProfile.joined')}</p>
-              <p className="text-sm font-medium">
-                {format(new Date(employee.createdAt), 'MMM d, yyyy', { locale: dateFnsLocale })}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Professional Hero Header */}
+      <EmployeeProfileHero
+        employee={{
+          _id: employee._id,
+          name: employee.name,
+          email: employee.email,
+          phone: employee.phone,
+          role: employee.role,
+          position: employee.position,
+          department: employee.department,
+          location: employee.location,
+          employeeType: employee.employeeType,
+          isActive: employee.isActive,
+          avatarUrl: employee.avatarUrl,
+          createdAt: employee.createdAt,
+        }}
+        score={score as any}
+        monthlyStats={monthlyStats as any}
+        canEdit={canEdit}
+        canDelete={canDelete}
+        isAdminOrSupervisor={isAdminOrSupervisor}
+        showRatingForm={showRatingForm}
+        onEdit={() => setShowEditModal(true)}
+        onDelete={() => setShowDeleteDialog(true)}
+        onRate={() => setShowRatingForm(!showRatingForm)}
+      />
+
+      {/* Reporting Line Widget */}
+      {employee.organizationId && (
+        <ReportingLineWidget
+          userId={employeeId}
+          organizationId={employee.organizationId as Id<'organizations'>}
+          onAssignManager={() => setShowAssignManager(true)}
+          canEdit={canEdit}
+        />
+      )}
+
+      {/* Extended Profile Section */}
+      <ExtendedProfileSection
+        data={profile?.profile as any}
+        canEdit={canEdit}
+        onEdit={() => setShowExtendedEdit(true)}
+      />
 
       {/* Supervisor Rating Form (inline) */}
       {isAdminOrSupervisor && showRatingForm && (
@@ -639,6 +570,31 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
         employee={employee as any}
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
+      />
+
+      {/* Assign Manager Modal */}
+      {employee.organizationId && (
+        <AssignManagerModal
+          employeeId={employeeId}
+          employeeName={employee.name}
+          currentSupervisorId={employee.supervisorId as Id<'users'> | null | undefined}
+          organizationId={employee.organizationId as Id<'organizations'>}
+          open={showAssignManager}
+          onClose={() => setShowAssignManager(false)}
+          onSuccess={() => setShowAssignManager(false)}
+        />
+      )}
+
+      {/* Edit Extended Profile Modal */}
+      <EditExtendedProfileModal
+        open={showExtendedEdit}
+        onClose={() => setShowExtendedEdit(false)}
+        onSuccess={() => setShowExtendedEdit(false)}
+        employeeId={employeeId}
+        {...(employee.organizationId
+          ? { organizationId: employee.organizationId as Id<'organizations'> }
+          : {})}
+        initialData={profile?.profile as any}
       />
     </div>
   );

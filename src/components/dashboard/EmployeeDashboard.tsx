@@ -28,6 +28,8 @@ import { getLeaveTypeLabel, type LeaveType, type LeaveStatus } from '@/lib/types
 import { CheckInOutWidget } from '@/components/attendance/CheckInOutWidget';
 import { DashboardBanners } from '@/components/dashboard/DashboardBanners';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import ActivityFeed from '@/components/dashboard/ActivityFeed';
+import PayrollUpcomingBanner from '@/components/payroll/PayrollUpcomingBanner';
 
 // Lazy load heavy dashboard components to reduce initial JS bundle
 const AttendanceDashboard = dynamic(
@@ -184,6 +186,11 @@ export function EmployeeDashboard() {
         </p>
       </motion.div>
 
+      {/* Upcoming Pay Periods notification (compact) */}
+      <motion.div variants={itemVariants}>
+        <PayrollUpcomingBanner compact />
+      </motion.div>
+
       {/* Check-In / Check-Out Widget */}
       <motion.div variants={itemVariants}>
         <CheckInOutWidget />
@@ -206,6 +213,11 @@ export function EmployeeDashboard() {
       {/* AI Recommendations */}
       <motion.div variants={itemVariants}>
         <AIRecommendationsCard />
+      </motion.div>
+
+      {/* Recent Activity Feed */}
+      <motion.div variants={itemVariants}>
+        <ActivityFeed limit={5} showViewAll={false} />
       </motion.div>
 
       {/* This Month Attendance Quick Stats */}

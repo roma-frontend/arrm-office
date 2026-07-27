@@ -78,6 +78,9 @@ export const createStarterOrganization = mutation({
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
+      dayOffBalance: 6,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 5,
       createdAt: Date.now(),
     });
 
@@ -280,6 +283,9 @@ export const approveOrganizationRequest = mutation({
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
+      dayOffBalance: 6,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 5,
       createdAt: Date.now(),
     });
 
@@ -413,6 +419,9 @@ export const secureApproveOrgRequest = mutation({
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
+      dayOffBalance: 6,
+      maternityLeaveBalance: 0,
+      studyLeaveBalance: 5,
       createdAt: Date.now(),
     });
 

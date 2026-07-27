@@ -54,7 +54,7 @@ function monthKey(d: Date) {
 // Months will be translated using i18n in the component
 
 export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['modules', 'common']);
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(monthKey(now));
   const [mounted, setMounted] = useState(false);

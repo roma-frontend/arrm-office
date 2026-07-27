@@ -42,6 +42,9 @@ import Link from 'next/link';
 import { Id } from '@/convex/_generated/dataModel';
 import { api } from '@/convex/_generated/api';
 import { CreatePayrollRunDialog } from './PayrollRunDialogs';
+import PayslipViewer from './PayslipViewer';
+import PayrollCalendar from './PayrollCalendar';
+import PayrollUpcomingBanner from './PayrollUpcomingBanner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -103,6 +106,7 @@ export default function PayrollDashboard() {
     | undefined;
   const isAdmin =
     user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
+  const isEmployee = user?.role === 'employee' || user?.role === 'driver';
   const canManage = user?.role === 'admin' || user?.role === 'superadmin';
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -212,6 +216,13 @@ export default function PayrollDashboard() {
             <p>{t('errors.unauthorized')}</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Upcoming Pay Periods Banner */}
+      {orgId && hasAnyData && (
+        <motion.div variants={itemVariants}>
+          <PayrollUpcomingBanner />
+        </motion.div>
       )}
 
       {/* Stats Cards */}
@@ -414,6 +425,20 @@ export default function PayrollDashboard() {
               )}
             </CardContent>
           </Card>
+        </motion.div>
+      )}
+
+      {/* Payroll Calendar */}
+      {!isEmployee && (
+        <motion.div variants={itemVariants}>
+          <PayrollCalendar />
+        </motion.div>
+      )}
+
+      {/* Employee Self-Service: My Payslips */}
+      {isEmployee && orgId && (
+        <motion.div variants={itemVariants}>
+          <PayslipViewer />
         </motion.div>
       )}
 
