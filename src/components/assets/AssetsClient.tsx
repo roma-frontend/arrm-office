@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
-
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
@@ -35,7 +33,7 @@ import {
   MapPin,
   QrCode,
 } from 'lucide-react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useAuthStore } from '@/store/useAuthStore';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -272,6 +270,7 @@ function AssignDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
   asset: any;
   orgId: Id<'organizations'>;
   userId: Id<'users'>;
@@ -291,7 +290,7 @@ function AssignDialog({
     if (!allUsers) return [];
     if (!searchQuery.trim()) return allUsers;
     const q = searchQuery.toLowerCase();
-    return allUsers.filter((u: any) => u.name && u.name.toLowerCase().includes(q));
+    return allUsers.filter((u) => u.name && u.name.toLowerCase().includes(q));
   }, [allUsers, searchQuery]);
 
   const handleAssign = async () => {
@@ -308,8 +307,8 @@ function AssignDialog({
       });
       toast.success(t('assets.assignedSuccess'));
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message || t('assets.assignedError'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('assets.assignedError'));
     } finally {
       setAssigning(false);
     }
@@ -339,7 +338,7 @@ function AssignDialog({
             </div>
             <div className="mt-2 max-h-48 overflow-y-auto space-y-1 border border-border rounded-lg p-1">
               {filteredUsers.length > 0 ? (
-                filteredUsers.map((u: any) => {
+                filteredUsers.map((u) => {
                   const isSelected = selectedUserId === u._id;
                   return (
                     <button
@@ -405,6 +404,7 @@ function ReturnDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
   assignment: any;
   userId: Id<'users'>;
 }) {
@@ -421,13 +421,13 @@ function ReturnDialog({
       await returnAsset({
         assignmentId: assignment._id,
         returnedBy: userId,
-        condition: condition as any,
+        condition: condition as 'good' | 'fair' | 'poor' | 'damaged',
         notes: notes || undefined,
       });
       toast.success(t('assets.returnedSuccess'));
       onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err.message || t('assets.returnedError'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('assets.returnedError'));
     } finally {
       setReturning(false);
     }
@@ -493,11 +493,13 @@ function AssetDetailCard({
   userId,
   setQrCodeAsset,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
   asset: any;
   onAssign: () => void;
   onReturn?: () => void;
   onClose: () => void;
   userId: Id<'users'>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setQrCodeAsset: (a: any) => void;
 }) {
   const { t } = useTranslation();
@@ -513,6 +515,7 @@ function AssetDetailCard({
   const sigDoc = useQuery(
     api.signatures.getDocument,
     mfDocId ? { documentId: mfDocId } : 'skip',
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) as any;
   const labels = useDocumentLabels();
 
@@ -574,8 +577,8 @@ function AssetDetailCard({
         assignedBy: userId,
       });
       toast.success(t('assets.movementForm.sent'));
-    } catch (err: any) {
-      toast.error(err.message || t('assets.common.error', 'Failed to send form'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('assets.common.error', 'Failed to send form'));
     } finally {
       setSending(false);
     }
@@ -896,8 +899,11 @@ function QRButton({
   setQrCodeAsset,
   t,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
   asset: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setQrCodeAsset: (a: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
 }) {
   return (
@@ -959,10 +965,15 @@ export default function AssetsClient() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [assignDialogAsset, setAssignDialogAsset] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [returnDialogAssignment, setReturnDialogAssignment] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [deleteConfirmAsset, setDeleteConfirmAsset] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [qrCodeAsset, setQrCodeAsset] = useState<any>(null);
 
   // Deep-link: open an asset's detail card when the URL carries `?asset=<id>`
@@ -977,51 +988,48 @@ export default function AssetsClient() {
   }, []);
 
   // Queries
-  const _useQuery = useQuery as unknown as (...args: any[]) => any;
-  const _useMutation = useMutation as unknown as (...args: any[]) => any;
+  const stats = useQuery(api.assets.getAssetStats, orgId ? { organizationId: orgId } : 'skip');
 
-  const stats = _useQuery(api.assets.getAssetStats, orgId ? { organizationId: orgId } : 'skip');
-
-  const assets = _useQuery(
+  const assets = useQuery(
     api.assets.listAssets,
     orgId
       ? {
           organizationId: orgId,
-          category: categoryFilter !== 'all' ? categoryFilter : undefined,
-          status: statusFilter !== 'all' ? statusFilter : undefined,
+          category: categoryFilter !== 'all' ? (categoryFilter as 'laptop' | 'monitor' | 'phone' | 'tablet' | 'peripheral' | 'furniture' | 'software_license' | 'vehicle' | 'other') : undefined,
+          status: statusFilter !== 'all' ? (statusFilter as 'available' | 'assigned' | 'maintenance' | 'retired' | 'lost') : undefined,
         }
       : 'skip',
   );
 
-  const employeeAssets = _useQuery(
+  const employeeAssets = useQuery(
     api.assets.listEmployeeAssets,
     orgId && user?.id ? { organizationId: orgId, employeeId: user.id as Id<'users'> } : 'skip',
   );
 
-  const requests = _useQuery(
+  const requests = useQuery(
     api.assets.listAssetRequests,
     orgId ? { organizationId: orgId } : 'skip',
   );
 
-  const myRequests = _useQuery(
+  const myRequests = useQuery(
     api.assets.getMyAssetRequests,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
   );
 
-  const maintenanceRecords = _useQuery(
+  const maintenanceRecords = useQuery(
     api.assets.listMaintenance,
     orgId ? { organizationId: orgId } : 'skip',
   );
 
-  const selectedAssetDetail = _useQuery(
+  const selectedAssetDetail = useQuery(
     api.assets.getAsset,
     selectedAsset?._id ? { assetId: selectedAsset._id } : 'skip',
   );
 
   // Mutations
-  const approveRequest = _useMutation(api.assets.approveAssetRequest);
-  const rejectRequest = _useMutation(api.assets.rejectAssetRequest);
-  const deleteAssetMut = _useMutation(api.assets.deleteAsset);
+  const approveRequest = useMutation(api.assets.approveAssetRequest);
+  const rejectRequest = useMutation(api.assets.rejectAssetRequest);
+  const deleteAssetMut = useMutation(api.assets.deleteAsset);
 
   // Filtered assets
   const filteredAssets = useMemo(() => {
@@ -1030,7 +1038,7 @@ export default function AssetsClient() {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
-        (a: any) =>
+        (a) =>
           a.name.toLowerCase().includes(q) ||
           (a.serialNumber && a.serialNumber.toLowerCase().includes(q)) ||
           (a.brand && a.brand.toLowerCase().includes(q)) ||
@@ -1071,8 +1079,8 @@ export default function AssetsClient() {
       await deleteAssetMut({ assetId });
       toast.success(t('assets.deletedSuccess'));
       setDeleteConfirmAsset(null);
-    } catch (err: any) {
-      toast.error(err.message || t('assets.deletedError'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('assets.deletedError'));
     }
   };
 
@@ -1306,7 +1314,7 @@ export default function AssetsClient() {
                 ) : viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredAssets.length > 0 ? (
-                      filteredAssets.map((asset: any) => {
+                      filteredAssets.map((asset) => {
                         const cfg = getCategoryCfg(asset.category);
                         const Icon = cfg.icon;
                         return (
@@ -1463,7 +1471,7 @@ export default function AssetsClient() {
                       </thead>
                       <tbody className="divide-y divide-(--border)">
                         {paginatedAssets.length > 0 ? (
-                          paginatedAssets.map((asset: any) => {
+                          paginatedAssets.map((asset) => {
                             const cfg = getCategoryCfg(asset.category);
                             const Icon = cfg.icon;
                             return (
@@ -1641,8 +1649,8 @@ export default function AssetsClient() {
                     {employeeAssets && employeeAssets.length > 0 ? (
                       <div className="space-y-3">
                         {employeeAssets
-                          .filter((a: any) => a.status === 'active')
-                          .map((a: any) => {
+                          .filter((a) => a.status === 'active')
+                          .map((a) => {
                             const cfg = getCategoryCfg(a.assetCategory);
                             const Icon = cfg.icon;
                             return (
@@ -1689,14 +1697,15 @@ export default function AssetsClient() {
                                     </span>
                                   )}
                                   <QRButton
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                     asset={{
                                       _id: a.assetId,
                                       name: a.assetName,
-                                      serialNumber: a.assetSerialNumber,
-                                      assetTag: a.assetTag,
+                                      serialNumber: (a as any).assetSerialNumber,
+                                      assetTag: (a as any).assetTag,
                                       category: a.assetCategory,
-                                      brand: a.assetBrand,
-                                      model: a.assetModel,
+                                      brand: (a as any).assetBrand,
+                                      model: (a as any).assetModel,
                                     }}
                                     setQrCodeAsset={setQrCodeAsset}
                                     t={t}

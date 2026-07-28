@@ -202,6 +202,15 @@ export default function NewIntegrationSettings() {
     return formState[`${providerId}_${toggleKey}`] ?? (cfg as any)?.[toggleKey] ?? false;
   };
 
+  // Enablement resolves the same way for the switch and for the save payload, so
+  // the card can never show one state and persist another. A provider with no
+  // saved config yet defaults to on: filling in credentials and hitting Save
+  // should produce a working integration, not a silently disabled one.
+  const getIsEnabled = (providerId: string) => {
+    const stored = getConfig(providerId) as any;
+    return formState[`${providerId}_isEnabled`] ?? stored?.isEnabled ?? !stored;
+  };
+
   const handleExpand = (providerId: string) => {
     const closing = expandedProvider === providerId;
     setExpandedProvider(closing ? null : providerId);
@@ -239,10 +248,8 @@ export default function NewIntegrationSettings() {
 
     setSavingProvider(providerId);
     try {
-      const stored = getConfig(providerId);
       const config: any = {
-        // Enablement is an explicit switch, defaulting to on for a first save.
-        isEnabled: formState[`${providerId}_isEnabled`] ?? (stored as any)?.isEnabled ?? true,
+        isEnabled: getIsEnabled(providerId),
       };
 
       for (const field of provider.fields) {
@@ -318,10 +325,11 @@ export default function NewIntegrationSettings() {
       {PROVIDERS.map((provider) => {
         const config = getConfig(provider.id);
         const isExpanded = expandedProvider === provider.id;
-        // While the card is open, reflect the pending switch state.
-        const isEnabled = isExpanded
-          ? (formState[`${provider.id}_isEnabled`] ?? config?.isEnabled ?? false)
-          : (config?.isEnabled ?? false);
+        // What the switch shows and what Save would persist.
+        const isEnabled = getIsEnabled(provider.id);
+        // A never-saved provider is not "Active" no matter what the switch
+        // defaults to, and cannot be synced.
+        const isLive = !!config && isEnabled;
         const lastSync = config?.lastSyncAt;
         const syncStatus = config?.syncStatus;
         const isSyncing = syncing === provider.id || syncStatus === 'syncing';
@@ -329,7 +337,7 @@ export default function NewIntegrationSettings() {
         return (
           <Card
             key={provider.id}
-            className={`border-l-4 ${isEnabled ? '' : 'opacity-70'}`}
+            className={`border-l-4 ${isLive ? '' : 'opacity-70'}`}
             style={{ borderLeftColor: provider.color }}
           >
             <CardHeader className="pb-3 cursor-pointer" onClick={() => handleExpand(provider.id)}>
@@ -344,7 +352,7 @@ export default function NewIntegrationSettings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {isEnabled ? (
+                  {isLive ? (
                     <Badge variant="default" className="bg-emerald-500">
                       <Check className="w-3 h-3 mr-1" /> {t('common.active', 'Active')}
                     </Badge>
@@ -427,7 +435,7 @@ export default function NewIntegrationSettings() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleSync(provider.id)}
-                      disabled={isSyncing || !isEnabled}
+                      disabled={isSyncing || !isLive}
                     >
                       {isSyncing ? (
                         <ShieldLoader size="xs" variant="inline" />

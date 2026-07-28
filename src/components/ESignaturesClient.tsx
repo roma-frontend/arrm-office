@@ -22,7 +22,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useQuery, useMutation, useConvex } from 'convex/react';
+import { useQuery, useMutation, useConvex } from '@/lib/convex-typed';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -232,6 +232,32 @@ function buildFormBody(
 
 // ============ THEMED RENDER HELPERS ============
 
+interface SignatureDocRequest {
+  _id: Id<'signatureRequests'>;
+  status: string;
+  signatureData?: string;
+  order: number;
+  signerName: string;
+  signedAt?: number;
+}
+
+interface SignatureDoc {
+  _id: Id<'signatureDocuments'>;
+  title: string;
+  content: string;
+  accent?: string;
+  signatureBlock?: boolean;
+  orgName?: string;
+  contentHash?: string;
+  completedAt?: number;
+  createdAt: number;
+  status: string;
+  signedPdfUrl?: string;
+  createdBy: Id<'users'>;
+  expiresAt?: number;
+  requests?: SignatureDocRequest[];
+}
+
 /**
  * Build the themed `RenderableDocument` for a signature document, baking in the
  * drawn signature so the exported/archived PDF looks like the ORIGINAL document
@@ -239,11 +265,11 @@ function buildFormBody(
  * report. Falls back to sensible defaults for documents created before the
  * theme was persisted.
  */
-function toRenderableDocument(doc: any, labels: DocumentLabels, t?: TFunction): RenderableDocument {
+function toRenderableDocument(doc: SignatureDoc, labels: DocumentLabels, t?: TFunction): RenderableDocument {
   // The primary signed request supplies the signature image + signer name/date.
   const signedReq = (doc.requests || [])
-    .filter((r: any) => r.status === 'signed' && r.signatureData)
-    .sort((a: any, b: any) => a.order - b.order)[0];
+    .filter((r) => r.status === 'signed' && r.signatureData)
+    .sort((a, b) => a.order - b.order)[0];
 
   // Detect structured movement/return forms and build localized body
   const parsed = doc.content ? parseFormContent(doc.content) : null;
@@ -660,7 +686,7 @@ function CreateDocumentWizard({
   const handleTemplateSelect = (tid: string) => {
     setTemplateId(tid);
     if (tid && templates) {
-      const tpl = templates.find((tt: any) => tt._id === tid);
+      const tpl = templates.find((tt) => tt._id === tid);
       if (tpl) {
         setTitle(tpl.title);
         setContent(tpl.content);
@@ -671,9 +697,9 @@ function CreateDocumentWizard({
 
   const toggleSigner = (user: { _id: Id<'users'>; name: string; email: string }) => {
     setSelectedSigners((prev) => {
-      const exists = prev.find((s: any) => s.userId === user._id);
+      const exists = prev.find((s) => s.userId === user._id);
       if (exists) {
-        const filtered = prev.filter((s: any) => s.userId !== user._id);
+        const filtered = prev.filter((s) => s.userId !== user._id);
         return filtered.map((s, i) => ({ ...s, order: i + 1 }));
       }
       return [
@@ -809,7 +835,7 @@ function CreateDocumentWizard({
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          {templates.map((tpl: any) => (
+                          {templates.map((tpl) => (
                             <SelectItem key={tpl._id} value={tpl._id}>
                               {tpl.title}
                             </SelectItem>
@@ -854,8 +880,8 @@ function CreateDocumentWizard({
                     )}
                   </p>
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {employeeList.map((emp: any) => {
-                      const selected = selectedSigners.find((s: any) => s.userId === emp._id);
+                    {employeeList.map((emp) => {
+                      const selected = selectedSigners.find((s) => s.userId === emp._id);
                       return (
                         <div
                           key={emp._id}
@@ -918,7 +944,7 @@ function CreateDocumentWizard({
                           {t('signatures.wizard.signers', 'Signers')}
                         </p>
                         <div className="space-y-1 mt-1">
-                          {selectedSigners.map((s: any) => (
+                          {selectedSigners.map((s) => (
                             <div key={s.userId} className="flex items-center gap-2 text-sm">
                               <Badge variant="outline" className="text-xs">
                                 #{s.order}
@@ -1307,7 +1333,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
               <div>
                 <h4 className="text-sm font-semibold mb-2">{t('signatures.signers', 'Signers')}</h4>
                 <div className="space-y-2">
-                  {doc.requests?.map((req: any) => (
+                  {doc.requests?.map((req) => (
                     <div
                       key={req._id}
                       className="flex items-center justify-between p-2 rounded border"
@@ -1345,7 +1371,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
                     {t('signatures.auditLog', 'Activity Log')}
                   </h4>
                   <div className="space-y-1 max-h-[150px] overflow-y-auto">
-                    {auditLog.map((entry: any) => {
+                    {auditLog.map((entry) => {
                       const Icon = actionIcons[entry.action] || FileText;
                       return (
                         <div
@@ -1474,7 +1500,7 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
                 <Plus className="w-4 h-4 mr-1" />
                 {t('signatures.createTemplate', 'New Template')}
               </Button>
-              {templates?.map((tpl: any) => (
+              {templates?.map((tpl) => (
                 <div
                   key={tpl._id}
                   className="flex items-center justify-between p-3 rounded-lg border"
@@ -1743,7 +1769,7 @@ export function ESignaturesClient() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {myPending.map((req: any) => (
+              {myPending.map((req) => (
                 <Card
                   key={req._id}
                   className="cursor-pointer hover:shadow-md transition-shadow"
@@ -1799,7 +1825,7 @@ export function ESignaturesClient() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {documents.map((doc: any) => (
+              {documents.map((doc) => (
                 <Card
                   key={doc._id}
                   className="cursor-pointer hover:shadow-md transition-shadow"

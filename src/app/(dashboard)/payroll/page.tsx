@@ -17,6 +17,7 @@ function PayrollSkeleton() {
 const PayrollDashboard = nextDynamic(
   () =>
     import('@/components/payroll/PayrollDashboard').then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic HOC wrapper
       default: (props: any) => (
         <WidgetErrorBoundary name="PayrollDashboard">
           <m.default {...props} />

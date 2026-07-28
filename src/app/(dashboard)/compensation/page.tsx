@@ -15,6 +15,7 @@ import CompensationRecordWizard from '@/components/compensation/CompensationReco
 const CompensationClient = dynamic(
   () =>
     import('@/components/compensation/CompensationClient').then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic HOC wrapper
       default: (props: any) => (
         <WidgetErrorBoundary name="CompensationClient">
           <m.default {...props} />

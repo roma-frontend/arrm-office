@@ -99,6 +99,7 @@ async function fetchFontBase64(file: string): Promise<string> {
 // exports never break (e.g. in tests/jsdom where fetch of /fonts is unavailable).
 let dejaVuReady: Promise<boolean> | null = null;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake has no TypeScript types
 async function ensureDejaVu(pdfMake: any): Promise<boolean> {
   if (!dejaVuReady) {
     dejaVuReady = (async () => {
@@ -118,13 +119,16 @@ async function ensureDejaVu(pdfMake: any): Promise<boolean> {
 }
 
 /** Load pdfmake with a Unicode-capable font; returns the font family to use. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake has no TypeScript types
 async function loadPdfMakeWithFonts(): Promise<{ pdfMake: any; font: string }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake has no types
   const pdfMake: any = await loadPdfMake();
   // vfs_fonts registers the default Roboto font family used by pdfmake. In
   // pdfmake 0.3.x the module *is* the vfs map (top-level *.ttf keys); older
   // builds nested it under `.pdfMake.vfs` or `.vfs`. Cover every shape —
   // otherwise createPdf()/getBase64() never invokes its callback and hangs.
   if (!pdfMake.vfs) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake vfs_fonts has no types
     const pdfFonts: any = await import('pdfmake/build/vfs_fonts');
     pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs || pdfFonts.default || pdfFonts;
   }
@@ -149,8 +153,9 @@ function isSectionHeader(line: string): boolean {
 }
 
 /** Build styled pdfmake content array from the body text. */
-function buildBodyContent(body: string): any[] {
+function buildBodyContent(body: string) {
   const rawLines = paragraphs(body);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake content is untyped
   const content: any[] = [];
   let i = 0;
 
@@ -235,6 +240,7 @@ function buildBodyContent(body: string): any[] {
 }
 
 /** Build the pdfmake document definition shared by the download and render paths. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake doc definition has no types
 function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
   const accent = ACCENT_HEX[doc.accent];
   const PAGE_WIDTH = 495; // A4 at default margins
@@ -307,6 +313,7 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
     const signed = doc.signed;
 
     // Name / Position column
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake column content
     const nameCol: any[] = [
       signed?.signatureData
         ? { image: signed.signatureData, fit: [180, 44], margin: [0, 0, 0, 4] }
@@ -325,6 +332,7 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
     }
 
     // Position column
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake column content
     const posCol: any[] = [
       { text: ' ', margin: [0, 10, 0, 0] },
       {
@@ -337,6 +345,7 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
     ];
 
     // Date column
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pdfmake column content
     const dateCol: any[] = [
       { text: ' ', margin: [0, 10, 0, 0] },
       {
@@ -456,11 +465,13 @@ export async function exportDocumentToDOCX(
   doc: RenderableDocument,
   filename = 'document.docx',
 ): Promise<{ success: boolean }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- docx types conflict with dynamic import
   const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle }: any =
     await loadDocx();
 
   const accentHex = ACCENT_HEX[doc.accent].replace('#', '');
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- docx Paragraph children
   const children: any[] = [
     new Paragraph({
       children: [new TextRun({ text: doc.orgName, bold: true, size: 32, color: accentHex })],

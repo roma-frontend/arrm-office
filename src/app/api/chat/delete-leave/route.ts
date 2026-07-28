@@ -99,10 +99,10 @@ export const POST = withCsrfProtection(async (req: Request) => {
         balanceNote: targetLeave.status === 'approved' ? t('aiMessages.leaveDeletedBalance') : '',
       }),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       success: false,
-      message: error.message ?? 'Failed to delete leave',
+      message: error instanceof Error ? error.message : 'Failed to delete leave',
     });
   }
 });

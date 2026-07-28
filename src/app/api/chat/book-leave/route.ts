@@ -67,7 +67,7 @@ export const POST = withCsrfProtection(async (req: Request) => {
     // LEGACY CHECK — personal leave overlap
     // ═══════════════════════════════════════════════════════════════
     const userLeaves = await convex.query(api.leaves.getUserLeaves, { userId });
-    const personalConflict = userLeaves.find((leave: any) => {
+    const personalConflict = userLeaves.find((leave) => {
       if (leave.status === 'rejected') return false;
       const existStart = new Date(leave.startDate);
       const existEnd = new Date(leave.endDate);
@@ -188,7 +188,7 @@ export const POST = withCsrfProtection(async (req: Request) => {
  * Build human-readable conflict message for AI
  */
 function buildConflictMessage(
-  conflicts: any[],
+  conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>,
   leaveType: string,
   startDate: string,
   endDate: string,

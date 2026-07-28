@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, usePaginatedQuery } from 'convex/react';
+import { useQuery, useMutation, usePaginatedQuery } from '@/lib/convex-typed';
 import { useDebouncedCallback } from 'use-debounce';
 import { api } from '../../../convex/_generated/api';
 import { Doc, Id } from '../../../convex/_generated/dataModel';
@@ -368,7 +368,7 @@ export function EmployeesClient() {
                     },
                   ]
                 : []),
-            ].map(({ value, setter, options, label }: any) => {
+            ].map(({ value, setter, options, label }) => {
               const getTranslation = (o: string) => {
                 if (o === 'all') {
                   if (label === 'Role')
@@ -385,7 +385,7 @@ export function EmployeesClient() {
                   key={label}
                   value={value}
                   onChange={setter}
-                  options={options.map((o: any) => ({
+                  options={options.map((o) => ({
                     value: o,
                     label: (() => {
                       if (label === 'Type')
@@ -453,7 +453,7 @@ export function EmployeesClient() {
             return cfg[status ?? 'available'] ?? cfg['available'];
           };
 
-          const renderMenu = (emp: any) =>
+          const renderMenu = (emp: Doc<'users'>) =>
             canManage ? (
               <div className="relative shrink-0">
                 <button
@@ -706,7 +706,7 @@ export function EmployeesClient() {
                 <>
                   {/* Mobile card view */}
                   <div className="sm:hidden space-y-3">
-                    {filtered.map((emp: any) => {
+                    {filtered.map((emp) => {
                       const roleConf = ROLE_CONFIG[emp.role as keyof typeof ROLE_CONFIG];
                       const RoleIcon = roleConf.icon;
                       return (
@@ -725,7 +725,7 @@ export function EmployeesClient() {
                               ) : (
                                 emp.name
                                   .split(' ')
-                                  .map((n: any) => n[0])
+                                  .map((n) => n[0])
                                   .join('')
                                   .toUpperCase()
                                   .slice(0, 2)
@@ -819,7 +819,7 @@ export function EmployeesClient() {
                                 ) : (
                                   emp.name
                                     .split(' ')
-                                    .map((n: any) => n[0])
+                                    .map((n) => n[0])
                                     .join('')
                                     .toUpperCase()
                                     .slice(0, 2)
@@ -986,6 +986,7 @@ export function EmployeesClient() {
 
         {editEmployee && (
           <EditEmployeeModal
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Doc<'users'> ≠ local Employee type
             employee={editEmployee as any}
             open={!!editEmployee}
             onClose={() => setEditEmployee(null)}

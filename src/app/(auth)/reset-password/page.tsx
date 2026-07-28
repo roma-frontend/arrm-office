@@ -44,11 +44,11 @@ function ResetPasswordForm() {
     e.preventDefault();
     setError(null);
     if (password !== confirm) {
-      setError('Passwords do not match');
+      setError(t('resetPassword.passwordsDoNotMatch'));
       return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('resetPassword.passwordMinLength'));
       return;
     }
 
@@ -60,11 +60,11 @@ function ResetPasswordForm() {
           body: JSON.stringify({ token, newPassword: password }),
         });
         const data = (await res.json()) as { error?: string };
-        if (!res.ok) throw new Error(data.error || 'Something went wrong');
+        if (!res.ok)        throw new Error(data.error || t('resetPassword.somethingWentWrong'));
         setSuccess(true);
         setTimeout(() => router.push('/login'), 3000);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
+        setError(err instanceof Error ? err.message : t('resetPassword.somethingWentWrong'));
       }
     });
   };
@@ -112,7 +112,7 @@ function ResetPasswordForm() {
                 Strata
               </p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                HR Management System
+                {t('resetPassword.hrSystemTitle')}
               </p>
             </div>
           </Link>
@@ -123,7 +123,7 @@ function ResetPasswordForm() {
               <motion.div key="loading" className="text-center py-8">
                 <ShieldLoader size="lg" className="mb-3" />
                 <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  Verifying reset link...
+                  {t('resetPassword.verifyingLink')}
                 </p>
               </motion.div>
             )}
@@ -140,16 +140,16 @@ function ResetPasswordForm() {
                   <AlertCircle className="w-8 h-8 text-red-500" />
                 </div>
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Invalid or expired link
+                  {t('resetPassword.invalidOrExpiredLink')}
                 </h2>
                 <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-                  This reset link has expired or is invalid. Please request a new one.
+                  {t('resetPassword.linkExpiredDescription')}
                 </p>
                 <Link
                   href="/forgot-password"
                   className="inline-block py-2.5 px-6 rounded-xl font-semibold text-sm text-white btn-gradient"
                 >
-                  Request new link
+                  {t('resetPassword.requestNewLink')}
                 </Link>
               </motion.div>
             )}
@@ -166,10 +166,10 @@ function ResetPasswordForm() {
                   <CheckCircle2 className="w-8 h-8 text-green-500" />
                 </div>
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                  Password updated!
+                  {t('resetPassword.passwordUpdated')}
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  Your password has been reset successfully. Redirecting to login...
+                  {t('resetPassword.redirectingToLogin')}
                 </p>
               </motion.div>
             )}
@@ -179,10 +179,10 @@ function ResetPasswordForm() {
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <div className="mb-6">
                   <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
-                    Set new password
+                    {t('resetPassword.setNewPassword')}
                   </h1>
                   <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                    Choose a strong password for your account.
+                    {t('resetPassword.chooseStrongPassword')}
                   </p>
                 </div>
 
@@ -190,7 +190,7 @@ function ResetPasswordForm() {
                   {/* New password */}
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      New password
+                      {t('resetPassword.newPassword')}
                     </label>
                     <div className="relative">
                       <Lock
@@ -231,7 +231,7 @@ function ResetPasswordForm() {
                   {/* Confirm password */}
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      Confirm password
+                      {t('resetPassword.confirmPassword')}
                     </label>
                     <div className="relative">
                       <Lock

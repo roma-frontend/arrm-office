@@ -6,7 +6,7 @@
 import { logger } from './logger';
 
 // ===== WEB VITALS MONITORING =====
-export function reportWebVitals(metric: any) {
+export function reportWebVitals(metric: { name: string; value: number; rating?: string; delta?: number; id?: string }) {
   // Логирование метрик производительности
   if (process.env.NODE_ENV === 'development') {
     logger.log('📊 Web Vitals:', {
@@ -18,8 +18,8 @@ export function reportWebVitals(metric: any) {
   }
 
   // В production можно отправлять в аналитику (Google Analytics, etc)
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('event', metric.name, {
+  if (typeof window !== 'undefined' && typeof window.gtag !== 'undefined') {
+    window.gtag('event', metric.name, {
       value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
       event_category: 'Web Vitals',
       event_label: metric.id,
@@ -150,7 +150,12 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 // ===== CACHE UTILITIES =====
-const cache = new Map<string, { data: any; timestamp: number }>();
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry<unknown>>();
 
 export function getCached<T>(key: string, ttl: number = 60000): T | null {
   const cached = cache.get(key);
@@ -166,7 +171,7 @@ export function getCached<T>(key: string, ttl: number = 60000): T | null {
 }
 
 export function setCache<T>(key: string, data: T): void {
-  cache.set(key, { data, timestamp: Date.now() });
+  cache.set(key, { data: data as unknown, timestamp: Date.now() });
 }
 
 export function clearCache(key?: string): void {

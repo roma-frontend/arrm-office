@@ -7,6 +7,7 @@ import { WidgetErrorBoundary } from '../components/error/WidgetErrorBoundary';
 const mockCaptureException = jest.fn();
 beforeEach(() => {
   jest.clearAllMocks();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Sentry mock for test setup
   (global as any).window.Sentry = { captureException: mockCaptureException };
 });
 

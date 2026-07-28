@@ -1763,7 +1763,11 @@
     "welcomeToPlan": "Welcome to {{plan}} plan",
     "allSet": "You're all set!",
     "instantAccess": "Instant Access",
-    "trialStarted": "Your 14-day free trial has started. No charge until the trial ends."
+    "trialStarted": "Your 14-day free trial has started. No charge until the trial ends.",
+    "verifying": "Verifying...",
+    "invalidSessionTitle": "Invalid Session",
+    "invalidSessionDescription": "We couldn't verify your payment session.",
+    "returnPricing": "Return to pricing"
   },
   "globalSearch": {
     "placeholder": "Search across the entire system...",

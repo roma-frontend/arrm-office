@@ -1,10 +1,8 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @next/next/no-img-element */
-
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -136,8 +134,8 @@ function CreateAnnouncementDialog({
       setIsPinned(false);
       setIsUrgent(false);
       onClose();
-    } catch (err: any) {
-      toast.error(err.message || t('common.error'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSubmitting(false);
     }
@@ -259,13 +257,13 @@ function CommentSection({
   t,
 }: {
   announcementId: Id<'announcements'>;
-  comments: any[];
+  comments: { _id: string; authorName: string; authorAvatar?: string; content: string; createdAt: number }[];
   totalComments: number;
   organizationId: Id<'organizations'>;
   userId: Id<'users'>;
   isExpanded: boolean;
   onToggle: () => void;
-  t: (key: string, options?: any) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   const [newComment, setNewComment] = useState('');
   const addComment = useMutation(api.news.addComment);
@@ -281,8 +279,8 @@ function CommentSection({
       });
       setNewComment('');
       toast.success(t('news.commentAdded'));
-    } catch (err: any) {
-      toast.error(err.message || t('common.error'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     }
   };
 
@@ -362,7 +360,8 @@ function AnnouncementCard({
   t,
   onDelete,
 }: {
-  announcement: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
+    announcement: any;
   organizationId: Id<'organizations'>;
   userId: Id<'users'>;
   userRole: string;
@@ -387,11 +386,11 @@ function AnnouncementCard({
 
   const isAdmin = userRole === 'admin' || userRole === 'superadmin';
 
-  const reactionsList = announcement.reactionsByEmoji ?? [];
-  const _totalReactions = reactionsList.reduce((sum: number, r: any) => sum + r.users.length, 0);
+  const reactionsList: Array<{ emoji: string; users: Array<{ userId: string; userName: string }> }> = announcement.reactionsByEmoji ?? [];
+  const _totalReactions = reactionsList.reduce((sum: number, r) => sum + r.users.length, 0);
 
-  const _hasMyReaction = reactionsList.some((r: any) =>
-    r.users.some((u: any) => u.userId === userId),
+  const _hasMyReaction = reactionsList.some((r) =>
+    r.users.some((u) => u.userId === userId),
   );
 
   const handleReact = async (emoji: string) => {
@@ -402,8 +401,8 @@ function AnnouncementCard({
         userId,
         emoji,
       });
-    } catch (err: any) {
-      toast.error(err.message || t('common.error'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     }
   };
 
@@ -515,10 +514,10 @@ function AnnouncementCard({
             {/* Emoji reaction buttons */}
             {EMOJI_REACTIONS.map((emoji) => {
               const reactors =
-                (announcement.reactionsByEmoji ?? []).find((r: any) => r.emoji === emoji)?.users ??
+                reactionsList.find((r) => r.emoji === emoji)?.users ??
                 [];
               const count = reactors.length;
-              const isActive = reactors.some((r: any) => r.userId === userId);
+              const isActive = reactors.some((r) => r.userId === userId);
               return (
                 <button
                   key={emoji}
@@ -528,7 +527,7 @@ function AnnouncementCard({
                       ? 'bg-primary/10 text-primary border border-primary/20'
                       : 'bg-muted/50 hover:bg-muted border border-transparent'
                   }`}
-                  title={reactors.map((r: any) => r.userName).join(', ')}
+                  title={reactors.map((r) => r.userName).join(', ')}
                 >
                   <span>{emoji}</span>
                   {count > 0 && <span className="font-medium">{count}</span>}
@@ -588,7 +587,7 @@ export default function NewsClient() {
     organizationId
       ? {
           organizationId,
-          category: categoryFilter !== 'all' ? (categoryFilter as any) : undefined,
+          category: categoryFilter !== 'all' ? (categoryFilter as 'news' | 'announcement' | 'event' | 'birthday' | 'achievement' | 'policy' | 'general') : undefined,
         }
       : 'skip',
   );
@@ -604,8 +603,8 @@ export default function NewsClient() {
     try {
       await deleteAnnouncement({ announcementId: id, userId: user!.id as Id<'users'> });
       toast.success(t('news.announcementDeleted'));
-    } catch (err: any) {
-      toast.error(err.message || t('common.error'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
     }
   };
 
@@ -750,7 +749,7 @@ export default function NewsClient() {
         </motion.div>
       ) : (
         <div className="space-y-3 max-w-2xl">
-          {newsFeed.map((announcement: any) => (
+          {newsFeed.map((announcement) => (
             <AnnouncementCard
               key={announcement._id}
               announcement={announcement}

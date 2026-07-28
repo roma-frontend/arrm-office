@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '../../../../../convex/_generated/api';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useAuthUser } from '@/store/useAuthStore';
-import type { Id } from '../../../../../convex/_generated/dataModel';
+import type { Doc, Id } from '../../../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,16 @@ import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Search, Pencil } from 'lucide-react';
+
+interface EmployeeBalance {
+  _id: string;
+  name: string;
+  email: string;
+  department?: string;
+  position?: string;
+  employeeType?: string;
+  balances: Record<string, number>;
+}
 
 type BalanceKey =
   | 'paidLeaveBalance'
@@ -83,7 +93,7 @@ export default function LeaveBalancesPage() {
   const organizationId = useSelectedOrganization() as Id<'organizations'> | undefined;
 
   const [search, setSearch] = useState('');
-  const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeBalance | null>(null);
   const [editBalances, setEditBalances] = useState<Record<string, number>>({});
   const [editReason, setEditReason] = useState('');
   const [saving, setSaving] = useState(false);
@@ -103,7 +113,7 @@ export default function LeaveBalancesPage() {
         e.email.toLowerCase().includes(search.toLowerCase()),
     ) ?? [];
 
-  const handleEditEmployee = (emp: any) => {
+  const handleEditEmployee = (emp: EmployeeBalance) => {
     setEditingEmployee(emp);
     setEditBalances({ ...emp.balances });
     setEditReason('');

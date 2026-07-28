@@ -26,7 +26,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useQuery, useMutation, useAction } from 'convex/react';
+import { useQuery, useMutation, useAction } from '@/lib/convex-typed';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -286,8 +286,8 @@ function CreateVacancyWizard({
                       setDescription(result.description);
                       setRequirements(result.requirements);
                       toast.success(t('recruitmentAI.generated', 'Description generated!'));
-                    } catch (err: any) {
-                      toast.error(err.message || t('recruitmentAI.error', 'Generation failed'));
+                    } catch (err: unknown) {
+                      toast.error(err instanceof Error ? err.message : t('recruitmentAI.error', 'Generation failed'));
                     } finally {
                       setAiGenerating(false);
                     }
@@ -743,7 +743,7 @@ function CandidateDetailDialog({
             <p className="text-sm font-semibold mb-2">
               {t('recruitment.scorecards', 'Scorecards')} ({scorecards.length})
             </p>
-            {scorecards.map((sc: any) => (
+            {scorecards.map((sc) => (
               <Card key={sc._id} className="mb-2">
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between text-sm">
@@ -769,7 +769,7 @@ function CandidateDetailDialog({
             <p className="text-sm font-semibold mb-2">
               {t('recruitment.interviews', 'Interviews')} ({interviews.length})
             </p>
-            {interviews.map((iv: any) => (
+            {interviews.map((iv) => (
               <div key={iv._id} className="flex items-center gap-2 text-xs p-2 border rounded mb-1">
                 <Calendar className="h-3 w-3 text-muted-foreground" />
                 <span>{new Date(iv.scheduledAt).toLocaleString()}</span>
@@ -797,7 +797,7 @@ function CandidateDetailDialog({
         {events.length > 0 && (
           <div>
             <p className="text-sm font-semibold mb-2">{t('recruitment.timeline', 'Timeline')}</p>
-            {events.map((ev: any) => (
+            {events.map((ev) => (
               <div
                 key={ev._id}
                 className="flex items-center gap-2 text-xs text-muted-foreground mb-1"
@@ -842,7 +842,7 @@ function PipelineView({
 
   const byStage = STAGES.reduce(
     (acc, stage) => {
-      acc[stage] = candidates.filter((c: any) => c.stage === stage);
+      acc[stage] = candidates.filter((c) => c.stage === stage);
       return acc;
     },
     {} as Record<string, typeof candidates>,
@@ -862,7 +862,7 @@ function PipelineView({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-      {STAGES.map((stage: any) => {
+      {STAGES.map((stage) => {
         const stageIdx = STAGES.indexOf(stage);
         const nextStage = stageIdx < STAGES.length - 1 ? STAGES[stageIdx + 1] : null;
         return (
@@ -876,7 +876,7 @@ function PipelineView({
               </span>
             </div>
             <div className="space-y-2 min-h-[60px]">
-              {(byStage[stage] || []).map((app: any) => (
+              {(byStage[stage] || []).map((app) => (
                 <Card key={app._id} className="cursor-pointer hover:shadow-sm transition-shadow">
                   <CardContent className="p-2">
                     <p
@@ -1124,7 +1124,7 @@ export default function RecruitmentClient() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {vacancies.map((vac: any) => (
+              {vacancies.map((vac) => (
                 <Card key={vac._id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1200,7 +1200,7 @@ export default function RecruitmentClient() {
                     </div>
                     {/* Mini pipeline */}
                     <div className="flex gap-1 mt-3">
-                      {STAGES.map((stage: any) => (
+                      {STAGES.map((stage) => (
                         <div key={stage} className="flex-1">
                           <div
                             className="h-1.5 rounded-full overflow-hidden"
@@ -1253,8 +1253,8 @@ export default function RecruitmentClient() {
                 {t('recruitment.selectVacancy', 'Select a vacancy to view pipeline:')}
               </p>
               {vacancies
-                ?.filter((v: any) => v.status === 'open')
-                .map((vac: any) => (
+                ?.filter((v) => v.status === 'open')
+                .map((vac) => (
                   <Card
                     key={vac._id}
                     className="cursor-pointer hover:shadow-sm"
@@ -1290,7 +1290,7 @@ export default function RecruitmentClient() {
             </Card>
           ) : (
             <div className="space-y-2">
-              {myInterviews.map((iv: any) => (
+              {myInterviews.map((iv) => (
                 <Card key={iv._id} className="hover:shadow-sm transition-shadow">
                   <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="min-w-0">

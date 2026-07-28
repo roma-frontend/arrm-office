@@ -74,11 +74,12 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       alternativeDates,
       canProceed: !conflictResult.hasCritical,
     });
-  } catch (error: any) {
-    console.error('[conflict-check] Error:', error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to check conflicts';
+    console.error('[conflict-check] Error:', msg);
     return NextResponse.json(
       {
-        error: error.message || 'Failed to check conflicts',
+        error: msg,
         success: false,
       },
       { status: 500 },
@@ -127,10 +128,11 @@ export async function GET(req: NextRequest) {
       aiMessage: aiFriendlyMessage,
       canProceed: !conflictResult.hasCritical,
     });
-  } catch (error: any) {
-    console.error('[conflict-check] Error:', error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to check conflicts';
+    console.error('[conflict-check] Error:', msg);
     return NextResponse.json(
-      { error: error.message || 'Failed to check conflicts' },
+      { error: msg },
       { status: 500 },
     );
   }
@@ -139,7 +141,7 @@ export async function GET(req: NextRequest) {
 /**
  * Форматирует конфликты в human-readable сообщения для AI
  */
-function formatConflictsForAI(conflicts: any[], requestType: string): string {
+function formatConflictsForAI(conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>, requestType: string): string {
   if (conflicts.length === 0) {
     return '✅ Конфликтов не обнаружено. Можно продолжать.';
   }
@@ -178,7 +180,7 @@ function formatConflictsForAI(conflicts: any[], requestType: string): string {
 /**
  * Извлекает альтернативные даты из конфликтов
  */
-function extractAlternativeDates(conflicts: any[], requestType: string): string[] {
+function extractAlternativeDates(conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>, requestType: string): string[] {
   const alternativeDates: string[] = [];
 
   if (requestType !== 'leave') return alternativeDates;

@@ -29,6 +29,7 @@
     "earlyLeave": "Early leave",
     "punctuality": "Punctuality",
     "active": "Active",
+    "inactive": "Inactive",
     "done": "Done",
     "driverNotRegistered": "Driver Not Registered",
     "pleaseLogIn": "Please log in",
@@ -439,7 +440,12 @@
     "uploaded": "Uploaded successfully"
   },
   "error": {
-    "fillRequiredFields": "Please fill all required fields"
+    "fillRequiredFields": "Please fill all required fields",
+    "criticalError": "Critical Error",
+    "criticalDescription": "A critical error occurred that prevented the application from loading. Please try refreshing the page.",
+    "tryAgain": "Try again",
+    "goHome": "Go home",
+    "reference": "Reference"
   },
   "actions": {
     "clearSelection": "Clear Selection",
@@ -1515,5 +1521,17 @@
     "groups": "groups",
     "group": "Group",
     "value": "Value"
+  },
+  "offline": {
+    "title": "You're offline",
+    "description": "Check your internet connection and try again.",
+    "retry": "Retry"
+  },
+  "loadingTranslations": "Loading translations...",
+  "faceVerification": {
+    "verifying": "Verifying identity…",
+    "verified": "Identity verified ✓",
+    "couldNotVerify": "⚠️ Could not verify — please look at camera",
+    "failed": "🚨 Identity verification failed — logging out…"
   }
 }

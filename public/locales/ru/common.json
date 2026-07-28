@@ -29,6 +29,7 @@
     "earlyLeave": "Ранний уход",
     "punctuality": "Пунктуальность",
     "active": "Активен",
+    "inactive": "Неактивен",
     "done": "Готово",
     "driverNotRegistered": "Водитель не зарегистрирован",
     "pleaseLogIn": "Пожалуйста, войдите",
@@ -116,7 +117,6 @@
     "sending": "Отправка...",
     "selectAll": "Выбрать всех",
     "deleted": "Удалено",
-    "today": "Сегодня",
     "to": "по",
     "error": "Ошибка",
     "unknownUser": "Неизвестный",
@@ -220,7 +220,6 @@
     "recognition": "Признание",
     "surveys": "Опросы",
     "performance": "Оценка",
-    "dashboards": "Панели",
     "signatures": "Э-Подписи",
     "goals": "OKR и Цели",
     "strategyMap": "Карта стратегии",
@@ -347,12 +346,6 @@
     "optional": "(необязательно)"
   },
   "status": {
-    "loading": "",
-    "loadingUserData": "",
-    "error": "Ошибка",
-    "success": "Успешно",
-    "noData": "Нет данных",
-    "empty": "Пусто",
     "updated": "Статус обновлен",
     "selectStatus": "Выберите свой статус",
     "selectSubtitle": "Выберите, как вы хотите быть восприняты вашей командой",
@@ -447,7 +440,12 @@
     "uploaded": "Загружено"
   },
   "error": {
-    "fillRequiredFields": "Заполните все обязательные поля"
+    "fillRequiredFields": "Заполните все обязательные поля",
+    "criticalError": "Критическая ошибка",
+    "criticalDescription": "Произошла критическая ошибка, которая помешала загрузке приложения. Пожалуйста, попробуйте обновить страницу.",
+    "tryAgain": "Попробовать снова",
+    "goHome": "На главную",
+    "reference": "Код ошибки"
   },
   "actions": {
     "clearSelection": "Очистить выбор",
@@ -488,7 +486,9 @@
     "whatDoesWell": "Что сотрудник делает хорошо?",
     "whatFeaturesImportant": "Какие функции важны для вас?",
     "youAtCompany": "you@company.com",
-    "emailAddress": "you@company.com"
+    "emailAddress": "you@company.com",
+    "position": "Должность",
+    "selectOrg": "Выберите организацию"
   },
   "ariaLabels": {
     "changeAvatar": "Изменить аватар",
@@ -677,18 +677,6 @@
     "backToOrganizations": "Вернуться к организациям",
     "yourEmail": "Ваш email",
     "role": "Роль",
-    "onlySuperadminAccess": "Только супер-админы могут получить доступ",
-    "accountSuspended": "Аккаунт приостановлен",
-    "until": "До",
-    "admins": "Администраторы",
-    "noAdminsYet": "Администраторов пока нет",
-    "noEmployeesAvailable": "Нет доступных сотрудников",
-    "now": "Сейчас",
-    "superadmin": "Супер-админ",
-    "starter": "Начальный",
-    "critical": "КРИТИЧЕСКИЙ",
-    "affectedUsers": "Затронутые пользователи",
-    "affectedOrgs": "Затронутые организации",
     "profilePictureUpload": "Загрузите фото профиля",
     "clickCameraToUpload": "Нажмите на значок камеры для загрузки фото",
     "recommendedImageSize": "Рекомендуемый размер: 400x400px (макс. 2MB)",
@@ -705,10 +693,8 @@
     "notCheckedInWarning": "Вы не отметились сегодня",
     "comprehensiveAnalysis": "Полный анализ",
     "memberSince": "Участник с",
-    "userId": "ID пользователя",
     "activityStats": "Статистика активности",
     "emergencyDashboard": "Панель чрезвычайных ситуаций",
-    "roleManagedByAdmin": "Ваша роль и отдел управляются администратором. Обратитесь к ним для внесения изменений.",
     "backToLogin": "Назад ко входу",
     "allCaughtUp": "Всё сделано",
     "noPendingApprovals": "Нет ожидающих согласований",
@@ -782,7 +768,6 @@
     "noDrivers": {
       "title": "Нет доступных водителей",
       "description": "В данный момент нет доступных водителей. Попробуйте позже.",
-      "action": "Заказать водителя",
       "requestDriver": "Заказать водителя"
     }
   },
@@ -852,8 +837,7 @@
     "fileTooBig": "Файл слишком большой",
     "invalidFileType": "Некорректный тип файла",
     "maxLength": "Максимальная длина {{max}} символов",
-    "minLength": "Минимальная длина {{min}} символов",
-    "hy": "🇦🇲 Время начала должно быть раньше времени окончания"
+    "minLength": "Минимальная длина {{min}} символов"
   },
   "search": {
     "search": "Поиск",
@@ -1021,19 +1005,9 @@
     "pageNotFound": "Страница не найдена",
     "pageNotFoundDesc": "Страница не существует или была перемещена.",
     "goHome": "На главную",
-    "errorDescription": "Произошла непредвиденная ошибка. Ваши данные в безопасности."
+    "errorDescription": "Произошла непредвиденная ошибка. Ваши данные в безопасности.",
+    "backToDashboard": "На главную"
   },
-  "tasks.priority": {
-    "high": "Высокий",
-    "low": "Низкий",
-    "medium": "Средний",
-    "urgent": "Срочный"
-  },
-  "pageNotFound": "Страница не найдена",
-  "pageNotFoundDesc": "Страница не существует или была перемещена.",
-  "backToDashboard": "Назад к панели",
-  "goHome": "На главную",
-  "errorDescription": "Произошла непредвиденная ошибка. Ваши данные в безопасности.",
   "strategyMap": {
     "title": "Карта стратегии",
     "subtitle": "Визуальный каскад целей компании до индивидуальных задач",
@@ -1547,5 +1521,17 @@
     "groups": "групп",
     "group": "Группа",
     "value": "Значение"
+  },
+  "offline": {
+    "title": "Вы офлайн",
+    "description": "Проверьте подключение к интернету и попробуйте снова.",
+    "retry": "Повторить"
+  },
+  "loadingTranslations": "Загрузка переводов...",
+  "faceVerification": {
+    "verifying": "Проверяем личность…",
+    "verified": "Личность подтверждена ✓",
+    "couldNotVerify": "⚠️ Не удалось подтвердить — посмотрите в камеру",
+    "failed": "🚨 Проверка личности не пройдена — выход из системы…"
   }
 }

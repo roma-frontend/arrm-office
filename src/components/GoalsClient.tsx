@@ -20,7 +20,7 @@ import {
   ListChecks,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -176,7 +176,7 @@ function CreateObjectiveWizard({
   };
 
   const handleSubmit = async () => {
-    if (!title.trim() || keyResults.some((kr: any) => !kr.title.trim())) {
+    if (!title.trim() ||    keyResults.some((kr) => !kr.title.trim())) {
       toast.error(t('goals.wizard.fillRequired'));
       return;
     }
@@ -196,7 +196,7 @@ function CreateObjectiveWizard({
         periodEnd: end,
         parentObjectiveId: parentId ? (parentId as Id<'objectives'>) : undefined,
         createdBy: userId,
-        keyResults: keyResults.map((kr: any) => ({
+        keyResults:      keyResults.map((kr) => ({
           title: kr.title.trim(),
           description: kr.description.trim() || undefined,
           metricType: kr.metricType,
@@ -388,7 +388,7 @@ function CreateObjectiveWizard({
                       <SelectItem value="">
                         {t('goals.wizard.noAlignment', 'None (top-level)')}
                       </SelectItem>
-                      {parentOptions.map((p: any) => (
+                      {parentOptions.map((p) => (
                         <SelectItem key={p._id} value={p._id}>
                           [{p.level}] {p.title}
                         </SelectItem>
@@ -523,10 +523,10 @@ function CreateObjectiveWizard({
               <Button variant="outline" size="sm" onClick={addKR} className="w-full">
                 <Plus className="h-4 w-4 mr-1" /> {t('goals.wizard.addKR', 'Add Key Result')}
               </Button>
-              {keyResults.reduce((s: any, kr: any) => s + kr.weight, 0) !== 100 && (
+              {              keyResults.reduce((s, kr) => s + kr.weight, 0) !== 100 && (
                 <p className="text-xs text-destructive">
                   {t('goals.wizard.weightWarning', 'Weights must sum to 100. Current: {{sum}}', {
-                    sum: keyResults.reduce((s: any, kr: any) => s + kr.weight, 0),
+                    sum: keyResults.reduce((s, kr) => s + kr.weight, 0),
                   })}
                 </p>
               )}
@@ -690,7 +690,7 @@ function CheckinDialog({
         <div>
           <Label>{t('goals.checkin.confidence', 'Confidence')}</Label>
           <div className="flex gap-2 mt-1">
-            {(['high', 'medium', 'low'] as const).map((c: any) => (
+            {(['high', 'medium', 'low'] as const).map((c) => (
               <Button
                 key={c}
                 size="sm"
@@ -810,8 +810,7 @@ function ObjectiveDetailDialog({
 
         {/* Key Results */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold">{t('goals.keyResults', 'Key Results')}</h4>
-          {objective.keyResults.map((kr: any) => {
+          <h4 className="text-sm font-semibold">{t('goals.keyResults', 'Key Results')}</h4>            {objective.keyResults.map((kr) => {
             const pct = kr.completionPercent;
             return (
               <Card key={kr._id}>
@@ -855,7 +854,7 @@ function ObjectiveDetailDialog({
                       <p className="text-xs font-medium mb-1">
                         {t('goals.recentCheckins', 'Recent Check-ins')}
                       </p>
-                      {kr.checkins.slice(0, 3).map((c: any) => (
+                      {kr.checkins.slice(0, 3).map((c) => (
                         <div
                           key={c._id}
                           className="text-xs text-muted-foreground flex items-center gap-2"
@@ -885,7 +884,7 @@ function ObjectiveDetailDialog({
             <h4 className="text-sm font-semibold mb-2">
               {t('goals.alignedGoals', 'Aligned Goals')}
             </h4>
-            {objective.children.map((child: any) => (
+            {objective.children.map((child) => (
               <div
                 key={child._id}
                 className="text-sm flex items-center gap-2 p-2 border rounded mb-1"
@@ -993,8 +992,8 @@ export default function GoalsClient() {
   const parentOptions = useMemo(() => {
     if (!objectives) return [];
     return objectives
-      .filter((o: any) => o.level === 'company' || o.level === 'team')
-      .map((o: any) => ({ _id: o._id, title: o.title, level: o.level }));
+      .filter((o) => o.level === 'company' || o.level === 'team')
+      .map((o) => ({ _id: o._id, title: o.title, level: o.level }));
   }, [objectives]);
 
   // Filter objectives by tab
@@ -1002,11 +1001,11 @@ export default function GoalsClient() {
     if (!objectives) return [];
     switch (selectedTab) {
       case 'my':
-        return objectives.filter((o: any) => o.ownerId === userId);
+        return objectives.filter((o) => o.ownerId === userId);
       case 'team':
-        return objectives.filter((o: any) => o.level === 'team');
+        return objectives.filter((o) => o.level === 'team');
       case 'company':
-        return objectives.filter((o: any) => o.level === 'company');
+        return objectives.filter((o) => o.level === 'company');
       default:
         return objectives;
     }
@@ -1196,7 +1195,7 @@ export default function GoalsClient() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {filteredObjectives.map((obj: any) => (
+              {filteredObjectives.map((obj) => (
                 <Card
                   key={obj._id}
                   className="cursor-pointer hover:shadow-md transition-shadow"

@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     if (timeHistory && timeHistory.length > 0) {
       // Count late arrivals
-      const lateRecords = timeHistory.filter((r: any) => r.isLate);
+      const lateRecords = timeHistory.filter((r) => r.isLate);
       if (lateRecords.length >= 3) {
         // Check if late on specific days
         const dayNames = [
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
           'Saturday',
         ];
         const lateDayCounts: Record<number, number> = {};
-        lateRecords.forEach((r: any) => {
+        lateRecords.forEach((r) => {
           const day = new Date(r.checkInTime).getDay();
           lateDayCounts[day] = (lateDayCounts[day] || 0) + 1;
         });
@@ -85,18 +85,18 @@ export async function GET(req: NextRequest) {
       }
 
       // Check early leave pattern
-      const earlyLeaves = timeHistory.filter((r: any) => r.isEarlyLeave);
+      const earlyLeaves = timeHistory.filter((r) => r.isEarlyLeave);
       if (earlyLeaves.length >= 3) {
         patterns.push(`${earlyLeaves.length} early departures recorded recently`);
       }
     }
 
     // Check sick leave pattern
-    const sickLeaves = userLeaves.filter((l: any) => l.type === 'sick');
+    const sickLeaves = userLeaves.filter((l) => l.type === 'sick');
     if (sickLeaves.length >= 3) {
       // Check if sick leaves cluster around specific days
       const sickDayCounts: Record<number, number> = {};
-      sickLeaves.forEach((l: any) => {
+      sickLeaves.forEach((l) => {
         const day = new Date(l.startDate).getDay();
         sickDayCounts[day] = (sickDayCounts[day] || 0) + 1;
       });
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
     const todayStr = today.toISOString().split('T')[0] || '';
     const next60Str = next60Days.toISOString().split('T')[0] || '';
 
-    const upcomingTeamLeaves = allLeaves.filter((l: any) => {
+    const upcomingTeamLeaves = allLeaves.filter((l) => {
       return (
         l.userId !== userId &&
         l.status === 'approved' &&
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Group by date range
-    upcomingTeamLeaves.slice(0, 5).forEach((l: any) => {
+    upcomingTeamLeaves.slice(0, 5).forEach((l) => {
       teamConflicts.push(
         `${l.userName} (${l.userDepartment || 'Unknown dept'}) is on ${l.type} leave: ${l.startDate} → ${l.endDate}`,
       );
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
         const weekEndStr = weekEnd.toISOString().split('T')[0] || '';
 
         // Check if anyone from team is on leave that week
-        const conflict = upcomingTeamLeaves.some((l: any) => {
+        const conflict = upcomingTeamLeaves.some((l) => {
           return l.startDate <= weekEndStr && l.endDate >= dateStr;
         });
 

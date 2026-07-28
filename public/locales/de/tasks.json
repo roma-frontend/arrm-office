@@ -15,8 +15,7 @@
       "cancelled": "Abgebrochen",
       "moved": "Verschoben in {{status}}"
     },
-    "priority": "Priorität",
-    "priorityLabels": {
+    "priority": {
       "low": "Niedrig",
       "medium": "Mittel",
       "high": "Hoch",
@@ -187,6 +186,8 @@
     "attachmentsHint": "PDF, Bilder, Dokumente (max. 10 MB pro Datei)",
     "clickToAttach": "Klicken Sie hier, um Dateien anzuhängen",
     "filesSelected": "Dateien ausgewählt",
-    "removeFile": "Datei entfernen"
+    "removeFile": "Datei entfernen",
+    "addFiles": "Dateien hinzufügen",
+    "uploading": "Hochladen..."
   }
 }

@@ -1,3 +1,24 @@
+export interface PayrollRecord {
+  grossSalary: number;
+  netSalary: number;
+  baseSalary: number;
+  period: string;
+  status: string;
+  createdAt: number;
+  bonuses?: number;
+  overtimePay?: number;
+  notes?: string;
+  deductions?: {
+    total?: number;
+    incomeTax?: number;
+    socialSecurity?: number;
+  };
+  user?: {
+    name?: string;
+    email?: string;
+  };
+}
+
 export function formatCurrency(amount: number, currency = 'AMD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -43,7 +64,7 @@ export function calculateEffectiveTaxRate(gross: number, deductions: number): nu
   return Math.round((deductions / gross) * 10000) / 100;
 }
 
-export function getPayrollSummary(records: any[]) {
+export function getPayrollSummary(records: PayrollRecord[]) {
   const totalGross = records.reduce((sum, r) => sum + r.grossSalary, 0);
   const totalNet = records.reduce((sum, r) => sum + r.netSalary, 0);
   const totalDeductions = records.reduce((sum, r) => sum + (r.deductions?.total || 0), 0);
@@ -63,13 +84,13 @@ export function getPayrollSummary(records: any[]) {
 }
 
 export function filterPayrollRuns(
-  runs: any[],
+  runs: PayrollRecord[],
   filters: {
     status?: string;
     period?: string;
     search?: string;
   },
-): any[] {
+) {
   let filtered = [...runs];
 
   if (filters.status && filters.status !== 'all') {
@@ -92,7 +113,7 @@ export function filterPayrollRuns(
   return filtered.sort((a, b) => b.createdAt - a.createdAt);
 }
 
-export function exportToCSV(records: any[]): string {
+export function exportToCSV(records: PayrollRecord[]): string {
   const headers = [
     'Employee',
     'Email',

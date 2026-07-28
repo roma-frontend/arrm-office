@@ -35,24 +35,24 @@ export async function GET() {
       convex.query(api.timeTracking.getTodayAttendanceSummary, { adminId: adminId as Id<'users'> }),
     ]);
 
-    const activeEmployees = allUsers.filter((u: any) => u.isActive && u.role === 'employee');
-    const pendingLeaves = allLeaves.filter((l: any) => l.status === 'pending');
+    const activeEmployees = allUsers.filter((u) => u.isActive && u.role === 'employee');
+    const pendingLeaves = allLeaves.filter((l) => l.status === 'pending');
 
     // Who is on leave this week
     const onLeaveThisWeek = allLeaves.filter(
-      (l: any) => l.status === 'approved' && l.startDate <= weekEndStr && l.endDate >= weekStartStr,
+      (l) => l.status === 'approved' && l.startDate <= weekEndStr && l.endDate >= weekStartStr,
     );
 
     // Late arrivals this week (from time tracking)
     const monthStr = today.toISOString().slice(0, 7);
-    const lateThisMonth: any[] = [];
+    const lateThisMonth: Array<{ name: string; lateCount: number }> = [];
     for (const emp of activeEmployees.slice(0, 20)) {
       try {
         const history = await convex.query(api.timeTracking.getUserHistory, {
           userId: emp._id,
           limit: 30,
         });
-        const lateCount = history.filter((r: any) => {
+        const lateCount = history.filter((r) => {
           return r.isLate && r.date >= weekStartStr && r.date <= weekEndStr;
         }).length;
         if (lateCount > 0) {
@@ -74,16 +74,15 @@ ON LEAVE THIS WEEK (${onLeaveThisWeek.length}):
 ${
   onLeaveThisWeek
     .slice(0, 10)
-    .map((l: any) => `- ${l.userName}: ${l.type} leave (${l.startDate} → ${l.endDate})`)
+    .map((l) => `- ${l.userName}: ${l.type} leave (${l.startDate} → ${l.endDate})`)
     .join('\n') || 'None'
 }
 
 PENDING APPROVAL (${pendingLeaves.length}):
 ${
   pendingLeaves
-    .slice(0, 5)
-    .map(
-      (l: any) =>
+    .slice(0, 5)      .map(
+      (l) =>
         `- ${l.userName}: ${l.days} day(s) ${l.type} leave (${l.startDate} → ${l.endDate})`,
     )
     .join('\n') || 'None'

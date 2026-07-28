@@ -300,9 +300,10 @@ export default function DriversPage() {
     [mainRef],
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type compatible with DriverBookingPage.Request
   const handleViewRequestDetails = useCallback(
     (request: any) => {
-      setSelectedRequest(request);
+      setSelectedRequest(request as TripRequest);
       setShowTripDetails(true);
       const mainEl = mainRef.current;
       if (mainEl) {

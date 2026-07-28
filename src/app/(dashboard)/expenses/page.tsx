@@ -17,6 +17,7 @@ function ExpensesSkeleton() {
 const ExpensesClient = nextDynamic(
   () =>
     import('@/components/expenses/ExpensesClient').then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic HOC wrapper
       default: (props: any) => (
         <WidgetErrorBoundary name="ExpensesClient">
           <m.default {...props} />

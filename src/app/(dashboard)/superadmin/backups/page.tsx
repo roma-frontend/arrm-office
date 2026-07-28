@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '@/convex/_generated/api';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,7 +77,7 @@ export default function BackupsManagementPage() {
 
   // Если на дашборде выбрана организация — используем её по умолчанию
   const defaultOrgId =
-    globalSelectedOrgId && orgs.some((o: any) => o._id === globalSelectedOrgId)
+    globalSelectedOrgId && orgs.some((o) => o._id === globalSelectedOrgId)
       ? globalSelectedOrgId
       : null;
 
@@ -86,12 +86,12 @@ export default function BackupsManagementPage() {
   // Если выбрана конкретная организация — показываем только её, иначе все
   const filteredOrgs = useMemo(() => {
     if (!effectiveOrgId) return orgs;
-    return orgs.filter((org: any) => org._id === effectiveOrgId);
+    return orgs.filter((org) => org._id === effectiveOrgId);
   }, [orgs, effectiveOrgId]);
 
   const selectedOrgData = useMemo(() => {
     if (!effectiveOrgId) return null;
-    return orgs.find((org: any) => org._id === effectiveOrgId) ?? null;
+    return orgs.find((org) => org._id === effectiveOrgId) ?? null;
   }, [orgs, effectiveOrgId]);
 
   if (isLoading) {
@@ -302,7 +302,7 @@ export default function BackupsManagementPage() {
                 <Building className="w-4 h-4" />
                 {selectedOrgData?.name ??
                   (globalSelectedOrgId
-                    ? (orgs.find((o: any) => o._id === globalSelectedOrgId)?.name ??
+                    ? (orgs.find((o) => o._id === globalSelectedOrgId)?.name ??
                       t('superadmin.backups.selectOrg'))
                     : t('superadmin.backups.selectOrg'))}
                 <ChevronDown className="w-3 h-3 ml-1" />
@@ -311,7 +311,7 @@ export default function BackupsManagementPage() {
             <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
               <DropdownMenuLabel>{t('superadmin.backups.selectOrgLabel')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {orgs.map((org: any) => (
+              {orgs.map((org) => (
                 <DropdownMenuItem
                   key={org._id}
                   onClick={() => setLocalSelectedOrg({ id: org._id, name: org.name })}
@@ -397,7 +397,7 @@ export default function BackupsManagementPage() {
               </p>
             </div>
             <p className="text-2xl font-bold">
-              {filteredOrgs?.reduce((sum: number, o: any) => sum + (o.totalEmployees || 0), 0) || 0}
+              {filteredOrgs?.reduce((sum: number, o) => sum + (o.totalEmployees || 0), 0) || 0}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               {t('superadmin.backups.totalEmployeesCount')}
@@ -428,7 +428,7 @@ export default function BackupsManagementPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredOrgs.map((org: any) => (
+              {filteredOrgs.map((org) => (
                 <OrgBackups
                   key={org._id}
                   org={org}
@@ -527,6 +527,7 @@ function OrgBackups({
   t,
   superadminUserId,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any — org shape from Convex query
   org: any;
   isExpanded: boolean;
   onToggle: () => void;
@@ -562,7 +563,7 @@ function OrgBackups({
 
   const backupMap = useMemo(() => {
     const map = new Map<string, any>();
-    orgBackups?.forEach((emp: any) => {
+    orgBackups?.forEach((emp) => {
       map.set(String(emp.userId), emp);
     });
     return map;
@@ -570,7 +571,7 @@ function OrgBackups({
 
   const employeeList = useMemo(() => {
     if (!employees) return [];
-    return employees.filter((emp: any) => emp.role !== 'superadmin');
+    return employees.filter((emp) => emp.role !== 'superadmin');
   }, [employees]);
 
   return (
@@ -599,11 +600,11 @@ function OrgBackups({
             <div className="flex items-center gap-1 text-(--text-muted)">
               <Clock className="w-3 h-3" />
               <span className="hidden sm:inline">
-                {formatDate(Math.max(...orgBackups.map((e: any) => e.latestBackup)))}
+                {formatDate(Math.max(...orgBackups.map((e) => e.latestBackup)))}
               </span>
               <span className="sm:hidden">
                 {new Date(
-                  Math.max(...orgBackups.map((e: any) => e.latestBackup)),
+                  Math.max(...orgBackups.map((e) => e.latestBackup)),
                 ).toLocaleDateString()}
               </span>
             </div>
@@ -637,7 +638,7 @@ function OrgBackups({
             </div>
           ) : (
             <div className="space-y-2">
-              {employeeList.map((emp: any) => {
+              {employeeList.map((emp) => {
                 const empKey = `${org._id}:${emp._id}`;
                 const isEmpExpanded = expandedEmployees.has(empKey);
                 const backupData = backupMap.get(String(emp._id));
@@ -679,6 +680,7 @@ function EmployeeBackups({
   formatDate,
   t,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any — emp shape from Convex query
   emp: any;
   orgId: string;
   isExpanded: boolean;
@@ -690,6 +692,7 @@ function EmployeeBackups({
     createdAt: number,
   ) => void;
   onBackup: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any — backup shape from Convex query
   backupData?: any;
   runningBackup: string | null;
   formatSize: (bytes: number) => string;
@@ -803,7 +806,7 @@ function EmployeeBackups({
                   </tr>
                 </thead>
                 <tbody>
-                  {userBackups.map((backup: any) => {
+                  {userBackups.map((backup) => {
                     const now = Date.now();
                     const isExpired = backup.expiresAt < now;
                     return (

@@ -344,7 +344,7 @@ function StatCard({
 }: {
   title: string;
   value: number | string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
@@ -559,7 +559,7 @@ function CreateTicketDialog({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="priority">{t('superadmin.support.create.priorityLabel')}</Label>
-                <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
+                <Select value={priority} onValueChange={(v) => setPriority(v as typeof priority)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -574,7 +574,7 @@ function CreateTicketDialog({
 
               <div>
                 <Label htmlFor="category">{t('superadmin.support.create.categoryLabel')}</Label>
-                <Select value={category} onValueChange={(v: any) => setCategory(v)}>
+                <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -698,7 +698,7 @@ function TicketDetailDialog({
       logger.log('[handleCreateChat] Chat created successfully:', result);
       toast.success(t('superadmin.support.chatCreated', { chatName: result.chatName }));
       router.refresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[handleCreateChat] Error:', error);
       toast.error(t('superadmin.support.chatCreateError'));
     } finally {
@@ -727,9 +727,9 @@ function TicketDetailDialog({
         message: defaultMessage,
       });
       router.push(`/chat?conversation=${result.chatId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error activating chat:', error);
-      toast.error(error.message || t('superadmin.support.chatActivateError'));
+      toast.error(error instanceof Error ? error.message : t('superadmin.support.chatActivateError'));
     }
   };
 
@@ -894,7 +894,7 @@ function TicketDetailDialog({
             >
               <div className="overflow-hidden">
                 <div className="space-y-3 pb-4">
-                  {ticket.comments?.map((comment: any) => (
+                  {ticket.comments?.map((comment) => (
                     <div
                       key={comment._id}
                       className={`p-4 rounded-lg transition-all duration-200 hover:shadow-sm ${
@@ -1107,10 +1107,10 @@ function TicketDetailDialog({
                 </h4>
                 <Select
                   value={ticket.status}
-                  onValueChange={(value: any) => {
+                  onValueChange={(value: string) => {
                     updateStatus({
                       ticketId: ticketId as Id<'supportTickets'>,
-                      status: value,
+                      status: value as 'open' | 'in_progress' | 'waiting_customer' | 'resolved' | 'closed',
                       userId,
                     });
                     toast.success(t('superadmin.support.detail.status'));

@@ -137,12 +137,11 @@ export default function EmployeeProfileHero({
   const { t, i18n } = useTranslation();
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
-  const roleGradientStyle = getRoleGradientStyle();
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-(--border) shadow-sm">
       {/* Cover gradient */}
-      <div className="absolute inset-0 opacity-90" style={roleGradientStyle} />
+      <div className="absolute inset-0 bg-primary opacity-90" />
 
       {/* Decorative circles */}
       <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/[0.06] rounded-full" />

@@ -53,14 +53,7 @@
     "add": "Добавить",
     "noUsersFound": "Пользователи не найдены",
     "allMembersAdded": "Все участники уже добавлены",
-    "fileReadyToSend": "файл готов к отправке",
-    "filesReadyToSend": "файлов готово к отправке",
     "messageDeleted": "Это сообщение было удалено",
-    "pollClosed": "Опрос закрыт",
-    "votes": "голосов",
-    "closePoll": "Закрыть опрос",
-    "reply": "Ответить",
-    "copy": "Копировать",
     "pin": "Закрепить",
     "defaultChatName": "Чат",
     "defaultGroupName": "Группа",
@@ -159,12 +152,12 @@
       "replies": "ответ",
       "repliesPlural": "ответы",
       "repliesCount": "{{count}} ответ",
-      "repliesCount_one": "{{count}} ответ",
-      "repliesCount_few": "{{count}} ответа",
-      "repliesCount_many": "{{count}} ответов",
       "repliesCount_other": "{{count}} ответов",
       "you": "Вы",
-      "replyPlaceholder": "Ответить в треде…"
+      "replyPlaceholder": "Ответить в треде…",
+      "repliesCount_one": "{{count}} ответ",
+      "repliesCount_few": "{{count}} ответа",
+      "repliesCount_many": "{{count}} ответов"
     },
     "voice": {
       "cancelRecording": "Отменить запись",
@@ -173,9 +166,6 @@
       "voiceMessage": "Голосовое сообщение"
     },
     "newMessages": "{{count}} новое сообщение",
-    "newMessages_one": "{{count}} новое сообщение",
-    "newMessages_few": "{{count}} новых сообщения",
-    "newMessages_many": "{{count}} новых сообщений",
     "newMessages_other": "{{count}} новых сообщений",
     "chatBackground": "Фон чата",
     "bgHint": "Выберите фон для ваших переписок",
@@ -216,7 +206,10 @@
     },
     "notification": {
       "attachment": "Вложение"
-    }
+    },
+    "newMessages_one": "{{count}} новое сообщение",
+    "newMessages_few": "{{count}} новых сообщения",
+    "newMessages_many": "{{count}} новых сообщений"
   },
   "chatWidget": {
     "chat": "Чат",
@@ -281,6 +274,7 @@
     "submitting": "Отправка...",
     "openAssistant": "Открыть AI ассистента",
     "imHere": "Я здесь, могу помочь!",
+    "closeChat": "Закрыть чат",
     "bookVacation": "📆 Запланировать отпуск",
     "requestSickLeave": "🤒 Запросить больничный",
     "showLeaveHistory": "📊 Показать историю отпусков",

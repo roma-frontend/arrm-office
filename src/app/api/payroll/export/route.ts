@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     };
     headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
-    records.forEach((record: any) => {
+    records.forEach((record) => {
       worksheet.addRow({
         employee: record.user?.name || 'Unknown',
         email: record.user?.email || '',
@@ -74,10 +74,10 @@ export async function POST(request: Request) {
       }
     });
 
-    const totalGross = records.reduce((sum: number, r: any) => sum + r.grossSalary, 0);
-    const totalNet = records.reduce((sum: number, r: any) => sum + r.netSalary, 0);
+    const totalGross = records.reduce((sum: number, r) => sum + r.grossSalary, 0);
+    const totalNet = records.reduce((sum: number, r) => sum + r.netSalary, 0);
     const totalDeductions = records.reduce(
-      (sum: number, r: any) => sum + (r.deductions?.total || 0),
+      (sum: number, r) => sum + (r.deductions?.total || 0),
       0,
     );
 

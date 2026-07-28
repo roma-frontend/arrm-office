@@ -9,7 +9,7 @@ let _unlocked = false;
 
 function getAudioContext(): AudioContext {
   if (!_sharedCtx || _sharedCtx.state === 'closed') {
-    _sharedCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    _sharedCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
   if (_sharedCtx.state === 'suspended') {
     _sharedCtx.resume().catch(() => {});
@@ -71,7 +71,7 @@ export const playNotificationSound = (
 };
 
 // Two-tone chime for new requests
-function playChime(context: AudioContext | any, startTime: number, duration: number) {
+function playChime(context: AudioContext, startTime: number, duration: number) {
   const frequencies = [523.25, 659.25]; // C5, E5
   frequencies.forEach((freq, idx) => {
     const osc = context.createOscillator();
@@ -94,7 +94,7 @@ function playChime(context: AudioContext | any, startTime: number, duration: num
 }
 
 // Happy uplifting sound for approvals
-function playSuccess(context: AudioContext | any, startTime: number, duration: number) {
+function playSuccess(context: AudioContext, startTime: number, duration: number) {
   const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
   frequencies.forEach((freq, idx) => {
     const osc = context.createOscillator();
@@ -118,7 +118,7 @@ function playSuccess(context: AudioContext | any, startTime: number, duration: n
 }
 
 // Gentle notification sound
-function playNotification(context: AudioContext | any, startTime: number, duration: number) {
+function playNotification(context: AudioContext, startTime: number, duration: number) {
   const frequencies = [439.74, 523.25]; // A4, C5
   frequencies.forEach((freq, idx) => {
     const osc = context.createOscillator();

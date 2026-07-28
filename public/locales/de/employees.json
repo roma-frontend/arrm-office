@@ -161,9 +161,7 @@
     "finance": "Finanzen (nur Admin)",
     "travel": "Reisen (nur Admin)",
     "vacation": "Urlaub",
-    "salary": "Gehalt",
-    "staff": "Personal",
-    "contractor": "Auftragnehmer"
+    "salary": "Gehalt"
   },
   "employeeTypes": {
     "full_time": "Vollzeit",
@@ -372,7 +370,6 @@
     "subtitle": "Visuelle Hierarchie Ihres Teams",
     "loading": "Lade Organisationsstruktur...",
     "noData": "Organisationsstruktur-Daten sind noch nicht erstellt",
-    "noDataDesc": "Erstellen Sie die Organisationsstruktur aus den Mitarbeiterdaten oder fügen Sie Knoten manuell hinzu.",
     "generateFromUsers": "Aus Mitarbeiterdaten erstellen",
     "generating": "Erstellen...",
     "generateSuccess": "Organisationsstruktur erfolgreich erstellt",

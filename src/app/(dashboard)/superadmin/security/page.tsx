@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -366,7 +366,7 @@ export default function SecurityDashboard() {
               value: `${enabledCount}/${FEATURES.length}`,
               color: 'var(--success)',
             },
-          ].map((stat: any) => (
+          ].map((stat) => (
             <div
               key={stat.label}
               className="rounded-lg sm:rounded-xl p-2 sm:p-4 text-center border"
@@ -411,7 +411,7 @@ export default function SecurityDashboard() {
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            {(['settings', 'blocked', 'attempts', 'logs'] as const).map((tab: any) => (
+            {(['settings', 'blocked', 'attempts', 'logs'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -457,7 +457,7 @@ export default function SecurityDashboard() {
             <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
               {t('superadmin.security.toggleSecuritySystems')}
             </p>
-            {FEATURES.map((feature: any) => {
+            {FEATURES.map((feature) => {
               const enabled = getSettingEnabled(feature.key);
               const colors = COLOR_MAP[feature.color] || {
                 accentBg: 'var(--card)',
@@ -586,12 +586,11 @@ export default function SecurityDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {suspendedUsers.map((user: any) => {
+                {suspendedUsers.map((user) => {
                   const isAutoBlocked = user.suspendedReason?.includes('AUTO-BLOCKED');
                   const hoursLeft = Math.max(
                     0,
-                    Math.ceil((user.suspendedUntil - Date.now()) / (1000 * 60 * 60)),
+                    Math.ceil((user.suspendedUntil! - Date.now()) / (1000 * 60 * 60)),
                   );
 
                   return (
@@ -659,7 +658,7 @@ export default function SecurityDashboard() {
                                   Expires in {hoursLeft}h
                                 </span>
                                 <span className="hidden sm:inline">
-                                  Until {new Date(user.suspendedUntil).toLocaleString()}
+                                  Until {user.suspendedUntil ? new Date(user.suspendedUntil).toLocaleString() : ''}
                                 </span>
                               </div>
                             </div>
@@ -709,8 +708,7 @@ export default function SecurityDashboard() {
               </div>
             ) : (
               <div className="space-y-2">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {loginStats.suspicious.map((attempt: any, i: number) => (
+                {loginStats.suspicious.map((attempt, i: number) => (
                   <div
                     key={i}
                     className="rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 border"
@@ -752,7 +750,7 @@ export default function SecurityDashboard() {
                         <span>
                           {t('superadmin.security.ip')}: {attempt.ip ?? '—'}
                         </span>
-                        {attempt.riskFactors?.length > 0 && (
+                        {attempt.riskFactors && attempt.riskFactors.length > 0 && (
                           <span style={{ color: 'var(--warning)' }}>
                             ⚠ {attempt.riskFactors.join(', ')}
                           </span>
@@ -790,8 +788,7 @@ export default function SecurityDashboard() {
               </div>
             ) : (
               <div className="space-y-2">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {auditLogs.map((log: any) => (
+                {auditLogs.map((log) => (
                   <div
                     key={log._id}
                     className="rounded-lg p-4 flex items-center gap-4 border"

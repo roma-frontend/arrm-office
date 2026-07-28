@@ -29,6 +29,7 @@
     "earlyLeave": "Früher Feierabend",
     "punctuality": "Pünktlichkeit",
     "active": "Aktiv",
+    "inactive": "Inaktiv",
     "done": "Fertig",
     "driverNotRegistered": "Fahrer nicht registriert",
     "pleaseLogIn": "Bitte einloggen",
@@ -116,7 +117,6 @@
     "sending": "Senden...",
     "selectAll": "Alle auswählen",
     "deleted": "Gelöscht",
-    "today": "Heute",
     "to": "bis",
     "error": "Fehler",
     "unknownUser": "Unbekannt",
@@ -220,7 +220,6 @@
     "recognition": "Anerkennung",
     "surveys": "Umfragen",
     "performance": "Leistung",
-    "dashboards": "Dashboards",
     "signatures": "E-Signaturen",
     "goals": "OKR und Ziele",
     "strategyMap": "Strategiekarte",
@@ -347,12 +346,6 @@
     "optional": "(optional)"
   },
   "status": {
-    "loading": "",
-    "loadingUserData": "",
-    "error": "Fehler",
-    "success": "Erfolgreich",
-    "noData": "Keine Daten",
-    "empty": "Leer",
     "updated": "Status aktualisiert",
     "selectStatus": "Wählen Sie Ihren Status",
     "selectSubtitle": "Wählen Sie, wie Sie von Ihrem Team wahrgenommen werden möchten",
@@ -447,7 +440,12 @@
     "uploaded": "Hochgeladen"
   },
   "error": {
-    "fillRequiredFields": "Bitte füllen Sie alle erforderlichen Felder aus"
+    "fillRequiredFields": "Bitte füllen Sie alle erforderlichen Felder aus",
+    "criticalError": "Kritischer Fehler",
+    "criticalDescription": "Ein kritischer Fehler ist aufgetreten, der das Laden der Anwendung verhindert hat. Bitte versuchen Sie, die Seite zu aktualisieren.",
+    "tryAgain": "Erneut versuchen",
+    "goHome": "Zur Startseite",
+    "reference": "Referenz"
   },
   "actions": {
     "clearSelection": "Auswahl löschen",
@@ -488,7 +486,9 @@
     "whatDoesWell": "Was macht der Mitarbeiter gut?",
     "whatFeaturesImportant": "Welche Funktionen sind Ihnen wichtig?",
     "youAtCompany": "you@company.com",
-    "emailAddress": "you@company.com"
+    "emailAddress": "you@company.com",
+    "position": "Position",
+    "selectOrg": "Organisation auswählen"
   },
   "ariaLabels": {
     "changeAvatar": "Avatar ändern",
@@ -677,18 +677,6 @@
     "backToOrganizations": "Zurück zu den Organisationen",
     "yourEmail": "Ihre E-Mail",
     "role": "Rolle",
-    "onlySuperadminAccess": "Nur Superadmins können darauf zugreifen",
-    "accountSuspended": "Konto gesperrt",
-    "until": "Bis",
-    "admins": "Administratoren",
-    "noAdminsYet": "Noch keine Administratoren",
-    "noEmployeesAvailable": "Keine verfügbaren Mitarbeiter",
-    "now": "Jetzt",
-    "superadmin": "Super-Admin",
-    "starter": "Einsteiger",
-    "critical": "Kritisch",
-    "affectedUsers": "Betroffene Benutzer",
-    "affectedOrgs": "Betroffene Organisationen",
     "profilePictureUpload": "Profilbild hochladen",
     "clickCameraToUpload": "Klicken Sie auf das Kamerasymbol, um ein Foto hochzuladen",
     "recommendedImageSize": "Empfohlene Größe: 400x400px (max. 2MB)",
@@ -705,10 +693,8 @@
     "notCheckedInWarning": "Sie haben sich heute nicht eingecheckt",
     "comprehensiveAnalysis": "Umfassende Analyse",
     "memberSince": "Mitglied seit",
-    "userId": "Benutzer-ID",
     "activityStats": "Aktivitätsstatistik",
     "emergencyDashboard": "Notfall-Dashboard",
-    "roleManagedByAdmin": "Ihre Rolle und Abteilung werden vom Administrator verwaltet. Wenden Sie sich an ihn, um Änderungen vorzunehmen.",
     "backToLogin": "Zurück zur Anmeldung",
     "allCaughtUp": "Alles erledigt",
     "noPendingApprovals": "Keine ausstehenden Genehmigungen",
@@ -782,7 +768,6 @@
     "noDrivers": {
       "title": "Keine verfügbaren Fahrer",
       "description": "Derzeit sind keine Fahrer verfügbar. Bitte versuchen Sie es später erneut.",
-      "action": "Fahrer bestellen",
       "requestDriver": "Fahrer anfordern"
     }
   },
@@ -852,8 +837,7 @@
     "fileTooBig": "Die Datei ist zu groß",
     "invalidFileType": "Ungültiger Dateityp",
     "maxLength": "Maximale Länge {{max}} Zeichen",
-    "minLength": "Minimale Länge {{min}} Zeichen",
-    "hy": "🇦🇲 Die Startzeit muss vor der Endzeit liegen"
+    "minLength": "Minimale Länge {{min}} Zeichen"
   },
   "search": {
     "search": "Suche",
@@ -880,8 +864,7 @@
     "globalSearch": "Globale Suche",
     "searchEverywhere": "Überall suchen",
     "refineSearch": "Suche verfeinern",
-    "exactMatch": "Exakte Übereinstimmung",
-    "anyMatch": "Beliebige Übereinstimmung"
+    "exactMatch": "Exakte Übereinstimmung"
   },
   "exportData": {
     "export": "Exportieren",
@@ -1022,19 +1005,9 @@
     "pageNotFoundDesc": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
     "goHome": "Startseite",
     "errorDescription": "Ein unerwarteter Fehler ist aufgetreten. Ihre Daten sind sicher.",
-    "errorReference": "Referenz:"
+    "errorReference": "Referenz:",
+    "backToDashboard": "Zurück zur Übersicht"
   },
-  "tasks.priority": {
-    "high": "Hoch",
-    "low": "Niedrig",
-    "medium": "Mittel",
-    "urgent": "Dringend"
-  },
-  "pageNotFound": "Seite nicht gefunden",
-  "pageNotFoundDesc": "Die Seite existiert nicht oder wurde verschoben.",
-  "backToDashboard": "Zurück zum Dashboard",
-  "goHome": "Startseite",
-  "errorDescription": "Ein unerwarteter Fehler ist aufgetreten. Ihre Daten sind sicher.",
   "strategyMap": {
     "title": "Strategiekarte",
     "subtitle": "Visuelle Kaskadierung von Unternehmenszielen zu individuellen Zielen",
@@ -1548,5 +1521,17 @@
     "groups": "Gruppen",
     "group": "Gruppe",
     "value": "Wert"
+  },
+  "offline": {
+    "title": "Sie sind offline",
+    "description": "Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+    "retry": "Wiederholen"
+  },
+  "loadingTranslations": "Übersetzungen werden geladen...",
+  "faceVerification": {
+    "verifying": "Identität wird überprüft…",
+    "verified": "Identität bestätigt ✓",
+    "couldNotVerify": "⚠️ Konnte nicht bestätigt werden — bitte schauen Sie in die Kamera",
+    "failed": "🚨 Identitätsprüfung fehlgeschlagen — Abmeldung…"
   }
 }

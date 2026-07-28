@@ -113,9 +113,9 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-  } catch (err: any) {
-    logger.error('[Stripe Webhook] Signature failed:', err.message);
-    Sentry.captureException(err, { tags: { stripe: 'webhook_signature' } });
+  } catch (err: unknown) {
+    logger.error('[Stripe Webhook] Signature failed:', err instanceof Error ? err.message : String(err));
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)), { tags: { stripe: 'webhook_signature' } });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -157,13 +157,15 @@ export async function POST(req: NextRequest) {
                 : '') ||
               undefined,
             stripeCustomerId:
-              typeof sub.customer === 'string' ? sub.customer : (sub.customer as any).id,
+              typeof sub.customer === 'string' ? sub.customer : (sub.customer as Stripe.Customer | Stripe.DeletedCustomer).id,
             stripeSubscriptionId: sub.id,
             stripeSessionId: session.id,
             plan,
             status: sub.status,
-            email: session.customer_email ?? (session.customer_details as any)?.email ?? undefined,
+            email: session.customer_email ?? session.customer_details?.email ?? undefined,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             currentPeriodStart: (sub as any).current_period_start * 1000,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             currentPeriodEnd: (sub as any).current_period_end * 1000,
             cancelAtPeriodEnd: sub.cancel_at_period_end,
             trialEnd: sub.trial_end ? (sub.trial_end as number) * 1000 : undefined,
@@ -171,7 +173,7 @@ export async function POST(req: NextRequest) {
 
           logger.log('[Stripe] ✅ Subscription saved:', sub.id, plan);
 
-          const customerEmail = session.customer_email ?? (session.customer_details as any)?.email;
+          const customerEmail = session.customer_email ?? session.customer_details?.email;
           if (customerEmail) {
             await notifyManager({
               email: customerEmail,
@@ -194,7 +196,9 @@ export async function POST(req: NextRequest) {
           stripeSubscriptionId: sub.id,
           status: sub.status,
           cancelAtPeriodEnd: sub.cancel_at_period_end,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           currentPeriodStart: (sub as any).current_period_start * 1000,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           currentPeriodEnd: (sub as any).current_period_end * 1000,
         });
         break;
@@ -214,10 +218,12 @@ export async function POST(req: NextRequest) {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sub = (invoice as any).subscription;
         const subId =
-          typeof (invoice as any).subscription === 'string'
-            ? (invoice as any).subscription
-            : (invoice as any).subscription?.id;
+          typeof sub === 'string'
+            ? sub
+            : sub?.id;
         logger.log('[Stripe] ⚠️ invoice.payment_failed:', invoice.id);
         if (subId) {
           await convexMutation('subscriptions/updateSubscriptionStatus', {
@@ -231,10 +237,12 @@ export async function POST(req: NextRequest) {
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sub = (invoice as any).subscription;
         const subId =
-          typeof (invoice as any).subscription === 'string'
-            ? (invoice as any).subscription
-            : (invoice as any).subscription?.id;
+          typeof sub === 'string'
+            ? sub
+            : sub?.id;
         logger.log('[Stripe] 💰 invoice.payment_succeeded:', invoice.id);
         if (subId) {
           await convexMutation('subscriptions/updateSubscriptionStatus', {
@@ -242,10 +250,10 @@ export async function POST(req: NextRequest) {
             status: 'active',
             cancelAtPeriodEnd: false,
             currentPeriodStart: invoice.period_start
-              ? (invoice.period_start as number) * 1000
+              ? invoice.period_start * 1000
               : undefined,
             currentPeriodEnd: invoice.period_end
-              ? (invoice.period_end as number) * 1000
+              ? invoice.period_end * 1000
               : undefined,
           });
         }
@@ -259,7 +267,7 @@ export async function POST(req: NextRequest) {
       }
 
       case 'charge.refunded': {
-        const charge = event.data.object as any;
+        const charge = event.data.object as Stripe.Charge;
         logger.log('[Stripe] 💸 charge.refunded:', charge.id);
         break;
       }
@@ -290,9 +298,9 @@ export async function POST(req: NextRequest) {
         logger.log('[Stripe Webhook] Unhandled:', event.type);
         break;
     }
-  } catch (err: any) {
-    logger.error('[Stripe Webhook] Handler error:', err.message);
-    Sentry.captureException(err, {
+  } catch (err: unknown) {
+    logger.error('[Stripe Webhook] Handler error:', err instanceof Error ? err.message : String(err));
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)), {
       tags: { stripe: 'webhook_handler' },
       extra: { eventType: event.type, eventId: event.id },
     });

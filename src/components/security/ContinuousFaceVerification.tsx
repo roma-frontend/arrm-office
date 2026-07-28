@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { logger } from '@/lib/logger';
 import { useRouter } from 'next/navigation';
 
@@ -23,6 +24,7 @@ export default function ContinuousFaceVerification({
   intervalMinutes = 10,
   onVerificationFail,
 }: Props) {
+  const { t } = useTranslation();
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -168,24 +170,24 @@ export default function ContinuousFaceVerification({
           {status === 'checking' && (
             <div className="flex items-center gap-2 bg-blue-900/90 border border-blue-500 text-blue-100 px-3 py-2 rounded-lg text-sm shadow-lg">
               <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-              Verifying identity…
+              {t('faceVerification.verifying')}
             </div>
           )}
           {status === 'ok' && (
             <div className="flex items-center gap-2 bg-green-900/90 border border-green-500 text-green-100 px-3 py-2 rounded-lg text-sm shadow-lg">
               <div className="w-2 h-2 rounded-full bg-green-400" />
-              Identity verified ✓
+              {t('faceVerification.verified')}
             </div>
           )}
           {status === 'warning' && (
             <div className="flex items-center gap-2 bg-yellow-900/90 border border-yellow-500 text-yellow-100 px-3 py-2 rounded-lg text-sm shadow-lg">
               <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-              ⚠️ Could not verify — please look at camera
+              {t('faceVerification.couldNotVerify')}
             </div>
           )}
           {status === 'failed' && (
             <div className="flex items-center gap-2 bg-red-900/90 border border-red-500 text-red-100 px-3 py-2 rounded-lg text-sm shadow-lg animate-pulse">
-              🚨 Identity verification failed — logging out…
+              {t('faceVerification.failed')}
             </div>
           )}
         </div>

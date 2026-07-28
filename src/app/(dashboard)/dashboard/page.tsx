@@ -24,6 +24,7 @@ function DashboardSkeleton() {
 const DashboardClient = dynamic(
   () =>
     import('@/components/dashboard/DashboardClient').then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic HOC wrapper
       default: (props: any) => (
         <WidgetErrorBoundary name="DashboardClient">
           <m.default {...props} />
@@ -36,6 +37,7 @@ const DashboardClient = dynamic(
 const EmployeeDashboard = dynamic(
   () =>
     import('@/components/dashboard/EmployeeDashboard').then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic HOC wrapper
       default: (props: any) => (
         <WidgetErrorBoundary name="EmployeeDashboard">
           <m.default {...props} />

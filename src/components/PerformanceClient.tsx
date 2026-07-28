@@ -25,7 +25,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -139,8 +139,8 @@ function CreateCycleWizard({
       toast.success(t('performance.cycleCreated'));
       onClose();
       resetForm();
-    } catch (e: any) {
-      toast.error(e.message || t('common.error'));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setSending(false);
     }
@@ -474,6 +474,7 @@ function FillReviewDialog({
 }: {
   open: boolean;
   onClose: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
   assignment: any;
 }) {
   const { t } = useTranslation();
@@ -518,8 +519,8 @@ function FillReviewDialog({
       });
       toast.success(t('performance.reviewSubmitted'));
       onClose();
-    } catch (e: any) {
-      toast.error(e.message || t('common.error'));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setSending(false);
     }
@@ -569,7 +570,7 @@ function FillReviewDialog({
 
               {showObjectives && (
                 <div className="mt-3 space-y-2">
-                  {revieweeObjectives.map((obj: any) => (
+                  {revieweeObjectives.map((obj) => (
                     <div
                       key={obj._id}
                       className="rounded-lg bg-background border border-border/50 p-3"
@@ -620,7 +621,7 @@ function FillReviewDialog({
                       {/* Key results mini list */}
                       {obj.keyResults?.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {obj.keyResults.slice(0, 3).map((kr: any) => (
+                          {obj.keyResults.slice(0, 3).map((kr) => (
                             <div key={kr._id} className="flex items-center gap-2 text-[10px]">
                               <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
                               <span className="text-muted-foreground flex-1 truncate">
@@ -782,8 +783,8 @@ function LaunchCycleDialog({
       });
       toast.success(t('performance.cycleLaunched'));
       onClose();
-    } catch (e: any) {
-      toast.error(e.message || t('common.error'));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setSending(false);
     }

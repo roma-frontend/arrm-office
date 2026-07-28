@@ -358,7 +358,7 @@ export interface SecurityEvent {
   ip: string;
   userAgent?: string;
   timestamp: number;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 /**

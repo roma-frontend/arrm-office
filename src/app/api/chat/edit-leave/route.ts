@@ -79,10 +79,10 @@ export const POST = withCsrfProtection(async (req: Request) => {
         adminNote: isAdmin && !isOwner ? t('aiMessages.leaveUpdatedAdmin') : '',
       }),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       success: false,
-      message: error.message ?? 'Failed to update leave request',
+      message: error instanceof Error ? error.message : 'Failed to update leave request',
     });
   }
 });

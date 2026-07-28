@@ -94,8 +94,9 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (err: any) {
-    console.error('[Stripe Checkout]', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Checkout failed';
+    console.error('[Stripe Checkout]', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 });

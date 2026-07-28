@@ -1130,7 +1130,6 @@
       "knowledge_transfer": "Wissensweitergabe",
       "documentation": "Dokumentation",
       "exit_interview": "Exit-Interview",
-      "payroll": "Gehaltsabrechnung",
       "other": "Andere"
     },
     "assigneeType": {
@@ -1764,7 +1763,11 @@
     "welcomeToPlan": "Willkommen im Plan {{plan}}",
     "allSet": "Alles bereit!",
     "instantAccess": "Sofortiger Zugriff",
-    "trialStarted": "Ihre 14-tägige kostenlose Testversion hat begonnen. Die Zahlung erfolgt erst nach Ablauf der Testphase."
+    "trialStarted": "Ihre 14-tägige kostenlose Testversion hat begonnen. Die Zahlung erfolgt erst nach Ablauf der Testphase.",
+    "verifying": "Überprüfen...",
+    "invalidSessionTitle": "Ungültige Sitzung",
+    "invalidSessionDescription": "Wir konnten Ihre Zahlungssitzung nicht bestätigen.",
+    "returnPricing": "Zurück zur Preisübersicht"
   },
   "globalSearch": {
     "placeholder": "Suche im gesamten System...",
@@ -1989,8 +1992,7 @@
     "googleCalendarSync": "Google Calendar synchronisieren",
     "googleCalendarSyncDesc": "Synchronisieren Sie den Urlaubsplan mit Google Calendar. Verfügbar im Professional-Plan und höher.",
     "outlookCalendarSync": "Outlook Calendar synchronisieren",
-    "outlookCalendarSyncDesc": "Synchronisieren Sie den Urlaubsplan mit Outlook Calendar. Verfügbar im Professional-Plan und höher.",
-    "icsFilename": "holidays-{{date}}.ics"
+    "outlookCalendarSyncDesc": "Synchronisieren Sie den Urlaubsplan mit Outlook Calendar. Verfügbar im Professional-Plan und höher."
   },
   "calendar": {
     "calendar": "Kalender",
@@ -2320,14 +2322,6 @@
     }
   },
   "support": {
-    "categories": {
-      "technical": "Technisches Problem",
-      "billing": "Zahlung und Rechnungen",
-      "access": "Konto und Zugriff",
-      "feature": "Funktionsvorschlag",
-      "bug": "Fehlerbericht",
-      "other": "Anderes"
-    },
     "categoryNames": {
       "travel": "Travel",
       "meals": "Meals",
@@ -2424,10 +2418,7 @@
     "low": "Niedrig",
     "medium": "Mittel",
     "high": "Hoch",
-    "urgent": "Dringend",
-    "critical": "Kritisch",
-    "priority": "Priorität",
-    "category": "Kategorie"
+    "urgent": "Dringend"
   },
   "category": {
     "technical": "Technisch",

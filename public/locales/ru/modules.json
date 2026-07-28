@@ -95,7 +95,8 @@
     "leftToday": "Ушли сегодня",
     "noRecordsToday": "Нет записей о посещаемости",
     "allEmployeesRated": "Все сотрудники оценены в этом месяце! ✅",
-    "checkBackNextMonth": "Вернитесь в следующем месяце"
+    "checkBackNextMonth": "Вернитесь в следующем месяце",
+    "lastMonth": "Прошлый месяц"
   },
   "attendanceExtra": {
     "daysWorked": "Отработано дней",
@@ -879,7 +880,11 @@
     "start": "Start",
     "startDate": "Start Date",
     "target": "Target",
-    "timeline": "Timeline"
+    "timeline": "Timeline",
+    "errors": {
+      "completeFailed": "Не удалось выполнить цель",
+      "deleteFailed": "Не удалось удалить цель"
+    }
   },
   "goalStatus": {
     "active": "Активная",
@@ -1125,7 +1130,6 @@
       "knowledge_transfer": "Передача знаний",
       "documentation": "Документация",
       "exit_interview": "Exit-интервью",
-      "payroll": "Расчёт",
       "other": "Другое"
     },
     "assigneeType": {
@@ -1362,7 +1366,8 @@
     "delete": "Удалить",
     "edit": "Редактировать",
     "view": "Просмотр",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "policyType": "Тип политики"
   },
   "documents": {
     "title": "Управление документами",
@@ -1758,7 +1763,11 @@
     "welcomeToPlan": "Добро пожаловать в план {{plan}}",
     "allSet": "Все готово!",
     "instantAccess": "Мгновенный доступ",
-    "trialStarted": "Ваша 14-дневная бесплатная пробная версия началась. Оплата только после окончания пробного периода."
+    "trialStarted": "Ваша 14-дневная бесплатная пробная версия началась. Оплата только после окончания пробного периода.",
+    "verifying": "Проверяем...",
+    "invalidSessionTitle": "Недействительная сессия",
+    "invalidSessionDescription": "Не удалось подтвердить вашу платёжную сессию.",
+    "returnPricing": "Вернуться к тарифам"
   },
   "globalSearch": {
     "placeholder": "Поиск по всей системе...",
@@ -1983,8 +1992,7 @@
     "googleCalendarSync": "Синхронизация с Google Calendar",
     "googleCalendarSyncDesc": "Синхронизируйте график отпусков с Google Calendar. Доступно на плане Professional и выше.",
     "outlookCalendarSync": "Синхронизация с Outlook Calendar",
-    "outlookCalendarSyncDesc": "Синхронизируйте график отпусков с Outlook Calendar. Доступно на плане Professional и выше.",
-    "icsFilename": "holidays-{{date}}.ics"
+    "outlookCalendarSyncDesc": "Синхронизируйте график отпусков с Outlook Calendar. Доступно на плане Professional и выше."
   },
   "calendar": {
     "calendar": "Календарь",
@@ -2314,12 +2322,16 @@
     }
   },
   "support": {
-    "categories": {
-      "technical": "Техническая проблема",
-      "billing": "Оплата и счета",
-      "access": "Доступ и разрешения",
-      "feature": "Предложение функции",
-      "bug": "Отчет об ошибке",
+    "categoryNames": {
+      "travel": "Путешествия",
+      "meals": "Питание",
+      "accommodation": "Проживание",
+      "transport": "Транспорт",
+      "office_supplies": "Офисные принадлежности",
+      "software": "Программное обеспечение",
+      "training": "Обучение",
+      "health": "Здоровье",
+      "communication": "Связь",
       "other": "Другое"
     }
   },
@@ -2406,10 +2418,7 @@
     "low": "Низкий",
     "medium": "Средний",
     "high": "Высокий",
-    "urgent": "Срочный",
-    "critical": "Критический",
-    "priority": "Приоритет",
-    "category": "Категория"
+    "urgent": "Срочный"
   },
   "category": {
     "technical": "Техническая",

@@ -432,17 +432,7 @@
     "context": "Համատեքստ",
     "visibility": "Տեսանելիություն",
     "date": "Ամսաթիվ",
-    "time": "Ժամանակ",
-    "categories": {
-      "aboveAndBeyond": "Սահմաններից դուրս",
-      "customerFocus": "Հաճախորդների վրա կենտրոնացում",
-      "dedication": "Նվիրվածություն",
-      "excellence": "Գերազանցություն",
-      "innovation": "Նորարարություն",
-      "leadership": "Առաջնորդություն",
-      "mentorship": "Վարպետություն",
-      "teamwork": "Թիմային աշխատանք"
-    }
+    "time": "Ժամանակ"
   },
   "recognitionCategories": {
     "teamwork": "Թիմային աշխատանք",
@@ -492,7 +482,8 @@
     "status": {
       "draft": "Սևագիր",
       "active": "Ակտիվ",
-      "closed": "Փակված"
+      "closed": "Փակված",
+      "label": "Կարգավիճակ"
     },
     "wizard": {
       "surveyInfo": "Տեղեկություններ",
@@ -754,7 +745,8 @@
     },
     "tabs": {
       "mySignatures": "Իմ ստորագրությունները",
-      "documents": "Փաստաթղթեր"
+      "documents": "Փաստաթղթեր",
+      "compliance": "Համապատասխություն"
     },
     "errors": {
       "createFailed": "Փաստաթուղթ ստեղծելն անհաջողվեց",
@@ -1771,7 +1763,11 @@
     "welcomeToPlan": "Բարի գալուստ պլան",
     "allSet": "Ամեն ինչ պատրաստ է",
     "instantAccess": "Ակնթարթային մուտք",
-    "trialStarted": "Ձեր 14-օրյա անվճար փորձաշրջանը սկսվել է: Վճար չի գանձվի մինչև փորձաշրջանի ավարտը:"
+    "trialStarted": "Ձեր 14-օրյա անվճար փորձաշրջանը սկսվել է: Վճար չի գանձվի մինչև փորձաշրջանի ավարտը:",
+    "verifying": "Ստուգում...",
+    "invalidSessionTitle": "Անվավեր նստաշրջան",
+    "invalidSessionDescription": "Չհաջողվեց հաստատել ձեր վճարման նստաշրջանը:",
+    "returnPricing": "Վերադառնալ գնացուցակ"
   },
   "globalSearch": {
     "placeholder": "Որոնում ամբողջ համակարգում...",
@@ -2326,14 +2322,6 @@
     }
   },
   "support": {
-    "categories": {
-      "technical": "Տեխնիկական խնդիր",
-      "billing": "Վարումներ և հաշիվներ",
-      "access": "Մուտք և թույլտվություններ",
-      "feature": "Ֆունկցիայի առաջարկ",
-      "bug": "Սխալի հաղորդում",
-      "other": "Այլ"
-    },
     "categoryNames": {
       "travel": "Travel",
       "meals": "Meals",

@@ -22,7 +22,7 @@ export default function TestI18nClient() {
     return (
       <div className="container mx-auto p-8">
         <Card className="p-6 max-w-2xl mx-auto">
-          <div className="animate-pulse">Loading translations...</div>
+          <div className="animate-pulse">{t('loadingTranslations')}</div>
         </Card>
       </div>
     );

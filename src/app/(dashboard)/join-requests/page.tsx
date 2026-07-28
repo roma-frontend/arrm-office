@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '@/lib/date-format';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -226,7 +226,7 @@ export default function JoinRequestsPage() {
       {/* Filters + Search */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex gap-2 overflow-x-auto sm:overflow-x-visible scrollbar-hide pb-1 -mb-1 sm:pb-0 sm:mb-0">
-          {(['all', 'approved', 'pending', 'rejected'] as FilterStatus[]).map((f: any) => (
+          {(['all', 'approved', 'pending', 'rejected'] as FilterStatus[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -287,7 +287,7 @@ export default function JoinRequestsPage() {
       ) : (
         <div className="space-y-3">
           <AnimatePresence>
-            {filtered.map((req: any) => (
+            {filtered.map((req) => (
               <motion.div
                 key={req._id}
                 initial={{ opacity: 0, y: 8 }}

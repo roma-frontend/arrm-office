@@ -142,7 +142,6 @@
       "readyToStart": "Bereit zu starten?",
       "tryFree": "Alle Funktionen kostenlos testen",
       "getStarted": "Kostenlos starten",
-      "login": "Anmelden",
       "vacation": {
         "title": "Urlaubsverwaltung",
         "subtitle": "Vollständige Kontrolle über die Urlaube der Mitarbeiter",
@@ -739,6 +738,8 @@
     "respectPrivacy": "Wir respektieren Ihre Privatsphäre. Erfahren Sie mehr in unserer",
     "privacyPolicy": "Datenschutzrichtlinie",
     "termsOfService": "Nutzungsbedingungen",
+    "privacyPolicyLabel": "Datenschutzrichtlinie — erfahren Sie, wie wir Ihre personenbezogenen Daten sammeln, verwenden und schützen",
+    "termsLabel": "Nutzungsbedingungen — lesen Sie die rechtlichen Bedingungen für die Nutzung unserer Plattform",
     "essentialCookies": "Erforderliche Cookies",
     "alwaysOn": "Immer aktiviert",
     "essentialDesc": "Erforderlich für den Betrieb der Website",

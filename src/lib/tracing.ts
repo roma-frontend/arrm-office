@@ -10,10 +10,11 @@ const tracer = trace.getTracer('strata-api');
 /**
  * Wrap API route handlers with tracing
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic utility wrapper
 export async function withTracing<T extends (...args: any[]) => Promise<any>>(
   spanName: string,
   fn: T,
-  attributes?: Record<string, any>,
+  attributes?: Record<string, unknown>,
 ): Promise<ReturnType<T>> {
   return tracer.startActiveSpan(spanName, async (span) => {
     try {
@@ -77,7 +78,9 @@ export async function tracingMiddleware(
  * Decorator for server actions
  */
 export function withServerActionTracing(spanName: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic decorator pattern
   return function decorator<T extends (...args: any[]) => Promise<any>>(target: T): T {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- needed for variadic args
     return (async (...args: any[]) => {
       return withTracing(spanName, () => target(...args));
     }) as T;
@@ -87,7 +90,7 @@ export function withServerActionTracing(spanName: string) {
 /**
  * Helper to add custom attributes to current span
  */
-export function addSpanAttributes(attributes: Record<string, any>) {
+export function addSpanAttributes(attributes: Record<string, unknown>) {
   const span = trace.getActiveSpan();
   if (span) {
     Object.entries(attributes).forEach(([key, value]) => {

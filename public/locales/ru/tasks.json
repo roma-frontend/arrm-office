@@ -15,8 +15,7 @@
       "cancelled": "Отменено",
       "moved": "Перемещено в {{status}}"
     },
-    "priority": "Приоритет",
-    "priorityLabels": {
+    "priority": {
       "low": "Низкий",
       "medium": "Средний",
       "high": "Высокий",
@@ -187,6 +186,8 @@
     "attachmentsHint": "PDF, изображения, документы (макс 10МБ каждый)",
     "clickToAttach": "Нажмите для прикрепления файлов",
     "filesSelected": "файлов выбрано",
-    "removeFile": "Удалить"
+    "removeFile": "Удалить",
+    "addFiles": "Добавить файлы",
+    "uploading": "Загрузка..."
   }
 }

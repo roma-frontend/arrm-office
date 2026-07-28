@@ -53,14 +53,7 @@
     "add": "Hinzufügen",
     "noUsersFound": "Keine Benutzer gefunden",
     "allMembersAdded": "Alle Mitglieder bereits hinzugefügt",
-    "fileReadyToSend": "Datei bereit zum Senden",
-    "filesReadyToSend": "Dateien bereit zum Senden",
     "messageDeleted": "Diese Nachricht wurde gelöscht",
-    "pollClosed": "Umfrage geschlossen",
-    "votes": "Stimmen",
-    "closePoll": "Umfrage schließen",
-    "reply": "Antworten",
-    "copy": "Kopieren",
     "pin": "Anheften",
     "defaultChatName": "Chat",
     "defaultGroupName": "Gruppe",
@@ -323,6 +316,8 @@
       "payrollReport": "📊 Gehaltsbericht",
       "nextPayday": "📅 Nächster Zahltag"
     },
+    "imHere": "Ich bin hier, um zu helfen!",
+    "closeChat": "Chat schließen",
     "viewFullScreen": "Vollständige Antwort anzeigen"
   },
   "broadcasts": {

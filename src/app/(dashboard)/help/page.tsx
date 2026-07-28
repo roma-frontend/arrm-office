@@ -1,12 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { useRouter } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import type { Id } from '@/convex/_generated/dataModel';
+
+/** Fields from the ticket document used in this component */
+interface TicketData {
+  _id: string;
+  ticketNumber: string;
+  status: string;
+  priority: string;
+  title: string;
+  description: string;
+  createdAt: number;
+  assigneeName?: string;
+}
 import {
   HelpCircle,
   Ticket,
@@ -63,7 +75,7 @@ export default function HelpSupportPage() {
 
   // Count tickets this month
   const currentMonthTickets =
-    myTickets?.filter((t: any) => {
+    myTickets?.filter((t) => {
       const ticketDate = new Date(t.createdAt);
       const now = new Date();
       return (
@@ -82,9 +94,9 @@ export default function HelpSupportPage() {
   }
 
   const openTickets =
-    myTickets?.filter((t: any) => t.status !== 'closed' && t.status !== 'resolved') || [];
+    myTickets?.filter((t) => t.status !== 'closed' && t.status !== 'resolved') || [];
   const closedTickets =
-    myTickets?.filter((t: any) => t.status === 'closed' || t.status === 'resolved') || [];
+    myTickets?.filter((t) => t.status === 'closed' || t.status === 'resolved') || [];
 
   const handleCreateTicket = () => {
     if (!canCreateTickets) {
@@ -295,7 +307,7 @@ function StatCard({
 }: {
   title: string;
   value: number | string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
@@ -320,7 +332,7 @@ function StatCard({
 }
 
 // Ticket List Component
-function TicketList({ tickets, emptyMessage }: { tickets: any[]; emptyMessage: string }) {
+function TicketList({ tickets, emptyMessage }: { tickets: TicketData[]; emptyMessage: string }) {
   const { t } = useTranslation();
 
   if (tickets.length === 0) {
@@ -336,7 +348,7 @@ function TicketList({ tickets, emptyMessage }: { tickets: any[]; emptyMessage: s
 
   return (
     <div className="space-y-3">
-      {tickets.map((ticket: any) => (
+      {tickets.map((ticket) => (
         <Card key={ticket._id} style={{ background: 'var(--card)' }}>
           <CardContent className="p-3 md:p-4">
             <div className="flex items-start justify-between">

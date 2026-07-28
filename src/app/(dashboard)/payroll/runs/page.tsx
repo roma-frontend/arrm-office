@@ -16,6 +16,7 @@ function RecordsSkeleton() {
 const PayrollRecordsTable = nextDynamic(
   () =>
     import('@/components/payroll/PayrollRecordsTable').then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic HOC wrapper
       default: (props: any) => (
         <WidgetErrorBoundary name="PayrollRecordsTable">
           <m.default {...props} />

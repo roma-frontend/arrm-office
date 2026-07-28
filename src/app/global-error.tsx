@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertOctagon, RefreshCw, Home } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function GlobalError({
   error,
@@ -11,6 +12,8 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     console.error('Global error:', error);
 
@@ -34,14 +37,13 @@ export default function GlobalError({
           </div>
 
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Critical Error</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('error.criticalError', 'Critical Error')}</h1>
             <p className="text-muted-foreground max-w-lg">
-              A critical error occurred that prevented the application from loading. Please try
-              refreshing the page.
+              {t('error.criticalDescription', 'A critical error occurred that prevented the application from loading. Please try refreshing the page.')}
             </p>
             {error.digest && (
               <p className="text-xs text-muted-foreground/50 font-mono mt-4">
-                Reference: {error.digest}
+                {t('error.reference', 'Reference')}: {error.digest}
               </p>
             )}
           </div>
@@ -52,14 +54,14 @@ export default function GlobalError({
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
             >
               <RefreshCw className="h-4 w-4" />
-              Try again
+              {t('error.tryAgain', 'Try again')}
             </button>
             <Link
               href="/"
               className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-6 py-3 text-sm font-medium shadow transition-colors hover:bg-accent"
             >
               <Home className="h-4 w-4" />
-              Go home
+              {t('error.goHome', 'Go home')}
             </Link>
           </div>
         </div>

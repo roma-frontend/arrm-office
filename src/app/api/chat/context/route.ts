@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
         pendingDays: analytics.pendingDays,
       },
       recentLeaves:
-        analytics.userLeaves?.slice(0, 5).map((l: any) => ({
+        analytics.userLeaves?.slice(0, 5).map((l) => ({
           type: l.type,
           startDate: l.startDate,
           endDate: l.endDate,
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
           days: l.days,
         })) || [],
       teamAvailability:
-        teamCalendar?.slice(0, 10).map((l: any) => ({
+        teamCalendar?.slice(0, 10).map((l) => ({
           userName: l.userName,
           department: l.userDepartment,
           startDate: l.startDate,

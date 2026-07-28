@@ -1,0 +1,10 @@
+ru BEFORE: tasks.priority.* = ['tasks.priority.high', 'tasks.priority.low', 'tasks.priority.medium', 'tasks.priority.urgent']
+ru: Removed keys: []
+ru AFTER: tasks.priority.* = ['tasks.priority.high', 'tasks.priority.low', 'tasks.priority.medium', 'tasks.priority.urgent']
+ru: Valid JSON = True
+
+de BEFORE: tasks.priority.* = ['tasks.priority.high', 'tasks.priority.low', 'tasks.priority.medium', 'tasks.priority.urgent']
+de: Removed keys: []
+de AFTER: tasks.priority.* = ['tasks.priority.high', 'tasks.priority.low', 'tasks.priority.medium', 'tasks.priority.urgent']
+de: Valid JSON = True
+

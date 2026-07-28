@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '../../../../../convex/_generated/api';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useAuthUser } from '@/store/useAuthStore';
-import type { Id } from '../../../../../convex/_generated/dataModel';
+import type { Doc, Id } from '../../../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ export default function HolidaysPage() {
   const organizationId = useSelectedOrganization() as Id<'organizations'> | undefined;
 
   const [showCreate, setShowCreate] = useState(false);
-  const [editingHoliday, setEditingHoliday] = useState<any>(null);
+  const [editingHoliday, setEditingHoliday] = useState<Doc<'holidays'> | null>(null);
   const [form, setForm] = useState({
     name: '',
     date: '',
@@ -89,7 +89,7 @@ export default function HolidaysPage() {
     }
   };
 
-  const handleEdit = (holiday: any) => {
+  const handleEdit = (holiday: Doc<'holidays'>) => {
     setEditingHoliday(holiday);
     setForm({
       name: holiday.name,

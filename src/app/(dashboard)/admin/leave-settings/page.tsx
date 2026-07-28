@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { api } from '../../../../../convex/_generated/api';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useAuthUser } from '@/store/useAuthStore';
@@ -23,7 +23,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const LEAVE_TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
+type LeaveType = keyof typeof LEAVE_TYPE_META;
+
+const LEAVE_TYPE_META = {
   paid: { label: 'Paid Vacation', icon: '💰', color: '#2563eb' },
   unpaid: { label: 'Unpaid Leave', icon: '📋', color: '#f59e0b' },
   sick: { label: 'Sick Leave', icon: '🤒', color: '#ef4444' },
@@ -42,7 +44,19 @@ export default function LeaveSettingsPage() {
   const user = useAuthUser();
   const organizationId = useSelectedOrganization() as Id<'organizations'> | undefined;
   const [editingType, setEditingType] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editForm, setEditForm] = useState<{
+    isActive: boolean;
+    defaultDaysPerYear: number;
+    requiresDocumentation: boolean;
+    approvalChain: string[];
+    balanceEditable: boolean;
+  }>({
+    isActive: true,
+    defaultDaysPerYear: 10,
+    requiresDocumentation: false,
+    approvalChain: ['supervisor'],
+    balanceEditable: true,
+  });
 
   const configs = useQuery(
     api.leaveSettings.getLeaveTypeConfigs,
@@ -67,7 +81,7 @@ export default function LeaveSettingsPage() {
       isActive: existing?.isActive ?? true,
       defaultDaysPerYear: existing?.defaultDaysPerYear ?? 10,
       requiresDocumentation: existing?.requiresDocumentation ?? false,
-      approvalChain: existing?.approvalChain ?? ['supervisor'],
+      approvalChain: existing?.approvalChain ? [...existing.approvalChain] : ['supervisor'],
       balanceEditable: existing?.balanceEditable ?? true,
     });
   };
@@ -77,7 +91,7 @@ export default function LeaveSettingsPage() {
     try {
       await upsertConfig({
         organizationId,
-        type: editingType as any,
+        type: editingType as LeaveType,
         ...editForm,
       });
       toast.success(t('admin.leaveSettings.saved', 'Leave type configuration saved'));
@@ -89,7 +103,7 @@ export default function LeaveSettingsPage() {
 
   const handleAddApprovalRole = (role: string) => {
     if (!editForm.approvalChain.includes(role)) {
-      setEditForm((prev: any) => ({
+      setEditForm((prev) => ({
         ...prev,
         approvalChain: [...prev.approvalChain, role],
       }));
@@ -97,9 +111,9 @@ export default function LeaveSettingsPage() {
   };
 
   const handleRemoveApprovalRole = (role: string) => {
-    setEditForm((prev: any) => ({
+    setEditForm((prev) => ({
       ...prev,
-      approvalChain: prev.approvalChain.filter((r: string) => r !== role),
+      approvalChain: prev.approvalChain.filter((r) => r !== role),
     }));
   };
 
@@ -173,7 +187,7 @@ export default function LeaveSettingsPage() {
                       <Switch
                         checked={editForm.isActive}
                         onCheckedChange={(v) =>
-                          setEditForm((prev: any) => ({ ...prev, isActive: v }))
+                          setEditForm((prev) => ({ ...prev, isActive: v }))
                         }
                       />
                     </div>
@@ -184,7 +198,7 @@ export default function LeaveSettingsPage() {
                       <Switch
                         checked={editForm.requiresDocumentation}
                         onCheckedChange={(v) =>
-                          setEditForm((prev: any) => ({ ...prev, requiresDocumentation: v }))
+                          setEditForm((prev) => ({ ...prev, requiresDocumentation: v }))
                         }
                       />
                     </div>
@@ -193,7 +207,7 @@ export default function LeaveSettingsPage() {
                       <Switch
                         checked={editForm.balanceEditable}
                         onCheckedChange={(v) =>
-                          setEditForm((prev: any) => ({ ...prev, balanceEditable: v }))
+                          setEditForm((prev) => ({ ...prev, balanceEditable: v }))
                         }
                       />
                     </div>
@@ -203,7 +217,7 @@ export default function LeaveSettingsPage() {
                         type="number"
                         value={editForm.defaultDaysPerYear}
                         onChange={(e) =>
-                          setEditForm((prev: any) => ({
+                          setEditForm((prev) => ({
                             ...prev,
                             defaultDaysPerYear: Number(e.target.value),
                           }))
