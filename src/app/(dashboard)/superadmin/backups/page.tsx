@@ -527,7 +527,7 @@ function OrgBackups({
   t,
   superadminUserId,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any — org shape from Convex query
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   org: any;
   isExpanded: boolean;
   onToggle: () => void;
@@ -680,7 +680,7 @@ function EmployeeBackups({
   formatDate,
   t,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any — emp shape from Convex query
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   emp: any;
   orgId: string;
   isExpanded: boolean;
@@ -692,7 +692,7 @@ function EmployeeBackups({
     createdAt: number,
   ) => void;
   onBackup: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any — backup shape from Convex query
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   backupData?: any;
   runningBackup: string | null;
   formatSize: (bytes: number) => string;

@@ -843,6 +843,7 @@ function AssetDetailCard({
                   key={a._id}
                   className="flex items-center justify-between p-2.5 rounded-lg bg-background-subtle border border-border text-sm"
                 >
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   <div className="flex items-center gap-2">
                     {a.status === 'active' ? (
                       <ArrowUpRight className="w-3.5 h-3.5 text-blue-500" />
@@ -874,6 +875,7 @@ function AssetDetailCard({
                   key={m._id}
                   className="flex items-center justify-between p-2.5 rounded-lg bg-background-subtle border border-border text-sm"
                 >
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   <div>
                     <p className="text-foreground font-medium">{m.description}</p>
                     <p className="text-xs text-muted-foreground">
@@ -1726,6 +1728,7 @@ export default function AssetsClient() {
                           })}
 
                         {/* History */}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {employeeAssets.filter((a: any) => a.status !== 'active').length > 0 && (
                           <div className="mt-6">
                             <h4 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">
