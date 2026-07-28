@@ -27,7 +27,7 @@ jest.mock('lucide-react', () => {
 });
 
 // Mock close Icon
-jest.mock('@/components/ui/Skeleton', () => ({
+jest.mock('@/components/ui/skeleton', () => ({
   Skeleton: () => null,
 }));
 

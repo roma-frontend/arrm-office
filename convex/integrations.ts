@@ -519,9 +519,7 @@ export const upsertEmployeeBatch = internalMutation({
       // Scope the lookup to this org so we can detect a cross-tenant collision.
       const inOrg = await ctx.db
         .query('users')
-        .withIndex('by_org_email', (q) =>
-          q.eq('organizationId', organizationId).eq('email', email),
-        )
+        .withIndex('by_org_email', (q) => q.eq('organizationId', organizationId).eq('email', email))
         .first();
 
       if (inOrg) {
@@ -1033,10 +1031,18 @@ async function syncLuckyCarrot(
     'Lucky Carrot employees URL',
   );
 
-  return importEmployees(ctx, organizationId, 'lucky_carrot', config, url, {
-    Authorization: `Bearer ${config.apiKey}`,
-    Accept: 'application/json',
-  }, 'Lucky Carrot');
+  return importEmployees(
+    ctx,
+    organizationId,
+    'lucky_carrot',
+    config,
+    url,
+    {
+      Authorization: `Bearer ${config.apiKey}`,
+      Accept: 'application/json',
+    },
+    'Lucky Carrot',
+  );
 }
 
 // ── imID Sync ──────────────────────────────────────────────────────────────
@@ -1252,13 +1258,7 @@ export function isValidCronExpression(expr: string): boolean {
 export function isCronDueThisHour(expr: string, now: Date): boolean {
   const fields = expr.trim().split(/\s+/);
   if (fields.length !== 5) return false;
-  const [, hour, dayOfMonth, month, dayOfWeek] = fields as [
-    string,
-    string,
-    string,
-    string,
-    string,
-  ];
+  const [, hour, dayOfMonth, month, dayOfWeek] = fields as [string, string, string, string, string];
 
   if (!cronFieldMatches(hour, now.getUTCHours(), 0, 23)) return false;
   if (!cronFieldMatches(month, now.getUTCMonth() + 1, 1, 12)) return false;

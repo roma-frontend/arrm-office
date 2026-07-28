@@ -15,6 +15,7 @@ jest.mock('../../convex/_generated/server', () => ({
   mutation: ({ handler, args }: any) => ({ handler, args }),
   query: ({ handler, args }: any) => ({ handler, args }),
   action: ({ handler, args }: any) => ({ handler, args }),
+  internalAction: ({ handler, args }: any) => ({ handler, args }),
   internalMutation: ({ handler, args }: any) => ({ handler, args }),
   internalQuery: ({ handler, args }: any) => ({ handler, args }),
 }));
@@ -267,44 +268,44 @@ describe('integrations.assertCanSync', () => {
     jest.resetAllMocks();
   });
 
-  it('returns false for unauthenticated', async () => {
+  it('returns null for unauthenticated', async () => {
     mockGetAuthCaller.mockResolvedValue(null);
     const result = await integrations.assertCanSync.handler(makeCtx(null), {
       organizationId: ORG_ID as any,
     });
-    expect(result).toBe(false);
+    expect(result).toBeNull();
   });
 
-  it('returns false for employee', async () => {
+  it('returns null for employee', async () => {
     mockGetAuthCaller.mockResolvedValue(employeeCaller);
     const result = await integrations.assertCanSync.handler(makeCtx(null), {
       organizationId: ORG_ID as any,
     });
-    expect(result).toBe(false);
+    expect(result).toBeNull();
   });
 
-  it('returns true for same-org admin', async () => {
+  it('returns userId for same-org admin', async () => {
     mockGetAuthCaller.mockResolvedValue(adminCaller);
     const result = await integrations.assertCanSync.handler(makeCtx(null), {
       organizationId: ORG_ID as any,
     });
-    expect(result).toBe(true);
+    expect(result).toEqual({ userId: 'user-admin' });
   });
 
-  it('returns false for cross-org admin', async () => {
+  it('returns null for cross-org admin', async () => {
     mockGetAuthCaller.mockResolvedValue(otherAdminCaller);
     const result = await integrations.assertCanSync.handler(makeCtx(null), {
       organizationId: ORG_ID as any,
     });
-    expect(result).toBe(false);
+    expect(result).toBeNull();
   });
 
-  it('returns true for superadmin', async () => {
+  it('returns userId for superadmin', async () => {
     mockGetAuthCaller.mockResolvedValue(otherAdminCaller);
     mockIsSuperadmin.mockReturnValue(true);
     const result = await integrations.assertCanSync.handler(makeCtx(null), {
       organizationId: ORG_ID as any,
     });
-    expect(result).toBe(true);
+    expect(result).toEqual({ userId: 'user-other' });
   });
 });
