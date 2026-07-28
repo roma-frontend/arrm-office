@@ -9,7 +9,6 @@ import i18n from 'i18next';
 import Link from 'next/link';
 import { ListChecks, Clock, AlertTriangle } from 'lucide-react';
 import { api } from '../../../../convex/_generated/api';
-import { Id } from '../../../../convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,10 +27,7 @@ export const MyTasksWidget = memo(function MyTasksWidget({ userId }: { userId: s
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
-  const tasks = useQuery(
-    api.dashboard.getMyTasks,
-    userId ? { userId: userId as Id<'users'> } : 'skip',
-  );
+  const tasks = useQuery(api.dashboard.getMyTasks, userId ? {} : 'skip');
 
   return (
     <Card className="h-full">

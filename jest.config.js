@@ -27,15 +27,13 @@ module.exports = {
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['text', 'text-summary', 'lcov', 'html', 'json-summary'],
   coverageThreshold: {
-    // Phase 1 — floor set to current real coverage so the gate passes and can be
-    // ratcheted up (target 40% then 80%) as suites are added in subsequent PRs.
-    // (The previous 10% target was never actually met — the job used to
-    // short-circuit on an unrelated `npm ci` failure before coverage ran.)
+    // Coverage floor — ratchet up as coverage improves.
+    // Auto-ratchet via: node scripts/ratchet-coverage.mjs
     global: {
-      branches: 1,
-      functions: 1,
-      lines: 1,
-      statements: 2,
+      branches: 7,
+      functions: 9,
+      lines: 11,
+      statements: 11,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],

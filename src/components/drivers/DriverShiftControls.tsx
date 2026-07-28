@@ -56,7 +56,6 @@ export function DriverShiftControls({
     try {
       await startShiftMutation({
         driverId,
-        userId,
         organizationId,
         scheduledStartTime: driver?.workingHours?.startTime
           ? Date.now() // Could parse workingHours.startTime to set scheduled time
@@ -75,7 +74,6 @@ export function DriverShiftControls({
     try {
       await endShiftMutation({
         driverId,
-        userId,
         breakTime: breakTime ? parseInt(breakTime) : undefined,
         driverNotes: driverNotes || undefined,
       });
@@ -90,7 +88,7 @@ export function DriverShiftControls({
 
   const handlePauseShift = async () => {
     try {
-      await pauseShiftMutation({ driverId, userId });
+      await pauseShiftMutation({ driverId });
       toast.success(t('driver.shift.paused', 'Shift paused'));
     } catch (error: any) {
       toast.error(error.message || t('driver.shift.pauseFailed', 'Failed to pause shift'));
@@ -99,7 +97,7 @@ export function DriverShiftControls({
 
   const handleResumeShift = async () => {
     try {
-      await resumeShiftMutation({ driverId, userId });
+      await resumeShiftMutation({ driverId });
       toast.success(t('driver.shift.resumed', 'Shift resumed'));
     } catch (error: any) {
       toast.error(error.message || t('driver.shift.resumeFailed', 'Failed to resume shift'));

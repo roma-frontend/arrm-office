@@ -1,10 +1,9 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { requireUser } from './lib/rbac';
 import { isSuperadmin } from './lib/auth';
 import { getProfile } from './lib/userProfile';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 
 // ── Reporting Line ───────────────────────────────────────────────────────────
@@ -26,6 +25,11 @@ export const getReportingLine = query({
     // ── Resolve org ──────────────────────────────────────────────────────
     const orgId = organizationId ?? targetUser.organizationId;
     if (!orgId) return null;
+
+    // Only colleagues (or a superadmin) may inspect someone's reporting line.
+    if (!isSuperadmin(requester) && requester.organizationId !== targetUser.organizationId) {
+      return null;
+    }
 
     // ── Walk up the chain (max 10 hops, cycle-safe) ──────────────────────
     const ancestors: Array<{
@@ -101,7 +105,9 @@ export const getReportingLine = query({
 
     return {
       subject,
-      ancestors, // top-level first (CEO → … → direct supervisor)
+      // Walked bottom-up, so reverse to match the documented (and rendered)
+      // order: top-level first (CEO → … → direct supervisor).
+      ancestors: ancestors.reverse(),
       directReports: reportsData,
     };
   },
@@ -120,6 +126,7 @@ export const getPotentialManagers = query({
   handler: async (ctx, { organizationId, searchQuery, excludeUserId }) => {
     const requester = await getAuthCaller(ctx);
     if (!requester) return [];
+    if (!isSuperadmin(requester) && requester.organizationId !== organizationId) return [];
 
     // Fetch all active users in the org (capped)
     const users = await ctx.db
@@ -170,13 +177,17 @@ export const getPotentialManagers = query({
 // ── Assign Manager ──────────────────────────────────────────────────────────
 export const assignManager = mutation({
   args: {
-    adminId: v.id('users'),
     employeeId: v.id('users'),
-    supervisorId: v.optional(v.id('users')), // null = remove manager
+    supervisorId: v.optional(v.id('users')), // omitted = remove manager
   },
-  handler: async (ctx, { adminId, employeeId, supervisorId }) => {
-    const admin = await requireUser(ctx, adminId);
+  handler: async (ctx, { employeeId, supervisorId }) => {
+    // Trust the authenticated identity, never a client-supplied adminId.
+    const admin = await getAuthCaller(ctx);
+    if (!admin) throw new Error('Not authenticated');
     const isSuperadminUser = isSuperadmin(admin);
+    if (!isSuperadminUser && admin.role !== 'admin' && admin.role !== 'supervisor') {
+      throw new Error('Insufficient permissions to assign managers');
+    }
 
     const employee = await ctx.db.get(employeeId);
     if (!employee) throw new Error('Employee not found');
@@ -188,12 +199,29 @@ export const assignManager = mutation({
 
     // If supervisorId provided, verify they exist and are in the same org
     if (supervisorId) {
+      if (supervisorId === employeeId) {
+        throw new Error('An employee cannot be their own manager');
+      }
       const supervisor = await ctx.db.get(supervisorId);
       if (!supervisor) throw new Error('Supervisor not found');
       if (!isSuperadminUser && supervisor.organizationId !== employee.organizationId) {
         throw new Error('Supervisor must be in the same organization');
       }
       if (!supervisor.isActive) throw new Error('Supervisor account is inactive');
+
+      // Reject cycles: the new manager must not already report to this employee.
+      const seen = new Set<string>([employeeId]);
+      let cursor: Id<'users'> | undefined = supervisorId;
+      for (let hops = 0; hops < 20 && cursor; hops++) {
+        if (seen.has(cursor)) {
+          throw new Error('This assignment would create a circular reporting line');
+        }
+        seen.add(cursor);
+        const node: Doc<'users'> | null = await ctx.db.get(cursor);
+        if (!node) break;
+        const nodeProfile = await getProfile(ctx, cursor);
+        cursor = nodeProfile?.supervisorId ?? node.supervisorId ?? undefined;
+      }
     }
 
     // Update both users table and userProfiles
@@ -216,7 +244,7 @@ export const assignManager = mutation({
 
     await ctx.db.insert('auditLogs', {
       organizationId: employee.organizationId,
-      userId: adminId,
+      userId: admin._id,
       action: supervisorId ? 'manager_assigned' : 'manager_removed',
       target: employeeId,
       details: JSON.stringify({
@@ -243,6 +271,7 @@ export const getOrgHierarchyTree = query({
   handler: async (ctx, { organizationId }) => {
     const requester = await getAuthCaller(ctx);
     if (!requester) return [];
+    if (!isSuperadmin(requester) && requester.organizationId !== organizationId) return [];
 
     // Fetch all active non-superadmin users in the org
     const users = await ctx.db

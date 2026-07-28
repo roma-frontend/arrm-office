@@ -59,7 +59,7 @@ export default function FavoritesPage() {
 
   const favoriteDrivers = useQuery(
     api.drivers.requests_queries.getFavoriteDrivers,
-    userId ? { userId } : 'skip',
+    userId ? {} : 'skip',
   );
 
   const drivers = useMemo((): DriverData[] => {
@@ -84,7 +84,7 @@ export default function FavoritesPage() {
     async (driverId: string) => {
       if (!userId || !orgId) return;
       try {
-        await removeFavorite({ userId, driverId: driverId as Id<'drivers'> });
+        await removeFavorite({ driverId: driverId as Id<'drivers'> });
         toast.success(t('driver.removedFromFavorites', 'Removed from favorites'));
       } catch (e) {
         const message = e instanceof Error ? e.message : t('driver.failed', 'Failed');

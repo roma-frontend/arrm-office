@@ -8,15 +8,18 @@ import { v } from 'convex/values';
 import { query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { getAuthCaller } from '../lib/getAuthCaller';
 
 /** Check calendar access permission */
 export const checkCalendarAccess = query({
   args: {
     ownerId: v.id('users'),
-    viewerId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { ownerId, viewerId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { hasAccess: false, level: 'none' };
+    const { ownerId } = args;
+    const viewerId = caller._id;
     const access = await ctx.db
       .query('calendarAccess')
       .withIndex('by_owner_viewer', (q) => q.eq('ownerId', ownerId).eq('viewerId', viewerId))
@@ -41,11 +44,11 @@ export const checkCalendarAccess = query({
 
 /** Get users who have access to my calendar */
 export const getCalendarAccessList = query({
-  args: {
-    ownerId: v.id('users'),
-  },
-  handler: async (ctx, args) => {
-    const { ownerId } = args;
+  args: {},
+  handler: async (ctx, _args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const ownerId = caller._id;
     const accesses = await ctx.db
       .query('calendarAccess')
       .withIndex('by_owner', (q) => q.eq('ownerId', ownerId))
@@ -74,12 +77,14 @@ export const getCalendarAccessList = query({
 export const getDriverCalendarForViewer = query({
   args: {
     driverUserId: v.id('users'),
-    viewerId: v.id('users'),
     startTime: v.number(),
     endTime: v.number(),
   },
   handler: async (ctx, args) => {
-    const { driverUserId, viewerId, startTime, endTime } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { driverUserId, startTime, endTime } = args;
+    const viewerId = caller._id;
     // Check access permission
     const access = await ctx.db
       .query('calendarAccess')

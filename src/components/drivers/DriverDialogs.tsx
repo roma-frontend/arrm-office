@@ -59,7 +59,6 @@ export function RatingDialog({
       await submitRating({
         scheduleId,
         requestId,
-        passengerId,
         driverId,
         organizationId,
         rating,
@@ -174,7 +173,6 @@ export function ReassignDriverDialog({
     try {
       await reassign({
         requestId,
-        userId,
         newDriverId: selectedNewDriver as Id<'drivers'>,
       });
       toast.success(t('driver.reassigned', 'Request sent to new driver!'));

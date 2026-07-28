@@ -140,7 +140,7 @@ export default function DriversPage() {
   // 4. Query hooks
   const driverRecord = useQuery(
     api.drivers.queries.getDriverByUserId,
-    userId && orgId ? { userId } : 'skip',
+    userId && orgId ? {} : 'skip',
   );
 
   // Query drivers - if no org filter, returns all drivers
@@ -149,14 +149,11 @@ export default function DriversPage() {
     shouldFilterByOrg ? { organizationId: effectiveOrgId } : {},
   );
 
-  const myRequests = useQuery(
-    api.drivers.requests_queries.getMyRequests,
-    userId ? { userId } : 'skip',
-  );
+  const myRequests = useQuery(api.drivers.requests_queries.getMyRequests, userId ? {} : 'skip');
 
   const favoriteDrivers = useQuery(
     api.drivers.requests_queries.getFavoriteDrivers,
-    userId ? { userId } : 'skip',
+    userId ? {} : 'skip',
   );
 
   // Optimistic favorite IDs state - initialized from query when available
@@ -167,7 +164,7 @@ export default function DriversPage() {
 
   const recurringTrips = useQuery(
     api.drivers.recurring_trips.getRecurringTrips,
-    userId ? { userId } : 'skip',
+    userId ? {} : 'skip',
   );
 
   // Get all employees with driver role for registration
@@ -339,12 +336,11 @@ export default function DriversPage() {
 
       try {
         if (wasFavorite) {
-          await removeFavorite({ userId, driverId: id as Id<'drivers'> });
+          await removeFavorite({ driverId: id as Id<'drivers'> });
           toast.success(t('driver.removedFromFavorites', 'Removed from favorites'));
         } else {
           await addFavorite({
             organizationId: effectiveOrgId,
-            userId,
             driverId: id as Id<'drivers'>,
           });
           toast.success(t('driver.addedToFavorites', 'Added to favorites'));
@@ -401,7 +397,6 @@ export default function DriversPage() {
         await registerAsDriver({
           userId: selectedDriverCandidate._id,
           organizationId: effectiveOrgId,
-          adminId: userId, // Admin is registering the driver
           vehicleInfo: {
             model: data.vehicleMake || '',
             year: data.vehicleYear ? parseInt(data.vehicleYear) : 2024,

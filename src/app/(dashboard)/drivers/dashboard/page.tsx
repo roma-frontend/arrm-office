@@ -102,7 +102,6 @@ export default function DriverDashboardPage() {
       await respondToRequest({
         requestId,
         driverId: driver._id,
-        userId,
         approved,
         declineReason: approved ? undefined : 'Declined by driver',
       });
@@ -424,7 +423,6 @@ export default function DriverDashboardPage() {
                                     try {
                                       await markArrived({
                                         scheduleId: s._id as Id<'driverSchedules'>,
-                                        userId: userId!,
                                       });
                                       toast.success(
                                         t('driver.markedAsArrived', 'Marked as arrived!'),
@@ -458,7 +456,6 @@ export default function DriverDashboardPage() {
                                       try {
                                         await markPickedUp({
                                           scheduleId: s._id as Id<'driverSchedules'>,
-                                          userId: userId!,
                                         });
                                         toast.success(
                                           t('driver.passengerPickedUp', 'Passenger picked up!'),

@@ -421,5 +421,110 @@
     "shortBreak": "Kurze Pause",
     "longBreak": "Lange Pause",
     "productivityTip": "💡 25 Min. Fokus + 5 Min. Pause = maximale Produktivität"
+  },
+  "nav": {
+    "projects": "Projekte",
+    "profile": "Profil",
+    "leaveSettings": "Urlaubseinstellungen",
+    "holidays": "Feiertage",
+    "leaveBalances": "Urlaubsguthaben",
+    "integrations": "Integrationen"
+  },
+  "admin": {
+    "leaveSettings": {
+      "title": "Urlaubstypen Einstellungen",
+      "subtitle": "Urlaubstypen, Genehmigungsketten und Guthaben konfigurieren",
+      "active": "Aktiv",
+      "requiresDoc": "Dokumente erforderlich",
+      "balanceEditable": "Guthaben bearbeitbar",
+      "daysPerYear": "Tage pro Jahr",
+      "approvalChain": "Genehmigungskette",
+      "defaultDays": "Standard: {{days}} Tage/Jahr",
+      "saved": "Konfiguration gespeichert"
+    },
+    "holidays": {
+      "title": "Feiertagsverwaltung",
+      "subtitle": "Öffentliche und interne Feiertage verwalten",
+      "add": "Feiertag hinzufügen",
+      "public": "Öffentliche Feiertage",
+      "internal": "Interne Feiertage",
+      "noHolidays": "Keine öffentlichen Feiertage konfiguriert",
+      "noInternal": "Keine internen Feiertage konfiguriert",
+      "recurring": "Wiederkehrend",
+      "create": "Erstellen",
+      "edit": "Bearbeiten",
+      "name": "Name",
+      "date": "Datum",
+      "type": "Typ",
+      "description": "Beschreibung",
+      "required": "Name und Datum erforderlich",
+      "created": "Feiertag erstellt",
+      "updated": "Feiertag aktualisiert",
+      "deleted": "Feiertag gelöscht"
+    },
+    "leaveBalances": {
+      "title": "Urlaubsguthaben",
+      "subtitle": "Mitarbeiter-Urlaubsguthaben anzeigen und bearbeiten",
+      "reason": "Grund für Anpassung *",
+      "reasonPlaceholder": "z.B. Jährliche Gutschrift, Korrektur",
+      "reasonRequired": "Bitte geben Sie einen Grund an",
+      "saved": "Guthaben erfolgreich aktualisiert",
+      "editTitle": "Guthaben bearbeiten",
+      "noEmployees": "Keine Mitarbeiter gefunden"
+    },
+    "integrations": {
+      "title": "Integrationen",
+      "subtitle": "Drittanbieter-Dienste verbinden, um Funktionen zu erweitern",
+      "saved": "{{provider}} Konfiguration gespeichert",
+      "connected": "Verbunden",
+      "error": "Sync-Fehler",
+      "notConnected": "Nicht verbunden",
+      "sync": "Sync jetzt",
+      "syncStarted": "Sync gestartet",
+      "viewDocs": "Dokumentation"
+    }
+  },
+  "projects": {
+    "title": "Projekte",
+    "subtitle": "Projekte verwalten, Fortschritt verfolgen und zusammenarbeiten",
+    "create": "Neues Projekt",
+    "createTitle": "Projekt erstellen",
+    "name": "Projektname",
+    "namePlaceholder": "z.B. Q4 Produkt Launch",
+    "description": "Beschreibung",
+    "descPlaceholder": "Kurze Projektübersicht...",
+    "priority": "Priorität",
+    "deadline": "Frist",
+    "total": "Gesamt",
+    "active": "Aktiv",
+    "planning": "Planung",
+    "completed": "Abgeschlossen",
+    "onHold": "Pausiert",
+    "noProjects": "Keine Projekte gefunden",
+    "createFirst": "Erstes Projekt erstellen",
+    "statusUpdated": "Status aktualisiert",
+    "deleteConfirm": "Projekt löschen? Alle Aufgaben werden entkoppelt.",
+    "deleted": "Projekt gelöscht",
+    "tasks": "Aufgaben",
+    "members": "Mitglieder",
+    "noTasks": "Noch keine Aufgaben",
+    "addTask": "Aufgabe hinzufügen",
+    "overallProgress": "Gesamtfortschritt",
+    "created": "Projekt erstellt",
+    "allStatuses": "Alle Status",
+    "status": {
+      "planning": "Planung",
+      "active": "Aktiv",
+      "on_hold": "Zurückgestellt",
+      "completed": "Abgeschlossen",
+      "cancelled": "Abgebrochen"
+    },
+    "priority": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "urgent": "Dringend"
+    },
+    "unassigned": "Nicht zugewiesen"
   }
 }

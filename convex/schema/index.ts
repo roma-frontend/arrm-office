@@ -44,6 +44,9 @@ import { userProfiles } from './userProfiles';
 import { newsletter } from './newsletter';
 import { news } from './news';
 import { assets } from './assets';
+import { leaveSettings } from './leaveSettings';
+import { projects } from './projects';
+import { integrations } from './integrations';
 
 export default defineSchema({
   ...organizations,
@@ -91,6 +94,9 @@ export default defineSchema({
   ...newsletter,
   ...news,
   ...assets,
+  ...leaveSettings,
+  ...projects,
+  ...integrations,
 });
 
 export {
@@ -139,4 +145,7 @@ export {
   newsletter,
   news,
   assets,
+  leaveSettings,
+  projects,
+  integrations,
 };

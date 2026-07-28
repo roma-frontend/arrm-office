@@ -40,7 +40,91 @@
     "editDescription": "Beschreibung bearbeiten",
     "editStart": "Start bearbeiten",
     "editPriority": "Priorität bearbeiten",
-    "slaDashboard": "SLA-Dashboard"
+    "slaDashboard": "SLA-Dashboard",
+    "holidays": {
+      "title": "Feiertagsverwaltung",
+      "subtitle": "Verwaltung von gesetzlichen Feiertagen und internen arbeitsfreien Tagen",
+      "add": "Feiertag hinzufügen",
+      "public": "Gesetzliche Feiertage",
+      "noHolidays": "Keine gesetzlichen Feiertage konfiguriert",
+      "internal": "Interne arbeitsfreie Tage",
+      "noInternal": "Keine internen arbeitsfreien Tage konfiguriert",
+      "recurring": "Jährlich wiederkehrend",
+      "edit": "Feiertag bearbeiten",
+      "create": "Feiertag erstellen",
+      "name": "Feiertagsname",
+      "date": "Datum",
+      "type": "Typ",
+      "description": "Beschreibung (optional)",
+      "required": "Name und Datum sind erforderlich",
+      "updated": "Feiertag aktualisiert",
+      "created": "Feiertag erstellt",
+      "deleted": "Feiertag gelöscht"
+    },
+    "leaveSettings": {
+      "title": "Urlaubstyp-Einstellungen",
+      "subtitle": "Urlaubstypen, Genehmigungsworkflows und Guthaben konfigurieren",
+      "defaultDays": "Standard: {{days}} Tage/Jahr",
+      "approvalChain": "Genehmigung: {{chain}}",
+      "saved": "Urlaubstyp-Konfiguration gespeichert",
+      "active": "Aktiv",
+      "requiresDoc": "Dokumentation erforderlich",
+      "balanceEditable": "Guthaben bearbeitbar",
+      "daysPerYear": "Tage pro Jahr"
+    },
+    "leaveBalances": {
+      "title": "Urlaubsguthaben",
+      "subtitle": "Urlaubsguthaben der Mitarbeiter anzeigen und bearbeiten",
+      "reasonRequired": "Bitte geben Sie einen Grund für die Anpassung an",
+      "invalid": "Guthaben müssen gültige Zahlen sein",
+      "negative": "Guthaben können nicht negativ sein",
+      "saved": "Guthaben erfolgreich aktualisiert",
+      "noEmployees": "Keine Mitarbeiter gefunden",
+      "editTitle": "Guthaben bearbeiten",
+      "reason": "Grund für die Anpassung *",
+      "reasonPlaceholder": "z.B. Jährliche Gutschrift, Korrektur"
+    },
+    "integrationProviders": {
+      "lucky_carrot": {
+        "desc": "Mitarbeiter-Anerkennungs- und Belohnungsplattform",
+        "field": {
+          "apiKey": "API-Schlüssel",
+          "apiUrl": "API-URL",
+          "webhookUrl": "Webhook-URL"
+        },
+        "toggle": {
+          "autoSyncEmployees": "Auto-Sync Mitarbeiter"
+        }
+      },
+      "imid": {
+        "desc": "Armenische digitale Identität & E-Signatur",
+        "field": {
+          "clientId": "Client-ID",
+          "clientSecret": "Client-Secret",
+          "redirectUri": "Weiterleitungs-URI"
+        },
+        "toggle": {
+          "enableLogin": "Anmeldung mit imID",
+          "enableSigning": "E-Signatur (imID Sign)",
+          "enableVerification": "Mitarbeiterverifizierung"
+        }
+      },
+      "armsoft": {
+        "desc": "Armenisches ERP — HR- und Gehaltssync",
+        "field": {
+          "apiEndpoint": "API-Endpunkt",
+          "apiUsername": "Benutzername",
+          "apiPassword": "Passwort"
+        },
+        "toggle": {
+          "syncEmployees": "Mitarbeiterverzeichnis syncen",
+          "syncPayroll": "Gehaltsdaten syncen"
+        },
+        "extraField": {
+          "syncSchedule": "Sync-Plan (cron)"
+        }
+      }
+    }
   },
   "superadmin": {
     "quickActions": {

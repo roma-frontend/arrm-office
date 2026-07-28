@@ -174,7 +174,9 @@
     "contractors": "Կապալառուներ"
   },
   "employeeProfile": {
-    "aiScore": "AI Score",
+    "aiScore": "ԱԲ գնահատական",
+    "punctuality": "Պատասխանատվություն",
+    "hoursWorked": "Ժամեր",
     "latestPerformanceRating": "Վերջին կատարողականի գնահատականը",
     "efficiencyBreakdown": "Արդյունավետության մանրամասներ",
     "ratePerformance": "Գնահատել արդյունավետությունը",

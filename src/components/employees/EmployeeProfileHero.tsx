@@ -67,7 +67,7 @@ function getInitials(name: string): string {
 function getRoleGradientStyle(): React.CSSProperties {
   return {
     background:
-      'linear-gradient(135deg, color-mix(in srgb, var(--primary) 80%, transparent), color-mix(in srgb, var(--primary) 40%, transparent))',
+      'linear-gradient(135deg, rgba(var(--primary-rgb), 0.8), rgba(var(--primary-rgb), 0.35))',
   };
 }
 

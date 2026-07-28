@@ -8,6 +8,8 @@ import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
+import { getAuthCaller } from '../lib/getAuthCaller';
+import { isSuperadmin } from '../lib/auth';
 
 /** Block time slot (for driver) */
 export const blockTimeSlot = mutation({
@@ -19,11 +21,20 @@ export const blockTimeSlot = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const { driverId, organizationId, startTime, endTime, reason } = args;
+    const driver = await ctx.db.get(driverId);
+    if (
+      !driver ||
+      (driver.userId !== caller._id && caller.role !== 'admin' && !isSuperadmin(caller))
+    ) {
+      throw new Error('Only the driver or an admin can block time slots');
+    }
     await ctx.db.insert('driverSchedules', {
       organizationId,
       driverId,
-      userId: (await ctx.db.get(driverId))!.userId,
+      userId: driver!.userId,
       startTime,
       endTime,
       type: 'blocked',
@@ -41,18 +52,19 @@ export const blockTimeSlot = mutation({
 export const updateTripStatus = mutation({
   args: {
     scheduleId: v.id('driverSchedules'),
-    userId: v.id('users'),
     status: v.union(v.literal('in_progress'), v.literal('completed'), v.literal('cancelled')),
   },
   handler: async (ctx, args) => {
-    const { scheduleId, userId, status } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { scheduleId, status } = args;
     const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
     // Verify user is the driver
     if (schedule.driverId) {
       const driver = await ctx.db.get(schedule.driverId);
-      if (!driver || driver.userId !== userId) {
+      if (!driver || driver.userId !== caller._id) {
         throw new Error('Only the driver can update trip status');
       }
     }
@@ -70,19 +82,20 @@ export const updateTripStatus = mutation({
 export const submitDriverFeedback = mutation({
   args: {
     scheduleId: v.id('driverSchedules'),
-    userId: v.id('users'),
     rating: v.number(),
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { scheduleId, userId, rating, comment } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { scheduleId, rating, comment } = args;
     const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
     // Verify user is the driver
     if (schedule.driverId) {
       const driver = await ctx.db.get(schedule.driverId);
-      if (!driver || driver.userId !== userId) {
+      if (!driver || driver.userId !== caller._id) {
         throw new Error('Only the driver can submit feedback');
       }
     }
@@ -138,9 +151,14 @@ export const blockTimeOff = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const { driverId, organizationId, startTime, endTime, reason, type } = args;
     const driver = await ctx.db.get(driverId);
     if (!driver) throw new Error('Driver not found');
+    if (driver.userId !== caller._id && caller.role !== 'admin' && !isSuperadmin(caller)) {
+      throw new Error('Only the driver or an admin can block time off');
+    }
 
     await ctx.db.insert('driverSchedules', {
       organizationId,
@@ -192,21 +210,23 @@ export const submitPassengerRating = mutation({
   args: {
     scheduleId: v.id('driverSchedules'),
     requestId: v.optional(v.id('driverRequests')),
-    passengerId: v.id('users'),
     driverId: v.id('drivers'),
     organizationId: v.id('organizations'),
     rating: v.number(),
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     if (args.rating < 1 || args.rating > 5) {
       throw new Error('Rating must be between 1 and 5');
     }
+    const passengerId = caller._id;
 
     const existing = await ctx.db
       .query('passengerRatings')
       .withIndex('by_schedule', (q) => q.eq('scheduleId', args.scheduleId))
-      .filter((q: any) => q.eq(q.field('passengerId'), args.passengerId))
+      .filter((q: any) => q.eq(q.field('passengerId'), passengerId))
       .first();
 
     if (existing) {
@@ -217,7 +237,7 @@ export const submitPassengerRating = mutation({
       organizationId: args.organizationId,
       scheduleId: args.scheduleId,
       requestId: args.requestId,
-      passengerId: args.passengerId,
+      passengerId,
       driverId: args.driverId,
       rating: args.rating,
       comment: args.comment,
@@ -254,13 +274,21 @@ export const submitPassengerRating = mutation({
 export const addDriverNotes = mutation({
   args: {
     scheduleId: v.id('driverSchedules'),
-    userId: v.id('users'),
     notes: v.string(),
   },
   handler: async (ctx, args) => {
-    const { scheduleId, userId, notes } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { scheduleId, notes } = args;
     const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
+    // Verify caller is the driver or the requester
+    const driver = schedule.driverId ? await ctx.db.get(schedule.driverId) : null;
+    const isDriver = driver && driver.userId === caller._id;
+    const isPassenger = schedule.userId && schedule.userId === caller._id;
+    if (!isDriver && !isPassenger && caller.role !== 'admin' && !isSuperadmin(caller)) {
+      throw new Error('Only the driver, passenger, or an admin can add notes');
+    }
 
     await ctx.db.patch(scheduleId, {
       driverNotes: schedule.driverNotes ? `${schedule.driverNotes}\n${notes}` : notes,
@@ -275,15 +303,17 @@ export const addDriverNotes = mutation({
 export const markDriverArrived = mutation({
   args: {
     scheduleId: v.id('driverSchedules'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { scheduleId, userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { scheduleId } = args;
     const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
     const driver = await ctx.db.get(schedule.driverId);
-    if (!driver || driver.userId !== userId) throw new Error('Only the driver can mark arrival');
+    if (!driver || driver.userId !== caller._id)
+      throw new Error('Only the driver can mark arrival');
 
     await ctx.db.patch(scheduleId, {
       arrivedAt: Date.now(),
@@ -310,15 +340,16 @@ export const markDriverArrived = mutation({
 export const markPassengerPickedUp = mutation({
   args: {
     scheduleId: v.id('driverSchedules'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { scheduleId, userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { scheduleId } = args;
     const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
     const driver = await ctx.db.get(schedule.driverId);
-    if (!driver || driver.userId !== userId) throw new Error('Only the driver can mark pickup');
+    if (!driver || driver.userId !== caller._id) throw new Error('Only the driver can mark pickup');
 
     const now = Date.now();
     const waitTime = schedule.arrivedAt ? Math.round((now - schedule.arrivedAt) / 60000) : 0;
@@ -337,16 +368,17 @@ export const markPassengerPickedUp = mutation({
 export const updateETA = mutation({
   args: {
     scheduleId: v.id('driverSchedules'),
-    userId: v.id('users'),
     etaMinutes: v.number(),
   },
   handler: async (ctx, args) => {
-    const { scheduleId, userId, etaMinutes } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { scheduleId, etaMinutes } = args;
     const schedule = await ctx.db.get(scheduleId);
     if (!schedule) throw new Error('Schedule not found');
 
     const driver = await ctx.db.get(schedule.driverId);
-    if (!driver || driver.userId !== userId) throw new Error('Only the driver can update ETA');
+    if (!driver || driver.userId !== caller._id) throw new Error('Only the driver can update ETA');
 
     await ctx.db.patch(scheduleId, {
       etaMinutes,

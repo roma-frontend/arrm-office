@@ -4,6 +4,7 @@ import { v } from 'convex/values';
 export const tasks = {
   tasks: defineTable({
     organizationId: v.optional(v.id('organizations')),
+    projectId: v.optional(v.id('projects')),
     title: v.string(),
     description: v.optional(v.string()),
     assignedTo: v.id('users'),
@@ -51,7 +52,8 @@ export const tasks = {
     .index('by_assigned_status', ['assignedTo', 'status'])
     .index('by_org_deadline', ['organizationId', 'deadline'])
     .index('by_objective', ['objectiveId'])
-    .index('by_key_result', ['keyResultId']),
+    .index('by_key_result', ['keyResultId'])
+    .index('by_project', ['projectId']),
 
   taskComments: defineTable({
     taskId: v.id('tasks'),

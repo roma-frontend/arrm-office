@@ -175,6 +175,8 @@
   },
   "employeeProfile": {
     "aiScore": "AI Score",
+    "punctuality": "Punctuality",
+    "hoursWorked": "Hours",
     "latestPerformanceRating": "Latest Performance Rating",
     "efficiencyBreakdown": "Efficiency Breakdown",
     "ratePerformance": "Rate Performance",

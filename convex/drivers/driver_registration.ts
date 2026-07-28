@@ -6,13 +6,14 @@
 
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
+import { getAuthCaller } from '../lib/getAuthCaller';
+import { isSuperadmin } from '../lib/auth';
 
 /** Register as a driver - only organization admins can register drivers, or users can register themselves */
 export const registerAsDriver = mutation({
   args: {
     organizationId: v.id('organizations'),
     userId: v.id('users'),
-    adminId: v.id('users'), // Admin who is registering the driver (or the driver themselves for self-registration)
     vehicleInfo: v.object({
       model: v.string(),
       plateNumber: v.string(),
@@ -28,14 +29,12 @@ export const registerAsDriver = mutation({
     maxTripsPerDay: v.number(),
   },
   handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin) {
-      throw new Error('Admin not found');
-    }
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
 
     // Allow admins/superadmins to register drivers, OR allow users to register themselves as drivers
-    const isAdmin = admin.role === 'admin' || admin.role === 'superadmin';
-    const isSelfRegistration = admin._id === args.userId;
+    const isAdmin = caller.role === 'admin' || caller.role === 'superadmin';
+    const isSelfRegistration = caller._id === args.userId;
 
     if (!isAdmin && !isSelfRegistration) {
       throw new Error(
@@ -46,6 +45,11 @@ export const registerAsDriver = mutation({
     const userToRegister = await ctx.db.get(args.userId);
     if (!userToRegister || userToRegister.organizationId !== args.organizationId) {
       throw new Error('User does not belong to this organization');
+    }
+
+    // Superadmin must pass org check — if not superadmin, verify caller is in same org
+    if (!isSuperadmin(caller) && caller.organizationId !== args.organizationId) {
+      throw new Error('Access denied: cross-organization operation');
     }
 
     const existing = await ctx.db
@@ -89,7 +93,15 @@ export const updateDriverAvailability = mutation({
     isAvailable: v.boolean(),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const { driverId, isAvailable } = args;
+    // Only the driver or an admin can update availability
+    const driver = await ctx.db.get(driverId);
+    if (!driver) throw new Error('Driver not found');
+    if (driver.userId !== caller._id && caller.role !== 'admin' && !isSuperadmin(caller)) {
+      throw new Error('Only the driver or an admin can update availability');
+    }
     await ctx.db.patch(driverId, {
       isAvailable,
       updatedAt: Date.now(),
@@ -102,11 +114,13 @@ export const updateDriverAvailability = mutation({
 export const addFavoriteDriver = mutation({
   args: {
     organizationId: v.optional(v.id('organizations')),
-    userId: v.id('users'),
     driverId: v.id('drivers'),
   },
   handler: async (ctx, args) => {
-    const { organizationId, userId, driverId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { organizationId, driverId } = args;
+    const userId = caller._id;
     // If org not provided, get from driver record
     let orgId = organizationId;
     if (!orgId) {
@@ -135,11 +149,13 @@ export const addFavoriteDriver = mutation({
 /** Remove driver from favorites */
 export const removeFavoriteDriver = mutation({
   args: {
-    userId: v.id('users'),
     driverId: v.id('drivers'),
   },
   handler: async (ctx, args) => {
-    const { userId, driverId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { driverId } = args;
+    const userId = caller._id;
     const existing = await ctx.db
       .query('favoriteDrivers')
       .withIndex('by_user_driver', (q) => q.eq('userId', userId).eq('driverId', driverId))

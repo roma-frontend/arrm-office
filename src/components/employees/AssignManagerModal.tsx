@@ -149,7 +149,6 @@ export function AssignManagerModal({
         return;
       }
       await assignManager({
-        adminId: currentUser.id as Id<'users'>,
         employeeId,
         supervisorId: selectedSupervisorId ?? undefined,
       });

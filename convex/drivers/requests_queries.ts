@@ -10,6 +10,8 @@ import { paginationOptsValidator } from 'convex/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getProfile } from '../lib/userProfile';
+import { getAuthCaller } from '../lib/getAuthCaller';
+import { isSuperadmin } from '../lib/auth';
 
 /** Get pending driver requests for a driver */
 export const getDriverRequests = query({
@@ -25,7 +27,19 @@ export const getDriverRequests = query({
     ),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
     const { driverId, status } = args;
+    // Only the driver or an admin can view driver requests
+    const driverRecord = await ctx.db.get(driverId);
+    if (
+      driverRecord &&
+      driverRecord.userId !== caller._id &&
+      caller.role !== 'admin' &&
+      !isSuperadmin(caller)
+    ) {
+      return [];
+    }
     let requests;
 
     if (status) {
@@ -62,11 +76,11 @@ export const getDriverRequests = query({
 
 /** Get my driver requests (for employees) */
 export const getMyRequests = query({
-  args: {
-    userId: v.id('users'),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = args;
+  args: {},
+  handler: async (ctx, _args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const userId = caller._id;
     const requests = await ctx.db
       .query('driverRequests')
       .withIndex('by_requester', (q) => q.eq('requesterId', userId))
@@ -111,9 +125,12 @@ export const getMyRequests = query({
 
 /** Paginated driver requests history for a user */
 export const listMyRequestsPaginated = query({
-  args: { userId: v.id('users'), paginationOpts: paginationOptsValidator },
+  args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    const { userId, paginationOpts } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { page: [], continueCursor: '', isDone: true };
+    const { paginationOpts } = args;
+    const userId = caller._id;
     const result = await ctx.db
       .query('driverRequests')
       .withIndex('by_requester', (q) => q.eq('requesterId', userId))
@@ -141,11 +158,13 @@ export const listMyRequestsPaginated = query({
 /** Get completed trip history for a user */
 export const getCompletedTrips = query({
   args: {
-    userId: v.id('users'),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { userId, limit: take } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const { limit: take } = args;
+    const userId = caller._id;
     const requests = await ctx.db
       .query('driverRequests')
       .withIndex('by_requester', (q) => q.eq('requesterId', userId))
@@ -259,10 +278,12 @@ export const getCompletedTrips = query({
 export const hasPassengerRated = query({
   args: {
     scheduleId: v.id('driverSchedules'),
-    passengerId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { scheduleId, passengerId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return false;
+    const { scheduleId } = args;
+    const passengerId = caller._id;
     const existing = await ctx.db
       .query('passengerRatings')
       .withIndex('by_schedule', (q) => q.eq('scheduleId', scheduleId))
@@ -275,11 +296,13 @@ export const hasPassengerRated = query({
 /** Get recurring trips for a user */
 export const getRecurringTrips = query({
   args: {
-    userId: v.id('users'),
     activeOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const { userId, activeOnly } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const { activeOnly } = args;
+    const userId = caller._id;
     let trips = await ctx.db
       .query('recurringTrips')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -334,11 +357,11 @@ export const getRecurringTrips = query({
 
 /** Get favorite drivers for a user */
 export const getFavoriteDrivers = query({
-  args: {
-    userId: v.id('users'),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = args;
+  args: {},
+  handler: async (ctx, _args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const userId = caller._id;
     const favorites = await ctx.db
       .query('favoriteDrivers')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -405,6 +428,8 @@ export const getScheduleETA = query({
     scheduleId: v.id('driverSchedules'),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
     const { scheduleId } = args;
     const schedule = await ctx.db.get(scheduleId);
     if (!schedule) return null;
@@ -429,7 +454,15 @@ export const getDriverStats = query({
     period: v.optional(v.union(v.literal('week'), v.literal('month'), v.literal('year'))),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
     const { driverId, period } = args;
+    // Verify caller belongs to the same org
+    const driverRecord = await ctx.db.get(driverId);
+    if (!driverRecord) return null;
+    if (!isSuperadmin(caller) && caller.organizationId !== driverRecord.organizationId) {
+      return null;
+    }
     const driver = await ctx.db.get(driverId);
     if (!driver) return null;
 
@@ -484,7 +517,16 @@ export const getCurrentShift = query({
     driverId: v.id('drivers'),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
     const { driverId } = args;
+    const driverRecord = await ctx.db.get(driverId);
+    if (
+      !driverRecord ||
+      (!isSuperadmin(caller) && caller.organizationId !== driverRecord.organizationId)
+    ) {
+      return null;
+    }
     const shift = await ctx.db
       .query('driverShifts')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
@@ -502,7 +544,16 @@ export const getShiftHistory = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
     const { driverId, limit } = args;
+    const driverRecord = await ctx.db.get(driverId);
+    if (
+      !driverRecord ||
+      (!isSuperadmin(caller) && caller.organizationId !== driverRecord.organizationId)
+    ) {
+      return [];
+    }
     const shifts = await ctx.db
       .query('driverShifts')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
@@ -520,7 +571,12 @@ export const getShiftStatistics = query({
     period: v.optional(v.union(v.literal('week'), v.literal('month'))),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
     const { organizationId, period } = args;
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) {
+      return null;
+    }
     const now = Date.now();
     const startTime =
       period === 'week' ? now - 7 * 24 * 60 * 60 * 1000 : now - 30 * 24 * 60 * 60 * 1000;

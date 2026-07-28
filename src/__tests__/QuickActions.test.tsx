@@ -1,28 +1,29 @@
 /**
- * Tests for QuickActions component — role-based action card rendering.
+ * Tests for QuickActions — role-based quick action cards.
+ * Pure presentational component (no Convex).
  */
+
+import React from 'react';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { render, screen, fireEvent } from '@testing-library/react';
+
+// ── i18n mock ────────────────────────────────────────────────────────────────
 jest.mock('react-i18next', () => ({
-  useTranslation: jest.fn(() => ({
-    t: jest.fn((key: string, opts?: { defaultValue?: string }) => opts?.defaultValue || key),
-  })),
+  useTranslation: () => ({
+    t: (key: string, fallback?: string) => fallback || key,
+    i18n: { language: 'en' },
+  }),
 }));
 
+// ── Next navigation mock ────────────────────────────────────────────────────
+const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(() => ({ push: jest.fn() })),
+  useRouter: () => ({ push: mockPush }),
 }));
 
-jest.mock('@/lib/cssMotion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => (
-      <div data-motion="div" {...props}>
-        {children}
-      </div>
-    ),
-  },
-}));
-
+// ── Lucide icons mock ────────────────────────────────────────────────────────
 jest.mock('lucide-react', () => {
-  const MockIcon = (props: any) => <span data-testid="icon" {...props} />;
+  const MockIcon = (props: any) => <span data-testid="lucide-icon" {...props} />;
   return {
     Plane: MockIcon,
     Fingerprint: MockIcon,
@@ -38,6 +39,18 @@ jest.mock('lucide-react', () => {
   };
 });
 
+// ── CSS motion mock ──────────────────────────────────────────────────────────
+jest.mock('@/lib/cssMotion', () => ({
+  motion: {
+    div: ({ children, variants, initial, animate, className }: any) => (
+      <div className={className} data-testid="motion-div">
+        {children}
+      </div>
+    ),
+  },
+}));
+
+// ── Card mocks ───────────────────────────────────────────────────────────────
 jest.mock('@/components/ui/card', () => ({
   Card: ({ children }: any) => <div data-testid="card">{children}</div>,
   CardContent: ({ children }: any) => <div data-testid="card-content">{children}</div>,
@@ -45,186 +58,170 @@ jest.mock('@/components/ui/card', () => ({
   CardTitle: ({ children }: any) => <div data-testid="card-title">{children}</div>,
 }));
 
+// ── Auth store mock ──────────────────────────────────────────────────────────
+let mockUser: any = { id: 'user-1', role: 'employee', name: 'Employee' };
 jest.mock('@/store/useAuthStore', () => ({
-  useAuthUser: jest.fn(),
+  useAuthUser: () => mockUser,
 }));
 
-import { render, screen, fireEvent } from '@testing-library/react';
+// ── Module under test ──
 import { QuickActions } from '@/components/dashboard/QuickActions';
-import { useAuthUser } from '@/store/useAuthStore';
-
-const mockPush = jest.fn();
 
 describe('QuickActions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    const { useRouter } = require('next/navigation');
-    (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
+    mockUser = { id: 'user-1', role: 'employee', name: 'Employee' };
   });
 
-  describe('employee role', () => {
-    beforeEach(() => {
-      (useAuthUser as jest.Mock).mockReturnValue({
-        id: 'user-1',
-        name: 'Test Employee',
-        role: 'employee',
-        email: 'emp@test.com',
-      });
-    });
+  // ── Common actions (all roles) ─────────────────────────────────────────
 
-    it('renders 4 common actions for employee', () => {
-      render(<QuickActions />);
-      const buttons = screen.getAllByRole('button');
-      // 4 common actions for employee (no manager/admin actions)
-      expect(buttons.length).toBe(4);
-    });
-
-    it('includes leave request action', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.leaveRequest')).toBeInTheDocument();
-    });
-
-    it('includes check-in action', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.checkIn')).toBeInTheDocument();
-    });
-
-    it('includes chat action', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.chat')).toBeInTheDocument();
-    });
-
-    it('includes tasks action', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.tasks')).toBeInTheDocument();
-    });
-
-    it('does NOT include strategy action for employee', () => {
-      render(<QuickActions />);
-      expect(screen.queryByText('Strategy')).not.toBeInTheDocument();
-    });
-
-    it('does NOT include approvals for employee', () => {
-      render(<QuickActions />);
-      expect(screen.queryByText('quickActions.approvals')).not.toBeInTheDocument();
-    });
+  it('renders card title', () => {
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.title')).toBeInTheDocument();
   });
 
-  describe('admin role', () => {
-    beforeEach(() => {
-      (useAuthUser as jest.Mock).mockReturnValue({
-        id: 'user-2',
-        name: 'Test Admin',
-        role: 'admin',
-        email: 'admin@test.com',
-      });
-    });
-
-    it('renders all action types (common + manager + admin)', () => {
-      render(<QuickActions />);
-      const buttons = screen.getAllByRole('button');
-      // 4 common + 3 manager + 2 admin = 9
-      expect(buttons.length).toBe(9);
-    });
-
-    it('includes strategy action for admin', () => {
-      render(<QuickActions />);
-      // Mock t returns the key: 'quickActions.strategy'
-      expect(screen.getByText('quickActions.strategy')).toBeInTheDocument();
-    });
-
-    it('includes approvals for admin', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.approvals')).toBeInTheDocument();
-    });
-
-    it('includes analytics for admin', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.analytics')).toBeInTheDocument();
-    });
-
-    it('includes employees for admin', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.employees')).toBeInTheDocument();
-    });
-
-    it('includes settings for admin', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.settings')).toBeInTheDocument();
-    });
+  it('renders leave request action for employee', () => {
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.leaveRequest')).toBeInTheDocument();
+    expect(screen.getByText('quickActions.leaveRequestDesc')).toBeInTheDocument();
   });
 
-  describe('supervisor role', () => {
-    beforeEach(() => {
-      (useAuthUser as jest.Mock).mockReturnValue({
-        id: 'user-3',
-        name: 'Test Supervisor',
-        role: 'supervisor',
-        email: 'sup@test.com',
-      });
-    });
-
-    it('renders common + manager actions (no admin)', () => {
-      render(<QuickActions />);
-      const buttons = screen.getAllByRole('button');
-      // 4 common + 3 manager = 7
-      expect(buttons.length).toBe(7);
-    });
-
-    it('includes approvals for supervisor', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.approvals')).toBeInTheDocument();
-    });
+  it('renders check-in action for employee', () => {
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.checkIn')).toBeInTheDocument();
   });
 
-  describe('superadmin role', () => {
-    beforeEach(() => {
-      (useAuthUser as jest.Mock).mockReturnValue({
-        id: 'user-4',
-        name: 'Test Superadmin',
-        role: 'superadmin',
-        email: 'super@test.com',
-      });
-    });
-
-    it('renders all actions for superadmin', () => {
-      render(<QuickActions />);
-      const buttons = screen.getAllByRole('button');
-      // 4 common + 3 manager + 2 admin = 9
-      expect(buttons.length).toBe(9);
-    });
-
-    it('includes strategy for superadmin', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.strategy')).toBeInTheDocument();
-    });
-
-    it('includes employees for superadmin', () => {
-      render(<QuickActions />);
-      expect(screen.getByText('quickActions.employees')).toBeInTheDocument();
-    });
+  it('renders chat action for employee', () => {
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.chat')).toBeInTheDocument();
   });
 
-  describe('interaction', () => {
-    beforeEach(() => {
-      (useAuthUser as jest.Mock).mockReturnValue({
-        id: 'user-1',
-        name: 'Test Employee',
-        role: 'employee',
-        email: 'emp@test.com',
-      });
-    });
+  it('renders tasks action for employee', () => {
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.tasks')).toBeInTheDocument();
+  });
 
-    it('navigates on click', () => {
-      render(<QuickActions />);
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      expect(mockPush).toHaveBeenCalledWith(expect.any(String));
-    });
+  it('shows 4 common actions for employee role', () => {
+    render(<QuickActions />);
+    // 4 common actions
+    const actionButtons = screen.getAllByRole('button');
+    expect(actionButtons.length).toBe(4);
+  });
 
-    it('renders card structure', () => {
-      const { container } = render(<QuickActions />);
-      expect(container).toBeTruthy();
-    });
+  // ── Manager actions ───────────────────────────────────────────────────
+
+  it('shows strategy action for admin', () => {
+    mockUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.strategy')).toBeInTheDocument();
+  });
+
+  it('shows approvals action for admin', () => {
+    mockUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.approvals')).toBeInTheDocument();
+  });
+
+  it('shows analytics action for admin', () => {
+    mockUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.analytics')).toBeInTheDocument();
+  });
+
+  it('shows strategy action for supervisor', () => {
+    mockUser = { id: 'sup-1', role: 'supervisor', name: 'Supervisor' };
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.strategy')).toBeInTheDocument();
+  });
+
+  it('shows strategy action for superadmin', () => {
+    mockUser = { id: 'super-1', role: 'superadmin', name: 'Superadmin' };
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.strategy')).toBeInTheDocument();
+  });
+
+  it('does not show strategy action for employee', () => {
+    render(<QuickActions />);
+    expect(screen.queryByText('quickActions.strategy')).not.toBeInTheDocument();
+  });
+
+  it('does not show approvals for employee', () => {
+    render(<QuickActions />);
+    expect(screen.queryByText('quickActions.approvals')).not.toBeInTheDocument();
+  });
+
+  // ── Admin-only actions ────────────────────────────────────────────────
+
+  it('shows employees action for admin', () => {
+    mockUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.employees')).toBeInTheDocument();
+  });
+
+  it('shows settings action for admin', () => {
+    mockUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.settings')).toBeInTheDocument();
+  });
+
+  it('shows employees action for superadmin', () => {
+    mockUser = { id: 'super-1', role: 'superadmin', name: 'Super' };
+    render(<QuickActions />);
+    expect(screen.getByText('quickActions.employees')).toBeInTheDocument();
+  });
+
+  it('does not show employees action for employee', () => {
+    render(<QuickActions />);
+    expect(screen.queryByText('quickActions.employees')).not.toBeInTheDocument();
+  });
+
+  it('does not show employees action for supervisor', () => {
+    mockUser = { id: 'sup-1', role: 'supervisor', name: 'Supervisor' };
+    render(<QuickActions />);
+    expect(screen.queryByText('quickActions.employees')).not.toBeInTheDocument();
+  });
+
+  // ── Action count by role ──────────────────────────────────────────────
+
+  it('shows 9 actions for admin (4 common + 3 manager + 2 admin)', () => {
+    mockUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
+    render(<QuickActions />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBe(9);
+  });
+
+  it('shows 7 actions for supervisor (4 common + 3 manager)', () => {
+    mockUser = { id: 'sup-1', role: 'supervisor', name: 'Supervisor' };
+    render(<QuickActions />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBe(7);
+  });
+
+  it('shows 9 actions for superadmin (4 common + 3 manager + 2 admin)', () => {
+    mockUser = { id: 'super-1', role: 'superadmin', name: 'Superadmin' };
+    render(<QuickActions />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBe(9);
+  });
+
+  // ── Navigation ────────────────────────────────────────────────────────
+
+  it('navigates to /leaves when leave request clicked', () => {
+    render(<QuickActions />);
+    fireEvent.click(screen.getByText('quickActions.leaveRequest'));
+    expect(mockPush).toHaveBeenCalledWith('/leaves');
+  });
+
+  it('navigates to /attendance when check-in clicked', () => {
+    render(<QuickActions />);
+    fireEvent.click(screen.getByText('quickActions.checkIn'));
+    expect(mockPush).toHaveBeenCalledWith('/attendance');
+  });
+
+  it('navigates to /strategy when strategy clicked (admin)', () => {
+    mockUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
+    render(<QuickActions />);
+    fireEvent.click(screen.getByText('quickActions.strategy'));
+    expect(mockPush).toHaveBeenCalledWith('/strategy');
   });
 });

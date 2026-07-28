@@ -3,7 +3,13 @@
  * Tests: getCurrencyConfig, LOCALE_CURRENCY, BASE_PRICES
  */
 
-import { getCurrencyConfig, LOCALE_CURRENCY, BASE_PRICES } from '@/lib/currency';
+import {
+  getCurrencyConfig,
+  LOCALE_CURRENCY,
+  BASE_PRICES,
+  convertPrice,
+  getExchangeRates,
+} from '@/lib/currency';
 
 describe('LOCALE_CURRENCY', () => {
   it('maps en to USD', () => {
@@ -136,5 +142,113 @@ describe('getCurrencyConfig - all locales', () => {
     const config = getCurrencyConfig(locale as string);
     expect(config.symbol).toMatch(/[$€₽֏]|RUB|AMD|EUR/);
     expect(config.code).toBe(code);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// convertPrice — requires mocking global fetch
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('convertPrice', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    // Clear localStorage cache
+    localStorage.clear();
+    jest.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('converts from USD to USD (identity)', async () => {
+    // Mock fetch to return fallback-triggering empty response
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ rates: {} }),
+    });
+    const result = await convertPrice(100, 'en');
+    expect(result.amount).toBe(100);
+    expect(result.currency).toBe('USD');
+    expect(result.symbol).toBe('$');
+    expect(result.formatted).toContain('$');
+  });
+
+  it('converts using the cached rates first', async () => {
+    // Pre-populate cache
+    const cache = {
+      timestamp: Date.now(),
+      rates: { USD: 1, RUB: 90 },
+    };
+    localStorage.setItem('currency_rates_cache', JSON.stringify(cache));
+
+    global.fetch = jest.fn().mockRejectedValue(new Error('Should not fetch'));
+    const result = await convertPrice(29, 'en');
+    expect(result.amount).toBe(29);
+    expect(result.currency).toBe('USD');
+  });
+
+  it('falls back to default USD for unknown locale', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ rates: {} }),
+    });
+    const result = await convertPrice(50, 'unknown');
+    expect(result.currency).toBe('USD');
+    expect(result.symbol).toBe('$');
+  });
+
+  it('handles fetch failure gracefully with fallback rates', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    const result = await convertPrice(100, 'en');
+    // Should return USD with fallback rate
+    expect(result.currency).toBe('USD');
+    expect(result.amount).toBe(100);
+  });
+
+  it('returns formatted price with currency symbol', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ rates: { USD: 1 } }),
+    });
+    const result = await convertPrice(79, 'en');
+    expect(result.formatted).toContain('$');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// getExchangeRates
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('getExchangeRates', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    jest.restoreAllMocks();
+  });
+
+  it('returns fallback rates when fetch fails', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('fail'));
+    const rates = await getExchangeRates();
+    expect(rates.USD).toBeDefined();
+    expect(rates.RUB).toBeDefined();
+    expect(rates.AMD).toBeDefined();
+    expect(rates.EUR).toBeDefined();
+  });
+
+  it('caches rates after fetching', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ rates: { USD: 1, EUR: 0.85 } }),
+    });
+    const rates = await getExchangeRates();
+    expect(rates.USD).toBe(1);
+    expect(rates.EUR).toBe(0.85);
+
+    // Should be cached now
+    const cached = localStorage.getItem('currency_rates_cache');
+    expect(cached).not.toBeNull();
+    const parsed = JSON.parse(cached!);
+    expect(parsed.rates.EUR).toBe(0.85);
   });
 });

@@ -102,24 +102,28 @@ export default function AIGovernancePanel() {
 
   const statCards = [
     {
+      id: 'totalRequests',
       label: t('aiGovernance.totalRequests', 'Total AI Requests'),
       value: stats ? stats.total.toLocaleString() : '—',
       icon: Activity,
       color: '#3b82f6',
     },
     {
+      id: 'blockedRequests',
       label: t('aiGovernance.blockedRequests', 'Blocked Requests'),
       value: stats ? stats.blocked.toLocaleString() : '—',
       icon: XCircle,
       color: '#ef4444',
     },
     {
+      id: 'activeAgents',
       label: t('aiGovernance.activeAgents', 'Active Agents'),
       value: stats ? String(stats.activeAgents) : '—',
       icon: Bot,
       color: '#10b981',
     },
     {
+      id: 'avgResponseTime',
       label: t('aiGovernance.avgResponseTime', 'Avg Response'),
       value: stats ? `${(stats.avgLatencyMs / 1000).toFixed(1)}s` : '—',
       icon: Clock,
@@ -134,7 +138,7 @@ export default function AIGovernancePanel() {
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.label} className="p-4 border border-(--border) bg-(--card)">
+            <Card key={stat.id} className="p-4 border border-(--border) bg-(--card)">
               <div className="flex items-center justify-between mb-2">
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center"

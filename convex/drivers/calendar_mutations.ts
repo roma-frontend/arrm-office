@@ -10,13 +10,15 @@ import { getAuthCaller } from '../lib/getAuthCaller';
 export const grantCalendarAccess = mutation({
   args: {
     organizationId: v.id('organizations'),
-    ownerId: v.id('users'),
     viewerId: v.id('users'),
     accessLevel: v.union(v.literal('full'), v.literal('busy_only')),
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { organizationId, ownerId, viewerId, accessLevel, expiresAt } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { organizationId, viewerId, accessLevel, expiresAt } = args;
+    const ownerId = caller._id;
     const existing = await ctx.db
       .query('calendarAccess')
       .withIndex('by_owner_viewer', (q) => q.eq('ownerId', ownerId).eq('viewerId', viewerId))
@@ -62,7 +64,14 @@ export const revokeCalendarAccess = mutation({
     accessId: v.id('calendarAccess'),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const { accessId } = args;
+    const access = await ctx.db.get(accessId);
+    if (!access) return { success: true }; // Already revoked or never existed
+    if (access.ownerId !== caller._id) {
+      throw new Error('Only the owner can revoke access');
+    }
     await ctx.db.patch(accessId, {
       isActive: false,
     });

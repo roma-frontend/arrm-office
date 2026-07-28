@@ -68,7 +68,6 @@ export function LocalizationSettings({
     setIsSaving(true);
     try {
       await updateSettings({
-        userId,
         language,
         timezone,
         dateFormat,

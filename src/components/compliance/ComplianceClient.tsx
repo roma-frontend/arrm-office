@@ -268,33 +268,38 @@ export default function ComplianceClient() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4 mb-6 sm:mb-8">
           {[
             {
+              id: 'statsTotal',
               label: t('compliance.statsTotal'),
               value: stats.gdprRequests,
               color: 'var(--text-primary)',
             },
             {
+              id: 'statsPending',
               label: t('compliance.statsPending'),
               value: stats.gdprByStatus.pending,
               color: 'var(--warning)',
             },
             {
+              id: 'statsInProgress',
               label: t('compliance.statsInProgress'),
               value: stats.gdprByStatus.in_progress,
               color: 'var(--primary)',
             },
             {
+              id: 'statsCompleted',
               label: t('compliance.statsCompleted'),
               value: stats.gdprByStatus.completed,
               color: 'var(--success)',
             },
             {
+              id: 'statsRejected',
               label: t('compliance.statsRejected'),
               value: stats.gdprByStatus.rejected,
               color: 'var(--destructive)',
             },
           ].map((stat) => (
             <div
-              key={stat.label}
+              key={stat.id}
               className="rounded-lg sm:rounded-xl p-2 sm:p-4 text-center border"
               style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
             >

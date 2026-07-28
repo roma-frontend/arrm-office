@@ -49,13 +49,16 @@ import {
   Layers,
   Megaphone,
   Package,
+  FolderKanban,
+  CalendarCheck,
+  Sun,
+  Globe,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/store/useSidebarStore';
 import { useSwipe } from '@/hooks/useSwipe';
 import { useAuthUser } from '@/store/useAuthStore';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OrganizationSelector } from '@/components/layout/OrganizationSelector';
 import { QuickActionsPalette } from '@/components/superadmin/QuickActionsPalette';
 import { useQuery } from 'convex/react';
@@ -125,7 +128,17 @@ const navItems: NavEntry[] = [
     labelKey: 'nav.tasks',
     icon: CheckSquare,
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
+    children: [
+      { href: '/tasks', labelKey: 'nav.tasks', icon: CheckSquare },
+      {
+        href: '/projects',
+        labelKey: 'nav.projects',
+        icon: FolderKanban,
+        roles: ['superadmin', 'admin', 'supervisor', 'employee'],
+      },
+    ],
   },
+
   {
     href: '/chat',
     labelKey: 'nav.chat',
@@ -332,6 +345,30 @@ const navItems: NavEntry[] = [
         href: '/admin/ai-governance',
         labelKey: 'nav.aiGovernance',
         icon: ShieldCheck,
+        roles: ['superadmin', 'admin'],
+      },
+      {
+        href: '/admin/leave-settings',
+        labelKey: 'nav.leaveSettings',
+        icon: CalendarCheck,
+        roles: ['superadmin', 'admin'],
+      },
+      {
+        href: '/admin/holidays',
+        labelKey: 'nav.holidays',
+        icon: Sun,
+        roles: ['superadmin', 'admin'],
+      },
+      {
+        href: '/admin/leave-balances',
+        labelKey: 'nav.leaveBalances',
+        icon: Wallet,
+        roles: ['superadmin', 'admin'],
+      },
+      {
+        href: '/admin/integrations',
+        labelKey: 'nav.integrations',
+        icon: Globe,
         roles: ['superadmin', 'admin'],
       },
       {

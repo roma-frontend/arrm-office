@@ -40,7 +40,91 @@
     "editDescription": "Edit Description",
     "editStart": "Edit Start",
     "editPriority": "Edit Priority",
-    "slaDashboard": "SLA Dashboard"
+    "slaDashboard": "SLA Dashboard",
+    "holidays": {
+      "title": "Holiday Management",
+      "subtitle": "Manage public holidays and internal non-working days",
+      "add": "Add Holiday",
+      "public": "Public Holidays",
+      "noHolidays": "No public holidays configured",
+      "internal": "Internal Non-Working Days",
+      "noInternal": "No internal non-working days configured",
+      "recurring": "Recurring yearly",
+      "edit": "Edit Holiday",
+      "create": "Create Holiday",
+      "name": "Holiday Name",
+      "date": "Date",
+      "type": "Type",
+      "description": "Description (optional)",
+      "required": "Name and date are required",
+      "updated": "Holiday updated",
+      "created": "Holiday created",
+      "deleted": "Holiday deleted"
+    },
+    "leaveSettings": {
+      "title": "Leave Type Settings",
+      "subtitle": "Configure leave types, approval workflows, and balances",
+      "defaultDays": "Default: {{days}} days/year",
+      "approvalChain": "Approval: {{chain}}",
+      "saved": "Leave type configuration saved",
+      "active": "Active",
+      "requiresDoc": "Requires Documentation",
+      "balanceEditable": "Balance Editable",
+      "daysPerYear": "Days Per Year"
+    },
+    "leaveBalances": {
+      "title": "Leave Balances",
+      "subtitle": "View and edit employee leave balances",
+      "reasonRequired": "Please provide a reason for the adjustment",
+      "invalid": "Balances must be valid numbers",
+      "negative": "Balances cannot be negative",
+      "saved": "Balances updated successfully",
+      "noEmployees": "No employees found",
+      "editTitle": "Edit Balances",
+      "reason": "Reason for adjustment *",
+      "reasonPlaceholder": "e.g. Annual balance accrual, correction"
+    },
+    "integrationProviders": {
+      "lucky_carrot": {
+        "desc": "Employee recognition & rewards platform",
+        "field": {
+          "apiKey": "API Key",
+          "apiUrl": "API URL",
+          "webhookUrl": "Webhook URL"
+        },
+        "toggle": {
+          "autoSyncEmployees": "Auto-sync employees"
+        }
+      },
+      "imid": {
+        "desc": "Armenian digital identity & e-signature",
+        "field": {
+          "clientId": "Client ID",
+          "clientSecret": "Client Secret",
+          "redirectUri": "Redirect URI"
+        },
+        "toggle": {
+          "enableLogin": "Enable login with imID",
+          "enableSigning": "Enable e-signature (imID Sign)",
+          "enableVerification": "Enable employee verification"
+        }
+      },
+      "armsoft": {
+        "desc": "Armenian ERP — HR & payroll data sync",
+        "field": {
+          "apiEndpoint": "API Endpoint",
+          "apiUsername": "Username",
+          "apiPassword": "Password"
+        },
+        "toggle": {
+          "syncEmployees": "Sync employee directory",
+          "syncPayroll": "Sync payroll data"
+        },
+        "extraField": {
+          "syncSchedule": "Sync schedule (cron)"
+        }
+      }
+    }
   },
   "superadmin": {
     "quickActions": {

@@ -6,6 +6,8 @@
 
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 // Helper: get or create userSettings doc for a user
 async function getOrCreateSettings(ctx: any, userId: any) {
@@ -46,13 +48,14 @@ async function getOrCreateSettings(ctx: any, userId: any) {
 }
 
 /**
- * Get user settings
+ * Get user settings — caller always reads their own settings
  */
 export const getUserSettings = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
-    const { userId } = args;
-    const settings = await getOrCreateSettings(ctx, userId);
+  args: {},
+  handler: async (ctx, _args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    const settings = await getOrCreateSettings(ctx, caller._id);
     return {
       language: settings.language ?? 'en',
       timezone: settings.timezone ?? 'UTC',
@@ -68,11 +71,10 @@ export const getUserSettings = query({
 });
 
 /**
- * Update user settings
+ * Update user settings — caller always updates their own settings
  */
 export const updateUserSettings = mutation({
   args: {
-    userId: v.id('users'),
     language: v.optional(v.string()),
     timezone: v.optional(v.string()),
     dateFormat: v.optional(v.string()),
@@ -84,10 +86,11 @@ export const updateUserSettings = mutation({
     pushNotifications: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const settings = await getOrCreateSettings(ctx, args.userId);
-    const { userId, ...updates } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const settings = await getOrCreateSettings(ctx, caller._id);
     const patch: Record<string, unknown> = {};
-    for (const [k, val] of Object.entries(updates)) {
+    for (const [k, val] of Object.entries(args)) {
       if (val !== undefined) patch[k] = val;
     }
     if (Object.keys(patch).length > 0) {
@@ -98,11 +101,10 @@ export const updateUserSettings = mutation({
 });
 
 /**
- * Update localization settings
+ * Update localization settings — caller always updates their own
  */
 export const updateLocalizationSettings = mutation({
   args: {
-    userId: v.id('users'),
     language: v.string(),
     timezone: v.string(),
     dateFormat: v.string(),
@@ -110,7 +112,9 @@ export const updateLocalizationSettings = mutation({
     firstDayOfWeek: v.string(),
   },
   handler: async (ctx, args) => {
-    const settings = await getOrCreateSettings(ctx, args.userId);
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const settings = await getOrCreateSettings(ctx, caller._id);
     await ctx.db.patch(settings._id, {
       language: args.language,
       timezone: args.timezone,
@@ -119,23 +123,24 @@ export const updateLocalizationSettings = mutation({
       firstDayOfWeek: args.firstDayOfWeek,
     });
     // Also update user record so language is available on user object
-    await ctx.db.patch(args.userId, { language: args.language });
+    await ctx.db.patch(caller._id as any, { language: args.language });
     return { success: true };
   },
 });
 
 /**
- * Update notification settings
+ * Update notification settings — caller always updates their own
  */
 export const updateNotificationSettings = mutation({
   args: {
-    userId: v.id('users'),
     notificationsEnabled: v.boolean(),
     emailNotifications: v.boolean(),
     pushNotifications: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const settings = await getOrCreateSettings(ctx, args.userId);
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const settings = await getOrCreateSettings(ctx, caller._id);
     await ctx.db.patch(settings._id, {
       notificationsEnabled: args.notificationsEnabled,
       emailNotifications: args.emailNotifications,
@@ -146,15 +151,16 @@ export const updateNotificationSettings = mutation({
 });
 
 /**
- * Update theme/appearance settings
+ * Update theme/appearance settings — caller always updates their own
  */
 export const updateThemeSettings = mutation({
   args: {
-    userId: v.id('users'),
     theme: v.string(),
   },
   handler: async (ctx, args) => {
-    const settings = await getOrCreateSettings(ctx, args.userId);
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const settings = await getOrCreateSettings(ctx, caller._id);
     await ctx.db.patch(settings._id, { theme: args.theme });
     return { success: true };
   },
@@ -165,11 +171,12 @@ export const updateThemeSettings = mutation({
  */
 export const updateSessionProfile = mutation({
   args: {
-    userId: v.id('users'),
     profile: v.any(),
   },
   handler: async (ctx, args) => {
-    const settings = await getOrCreateSettings(ctx, args.userId);
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const settings = await getOrCreateSettings(ctx, caller._id);
     const patch: Record<string, unknown> = {};
     if (args.profile.language !== undefined) patch.language = args.profile.language;
     if (args.profile.timezone !== undefined) patch.timezone = args.profile.timezone;
@@ -190,6 +197,11 @@ export const updateSessionProfile = mutation({
 export const getOrganizationSettings = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (!isSuperadmin(caller) && caller.organizationId !== args.organizationId) {
+      throw new Error('Access denied');
+    }
     const org = await ctx.db.get(args.organizationId);
     if (!org) throw new Error('Organization not found');
     return {

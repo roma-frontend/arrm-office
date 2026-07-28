@@ -10,7 +10,6 @@ import { mutation } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { SMALL_LIST_CAP } from '../lib/limits';
 import { isSuperadmin } from '../lib/auth';
-import { requireUser } from '../lib/rbac';
 
 /** Request a driver for a trip */
 export const requestDriver = mutation({
@@ -208,18 +207,24 @@ export const respondToDriverRequest = mutation({
   args: {
     requestId: v.id('driverRequests'),
     driverId: v.id('drivers'),
-    userId: v.id('users'),
     approved: v.boolean(),
     declineReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { requestId, driverId, userId, approved, declineReason } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { requestId, driverId, approved, declineReason } = args;
+    const userId = caller._id;
     const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
 
     // Verify this is the correct driver
     if (request.driverId !== driverId) {
-      throw new Error('Unauthorized');
+      throw new Error('Unauthorized: this request is not assigned to this driver');
+    }
+    const driverRecord = await ctx.db.get(driverId);
+    if (!driverRecord || driverRecord.userId !== userId) {
+      throw new Error('Only the assigned driver can respond to this request');
     }
 
     // Update request status
@@ -293,7 +298,6 @@ export const respondToDriverRequest = mutation({
 export const updateDriverRequest = mutation({
   args: {
     requestId: v.id('driverRequests'),
-    userId: v.id('users'),
     driverId: v.optional(v.id('drivers')),
     startTime: v.optional(v.number()),
     endTime: v.optional(v.number()),
@@ -308,15 +312,15 @@ export const updateDriverRequest = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const request = await ctx.db.get(args.requestId);
     if (!request) throw new Error('Request not found');
 
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error('User not found');
-    const userIsSuperadmin = isSuperadmin(user);
-    const isAdmin = user.role === 'admin';
+    const userIsSuperadmin = isSuperadmin(caller);
+    const isAdmin = caller.role === 'admin';
 
-    if (request.requesterId !== args.userId && !userIsSuperadmin && !isAdmin) {
+    if (request.requesterId !== caller._id && !userIsSuperadmin && !isAdmin) {
       throw new Error('Only the requester can edit this booking');
     }
 
@@ -370,7 +374,7 @@ export const updateDriverRequest = mutation({
     // Audit log: driver request updated
     await ctx.db.insert('auditLogs', {
       organizationId: request.organizationId,
-      userId: args.userId,
+      userId: caller._id,
       action: 'driver_request_updated',
       target: args.requestId,
       details: JSON.stringify({
@@ -409,10 +413,12 @@ export const updateDriverRequest = mutation({
 export const cancelDriverRequest = mutation({
   args: {
     requestId: v.id('driverRequests'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { requestId, userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { requestId } = args;
+    const userId = caller._id;
     const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.requesterId !== userId) throw new Error('Unauthorized');
@@ -425,7 +431,7 @@ export const cancelDriverRequest = mutation({
     // Audit log: driver request cancelled
     await ctx.db.insert('auditLogs', {
       organizationId: request.organizationId,
-      userId,
+      userId: caller._id,
       action: 'driver_request_cancelled',
       target: requestId,
       details: JSON.stringify({
@@ -444,18 +450,17 @@ export const cancelDriverRequest = mutation({
 export const deleteDriverRequest = mutation({
   args: {
     requestId: v.id('driverRequests'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const request = await ctx.db.get(args.requestId);
     if (!request) throw new Error('Request not found');
 
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error('User not found');
-    const userIsSuperadmin = isSuperadmin(user);
-    const isAdmin = user.role === 'admin';
+    const userIsSuperadmin = isSuperadmin(caller);
+    const isAdmin = caller.role === 'admin';
 
-    if (request.requesterId !== args.userId && !userIsSuperadmin && !isAdmin) {
+    if (request.requesterId !== caller._id && !userIsSuperadmin && !isAdmin) {
       throw new Error('Only the requester can delete this booking');
     }
 
@@ -481,14 +486,14 @@ export const deleteDriverRequest = mutation({
     await ctx.db.patch(args.requestId, {
       status: 'cancelled',
       cancelledAt: Date.now(),
-      cancelledBy: args.userId,
+      cancelledBy: caller._id,
       cancellationReason: 'Cancelled by requester',
     });
 
     // Audit log: driver request deleted
     await ctx.db.insert('auditLogs', {
       organizationId: request.organizationId,
-      userId: args.userId,
+      userId: caller._id,
       action: 'driver_request_deleted',
       target: args.requestId,
       details: JSON.stringify({
@@ -507,11 +512,13 @@ export const deleteDriverRequest = mutation({
 export const reassignDriverRequest = mutation({
   args: {
     requestId: v.id('driverRequests'),
-    userId: v.id('users'),
     newDriverId: v.id('drivers'),
   },
   handler: async (ctx, args) => {
-    const { requestId, userId, newDriverId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { requestId, newDriverId } = args;
+    const userId = caller._id;
     const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.requesterId !== userId) throw new Error('Unauthorized');
@@ -556,7 +563,7 @@ export const reassignDriverRequest = mutation({
     // Audit log: driver request reassigned
     await ctx.db.insert('auditLogs', {
       organizationId: request.organizationId,
-      userId,
+      userId: caller._id,
       action: 'driver_request_reassigned',
       target: requestId,
       details: JSON.stringify({
@@ -570,11 +577,11 @@ export const reassignDriverRequest = mutation({
     });
 
     // Notify new driver
-    const driver = await ctx.db.get(newDriverId);
-    if (driver) {
+    const driverRecord = await ctx.db.get(newDriverId);
+    if (driverRecord) {
       await ctx.db.insert('notifications', {
         organizationId: request.organizationId,
-        userId: driver.userId,
+        userId: driverRecord.userId,
         type: 'driver_request',
         title: 'New Driver Request (Reassigned)',
         message: `${request.tripInfo.purpose}: ${request.tripInfo.from} → ${request.tripInfo.to}`,

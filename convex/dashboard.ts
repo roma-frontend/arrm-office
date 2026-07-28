@@ -14,45 +14,42 @@ import type { Id, Doc } from './_generated/dataModel';
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── My Tasks ────────────────────────────────────────────────────────────────
-// Active tasks (not completed/cancelled) assigned to the user, ordered by the
+// Active tasks (not completed/cancelled) assigned to the caller, ordered by the
 // nearest deadline. Tasks without a deadline sort after dated ones.
+// The caller is always the authenticated user; the userId arg is NOT accepted
+// from the client to prevent data leakage across the org.
 export const getMyTasks = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
-    const employee = await ctx.db.get(args.userId);
-    if (!employee) return [];
+  args: {},
+  handler: async (ctx, _args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const userId = caller._id as Id<'users'>;
 
     // Pull the user's most recent tasks via the compound index, then keep the
     // ones that still need attention.
     const [pending, inProgress, review] = await Promise.all([
       ctx.db
         .query('tasks')
-        .withIndex('by_assigned_status', (q) =>
-          q.eq('assignedTo', args.userId).eq('status', 'pending'),
-        )
+        .withIndex('by_assigned_status', (q) => q.eq('assignedTo', userId).eq('status', 'pending'))
         .take(SMALL_LIST_CAP),
       ctx.db
         .query('tasks')
         .withIndex('by_assigned_status', (q) =>
-          q.eq('assignedTo', args.userId).eq('status', 'in_progress'),
+          q.eq('assignedTo', userId).eq('status', 'in_progress'),
         )
         .take(SMALL_LIST_CAP),
       ctx.db
         .query('tasks')
-        .withIndex('by_assigned_status', (q) =>
-          q.eq('assignedTo', args.userId).eq('status', 'review'),
-        )
+        .withIndex('by_assigned_status', (q) => q.eq('assignedTo', userId).eq('status', 'review'))
         .take(SMALL_LIST_CAP),
     ]);
 
     const active = [...pending, ...inProgress, ...review];
 
     // Scope to the caller's organization (superadmin sees everything).
-    const scoped = isSuperadmin(employee)
+    const scoped = isSuperadmin(caller)
       ? active
-      : active.filter(
-          (t) => !employee.organizationId || t.organizationId === employee.organizationId,
-        );
+      : active.filter((t) => !caller.organizationId || t.organizationId === caller.organizationId);
 
     // Sort by soonest deadline; undated tasks go last, tie-break on creation.
     scoped.sort((a, b) => {

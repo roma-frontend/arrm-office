@@ -8,12 +8,13 @@ import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
+import { getAuthCaller } from '../lib/getAuthCaller';
+import { isSuperadmin } from '../lib/auth';
 
 /** Create a recurring trip template */
 export const createRecurringTrip = mutation({
   args: {
     organizationId: v.id('organizations'),
-    userId: v.id('users'),
     driverId: v.id('drivers'),
     tripInfo: v.object({
       from: v.string(),
@@ -31,9 +32,11 @@ export const createRecurringTrip = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const id = await ctx.db.insert('recurringTrips', {
       organizationId: args.organizationId,
-      userId: args.userId,
+      userId: caller._id,
       driverId: args.driverId,
       tripInfo: args.tripInfo,
       schedule: args.schedule,
@@ -45,11 +48,13 @@ export const createRecurringTrip = mutation({
   },
 });
 
-/** Get recurring trips for a user */
+/** Get recurring trips for the caller */
 export const getRecurringTrips = query({
-  args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
-    const { userId } = args;
+  args: {},
+  handler: async (ctx, _args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const userId = caller._id;
     const trips = await ctx.db
       .query('recurringTrips')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -74,14 +79,15 @@ export const getRecurringTrips = query({
 export const toggleRecurringTrip = mutation({
   args: {
     recurringTripId: v.id('recurringTrips'),
-    userId: v.id('users'),
     isActive: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const { recurringTripId, userId, isActive } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { recurringTripId, isActive } = args;
     const trip = await ctx.db.get(recurringTripId);
     if (!trip) throw new Error('Recurring trip not found');
-    if (trip.userId !== userId) throw new Error('Unauthorized');
+    if (trip.userId !== caller._id) throw new Error('Unauthorized');
     await ctx.db.patch(recurringTripId, { isActive, updatedAt: Date.now() });
     return { success: true };
   },
@@ -91,13 +97,14 @@ export const toggleRecurringTrip = mutation({
 export const deleteRecurringTrip = mutation({
   args: {
     recurringTripId: v.id('recurringTrips'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { recurringTripId, userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { recurringTripId } = args;
     const trip = await ctx.db.get(recurringTripId);
     if (!trip) throw new Error('Recurring trip not found');
-    if (trip.userId !== userId) throw new Error('Unauthorized');
+    if (trip.userId !== caller._id) throw new Error('Unauthorized');
     await ctx.db.delete(recurringTripId);
     return { success: true };
   },
@@ -107,7 +114,15 @@ export const deleteRecurringTrip = mutation({
 export const generateRecurringRequests = mutation({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (caller.role !== 'admin' && !isSuperadmin(caller)) {
+      throw new Error('Only admins can generate recurring requests');
+    }
     const { organizationId } = args;
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) {
+      throw new Error('Access denied: cross-organization operation');
+    }
     const today = new Date();
     const dayOfWeek = today.getDay();
     const todayStr = today.toISOString().slice(0, 10);

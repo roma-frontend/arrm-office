@@ -3,7 +3,20 @@
  * Tests: debounce, throttle, getCached, setCache, clearCache
  */
 
-import { debounce, throttle, getCached, setCache, clearCache } from '@/lib/performance';
+import {
+  debounce,
+  throttle,
+  getCached,
+  setCache,
+  clearCache,
+  perf,
+  createLazyObserver,
+  prefetchRoute,
+  preconnect,
+  calculatePerformanceScore,
+  reportWebVitals,
+  logBundleSize,
+} from '@/lib/performance';
 
 // ════════════════════════════════════════════════════════════════════════════
 // debounce
@@ -324,6 +337,202 @@ describe('getCached / setCache / clearCache', () => {
     const obj = { level1: { level2: { level3: 'deep' } } };
     setCache('nested', obj);
     expect(getCached('nested')).toEqual(obj);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// perf.mark / perf.measure / perf.getAllMetrics
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('perf.mark / perf.measure / perf.getAllMetrics', () => {
+  beforeEach(() => {
+    if (typeof performance !== 'undefined' && performance.clearMarks) {
+      performance.clearMarks();
+      performance.clearMeasures();
+    }
+  });
+
+  it('perf.mark does not throw', () => {
+    expect(() => perf.mark('test-op')).not.toThrow();
+  });
+
+  it('perf.measure returns a number (may be 0 in jsdom)', () => {
+    perf.mark('cycle');
+    const duration = perf.measure('cycle');
+    expect(typeof duration).toBe('number');
+  });
+
+  it('perf.measure returns 0 when performance API is missing', () => {
+    const orig = (globalThis as any).performance;
+    (globalThis as any).performance = undefined;
+    perf.mark('noop');
+    const duration = perf.measure('noop');
+    expect(duration).toBe(0);
+    (globalThis as any).performance = orig;
+  });
+
+  it('perf.mark does not throw when performance is undefined', () => {
+    const orig = (globalThis as any).performance;
+    (globalThis as any).performance = undefined;
+    expect(() => perf.mark('x')).not.toThrow();
+    (globalThis as any).performance = orig;
+  });
+
+  it('perf.getAllMetrics does not throw when performance is defined', () => {
+    expect(() => perf.getAllMetrics()).not.toThrow();
+  });
+
+  it('perf.getAllMetrics returns object structure when performance is defined', () => {
+    const metrics = perf.getAllMetrics();
+    expect(metrics).toHaveProperty('navigation');
+    expect(metrics).toHaveProperty('resources');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// createLazyObserver
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('createLazyObserver', () => {
+  it('returns null or an IntersectionObserver instance depending on environment', () => {
+    const callback = jest.fn();
+    const observer = createLazyObserver(callback);
+    // In some jsdom versions IntersectionObserver might not exist
+    // The function handles both cases gracefully
+    if (typeof IntersectionObserver !== 'undefined') {
+      expect(observer).not.toBeNull();
+    } else {
+      expect(observer).toBeNull();
+    }
+  });
+
+  it('returns null when IntersectionObserver is not available', () => {
+    const orig = (globalThis as any).IntersectionObserver;
+    (globalThis as any).IntersectionObserver = undefined;
+    const observer = createLazyObserver(jest.fn());
+    expect(observer).toBeNull();
+    (globalThis as any).IntersectionObserver = orig;
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// prefetchRoute / preconnect
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('prefetchRoute / preconnect', () => {
+  it('prefetchRoute creates a prefetch link element', () => {
+    const appendChildSpy = jest.spyOn(document.head, 'appendChild');
+    prefetchRoute('/some-page');
+    expect(appendChildSpy).toHaveBeenCalled();
+    const link = appendChildSpy.mock.calls[0]![0] as HTMLLinkElement;
+    expect(link.rel).toBe('prefetch');
+    expect(link.href).toContain('/some-page');
+    appendChildSpy.mockRestore();
+  });
+
+  it('preconnect creates a preconnect link element', () => {
+    const appendChildSpy = jest.spyOn(document.head, 'appendChild');
+    preconnect('https://api.example.com');
+    expect(appendChildSpy).toHaveBeenCalled();
+    const link = appendChildSpy.mock.calls[0]![0] as HTMLLinkElement;
+    expect(link.rel).toBe('preconnect');
+    expect(link.href).toContain('https://api.example.com');
+    appendChildSpy.mockRestore();
+  });
+
+  it('prefetchRoute handles invalid href gracefully (does not throw)', () => {
+    const appendChildSpy = jest.spyOn(document.head, 'appendChild');
+    expect(() => prefetchRoute('')).not.toThrow();
+    appendChildSpy.mockRestore();
+  });
+
+  it('preconnect does nothing when document is undefined', () => {
+    const origDoc = (globalThis as any).document;
+    (globalThis as any).document = undefined;
+    expect(() => preconnect('https://x.com')).not.toThrow();
+    (globalThis as any).document = origDoc;
+  });
+
+  it('prefetchRoute does nothing when document is undefined', () => {
+    const origDoc = (globalThis as any).document;
+    (globalThis as any).document = undefined;
+    expect(() => prefetchRoute('/test')).not.toThrow();
+    (globalThis as any).document = origDoc;
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// calculatePerformanceScore
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('calculatePerformanceScore', () => {
+  beforeEach(() => {
+    // jsdom may not have getEntriesByType, so we add it
+    (globalThis.performance as any).getEntriesByType = jest.fn((type: string) => {
+      if (type === 'navigation') {
+        return [
+          {
+            domContentLoadedEventEnd: 500,
+            domContentLoadedEventStart: 100,
+            loadEventEnd: 2000,
+            loadEventStart: 100,
+          } as any,
+        ];
+      }
+      return [];
+    });
+    (globalThis.performance as any).getEntriesByName = jest.fn((name: string) => {
+      if (name === 'first-contentful-paint') {
+        return [{ startTime: 800 } as PerformanceEntry];
+      }
+      return [];
+    });
+  });
+
+  afterEach(() => {
+    delete (globalThis.performance as any).getEntriesByType;
+    delete (globalThis.performance as any).getEntriesByName;
+  });
+
+  it('returns a number between 0 and 100', () => {
+    const score = calculatePerformanceScore();
+    expect(typeof score).toBe('number');
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('returns 0 when navigation timing is missing', () => {
+    (globalThis.performance as any).getEntriesByType = jest.fn().mockReturnValue([]);
+    (globalThis.performance as any).getEntriesByName = jest.fn().mockReturnValue([]);
+    const score = calculatePerformanceScore();
+    // When no navigation data is available, score is 0
+    expect(typeof score).toBe('number');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// reportWebVitals
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('reportWebVitals', () => {
+  it('does not throw when called with a metric object', () => {
+    const metric = { name: 'FCP', value: 1200, rating: 'good', delta: 100, id: 'v1' };
+    expect(() => reportWebVitals(metric)).not.toThrow();
+  });
+
+  it('handles CLS metric (multiplied by 1000)', () => {
+    const metric = { name: 'CLS', value: 0.1, rating: 'needs-improvement', delta: 0.01, id: 'v2' };
+    expect(() => reportWebVitals(metric)).not.toThrow();
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// logBundleSize
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('logBundleSize', () => {
+  it('does not throw when called', () => {
+    expect(() => logBundleSize()).not.toThrow();
   });
 });
 

@@ -177,6 +177,8 @@
   },
   "employeeProfile": {
     "aiScore": "AI-Bewertung",
+    "punctuality": "Pünktlichkeit",
+    "hoursWorked": "Std.",
     "latestPerformanceRating": "Letzte Leistungsbewertung",
     "efficiencyBreakdown": "Effizienzaufgliederung",
     "ratePerformance": "Leistung bewerten",

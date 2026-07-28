@@ -704,38 +704,44 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 my-4 sm:my-6">
         {[
           {
+            id: 'total',
             label: t('tasksClient.total'),
             value: stats.total,
             color: 'from-[var(--text-secondary)] to-[var(--text-muted)]',
           },
           {
+            id: 'pending',
             label: t('tasksClient.pending'),
             value: stats.pending,
             color: 'from-[var(--text-muted)] to-[var(--text-muted)]',
           },
           {
+            id: 'inProgress',
             label: t('tasksClient.inProgress'),
             value: stats.inProgress,
             color: 'from-blue-400 to-blue-500',
           },
           {
+            id: 'inReview',
             label: t('tasksClient.inReview'),
             value: stats.review,
             color: 'from-amber-400 to-amber-500',
           },
           {
+            id: 'completed',
             label: t('tasksClient.completed'),
             value: stats.completed,
             color: 'from-emerald-400 to-emerald-500',
           },
           {
+            id: 'overdue',
             label: t('tasksClient.overdue'),
             value: stats.overdue,
             color: 'from-rose-400 to-rose-500',
           },
         ].map((s) => (
           <div
-            key={s.label}
+            key={s.id}
             className="bg-(--card) rounded-xl sm:rounded-2xl border border-(--border) shadow-sm p-3 sm:p-4 text-center"
           >
             <p

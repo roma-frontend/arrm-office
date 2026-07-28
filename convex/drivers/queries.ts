@@ -9,6 +9,8 @@ import { query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { getAuthCaller } from '../lib/getAuthCaller';
+import { isSuperadmin } from '../lib/auth';
 
 /** Get all available drivers - optionally scoped to organization */
 export const getAvailableDrivers = query({
@@ -16,7 +18,17 @@ export const getAvailableDrivers = query({
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
-    const { organizationId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    let { organizationId } = args;
+    // If no org specified, default to caller's org
+    if (!organizationId && caller.organizationId) {
+      organizationId = caller.organizationId;
+    }
+    if (!organizationId) return [];
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) {
+      return [];
+    }
     let drivers;
     if (organizationId) {
       drivers = await ctx.db
@@ -60,9 +72,15 @@ export const getDriverById = query({
     driverId: v.id('drivers'),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
     const { driverId } = args;
     const driver = await ctx.db.get(driverId);
     if (!driver) return null;
+    // Verify caller belongs to the same org
+    if (!isSuperadmin(caller) && caller.organizationId !== driver.organizationId) {
+      return null;
+    }
 
     const user = await ctx.db.get(driver.userId);
     const profile = await getProfile(ctx, driver.userId);
@@ -79,10 +97,17 @@ export const getDriverById = query({
 /** Get driver record by userId */
 export const getDriverByUserId = query({
   args: {
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
-    const { userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    // If no userId specified, use the caller's ID
+    const userId = args.userId ?? caller._id;
+    // Non-superadmin can only see their own driver record
+    if (!isSuperadmin(caller) && userId !== caller._id) {
+      return null;
+    }
     const driver = await ctx.db
       .query('drivers')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -110,7 +135,15 @@ export const getDriverSchedule = query({
     endTime: v.number(),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
     const { driverId, startTime, endTime } = args;
+    const driver = await ctx.db.get(driverId);
+    if (!driver) return [];
+    // Verify org scope
+    if (!isSuperadmin(caller) && caller.organizationId !== driver.organizationId) {
+      return [];
+    }
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
@@ -144,7 +177,15 @@ export const isDriverAvailable = query({
     endTime: v.number(),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { available: false, reason: 'not_authenticated' };
     const { driverId, startTime, endTime } = args;
+    const driverRecord = await ctx.db.get(driverId);
+    if (!driverRecord) return { available: false, reason: 'driver_not_found' };
+    // Verify org scope
+    if (!isSuperadmin(caller) && caller.organizationId !== driverRecord.organizationId) {
+      return { available: false, reason: 'not_authenticated' };
+    }
     // Check for overlapping schedules
     const overlapping = await ctx.db
       .query('driverSchedules')
@@ -169,13 +210,7 @@ export const isDriverAvailable = query({
       };
     }
 
-    // Check driver's working hours
-    const driver = await ctx.db.get(driverId);
-    if (!driver) {
-      return { available: false, reason: 'driver_not_found' };
-    }
-
-    if (!driver.isAvailable) {
+    if (!driverRecord.isAvailable) {
       return { available: false, reason: 'driver_unavailable' };
     }
 
@@ -183,7 +218,7 @@ export const isDriverAvailable = query({
     const startDate = new Date(startTime);
     const dayOfWeek = startDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-    if (!driver.workingHours.workingDays.includes(dayOfWeek)) {
+    if (!driverRecord.workingHours.workingDays.includes(dayOfWeek)) {
       return { available: false, reason: 'not_working_day' };
     }
 
@@ -191,8 +226,10 @@ export const isDriverAvailable = query({
     const startMinute = startDate.getMinutes();
     const timeInMinutes = startHour * 60 + startMinute;
 
-    const [workStartHour, workStartMin] = driver.workingHours.startTime.split(':').map(Number);
-    const [workEndHour, workEndMin] = driver.workingHours.endTime.split(':').map(Number);
+    const [workStartHour, workStartMin] = driverRecord.workingHours.startTime
+      .split(':')
+      .map(Number);
+    const [workEndHour, workEndMin] = driverRecord.workingHours.endTime.split(':').map(Number);
 
     const workStartMinutes = (workStartHour ?? 0) * 60 + (workStartMin ?? 0);
     const workEndMinutes = (workEndHour ?? 0) * 60 + (workEndMin ?? 0);
@@ -220,7 +257,7 @@ export const isDriverAvailable = query({
       )
       .take(MAX_PAGE_SIZE);
 
-    if (tripsToday.length >= driver.maxTripsPerDay) {
+    if (tripsToday.length >= driverRecord.maxTripsPerDay) {
       return { available: false, reason: 'max_trips_reached' };
     }
 
@@ -236,10 +273,16 @@ export const isDriverOnLeave = query({
     endTime: v.number(),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { onLeave: false, leave: null };
     const { driverId, startTime, endTime } = args;
     // Get the driver's userId
     const driver = await ctx.db.get(driverId);
     if (!driver) {
+      return { onLeave: false, leave: null };
+    }
+    // Verify org scope
+    if (!isSuperadmin(caller) && caller.organizationId !== driver.organizationId) {
       return { onLeave: false, leave: null };
     }
 
@@ -290,7 +333,12 @@ export const getAlternativeDrivers = query({
     excludeDriverId: v.optional(v.id('drivers')),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
     const { organizationId, startTime, endTime, excludeDriverId } = args;
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) {
+      return [];
+    }
     // Get all available drivers
     const allDrivers = await ctx.db
       .query('drivers')
@@ -377,7 +425,12 @@ export const getOrgDriverSchedules = query({
     endTime: v.number(),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
     const { organizationId, startTime, endTime } = args;
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) {
+      return [];
+    }
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
@@ -418,7 +471,12 @@ export const getFilteredDrivers = query({
     sortBy: v.optional(v.union(v.literal('rating'), v.literal('trips'), v.literal('name'))),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
     const { organizationId, minCapacity, tripStartTime, tripEndTime, sortBy } = args;
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) {
+      return [];
+    }
     const drivers = await ctx.db
       .query('drivers')
       .withIndex('by_org_available', (q) =>

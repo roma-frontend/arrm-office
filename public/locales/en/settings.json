@@ -421,5 +421,110 @@
     "shortBreak": "Short Break",
     "longBreak": "Long Break",
     "productivityTip": "💡 25 min focus + 5 min break = peak productivity"
+  },
+  "nav": {
+    "projects": "Projects",
+    "profile": "Profile",
+    "leaveSettings": "Leave Settings",
+    "holidays": "Holidays",
+    "leaveBalances": "Leave Balances",
+    "integrations": "Integrations"
+  },
+  "admin": {
+    "leaveSettings": {
+      "title": "Leave Type Settings",
+      "subtitle": "Configure leave types, approval workflows, and balances",
+      "active": "Active",
+      "requiresDoc": "Requires Documentation",
+      "balanceEditable": "Balance Editable",
+      "daysPerYear": "Days Per Year",
+      "approvalChain": "Approval Chain (ordered)",
+      "defaultDays": "Default: {{days}} days/year",
+      "saved": "Leave type configuration saved"
+    },
+    "holidays": {
+      "title": "Holiday Management",
+      "subtitle": "Manage public holidays and internal non-working days",
+      "add": "Add Holiday",
+      "public": "Public Holidays",
+      "internal": "Internal Non-Working Days",
+      "noHolidays": "No public holidays configured",
+      "noInternal": "No internal non-working days configured",
+      "recurring": "Recurring",
+      "create": "Create Holiday",
+      "edit": "Edit Holiday",
+      "name": "Holiday Name",
+      "date": "Date",
+      "type": "Type",
+      "description": "Description (optional)",
+      "required": "Name and date are required",
+      "created": "Holiday created",
+      "updated": "Holiday updated",
+      "deleted": "Holiday deleted"
+    },
+    "leaveBalances": {
+      "title": "Leave Balances",
+      "subtitle": "View and edit employee leave balances",
+      "reason": "Reason for adjustment *",
+      "reasonPlaceholder": "e.g. Annual balance accrual, correction",
+      "reasonRequired": "Please provide a reason for the adjustment",
+      "saved": "Balances updated successfully",
+      "editTitle": "Edit Balances",
+      "noEmployees": "No employees found"
+    },
+    "integrations": {
+      "title": "Integrations",
+      "subtitle": "Connect third-party services to extend platform capabilities",
+      "saved": "{{provider}} configuration saved",
+      "connected": "Connected",
+      "error": "Sync error",
+      "notConnected": "Not connected",
+      "sync": "Sync Now",
+      "syncStarted": "Sync started",
+      "viewDocs": "View documentation"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Manage projects, track progress, and collaborate",
+    "create": "New Project",
+    "createTitle": "Create Project",
+    "name": "Project Name",
+    "namePlaceholder": "e.g. Q4 Product Launch",
+    "description": "Description",
+    "descPlaceholder": "Brief project overview...",
+    "priority": "Priority",
+    "deadline": "Deadline",
+    "total": "Total",
+    "active": "Active",
+    "planning": "Planning",
+    "completed": "Completed",
+    "onHold": "On Hold",
+    "noProjects": "No projects found",
+    "createFirst": "Create your first project",
+    "statusUpdated": "Status updated",
+    "deleteConfirm": "Delete this project? All linked tasks will be unlinked.",
+    "deleted": "Project deleted",
+    "tasks": "Tasks",
+    "members": "Members",
+    "noTasks": "No tasks yet",
+    "addTask": "Add Task",
+    "overallProgress": "Overall Progress",
+    "created": "Project created",
+    "allStatuses": "All Statuses",
+    "status": {
+      "planning": "Planning",
+      "active": "Active",
+      "on_hold": "On Hold",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "unassigned": "Unassigned"
   }
 }

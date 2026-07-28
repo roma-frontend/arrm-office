@@ -391,6 +391,7 @@ html.light {
   --primary: linear-gradient(135deg, rgb(37, 99, 235), rgb(96, 165, 250));
   --primary-hover: #1d4ed8;
   --primary-foreground: #ffffff;
+  --primary-rgb: 37, 99, 235;
 
   /* Tab active state */
   --tab-active-bg: #2563eb;
@@ -562,6 +563,7 @@ html.light {
   --primary: #3b82f6;
   --primary-hover: #2563eb;
   --primary-foreground: #ffffff;
+  --primary-rgb: 59, 130, 246;
 
   /* Tab active state */
   --tab-active-bg: #2563eb;

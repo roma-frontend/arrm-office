@@ -7,20 +7,25 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
+import { getAuthCaller } from '../lib/getAuthCaller';
+import { isSuperadmin } from '../lib/auth';
 
 /** Start a new shift for a driver */
 export const startShift = mutation({
   args: {
     driverId: v.id('drivers'),
-    userId: v.id('users'),
     organizationId: v.id('organizations'),
     scheduledStartTime: v.optional(v.number()),
     scheduledEndTime: v.optional(v.number()),
   },
-  handler: async (
-    ctx,
-    { driverId, userId, organizationId, scheduledStartTime, scheduledEndTime },
-  ) => {
+  handler: async (ctx, { driverId, organizationId, scheduledStartTime, scheduledEndTime }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const driverRecord = await ctx.db.get(driverId);
+    if (!driverRecord || driverRecord.userId !== caller._id) {
+      throw new Error('Only the driver can start a shift');
+    }
+    const userId = caller._id;
     const existingShift = await ctx.db
       .query('driverShifts')
       .withIndex('by_driver_status', (q) => q.eq('driverId', driverId).eq('status', 'active'))
@@ -62,12 +67,18 @@ export const startShift = mutation({
 export const endShift = mutation({
   args: {
     driverId: v.id('drivers'),
-    userId: v.id('users'),
     breakTime: v.optional(v.number()),
     driverNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { driverId, userId, breakTime, driverNotes } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { driverId, breakTime, driverNotes } = args;
+    const driverRecord = await ctx.db.get(driverId);
+    if (!driverRecord || driverRecord.userId !== caller._id) {
+      throw new Error('Only the driver can end a shift');
+    }
+    const userId = caller._id;
     const shift = await ctx.db
       .query('driverShifts')
       .withIndex('by_driver_status', (q) => q.eq('driverId', driverId).eq('status', 'active'))
@@ -113,10 +124,15 @@ export const endShift = mutation({
 export const pauseShift = mutation({
   args: {
     driverId: v.id('drivers'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { driverId, userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { driverId } = args;
+    const driverRecord = await ctx.db.get(driverId);
+    if (!driverRecord || driverRecord.userId !== caller._id) {
+      throw new Error('Only the driver can pause a shift');
+    }
     const shift = await ctx.db
       .query('driverShifts')
       .withIndex('by_driver_status', (q) => q.eq('driverId', driverId).eq('status', 'active'))
@@ -139,10 +155,15 @@ export const pauseShift = mutation({
 export const resumeShift = mutation({
   args: {
     driverId: v.id('drivers'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { driverId, userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const { driverId } = args;
+    const driverRecord = await ctx.db.get(driverId);
+    if (!driverRecord || driverRecord.userId !== caller._id) {
+      throw new Error('Only the driver can resume a shift');
+    }
     const shift = await ctx.db
       .query('driverShifts')
       .withIndex('by_driver_status', (q) => q.eq('driverId', driverId).eq('status', 'paused'))
@@ -169,9 +190,16 @@ export const updateShiftTripCount = mutation({
     durationMinutes: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const { shiftId, distanceKm, durationMinutes } = args;
     const shift = await ctx.db.get(shiftId);
     if (!shift) throw new Error('Shift not found');
+    // Only the driver can update their shift trip count
+    const driverRecord = await ctx.db.get(shift.driverId);
+    if (!driverRecord || driverRecord.userId !== caller._id) {
+      throw new Error('Only the driver can update shift trip count');
+    }
 
     await ctx.db.patch(shiftId, {
       tripsCompleted: (shift.tripsCompleted || 0) + 1,
@@ -191,7 +219,17 @@ export const getShiftHistory = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const { driverId, limit } = args;
+    // Only the driver or an admin can view shift history
+    const driverRecord = await ctx.db.get(driverId);
+    if (
+      !driverRecord ||
+      (driverRecord.userId !== caller._id && caller.role !== 'admin' && !isSuperadmin(caller))
+    ) {
+      throw new Error('Only the driver or an admin can view shift history');
+    }
     const shifts = await ctx.db
       .query('driverShifts')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
@@ -212,7 +250,12 @@ export const getShiftStatistics = query({
     period: v.union(v.literal('week'), v.literal('month'), v.literal('year')),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
     const { organizationId, period } = args;
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) {
+      return null;
+    }
     const now = Date.now();
     let periodStart: number;
 

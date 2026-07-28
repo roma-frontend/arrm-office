@@ -3,12 +3,19 @@
 # 🏢 Strata Platform
 
 [![Build](https://img.shields.io/github/actions/workflow/status/roma-frontend/hr-project/ci.yml?branch=main&label=CI%2FCD)](https://github.com/roma-frontend/hr-project/actions)
-[![Coverage](https://img.shields.io/badge/coverage-baseline_10%25-yellow)]()
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)]()
-[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)]()
-[![Convex](https://img.shields.io/badge/Convex-Real--time_DB-FF6F00)]()
-[![License](https://img.shields.io/badge/license-MIT-blue)]()
-[![Vercel](<https://img.shields.io/badge/deployed_on-Vercel_(EU)-000000?logo=vercel&logoColor=white>)](https://hr-project-sigma.vercel.app)
+[![Coverage](https://img.shields.io/badge/coverage-9.8%25-red?logo=vitest)](https://github.com/roma-frontend/hr-project/actions)
+[![Coverage](https://img.shields.io/endpoint?url=https://roma-frontend.github.io/hr-project/coverage-badge.json&logo=vitest&cacheSeconds=3600)](https://github.com/roma-frontend/hr-project/actions)
+[![codecov](https://codecov.io/gh/roma-frontend/hr-project/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/roma-frontend/hr-project)
+
+<!-- After setup, replace YOUR_CODECOV_TOKEN with the public badge token from codecov.io Settings → Badge token -->
+
+> ⚡ The second badge updates automatically after each `main` merge.
+> Enable **GitHub Pages** (Source: GitHub Actions) in repo settings to activate it.
+> [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)]()
+> [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)]()
+> [![Convex](https://img.shields.io/badge/Convex-Real--time_DB-FF6F00)]()
+> [![License](https://img.shields.io/badge/license-MIT-blue)]()
+> [![Vercel](<https://img.shields.io/badge/deployed_on-Vercel_(EU)-000000?logo=vercel&logoColor=white>)](https://hr-project-sigma.vercel.app)
 
 **All-in-One HR Management SaaS Platform**
 
@@ -319,25 +326,54 @@ hr-project/
 
 ## 🧪 Testing
 
-Current coverage thresholds enforced in CI (`jest.config.js`) are an early-stage
-baseline that is being raised over time, not the long-term target.
+Coverage thresholds are enforced in CI (`jest.config.js`) and ratcheted up
+as coverage improves. Coverage reports and badges are published to GitHub
+Pages on every merge to `main`.
 
-| Category               | Current gate | Target |
-| ---------------------- | ------------ | ------ |
-| **Statements**         | ≥ 10%        | ≥ 80%  |
-| **Branches**           | ≥ 5%         | ≥ 75%  |
-| **Functions**          | ≥ 10%        | ≥ 80%  |
-| **Lines**              | ≥ 10%        | ≥ 80%  |
-| **E2E Critical Paths** | 4 specs      | 100%   |
+| Metric         | Current gate | Target |
+| -------------- | ------------ | ------ |
+| **Lines**      | ≥ 9%         | ≥ 80%  |
+| **Branches**   | ≥ 6%         | ≥ 75%  |
+| **Functions**  | ≥ 8%         | ≥ 80%  |
+| **Statements** | ≥ 9%         | ≥ 80%  |
 
-Existing suites:
+> ⚡ Thresholds are auto-ratcheted after each `main` merge via
+> `scripts/ratchet-coverage.mjs`. Coverage history tracked on
+> [Codecov](https://codecov.io/gh/roma-frontend/hr-project).
+> Run `node scripts/ratchet-coverage.mjs --apply` to bump them manually.
 
-- **Unit (`src/__tests__/`)** — `jwt-utils`, `passwordValidation`, `security`, `riskScore`,
-  `error-handler`, `error-boundary`, `recruitment-emails`, `armenian-holidays`, `payrollUtils`,
-  `restricted-org`, `stringUtils`, `types` (~255 assertions).
-- **E2E (`e2e/`)** — `auth.spec`, `dashboard.spec`, `leaves.spec`, `tasks.spec` (Playwright).
+### Runs on every PR
 
-Add tests alongside features in `src/__tests__/<area>.test.ts` or `e2e/<flow>.spec.ts`.
+| Job               | What it checks                                             |
+| ----------------- | ---------------------------------------------------------- |
+| `lint`            | ESLint + Prettier                                          |
+| `type-check`      | TypeScript `--noEmit`                                      |
+| `unit-tests`      | Jest + coverage thresholds + JUnit report + Codecov upload |
+| `build`           | Next.js production build                                   |
+| `e2e-tests`       | Playwright cross-browser E2E (Chrome + Firefox + WebKit)   |
+| `security-audit`  | npm audit + Dependency Review                              |
+| `codeql`          | GitHub CodeQL SAST                                         |
+| `coverage-report` | Posts coverage summary as a PR comment (PRs only)          |
+| `coverage-badge`  | Publishes live badge JSON to GitHub Pages (main only)      |
+
+> 💡 Enable **GitHub Pages** in your repo settings (Source: GitHub Actions)
+> and the second coverage badge will update automatically after each `main` merge.
+
+### Codecov History
+
+[Codecov](https://about.codecov.io/) tracks coverage over time and posts
+coverage summaries on every PR. To activate:
+
+1. Sign in at [codecov.io](https://codecov.io) with your GitHub account
+2. Add the `hr-project` repo
+3. Copy the **Repository Upload Token** from repo settings → add as `CODECOV_TOKEN` in GitHub Secrets
+4. Copy the **Badge token** from Codecov Settings → replace `YOUR_CODECOV_TOKEN` in the badge URL above
+5. The `unit-tests` job will upload coverage automatically on every CI run
+
+![Codecov graph](https://codecov.io/gh/roma-frontend/hr-project/graphs/sunburst.svg?token=YOUR_CODECOV_TOKEN)
+
+Existing test suites live in `src/__tests__/` (Jest) and `e2e/` (Playwright).
+Add tests alongside features: `src/__tests__/<area>.test.ts` or `e2e/<flow>.spec.ts`.
 
 ---
 

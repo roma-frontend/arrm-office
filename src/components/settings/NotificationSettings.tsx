@@ -15,7 +15,7 @@ export function NotificationSettings() {
   const { user } = useAuthStore();
   const userId = user?.id as Id<'users'> | undefined;
 
-  const settings = useQuery(api.settings.getUserSettings, userId ? { userId } : 'skip');
+  const settings = useQuery(api.settings.getUserSettings, userId ? {} : 'skip');
   const updateNotificationSettings = useMutation(api.settings.updateNotificationSettings);
 
   const [emailNotifs, setEmailNotifs] = useState(true);
@@ -32,7 +32,6 @@ export function NotificationSettings() {
   const persist = async (next: { email: boolean; push: boolean }) => {
     if (!userId) return;
     await updateNotificationSettings({
-      userId,
       notificationsEnabled: next.email || next.push,
       emailNotifications: next.email,
       pushNotifications: next.push,

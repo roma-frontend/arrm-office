@@ -59,14 +59,44 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
       - run: npm ci --prefer-offline --no-audit
-      - run: npm run test:coverage -- --ci --reporters=default --reporters=jest-junit
+      - name: Run tests with coverage
+        run: npm run test:coverage -- --ci --reporters=default --reporters=jest-junit
         env:
           JEST_JUNIT_OUTPUT_DIR: ./reports/junit
-      - uses: actions/upload-artifact@v4
+      - name: Extract coverage summary
+        id: coverage
+        run: |
+          node -e "
+            const j = require('./coverage/coverage-summary.json');
+            const t = j.total.lines;
+            const s = 
+              '### ☂️ Coverage Report\n' +
+              '| Metric | Coverage |\n' +
+              '|--------|---------|\n' +
+              '| **Lines** | ' + t.pct.toFixed(2) + '% (' + t.covered + '/' + t.total + ') |\n' +
+              '| **Functions** | ' + j.total.functions.pct.toFixed(2) + '% |\n' +
+              '| **Branches** | ' + j.total.branches.pct.toFixed(2) + '% |\n' +
+              '| **Statements** | ' + j.total.statements.pct.toFixed(2) + '% |\n';
+            require('fs').writeFileSync('coverage-summary.md', s);
+            // Also write a JSON-safe version for the step output
+            console.log(s);
+          "
+      - name: Upload LCOV report to Codecov
+        uses: codecov/codecov-action@v5
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+          verbose: false
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-report
-          path: coverage/
+          path: |
+            coverage/
+            coverage-summary.md
           retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
@@ -74,6 +104,122 @@ jobs:
           name: unit-test-results
           path: reports/junit/
           retention-days: 30
+
+  coverage-report:
+    name: "📊 Coverage Report"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [unit-tests]
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Download base branch coverage from main
+        uses: dawidd6/action-download-artifact@v3
+        continue-on-error: true
+        with:
+          branch: main
+          name: coverage-report
+          path: base-coverage
+          if_no_artifact_found: warn
+      - name: Download head coverage summary
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+      - name: Compare coverage with base branch
+        id: diff
+        run: |
+          if [ -f base-coverage/coverage/coverage-summary.json ]; then
+            node scripts/compare-coverage.mjs \
+              base-coverage/coverage/coverage-summary.json \
+              coverage/coverage-summary.json
+            echo "diff_available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No base coverage found — first run or base artifact missing."
+            echo "diff_available=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Combine coverage summary and diff
+        run: |
+          echo "$(cat coverage-summary.md)" > combined.md
+          echo "" >> combined.md
+          if [ -f coverage-diff.md ]; then
+            cat coverage-diff.md >> combined.md
+          else
+            echo "_Coverage diff: no base data available yet._" >> combined.md
+          fi
+      - name: Find or create coverage comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: '### ☂️ Coverage Report'
+      - name: Post or update coverage comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: combined.md
+          edit-mode: replace
+
+  coverage-badge:
+    name: "🏷️ Coverage Badge"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [unit-tests]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download coverage report from unit-tests
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+      - name: Check if coverage thresholds can be ratcheted up
+        id: ratchet
+        run: |
+          echo "Checking if coverage thresholds can be raised..."
+          if node scripts/ratchet-coverage.mjs; then
+            echo "ratchet_needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ratchet_needed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Apply coverage ratchet
+        if: steps.ratchet.outputs.ratchet_needed == 'true'
+        run: node scripts/ratchet-coverage.mjs --apply
+      - name: Create PR with threshold bump
+        if: steps.ratchet.outputs.ratchet_needed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          add-paths: jest.config.js
+          commit-message: 'chore: ratchet coverage thresholds'
+          title: '⚡ Auto-ratchet coverage thresholds'
+          body: |
+            Coverage has improved beyond the current thresholds.
+            This PR bumps them to the next level to prevent regression.
+
+            See `scripts/ratchet-coverage.mjs` for the ratchet formula
+            (threshold = floor(current_coverage - 1pp buffer)).
+          branch: chore/ratchet-coverage
+          labels: automated-pr, coverage
+          delete-branch: true
+      - name: Generate badge JSON
+        run: node scripts/generate-coverage-badge.mjs
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: badges/
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   # ═════════════════════════════════════════════════════════════
   # SECURITY — supply-chain + static analysis
@@ -284,4 +430,5 @@ jobs:
 
 # Required GitHub Secrets:
 # VERCEL_TOKEN, CONVEX_DEPLOYMENT, NEXT_PUBLIC_CONVEX_URL,
-# CONVEX_DEPLOY_KEY, SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT
+# CONVEX_DEPLOY_KEY, SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT,
+# CODECOV_TOKEN (Repository Upload Token from codecov.io)

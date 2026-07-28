@@ -22,3 +22,28 @@ if (typeof globalThis.PushManager === 'undefined') {
     }
   };
 }
+
+// ── Polyfill performance API methods missing in jsdom ────────────────────────
+if (typeof globalThis.performance !== 'undefined') {
+  if (typeof (globalThis.performance as any).mark !== 'function') {
+    (globalThis.performance as any).mark = jest.fn((name: string) => {
+      (globalThis.performance as any)._marks = (globalThis.performance as any)._marks || {};
+      (globalThis.performance as any)._marks[name] = performance.now();
+    });
+  }
+  if (typeof (globalThis.performance as any).clearMarks !== 'function') {
+    (globalThis.performance as any).clearMarks = jest.fn();
+  }
+  if (typeof (globalThis.performance as any).clearMeasures !== 'function') {
+    (globalThis.performance as any).clearMeasures = jest.fn();
+  }
+  if (typeof (globalThis.performance as any).getEntriesByType !== 'function') {
+    (globalThis.performance as any).getEntriesByType = jest.fn().mockReturnValue([]);
+  }
+  if (typeof (globalThis.performance as any).getEntriesByName !== 'function') {
+    (globalThis.performance as any).getEntriesByName = jest.fn().mockReturnValue([]);
+  }
+  if (typeof (globalThis.performance as any).measure !== 'function') {
+    (globalThis.performance as any).measure = jest.fn();
+  }
+}

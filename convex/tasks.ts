@@ -105,6 +105,8 @@ export const createTask = mutation({
     ),
     deadline: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
+    // Project linkage
+    projectId: v.optional(v.id('projects')),
     // Goals ↔ Tasks linkage
     objectiveId: v.optional(v.id('objectives')),
     keyResultId: v.optional(v.id('keyResults')),
@@ -138,6 +140,7 @@ export const createTask = mutation({
       priority: args.priority,
       deadline: args.deadline,
       tags: args.tags,
+      projectId: args.projectId,
       objectiveId: args.objectiveId,
       keyResultId: args.keyResultId,
       createdAt: now,
@@ -262,6 +265,7 @@ export const updateTask = mutation({
         v.literal('cancelled'),
       ),
     ),
+    projectId: v.optional(v.id('projects')),
   },
   handler: async (ctx, args) => {
     const { taskId, ...updates } = args;
