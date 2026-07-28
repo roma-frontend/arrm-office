@@ -39,6 +39,7 @@ import type * as conflicts from "../conflicts.js";
 import type * as conflicts_index from "../conflicts/index.js";
 import type * as conflicts_main from "../conflicts/main.js";
 import type * as corporate from "../corporate.js";
+import type * as crons from "../crons.js";
 import type * as dashboard from "../dashboard.js";
 import type * as departments from "../departments.js";
 import type * as documentLibrary from "../documentLibrary.js";
@@ -236,6 +237,7 @@ declare const fullApi: ApiFromModules<{
   "conflicts/index": typeof conflicts_index;
   "conflicts/main": typeof conflicts_main;
   corporate: typeof corporate;
+  crons: typeof crons;
   dashboard: typeof dashboard;
   departments: typeof departments;
   documentLibrary: typeof documentLibrary;

@@ -45,7 +45,7 @@ import {
 import dynamic from 'next/dynamic';
 import { playNotificationSound, sendBrowserNotification } from '@/lib/notificationSound';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
-import { SkeletonTable } from '@/components/ui/Skeleton';
+import { SkeletonTable } from '@/components/ui/skeleton';
 import { useOptimisticLeaveActions } from '@/hooks/useOptimisticActions';
 
 const AILeaveAssistant = dynamic(() => import('@/components/leaves/AILeaveAssistant'), {

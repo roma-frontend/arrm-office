@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import nextDynamic from 'next/dynamic';
 import { cookies } from 'next/headers';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export async function generateMetadata(): Promise<Metadata> {
   const cookieStore = await cookies();

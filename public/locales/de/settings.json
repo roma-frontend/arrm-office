@@ -481,7 +481,19 @@
       "notConnected": "Nicht verbunden",
       "sync": "Sync jetzt",
       "syncStarted": "Sync gestartet",
-      "viewDocs": "Dokumentation"
+      "viewDocs": "Dokumentation",
+      "syncComplete": "Synchronisierung abgeschlossen",
+      "syncFailed": "Synchronisierung fehlgeschlagen",
+      "syncing": "Synchronisierung…",
+      "enabled": "Integration aktiviert",
+      "enabledHint": "Deaktivieren, um die Synchronisierung zu stoppen, ohne die Zugangsdaten zu löschen",
+      "secretSet": "Gespeichert — leer lassen, um den aktuellen Wert zu behalten",
+      "secretWillClear": "Wird beim Speichern entfernt",
+      "clearSecret": "Gespeicherten Wert entfernen",
+      "showLogs": "Verlauf",
+      "hideLogs": "Verlauf ausblenden",
+      "noLogs": "Noch keine Synchronisierungen aufgezeichnet",
+      "mappingHint": "Lassen Sie die erweiterten Felder leer, um das Antwortformat automatisch zu erkennen. Füllen Sie sie aus, wenn die Synchronisierung keine Mitarbeiter findet."
     }
   },
   "projects": {
@@ -493,7 +505,12 @@
     "namePlaceholder": "z.B. Q4 Produkt Launch",
     "description": "Beschreibung",
     "descPlaceholder": "Kurze Projektübersicht...",
-    "priority": "Priorität",
+    "priority": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "urgent": "Dringend"
+    },
     "deadline": "Frist",
     "total": "Gesamt",
     "active": "Aktiv",
@@ -518,12 +535,6 @@
       "on_hold": "Zurückgestellt",
       "completed": "Abgeschlossen",
       "cancelled": "Abgebrochen"
-    },
-    "priority": {
-      "low": "Niedrig",
-      "medium": "Mittel",
-      "high": "Hoch",
-      "urgent": "Dringend"
     },
     "unassigned": "Nicht zugewiesen"
   }

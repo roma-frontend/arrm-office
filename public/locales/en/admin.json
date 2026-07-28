@@ -93,7 +93,14 @@
           "webhookUrl": "Webhook URL"
         },
         "toggle": {
-          "autoSyncEmployees": "Auto-sync employees"
+          "autoSyncEmployees": "Auto-sync employees",
+          "deactivateMissing": "Deactivate employees missing from the provider"
+        },
+        "extraField": {
+          "syncSchedule": "Sync schedule (cron)",
+          "employeesPath": "Employees endpoint path",
+          "employeesListKey": "Employees list key",
+          "fieldMap": "Field mapping (JSON)"
         }
       },
       "imid": {
@@ -107,6 +114,9 @@
           "enableLogin": "Enable login with imID",
           "enableSigning": "Enable e-signature (imID Sign)",
           "enableVerification": "Enable employee verification"
+        },
+        "extraField": {
+          "tokenPath": "OAuth token URL"
         }
       },
       "armsoft": {
@@ -118,10 +128,14 @@
         },
         "toggle": {
           "syncEmployees": "Sync employee directory",
-          "syncPayroll": "Sync payroll data"
+          "syncPayroll": "Sync payroll data",
+          "deactivateMissing": "Deactivate employees missing from the provider"
         },
         "extraField": {
-          "syncSchedule": "Sync schedule (cron)"
+          "syncSchedule": "Sync schedule (cron)",
+          "employeesPath": "Employees endpoint path",
+          "employeesListKey": "Employees list key",
+          "fieldMap": "Field mapping (JSON)"
         }
       }
     }

@@ -93,7 +93,14 @@
           "webhookUrl": "Webhook URL"
         },
         "toggle": {
-          "autoSyncEmployees": "Авто-синхронизация сотрудников"
+          "autoSyncEmployees": "Авто-синхронизация сотрудников",
+          "deactivateMissing": "Деактивировать сотрудников, отсутствующих у провайдера"
+        },
+        "extraField": {
+          "syncSchedule": "Расписание синхронизации (cron)",
+          "employeesPath": "Путь к эндпоинту сотрудников",
+          "employeesListKey": "Ключ списка сотрудников",
+          "fieldMap": "Сопоставление полей (JSON)"
         }
       },
       "imid": {
@@ -107,6 +114,9 @@
           "enableLogin": "Вход через imID",
           "enableSigning": "Электронная подпись (imID Sign)",
           "enableVerification": "Верификация сотрудников"
+        },
+        "extraField": {
+          "tokenPath": "URL получения OAuth-токена"
         }
       },
       "armsoft": {
@@ -118,10 +128,14 @@
         },
         "toggle": {
           "syncEmployees": "Синхронизация сотрудников",
-          "syncPayroll": "Синхронизация зарплаты"
+          "syncPayroll": "Синхронизация зарплаты",
+          "deactivateMissing": "Деактивировать сотрудников, отсутствующих у провайдера"
         },
         "extraField": {
-          "syncSchedule": "Расписание синхронизации (cron)"
+          "syncSchedule": "Расписание синхронизации (cron)",
+          "employeesPath": "Путь к эндпоинту сотрудников",
+          "employeesListKey": "Ключ списка сотрудников",
+          "fieldMap": "Сопоставление полей (JSON)"
         }
       }
     }

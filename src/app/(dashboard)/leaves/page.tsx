@@ -1,5 +1,5 @@
 import nextDynamic from 'next/dynamic';
-import { Skeleton, SkeletonTable } from '@/components/ui/Skeleton';
+import { Skeleton, SkeletonTable } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 
 export const dynamic = 'force-dynamic';

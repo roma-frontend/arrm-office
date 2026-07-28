@@ -481,7 +481,19 @@
       "notConnected": "Not connected",
       "sync": "Sync Now",
       "syncStarted": "Sync started",
-      "viewDocs": "View documentation"
+      "viewDocs": "View documentation",
+      "syncComplete": "Sync complete",
+      "syncFailed": "Sync failed",
+      "syncing": "Syncing…",
+      "enabled": "Integration enabled",
+      "enabledHint": "Turn off to stop all syncing without deleting the credentials",
+      "secretSet": "Saved — leave blank to keep the current value",
+      "secretWillClear": "Will be removed when you save",
+      "clearSecret": "Remove saved value",
+      "showLogs": "History",
+      "hideLogs": "Hide history",
+      "noLogs": "No sync runs recorded yet",
+      "mappingHint": "Leave the advanced fields blank to auto-detect the response shape. Set them if the sync reports it could not find employees."
     }
   },
   "projects": {
@@ -493,7 +505,12 @@
     "namePlaceholder": "e.g. Q4 Product Launch",
     "description": "Description",
     "descPlaceholder": "Brief project overview...",
-    "priority": "Priority",
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
     "deadline": "Deadline",
     "total": "Total",
     "active": "Active",
@@ -518,12 +535,6 @@
       "on_hold": "On Hold",
       "completed": "Completed",
       "cancelled": "Cancelled"
-    },
-    "priority": {
-      "low": "Low",
-      "medium": "Medium",
-      "high": "High",
-      "urgent": "Urgent"
     },
     "unassigned": "Unassigned"
   }

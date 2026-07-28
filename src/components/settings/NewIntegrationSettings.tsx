@@ -15,12 +15,37 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Check, X, RefreshCw, Clock, ExternalLink } from 'lucide-react';
+import { Check, X, RefreshCw, Clock, ExternalLink, Trash2, SkipForward } from 'lucide-react';
 
 /** Mirror of the server-side placeholder for stored credentials. */
 const SECRET_MASK = '••••••••';
 
 const SECRET_FIELDS = new Set(['apiKey', 'clientSecret', 'apiPassword']);
+
+/**
+ * Shared advanced options. Provider payload shapes are not fixed, so an admin
+ * can point the sync at the right path and name the fields without a code change.
+ */
+const MAPPING_FIELDS = [
+  {
+    key: 'employeesPath',
+    label: 'Employees endpoint path',
+    type: 'text',
+    placeholder: '/api/v1/employees',
+  },
+  {
+    key: 'employeesListKey',
+    label: 'Employees list key',
+    type: 'text',
+    placeholder: 'data.items',
+  },
+  {
+    key: 'fieldMap',
+    label: 'Field mapping (JSON)',
+    type: 'text',
+    placeholder: '{"email":"work_email","name":"full_name"}',
+  },
+];
 
 const PROVIDERS = [
   {
@@ -30,6 +55,8 @@ const PROVIDERS = [
     desc: 'Employee recognition & rewards platform',
     color: '#f97316',
     docUrl: 'https://luckycarrotapp.com/integrations',
+    /** This provider pulls an employee directory. */
+    imports: true,
     fields: [
       { key: 'apiKey', label: 'API Key', type: 'password', placeholder: 'lc_...' },
       { key: 'apiUrl', label: 'API URL', type: 'text', placeholder: 'https://api.luckycarrot.com' },
@@ -40,7 +67,19 @@ const PROVIDERS = [
         placeholder: 'https://yourapp.com/webhook/lucky-carrot',
       },
     ],
-    toggles: [{ key: 'autoSyncEmployees', label: 'Auto-sync employees' }],
+    toggles: [
+      { key: 'autoSyncEmployees', label: 'Auto-sync employees' },
+      { key: 'deactivateMissing', label: 'Deactivate employees missing from the provider' },
+    ],
+    extraFields: [
+      {
+        key: 'syncSchedule',
+        label: 'Sync schedule (cron)',
+        type: 'text',
+        placeholder: '0 3 * * *',
+      },
+      ...MAPPING_FIELDS,
+    ],
   },
   {
     id: 'imid' as const,
@@ -49,6 +88,7 @@ const PROVIDERS = [
     desc: 'Armenian digital identity & e-signature',
     color: '#3b82f6',
     docUrl: 'https://imid.am/integration',
+    imports: false,
     fields: [
       { key: 'clientId', label: 'Client ID', type: 'text', placeholder: 'imid_client_...' },
       { key: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: '••••••••' },
@@ -64,6 +104,14 @@ const PROVIDERS = [
       { key: 'enableSigning', label: 'Enable e-signature (imID Sign)' },
       { key: 'enableVerification', label: 'Enable employee verification' },
     ],
+    extraFields: [
+      {
+        key: 'tokenPath',
+        label: 'OAuth token URL',
+        type: 'text',
+        placeholder: 'https://api.imid.am/v1/oauth/token',
+      },
+    ],
   },
   {
     id: 'armsoft' as const,
@@ -72,6 +120,7 @@ const PROVIDERS = [
     desc: 'Armenian ERP — HR & payroll data sync',
     color: '#dc2626',
     docUrl: 'https://armsoft.am/api',
+    imports: true,
     fields: [
       {
         key: 'apiEndpoint',
@@ -85,6 +134,7 @@ const PROVIDERS = [
     toggles: [
       { key: 'syncEmployees', label: 'Sync employee directory' },
       { key: 'syncPayroll', label: 'Sync payroll data' },
+      { key: 'deactivateMissing', label: 'Deactivate employees missing from the provider' },
     ],
     extraFields: [
       {
@@ -93,9 +143,12 @@ const PROVIDERS = [
         type: 'text',
         placeholder: '0 3 * * *',
       },
+      ...MAPPING_FIELDS,
     ],
   },
 ];
+
+type ProviderId = (typeof PROVIDERS)[number]['id'];
 
 export default function NewIntegrationSettings() {
   const { t } = useTranslation();
@@ -104,8 +157,11 @@ export default function NewIntegrationSettings() {
 
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [formState, setFormState] = useState<Record<string, any>>({});
+  /** Secret fields the admin explicitly cleared, keyed `provider_field`. */
+  const [clearedSecrets, setClearedSecrets] = useState<Record<string, boolean>>({});
   const [syncing, setSyncing] = useState<string | null>(null);
   const [savingProvider, setSavingProvider] = useState<string | null>(null);
+  const [logsProvider, setLogsProvider] = useState<ProviderId | null>(null);
 
   const configs = useQuery(
     api.integrations.getAllIntegrationConfigs,
@@ -113,6 +169,12 @@ export default function NewIntegrationSettings() {
   );
   const saveConfig = useMutation(api.integrations.saveIntegrationConfig);
   const syncIntegration = useAction(api.integrations.syncIntegration);
+
+  // Logs are only fetched for the card whose history is open.
+  const syncLogs = useQuery(
+    api.integrations.getSyncLogs,
+    organizationId && logsProvider ? { organizationId, provider: logsProvider } : 'skip',
+  );
 
   if (!organizationId || !user) return <ShieldLoader />;
 
@@ -123,6 +185,7 @@ export default function NewIntegrationSettings() {
   // Secrets never leave the server — the query returns a mask. Show such fields
   // empty and label them as already set, so an untouched field means "keep".
   const isSecretSet = (providerId: string, fieldKey: string) => {
+    if (clearedSecrets[`${providerId}_${fieldKey}`]) return false;
     const cfg = getConfig(providerId);
     return (cfg as any)?.[fieldKey] === SECRET_MASK;
   };
@@ -140,13 +203,30 @@ export default function NewIntegrationSettings() {
   };
 
   const handleExpand = (providerId: string) => {
-    setExpandedProvider(expandedProvider === providerId ? null : providerId);
-    // Reset form state for this provider
+    const closing = expandedProvider === providerId;
+    setExpandedProvider(closing ? null : providerId);
+    if (closing) setLogsProvider(null);
+    // Discard unsaved edits for the card being left behind.
     setFormState({});
+    setClearedSecrets({});
   };
 
   const handleFieldChange = (providerId: string, fieldKey: string, value: string) => {
     setFormState((prev) => ({ ...prev, [`${providerId}_${fieldKey}`]: value }));
+    // Typing a new secret supersedes a pending clear.
+    if (value && SECRET_FIELDS.has(fieldKey)) {
+      setClearedSecrets((prev) => {
+        if (!prev[`${providerId}_${fieldKey}`]) return prev;
+        const next = { ...prev };
+        delete next[`${providerId}_${fieldKey}`];
+        return next;
+      });
+    }
+  };
+
+  const handleClearSecret = (providerId: string, fieldKey: string) => {
+    setClearedSecrets((prev) => ({ ...prev, [`${providerId}_${fieldKey}`]: true }));
+    setFormState((prev) => ({ ...prev, [`${providerId}_${fieldKey}`]: '' }));
   };
 
   const handleToggleChange = (providerId: string, toggleKey: string, value: boolean) => {
@@ -159,7 +239,11 @@ export default function NewIntegrationSettings() {
 
     setSavingProvider(providerId);
     try {
-      const config: any = { isEnabled: true };
+      const stored = getConfig(providerId);
+      const config: any = {
+        // Enablement is an explicit switch, defaulting to on for a first save.
+        isEnabled: formState[`${providerId}_isEnabled`] ?? (stored as any)?.isEnabled ?? true,
+      };
 
       for (const field of provider.fields) {
         const val = getFieldValue(providerId, field.key);
@@ -175,16 +259,22 @@ export default function NewIntegrationSettings() {
         }
       }
 
+      const clearSecrets = Object.keys(clearedSecrets)
+        .filter((k) => clearedSecrets[k] && k.startsWith(`${providerId}_`))
+        .map((k) => k.slice(providerId.length + 1));
+
       await saveConfig({
         organizationId,
         provider: providerId as any,
         config,
+        ...(clearSecrets.length ? { clearSecrets } : {}),
       });
       toast.success(t('admin.integrations.saved', { provider: provider.name }));
       // Drop local edits so freshly saved values come back from the server.
       setFormState({});
-    } catch (e) {
-      toast.error(String(e));
+      setClearedSecrets({});
+    } catch (e: any) {
+      toast.error(e?.message ? String(e.message) : String(e));
     } finally {
       setSavingProvider(null);
     }
@@ -193,13 +283,18 @@ export default function NewIntegrationSettings() {
   const handleSync = async (providerId: string) => {
     setSyncing(providerId);
     try {
-      await syncIntegration({
+      const result = await syncIntegration({
         organizationId,
         provider: providerId as any,
       });
-      toast.success(t('admin.integrations.syncStarted', 'Sync started'));
-    } catch (e) {
-      toast.error(String(e));
+      // The action reports failure in its return value rather than throwing.
+      if (result?.success) {
+        toast.success(result.message || t('admin.integrations.syncComplete', 'Sync complete'));
+      } else {
+        toast.error(result?.error || t('admin.integrations.syncFailed', 'Sync failed'));
+      }
+    } catch (e: any) {
+      toast.error(e?.message ? String(e.message) : String(e));
     } finally {
       setSyncing(null);
     }
@@ -222,10 +317,14 @@ export default function NewIntegrationSettings() {
 
       {PROVIDERS.map((provider) => {
         const config = getConfig(provider.id);
-        const isEnabled = config?.isEnabled ?? false;
         const isExpanded = expandedProvider === provider.id;
+        // While the card is open, reflect the pending switch state.
+        const isEnabled = isExpanded
+          ? (formState[`${provider.id}_isEnabled`] ?? config?.isEnabled ?? false)
+          : (config?.isEnabled ?? false);
         const lastSync = config?.lastSyncAt;
         const syncStatus = config?.syncStatus;
+        const isSyncing = syncing === provider.id || syncStatus === 'syncing';
 
         return (
           <Card
@@ -264,10 +363,31 @@ export default function NewIntegrationSettings() {
 
             {isExpanded && (
               <CardContent className="border-t pt-4 space-y-4">
+                {/* Enablement — a disabled integration is never synced */}
+                <div className="flex items-center justify-between p-3 rounded-lg border border-(--border)">
+                  <div>
+                    <Label className="cursor-pointer">
+                      {t('admin.integrations.enabled', 'Integration enabled')}
+                    </Label>
+                    <p className="text-[11px] text-(--text-muted) mt-0.5">
+                      {t(
+                        'admin.integrations.enabledHint',
+                        'Turn off to stop all syncing without deleting the credentials',
+                      )}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isEnabled}
+                    onCheckedChange={(v) => handleToggleChange(provider.id, 'isEnabled', v)}
+                  />
+                </div>
+
                 {/* Status & Sync */}
                 <div className="flex items-center justify-between p-3 rounded-lg bg-(--background-subtle)">
                   <div className="flex items-center gap-2">
-                    {syncStatus === 'success' ? (
+                    {isSyncing ? (
+                      <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                    ) : syncStatus === 'success' ? (
                       <Check className="w-4 h-4 text-emerald-500" />
                     ) : syncStatus === 'error' ? (
                       <X className="w-4 h-4 text-red-500" />
@@ -276,11 +396,13 @@ export default function NewIntegrationSettings() {
                     )}
                     <div className="min-w-0">
                       <span className="text-sm">
-                        {syncStatus === 'success'
-                          ? t('admin.integrations.connected', 'Connected')
-                          : syncStatus === 'error'
-                            ? t('admin.integrations.error', 'Sync error')
-                            : t('admin.integrations.notConnected', 'Not connected')}
+                        {isSyncing
+                          ? t('admin.integrations.syncing', 'Syncing…')
+                          : syncStatus === 'success'
+                            ? t('admin.integrations.connected', 'Connected')
+                            : syncStatus === 'error'
+                              ? t('admin.integrations.error', 'Sync error')
+                              : t('admin.integrations.notConnected', 'Not connected')}
                       </span>
                       {syncStatus === 'error' && config?.lastError && (
                         <p className="text-[11px] text-red-500 mt-0.5 line-clamp-2 break-words">
@@ -289,46 +411,118 @@ export default function NewIntegrationSettings() {
                       )}
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleSync(provider.id)}
-                    disabled={syncing === provider.id || !isEnabled}
-                  >
-                    {syncing === provider.id ? (
-                      <ShieldLoader size="xs" variant="inline" />
-                    ) : (
-                      <RefreshCw className="w-3 h-3 mr-1" />
-                    )}
-                    {t('admin.integrations.sync', 'Sync Now')}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        setLogsProvider(logsProvider === provider.id ? null : provider.id)
+                      }
+                    >
+                      {logsProvider === provider.id
+                        ? t('admin.integrations.hideLogs', 'Hide history')
+                        : t('admin.integrations.showLogs', 'History')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleSync(provider.id)}
+                      disabled={isSyncing || !isEnabled}
+                    >
+                      {isSyncing ? (
+                        <ShieldLoader size="xs" variant="inline" />
+                      ) : (
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                      )}
+                      {t('admin.integrations.sync', 'Sync Now')}
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Sync history */}
+                {logsProvider === provider.id && (
+                  <div className="rounded-lg border border-(--border) divide-y divide-(--border)">
+                    {syncLogs === undefined ? (
+                      <div className="p-3">
+                        <ShieldLoader size="xs" variant="inline" />
+                      </div>
+                    ) : syncLogs.length === 0 ? (
+                      <p className="p-3 text-xs text-(--text-muted)">
+                        {t('admin.integrations.noLogs', 'No sync runs recorded yet')}
+                      </p>
+                    ) : (
+                      syncLogs.map((log) => (
+                        <div key={log._id} className="p-3 flex items-start gap-2">
+                          {log.status === 'success' ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                          ) : log.status === 'error' ? (
+                            <X className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                          ) : (
+                            <SkipForward className="w-3.5 h-3.5 text-(--text-muted) mt-0.5 shrink-0" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs break-words">{log.message}</p>
+                            <p className="text-[11px] text-(--text-muted) mt-0.5">
+                              {new Date(log.createdAt).toLocaleString()}
+                              {log.created !== undefined &&
+                                ` · +${log.created} / ~${log.updated ?? 0} / −${
+                                  log.deactivated ?? 0
+                                } / ⊘${log.skipped ?? 0}`}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
 
                 {/* Configuration Fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {provider.fields.map((field) => {
                     const secretSet =
                       SECRET_FIELDS.has(field.key) && isSecretSet(provider.id, field.key);
+                    const pendingClear = clearedSecrets[`${provider.id}_${field.key}`];
                     return (
                       <div key={field.key}>
                         <Label>
                           {t(providerLabelKey(provider.id, `field.${field.key}`), field.label)}
                         </Label>
-                        <Input
-                          type={field.type}
-                          value={getFieldValue(provider.id, field.key)}
-                          onChange={(e) =>
-                            handleFieldChange(provider.id, field.key, e.target.value)
-                          }
-                          placeholder={secretSet ? SECRET_MASK : field.placeholder}
-                          className="mt-1"
-                          autoComplete={field.type === 'password' ? 'new-password' : undefined}
-                        />
+                        <div className="flex items-center gap-1 mt-1">
+                          <Input
+                            type={field.type}
+                            value={getFieldValue(provider.id, field.key)}
+                            onChange={(e) =>
+                              handleFieldChange(provider.id, field.key, e.target.value)
+                            }
+                            placeholder={secretSet ? SECRET_MASK : field.placeholder}
+                            autoComplete={field.type === 'password' ? 'new-password' : undefined}
+                          />
+                          {secretSet && (
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              aria-label={t('admin.integrations.clearSecret', 'Remove saved value')}
+                              title={t('admin.integrations.clearSecret', 'Remove saved value')}
+                              onClick={() => handleClearSecret(provider.id, field.key)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                            </Button>
+                          )}
+                        </div>
                         {secretSet && (
                           <p className="text-[11px] text-(--text-muted) mt-1">
                             {t(
                               'admin.integrations.secretSet',
                               'Saved — leave blank to keep the current value',
+                            )}
+                          </p>
+                        )}
+                        {pendingClear && (
+                          <p className="text-[11px] text-amber-500 mt-1">
+                            {t(
+                              'admin.integrations.secretWillClear',
+                              'Will be removed when you save',
                             )}
                           </p>
                         )}
@@ -372,6 +566,15 @@ export default function NewIntegrationSettings() {
                       </div>
                     ))}
                   </div>
+                )}
+
+                {provider.imports && (
+                  <p className="text-[11px] text-(--text-muted)">
+                    {t(
+                      'admin.integrations.mappingHint',
+                      'Leave the advanced fields blank to auto-detect the response shape. Set them if the sync reports it could not find employees.',
+                    )}
+                  </p>
                 )}
 
                 {/* Actions */}

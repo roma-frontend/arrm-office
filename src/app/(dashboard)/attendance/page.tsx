@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Clock, Users, Star, UserCheck, BarChart2, Search } from 'lucide-react';
-import { SkeletonTable } from '@/components/ui/Skeleton';
+import { SkeletonTable } from '@/components/ui/skeleton';
 import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
 import { formatTime } from '@/lib/date-format';
 import { format } from 'date-fns';

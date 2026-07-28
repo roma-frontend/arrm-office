@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { useRouter, useParams } from 'next/navigation';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Button } from '@/components/ui/button';
-import { SkeletonTable } from '@/components/ui/Skeleton';
+import { SkeletonTable } from '@/components/ui/skeleton';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AssetsClient = dynamic(() => import('@/components/assets/AssetsClient'), {
   ssr: false,

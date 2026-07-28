@@ -93,7 +93,14 @@
           "webhookUrl": "Webhook URL"
         },
         "toggle": {
-          "autoSyncEmployees": "Աշխատակիցների ավտոմատ սինխրոնիզացիա"
+          "autoSyncEmployees": "Աշխատակիցների ավտոմատ սինխրոնիզացիա",
+          "deactivateMissing": "Ապաակտիվացնել աշխատակիցներին, որոնք բացակայում են մատակարարի ցանկից"
+        },
+        "extraField": {
+          "syncSchedule": "Համաժամացման ժամանակացույց (cron)",
+          "employeesPath": "Աշխատակիցների վերջնակետի ուղին",
+          "employeesListKey": "Աշխատակիցների ցանկի բանալին",
+          "fieldMap": "Դաշտերի համապատասխանեցում (JSON)"
         }
       },
       "imid": {
@@ -107,6 +114,9 @@
           "enableLogin": "Մուտք imID-ով",
           "enableSigning": "Էլ. ստորագրություն (imID Sign)",
           "enableVerification": "Աշխատակիցների վավերացում"
+        },
+        "extraField": {
+          "tokenPath": "OAuth թոքենի URL"
         }
       },
       "armsoft": {
@@ -118,10 +128,14 @@
         },
         "toggle": {
           "syncEmployees": "Աշխատակիցների սինխրոնիզացիա",
-          "syncPayroll": "Աշխատավարձի սինխրոնիզացիա"
+          "syncPayroll": "Աշխատավարձի սինխրոնիզացիա",
+          "deactivateMissing": "Ապաակտիվացնել աշխատակիցներին, որոնք բացակայում են մատակարարի ցանկից"
         },
         "extraField": {
-          "syncSchedule": "Սինխրոնիզացիայի ժամանակացույց (cron)"
+          "syncSchedule": "Համաժամացման ժամանակացույց (cron)",
+          "employeesPath": "Աշխատակիցների վերջնակետի ուղին",
+          "employeesListKey": "Աշխատակիցների ցանկի բանալին",
+          "fieldMap": "Դաշտերի համապատասխանեցում (JSON)"
         }
       }
     }
