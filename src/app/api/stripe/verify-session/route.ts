@@ -33,7 +33,10 @@ export async function GET(req: NextRequest) {
       paymentStatus: session.payment_status,
     });
   } catch (err: unknown) {
-    console.error('[Stripe Verify] Session verification failed:', err instanceof Error ? err.message : String(err));
+    console.error(
+      '[Stripe Verify] Session verification failed:',
+      err instanceof Error ? err.message : String(err),
+    );
     return NextResponse.json({ valid: false, error: 'Invalid session' }, { status: 400 });
   }
 }

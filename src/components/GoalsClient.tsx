@@ -176,7 +176,7 @@ function CreateObjectiveWizard({
   };
 
   const handleSubmit = async () => {
-    if (!title.trim() ||    keyResults.some((kr) => !kr.title.trim())) {
+    if (!title.trim() || keyResults.some((kr) => !kr.title.trim())) {
       toast.error(t('goals.wizard.fillRequired'));
       return;
     }
@@ -196,7 +196,7 @@ function CreateObjectiveWizard({
         periodEnd: end,
         parentObjectiveId: parentId ? (parentId as Id<'objectives'>) : undefined,
         createdBy: userId,
-        keyResults:      keyResults.map((kr) => ({
+        keyResults: keyResults.map((kr) => ({
           title: kr.title.trim(),
           description: kr.description.trim() || undefined,
           metricType: kr.metricType,
@@ -523,7 +523,7 @@ function CreateObjectiveWizard({
               <Button variant="outline" size="sm" onClick={addKR} className="w-full">
                 <Plus className="h-4 w-4 mr-1" /> {t('goals.wizard.addKR', 'Add Key Result')}
               </Button>
-              {              keyResults.reduce((s, kr) => s + kr.weight, 0) !== 100 && (
+              {keyResults.reduce((s, kr) => s + kr.weight, 0) !== 100 && (
                 <p className="text-xs text-destructive">
                   {t('goals.wizard.weightWarning', 'Weights must sum to 100. Current: {{sum}}', {
                     sum: keyResults.reduce((s, kr) => s + kr.weight, 0),
@@ -810,7 +810,8 @@ function ObjectiveDetailDialog({
 
         {/* Key Results */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold">{t('goals.keyResults', 'Key Results')}</h4>            {objective.keyResults.map((kr) => {
+          <h4 className="text-sm font-semibold">{t('goals.keyResults', 'Key Results')}</h4>{' '}
+          {objective.keyResults.map((kr) => {
             const pct = kr.completionPercent;
             return (
               <Card key={kr._id}>

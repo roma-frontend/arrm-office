@@ -6,7 +6,13 @@
 import { logger } from './logger';
 
 // ===== WEB VITALS MONITORING =====
-export function reportWebVitals(metric: { name: string; value: number; rating?: string; delta?: number; id?: string }) {
+export function reportWebVitals(metric: {
+  name: string;
+  value: number;
+  rating?: string;
+  delta?: number;
+  id?: string;
+}) {
   // Логирование метрик производительности
   if (process.env.NODE_ENV === 'development') {
     logger.log('📊 Web Vitals:', {

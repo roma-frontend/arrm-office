@@ -53,7 +53,16 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     // ═══════════════════════════════════════════════════════════════
     // CONFLICT DETECTION — Check task conflicts
     // ═══════════════════════════════════════════════════════════════
-    let conflictResult: { hasCritical: boolean; hasWarnings: boolean; conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }> } = {
+    let conflictResult: {
+      hasCritical: boolean;
+      hasWarnings: boolean;
+      conflicts: Array<{
+        severity?: string;
+        title?: string;
+        message?: string;
+        suggestion?: string;
+      }>;
+    } = {
       hasCritical: false,
       hasWarnings: false,
       conflicts: [],
@@ -61,7 +70,16 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
 
     if (deadline) {
       // Проверяем конфликты задачи с отпусками
-      const conflictData: { hasCritical: boolean; hasWarnings?: boolean; conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }> } = await convex.query(api.conflicts.checkConflictsForRequest, {
+      const conflictData: {
+        hasCritical: boolean;
+        hasWarnings?: boolean;
+        conflicts: Array<{
+          severity?: string;
+          title?: string;
+          message?: string;
+          suggestion?: string;
+        }>;
+      } = await convex.query(api.conflicts.checkConflictsForRequest, {
         organizationId: organizationId,
         requestType: 'task' as const,
         userId: assignedTo as Id<'users'>,
@@ -124,7 +142,10 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     });
   } catch (error: unknown) {
     console.error('[create-task] Error:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to create task' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create task' },
+      { status: 500 },
+    );
   }
 });
 
@@ -175,17 +196,16 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to check conflicts';
     console.error('[task-conflict-check] Error:', msg);
-    return NextResponse.json(
-      { error: msg },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
 /**
  * Форматирует конфликты задач в human-readable сообщения для AI
  */
-function formatTaskConflictsForAI(conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>): string {
+function formatTaskConflictsForAI(
+  conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>,
+): string {
   if (conflicts.length === 0) {
     return '✅ Конфликтов не обнаружено. Задачу можно создавать.';
   }

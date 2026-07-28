@@ -69,7 +69,9 @@ export default function SuccessClient() {
         style={{ background: 'var(--background)' }}
       >
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-red-400 mb-4">{t('checkout.invalidSessionTitle')}</h1>
+          <h1 className="text-3xl font-bold text-red-400 mb-4">
+            {t('checkout.invalidSessionTitle')}
+          </h1>
           <p className="text-white/50 mb-6">{t('checkout.invalidSessionDescription')}</p>
           <Link href="/#pricing" className="text-blue-400 hover:underline">
             {t('checkout.returnPricing')}

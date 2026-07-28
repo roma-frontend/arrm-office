@@ -287,7 +287,11 @@ function CreateVacancyWizard({
                       setRequirements(result.requirements);
                       toast.success(t('recruitmentAI.generated', 'Description generated!'));
                     } catch (err: unknown) {
-                      toast.error(err instanceof Error ? err.message : t('recruitmentAI.error', 'Generation failed'));
+                      toast.error(
+                        err instanceof Error
+                          ? err.message
+                          : t('recruitmentAI.error', 'Generation failed'),
+                      );
                     } finally {
                       setAiGenerating(false);
                     }

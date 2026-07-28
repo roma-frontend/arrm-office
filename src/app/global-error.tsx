@@ -37,9 +37,14 @@ export default function GlobalError({
           </div>
 
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('error.criticalError', 'Critical Error')}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              {t('error.criticalError', 'Critical Error')}
+            </h1>
             <p className="text-muted-foreground max-w-lg">
-              {t('error.criticalDescription', 'A critical error occurred that prevented the application from loading. Please try refreshing the page.')}
+              {t(
+                'error.criticalDescription',
+                'A critical error occurred that prevented the application from loading. Please try refreshing the page.',
+              )}
             </p>
             {error.digest && (
               <p className="text-xs text-muted-foreground/50 font-mono mt-4">

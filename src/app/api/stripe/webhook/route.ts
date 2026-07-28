@@ -114,8 +114,13 @@ export async function POST(req: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: unknown) {
-    logger.error('[Stripe Webhook] Signature failed:', err instanceof Error ? err.message : String(err));
-    Sentry.captureException(err instanceof Error ? err : new Error(String(err)), { tags: { stripe: 'webhook_signature' } });
+    logger.error(
+      '[Stripe Webhook] Signature failed:',
+      err instanceof Error ? err.message : String(err),
+    );
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)), {
+      tags: { stripe: 'webhook_signature' },
+    });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -157,7 +162,9 @@ export async function POST(req: NextRequest) {
                 : '') ||
               undefined,
             stripeCustomerId:
-              typeof sub.customer === 'string' ? sub.customer : (sub.customer as Stripe.Customer | Stripe.DeletedCustomer).id,
+              typeof sub.customer === 'string'
+                ? sub.customer
+                : (sub.customer as Stripe.Customer | Stripe.DeletedCustomer).id,
             stripeSubscriptionId: sub.id,
             stripeSessionId: session.id,
             plan,
@@ -220,10 +227,7 @@ export async function POST(req: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sub = (invoice as any).subscription;
-        const subId =
-          typeof sub === 'string'
-            ? sub
-            : sub?.id;
+        const subId = typeof sub === 'string' ? sub : sub?.id;
         logger.log('[Stripe] ⚠️ invoice.payment_failed:', invoice.id);
         if (subId) {
           await convexMutation('subscriptions/updateSubscriptionStatus', {
@@ -239,22 +243,15 @@ export async function POST(req: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sub = (invoice as any).subscription;
-        const subId =
-          typeof sub === 'string'
-            ? sub
-            : sub?.id;
+        const subId = typeof sub === 'string' ? sub : sub?.id;
         logger.log('[Stripe] 💰 invoice.payment_succeeded:', invoice.id);
         if (subId) {
           await convexMutation('subscriptions/updateSubscriptionStatus', {
             stripeSubscriptionId: subId,
             status: 'active',
             cancelAtPeriodEnd: false,
-            currentPeriodStart: invoice.period_start
-              ? invoice.period_start * 1000
-              : undefined,
-            currentPeriodEnd: invoice.period_end
-              ? invoice.period_end * 1000
-              : undefined,
+            currentPeriodStart: invoice.period_start ? invoice.period_start * 1000 : undefined,
+            currentPeriodEnd: invoice.period_end ? invoice.period_end * 1000 : undefined,
           });
         }
         break;
@@ -299,7 +296,10 @@ export async function POST(req: NextRequest) {
         break;
     }
   } catch (err: unknown) {
-    logger.error('[Stripe Webhook] Handler error:', err instanceof Error ? err.message : String(err));
+    logger.error(
+      '[Stripe Webhook] Handler error:',
+      err instanceof Error ? err.message : String(err),
+    );
     Sentry.captureException(err instanceof Error ? err : new Error(String(err)), {
       tags: { stripe: 'webhook_handler' },
       extra: { eventType: event.type, eventId: event.id },

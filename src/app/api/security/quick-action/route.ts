@@ -69,9 +69,6 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to perform action';
     console.error('[Quick Action API Error]:', msg);
-    return NextResponse.json(
-      { error: msg },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 });

@@ -257,7 +257,13 @@ function CommentSection({
   t,
 }: {
   announcementId: Id<'announcements'>;
-  comments: { _id: string; authorName: string; authorAvatar?: string; content: string; createdAt: number }[];
+  comments: {
+    _id: string;
+    authorName: string;
+    authorAvatar?: string;
+    content: string;
+    createdAt: number;
+  }[];
   totalComments: number;
   organizationId: Id<'organizations'>;
   userId: Id<'users'>;
@@ -360,8 +366,8 @@ function AnnouncementCard({
   t,
   onDelete,
 }: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
-    announcement: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
+  announcement: any;
   organizationId: Id<'organizations'>;
   userId: Id<'users'>;
   userRole: string;
@@ -386,12 +392,13 @@ function AnnouncementCard({
 
   const isAdmin = userRole === 'admin' || userRole === 'superadmin';
 
-  const reactionsList: Array<{ emoji: string; users: Array<{ userId: string; userName: string }> }> = announcement.reactionsByEmoji ?? [];
+  const reactionsList: Array<{
+    emoji: string;
+    users: Array<{ userId: string; userName: string }>;
+  }> = announcement.reactionsByEmoji ?? [];
   const _totalReactions = reactionsList.reduce((sum: number, r) => sum + r.users.length, 0);
 
-  const _hasMyReaction = reactionsList.some((r) =>
-    r.users.some((u) => u.userId === userId),
-  );
+  const _hasMyReaction = reactionsList.some((r) => r.users.some((u) => u.userId === userId));
 
   const handleReact = async (emoji: string) => {
     try {
@@ -513,9 +520,7 @@ function AnnouncementCard({
           <div className="flex items-center gap-1.5 mt-3 flex-wrap">
             {/* Emoji reaction buttons */}
             {EMOJI_REACTIONS.map((emoji) => {
-              const reactors =
-                reactionsList.find((r) => r.emoji === emoji)?.users ??
-                [];
+              const reactors = reactionsList.find((r) => r.emoji === emoji)?.users ?? [];
               const count = reactors.length;
               const isActive = reactors.some((r) => r.userId === userId);
               return (
@@ -587,7 +592,17 @@ export default function NewsClient() {
     organizationId
       ? {
           organizationId,
-          category: categoryFilter !== 'all' ? (categoryFilter as 'news' | 'announcement' | 'event' | 'birthday' | 'achievement' | 'policy' | 'general') : undefined,
+          category:
+            categoryFilter !== 'all'
+              ? (categoryFilter as
+                  | 'news'
+                  | 'announcement'
+                  | 'event'
+                  | 'birthday'
+                  | 'achievement'
+                  | 'policy'
+                  | 'general')
+              : undefined,
         }
       : 'skip',
   );

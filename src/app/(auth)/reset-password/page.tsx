@@ -60,7 +60,7 @@ function ResetPasswordForm() {
           body: JSON.stringify({ token, newPassword: password }),
         });
         const data = (await res.json()) as { error?: string };
-        if (!res.ok)        throw new Error(data.error || t('resetPassword.somethingWentWrong'));
+        if (!res.ok) throw new Error(data.error || t('resetPassword.somethingWentWrong'));
         setSuccess(true);
         setTimeout(() => router.push('/login'), 3000);
       } catch (err) {

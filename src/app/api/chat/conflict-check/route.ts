@@ -131,17 +131,17 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to check conflicts';
     console.error('[conflict-check] Error:', msg);
-    return NextResponse.json(
-      { error: msg },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
 /**
  * Форматирует конфликты в human-readable сообщения для AI
  */
-function formatConflictsForAI(conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>, requestType: string): string {
+function formatConflictsForAI(
+  conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>,
+  requestType: string,
+): string {
   if (conflicts.length === 0) {
     return '✅ Конфликтов не обнаружено. Можно продолжать.';
   }
@@ -180,7 +180,10 @@ function formatConflictsForAI(conflicts: Array<{ severity?: string; title?: stri
 /**
  * Извлекает альтернативные даты из конфликтов
  */
-function extractAlternativeDates(conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>, requestType: string): string[] {
+function extractAlternativeDates(
+  conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>,
+  requestType: string,
+): string[] {
   const alternativeDates: string[] = [];
 
   if (requestType !== 'leave') return alternativeDates;

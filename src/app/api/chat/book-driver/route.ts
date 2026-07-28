@@ -105,14 +105,21 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     });
   } catch (error: unknown) {
     console.error('[book-driver] Error:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to book driver' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to book driver' },
+      { status: 500 },
+    );
   }
 });
 
 /**
  * Build human-readable conflict message for driver booking
  */
-function buildDriverConflictMessage(conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>, startTime: string, endTime: string): string {
+function buildDriverConflictMessage(
+  conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>,
+  startTime: string,
+  endTime: string,
+): string {
   if (conflicts.length === 0) return '';
 
   const startDate = new Date(startTime).toLocaleString();

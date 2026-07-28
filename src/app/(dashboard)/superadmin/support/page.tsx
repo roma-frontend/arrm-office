@@ -729,7 +729,9 @@ function TicketDetailDialog({
       router.push(`/chat?conversation=${result.chatId}`);
     } catch (error: unknown) {
       console.error('Error activating chat:', error);
-      toast.error(error instanceof Error ? error.message : t('superadmin.support.chatActivateError'));
+      toast.error(
+        error instanceof Error ? error.message : t('superadmin.support.chatActivateError'),
+      );
     }
   };
 
@@ -1110,7 +1112,12 @@ function TicketDetailDialog({
                   onValueChange={(value: string) => {
                     updateStatus({
                       ticketId: ticketId as Id<'supportTickets'>,
-                      status: value as 'open' | 'in_progress' | 'waiting_customer' | 'resolved' | 'closed',
+                      status: value as
+                        | 'open'
+                        | 'in_progress'
+                        | 'waiting_customer'
+                        | 'resolved'
+                        | 'closed',
                       userId,
                     });
                     toast.success(t('superadmin.support.detail.status'));

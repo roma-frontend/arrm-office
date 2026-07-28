@@ -186,9 +186,7 @@ export default function LeaveSettingsPage() {
                       <Label>{t('admin.leaveSettings.active', 'Active')}</Label>
                       <Switch
                         checked={editForm.isActive}
-                        onCheckedChange={(v) =>
-                          setEditForm((prev) => ({ ...prev, isActive: v }))
-                        }
+                        onCheckedChange={(v) => setEditForm((prev) => ({ ...prev, isActive: v }))}
                       />
                     </div>
                     <div className="flex items-center justify-between">

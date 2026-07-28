@@ -22,9 +22,22 @@ const REFERENCE = 'en';
 const TARGETS = ['ru', 'hy', 'de'];
 
 const NAMESPACES = [
-  'common', 'landing', 'auth', 'dashboard', 'leaves', 'tasks',
-  'employees', 'chat', 'admin', 'drivers', 'settings', 'modules',
-  'payroll', 'compensation', 'learning', 'expenses',
+  'common',
+  'landing',
+  'auth',
+  'dashboard',
+  'leaves',
+  'tasks',
+  'employees',
+  'chat',
+  'admin',
+  'drivers',
+  'settings',
+  'modules',
+  'payroll',
+  'compensation',
+  'learning',
+  'expenses',
 ];
 
 /** Flattened dotted paths that are intentionally absent from EN. */
@@ -38,18 +51,26 @@ const PRESERVED_EXTRAS = new Set([
 ]);
 
 const PLURAL_SUFFIXES = [
-  '_one', '_few', '_many', '_zero', '_two', '_three',
-  '_four', '_five', '_six', '_seven', '_eight', '_nine',
-  '_ten', '_other',
+  '_one',
+  '_few',
+  '_many',
+  '_zero',
+  '_two',
+  '_three',
+  '_four',
+  '_five',
+  '_six',
+  '_seven',
+  '_eight',
+  '_nine',
+  '_ten',
+  '_other',
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 /** Recursively flatten a nested translation object into dotted-path → leaf-value map. */
-function flatten(
-  obj: Record<string, unknown>,
-  prefix = '',
-): Record<string, unknown> {
+function flatten(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
     const next = prefix ? `${prefix}.${k}` : k;
@@ -113,10 +134,14 @@ describe('Locale parity', () => {
         it(`${lang}/${ns}.json has zero drift`, () => {
           const messages: string[] = [];
           if (missing.length > 0) {
-            messages.push(`Missing keys (${missing.length}):\n${missing.map((k) => `  + ${k}`).join('\n')}`);
+            messages.push(
+              `Missing keys (${missing.length}):\n${missing.map((k) => `  + ${k}`).join('\n')}`,
+            );
           }
           if (extra.length > 0) {
-            messages.push(`Extra keys (${extra.length}):\n${extra.map((k) => `  - ${k}`).join('\n')}`);
+            messages.push(
+              `Extra keys (${extra.length}):\n${extra.map((k) => `  - ${k}`).join('\n')}`,
+            );
           }
           fail(`Locale drift in ${lang}/${ns}.json:\n\n${messages.join('\n\n')}`);
         });

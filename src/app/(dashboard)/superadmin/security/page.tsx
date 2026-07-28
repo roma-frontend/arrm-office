@@ -658,7 +658,10 @@ export default function SecurityDashboard() {
                                   Expires in {hoursLeft}h
                                 </span>
                                 <span className="hidden sm:inline">
-                                  Until {user.suspendedUntil ? new Date(user.suspendedUntil).toLocaleString() : ''}
+                                  Until{' '}
+                                  {user.suspendedUntil
+                                    ? new Date(user.suspendedUntil).toLocaleString()
+                                    : ''}
                                 </span>
                               </div>
                             </div>

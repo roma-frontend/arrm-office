@@ -265,7 +265,11 @@ interface SignatureDoc {
  * report. Falls back to sensible defaults for documents created before the
  * theme was persisted.
  */
-function toRenderableDocument(doc: SignatureDoc, labels: DocumentLabels, t?: TFunction): RenderableDocument {
+function toRenderableDocument(
+  doc: SignatureDoc,
+  labels: DocumentLabels,
+  t?: TFunction,
+): RenderableDocument {
   // The primary signed request supplies the signature image + signer name/date.
   const signedReq = (doc.requests || [])
     .filter((r) => r.status === 'signed' && r.signatureData)

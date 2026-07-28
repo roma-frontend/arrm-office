@@ -603,9 +603,7 @@ function OrgBackups({
                 {formatDate(Math.max(...orgBackups.map((e) => e.latestBackup)))}
               </span>
               <span className="sm:hidden">
-                {new Date(
-                  Math.max(...orgBackups.map((e) => e.latestBackup)),
-                ).toLocaleDateString()}
+                {new Date(Math.max(...orgBackups.map((e) => e.latestBackup))).toLocaleDateString()}
               </span>
             </div>
           )}

@@ -114,9 +114,7 @@ export const detectConflicts = query({
     // Get all approved and pending leaves
     let leaves = await ctx.db
       .query('leaveRequests')
-      .filter((q) =>
-        q.or(q.eq(q.field('status'), 'approved'), q.eq(q.field('status'), 'pending')),
-      )
+      .filter((q) => q.or(q.eq(q.field('status'), 'approved'), q.eq(q.field('status'), 'pending')))
       .order('desc')
       .take(MAX_PAGE_SIZE);
 

@@ -515,7 +515,7 @@ function AssetDetailCard({
   const sigDoc = useQuery(
     api.signatures.getDocument,
     mfDocId ? { documentId: mfDocId } : 'skip',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) as any;
   const labels = useDocumentLabels();
 
@@ -578,7 +578,9 @@ function AssetDetailCard({
       });
       toast.success(t('assets.movementForm.sent'));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('assets.common.error', 'Failed to send form'));
+      toast.error(
+        err instanceof Error ? err.message : t('assets.common.error', 'Failed to send form'),
+      );
     } finally {
       setSending(false);
     }
@@ -997,8 +999,23 @@ export default function AssetsClient() {
     orgId
       ? {
           organizationId: orgId,
-          category: categoryFilter !== 'all' ? (categoryFilter as 'laptop' | 'monitor' | 'phone' | 'tablet' | 'peripheral' | 'furniture' | 'software_license' | 'vehicle' | 'other') : undefined,
-          status: statusFilter !== 'all' ? (statusFilter as 'available' | 'assigned' | 'maintenance' | 'retired' | 'lost') : undefined,
+          category:
+            categoryFilter !== 'all'
+              ? (categoryFilter as
+                  | 'laptop'
+                  | 'monitor'
+                  | 'phone'
+                  | 'tablet'
+                  | 'peripheral'
+                  | 'furniture'
+                  | 'software_license'
+                  | 'vehicle'
+                  | 'other')
+              : undefined,
+          status:
+            statusFilter !== 'all'
+              ? (statusFilter as 'available' | 'assigned' | 'maintenance' | 'retired' | 'lost')
+              : undefined,
         }
       : 'skip',
   );

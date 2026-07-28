@@ -81,10 +81,8 @@ ${
 PENDING APPROVAL (${pendingLeaves.length}):
 ${
   pendingLeaves
-    .slice(0, 5)      .map(
-      (l) =>
-        `- ${l.userName}: ${l.days} day(s) ${l.type} leave (${l.startDate} → ${l.endDate})`,
-    )
+    .slice(0, 5)
+    .map((l) => `- ${l.userName}: ${l.days} day(s) ${l.type} leave (${l.startDate} → ${l.endDate})`)
     .join('\n') || 'None'
 }
 

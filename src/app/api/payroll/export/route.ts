@@ -76,10 +76,7 @@ export async function POST(request: Request) {
 
     const totalGross = records.reduce((sum: number, r) => sum + r.grossSalary, 0);
     const totalNet = records.reduce((sum: number, r) => sum + r.netSalary, 0);
-    const totalDeductions = records.reduce(
-      (sum: number, r) => sum + (r.deductions?.total || 0),
-      0,
-    );
+    const totalDeductions = records.reduce((sum: number, r) => sum + (r.deductions?.total || 0), 0);
 
     worksheet.addRow([]);
     const totalsRow = worksheet.addRow({ employee: 'TOTALS' });
