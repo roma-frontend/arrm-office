@@ -432,12 +432,63 @@ describe('imidExchangeCode', () => {
     const fetchCall = mockFetch.mock.calls[0]!;
     const fetchUrl = fetchCall[0] as string;
     const fetchOpts = fetchCall[1] as RequestInit;
-    const body = JSON.parse(fetchOpts.body as string);
+
+    // RFC 6749 §4.1.3 requires form-urlencoded on the token endpoint.
+    expect((fetchOpts.headers as Record<string, string>)['Content-Type']).toBe(
+      'application/x-www-form-urlencoded',
+    );
+    const body = new URLSearchParams(fetchOpts.body as string);
 
     expect(fetchUrl).toBe('https://api.imid.am/v1/oauth/token');
-    expect(body.grant_type).toBe('authorization_code');
-    expect(body.code).toBe('auth-code-123');
-    expect(body.client_id).toBe('imid-client-xyz');
+    expect(body.get('grant_type')).toBe('authorization_code');
+    expect(body.get('code')).toBe('auth-code-123');
+    expect(body.get('client_id')).toBe('imid-client-xyz');
+  });
+
+  it('retries the token request as JSON when the server rejects form encoding', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        text: async () => '{"error":"invalid_request"}',
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify(VALID_TOKEN_RESPONSE),
+      });
+
+    const ctx = makeCtx();
+    const result = await integrations.imidExchangeCode.handler(ctx, {
+      organizationId: ORG_ID,
+      code: 'auth-code-123',
+      redirectUri: 'https://app.example.com/auth/imid/callback',
+    });
+
+    expect(result.accessToken).toBe('exchanged-access-token');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+
+    const retryOpts = mockFetch.mock.calls[1]![1] as RequestInit;
+    expect((retryOpts.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    expect(JSON.parse(retryOpts.body as string).grant_type).toBe('authorization_code');
+  });
+
+  it('does not retry when the credentials are rejected (401)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      text: async () => '{"error":"invalid_client"}',
+    });
+
+    const ctx = makeCtx();
+    await expect(
+      integrations.imidExchangeCode.handler(ctx, {
+        organizationId: ORG_ID,
+        code: 'auth-code-123',
+        redirectUri: 'https://app.example.com/auth/imid/callback',
+      }),
+    ).rejects.toThrow('API error');
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it('throws when the token exchange fails', async () => {

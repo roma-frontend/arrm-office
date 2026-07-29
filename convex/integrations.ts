@@ -921,6 +921,53 @@ async function fetchJson(
   }
 }
 
+/**
+ * Call an OAuth 2.0 token endpoint.
+ *
+ * RFC 6749 §4.1.3 mandates `application/x-www-form-urlencoded` for token
+ * requests, so that is what we send first. Some providers only accept JSON,
+ * so a 400/415 response — the two statuses a server uses to reject a body it
+ * cannot parse — triggers one retry with a JSON body. Any other failure is
+ * a genuine error (bad credentials, wrong URL) and propagates immediately.
+ */
+async function fetchTokenEndpoint(
+  url: string,
+  params: Record<string, string>,
+  label: string,
+  config: any,
+): Promise<Record<string, unknown>> {
+  try {
+    return (await fetchJson(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
+        body: new URLSearchParams(params).toString(),
+      },
+      label,
+      config,
+    )) as Record<string, unknown>;
+  } catch (e: any) {
+    const message = String(e?.message ?? '');
+    // Only retry when the server rejected the *encoding*, not the credentials.
+    if (!/\((400|415)\)/.test(message)) throw e;
+
+    return (await fetchJson(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(params),
+      },
+      label,
+      config,
+    )) as Record<string, unknown>;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SYNC ORCHESTRATION
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1419,20 +1466,16 @@ async function syncImid(
     'imID token URL',
   );
 
-  const payload = (await fetchJson(
+  const payload = await fetchTokenEndpoint(
     tokenUrl,
     {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        grant_type: 'client_credentials',
-      }),
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      grant_type: 'client_credentials',
     },
     'imID auth',
     config,
-  )) as Record<string, unknown>;
+  );
 
   const accessToken =
     asString(payload.access_token) ?? asString(payload.accessToken) ?? asString(payload.token);
@@ -1572,22 +1615,23 @@ export const imidExchangeCode = internalAction({
       'imID token URL',
     );
 
-    const payload = (await fetchJson(
+    const { clientId, clientSecret } = config.config;
+    if (!clientId || !clientSecret) {
+      throw new Error('imID: Client ID and Client Secret must be configured');
+    }
+
+    const payload = await fetchTokenEndpoint(
       tokenUrl,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          client_id: config.config.clientId,
-          client_secret: config.config.clientSecret,
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: redirectUri,
-        }),
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
       },
       'imID token exchange',
       config.config,
-    )) as Record<string, unknown>;
+    );
 
     const accessToken =
       asString(payload.access_token) ?? asString(payload.accessToken) ?? asString(payload.token);
