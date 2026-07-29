@@ -254,6 +254,7 @@ export function FaceLogin() {
       setTimeout(() => {
         if (videoRef.current && streamRef.current && isWebcamActive) playVideoOnce();
       }, 1000);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('❌ Error accessing webcam:', error);
       stopWebcam();
@@ -520,6 +521,7 @@ export function FaceLogin() {
       const params = new URLSearchParams(window.location.search);
       const nextUrl = params.get('next');
       router.push(nextUrl || '/dashboard');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('❌ Error during face login:', error);
 

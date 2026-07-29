@@ -361,6 +361,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
       });
       setPickupCoords(undefined);
       setDropoffCoords(undefined);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(
         error.message || t('driver.failedToRequestDriver', 'Не удалось запросить водителя'),
@@ -401,7 +402,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                 <SelectValue placeholder={t('driver.chooseDriver', 'Choose a driver')} />
               </SelectTrigger>
               <SelectContent>
-                {availableDrivers?.filter(Boolean).map((driver: any) => (
+                {availableDrivers?.filter(Boolean).map((driver) => (
                   <SelectItem key={driver!._id} value={driver!._id}>
                     {driver!.userName} - {driver!.vehicleInfo.model} (
                     {driver!.vehicleInfo.plateNumber})
@@ -454,7 +455,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                       {t('driver.alternativeDrivers', 'Доступные водители:')}
                     </p>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {alternativeDrivers.map((driver: any) => (
+                      {alternativeDrivers.map((driver) => (
                         <div
                           key={driver._id}
                           className="flex items-center justify-between p-2 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700"

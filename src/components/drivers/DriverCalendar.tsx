@@ -290,6 +290,7 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
       toast.success(
         t('driverCalendar.tripStatusUpdated', 'Trip status updated to {{status}}', { status }),
       );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(
         error.message || t('driverCalendar.failedToUpdateStatus', 'Failed to update status'),
@@ -298,7 +299,7 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
   };
 
   const weekDays = useMemo(() => {
-    return Array.from({ length: 7 }).map((_: any, i: any) =>
+    return Array.from({ length: 7 }).map((_, i) =>
       addDays(startOfWeek(selectedDate, { weekStartsOn: 1 }), i),
     );
   }, [selectedDate]);
@@ -386,7 +387,7 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
       {/* Desktop Week View - Hidden on mobile */}
       <div className="hidden sm:block">
         <div className="grid grid-cols-7 gap-2 lg:gap-3">
-          {weekDays.map((day: any) => {
+          {weekDays.map((day) => {
             const daySchedule = getScheduleForDay(day);
             const today = isToday(day);
 
@@ -463,7 +464,7 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
           <div className="p-2 pb-1.5 border-b border-border/30">
             <ScrollArea className="w-full">
               <div className="flex gap-1.5 pb-1.5">
-                {weekDays.map((day: any, index: any) => {
+                {weekDays.map((day, index) => {
                   const today = isToday(day);
                   const isSelected = index === mobileViewDay;
                   const daySchedule = getScheduleForDay(day);

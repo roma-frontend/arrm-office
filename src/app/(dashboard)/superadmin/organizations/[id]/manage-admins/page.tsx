@@ -279,7 +279,7 @@ export default function ManageAdminsPage() {
 
           {admins.length > 0 ? (
             <div className="space-y-3 mb-6">
-              {admins.map((admin: any) => (
+              {admins.map((admin) => (
                 <div
                   key={admin._id}
                   className="p-4 rounded-xl border flex items-center justify-between hover:shadow-md transition-all"
@@ -353,7 +353,7 @@ export default function ManageAdminsPage() {
 
           {employees.length > 0 ? (
             <div className="space-y-3">
-              {employees.map((employee: any) => (
+              {employees.map((employee) => (
                 <div
                   key={employee._id}
                   className="p-4 rounded-xl border flex items-center justify-between hover:shadow-md transition-all group"

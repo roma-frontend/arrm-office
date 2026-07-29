@@ -99,6 +99,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
       });
       toast.success(t('employees.employeeDeleted', 'Employee deleted successfully'));
       window.history.back();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('employees.deleteFailed', 'Failed to delete employee'));
     } finally {
@@ -107,7 +108,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
   };
 
   const renderStars = (rating: number) =>
-    [1, 2, 3, 4, 5].map((i: any) => (
+    [1, 2, 3, 4, 5].map((i) => (
       <Star
         key={i}
         className={`w-3.5 h-3.5 ${i <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
@@ -315,7 +316,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {ratingHistory.map((rating: any) => (
+              {ratingHistory.map((rating) => (
                 <div
                   key={rating._id}
                   className="flex items-center justify-between p-3 rounded-lg border"
@@ -466,7 +467,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
               <div>
                 <p className="text-sm font-medium mb-2">{t('employeeProfile.skills')}</p>
                 <div className="flex flex-wrap gap-2">
-                  {profile.profile.biography.skills.map((skill: any, i: any) => (
+                  {profile.profile.biography.skills.map((skill, i) => (
                     <Badge key={i} variant="secondary">
                       {skill}
                     </Badge>
@@ -479,7 +480,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                 <div>
                   <p className="text-sm font-medium mb-2">{t('employeeProfile.languages')}</p>
                   <div className="flex flex-wrap gap-2">
-                    {profile.profile.biography.languages.map((lang: any, i: any) => (
+                    {profile.profile.biography.languages.map((lang, i) => (
                       <Badge key={i} variant="outline">
                         {lang}
                       </Badge>
@@ -499,7 +500,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {profile.documents.map((doc: any) => (
+              {profile.documents.map((doc) => (
                 <div
                   key={doc._id}
                   className="flex items-center justify-between p-3 bg-[var(--card-hover)] rounded-lg"

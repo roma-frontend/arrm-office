@@ -465,6 +465,7 @@ export default function LearningClient() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const openEditLessonDialog = (lesson: any) => {
     setEditingLesson(lesson);
     setLessonForm({
@@ -496,7 +497,7 @@ export default function LearningClient() {
   const handleSubmitQuiz = async () => {
     if (!quizDataResult || !effectiveOrgId || !user?.id) return;
 
-    const answers = quizDataResult.questions.map((q: any) => ({
+    const answers = quizDataResult.questions.map((q) => ({
       questionId: q._id,
       userAnswer: userAnswers[q._id] || '',
     }));

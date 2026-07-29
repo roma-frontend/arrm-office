@@ -318,6 +318,7 @@ export default function NewIntegrationSettings() {
       // Drop local edits so freshly saved values come back from the server.
       setFormState({});
       setClearedSecrets({});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e?.message ? String(e.message) : String(e));
     } finally {
@@ -338,6 +339,7 @@ export default function NewIntegrationSettings() {
       } else {
         toast.error(result?.error || t('admin.integrations.syncFailed', 'Sync failed'));
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e?.message ? String(e.message) : String(e));
     } finally {
@@ -375,6 +377,7 @@ export default function NewIntegrationSettings() {
       toast.success(
         t('admin.integrations.webhookSecretCreated', 'Webhook secret generated — copy it now'),
       );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e?.message ? String(e.message) : String(e));
     } finally {

@@ -85,7 +85,7 @@ export function AttendanceDashboard() {
           {t('attendance.monthlyAttendance')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat: any, index: any) => (
+          {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
@@ -154,7 +154,7 @@ export function AttendanceDashboard() {
             </p>
           ) : (
             <div className="space-y-3">
-              {history.map((record: any) => (
+              {history.map((record) => (
                 <div
                   key={record._id}
                   className="flex flex-wrap gap-2 items-center justify-between p-4 rounded-lg border"

@@ -21,6 +21,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 5000): 
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const isRateLimit =
         error?.message?.includes('quota') ||
@@ -816,6 +817,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       editType,
       sessionId,
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('=== AI Site Editor Error ===');
     console.error('Message:', error?.message);

@@ -23,6 +23,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 interface LocalizationSettingsProps {
   userId: Id<'users'>;
   user: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSettingsChange: (settings: any) => void;
 }
 

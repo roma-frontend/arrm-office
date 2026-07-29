@@ -72,6 +72,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
 
       setSelectedAlert(null);
       setReviewNotes('');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Failed to review alert:', error);
       toast.error(t('events.reviewFailed', 'Failed to review alert'));
@@ -130,7 +131,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
             </div>
           ) : (
             <div className="space-y-3">
-              {alerts.map((alert: any) => (
+              {alerts.map((alert) => (
                 <div
                   key={alert._id}
                   className="p-4 border rounded-lg transition-colors cursor-pointer"
@@ -186,7 +187,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
             </p>
           ) : (
             <div className="space-y-2">
-              {reviewedAlerts.slice(0, 5).map((alert: any) => (
+              {reviewedAlerts.slice(0, 5).map((alert) => (
                 <div key={alert._id} className="flex items-center gap-3 text-sm p-2 rounded">
                   {alert.reviewNotes?.includes('Approved') ? (
                     <CheckCircle className="w-4 h-4 text-green-600" />

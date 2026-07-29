@@ -324,7 +324,7 @@ export default function DepartmentDetailClient() {
 
   const departmentPositions = useMemo(() => {
     if (!positions || !department) return [];
-    return positions.filter((p: any) => p.departmentId === department._id);
+    return positions.filter((p) => p.departmentId === department._id);
   }, [positions, department]);
 
   const handleDelete = async () => {

@@ -190,10 +190,12 @@ export default function OrgChartClient() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onNodesChange = useCallback((changes: any) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onEdgesChange = useCallback((changes: any) => {
     setEdges((eds) => applyEdgeChanges(changes, eds));
   }, []);

@@ -311,7 +311,7 @@ export default function PayrollDashboard() {
                         boxShadow: tooltipShadow,
                       }}
                       labelStyle={{ color: tooltipColor, fontWeight: 500 }}
-                      formatter={(value: any, _name: any) => [value, '']}
+                      formatter={(value, _name) => [value, '']}
                     />
                     <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -333,7 +333,7 @@ export default function PayrollDashboard() {
                       cx="50%"
                       cy="50%"
                       labelLine={true}
-                      label={(entry: any) =>
+                      label={(entry) =>
                         `${entry.name}: ${((entry.percent ?? 0) * 100).toFixed(0)}%`
                       }
                       outerRadius={80}
