@@ -199,7 +199,9 @@ export const listAssets = query({
         const activeAssignment = await ctx.db
           .query('assetAssignments')
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .withIndex('by_asset_active', (q: any) => q.eq('assetId', asset._id).eq('status', 'active'))
+          .withIndex('by_asset_active', (q: any) =>
+            q.eq('assetId', asset._id).eq('status', 'active'),
+          )
           .first();
 
         let assignedToUser = null;
@@ -859,7 +861,9 @@ export const deleteAsset = mutation({
     const activeAssignment = await ctx.db
       .query('assetAssignments')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_asset_active', (q: any) => q.eq('assetId', args.assetId).eq('status', 'active'))
+      .withIndex('by_asset_active', (q: any) =>
+        q.eq('assetId', args.assetId).eq('status', 'active'),
+      )
       .first();
     if (activeAssignment) {
       throw new Error('Cannot delete an asset with active assignment. Return it first.');
