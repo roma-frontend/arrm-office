@@ -42,6 +42,7 @@ interface LeaveConflictAlertsProps {
 
 export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAlertsProps) {
   const { t } = useTranslation();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [isReviewing, setIsReviewing] = useState(false);

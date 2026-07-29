@@ -82,11 +82,14 @@ export function DriverMap({
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapDivRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const polylineRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const LRef = useRef<any>(null);
 
   // Get user's current location

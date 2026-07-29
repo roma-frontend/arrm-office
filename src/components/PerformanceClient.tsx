@@ -1028,6 +1028,7 @@ export function PerformanceClient() {
     | undefined;
 
   const [showCreateWizard, setShowCreateWizard] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [launchCycleId, setLaunchCycleId] = useState<Id<'reviewCycles'> | null>(null);
   const [viewResults, setViewResults] = useState<{

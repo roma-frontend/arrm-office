@@ -266,7 +266,8 @@ export function CardSelectionStep({
                   )}
                 >
                   {React.isValidElement(option.icon)
-                    ? React.cloneElement(option.icon as React.ReactElement<any>, {
+                    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      React.cloneElement(option.icon as React.ReactElement<any>, {
                         className: 'w-4 h-4 md:w-6 md:h-6',
                       })
                     : option.icon}

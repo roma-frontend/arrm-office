@@ -119,12 +119,14 @@ export default function LearningClient() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [quizResult, setQuizResult] = useState<any>(null);
   const [quizStartTime, setQuizStartTime] = useState<number>(0);
 
   // Lesson management state
   const [showCreateLesson, setShowCreateLesson] = useState(false);
   const [showEditLesson, setShowEditLesson] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingLesson, setEditingLesson] = useState<any>(null);
   const [lessonForm, setLessonForm] = useState({
     title: '',

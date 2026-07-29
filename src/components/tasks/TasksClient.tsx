@@ -488,6 +488,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
   const [filterEmployee, setFilterEmployee] = useState<string>('all');
   const [search, setSearch] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [activeTask, setActiveTask] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
   const [isScrolled, setIsScrolled] = useState(false);
