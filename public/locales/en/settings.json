@@ -505,6 +505,7 @@
     "namePlaceholder": "e.g. Q4 Product Launch",
     "description": "Description",
     "descPlaceholder": "Brief project overview...",
+    "priorityLabel": "Priority",
     "priority": {
       "low": "Low",
       "medium": "Medium",

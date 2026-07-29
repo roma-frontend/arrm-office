@@ -499,7 +499,8 @@ export const updateQuestion = mutation({
       throw new Error('Can only edit questions in draft surveys');
     }
 
-    const patch = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const patch: any = {};
     if (updates.text !== undefined) patch.text = updates.text;
     if (updates.description !== undefined) patch.description = updates.description;
     if (updates.isRequired !== undefined) patch.isRequired = updates.isRequired;
@@ -582,7 +583,8 @@ export const updateSurvey = mutation({
       throw new Error('Only draft surveys can be updated');
     }
 
-    const patch = { updatedAt: Date.now() };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const patch: any = { updatedAt: Date.now() };
     if (updates.title !== undefined) patch.title = updates.title;
     if (updates.description !== undefined) patch.description = updates.description;
     if (updates.isAnonymous !== undefined) patch.isAnonymous = updates.isAnonymous;

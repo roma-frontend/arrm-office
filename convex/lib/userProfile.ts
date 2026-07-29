@@ -58,7 +58,8 @@ export const PROFILE_FIELDS = [
 export async function getProfile(ctx: any, userId: Id<'users'>): Promise<UserProfile | null> {
   return await ctx.db
     .query('userProfiles')
-    .withIndex('by_user', (q) => q.eq('userId', userId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_user', (q: any) => q.eq('userId', userId))
     .first();
 }
 
@@ -105,7 +106,8 @@ export async function patchProfile(
   // Write to userProfiles table
   const profile = await ctx.db
     .query('userProfiles')
-    .withIndex('by_user', (q) => q.eq('userId', userId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_user', (q: any) => q.eq('userId', userId))
     .first();
 
   if (profile) {

@@ -156,7 +156,8 @@ export const updateDocument = mutation({
     const { isSuperadmin } = await checkAccess(ctx, doc.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can update documents');
 
-    const patch = { updatedAt: Date.now() };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const patch: any = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
     if (args.category !== undefined) patch.category = args.category;

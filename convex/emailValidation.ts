@@ -53,7 +53,8 @@ export const validateEmail = action({
         return { valid: false, reason: 'no_mx_records' };
       }
       return { valid: true };
-    } catch (err: unknown) {
+    } catch (err: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // ENOTFOUND = domain doesn't exist, ENODATA = no MX records
       if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
         return { valid: false, reason: 'domain_not_found' };

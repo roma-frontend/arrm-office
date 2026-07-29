@@ -201,7 +201,9 @@ export const getIncomingCalls = query({
 
     // Batch-load all potential initiators
     const sendersBatch = await Promise.all([...uniqueSenderIds].map((id) => ctx.db.get(id)));
-    const senderMap = new Map(sendersBatch.filter(Boolean).map((s) => [s._id, s]));
+    const senderMap = new Map(
+      sendersBatch.filter((s): s is NonNullable<typeof s> => s !== null).map((s) => [s._id, s]),
+    );
 
     // Find active calls in these conversations
     for (let i = 0; i < memberships.length; i++) {

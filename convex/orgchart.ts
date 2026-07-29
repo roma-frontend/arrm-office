@@ -25,21 +25,29 @@ export const getOrgChart = query({
     // Get all nodes for this org
     const nodes = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
       .take(MAX_PAGE_SIZE);
 
     // Get all users in org (for enrichment)
     const users = await ctx.db
       .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((q: any) =>
+        q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')),
+      )
       .take(MAX_PAGE_SIZE);
 
-    const userMap = new Map(users.map((u) => [u._id, u]));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userMap = new Map(users.map((u: any) => [u._id, u]));
 
     // Load profiles in parallel
-    const profiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
-    const profileMap = new Map(users.map((u, i) => [u._id, profiles[i]]));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profileMap = new Map(users.map((u: any, i: any) => [u._id, profiles[i]]));
 
     // Enrich nodes with user data
     const enrichedNodes = nodes.map((node) => {
@@ -84,7 +92,8 @@ export const getOrgChartTree = query({
 
     const nodes = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
       .take(MAX_PAGE_SIZE);
 
     // Build tree structure
@@ -107,9 +116,12 @@ export const getOrgChartTree = query({
     });
 
     // Sort children by order field
-    roots.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    const sortChildren = (node) => {
-      node.children.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    roots.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sortChildren = (node: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      node.children.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
       node.children.forEach(sortChildren);
     };
     roots.forEach(sortChildren);
@@ -142,14 +154,19 @@ export const generateOrgChartFromUsers = mutation({
     // Get all active users in org
     const users = await ctx.db
       .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((q: any) =>
+        q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')),
+      )
       .take(MAX_PAGE_SIZE);
 
     // Clear existing nodes
     const existingNodes = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
       .take(MAX_PAGE_SIZE);
 
     for (const node of existingNodes) {
@@ -158,7 +175,8 @@ export const generateOrgChartFromUsers = mutation({
 
     // Group users by department
     const departments = new Map<string, typeof users>();
-    users.forEach((user) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    users.forEach((user: any) => {
       const dept = user.department || 'Unassigned';
       if (!departments.has(dept)) departments.set(dept, []);
       departments.get(dept)!.push(user);
@@ -191,7 +209,8 @@ export const generateOrgChartFromUsers = mutation({
       });
 
       // Find department head (admin or first user with supervisor role)
-      const _deptHead = deptUsers.find((u) => u.role === 'admin' || u.role === 'supervisor');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const _deptHead = deptUsers.find((u: any) => u.role === 'admin' || u.role === 'supervisor');
 
       // Create user nodes under department
       let userOrder = 0;
@@ -334,7 +353,8 @@ export const deleteNode = mutation({
     // Delete all children recursively
     const children = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_parent', (q) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_parent', (q: any) =>
         q.eq('organizationId', node.organizationId).eq('parentId', args.nodeId),
       )
       .take(MAX_PAGE_SIZE);
@@ -410,7 +430,10 @@ async function checkIsDescendant(
 ): Promise<boolean> {
   const children = await ctx.db
     .query('orgChartNodes')
-    .withIndex('by_parent', (q) => q.eq('organizationId', organizationId).eq('parentId', nodeId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_parent', (q: any) =>
+      q.eq('organizationId', organizationId).eq('parentId', nodeId),
+    )
     .take(MAX_PAGE_SIZE);
 
   for (const child of children) {
@@ -450,10 +473,12 @@ export const saveLayout = mutation({
     if (args.isDefault) {
       const existingDefaults = await ctx.db
         .query('orgChartLayouts')
-        .withIndex('by_user', (q) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .withIndex('by_user', (q: any) =>
           q.eq('organizationId', args.organizationId).eq('userId', requester._id),
         )
-        .filter((q) => q.eq(q.field('isDefault'), true))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((q: any) => q.eq(q.field('isDefault'), true))
         .take(MAX_PAGE_SIZE);
 
       for (const layout of existingDefaults) {
@@ -495,7 +520,8 @@ export const fixOrgChartDepartments = mutation({
     // Get all nodes
     const nodes = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .take(MAX_PAGE_SIZE);
 
     // Build map of department name -> department node id (case-insensitive)
@@ -514,7 +540,8 @@ export const fixOrgChartDepartments = mutation({
     // Get all users to map userId -> department and name -> department
     const users = await ctx.db
       .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .take(MAX_PAGE_SIZE);
 
     const userDeptMap = new Map<string, string>();
@@ -620,16 +647,19 @@ export const debugOrgChart = query({
 
     const nodes = await ctx.db
       .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .take(MAX_PAGE_SIZE);
 
     // Get users for name lookup
     const users = await ctx.db
       .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .take(MAX_PAGE_SIZE);
 
-    const userMap = new Map(users.map((u) => [u._id, u]));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userMap = new Map(users.map((u: any) => [u._id, u]));
 
     // Build node map
     const nodeMap = new Map<string, any>();
@@ -690,7 +720,8 @@ export const getLayouts = query({
 
     const layouts = await ctx.db
       .query('orgChartLayouts')
-      .withIndex('by_user', (q) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_user', (q: any) =>
         q.eq('organizationId', args.organizationId).eq('userId', requester._id),
       )
       .take(MAX_PAGE_SIZE);

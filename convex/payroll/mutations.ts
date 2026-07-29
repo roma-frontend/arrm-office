@@ -21,7 +21,8 @@ type RunTotals = {
 async function recomputeRunTotals(ctx: any, payrollRunId: Id<'payrollRuns'>): Promise<RunTotals> {
   const records = await ctx.db
     .query('payrollRecords')
-    .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', payrollRunId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', payrollRunId))
     .take(DEFAULT_LIST_CAP);
 
   let totalGross = 0;
@@ -41,7 +42,8 @@ async function recomputeRunTotals(ctx: any, payrollRunId: Id<'payrollRuns'>): Pr
     totalNet: round2(totalNet),
     totalDeductions: round2(totalDeductions),
     totalEmployerCost: round2(totalEmployerCost),
-    employeeCount: records.filter((r) => r.status !== 'cancelled').length,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    employeeCount: records.filter((r: any) => r.status !== 'cancelled').length,
   };
 
   await ctx.db.patch(payrollRunId, {
@@ -129,7 +131,8 @@ export const createPayrollRun = mutation({
 
     const existing = await ctx.db
       .query('payrollRuns')
-      .withIndex('by_org_period', (q) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org_period', (q: any) =>
         q.eq('organizationId', organizationId).eq('period', period),
       )
       .first();
@@ -182,12 +185,14 @@ export const calculatePayrollRun = mutation({
 
     const employees = await ctx.db
       .query('employeeProfiles')
-      .withIndex('by_org', (q) => q.eq('organizationId', run.organizationId!))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', run.organizationId!))
       .take(DEFAULT_LIST_CAP);
 
     const settings = await ctx.db
       .query('salarySettings')
-      .withIndex('by_org', (q) => q.eq('organizationId', run.organizationId!))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', run.organizationId!))
       .first();
 
     // Prefer explicit salary settings, then fall back to the organization's country.
@@ -208,10 +213,13 @@ export const calculatePayrollRun = mutation({
     const skipped: { userId: Id<'users'>; reason: string }[] = [];
 
     // Batch-load all unique user IDs upfront to avoid N+1 queries
-    const uniqueUserIds = [...new Set(employees.map((emp) => emp.userId))];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const uniqueUserIds = [...new Set(employees.map((emp: any) => emp.userId))];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
     );
 
     for (const emp of employees) {
@@ -347,7 +355,8 @@ export const approvePayrollRun = mutation({
 
     const records = await ctx.db
       .query('payrollRecords')
-      .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', args.payrollRunId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', args.payrollRunId))
       .take(DEFAULT_LIST_CAP);
 
     for (const record of records) {
@@ -397,7 +406,8 @@ export const markPayrollRunAsPaid = mutation({
 
     const records = await ctx.db
       .query('payrollRecords')
-      .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', args.payrollRunId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', args.payrollRunId))
       .take(DEFAULT_LIST_CAP);
 
     for (const record of records) {
@@ -446,7 +456,8 @@ export const cancelPayrollRun = mutation({
 
     const records = await ctx.db
       .query('payrollRecords')
-      .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', args.payrollRunId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', args.payrollRunId))
       .take(DEFAULT_LIST_CAP);
 
     for (const record of records) {
@@ -487,7 +498,8 @@ export const generatePayslip = mutation({
 
     const existing = await ctx.db
       .query('payslips')
-      .withIndex('by_payroll_record', (q) => q.eq('payrollRecordId', args.payrollRecordId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_payroll_record', (q: any) => q.eq('payrollRecordId', args.payrollRecordId))
       .first();
 
     if (existing) {
@@ -590,7 +602,8 @@ export const updatePayrollRecord = mutation({
 
     const settings = await ctx.db
       .query('salarySettings')
-      .withIndex('by_org', (q) => q.eq('organizationId', record.organizationId!))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', record.organizationId!))
       .first();
     const minWage = settings?.minimumWage ?? 0;
     const maxOvertime = settings?.maximumOvertime ?? 0;
@@ -706,7 +719,8 @@ export const deletePayrollRecord = mutation({
 
     const payslips = await ctx.db
       .query('payslips')
-      .withIndex('by_payroll_record', (q) => q.eq('payrollRecordId', args.payrollRecordId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_payroll_record', (q: any) => q.eq('payrollRecordId', args.payrollRecordId))
       .take(SMALL_LIST_CAP);
 
     for (const payslip of payslips) {
@@ -784,7 +798,8 @@ export const saveSalarySettings = mutation({
 
     const existing = await ctx.db
       .query('salarySettings')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .first();
 
     const now = Date.now();

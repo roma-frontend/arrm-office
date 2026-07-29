@@ -702,7 +702,9 @@ export const bulkApproveLeaves = mutation({
       ),
     ];
     const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
-    const userMap = new Map(usersBatch.filter(Boolean).map((u) => [u._id, u]));
+    const userMap = new Map(
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
+    );
 
     for (const leaveId of leaveIds) {
       try {

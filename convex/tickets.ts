@@ -572,7 +572,8 @@ export const bulkUpdateTickets = mutation({
           firstTicketOrgId = ticket.organizationId;
         }
 
-        const updates = { updatedAt: now };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const updates: any = { updatedAt: now };
         if (args.status) updates.status = args.status;
         if (args.assignedTo !== undefined) updates.assignedTo = args.assignedTo;
 

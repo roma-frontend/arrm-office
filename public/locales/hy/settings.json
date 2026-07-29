@@ -505,6 +505,7 @@
     "namePlaceholder": "Օրինակ՝ Q4 արտադրանքի թողարկում",
     "description": "Նկարագրություն",
     "descPlaceholder": "Համառոտ նկարագրություն...",
+    "priorityLabel": "Առաջնություն",
     "priority": {
       "low": "Ցածր",
       "medium": "Միջին",

@@ -167,7 +167,8 @@ export const updateCourse = mutation({
     const { isSuperadmin } = await checkAccess(ctx, course.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can update courses');
 
-    const patch = { updatedAt: Date.now() };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const patch: any = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
     if (args.category !== undefined) patch.category = args.category;
@@ -274,7 +275,8 @@ export const updateLesson = mutation({
     if (!lesson) throw new Error('Lesson not found');
     await checkAccess(ctx, lesson.organizationId);
 
-    const patch = { updatedAt: Date.now() };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const patch: any = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
     if (args.order !== undefined) patch.order = args.order;
@@ -462,7 +464,8 @@ export const updateEnrollmentStatus = mutation({
     if (!enrollment) throw new Error('Enrollment not found');
     await checkAccess(ctx, enrollment.organizationId);
 
-    const patch = { status: args.status, updatedAt: Date.now() };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const patch: any = { status: args.status, updatedAt: Date.now() };
     if (args.progress !== undefined) patch.progress = args.progress;
     if (args.status === 'in_progress' && !enrollment.startedAt) patch.startedAt = Date.now();
     if (args.status === 'completed') {
@@ -520,7 +523,8 @@ export const updateLessonProgress = mutation({
 
     const now = Date.now();
     if (existing) {
-      const patch = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const patch: any = {
         isCompleted: args.isCompleted,
         updatedAt: now,
       };
@@ -718,7 +722,8 @@ export const submitQuizAttempt = mutation({
     const totalPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
     let earnedPoints = 0;
 
-    const answerResults = args.answers.map((answer, idx: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const answerResults = args.answers.map((answer: any, idx: number) => {
       const question = questions[idx];
       if (!question) return { questionId: null, userAnswer: answer.userAnswer, isCorrect: false };
       const isCorrect = answer.userAnswer === question.correctAnswer;

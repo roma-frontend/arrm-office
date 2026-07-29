@@ -505,6 +505,7 @@
     "namePlaceholder": "Например: Запуск продукта Q4",
     "description": "Описание",
     "descPlaceholder": "Краткое описание проекта...",
+    "priorityLabel": "Приоритет",
     "priority": {
       "low": "Низкий",
       "medium": "Средний",

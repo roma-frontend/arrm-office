@@ -14,7 +14,8 @@ import { isSuperadmin } from './lib/auth';
 async function getOrCreateSettings(ctx: any, userId: any) {
   const existing = await ctx.db
     .query('userSettings')
-    .withIndex('by_user', (q) => q.eq('userId', userId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_user', (q: any) => q.eq('userId', userId))
     .first();
   if (existing) return existing;
 

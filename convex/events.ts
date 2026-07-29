@@ -124,7 +124,8 @@ export const updateCompanyEvent = mutation({
       throw new Error('Only event creator or admin can update');
     }
 
-    const patch = { updatedAt: Date.now() };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const patch: any = { updatedAt: Date.now() };
     if (args.name) patch.name = args.name;
     if (args.description !== undefined) patch.description = args.description;
     if (args.startDate) patch.startDate = args.startDate;

@@ -337,7 +337,7 @@ export default function ProjectsClient({ userId, userRole }: { userId: string; u
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>{t('projects.priority', 'Priority')}</Label>
+                <Label>{t('projects.priorityLabel', 'Priority')}</Label>
                 <Select
                   value={createForm.priority}
                   onValueChange={(v) => setCreateForm((p) => ({ ...p, priority: v as any }))}

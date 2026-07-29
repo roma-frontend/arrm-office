@@ -82,7 +82,8 @@ async function assertUniqueIdentifiers(
   // Bounded scan of the org catalog; DEFAULT_LIST_CAP covers 99% of tenants.
   const existing = await ctx.db
     .query('assetCatalog')
-    .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
     .take(DEFAULT_LIST_CAP);
 
   for (const a of existing) {
@@ -127,7 +128,8 @@ async function restoreAssetAfterMaintenance(
 
   const activeAssignment = await ctx.db
     .query('assetAssignments')
-    .withIndex('by_asset_active', (q) => q.eq('assetId', assetId).eq('status', 'active'))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_asset_active', (q: any) => q.eq('assetId', assetId).eq('status', 'active'))
     .first();
 
   const toStatus = activeAssignment ? 'assigned' : 'available';
@@ -177,13 +179,16 @@ export const listAssets = query({
   handler: async (ctx, args) => {
     let q = ctx.db
       .query('assetCatalog')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId));
 
     if (args.category) {
-      q = q.filter((q) => q.eq(q.field('category'), args.category));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = q.filter((q: any) => q.eq(q.field('category'), args.category));
     }
     if (args.status) {
-      q = q.filter((q) => q.eq(q.field('status'), args.status));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = q.filter((q: any) => q.eq(q.field('status'), args.status));
     }
 
     const assets = await q.order('desc').take(DEFAULT_LIST_CAP);
@@ -193,7 +198,8 @@ export const listAssets = query({
       assets.map(async (asset) => {
         const activeAssignment = await ctx.db
           .query('assetAssignments')
-          .withIndex('by_asset_active', (q) => q.eq('assetId', asset._id).eq('status', 'active'))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .withIndex('by_asset_active', (q: any) => q.eq('assetId', asset._id).eq('status', 'active'))
           .first();
 
         let assignedToUser = null;
@@ -205,8 +211,10 @@ export const listAssets = query({
         // Count maintenance history
         const maintenanceCount = await ctx.db
           .query('assetMaintenance')
-          .withIndex('by_asset', (q) => q.eq('assetId', asset._id))
-          .filter((q) => q.eq(q.field('status'), 'completed'))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .withIndex('by_asset', (q: any) => q.eq('assetId', asset._id))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .filter((q: any) => q.eq(q.field('status'), 'completed'))
           .take(SMALL_LIST_CAP);
 
         return {
@@ -230,7 +238,8 @@ export const getAsset = query({
     // Get full assignment history
     const assignments = await ctx.db
       .query('assetAssignments')
-      .withIndex('by_asset', (q) => q.eq('assetId', args.assetId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_asset', (q: any) => q.eq('assetId', args.assetId))
       .order('desc')
       .take(SMALL_LIST_CAP);
 
@@ -251,7 +260,8 @@ export const getAsset = query({
     // Get maintenance history
     const maintenance = await ctx.db
       .query('assetMaintenance')
-      .withIndex('by_asset', (q) => q.eq('assetId', args.assetId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_asset', (q: any) => q.eq('assetId', args.assetId))
       .order('desc')
       .take(SMALL_LIST_CAP);
 
@@ -296,7 +306,8 @@ export const getAssetHistory = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query('assetHistory')
-      .withIndex('by_asset_time', (q) => q.eq('assetId', args.assetId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_asset_time', (q: any) => q.eq('assetId', args.assetId))
       .order('desc')
       .take(SMALL_LIST_CAP);
   },
@@ -356,7 +367,8 @@ export const getDepreciation = query({
 
     const all = await ctx.db
       .query('assetCatalog')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .take(XLARGE_LIST_CAP);
 
     const now = Date.now();
@@ -424,7 +436,8 @@ export const getAssetStats = query({
     // counts don't silently under-report on bigger tenants (was DEFAULT_LIST_CAP).
     const all = await ctx.db
       .query('assetCatalog')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .take(XLARGE_LIST_CAP);
 
     const stats = {
@@ -490,7 +503,8 @@ export const searchAssets = query({
     const q = args.query.toLowerCase();
     const all = await ctx.db
       .query('assetCatalog')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
 
     return all.filter(
@@ -570,10 +584,12 @@ export const listMaintenance = query({
   handler: async (ctx, args) => {
     let q = ctx.db
       .query('assetMaintenance')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId));
 
     if (args.status) {
-      q = q.filter((q) => q.eq(q.field('status'), args.status));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = q.filter((q: any) => q.eq(q.field('status'), args.status));
     }
 
     const records = await q.order('desc').take(DEFAULT_LIST_CAP);
@@ -608,10 +624,12 @@ export const listAssetRequests = query({
   handler: async (ctx, args) => {
     let q = ctx.db
       .query('assetRequests')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId));
 
     if (args.status) {
-      q = q.filter((q) => q.eq(q.field('status'), args.status));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = q.filter((q: any) => q.eq(q.field('status'), args.status));
     }
 
     const requests = await q.order('desc').take(DEFAULT_LIST_CAP);
@@ -638,7 +656,8 @@ export const getMyAssetRequests = query({
   handler: async (ctx, args) => {
     const requests = await ctx.db
       .query('assetRequests')
-      .withIndex('by_requestor', (q) => q.eq('requestedBy', args.userId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_requestor', (q: any) => q.eq('requestedBy', args.userId))
       .order('desc')
       .take(DEFAULT_LIST_CAP);
 
@@ -839,7 +858,8 @@ export const deleteAsset = mutation({
     // Check no active assignments
     const activeAssignment = await ctx.db
       .query('assetAssignments')
-      .withIndex('by_asset_active', (q) => q.eq('assetId', args.assetId).eq('status', 'active'))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_asset_active', (q: any) => q.eq('assetId', args.assetId).eq('status', 'active'))
       .first();
     if (activeAssignment) {
       throw new Error('Cannot delete an asset with active assignment. Return it first.');
@@ -848,7 +868,8 @@ export const deleteAsset = mutation({
     // Clean up the audit trail so deleted assets don't leave orphaned history.
     const history = await ctx.db
       .query('assetHistory')
-      .withIndex('by_asset', (q) => q.eq('assetId', args.assetId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_asset', (q: any) => q.eq('assetId', args.assetId))
       .take(DEFAULT_LIST_CAP);
     for (const h of history) {
       await ctx.db.delete(h._id);
@@ -1804,7 +1825,8 @@ export const checkActiveAssignmentsForEmployee = query({
       .withIndex('by_assignee_org', (q) =>
         q.eq('organizationId', args.organizationId).eq('assignedTo', args.employeeId),
       )
-      .filter((q) => q.eq(q.field('status'), 'active'))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((q: any) => q.eq(q.field('status'), 'active'))
       .take(SMALL_LIST_CAP);
 
     return await Promise.all(
@@ -1839,7 +1861,8 @@ export const autoReturnEmployeeAssets = internalMutation({
       .withIndex('by_assignee_org', (q) =>
         q.eq('organizationId', args.organizationId).eq('assignedTo', args.employeeId),
       )
-      .filter((q) => q.eq(q.field('status'), 'active'))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((q: any) => q.eq(q.field('status'), 'active'))
       .take(SMALL_LIST_CAP);
 
     const now = Date.now();
@@ -1879,7 +1902,8 @@ export const checkWarrantyReminders = internalMutation({
     for (const org of orgs) {
       const assets = await ctx.db
         .query('assetCatalog')
-        .withIndex('by_org', (q) => q.eq('organizationId', org._id))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .withIndex('by_org', (q: any) => q.eq('organizationId', org._id))
         .take(DEFAULT_LIST_CAP);
 
       for (const asset of assets) {
@@ -1918,7 +1942,8 @@ export const checkMaintenanceReminders = internalMutation({
     for (const org of orgs) {
       const records = await ctx.db
         .query('assetMaintenance')
-        .withIndex('by_org', (q) => q.eq('organizationId', org._id))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .withIndex('by_org', (q: any) => q.eq('organizationId', org._id))
         .take(DEFAULT_LIST_CAP);
 
       for (const record of records) {

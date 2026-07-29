@@ -43,6 +43,13 @@ const MAX_IMPORT_RECORDS = 2000;
 /** Employees upserted per mutation — keeps each transaction small. */
 const UPSERT_BATCH_SIZE = 25;
 
+/**
+ * Pages followed in one sync run. A backstop against a provider whose next
+ * link never terminates; `MAX_IMPORT_RECORDS` bounds the data, this bounds the
+ * request count.
+ */
+const MAX_IMPORT_PAGES = 50;
+
 /** Roles that a provider sync must never create, modify or deactivate. */
 const PRIVILEGED_ROLES = new Set(['superadmin', 'admin', 'supervisor']);
 
@@ -393,14 +400,17 @@ async function runSync(
     await ctx.runMutation(internal.integrations.setSyncState, {
       organizationId,
       provider,
-      syncStatus: 'success',
-      lastSyncAt: Date.now(),
+      // A skipped run imported nothing, so it must not read as "Connected" in
+      // the UI, and `lastSyncAt` must keep pointing at the last real import.
+      syncStatus: result.skippedSync ? 'idle' : 'success',
+      ...(result.skippedSync ? {} : { lastSyncAt: Date.now() }),
       // Clear any stale error from a previous failed run.
       lastError: undefined,
     });
 
     return { success: true, message: result.message };
-  } catch (error: unknown) {
+  } catch (error: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message = error?.message ? String(error.message) : 'Sync failed';
 
     await ctx.runMutation(internal.integrations.logSync, {
@@ -534,10 +544,25 @@ export const upsertEmployeeBatch = internalMutation({
       }
 
       // Scope the lookup to this org so we can detect a cross-tenant collision.
-      const inOrg = await ctx.db
+      let inOrg = await ctx.db
         .query('users')
         .withIndex('by_org_email', (q) => q.eq('organizationId', organizationId).eq('email', email))
         .first();
+
+      // No email match, but the provider gave us an id we have seen before:
+      // this is someone whose address changed at the source. Update them
+      // rather than creating a second account for the same person.
+      if (!inOrg && incoming.externalId) {
+        inOrg = await ctx.db
+          .query('users')
+          .withIndex('by_org_external', (q) =>
+            q
+              .eq('organizationId', organizationId)
+              .eq('externalSource', provider)
+              .eq('externalId', incoming.externalId),
+          )
+          .first();
+      }
 
       if (inOrg) {
         if (PRIVILEGED_ROLES.has(inOrg.role)) {
@@ -549,6 +574,26 @@ export const upsertEmployeeBatch = internalMutation({
           name: incoming.name || inOrg.name,
           updatedAt: Date.now(),
         };
+        // Remember the provider id so the next run can still find this person
+        // if their address changes at the source.
+        if (incoming.externalId) {
+          patch.externalId = incoming.externalId;
+          patch.externalSource = provider;
+        }
+        // Matched by provider id, not by email — the address changed upstream.
+        // Only follow it if nobody else holds the new one.
+        if (inOrg.email !== email) {
+          const taken = await ctx.db
+            .query('users')
+            .withIndex('by_email', (q) => q.eq('email', email))
+            .first();
+          if (taken) {
+            skipped++;
+            notes.push(`${email}: address already belongs to another account`);
+            continue;
+          }
+          patch.email = email;
+        }
         // Only overwrite what the provider actually sent.
         if (incoming.department !== undefined) patch.department = incoming.department;
         if (incoming.position !== undefined) patch.position = incoming.position;
@@ -604,6 +649,10 @@ export const upsertEmployeeBatch = internalMutation({
         position: incoming.position,
         phone: incoming.phone,
         location: incoming.location,
+        // Recorded on creation so a later email change at the provider is a
+        // match rather than a duplicate account.
+        externalId: incoming.externalId,
+        externalSource: incoming.externalId ? provider : undefined,
         isActive: incoming.isActive ?? true,
         isApproved: true,
         travelAllowance: isStaff ? 20000 : 12000,
@@ -619,7 +668,6 @@ export const upsertEmployeeBatch = internalMutation({
       created++;
     }
 
-    void provider;
     return { created, updated, skipped, notes };
   },
 });
@@ -701,6 +749,56 @@ export function extractList(payload: unknown, listKey?: string): unknown[] {
   throw new Error(
     'Could not find an employee array in the response — set "Employees list key" to the field holding it',
   );
+}
+
+/** Keys providers commonly put a "next page" link or cursor under. */
+const NEXT_PAGE_KEYS = [
+  'next',
+  'nextUrl',
+  'next_url',
+  'nextPage',
+  'next_page',
+  'nextLink',
+  '@odata.nextLink',
+  'paging.next',
+  'pagination.next',
+  'links.next',
+  'meta.next',
+  'meta.nextPage',
+];
+
+/**
+ * Find the next page of a paginated employee response.
+ *
+ * A next link is provider-controlled data, so it is only honoured when it
+ * resolves to the same origin as the page we just fetched — otherwise a
+ * compromised or misconfigured provider could walk the sync onto an arbitrary
+ * host, carrying the Authorization header with it. Relative links ("?page=2")
+ * are resolved against the current URL; anything else is ignored, which simply
+ * ends pagination rather than failing the run.
+ */
+export function findNextPageUrl(payload: unknown, currentUrl: string): string | undefined {
+  for (const key of NEXT_PAGE_KEYS) {
+    const raw = readPath(payload, key);
+    // A `next: null`/`false` from an exhausted provider means stop, not "try
+    // the next candidate key" — but only settle on keys that were present.
+    if (raw === undefined) continue;
+    if (raw === null || raw === '' || raw === false) return undefined;
+    if (typeof raw !== 'string') continue;
+
+    let candidate: URL;
+    try {
+      candidate = new URL(raw, currentUrl);
+    } catch {
+      return undefined;
+    }
+    if (candidate.origin !== new URL(currentUrl).origin) return undefined;
+    if (candidate.protocol !== 'https:') return undefined;
+    // A link back to the page we are on would loop forever.
+    if (candidate.toString() === currentUrl) return undefined;
+    return candidate.toString();
+  }
+  return undefined;
 }
 
 /** Provider field names we try for each of our fields, in priority order. */
@@ -919,7 +1017,8 @@ async function fetchJson(
       ...init,
       signal: AbortSignal.timeout(20_000),
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const reason = e?.name === 'TimeoutError' ? 'request timed out' : 'network error';
     throw new Error(`${label}: ${reason}`);
   }
@@ -970,7 +1069,8 @@ async function fetchTokenEndpoint(
       label,
       config,
     )) as Record<string, unknown>;
-  } catch (e: unknown) {
+  } catch (e: any) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message = String(e?.message ?? '');
     // Only retry when the server rejected the *encoding*, not the credentials.
     if (!/\((400|415)\)/.test(message)) throw e;
@@ -1025,6 +1125,10 @@ async function performSync(
 
 /**
  * Fetch → normalize → upsert, shared by every provider that imports people.
+ *
+ * Paginated directories are followed page by page (see `findNextPageUrl`) up to
+ * the per-run record and page caps, so a provider that returns 100 people at a
+ * time still yields a complete import.
  */
 async function importEmployees(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1037,13 +1141,34 @@ async function importEmployees(
   headers: Record<string, string>,
   label: string,
 ): Promise<SyncOutcome> {
-  const payload = await fetchJson(url, { method: 'GET', headers }, label, config);
+  const rows: unknown[] = [];
+  const notes: string[] = [];
+  let nextUrl: string | undefined = url;
+  let pages = 0;
+  /** True when a cap stopped us before the provider ran out of pages. */
+  let truncated = false;
 
-  const rows = extractList(payload, config.employeesListKey);
-  if (rows.length > MAX_IMPORT_RECORDS) {
-    throw new Error(
-      `${label}: response contained ${rows.length} records, above the ${MAX_IMPORT_RECORDS} per-run limit. Narrow the query or paginate.`,
-    );
+  while (nextUrl) {
+    const payload: unknown = await fetchJson(nextUrl, { method: 'GET', headers }, label, config);
+    pages++;
+
+    rows.push(...extractList(payload, config.employeesListKey));
+    if (rows.length > MAX_IMPORT_RECORDS) {
+      throw new Error(
+        `${label}: response contained ${rows.length} records, above the ${MAX_IMPORT_RECORDS} per-run limit. Narrow the query or paginate.`,
+      );
+    }
+
+    // Only follow a next link that stays on the origin we were pointed at —
+    // a provider response must not be able to redirect the sync elsewhere.
+    nextUrl = findNextPageUrl(payload, nextUrl);
+    if (nextUrl && pages >= MAX_IMPORT_PAGES) {
+      truncated = true;
+      notes.push(
+        `stopped after ${MAX_IMPORT_PAGES} pages — the provider offered more; narrow the query`,
+      );
+      break;
+    }
   }
 
   const { employees, dropped } = normalizeEmployees(rows, config.fieldMap);
@@ -1056,7 +1181,6 @@ async function importEmployees(
   let created = 0;
   let updated = 0;
   let skipped = dropped;
-  const notes: string[] = [];
 
   for (let i = 0; i < employees.length; i += UPSERT_BATCH_SIZE) {
     const batch = employees.slice(i, i + UPSERT_BATCH_SIZE);
@@ -1073,12 +1197,19 @@ async function importEmployees(
 
   let deactivated = 0;
   if (config.deactivateMissing) {
-    const res = await ctx.runMutation(internal.integrations.deactivateMissingEmployees, {
-      organizationId,
-      // Only people the provider says are active should stay active here.
-      activeEmails: employees.filter((e) => e.isActive !== false).map((e) => e.email),
-    });
-    deactivated = res.deactivated;
+    if (truncated) {
+      // The list we hold is provably incomplete, and "missing from the list"
+      // is exactly the signal this mutation acts on — running it here would
+      // deactivate people the provider never got a chance to mention.
+      notes.push('deactivation skipped — the employee list was truncated');
+    } else {
+      const res = await ctx.runMutation(internal.integrations.deactivateMissingEmployees, {
+        organizationId,
+        // Only people the provider says are active should stay active here.
+        activeEmails: employees.filter((e) => e.isActive !== false).map((e) => e.email),
+      });
+      deactivated = res.deactivated;
+    }
   }
 
   const message = `${label}: ${created} created, ${updated} updated, ${deactivated} deactivated, ${skipped} skipped`;
@@ -1341,7 +1472,8 @@ export const ingestLuckyCarrotWebhook = internalAction({
     let records: unknown[];
     try {
       records = extractWebhookRecords(payload, auth.employeesListKey);
-    } catch (error: unknown) {
+    } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
         status: 'invalid',
         message: error?.message ? String(error.message) : 'Unrecognized payload shape',
@@ -1358,7 +1490,8 @@ export const ingestLuckyCarrotWebhook = internalAction({
     let normalized;
     try {
       normalized = normalizeEmployees(records, auth.fieldMap);
-    } catch (error: unknown) {
+    } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
         status: 'invalid',
         message: error?.message ? String(error.message) : 'Could not read the payload',
@@ -1798,7 +1931,8 @@ export const imidLoginCallback = internalAction({
         code,
         redirectUri,
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
         status: 'error',
         message: error?.message ? String(error.message) : 'Token exchange failed',
@@ -1812,7 +1946,8 @@ export const imidLoginCallback = internalAction({
         organizationId,
         accessToken: tokenResult.accessToken,
       });
-    } catch (error: unknown) {
+    } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
         status: 'error',
         message: error?.message ? String(error.message) : 'Failed to fetch user info',
@@ -1842,7 +1977,8 @@ export const imidLoginCallback = internalAction({
         isNewUser: result.isNewUser,
         needsApproval: result.needsApproval,
       } as const;
-    } catch (error: unknown) {
+    } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
         status: 'error',
         message: error?.message ? String(error.message) : 'Failed to create session',
@@ -2437,49 +2573,49 @@ async function syncArmsoft(
   }
 
   const base = assertSafeUrl(config.apiEndpoint, 'ՀԾ Armsoft API endpoint');
-  // Convex's default runtime has no Buffer — use btoa for Basic auth.
-  const basic = btoa(`${config.apiUsername}:${config.apiPassword}`);
   const headers = {
-    Authorization: `Basic ${basic}`,
+    Authorization: basicAuthHeader(config.apiUsername, config.apiPassword),
     Accept: 'application/json',
   };
 
   const notes: string[] = [];
-  let outcome: SyncOutcome = {
-    message: '',
-    created: 0,
-    updated: 0,
-    deactivated: 0,
-    skipped: 0,
-  };
-
-  if (config.syncEmployees) {
-    const url = assertSafeUrl(
-      joinUrl(base, config.employeesPath || '/api/hr/employees'),
-      'ՀԾ Armsoft employees URL',
-    );
-    outcome = await importEmployees(
-      ctx,
-      organizationId,
-      'armsoft',
-      config,
-      url,
-      headers,
-      'ՀԾ Armsoft',
-    );
-  }
 
   if (config.syncPayroll) {
-    // Payroll import is not implemented — say so in the log instead of
-    // reporting a success the data doesn't back up.
-    notes.push('payroll sync requested but not implemented yet — employees only');
+    // Payroll import is not implemented. Record that plainly rather than
+    // folding it into a "success" the data does not back up.
+    notes.push('payroll sync is not implemented yet and was not attempted');
   }
 
-  const messageParts = [outcome.message || 'ՀԾ Armsoft: employee sync disabled', ...notes];
+  if (!config.syncEmployees) {
+    // Payroll was the only thing switched on, and we cannot do it — so this run
+    // imported nothing and must not be logged or displayed as a completed sync.
+    return {
+      message: ['ՀԾ Armsoft: nothing was synced', ...notes].join('; '),
+      created: 0,
+      updated: 0,
+      deactivated: 0,
+      skipped: 0,
+      skippedSync: true,
+    };
+  }
+
+  const url = assertSafeUrl(
+    joinUrl(base, config.employeesPath || '/api/hr/employees'),
+    'ՀԾ Armsoft employees URL',
+  );
+  const outcome = await importEmployees(
+    ctx,
+    organizationId,
+    'armsoft',
+    config,
+    url,
+    headers,
+    'ՀԾ Armsoft',
+  );
+
   return {
     ...outcome,
-    message: messageParts.filter(Boolean).join('; '),
-    details: outcome.details,
+    message: [outcome.message, ...notes].join('; '),
   };
 }
 

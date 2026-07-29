@@ -382,7 +382,9 @@ export const addParticipants = mutation({
 
     // Batch-load all users upfront to avoid N+1 queries
     const usersBatch = await Promise.all(userIds.map((id) => ctx.db.get(id)));
-    const userMap = new Map(usersBatch.filter(Boolean).map((u) => [u._id, u]));
+    const userMap = new Map(
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
+    );
 
     // Batch-check existing memberships
     const allMemberships = await ctx.db

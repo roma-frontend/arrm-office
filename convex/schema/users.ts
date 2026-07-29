@@ -10,6 +10,14 @@ export const users = {
     googleId: v.optional(v.string()),
     clerkId: v.optional(v.string()),
     imidSub: v.optional(v.string()),
+    /**
+     * Stable identifier this user carries in the HR system they were imported
+     * from (ՀԾ Armsoft, Lucky Carrot). Lets a sync recognise someone whose
+     * email changed at the provider instead of creating a duplicate account.
+     */
+    externalId: v.optional(v.string()),
+    /** Which provider `externalId` belongs to — ids are only unique per source. */
+    externalSource: v.optional(v.string()),
     role: v.union(
       v.literal('superadmin'),
       v.literal('admin'),
@@ -116,7 +124,9 @@ export const users = {
     .index('by_session_token', ['sessionToken'])
     .index('by_reset_token', ['resetPasswordToken'])
     .index('by_department', ['departmentId'])
-    .index('by_position', ['positionId']),
+    .index('by_position', ['positionId'])
+    // Lets an integration sync find a previously imported user by provider id.
+    .index('by_org_external', ['organizationId', 'externalSource', 'externalId']),
 
   webauthnCredentials: defineTable({
     userId: v.id('users'),

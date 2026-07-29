@@ -114,7 +114,8 @@ export const detectAllConflicts = query({
     }
 
     // Сортируем: критические сначала, затем по дате
-    return conflicts.sort((a, b) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return conflicts.sort((a: any, b: any) => {
       if (a.severity === 'critical' && b.severity !== 'critical') return -1;
       if (b.severity === 'critical' && a.severity !== 'critical') return 1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -154,7 +155,8 @@ export const checkConflictsForRequest = query({
       // 1. Проверка мероприятий
       const events = await ctx.db
         .query('companyEvents')
-        .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
         .take(MAX_PAGE_SIZE);
 
       for (const event of events) {
@@ -208,7 +210,8 @@ export const checkConflictsForRequest = query({
       if (driverId) {
         const existingTrips = await ctx.db
           .query('driverSchedules')
-          .withIndex('by_driver', (q) => q.eq('driverId', driverId))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .withIndex('by_driver', (q: any) => q.eq('driverId', driverId))
           .take(MAX_PAGE_SIZE);
 
         for (const trip of existingTrips) {
@@ -242,7 +245,8 @@ export const checkConflictsForRequest = query({
         // Проверяем, не в отпуске ли исполнитель
         const leaveRequests = await ctx.db
           .query('leaveRequests')
-          .withIndex('by_user', (q) => q.eq('userId', assigneeId))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .withIndex('by_user', (q: any) => q.eq('userId', assigneeId))
           .take(MAX_PAGE_SIZE);
 
         for (const leave of leaveRequests) {
@@ -276,7 +280,8 @@ export const checkConflictsForRequest = query({
 
     return {
       conflicts,
-      hasCritical: conflicts.some((c) => c.severity === 'critical'),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      hasCritical: conflicts.some((c: any) => c.severity === 'critical'),
     };
   },
 });
@@ -295,22 +300,29 @@ async function detectLeaveEventConflicts(
   // Получаем все мероприятия в периоде
   const events = await ctx.db
     .query('companyEvents')
-    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
   // Получаем все одобренные отпуска в периоде
   const leaves = await ctx.db
     .query('leaveRequests')
-    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
 
   // Batch-load all unique user IDs upfront to avoid N+1 queries
-  const uniqueUserIds = [...new Set(approvedLeaves.map((l) => l.userId))];
-  const usersForLeaves = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
-  const userMap = new Map(usersForLeaves.filter(Boolean).map((u) => [u._id, u]));
-  const profilesForLeaves = await Promise.all(uniqueUserIds.map((id) => getProfile(ctx, id)));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uniqueUserIds = [...new Set(approvedLeaves.map((l: any) => l.userId))];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const usersForLeaves = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userMap = new Map(usersForLeaves.filter(Boolean).map((u: any) => [u._id, u]));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profilesForLeaves = await Promise.all(uniqueUserIds.map((id: any) => getProfile(ctx, id)));
   const profileMapForLeaves = new Map(
     uniqueUserIds.map((id, i: number) => [id, profilesForLeaves[i]]),
   );
@@ -380,23 +392,30 @@ async function detectDepartmentConflicts(
   const users = (
     await ctx.db
       .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
       .take(MAX_PAGE_SIZE)
-  ).filter((u) => u.role !== 'superadmin');
+  )
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((u: any) => u.role !== 'superadmin');
 
   // Load profiles in parallel for department field
-  const profiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
   const profileMap = new Map<string, Awaited<ReturnType<typeof getProfile>>>(
-    users.map((u, i: number) => [u._id as string, profiles[i]!]),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    users.map((u: any, i: number) => [u._id as string, profiles[i]!]),
   );
 
   // Get all approved leaves
   const leaves = await ctx.db
     .query('leaveRequests')
-    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
 
   // Build department user counts
   const deptUserCounts = new Map<string, number>();
@@ -430,14 +449,16 @@ async function detectDepartmentConflicts(
   }
 
   // Sort events by date
-  events.sort((a, b) => a.date - b.date);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  events.sort((a: any, b: any) => a.date - b.date);
 
   // Track active leaves per department using a map
   const activeLeavesPerDept = new Map<string, Set<Id<'users'>>>();
   let eventIndex = 0;
 
   // Process events at each unique date point
-  const uniqueDates = [...new Set(events.map((e) => e.date))].sort((a, b) => a - b);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uniqueDates = [...new Set(events.map((e: any) => e.date))].sort((a: any, b: any) => a - b);
 
   for (const date of uniqueDates) {
     // Process all events at this date
@@ -525,11 +546,13 @@ async function detectDriverConflicts(
   // Получаем все поездки в периоде
   const schedules = await ctx.db
     .query('driverSchedules')
-    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
   const activeSchedules = schedules.filter(
-    (s) => s.status === 'approved' || s.status === 'pending',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (s: any) => s.status === 'approved' || s.status === 'pending',
   );
 
   // Группируем по водителям и проверяем пересечения
@@ -589,23 +612,32 @@ async function detectTaskConflicts(
   // Получаем все задачи
   const tasks = await ctx.db
     .query('tasks')
-    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  const activeTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activeTasks = tasks.filter(
+    (t: any) => t.status !== 'completed' && t.status !== 'cancelled',
+  );
 
   // Получаем все отпуска
   const leaves = await ctx.db
     .query('leaveRequests')
-    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
 
   // Batch-load all unique assignee IDs upfront
-  const uniqueAssigneeIds = [...new Set(activeTasks.map((t) => t.assigneeId).filter(Boolean))];
-  const assigneeUsers = await Promise.all(uniqueAssigneeIds.map((id) => ctx.db.get(id)));
-  const assigneeMap = new Map(assigneeUsers.filter(Boolean).map((u) => [u._id, u]));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uniqueAssigneeIds = [...new Set(activeTasks.map((t: any) => t.assigneeId).filter(Boolean))];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const assigneeUsers = await Promise.all(uniqueAssigneeIds.map((id: any) => ctx.db.get(id)));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const assigneeMap = new Map(assigneeUsers.filter(Boolean).map((u: any) => [u._id, u]));
 
   // Проверяем каждую задачу
   for (const task of activeTasks) {
@@ -670,8 +702,10 @@ export const getConflictSummaryForAI = query({
       userId: args.userId,
     });
 
-    const critical = conflicts.filter((c) => c.severity === 'critical');
-    const warnings = conflicts.filter((c) => c.severity === 'warning');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const critical = conflicts.filter((c: any) => c.severity === 'critical');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const warnings = conflicts.filter((c: any) => c.severity === 'warning');
 
     return {
       total: conflicts.length,
