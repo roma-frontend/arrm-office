@@ -165,7 +165,7 @@ export default function SurveyEditClient() {
       setDescription(survey.description || '');
       setIsAnonymous(survey.isAnonymous);
       setQuestions(
-        survey.questions.map((q: any) => ({
+        survey.questions.map((q) => ({
           _id: q._id,
           type: q.type,
           text: q.text,

@@ -80,13 +80,13 @@ export function TeamPresence() {
         </div>
       ) : (
         <div className="space-y-2">
-          {teamMembers.map((member: any) => {
+          {teamMembers.map((member) => {
             const presenceConfig =
               PRESENCE_CONFIG[member.presenceStatus as keyof typeof PRESENCE_CONFIG] ||
               PRESENCE_CONFIG.available;
             const initials = member.name
               .split(' ')
-              .map((n: any) => n[0])
+              .map((n) => n[0])
               .join('')
               .toUpperCase()
               .slice(0, 2);

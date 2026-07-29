@@ -194,7 +194,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         <h2 className="text-lg font-semibold mb-3">{t('projects.tasks', 'Tasks')}</h2>
         {project.tasks && project.tasks.length > 0 ? (
           <div className="space-y-2">
-            {project.tasks.map((task: any) => (
+            {project.tasks.map((task) => (
               <div
                 key={task._id}
                 className="flex items-center justify-between p-3 rounded-xl bg-(--card) border border-(--border) hover:shadow-sm cursor-pointer transition-all"
@@ -245,7 +245,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         <div>
           <h2 className="text-lg font-semibold mb-3">{t('projects.members', 'Members')}</h2>
           <div className="flex flex-wrap gap-2">
-            {project.members.map((member: any) => (
+            {project.members.map((member) => (
               <Badge key={member._id} variant="secondary" className="text-sm px-3 py-1.5">
                 {member.name}
               </Badge>

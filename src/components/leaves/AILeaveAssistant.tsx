@@ -38,7 +38,7 @@ export default function AILeaveAssistant({
 
   // Загружаем информацию о заявке на отпуск для проверки конфликтов
   const leaveRequest = useQuery(api.leaves.getAllLeaves, userId && userId !== '' ? {} : 'skip');
-  const currentLeave = leaveRequest?.find((l: any) => l._id === leaveRequestId);
+  const currentLeave = leaveRequest?.find((l) => l._id === leaveRequestId);
 
   // Проверяем конфликты через Conflict Service
   const conflicts = useQuery(
@@ -73,13 +73,14 @@ export default function AILeaveAssistant({
   // Фильтруем конфликты, относящиеся к этой заявке
   const leaveConflicts =
     conflicts?.filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (c: any) =>
         c.affectedUsers?.includes(currentLeave?.userId) ||
         c.affectedDepartments?.includes(currentLeave?.userDepartment),
     ) || [];
 
-  const criticalConflicts = leaveConflicts.filter((c: any) => c.severity === 'critical');
-  const warningConflicts = leaveConflicts.filter((c: any) => c.severity === 'warning');
+  const criticalConflicts = leaveConflicts.filter((c) => c.severity === 'critical');
+  const warningConflicts = leaveConflicts.filter((c) => c.severity === 'warning');
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';

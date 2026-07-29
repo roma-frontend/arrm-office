@@ -89,6 +89,7 @@ export default function StripeDataStudioClient() {
 
       // Calculate success rate
       const txs = result.recentTransactions || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const successCount = txs.filter((t: any) => t.status === 'succeeded').length;
       const successRate = txs.length > 0 ? (successCount / txs.length) * 100 : 0;
 
@@ -100,6 +101,7 @@ export default function StripeDataStudioClient() {
         },
         recentTransactions: txs,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.name === 'AbortError') return;
       setError(err.message);

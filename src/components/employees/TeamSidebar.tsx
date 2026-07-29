@@ -242,8 +242,8 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
 
   const recentEmployees =
     allUsers
-      ?.filter((u: any) => u.isActive)
-      .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
+      ?.filter((u) => u.isActive)
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
       .slice(0, 5) || [];
 
   const overviewTitle = useMemo(

@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
       secret,
       backupCodes, // return plaintext codes to show user once
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('TOTP setup error:', error);
     return NextResponse.json({ error: error.message || 'Setup failed' }, { status: 500 });

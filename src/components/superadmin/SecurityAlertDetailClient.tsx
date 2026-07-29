@@ -337,7 +337,7 @@ export default function SecurityAlertDetailClient() {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {recentAttempts.map((attempt: any) => (
+                  {recentAttempts.map((attempt) => (
                     <div
                       key={attempt._id}
                       className="p-4 rounded-lg border"

@@ -90,7 +90,7 @@ export default function CostAnalysis({ organizationId }: CostAnalysisProps) {
               {t('costAnalysis.byDepartment')}
             </h4>
             <div className="space-y-2">
-              {data.byDepartment.map((dept: any) => (
+              {data.byDepartment.map((dept) => (
                 <div key={dept.name} className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="text-(--text-secondary)">{dept.name}</span>
@@ -117,7 +117,7 @@ export default function CostAnalysis({ organizationId }: CostAnalysisProps) {
               {t('costAnalysis.byLeaveType')}
             </h4>
             <div className="space-y-2">
-              {data.byType.map((typeData: any) => (
+              {data.byType.map((typeData) => (
                 <div key={typeData.type} className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="text-(--text-secondary) capitalize">{typeData.type}</span>

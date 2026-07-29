@@ -47,7 +47,7 @@ export default function BulkActionsClient() {
   const bulkApprove = useMutation(api.leaves.bulkApproveLeaves);
   const bulkReject = useMutation(api.leaves.bulkRejectLeaves);
 
-  const pendingLeaves = leaves?.filter((l: any) => l.status === 'pending') || [];
+  const pendingLeaves = leaves?.filter((l) => l.status === 'pending') || [];
 
   const toggleLeaf = (leaveId: string) => {
     const newSelected = new Set(selectedLeaves);
@@ -63,7 +63,7 @@ export default function BulkActionsClient() {
     if (selectedLeaves.size === pendingLeaves.length) {
       setSelectedLeaves(new Set());
     } else {
-      setSelectedLeaves(new Set(pendingLeaves.map((l: any) => l._id)));
+      setSelectedLeaves(new Set(pendingLeaves.map((l) => l._id)));
     }
   };
 
@@ -257,7 +257,7 @@ export default function BulkActionsClient() {
               </div>
             ) : (
               <div className="space-y-3">
-                {pendingLeaves.map((leave: any) => (
+                {pendingLeaves.map((leave) => (
                   <div
                     key={leave._id}
                     className={`p-4 rounded-lg border transition-colors cursor-pointer ${

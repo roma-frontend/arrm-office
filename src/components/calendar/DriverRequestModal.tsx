@@ -455,7 +455,9 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                       {t('driver.alternativeDrivers', 'Доступные водители:')}
                     </p>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {alternativeDrivers.map((driver) => (
+                      {alternativeDrivers
+                        .filter((d): d is NonNullable<typeof d> => Boolean(d))
+                        .map((driver) => (
                         <div
                           key={driver._id}
                           className="flex items-center justify-between p-2 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700"

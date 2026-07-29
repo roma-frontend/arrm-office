@@ -232,8 +232,9 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
   // Reset supervisorId when organization changes (can't have supervisor from another org)
   useEffect(() => {
     if (isSuperadmin && supervisors && supervisors.length > 0) {
-      const supIds = supervisors.map((s: any) => s._id);
-      if (form.supervisorId && !supIds.includes(form.supervisorId)) {
+      const supIds = supervisors.map((s) => s._id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (form.supervisorId && !supIds.includes(form.supervisorId as any)) {
         setForm((prev) => ({ ...prev, supervisorId: '' }));
       }
     }
@@ -505,7 +506,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       <SelectValue placeholder={t('employees.selectOrganization')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {organizations?.map((org: any) => (
+                      {organizations?.map((org) => (
                         <SelectItem key={org._id} value={org._id}>
                           {org.name}
                         </SelectItem>
@@ -751,7 +752,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                         <SelectValue placeholder={t('placeholders.select', 'Select...')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {supervisors.map((s: any) => (
+                        {supervisors.map((s) => (
                           <SelectItem key={s._id} value={s._id}>
                             {s.name}
                           </SelectItem>
@@ -939,8 +940,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       ? [
                           {
                             label: t('employees.organization'),
-                            value:
-                              organizations?.find((o: any) => o._id === selectedOrgId)?.name || '—',
+                            value: organizations?.find((o) => o._id === selectedOrgId)?.name || '—',
                           },
                         ]
                       : []),

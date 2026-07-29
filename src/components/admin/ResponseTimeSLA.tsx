@@ -58,7 +58,7 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
     return (
       <div className="space-y-4 my-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i: any) => (
+          {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="pb-2">
                 <div className="h-4 bg-(--background-subtle) rounded w-24"></div>
@@ -267,7 +267,7 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pendingWithSLA.map((request: any) => {
+              {pendingWithSLA.map((request) => {
                 const statusConfig = {
                   normal: {
                     color: 'bg-success/10 text-success',

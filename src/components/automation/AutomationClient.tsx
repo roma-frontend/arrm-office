@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import { motion } from '@/lib/cssMotion';
@@ -189,7 +190,7 @@ export default function AutomationClient() {
             <CardContent>
               {activeWorkflows && activeWorkflows.length > 0 ? (
                 <div className="space-y-3">
-                  {activeWorkflows?.map((workflow: any) => (
+                  {activeWorkflows?.map((workflow) => (
                     <div
                       key={workflow._id}
                       className="flex items-center justify-between p-3 rounded-lg border border-(--border)"
@@ -208,7 +209,9 @@ export default function AutomationClient() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => toggleWorkflow({ workflowId: workflow._id })}
+                        onClick={() =>
+                          toggleWorkflow({ workflowId: workflow._id as Id<'automationWorkflows'> })
+                        }
                       >
                         {workflow.isActive ? (
                           <Pause className="w-4 h-4" />
@@ -238,7 +241,7 @@ export default function AutomationClient() {
             <CardContent>
               {recentTasks && recentTasks.length > 0 ? (
                 <div className="space-y-2">
-                  {recentTasks?.map((task: any) => (
+                  {recentTasks?.map((task) => (
                     <div
                       key={task._id}
                       className="flex items-center justify-between p-2 rounded hover:bg-(--background-subtle)"

@@ -360,7 +360,7 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                           {t('attendance.last7Days')}
                         </h3>
                         <div className="space-y-2">
-                          {recentRecords.map((r: any) => (
+                          {recentRecords.map((r) => (
                             <div
                               key={r._id}
                               className="flex items-center justify-between text-sm p-2 bg-background rounded-lg"

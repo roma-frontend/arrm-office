@@ -372,7 +372,7 @@ function EmployeeStep({
           <SelectValue placeholder={t('placeholders.selectEmployee', 'Select employee...')} />
         </SelectTrigger>
         <SelectContent className="bg-(--input) border border-(--input-border) text-(--text-primary)">
-          {allUsers?.map((emp: any) => (
+          {allUsers?.map((emp) => (
             <SelectItem key={emp._id} value={emp._id} className="text-(--text-primary)">
               {emp.name}
               {emp.department ? ` · ${emp.department}` : ''}
@@ -600,7 +600,7 @@ function DetailsStep({
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
-  const selectedUser = allUsers?.find((u: any) => u._id === stepData.selectedUserId);
+  const selectedUser = allUsers?.find((u) => u._id === stepData.selectedUserId);
   const displayUser = selectedUser || currentUser;
 
   const typeLabels: Record<string, string> = {

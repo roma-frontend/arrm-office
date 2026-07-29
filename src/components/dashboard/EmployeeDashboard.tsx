@@ -100,7 +100,7 @@ const StatusBadge = memo(({ status }: { status: LeaveStatus }) => {
 StatusBadge.displayName = 'StatusBadge';
 
 const StarRating = memo(({ rating }: { rating: number }) => {
-  return [1, 2, 3, 4, 5].map((i: any) => (
+  return [1, 2, 3, 4, 5].map((i) => (
     <Star
       key={i}
       className={`w-4 h-4 ${i <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
@@ -473,7 +473,7 @@ export function EmployeeDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {leaveStats.myLeaves.slice(0, 5).map((leave: any) => (
+                {leaveStats.myLeaves.slice(0, 5).map((leave) => (
                   <div
                     key={leave._id}
                     className="flex items-center justify-between p-3 rounded-lg border border-(--border) hover:bg-(--background-subtle) transition-colors"
