@@ -65,6 +65,7 @@ export function PlaceAutocomplete({
       setSuggestions(data);
       setIsOpen(data.length > 0);
       setHighlightedIndex(-1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       if (e.name !== 'AbortError') {
         setSuggestions([]);

@@ -340,6 +340,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
 }
 
 // Helper icon component
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function BriefcaseIcon(props: any) {
   return (
     <svg

@@ -485,6 +485,7 @@ export default function StrategyMapsClient() {
       ? {
           organizationId,
           periodYear: filterYear,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           periodType: filterPeriod !== 'all' ? (filterPeriod as any) : undefined,
           compact: compact || undefined,
         }

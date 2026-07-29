@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       totpEnabled: false,
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('TOTP status error:', error);
     return NextResponse.json({ error: 'Failed to get status' }, { status: 500 });

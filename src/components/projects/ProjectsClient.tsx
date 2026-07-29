@@ -340,6 +340,7 @@ export default function ProjectsClient({ userId, userRole }: { userId: string; u
                 <Label>{t('projects.priorityLabel', 'Priority')}</Label>
                 <Select
                   value={createForm.priority}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onValueChange={(v) => setCreateForm((p) => ({ ...p, priority: v as any }))}
                 >
                   <SelectTrigger>

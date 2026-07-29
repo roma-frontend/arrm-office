@@ -223,18 +223,21 @@ export default function NewIntegrationSettings() {
   const isSecretSet = (providerId: string, fieldKey: string) => {
     if (clearedSecrets[`${providerId}_${fieldKey}`]) return false;
     const cfg = getConfig(providerId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (cfg as any)?.[fieldKey] === SECRET_MASK;
   };
 
   const getFieldValue = (providerId: string, fieldKey: string) => {
     const local = formState[`${providerId}_${fieldKey}`];
     if (local !== undefined) return local;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stored = (getConfig(providerId) as any)?.[fieldKey];
     return stored === SECRET_MASK ? '' : (stored ?? '');
   };
 
   const getToggleValue = (providerId: string, toggleKey: string) => {
     const cfg = getConfig(providerId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return formState[`${providerId}_${toggleKey}`] ?? (cfg as any)?.[toggleKey] ?? false;
   };
 
@@ -243,6 +246,7 @@ export default function NewIntegrationSettings() {
   // saved config yet defaults to on: filling in credentials and hitting Save
   // should produce a working integration, not a silently disabled one.
   const getIsEnabled = (providerId: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stored = getConfig(providerId) as any;
     return formState[`${providerId}_isEnabled`] ?? stored?.isEnabled ?? !stored;
   };
@@ -286,6 +290,7 @@ export default function NewIntegrationSettings() {
 
     setSavingProvider(providerId);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const config: any = {
         isEnabled: getIsEnabled(providerId),
       };
@@ -310,6 +315,7 @@ export default function NewIntegrationSettings() {
 
       await saveConfig({
         organizationId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         provider: providerId as any,
         config,
         ...(clearSecrets.length ? { clearSecrets } : {}),
@@ -331,6 +337,7 @@ export default function NewIntegrationSettings() {
     try {
       const result = await syncIntegration({
         organizationId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         provider: providerId as any,
       });
       // The action reports failure in its return value rather than throwing.

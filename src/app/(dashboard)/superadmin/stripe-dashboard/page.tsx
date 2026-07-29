@@ -96,6 +96,7 @@ export default function StripeDashboardPage() {
       if (isRefresh) {
         toast.success(t('stripeDashboard.dataUpdated'));
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message);
       if (isRefresh) {

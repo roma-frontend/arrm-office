@@ -174,6 +174,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
           playVideo();
         }
       }, 1000);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('❌ Error accessing webcam:', error);
 

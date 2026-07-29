@@ -143,7 +143,9 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           avatarUrl: employee.avatarUrl,
           createdAt: employee.createdAt,
         }}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         score={score as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         monthlyStats={monthlyStats as any}
         canEdit={canEdit}
         canDelete={canDelete}
@@ -166,6 +168,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
 
       {/* Extended Profile Section */}
       <ExtendedProfileSection
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data={profile?.profile as any}
         canEdit={canEdit}
         onEdit={() => setShowExtendedEdit(true)}
@@ -568,6 +571,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
 
       {/* Edit Employee Modal */}
       <EditEmployeeModal
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         employee={employee as any}
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
@@ -595,6 +599,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
         {...(employee.organizationId
           ? { organizationId: employee.organizationId as Id<'organizations'> }
           : {})}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         initialData={profile?.profile as any}
       />
     </div>

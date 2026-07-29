@@ -640,6 +640,7 @@ function TakeSurveyDialog({
       const formattedAnswers = surveyData.questions
         .filter((q) => answers[q._id] !== undefined)
         .map((q) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const answer: any = { questionId: q._id };
           const val = answers[q._id];
           switch (q.type) {

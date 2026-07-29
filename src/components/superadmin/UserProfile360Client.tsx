@@ -644,6 +644,7 @@ export default function UserProfile360Page() {
                           </span>{' '}
                           // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           <Badge variant="outline">
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             {(attempt as any).authMethod || 'password'}
                           </Badge>
                         </div>

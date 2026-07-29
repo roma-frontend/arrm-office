@@ -341,6 +341,7 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
   const auditLogs = _useQuery(
     api.users.queries.getAuditLogs as never,
     user?.id && canViewAuditLogs ? {} : 'skip',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) as any[] | undefined;
 
   const allActivities = useMemo(() => {

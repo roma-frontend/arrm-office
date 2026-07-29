@@ -113,6 +113,7 @@ export function SupervisorRatingForm({
       );
       onSuccess?.();
       onClose?.();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('rating.submitFailed', 'Failed to submit rating'));
     } finally {

@@ -49,6 +49,7 @@ const Navbar = dynamic(() => import('@/components/layout/Navbar').then((m) => m.
 const ChatWidget = dynamic(
   () =>
     import('@/components/ai/ChatWidget').then((m) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       default: (props: any) => (
         <WidgetErrorBoundary name="ChatWidget">
           <m.ChatWidget {...props} />

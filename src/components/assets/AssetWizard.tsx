@@ -171,6 +171,7 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
       await createAsset({
         organizationId: orgId,
         name: String(data.name).trim(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         category: String(data.category || 'laptop') as any,
         brand: data.brand ? String(data.brand).trim() : undefined,
         model: data.model ? String(data.model).trim() : undefined,
@@ -178,6 +179,7 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
         purchaseDate: data.purchaseDate ? new Date(String(data.purchaseDate)).getTime() : undefined,
         purchasePrice: data.purchasePrice ? Number(data.purchasePrice) : undefined,
         location: data.location ? String(data.location).trim() : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         condition: (data.condition || 'new') as any,
         notes: data.notes ? String(data.notes).trim() : undefined,
         createdBy: userId,

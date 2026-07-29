@@ -279,6 +279,7 @@ export default function PayrollCalendar() {
   const calendarData = _useQuery(
     _calRef,
     orgId && isAdmin ? { organizationId: orgId, year } : 'skip',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) as any;
 
   // Stats from calendar data

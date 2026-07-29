@@ -1724,10 +1724,14 @@ export default function AssetsClient() {
                                     asset={{
                                       _id: a.assetId,
                                       name: a.assetName,
+                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                       serialNumber: (a as any).assetSerialNumber,
+                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                       assetTag: (a as any).assetTag,
                                       category: a.assetCategory,
+                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                       brand: (a as any).assetBrand,
+                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                       model: (a as any).assetModel,
                                     }}
                                     setQrCodeAsset={setQrCodeAsset}

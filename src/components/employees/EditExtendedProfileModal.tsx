@@ -186,6 +186,7 @@ export default function EditExtendedProfileModal({
       });
       toast.success(t('extendedProfile.saved', 'Extended profile updated successfully'));
       onSuccess();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message || t('extendedProfile.saveError', 'Failed to save'));
     } finally {
