@@ -192,21 +192,24 @@ http.route({
       return new Response(null, { status: 302, headers: { Location: loc.toString() } });
     }
 
-    // Set session cookie and redirect to app.
-    const redirectTarget = new URL('/dashboard', APP_URL);
+    // The Convex HTTP runtime cannot sign a JWT (no access to JWT_SECRET),
+    // so we delegate to the Next.js API route which will:
+    //   1. Verify the session token via Convex query `auth:verifySession`
+    //   2. Sign a proper JWT with user info
+    //   3. Set hr-auth-token (JWT) + hr-session-token (UUID) cookies
+    //   4. Redirect to /dashboard
+    const callbackUrl = new URL('/api/auth/imid-callback', APP_URL);
+    callbackUrl.searchParams.set('sessionToken', result.sessionToken);
     if (result.isNewUser) {
-      redirectTarget.searchParams.set('welcome', 'true');
+      callbackUrl.searchParams.set('welcome', 'true');
     }
     if (result.needsApproval) {
-      redirectTarget.searchParams.set('pending_approval', 'true');
+      callbackUrl.searchParams.set('pending_approval', 'true');
     }
 
     return new Response(null, {
       status: 302,
-      headers: {
-        Location: redirectTarget.toString(),
-        'Set-Cookie': `hr-auth-token=${result.sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`,
-      },
+      headers: { Location: callbackUrl.toString() },
     });
   }),
 });
