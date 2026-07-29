@@ -68,6 +68,10 @@ build-errors.log
 # (Use scripts/* not scripts/ so negation patterns can take effect.)
 scripts/*
 !scripts/check-locale-parity.mjs
+# Coverage tooling invoked by .github/workflows/ci.yml — must be committed.
+!scripts/compare-coverage.mjs
+!scripts/generate-coverage-badge.mjs
+!scripts/ratchet-coverage.mjs
 .vercel
 .env*.local
 
