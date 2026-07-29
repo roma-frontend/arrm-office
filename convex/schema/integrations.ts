@@ -21,6 +21,15 @@ export const integrations = {
       apiUrl: v.optional(v.string()),
       webhookUrl: v.optional(v.string()),
       autoSyncEmployees: v.optional(v.boolean()),
+      /** Accept inbound webhook pushes at /webhooks/lucky-carrot/<orgId>. */
+      webhookEnabled: v.optional(v.boolean()),
+      /**
+       * HMAC-SHA256 signing secret for inbound webhooks. Generated server-side
+       * and returned to the admin exactly once — never accepted from a client.
+       */
+      webhookSecret: v.optional(v.string()),
+      /** Timestamp of the last accepted webhook delivery. */
+      lastWebhookAt: v.optional(v.number()),
 
       // imID
       clientId: v.optional(v.string()),
@@ -29,6 +38,12 @@ export const integrations = {
       enableLogin: v.optional(v.boolean()),
       enableSigning: v.optional(v.boolean()),
       enableVerification: v.optional(v.boolean()),
+      /** Override for the OAuth authorization endpoint (default: https://api.imid.am/v1/oauth/authorize). */
+      authorizePath: v.optional(v.string()),
+      /** Override for the userinfo endpoint (default: https://api.imid.am/v1/oauth/userinfo). */
+      userInfoPath: v.optional(v.string()),
+      /** Override for the signing API endpoint (default: https://api.imid.am/v1/sign). */
+      signingPath: v.optional(v.string()),
 
       // Armsoft (ՀԾ)
       apiEndpoint: v.optional(v.string()),
@@ -54,6 +69,9 @@ export const integrations = {
       imidAccessToken: v.optional(v.string()),
       imidTokenExpiresAt: v.optional(v.number()),
       tokenPath: v.optional(v.string()), // override for the OAuth token endpoint
+      // ── OAuth session state ──────────────────────────────────
+      /** Pending OAuth authorization state (anti-CSRF). */
+      oauthState: v.optional(v.string()),
     }),
     createdBy: v.id('users'),
     createdAt: v.number(),

@@ -15,7 +15,17 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Check, X, RefreshCw, Clock, ExternalLink, Trash2, SkipForward } from 'lucide-react';
+import {
+  Check,
+  X,
+  RefreshCw,
+  Clock,
+  ExternalLink,
+  Trash2,
+  SkipForward,
+  Copy,
+  KeyRound,
+} from 'lucide-react';
 
 /** Mirror of the server-side placeholder for stored credentials. */
 const SECRET_MASK = '••••••••';
@@ -70,6 +80,7 @@ const PROVIDERS = [
     toggles: [
       { key: 'autoSyncEmployees', label: 'Auto-sync employees' },
       { key: 'deactivateMissing', label: 'Deactivate employees missing from the provider' },
+      { key: 'webhookEnabled', label: 'Accept inbound webhooks' },
     ],
     extraFields: [
       {
@@ -110,6 +121,24 @@ const PROVIDERS = [
         label: 'OAuth token URL',
         type: 'text',
         placeholder: 'https://api.imid.am/v1/oauth/token',
+      },
+      {
+        key: 'authorizePath',
+        label: 'OAuth authorize URL',
+        type: 'text',
+        placeholder: 'https://api.imid.am/v1/oauth/authorize',
+      },
+      {
+        key: 'userInfoPath',
+        label: 'UserInfo URL',
+        type: 'text',
+        placeholder: 'https://api.imid.am/v1/oauth/userinfo',
+      },
+      {
+        key: 'signingPath',
+        label: 'Signing API URL',
+        type: 'text',
+        placeholder: 'https://api.imid.am/v1/sign',
       },
     ],
   },
@@ -162,6 +191,12 @@ export default function NewIntegrationSettings() {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [savingProvider, setSavingProvider] = useState<string | null>(null);
   const [logsProvider, setLogsProvider] = useState<ProviderId | null>(null);
+  /**
+   * A freshly minted webhook secret. The server returns it exactly once, so it
+   * is held here until the admin navigates away — never re-fetchable.
+   */
+  const [newWebhookSecret, setNewWebhookSecret] = useState<string | null>(null);
+  const [rotatingSecret, setRotatingSecret] = useState(false);
 
   const configs = useQuery(
     api.integrations.getAllIntegrationConfigs,
@@ -169,6 +204,7 @@ export default function NewIntegrationSettings() {
   );
   const saveConfig = useMutation(api.integrations.saveIntegrationConfig);
   const syncIntegration = useAction(api.integrations.syncIntegration);
+  const rotateWebhookSecret = useMutation(api.integrations.rotateWebhookSecret);
 
   // Logs are only fetched for the card whose history is open.
   const syncLogs = useQuery(
@@ -218,6 +254,8 @@ export default function NewIntegrationSettings() {
     // Discard unsaved edits for the card being left behind.
     setFormState({});
     setClearedSecrets({});
+    // Stop showing a one-time secret once the admin leaves the card.
+    setNewWebhookSecret(null);
   };
 
   const handleFieldChange = (providerId: string, fieldKey: string, value: string) => {
@@ -304,6 +342,43 @@ export default function NewIntegrationSettings() {
       toast.error(e?.message ? String(e.message) : String(e));
     } finally {
       setSyncing(null);
+    }
+  };
+
+  /**
+   * Webhooks are served by the Convex HTTP router, which lives on `.convex.site`
+   * rather than the `.convex.cloud` origin the client talks to.
+   */
+  const webhookEndpoint = `${(process.env.NEXT_PUBLIC_CONVEX_URL ?? '').replace(
+    '.convex.cloud',
+    '.convex.site',
+  )}/webhooks/lucky-carrot/${organizationId}`;
+
+  const handleCopy = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(t('admin.integrations.copied', 'Copied'));
+    } catch {
+      // Clipboard access can be denied or unavailable outside a secure context;
+      // the field is selectable, so a manual copy still works.
+      toast.error(
+        t('admin.integrations.copyFailed', 'Could not copy — select the text and copy manually'),
+      );
+    }
+  };
+
+  const handleRotateSecret = async () => {
+    setRotatingSecret(true);
+    try {
+      const result = await rotateWebhookSecret({ organizationId });
+      setNewWebhookSecret(result.secret);
+      toast.success(
+        t('admin.integrations.webhookSecretCreated', 'Webhook secret generated — copy it now'),
+      );
+    } catch (e: any) {
+      toast.error(e?.message ? String(e.message) : String(e));
+    } finally {
+      setRotatingSecret(false);
     }
   };
 
@@ -553,6 +628,121 @@ export default function NewIntegrationSettings() {
                     </div>
                   ))}
                 </div>
+
+                {/* Inbound webhook — Lucky Carrot pushes changes instead of
+                    waiting for the hourly sweep. */}
+                {provider.id === 'lucky_carrot' &&
+                  getToggleValue(provider.id, 'webhookEnabled') && (
+                    <div className="p-3 rounded-lg border border-(--border) space-y-3">
+                      <div>
+                        <Label>{t('admin.integrations.webhookEndpoint', 'Webhook endpoint')}</Label>
+                        <p className="text-[11px] text-(--text-muted) mt-0.5">
+                          {t(
+                            'admin.integrations.webhookEndpointHint',
+                            'Register this URL in Lucky Carrot to receive employee changes immediately.',
+                          )}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Input readOnly value={webhookEndpoint} className="font-mono text-xs" />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            aria-label={t('admin.integrations.copy', 'Copy')}
+                            title={t('admin.integrations.copy', 'Copy')}
+                            onClick={() => handleCopy(webhookEndpoint)}
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <Label>{t('admin.integrations.webhookSecret', 'Signing secret')}</Label>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={rotatingSecret || !config}
+                            onClick={handleRotateSecret}
+                          >
+                            {rotatingSecret ? (
+                              <ShieldLoader size="xs" variant="inline" />
+                            ) : (
+                              <KeyRound className="w-3 h-3 mr-1" />
+                            )}
+                            {config?.hasWebhookSecret
+                              ? t('admin.integrations.rotateSecret', 'Rotate')
+                              : t('admin.integrations.generateSecret', 'Generate')}
+                          </Button>
+                        </div>
+                        <p className="text-[11px] text-(--text-muted) mt-0.5">
+                          {t(
+                            'admin.integrations.webhookSecretHint',
+                            'Deliveries must be signed HMAC-SHA256 over "<timestamp>.<body>" in the x-luckycarrot-signature header.',
+                          )}
+                        </p>
+
+                        {newWebhookSecret ? (
+                          <div className="mt-2">
+                            <div className="flex items-center gap-1">
+                              <Input
+                                readOnly
+                                value={newWebhookSecret}
+                                className="font-mono text-xs"
+                                onFocus={(e) => e.currentTarget.select()}
+                              />
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                aria-label={t('admin.integrations.copy', 'Copy')}
+                                title={t('admin.integrations.copy', 'Copy')}
+                                onClick={() => handleCopy(newWebhookSecret)}
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                            <p className="text-[11px] text-amber-500 mt-1">
+                              {t(
+                                'admin.integrations.webhookSecretOnce',
+                                'Copy this now — it is shown only once and rotating replaces it.',
+                              )}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-(--text-muted) mt-2">
+                            {config?.hasWebhookSecret
+                              ? t(
+                                  'admin.integrations.webhookSecretSet',
+                                  'A signing secret is set. Rotating it invalidates the previous one immediately.',
+                                )
+                              : t(
+                                  'admin.integrations.webhookSecretMissing',
+                                  'No signing secret yet — generate one to start accepting deliveries.',
+                                )}
+                          </p>
+                        )}
+
+                        {!config && (
+                          <p className="text-[11px] text-amber-500 mt-1">
+                            {t(
+                              'admin.integrations.webhookSaveFirst',
+                              'Save the configuration before generating a secret.',
+                            )}
+                          </p>
+                        )}
+                      </div>
+
+                      {config?.lastWebhookAt && (
+                        <p className="text-[11px] text-(--text-muted)">
+                          {t('admin.integrations.lastWebhook', 'Last delivery')}:{' '}
+                          {new Date(config.lastWebhookAt).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                 {/* Extra Fields */}
                 {provider.extraFields && (

@@ -66,18 +66,19 @@ Strata replaces all fragmented tools with a **unified platform** — zero manual
 
 ## ✨ Features
 
-| Module                      | Description                       | Highlights                                                          |
-| --------------------------- | --------------------------------- | ------------------------------------------------------------------- |
-| 👤 **Employee Lifecycle**   | Full employee profile management  | Documents, performance metrics, onboarding/offboarding              |
-| 🔐 **Face Recognition**     | Biometric attendance check-in/out | Browser-based camera, daily logs, anomaly detection                 |
-| 📅 **Leave Management**     | End-to-end leave workflow         | Multi-level approval, auto Outlook Calendar sync, entitlement rules |
-| 📋 **Task Management**      | Kanban board with drag-and-drop   | Assignment, deadlines, progress tracking, notifications             |
-| 💬 **Team Chat**            | Real-time messaging               | File sharing, channels, direct messages                             |
-| 🤖 **AI HR Assistant**      | Conversational HR chatbot         | Policy Q&A, smart insights, analytics queries                       |
-| 🚗 **Driver Management**    | Vehicle/driver booking system     | Availability tracking, scheduling, route management                 |
-| 📊 **AI Analytics**         | Workforce intelligence dashboard  | Headcount trends, leave patterns, attendance heatmaps               |
-| 🔗 **M365 Integration**     | SharePoint + Outlook sync         | Auto employee sync, calendar events for leave                       |
-| 💳 **Multi-Tenant Billing** | Stripe subscription management    | Plans, invoicing, usage tracking                                    |
+| Module                      | Description                             | Highlights                                                          |
+| --------------------------- | --------------------------------------- | ------------------------------------------------------------------- |
+| 👤 **Employee Lifecycle**   | Full employee profile management        | Documents, performance metrics, onboarding/offboarding              |
+| 🔐 **Face Recognition**     | Biometric attendance check-in/out       | Browser-based camera, daily logs, anomaly detection                 |
+| 📅 **Leave Management**     | End-to-end leave workflow               | Multi-level approval, auto Outlook Calendar sync, entitlement rules |
+| 📋 **Task Management**      | Kanban board with drag-and-drop         | Assignment, deadlines, progress tracking, notifications             |
+| 💬 **Team Chat**            | Real-time messaging                     | File sharing, channels, direct messages                             |
+| 🤖 **AI HR Assistant**      | Conversational HR chatbot               | Policy Q&A, smart insights, analytics queries                       |
+| 🚗 **Driver Management**    | Vehicle/driver booking system           | Availability tracking, scheduling, route management                 |
+| 📊 **AI Analytics**         | Workforce intelligence dashboard        | Headcount trends, leave patterns, attendance heatmaps               |
+| 🔗 **M365 Integration**     | SharePoint + Outlook sync               | Auto employee sync, calendar events for leave                       |
+| 🆔 **imID Integration**     | Armenian digital identity & e-signature | OAuth login, document signing, employee verification via imID       |
+| 💳 **Multi-Tenant Billing** | Stripe subscription management          | Plans, invoicing, usage tracking                                    |
 
 ### Role-Based Access Control (5 Roles)
 
@@ -113,14 +114,16 @@ Strata replaces all fragmented tools with a **unified platform** — zero manual
 
 ### Integrations
 
-| Service                                                                   | Purpose                            |
-| ------------------------------------------------------------------------- | ---------------------------------- |
-| [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/)           | SharePoint sync + Outlook Calendar |
-| [Google Calendar API](https://developers.google.com/calendar)             | Calendar sync (alternative)        |
-| [Stripe](https://stripe.com/)                                             | Subscription billing               |
-| [Resend](https://resend.com/)                                             | Transactional email                |
-| [Cloudinary](https://cloudinary.com/)                                     | Media storage & optimization       |
-| [Sentry](https://sentry.io/) + [OpenTelemetry](https://opentelemetry.io/) | Error tracking & observability     |
+| Service                                                                   | Purpose                                              |
+| ------------------------------------------------------------------------- | ---------------------------------------------------- |
+| [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/)           | SharePoint sync + Outlook Calendar                   |
+| [Google Calendar API](https://developers.google.com/calendar)             | Calendar sync (alternative)                          |
+| [Stripe](https://stripe.com/)                                             | Subscription billing                                 |
+| [Resend](https://resend.com/)                                             | Transactional email                                  |
+| [imID](https://imid.am)                                                   | Armenian digital identity, OAuth login & e-signature |
+| [Lucky Carrot](https://luckycarrotapp.com/integrations)                   | Employee recognition & rewards                       |
+| [Cloudinary](https://cloudinary.com/)                                     | Media storage & optimization                         |
+| [Sentry](https://sentry.io/) + [OpenTelemetry](https://opentelemetry.io/) | Error tracking & observability                       |
 
 ### DevOps
 
@@ -425,6 +428,7 @@ vercel --prod           # Manual deploy
 - [x] Employee lifecycle, Face recognition, Leave management, Tasks, Chat, AI, Drivers, Analytics
 - [x] Microsoft 365 integration, Stripe billing, i18n (EN/RU/HY/DE)
 - [x] Performance reviews, Payroll, E-signatures, PDF export
+- [x] imID — Armenian digital identity (OAuth login, e-signature, employee verification), Lucky Carrot employee sync
 - [ ] Mobile app (React Native)
 
 ---

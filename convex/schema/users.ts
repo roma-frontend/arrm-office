@@ -9,6 +9,7 @@ export const users = {
     passwordHash: v.string(),
     googleId: v.optional(v.string()),
     clerkId: v.optional(v.string()),
+    imidSub: v.optional(v.string()),
     role: v.union(
       v.literal('superadmin'),
       v.literal('admin'),

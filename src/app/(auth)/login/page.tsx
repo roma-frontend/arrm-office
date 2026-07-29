@@ -11,6 +11,7 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { WebAuthnButton } from '@/components/auth/WebAuthnButton';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { ImidSignInButton } from '@/components/auth/ImidSignInButton';
 import { OAuthSyncLoader } from '@/components/auth/OAuthSyncLoader';
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { getLoginTourSteps } from '@/components/onboarding/loginTourSteps';
@@ -820,8 +821,9 @@ export default function LoginPage() {
                     {loginMode === 'email' && (
                       <>
                         {/* Google OAuth */}
-                        <div className="mb-4">
+                        <div className="mb-4 space-y-2">
                           <GoogleSignInButton />
+                          <ImidSignInButton />
                         </div>
 
                         {/* Divider */}
