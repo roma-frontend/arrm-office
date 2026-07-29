@@ -383,7 +383,7 @@ export default function TaskDetailClient() {
               linkedObjective.keyResults &&
               (() => {
                 const linkedKr = linkedObjective.keyResults.find(
-                  (kr: any) => kr._id === task.keyResultId,
+                  (kr) => kr._id === task.keyResultId,
                 );
                 if (!linkedKr) return null;
                 return (

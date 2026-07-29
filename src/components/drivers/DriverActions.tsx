@@ -144,6 +144,7 @@ export function InAppCallButton({
         remoteUserId,
         remoteUserName: remoteName,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('driverActions.callStartFailed', 'Failed to start call'));
     } finally {
@@ -244,6 +245,7 @@ export function DriverQuickMessage({
       });
       toast.success(t('driverActions.toasts.messageSentToDriver', 'Message sent'));
       setOpen(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(t('driverActions.toasts.messageFailedToSend', 'Failed to send message'));
     }
@@ -339,6 +341,7 @@ export function PassengerQuickMessage({
       });
       toast.success(t('driverActions.toasts.messageSentToDriver', 'Message sent'));
       setOpen(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(t('driverActions.toasts.messageFailedToSend', 'Failed to send message'));
     }

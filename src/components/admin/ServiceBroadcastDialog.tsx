@@ -315,7 +315,7 @@ export function ServiceBroadcastDialog({
               value={selectedOrgId as string}
               onChange={setSelectedOrgId}
               fullWidth
-              options={organizations.map((org: any) => ({
+              options={organizations.map((org) => ({
                 value: org._id,
                 label: `${org.name} (${t('broadcastDialog.employeeCount', {
                   count: org.activeEmployees ?? org.memberCount ?? 0,
@@ -515,7 +515,7 @@ export function ServiceBroadcastDialog({
                 {t('broadcastDialog.estimatedDuration')}
               </label>
               <div className="grid grid-cols-3 gap-2">
-                {DURATION_OPTIONS.map((option: any) => (
+                {DURATION_OPTIONS.map((option) => (
                   <button
                     key={option.value || 'unknown'}
                     onClick={() => setEstimatedDuration(option.value)}

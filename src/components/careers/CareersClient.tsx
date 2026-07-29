@@ -505,6 +505,7 @@ function VacancyDetailModal({
           data: { name, email, phone, vacancy: vacancy.title },
         }),
       }).catch(() => {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(t('careers.submitError', 'Error submitting application'));
     } finally {

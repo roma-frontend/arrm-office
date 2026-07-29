@@ -446,7 +446,7 @@ export function Sidebar() {
   );
 
   const taskUnreadCount = (notifications ?? []).filter(
-    (n: any) =>
+    (n) =>
       !n.isRead && n.type === 'system' && (n.title?.includes('Task') || n.title?.includes('task')),
   ).length;
 
@@ -1108,7 +1108,7 @@ export function MobileSidebar() {
   );
 
   const mobileTaskBadge = (mobileNotifications ?? []).filter(
-    (n: any) =>
+    (n) =>
       !n.isRead && n.type === 'system' && (n.title?.includes('Task') || n.title?.includes('task')),
   ).length;
 

@@ -53,7 +53,7 @@ export default React.memo(
 
       const now = new Date();
       const currentYear = now.getFullYear();
-      const leavesThisYear = userLeaves.filter((leave: any) => {
+      const leavesThisYear = userLeaves.filter((leave) => {
         return (
           new Date(leave.startDate).getFullYear() === currentYear && leave.status === 'approved'
         );
@@ -69,8 +69,8 @@ export default React.memo(
 
       // Burnout prevention
       const approvedLeaves = userLeaves
-        .filter((leave: any) => leave.status === 'approved')
-        .sort((a: any, b: any) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
+        .filter((leave) => leave.status === 'approved')
+        .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
 
       const lastLeave = approvedLeaves[0];
       const lastLeaveDate = lastLeave ? new Date(lastLeave.endDate) : null;

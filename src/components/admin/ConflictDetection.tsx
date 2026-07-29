@@ -66,7 +66,7 @@ export default function ConflictDetection({ organizationId }: ConflictDetectionP
           </div>
         ) : (
           <div className="max-h-[400px] space-y-3 overflow-y-auto">
-            {conflicts.map((conflict: any) => (
+            {conflicts.map((conflict) => (
               <div
                 key={conflict.id}
                 className={`rounded-lg border p-3 ${
@@ -102,7 +102,7 @@ export default function ConflictDetection({ organizationId }: ConflictDetectionP
                 <div className="text-xs text-(--text-secondary)">
                   <p className="mb-1 font-medium">{t('conflicts.employeesOut')}</p>
                   <div className="flex flex-wrap gap-1">
-                    {conflict.employeesOut.map((name: any, idx: any) => (
+                    {conflict.employeesOut.map((name, idx) => (
                       <Badge key={idx} variant="outline" className="text-xs">
                         {name}
                       </Badge>

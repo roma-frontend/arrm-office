@@ -122,8 +122,7 @@ export default function EventDetailClient() {
   const isPast = endDate < new Date();
   const isUpcoming = startDate > new Date();
   const daysUntilEvent = Math.ceil((startDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const confirmedCount =
-    attendance?.attendanceStatus?.filter((s: any) => !s.hasConflict).length || 0;
+  const confirmedCount = attendance?.attendanceStatus?.filter((s) => !s.hasConflict).length || 0;
   const totalRequired = attendance?.totalRequired || 0;
   const conflictCount = attendance?.hasConflicts || 0;
 
@@ -307,7 +306,7 @@ export default function EventDetailClient() {
           <CardContent>
             <div className="space-y-2">
               {attendance.attendanceStatus
-                .filter((s: any) => s.hasConflict)
+                .filter((s) => s.hasConflict)
                 .map((conflict: any, index: number) => (
                   <div
                     key={index}

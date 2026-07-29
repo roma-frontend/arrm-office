@@ -51,7 +51,7 @@ export function OrganizationSelector({ collapsed = false }: OrgSelectorProps) {
   if (!mounted || !isSuperadmin) return null;
 
   const orgs = organizations ?? [];
-  const selectedOrg = orgs.find((org: any) => org._id === selectedOrgId);
+  const selectedOrg = orgs.find((org) => org._id === selectedOrgId);
 
   return (
     <div style={{ borderColor: 'var(--sidebar-border)' }}>
@@ -112,7 +112,7 @@ export function OrganizationSelector({ collapsed = false }: OrgSelectorProps) {
             </button>
 
             {/* Organization List */}
-            {orgs.map((org: any) => (
+            {orgs.map((org) => (
               <button
                 key={org._id}
                 onClick={() => {

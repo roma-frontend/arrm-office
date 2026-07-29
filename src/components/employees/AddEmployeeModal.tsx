@@ -101,7 +101,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Resolve the tax country for salary calc from the target organization.
-  const targetOrg = isSuperadmin ? organizations?.find((o: any) => o._id === selectedOrgId) : myOrg;
+  const targetOrg = isSuperadmin ? organizations?.find((o) => o._id === selectedOrgId) : myOrg;
   const orgCountry: CountryCode =
     toCountryCode(targetOrg?.taxCountry) ?? toCountryCode(targetOrg?.country) ?? 'armenia';
 
@@ -376,7 +376,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                         <SelectValue placeholder={t('employees.selectOrganization')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {organizations?.map((org: any) => (
+                        {organizations?.map((org) => (
                           <SelectItem key={org._id} value={org._id}>
                             {org.name}
                           </SelectItem>

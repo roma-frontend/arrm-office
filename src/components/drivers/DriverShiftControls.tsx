@@ -65,6 +65,7 @@ export function DriverShiftControls({
           : undefined,
       });
       toast.success(t('driver.shift.started', 'Shift started successfully!'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('driver.shift.startFailed', 'Failed to start shift'));
     }
@@ -81,6 +82,7 @@ export function DriverShiftControls({
       setShowEndShiftModal(false);
       setBreakTime('');
       setDriverNotes('');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('driver.shift.endFailed', 'Failed to end shift'));
     }
@@ -90,6 +92,7 @@ export function DriverShiftControls({
     try {
       await pauseShiftMutation({ driverId });
       toast.success(t('driver.shift.paused', 'Shift paused'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('driver.shift.pauseFailed', 'Failed to pause shift'));
     }
@@ -99,6 +102,7 @@ export function DriverShiftControls({
     try {
       await resumeShiftMutation({ driverId });
       toast.success(t('driver.shift.resumed', 'Shift resumed'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('driver.shift.resumeFailed', 'Failed to resume shift'));
     }

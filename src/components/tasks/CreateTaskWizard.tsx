@@ -147,7 +147,7 @@ export function CreateTaskWizard({
           field="assigneeId"
           label={t('taskWizard.steps.assignee.assigneeLabel')}
           options={
-            availableEmployees?.map((emp: any) => ({
+            availableEmployees?.map((emp) => ({
               value: emp._id,
               label: `${emp.name}${emp.position ? ` — ${emp.position}` : ''}${emp.department ? ` (${emp.department})` : ''}`,
             })) || []
@@ -212,7 +212,7 @@ export function CreateTaskWizard({
             field="objectiveId"
             label={t('taskWizard.steps.objectiveLink.objectiveLabel', 'Objective')}
             options={
-              objectivesForLinking?.map((obj: any) => ({
+              objectivesForLinking?.map((obj) => ({
                 value: obj._id,
                 label: `${obj.title} (${obj.periodType} ${obj.periodYear})`,
               })) || []

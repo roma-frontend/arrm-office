@@ -63,7 +63,7 @@ export default function SmartSuggestions({ organizationId }: SmartSuggestionsPro
           </div>
         ) : (
           <div className="max-h-[400px] space-y-3 overflow-y-auto">
-            {suggestions.map((suggestion: any) => (
+            {suggestions.map((suggestion) => (
               <div
                 key={suggestion.id}
                 className={`rounded-lg border p-4 ${getCategoryColor(suggestion.category)}`}
