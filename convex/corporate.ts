@@ -79,7 +79,7 @@ export const approveRequest = mutation({
 
     // Sort by priority and availability
     const availableDrivers = drivers
-      .filter((d: any) => d.isAvailable && d.isOnShift)
+      .filter((d) => d.isAvailable && d.isOnShift)
       .sort((a, b) => {
         // Priority: P0 > P1 > P2 > P3
         const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 };
@@ -185,7 +185,7 @@ export const getPendingApprovals = query({
       .withIndex('by_org_status', (q) =>
         q.eq('organizationId', manager.organizationId!).eq('status', 'pending'),
       )
-      .filter((q: any) => q.eq(q.field('requiresApproval'), true))
+      .filter((q) => q.eq(q.field('requiresApproval'), true))
       .order('desc')
       .take(50);
 
@@ -242,7 +242,7 @@ export const calculateDriverKPI = query({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(q.eq(q.field('status'), 'completed'), q.gte(q.field('updatedAt'), startDate)),
       )
       .take(DEFAULT_LIST_CAP);
@@ -251,7 +251,7 @@ export const calculateDriverKPI = query({
     const totalTrips = schedules.length;
 
     // On-time rate (trips that started on time)
-    const onTimeTrips = schedules.filter((s: any) => {
+    const onTimeTrips = schedules.filter((s) => {
       const scheduledStart = s.startTime;
       const actualStart = s.arrivedAt || s.createdAt;
       const isOnTime = actualStart <= scheduledStart + 10 * 60 * 1000; // 10 min grace
@@ -261,7 +261,7 @@ export const calculateDriverKPI = query({
     const onTimeRate = totalTrips > 0 ? Math.round((onTimeTrips / totalTrips) * 100) : 100;
 
     // Customer satisfaction (from ratings)
-    const ratedTrips = schedules.filter((s: any) => s.driverFeedback?.rating);
+    const ratedTrips = schedules.filter((s) => s.driverFeedback?.rating);
     const avgRating =
       ratedTrips.length > 0
         ? ratedTrips.reduce((sum, s) => sum + (s.driverFeedback!.rating || 0), 0) /
@@ -272,10 +272,10 @@ export const calculateDriverKPI = query({
     const allSchedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
-      .filter((q: any) => q.gte(q.field('updatedAt'), startDate))
+      .filter((q) => q.gte(q.field('updatedAt'), startDate))
       .take(DEFAULT_LIST_CAP);
 
-    const completedSchedules = allSchedules.filter((s: any) => s.status === 'completed').length;
+    const completedSchedules = allSchedules.filter((s) => s.status === 'completed').length;
     const completionRate =
       allSchedules.length > 0 ? Math.round((completedSchedules / allSchedules.length) * 100) : 100;
 
@@ -309,13 +309,13 @@ export const updateDriverKPI = mutation({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver', (q) => q.eq('driverId', driverId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(q.eq(q.field('status'), 'completed'), q.gte(q.field('updatedAt'), startDate)),
       )
       .take(DEFAULT_LIST_CAP);
 
     const totalTrips = schedules.length;
-    const onTimeTrips = schedules.filter((s: any) => {
+    const onTimeTrips = schedules.filter((s) => {
       const scheduledStart = s.startTime;
       const actualStart = s.arrivedAt || s.createdAt;
       return actualStart <= scheduledStart + 10 * 60 * 1000;
@@ -323,7 +323,7 @@ export const updateDriverKPI = mutation({
 
     const onTimeRate = totalTrips > 0 ? Math.round((onTimeTrips / totalTrips) * 100) : 100;
 
-    const ratedTrips = schedules.filter((s: any) => s.driverFeedback?.rating);
+    const ratedTrips = schedules.filter((s) => s.driverFeedback?.rating);
     const avgRating =
       ratedTrips.length > 0
         ? ratedTrips.reduce((sum, s) => sum + (s.driverFeedback!.rating || 0), 0) /
@@ -367,7 +367,7 @@ export const autoAssignDriver = mutation({
       .take(SMALL_LIST_CAP);
 
     // Filter available and on shift
-    const availableDrivers = drivers.filter((d: any) => d.isAvailable && d.isOnShift);
+    const availableDrivers = drivers.filter((d) => d.isAvailable && d.isOnShift);
 
     if (availableDrivers.length === 0) {
       throw new Error('No available drivers on shift');

@@ -6,6 +6,7 @@ import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function checkAccess(ctx: any, organizationId: any) {
   const requester = await getAuthCaller(ctx);
   if (!requester) throw new Error('Not authenticated');
@@ -155,7 +156,7 @@ export const updateDocument = mutation({
     const { isSuperadmin } = await checkAccess(ctx, doc.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can update documents');
 
-    const patch: any = { updatedAt: Date.now() };
+    const patch = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
     if (args.category !== undefined) patch.category = args.category;

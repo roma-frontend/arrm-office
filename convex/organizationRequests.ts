@@ -138,7 +138,7 @@ export const requestOrganization = mutation({
     const existingRequest = await ctx.db
       .query('organizationRequests')
       .withIndex('by_email', (q) => q.eq('requesterEmail', args.email.toLowerCase()))
-      .filter((q: any) => q.eq(q.field('status'), 'pending'))
+      .filter((q) => q.eq(q.field('status'), 'pending'))
       .unique();
     if (existingRequest) throw new Error('You already have a pending organization request');
 

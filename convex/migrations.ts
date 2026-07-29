@@ -78,7 +78,7 @@ export const migrateNewBalanceFields = internalMutation({
       // Also update userProfiles if exists
       const profile = await ctx.db
         .query('userProfiles')
-        .withIndex('by_user', (q: any) => q.eq('userId', user._id))
+        .withIndex('by_user', (q) => q.eq('userId', user._id))
         .first();
       if (profile) {
         const profilePatch: Record<string, number> = {};

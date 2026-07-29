@@ -19,9 +19,9 @@ export const listCompensationRecords = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (userId) records = records.filter((r: any) => r.userId === userId);
-    if (type) records = records.filter((r: any) => r.type === type);
-    if (status) records = records.filter((r: any) => r.status === status);
+    if (userId) records = records.filter((r) => r.userId === userId);
+    if (type) records = records.filter((r) => r.type === type);
+    if (status) records = records.filter((r) => r.status === status);
 
     // Enrich with user names
     const enriched = await Promise.all(
@@ -73,8 +73,8 @@ export const listCompensationBands = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (level) bands = bands.filter((b: any) => b.level === level);
-    if (department) bands = bands.filter((b: any) => b.department === department);
+    if (level) bands = bands.filter((b) => b.level === level);
+    if (department) bands = bands.filter((b) => b.department === department);
 
     return bands.sort((a, b) => a.minSalary - b.minSalary);
   },
@@ -92,7 +92,7 @@ export const listBonusPrograms = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (status) programs = programs.filter((p: any) => p.status === status);
+    if (status) programs = programs.filter((p) => p.status === status);
 
     return programs.sort((a, b) => b.createdAt - a.createdAt);
   },
@@ -111,8 +111,8 @@ export const listReviewCycles = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (year) cycles = cycles.filter((c: any) => c.year === year);
-    if (status) cycles = cycles.filter((c: any) => c.status === status);
+    if (year) cycles = cycles.filter((c) => c.year === year);
+    if (status) cycles = cycles.filter((c) => c.status === status);
 
     return cycles.sort((a, b) => b.year - a.year);
   },
@@ -150,10 +150,9 @@ export const getReviewCycleDetails = query({
       ...cycle,
       entries: enrichedEntries.sort((a, b) => b.createdAt - a.createdAt),
       totalEntries: entries.length,
-      approvedCount: entries.filter((e: any) => e.status === 'approved').length,
-      pendingCount: entries.filter(
-        (e: any) => e.status === 'submitted' || e.status === 'under_review',
-      ).length,
+      approvedCount: entries.filter((e) => e.status === 'approved').length,
+      pendingCount: entries.filter((e) => e.status === 'submitted' || e.status === 'under_review')
+        .length,
     };
   },
 });
@@ -169,27 +168,27 @@ export const getCompensationSummary = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const baseRecords = records.filter((r: any) => r.type === 'base');
+    const baseRecords = records.filter((r) => r.type === 'base');
     const totalBase = baseRecords.reduce((sum, r) => sum + r.amount, 0);
     const avgBase = baseRecords.length > 0 ? totalBase / baseRecords.length : 0;
 
-    const bonusRecords = records.filter((r: any) => r.type === 'bonus');
+    const bonusRecords = records.filter((r) => r.type === 'bonus');
     const totalBonus = bonusRecords.reduce((sum, r) => sum + r.amount, 0);
 
     const byType = {
       base: baseRecords.length,
       bonus: bonusRecords.length,
-      raise: records.filter((r: any) => r.type === 'raise').length,
-      adjustment: records.filter((r: any) => r.type === 'adjustment').length,
-      allowance: records.filter((r: any) => r.type === 'allowance').length,
+      raise: records.filter((r) => r.type === 'raise').length,
+      adjustment: records.filter((r) => r.type === 'adjustment').length,
+      allowance: records.filter((r) => r.type === 'allowance').length,
     };
 
     const byStatus = {
-      draft: records.filter((r: any) => r.status === 'draft').length,
-      pending_approval: records.filter((r: any) => r.status === 'pending_approval').length,
-      approved: records.filter((r: any) => r.status === 'approved').length,
-      active: records.filter((r: any) => r.status === 'active').length,
-      rejected: records.filter((r: any) => r.status === 'rejected').length,
+      draft: records.filter((r) => r.status === 'draft').length,
+      pending_approval: records.filter((r) => r.status === 'pending_approval').length,
+      approved: records.filter((r) => r.status === 'approved').length,
+      active: records.filter((r) => r.status === 'active').length,
+      rejected: records.filter((r) => r.status === 'rejected').length,
     };
 
     return {

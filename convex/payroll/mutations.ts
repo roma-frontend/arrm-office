@@ -17,10 +17,11 @@ type RunTotals = {
   employeeCount: number;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function recomputeRunTotals(ctx: any, payrollRunId: Id<'payrollRuns'>): Promise<RunTotals> {
   const records = await ctx.db
     .query('payrollRecords')
-    .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', payrollRunId))
+    .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', payrollRunId))
     .take(DEFAULT_LIST_CAP);
 
   let totalGross = 0;
@@ -40,7 +41,7 @@ async function recomputeRunTotals(ctx: any, payrollRunId: Id<'payrollRuns'>): Pr
     totalNet: round2(totalNet),
     totalDeductions: round2(totalDeductions),
     totalEmployerCost: round2(totalEmployerCost),
-    employeeCount: records.filter((r: any) => r.status !== 'cancelled').length,
+    employeeCount: records.filter((r) => r.status !== 'cancelled').length,
   };
 
   await ctx.db.patch(payrollRunId, {
@@ -86,6 +87,7 @@ function validateTaxRuleOverride(o: TaxRuleOverride): void {
 }
 
 // Verified caller id from JWT (never trust a client-supplied requesterId).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function callerId(ctx: any): Promise<Id<'users'>> {
   const caller = await getAuthCaller(ctx);
   if (!caller) throw new Error('Not authenticated');
@@ -206,10 +208,10 @@ export const calculatePayrollRun = mutation({
     const skipped: { userId: Id<'users'>; reason: string }[] = [];
 
     // Batch-load all unique user IDs upfront to avoid N+1 queries
-    const uniqueUserIds = [...new Set(employees.map((emp: any) => emp.userId))];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
+    const uniqueUserIds = [...new Set(employees.map((emp) => emp.userId))];
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
     );
 
     for (const emp of employees) {

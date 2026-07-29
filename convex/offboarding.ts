@@ -58,7 +58,7 @@ const DEFAULT_TASKS = [
 // ─── Helpers ─────────────────────────────────────────────────
 function computeProgress(tasks: { status: string }[]): number {
   if (tasks.length === 0) return 0;
-  const done = tasks.filter((t: any) => t.status === 'completed' || t.status === 'skipped').length;
+  const done = tasks.filter((t) => t.status === 'completed' || t.status === 'skipped').length;
   return Math.round((done / tasks.length) * 100);
 }
 
@@ -85,9 +85,8 @@ export const listPrograms = query({
           ...prog,
           progress: computeProgress(tasks),
           totalTasks: tasks.length,
-          completedTasks: tasks.filter(
-            (t: any) => t.status === 'completed' || t.status === 'skipped',
-          ).length,
+          completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
+            .length,
           employeeName: employee?.name ?? 'Unknown',
         };
       }),
@@ -132,7 +131,7 @@ export const getProgram = query({
       ...program,
       progress: computeProgress(tasks),
       totalTasks: tasks.length,
-      completedTasks: tasks.filter((t: any) => t.status === 'completed' || t.status === 'skipped')
+      completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
         .length,
       employeeName: employee?.name ?? 'Unknown',
       employeeEmail: employee?.email,
@@ -157,7 +156,7 @@ export const getRetentionInsights = query({
     const exits = await ctx.db
       .query('exitInterviews')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q: any) => q.eq(q.field('status'), 'completed'))
+      .filter((q) => q.eq(q.field('status'), 'completed'))
       .take(DEFAULT_LIST_CAP);
 
     // Reason breakdown
@@ -168,17 +167,15 @@ export const getRetentionInsights = query({
 
     // Average experience
     const scores = exits
-      .filter((e: any) => e.overallExperience != null)
-      .map((e: any) => e.overallExperience!);
+      .filter((e) => e.overallExperience != null)
+      .map((e) => e.overallExperience!);
     const avgExperience = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
     // Would recommend %
-    const recommends = exits.filter((e: any) => e.wouldRecommend != null);
+    const recommends = exits.filter((e) => e.wouldRecommend != null);
     const recommendRate =
       recommends.length > 0
-        ? Math.round(
-            (recommends.filter((e: any) => e.wouldRecommend).length / recommends.length) * 100,
-          )
+        ? Math.round((recommends.filter((e) => e.wouldRecommend).length / recommends.length) * 100)
         : 0;
 
     return {
@@ -215,7 +212,7 @@ export const startOffboarding = mutation({
     const existing = await ctx.db
       .query('offboardingPrograms')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
-      .filter((q: any) => q.eq(q.field('status'), 'active'))
+      .filter((q) => q.eq(q.field('status'), 'active'))
       .first();
     if (existing) {
       throw new Error('This employee already has an active offboarding program');

@@ -29,13 +29,13 @@ export const generateAccessToken = mutation({
 
     const staleUser = await ctx.db
       .query('users')
-      .withIndex('by_email', (q: any) => q.eq('email', email))
+      .withIndex('by_email', (q) => q.eq('email', email))
       .unique();
 
     if (staleUser) {
       const staleToken = await ctx.db
         .query('superadminAccessTokens')
-        .withIndex('by_temp_user', (q: any) => q.eq('tempUserId', staleUser._id))
+        .withIndex('by_temp_user', (q) => q.eq('tempUserId', staleUser._id))
         .unique();
       if (staleToken) await ctx.db.delete(staleToken._id);
       await ctx.db.delete(staleUser._id);
@@ -156,7 +156,7 @@ export const listAccessTokens = query({
 
     const tokens = await ctx.db
       .query('superadminAccessTokens')
-      .withIndex('by_creator', (q: any) => q.eq('createdBy', caller._id))
+      .withIndex('by_creator', (q) => q.eq('createdBy', caller._id))
       .order('desc')
       .take(100);
 
@@ -186,12 +186,13 @@ export const listAccessTokens = query({
  * Used by the login mutation to block expired tokens.
  */
 export async function checkTempAccessStillValid(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   userId: string,
 ): Promise<{ valid: boolean; reason?: string }> {
   const token = await ctx.db
     .query('superadminAccessTokens')
-    .withIndex('by_temp_user', (q: any) => q.eq('tempUserId', userId))
+    .withIndex('by_temp_user', (q) => q.eq('tempUserId', userId))
     .unique();
 
   if (!token) return { valid: true };

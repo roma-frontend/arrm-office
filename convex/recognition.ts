@@ -30,15 +30,15 @@ export const getKudosFeed = query({
     if (kudos.length === 0) return [];
 
     // Batch load users
-    const userIds = [...new Set(kudos.flatMap((k: any) => [k.senderId, k.receiverId]))];
-    const users = await Promise.all(userIds.map((id: any) => ctx.db.get(id)));
-    const userMap = new Map(users.filter(Boolean).map((u: any) => [u!._id, u!]));
+    const userIds = [...new Set(kudos.flatMap((k) => [k.senderId, k.receiverId]))];
+    const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+    const userMap = new Map(users.filter(Boolean).map((u) => [u!._id, u!]));
 
     // Batch load profiles
-    const userProfiles = await Promise.all(userIds.map((id: any) => getProfile(ctx, id)));
-    const profileMap = new Map(userProfiles.filter(Boolean).map((p: any) => [p!.userId, p!]));
+    const userProfiles = await Promise.all(userIds.map((id) => getProfile(ctx, id)));
+    const profileMap = new Map(userProfiles.filter(Boolean).map((p) => [p!.userId, p!]));
 
-    return kudos.map((kudo: any) => {
+    return kudos.map((kudo) => {
       const sender = userMap.get(kudo.senderId);
       const senderProfile = profileMap.get(kudo.senderId);
       const receiver = userMap.get(kudo.receiverId);
@@ -88,11 +88,11 @@ export const getKudosForUser = query({
 
     if (kudos.length === 0) return [];
 
-    const senderIds = [...new Set(kudos.map((k: any) => k.senderId))];
-    const senders = await Promise.all(senderIds.map((id: any) => ctx.db.get(id)));
-    const senderMap = new Map(senders.filter(Boolean).map((u: any) => [u!._id, u!]));
+    const senderIds = [...new Set(kudos.map((k) => k.senderId))];
+    const senders = await Promise.all(senderIds.map((id) => ctx.db.get(id)));
+    const senderMap = new Map(senders.filter(Boolean).map((u) => [u!._id, u!]));
 
-    return kudos.map((kudo: any) => ({
+    return kudos.map((kudo) => ({
       ...kudo,
       sender: senderMap.get(kudo.senderId)
         ? {
@@ -125,11 +125,11 @@ export const getKudosSentByUser = query({
 
     if (kudos.length === 0) return [];
 
-    const receiverIds = [...new Set(kudos.map((k: any) => k.receiverId))];
-    const receivers = await Promise.all(receiverIds.map((id: any) => ctx.db.get(id)));
-    const receiverMap = new Map(receivers.filter(Boolean).map((u: any) => [u!._id, u!]));
+    const receiverIds = [...new Set(kudos.map((k) => k.receiverId))];
+    const receivers = await Promise.all(receiverIds.map((id) => ctx.db.get(id)));
+    const receiverMap = new Map(receivers.filter(Boolean).map((u) => [u!._id, u!]));
 
-    return kudos.map((kudo: any) => ({
+    return kudos.map((kudo) => ({
       ...kudo,
       receiver: receiverMap.get(kudo.receiverId)
         ? {
@@ -180,7 +180,7 @@ export const getLeaderboard = query({
       .take(DEFAULT_LIST_CAP);
 
     const filteredKudos =
-      startDate > 0 ? allKudos.filter((k: any) => k.createdAt >= startDate) : allKudos;
+      startDate > 0 ? allKudos.filter((k) => k.createdAt >= startDate) : allKudos;
 
     // Count kudos per receiver
     const counts = new Map<Id<'users'>, number>();
@@ -189,7 +189,7 @@ export const getLeaderboard = query({
     }
 
     // Sort by count desc, take top 20
-    const sorted = [...counts.entries()].sort((a: any, b: any) => b[1] - a[1]).slice(0, 20);
+    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20);
 
     // Batch load users
     const users = await Promise.all(sorted.map(([id]) => ctx.db.get(id)));
@@ -283,11 +283,11 @@ export const getUserBadges = query({
 
     if (awards.length === 0) return [];
 
-    const badgeIds = [...new Set(awards.map((a: any) => a.badgeId))];
-    const badges = await Promise.all(badgeIds.map((id: any) => ctx.db.get(id)));
-    const badgeMap = new Map(badges.filter(Boolean).map((b: any) => [b!._id, b!]));
+    const badgeIds = [...new Set(awards.map((a) => a.badgeId))];
+    const badges = await Promise.all(badgeIds.map((id) => ctx.db.get(id)));
+    const badgeMap = new Map(badges.filter(Boolean).map((b) => [b!._id, b!]));
 
-    return awards.map((award: any) => ({
+    return awards.map((award) => ({
       ...award,
       badge: badgeMap.get(award.badgeId) ?? null,
     }));
@@ -422,7 +422,7 @@ export const reactToKudos = mutation({
     const reactions = kudo.reactions ?? [];
 
     // Check if user already reacted with this emoji
-    const existingIndex = reactions.findIndex((r: any) => r.userId === userId && r.emoji === emoji);
+    const existingIndex = reactions.findIndex((r) => r.userId === userId && r.emoji === emoji);
 
     if (existingIndex >= 0) {
       // Remove reaction (toggle)
@@ -641,7 +641,7 @@ export const awardAttendancePoints = mutation({
       .withIndex('by_org_user_created', (q) =>
         q.eq('organizationId', organizationId).eq('userId', userId).gte('createdAt', todayStart),
       )
-      .filter((q: any) => q.eq(q.field('type'), 'earned_attendance'))
+      .filter((q) => q.eq(q.field('type'), 'earned_attendance'))
       .first();
 
     if (existingToday) return; // Already awarded today

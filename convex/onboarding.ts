@@ -9,7 +9,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 // ─── Helpers ─────────────────────────────────────────────────
 function computeProgress(tasks: { status: string }[]): number {
   if (tasks.length === 0) return 0;
-  const done = tasks.filter((t: any) => t.status === 'completed' || t.status === 'skipped').length;
+  const done = tasks.filter((t) => t.status === 'completed' || t.status === 'skipped').length;
   return Math.round((done / tasks.length) * 100);
 }
 
@@ -48,9 +48,8 @@ export const listPrograms = query({
           ...prog,
           progress: computeProgress(tasks),
           totalTasks: tasks.length,
-          completedTasks: tasks.filter(
-            (t: any) => t.status === 'completed' || t.status === 'skipped',
-          ).length,
+          completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
+            .length,
           employeeName: employee?.name ?? 'Unknown',
           buddyName: buddy?.name,
         };
@@ -79,7 +78,7 @@ export const getProgram = query({
     // Resolve assignee names
     const tasksWithNames = await Promise.all(
       tasks
-        .sort((a: any, b: any) => a.order - b.order)
+        .sort((a, b) => a.order - b.order)
         .map(async (task) => {
           let assigneeName: string | undefined;
           if (task.assigneeId) {
@@ -94,7 +93,7 @@ export const getProgram = query({
       ...program,
       progress: computeProgress(tasks),
       totalTasks: tasks.length,
-      completedTasks: tasks.filter((t: any) => t.status === 'completed' || t.status === 'skipped')
+      completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
         .length,
       employeeName: employee?.name ?? 'Unknown',
       employeeEmail: employee?.email,
@@ -112,7 +111,7 @@ export const getMyOnboarding = query({
     const program = await ctx.db
       .query('onboardingPrograms')
       .withIndex('by_employee', (q) => q.eq('employeeId', userId))
-      .filter((q: any) => q.eq(q.field('status'), 'active'))
+      .filter((q) => q.eq(q.field('status'), 'active'))
       .first();
 
     if (!program) return null;
@@ -129,11 +128,11 @@ export const getMyOnboarding = query({
       ...program,
       progress: computeProgress(tasks),
       totalTasks: tasks.length,
-      completedTasks: tasks.filter((t: any) => t.status === 'completed' || t.status === 'skipped')
+      completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
         .length,
       buddyName: buddy?.name,
       managerName: manager?.name ?? 'Unknown',
-      tasks: tasks.sort((a: any, b: any) => a.order - b.order),
+      tasks: tasks.sort((a, b) => a.order - b.order),
     };
   },
 });
@@ -145,17 +144,17 @@ export const getMyMenteePrograms = query({
     const asBuddy = await ctx.db
       .query('onboardingPrograms')
       .withIndex('by_buddy', (q) => q.eq('buddyId', userId))
-      .filter((q: any) => q.eq(q.field('status'), 'active'))
+      .filter((q) => q.eq(q.field('status'), 'active'))
       .take(DEFAULT_LIST_CAP);
 
     const asManager = await ctx.db
       .query('onboardingPrograms')
       .withIndex('by_manager', (q) => q.eq('managerId', userId))
-      .filter((q: any) => q.eq(q.field('status'), 'active'))
+      .filter((q) => q.eq(q.field('status'), 'active'))
       .take(DEFAULT_LIST_CAP);
 
     const all = [...asBuddy, ...asManager];
-    const unique = Array.from(new Map(all.map((p: any) => [p._id, p])).values());
+    const unique = Array.from(new Map(all.map((p) => [p._id, p])).values());
 
     return await Promise.all(
       unique.map(async (prog) => {
@@ -168,9 +167,8 @@ export const getMyMenteePrograms = query({
           ...prog,
           progress: computeProgress(tasks),
           totalTasks: tasks.length,
-          completedTasks: tasks.filter(
-            (t: any) => t.status === 'completed' || t.status === 'skipped',
-          ).length,
+          completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
+            .length,
           employeeName: employee?.name ?? 'Unknown',
         };
       }),
@@ -298,7 +296,7 @@ export const startOnboarding = mutation({
     const existing = await ctx.db
       .query('onboardingPrograms')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
-      .filter((q: any) => q.eq(q.field('status'), 'active'))
+      .filter((q) => q.eq(q.field('status'), 'active'))
       .first();
     if (existing) {
       throw new Error('This employee already has an active onboarding program');
@@ -510,7 +508,7 @@ export const assignBuddy = mutation({
     const tasks = await ctx.db
       .query('onboardingTasks')
       .withIndex('by_program', (q) => q.eq('programId', programId))
-      .filter((q: any) => q.eq(q.field('assigneeType'), 'buddy'))
+      .filter((q) => q.eq(q.field('assigneeType'), 'buddy'))
       .take(SMALL_LIST_CAP);
     for (const task of tasks) {
       await ctx.db.patch(task._id, { assigneeId: buddyId });
@@ -566,7 +564,7 @@ export const activateOnboardingTasks = internalMutation({
         const tasks = await ctx.db
           .query('onboardingTasks')
           .withIndex('by_program', (q) => q.eq('programId', program._id))
-          .filter((q: any) =>
+          .filter((q) =>
             q.and(
               q.eq(q.field('status'), 'pending'),
               q.lte(q.field('dueDate'), now),
@@ -581,7 +579,7 @@ export const activateOnboardingTasks = internalMutation({
           const existingNotif = await ctx.db
             .query('notifications')
             .withIndex('by_user', (q) => q.eq('userId', task.assigneeId ?? program.employeeId))
-            .filter((q: any) =>
+            .filter((q) =>
               q.and(
                 q.eq(q.field('type'), 'onboarding_task_due'),
                 q.eq(q.field('relatedId'), task._id),
@@ -701,7 +699,7 @@ export const sendOnboardingOverdueReminders = internalMutation({
         const overdueTasks = await ctx.db
           .query('onboardingTasks')
           .withIndex('by_program', (q) => q.eq('programId', program._id))
-          .filter((q: any) =>
+          .filter((q) =>
             q.and(
               q.eq(q.field('status'), 'pending'),
               q.lt(q.field('dueDate'), now - 86400000), // More than 1 day overdue
@@ -716,7 +714,7 @@ export const sendOnboardingOverdueReminders = internalMutation({
           const recentReminder = await ctx.db
             .query('notifications')
             .withIndex('by_user', (q) => q.eq('userId', assigneeId))
-            .filter((q: any) =>
+            .filter((q) =>
               q.and(
                 q.eq(q.field('type'), 'onboarding_task_overdue'),
                 q.eq(q.field('relatedId'), task._id),

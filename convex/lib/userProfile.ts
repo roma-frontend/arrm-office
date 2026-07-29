@@ -54,10 +54,11 @@ export const PROFILE_FIELDS = [
  * Get user profile from userProfiles table.
  * Returns null if profile doesn't exist (run migration first).
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function getProfile(ctx: any, userId: Id<'users'>): Promise<UserProfile | null> {
   return await ctx.db
     .query('userProfiles')
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
 }
 
@@ -93,6 +94,7 @@ export function extractProfileFromUser(user: Doc<'users'>) {
  * Use this when updating profile fields to keep both tables in sync.
  */
 export async function patchProfile(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   userId: Id<'users'>,
   patch: Partial<Omit<UserProfile, '_id' | 'userId'>>,
@@ -103,7 +105,7 @@ export async function patchProfile(
   // Write to userProfiles table
   const profile = await ctx.db
     .query('userProfiles')
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
 
   if (profile) {

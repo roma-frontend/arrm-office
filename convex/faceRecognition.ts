@@ -44,7 +44,7 @@ function generateToken(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes)
-    .map((b: any) => b.toString(16).padStart(2, '0'))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
@@ -332,6 +332,6 @@ export const pruneExpiredFaceTokens = internalQuery({
       .query('faceLoginTokens')
       .withIndex('by_expires', (q) => q.lt('expiresAt', now))
       .take(DEFAULT_LIST_CAP);
-    return expired.map((t: any) => t._id);
+    return expired.map((t) => t._id);
   },
 });

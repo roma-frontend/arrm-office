@@ -41,7 +41,7 @@ export const getAvailableDrivers = query({
       // No index for isAvailable alone, scan all and filter
       drivers = await ctx.db
         .query('drivers')
-        .filter((q: any) => q.eq(q.field('isAvailable'), true))
+        .filter((q) => q.eq(q.field('isAvailable'), true))
         .take(MAX_PAGE_SIZE);
     }
 
@@ -147,7 +147,7 @@ export const getDriverSchedule = query({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(q.gte(q.field('startTime'), startTime), q.lte(q.field('startTime'), endTime)),
       )
       .take(MAX_PAGE_SIZE);
@@ -190,7 +190,7 @@ export const isDriverAvailable = query({
     const overlapping = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(
           q.eq(q.field('status'), 'scheduled'),
           q.or(
@@ -247,7 +247,7 @@ export const isDriverAvailable = query({
     const tripsToday = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(
           q.eq(q.field('type'), 'trip'),
           q.gte(q.field('startTime'), startOfDay.getTime()),
@@ -297,7 +297,7 @@ export const isDriverOnLeave = query({
     const allLeaves = await ctx.db
       .query('leaveRequests')
       .withIndex('by_user', (q) => q.eq('userId', driver.userId))
-      .filter((q: any) => q.eq(q.field('status'), 'approved'))
+      .filter((q) => q.eq(q.field('status'), 'approved'))
       .take(MAX_PAGE_SIZE);
 
     // Check for overlap in JavaScript
@@ -349,7 +349,7 @@ export const getAlternativeDrivers = query({
 
     // Filter out excluded driver
     const drivers = excludeDriverId
-      ? allDrivers.filter((d: any) => d._id !== excludeDriverId)
+      ? allDrivers.filter((d) => d._id !== excludeDriverId)
       : allDrivers;
 
     // Convert startTime to date string for leave comparison
@@ -369,7 +369,7 @@ export const getAlternativeDrivers = query({
         const leaveRequests = await ctx.db
           .query('leaveRequests')
           .withIndex('by_user', (q) => q.eq('userId', driver.userId))
-          .filter((q: any) =>
+          .filter((q) =>
             q.and(
               q.eq(q.field('status'), 'approved'),
               q.lte(q.field('startDate'), endDateStr),
@@ -386,7 +386,7 @@ export const getAlternativeDrivers = query({
         const overlapping = await ctx.db
           .query('driverSchedules')
           .withIndex('by_driver_time', (q) => q.eq('driverId', driver._id))
-          .filter((q: any) =>
+          .filter((q) =>
             q.and(
               q.eq(q.field('status'), 'scheduled'),
               q.or(
@@ -434,7 +434,7 @@ export const getOrgDriverSchedules = query({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(
           q.neq(q.field('status'), 'cancelled'),
           q.gte(q.field('startTime'), startTime),
@@ -518,7 +518,7 @@ export const getFilteredDrivers = query({
           const overlap = await ctx.db
             .query('driverSchedules')
             .withIndex('by_driver_time', (q) => q.eq('driverId', driver._id))
-            .filter((q: any) =>
+            .filter((q) =>
               q.and(
                 q.eq(q.field('status'), 'scheduled'),
                 q.or(

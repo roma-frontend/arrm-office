@@ -33,6 +33,7 @@ export const sendChatMessage = action({
     // ── Fetch real data from Convex DB ──────────────────────────────────
     let userDataContext = '';
     let teamDataContext = '';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let userProfile: any = null;
 
     try {
@@ -275,7 +276,7 @@ RULES:
       const content = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
 
       return { content };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('GROQ API error:', error);
       throw new Error(`Failed to get AI response: ${error.message}`);
     }

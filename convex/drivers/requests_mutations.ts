@@ -80,7 +80,7 @@ export const requestDriver = mutation({
       const leaveRequests = await ctx.db
         .query('leaveRequests')
         .withIndex('by_user', (q) => q.eq('userId', driver.userId))
-        .filter((q: any) =>
+        .filter((q) =>
           q.and(
             q.eq(q.field('status'), 'approved'),
             q.lte(q.field('startDate'), endDateStr),
@@ -105,7 +105,7 @@ export const requestDriver = mutation({
     const availability = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', args.driverId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(
           q.eq(q.field('status'), 'scheduled'),
           q.or(
@@ -335,7 +335,7 @@ export const updateDriverRequest = mutation({
       const schedule = await ctx.db
         .query('driverSchedules')
         .withIndex('by_driver', (q) => q.eq('driverId', request.driverId))
-        .filter((q: any) =>
+        .filter((q) =>
           q.and(
             q.eq(q.field('userId'), request.requesterId),
             q.eq(q.field('startTime'), request.startTime),
@@ -469,7 +469,7 @@ export const deleteDriverRequest = mutation({
       const schedule = await ctx.db
         .query('driverSchedules')
         .withIndex('by_driver', (q) => q.eq('driverId', request.driverId))
-        .filter((q: any) =>
+        .filter((q) =>
           q.and(
             q.eq(q.field('userId'), request.requesterId),
             q.eq(q.field('startTime'), request.startTime),
@@ -528,7 +528,7 @@ export const reassignDriverRequest = mutation({
     const overlap = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', newDriverId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(
           q.eq(q.field('status'), 'scheduled'),
           q.or(

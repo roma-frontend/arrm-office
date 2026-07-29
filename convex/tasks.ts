@@ -14,25 +14,26 @@ import { sanitizeTitle, sanitizeText } from './lib/sanitize';
  * Helper to batch load users and enrich task data
  * Eliminates N+1 queries for task lists
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function enrichTasksWithUserData(ctx: any, tasks: any[]) {
   if (tasks.length === 0) return [];
 
   // Collect all unique user IDs
-  const assignedToIds = [...new Set(tasks.map((t: any) => t.assignedTo))];
-  const assignedByIds = [...new Set(tasks.map((t: any) => t.assignedBy))];
+  const assignedToIds = [...new Set(tasks.map((t) => t.assignedTo))];
+  const assignedByIds = [...new Set(tasks.map((t) => t.assignedBy))];
   const allUserIds = [...new Set([...assignedToIds, ...assignedByIds])];
 
   // Batch load all users
   const users = await Promise.all(allUserIds.map((id: Id<'users'>) => ctx.db.get(id)));
-  const userMap = new Map(users.map((u: any) => [u?._id, u]));
+  const userMap = new Map(users.map((u) => [u?._id, u]));
 
   // Batch load comments per-task via by_task index (avoids scanning the whole
   // taskComments table just to filter by taskId). Caps at SMALL_LIST_CAP per task.
   const commentsPerTask: any[][] = await Promise.all(
-    tasks.map((t: any) =>
+    tasks.map((t) =>
       ctx.db
         .query('taskComments')
-        .withIndex('by_task', (q: any) => q.eq('taskId', t._id))
+        .withIndex('by_task', (q) => q.eq('taskId', t._id))
         .take(SMALL_LIST_CAP),
     ),
   );
@@ -43,18 +44,18 @@ async function enrichTasksWithUserData(ctx: any, tasks: any[]) {
   });
 
   // Collect all comment author IDs
-  const commentAuthorIds = [...new Set(allComments.map((c: any) => c.authorId))];
+  const commentAuthorIds = [...new Set(allComments.map((c) => c.authorId))];
   const commentAuthors = await Promise.all(
-    commentAuthorIds.map((id: any) => ctx.db.get(id as Id<'users'>)),
+    commentAuthorIds.map((id) => ctx.db.get(id as Id<'users'>)),
   );
-  const commentAuthorMap = new Map(commentAuthors.map((a: any) => [a?._id, a]));
+  const commentAuthorMap = new Map(commentAuthors.map((a) => [a?._id, a]));
 
   // Batch load profiles for all users
   const profiles = await Promise.all(allUserIds.map((id: Id<'users'>) => getProfile(ctx, id)));
-  const profileMap = new Map(profiles.filter(Boolean).map((p: any) => [p!.userId, p!]));
+  const profileMap = new Map(profiles.filter(Boolean).map((p) => [p!.userId, p!]));
 
   // Enrich tasks
-  return tasks.map((task: any) => {
+  return tasks.map((task) => {
     const assignedTo = userMap.get(task.assignedTo);
     const assignedBy = userMap.get(task.assignedBy);
     const taskComments = commentsByTask.get(task._id) || [];
@@ -81,7 +82,7 @@ async function enrichTasksWithUserData(ctx: any, tasks: any[]) {
               assignedByProfile?.avatarUrl ?? assignedBy.avatarUrl ?? assignedBy.faceImageUrl,
           }
         : null,
-      comments: taskComments.map((c: any) => ({
+      comments: taskComments.map((c) => ({
         ...c,
         author: commentAuthorMap.get(c.authorId),
       })),
@@ -458,12 +459,12 @@ export const getAllTasks = query({
     if (userIsSuperadmin) {
       // For superadmin: filter by selectedOrganizationId if provided
       if (args.selectedOrganizationId) {
-        orgTasks = tasks.filter((task: any) => task.organizationId === args.selectedOrganizationId);
+        orgTasks = tasks.filter((task) => task.organizationId === args.selectedOrganizationId);
       }
       // If no selectedOrganizationId, superadmin sees all tasks (no filter)
     } else {
       // For regular admin: filter by their organization
-      orgTasks = tasks.filter((task: any) => task.organizationId === requester.organizationId);
+      orgTasks = tasks.filter((task) => task.organizationId === requester.organizationId);
     }
 
     return enrichTasksWithUserData(ctx, orgTasks);
@@ -481,12 +482,12 @@ export const getTeamTasks = query({
       .withIndex('by_supervisor', (q) => q.eq('supervisorId', args.supervisorId))
       .take(DEFAULT_LIST_CAP);
 
-    const employeeIds = employees.map((e: any) => e._id);
+    const employeeIds = employees.map((e) => e._id);
 
     // Fetch tasks per employee via by_assigned_to index (no full-table scan).
     // Caps at SMALL_LIST_CAP per employee; team size is bounded by supervisor.
     const tasksPerEmployee = await Promise.all(
-      employeeIds.map((id: any) =>
+      employeeIds.map((id) =>
         ctx.db
           .query('tasks')
           .withIndex('by_assigned_to', (q) => q.eq('assignedTo', id))
@@ -507,7 +508,7 @@ export const getMyEmployees = query({
       .query('users')
       .withIndex('by_supervisor', (q) => q.eq('supervisorId', args.supervisorId))
       .take(DEFAULT_LIST_CAP);
-    const empProfiles = await Promise.all(employees.map((e: any) => getProfile(ctx, e._id)));
+    const empProfiles = await Promise.all(employees.map((e) => getProfile(ctx, e._id)));
     return employees.map((e, i) => {
       const profile = empProfiles[i];
       return {
@@ -536,7 +537,7 @@ export const getUsersForAssignment = query({
     } else {
       users = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
     }
-    users = users.filter((u: any) => u.role !== 'superadmin');
+    users = users.filter((u) => u.role !== 'superadmin');
 
     // Return all active users (employees, supervisors, admins, AND drivers)
     // Anyone in the organization can be assigned a task
@@ -550,7 +551,7 @@ export const getUsersForAssignment = query({
           u.role === 'driver'),
     );
 
-    const userProfiles = await Promise.all(activeUsers.map((u: any) => getProfile(ctx, u._id)));
+    const userProfiles = await Promise.all(activeUsers.map((u) => getProfile(ctx, u._id)));
 
     return activeUsers.map((u, i) => {
       const profile = userProfiles[i];
@@ -583,17 +584,13 @@ export const getSupervisors = query({
 
     // Filter by organization
     if (requester && requester.organizationId) {
-      supervisors = supervisors.filter((u: any) => u.organizationId === requester.organizationId);
-      admins = admins.filter((u: any) => u.organizationId === requester.organizationId);
+      supervisors = supervisors.filter((u) => u.organizationId === requester.organizationId);
+      admins = admins.filter((u) => u.organizationId === requester.organizationId);
     }
 
-    const activeSupervisors = [...supervisors, ...admins].filter(
-      (u: any) => u.isActive && u.isApproved,
-    );
+    const activeSupervisors = [...supervisors, ...admins].filter((u) => u.isActive && u.isApproved);
 
-    const supProfiles = await Promise.all(
-      activeSupervisors.map((u: any) => getProfile(ctx, u._id)),
-    );
+    const supProfiles = await Promise.all(activeSupervisors.map((u) => getProfile(ctx, u._id)));
 
     return activeSupervisors.map((u, i) => {
       const profile = supProfiles[i];
@@ -660,7 +657,7 @@ export const removeAttachment = mutation({
   handler: async (ctx, args) => {
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error('Task not found');
-    const attachments = (task.attachments ?? []).filter((a: any) => a.url !== args.url);
+    const attachments = (task.attachments ?? []).filter((a) => a.url !== args.url);
     await ctx.db.patch(args.taskId, { attachments, updatedAt: Date.now() });
 
     // Audit log: attachment removed
@@ -689,11 +686,11 @@ export const getTaskComments = query({
       .take(DEFAULT_LIST_CAP);
 
     // Batch load all authors
-    const authorIds = [...new Set(comments.map((c: any) => c.authorId))];
+    const authorIds = [...new Set(comments.map((c) => c.authorId))];
     const authors = await Promise.all(authorIds.map((id: Id<'users'>) => ctx.db.get(id)));
-    const authorMap = new Map(authors.map((a: any) => [a?._id, a]));
+    const authorMap = new Map(authors.map((a) => [a?._id, a]));
 
-    return comments.map((c: any) => ({
+    return comments.map((c) => ({
       ...c,
       author: authorMap.get(c.authorId),
     }));
@@ -763,9 +760,9 @@ export const getTask = query({
       .withIndex('by_task', (q) => q.eq('taskId', args.taskId))
       .take(DEFAULT_LIST_CAP);
 
-    const commentAuthorIds = [...new Set(comments.map((c: any) => c.authorId))];
+    const commentAuthorIds = [...new Set(comments.map((c) => c.authorId))];
     const commentAuthors = await Promise.all(commentAuthorIds.map((id) => ctx.db.get(id)));
-    const commentAuthorMap = new Map(commentAuthors.map((a: any) => [a?._id, a]));
+    const commentAuthorMap = new Map(commentAuthors.map((a) => [a?._id, a]));
 
     return {
       ...task,
@@ -787,7 +784,7 @@ export const getTask = query({
               assignedByProfile?.avatarUrl ?? assignedBy.avatarUrl ?? assignedBy.faceImageUrl,
           }
         : null,
-      comments: comments.map((c: any) => ({
+      comments: comments.map((c) => ({
         ...c,
         author: commentAuthorMap.get(c.authorId),
       })),

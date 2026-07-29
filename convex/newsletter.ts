@@ -618,7 +618,7 @@ export const sendPollToSubscribers = internalAction({
     if (!token) return;
 
     for (const sub of telegramSubs) {
-      const buttons = poll.options.map((opt: any, i: number) => [
+      const buttons = poll.options.map((opt, i: number) => [
         {
           text: opt.text,
           callback_data: `poll_${poll._id}_${i}`,

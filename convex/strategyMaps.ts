@@ -572,8 +572,8 @@ function generatePerspectiveMetrics(
   objectives: any[],
   avgProgress: number,
 ): Array<{ label: string; value: string; direction: 'up' | 'down' | 'neutral' }> {
-  const active = objectives.filter((o: any) => o.status === 'active');
-  const completedCount = objectives.filter((o: any) => o.status === 'completed').length;
+  const active = objectives.filter((o) => o.status === 'active');
+  const completedCount = objectives.filter((o) => o.status === 'completed').length;
   const total = objectives.length;
 
   const completionRate = total > 0 ? Math.round((completedCount / total) * 100) : 0;
@@ -606,7 +606,7 @@ function generatePerspectiveMetrics(
         },
         {
           label: 'On Track Rate',
-          value: `${active.length > 0 ? Math.round((active.filter((o: any) => o.progress >= 70).length / active.length) * 100) : 0}%`,
+          value: `${active.length > 0 ? Math.round((active.filter((o) => o.progress >= 70).length / active.length) * 100) : 0}%`,
           direction: avgProgress >= 50 ? 'up' : 'down',
         },
         {
@@ -629,7 +629,7 @@ function generatePerspectiveMetrics(
         },
         {
           label: 'At Risk',
-          value: String(active.filter((o: any) => o.progress < 40).length),
+          value: String(active.filter((o) => o.progress < 40).length),
           direction: 'neutral',
         },
       ];
@@ -726,7 +726,7 @@ export const getAlignmentTree = query({
           objective: obj,
           keyResults: krs,
           taskCount: tasks.length,
-          completedTaskCount: tasks.filter((t: any) => t.status === 'completed').length,
+          completedTaskCount: tasks.filter((t) => t.status === 'completed').length,
         };
       }),
     );
@@ -818,9 +818,9 @@ function computeNorthStar(
   perspectives: BscPerspectiveData[],
   overallScore: number,
 ): NorthStarMetric {
-  const active = objectives.filter((o: any) => o.status === 'active');
+  const active = objectives.filter((o) => o.status === 'active');
   const total = objectives.length;
-  const completed = objectives.filter((o: any) => o.status === 'completed').length;
+  const completed = objectives.filter((o) => o.status === 'completed').length;
   const avgProgress =
     active.length > 0
       ? Math.round(active.reduce((sum: number, o: any) => sum + o.progress, 0) / active.length)

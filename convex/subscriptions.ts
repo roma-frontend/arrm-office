@@ -150,7 +150,7 @@ export const linkSubscriptionToUser = mutation({
     const subscription = await ctx.db
       .query('subscriptions')
       .withIndex('by_email', (q) => q.eq('email', email))
-      .filter((q: any) => q.eq(q.field('userId'), undefined))
+      .filter((q) => q.eq(q.field('userId'), undefined))
       .first();
 
     if (!subscription) return null;

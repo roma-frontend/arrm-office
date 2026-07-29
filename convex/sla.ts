@@ -249,35 +249,34 @@ export const getSLAStats = query({
 
     // Filter by organization if provided
     if (organizationId) {
-      metrics = metrics.filter((m: any) => m.organizationId === organizationId);
+      metrics = metrics.filter((m) => m.organizationId === organizationId);
     }
 
     // Filter by date range if provided
     if (startDate) {
-      metrics = metrics.filter((m: any) => m.submittedAt >= startDate);
+      metrics = metrics.filter((m) => m.submittedAt >= startDate);
     }
     if (endDate) {
-      metrics = metrics.filter((m: any) => m.submittedAt <= endDate);
+      metrics = metrics.filter((m) => m.submittedAt <= endDate);
     }
     if (endDate) {
-      metrics = metrics.filter((m: any) => m.submittedAt <= endDate);
+      metrics = metrics.filter((m) => m.submittedAt <= endDate);
     }
 
     const total = metrics.length;
-    const pending = metrics.filter((m: any) => m.status === 'pending').length;
-    const onTime = metrics.filter((m: any) => m.status === 'on_time').length;
-    const breached = metrics.filter((m: any) => m.status === 'breached').length;
+    const pending = metrics.filter((m) => m.status === 'pending').length;
+    const onTime = metrics.filter((m) => m.status === 'on_time').length;
+    const breached = metrics.filter((m) => m.status === 'breached').length;
 
-    const completed = metrics.filter((m: any) => m.responseTimeHours !== undefined);
+    const completed = metrics.filter((m) => m.responseTimeHours !== undefined);
     const avgResponseTime =
       completed.length > 0
-        ? completed.reduce((sum: any, m: any) => sum + (m.responseTimeHours ?? 0), 0) /
-          completed.length
+        ? completed.reduce((sum, m) => sum + (m.responseTimeHours ?? 0), 0) / completed.length
         : 0;
 
     const avgSLAScore =
       completed.length > 0
-        ? completed.reduce((sum: any, m: any) => sum + (m.slaScore ?? 0), 0) / completed.length
+        ? completed.reduce((sum, m) => sum + (m.slaScore ?? 0), 0) / completed.length
         : 0;
 
     const complianceRate = total > 0 ? (onTime / (onTime + breached)) * 100 : 100;
@@ -288,13 +287,13 @@ export const getSLAStats = query({
 
     // Check pending requests for warnings
     const now = Date.now();
-    const warningCount = metrics.filter((m: any) => {
+    const warningCount = metrics.filter((m) => {
       if (m.status !== 'pending') return false;
       const elapsed = (now - m.submittedAt) / (1000 * 60 * 60);
       return elapsed >= (config?.warningThreshold ?? 18);
     }).length;
 
-    const criticalCount = metrics.filter((m: any) => {
+    const criticalCount = metrics.filter((m) => {
       if (m.status !== 'pending') return false;
       const elapsed = (now - m.submittedAt) / (1000 * 60 * 60);
       return elapsed >= (config?.criticalThreshold ?? 22);
@@ -329,26 +328,26 @@ export const getPendingWithSLA = query({
 
     // Filter by organization if provided
     if (organizationId) {
-      pendingLeaves = pendingLeaves.filter((l: any) => l.organizationId === organizationId);
+      pendingLeaves = pendingLeaves.filter((l) => l.organizationId === organizationId);
     }
 
     const config = await ctx.db.query('slaConfig').first();
     const now = Date.now();
 
     // Batch-load all unique user IDs upfront to avoid N+1 queries
-    const uniqueUserIds = [...new Set(pendingLeaves.map((l: any) => l.userId))];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
-    const profilesBatch = await Promise.all(uniqueUserIds.map((id: any) => getProfile(ctx, id)));
+    const uniqueUserIds = [...new Set(pendingLeaves.map((l) => l.userId))];
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
+    const profilesBatch = await Promise.all(uniqueUserIds.map((id) => getProfile(ctx, id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
     );
     const profileMap = new Map(uniqueUserIds.map((id, i) => [id, profilesBatch[i]]));
 
     // Batch-load all SLA metrics for the pending leaves
     const allMetrics = await ctx.db.query('slaMetrics').take(XLARGE_LIST_CAP);
-    const metricsByLeave = new Map(allMetrics.map((m: any) => [m.leaveRequestId, m]));
+    const metricsByLeave = new Map(allMetrics.map((m) => [m.leaveRequestId, m]));
 
-    return pendingLeaves.map((leave: any) => {
+    return pendingLeaves.map((leave) => {
       const user = userMap.get(leave.userId);
       const profile = profileMap.get(leave.userId);
       const metric = metricsByLeave.get(leave._id);
@@ -399,12 +398,12 @@ export const getSLATrend = query({
     let metrics = await ctx.db
       .query('slaMetrics')
       .withIndex('by_submitted')
-      .filter((q: any) => q.gte(q.field('submittedAt'), startDate))
+      .filter((q) => q.gte(q.field('submittedAt'), startDate))
       .take(DEFAULT_LIST_CAP);
 
     // Filter by organization if provided
     if (organizationId) {
-      metrics = metrics.filter((m: any) => m.organizationId === organizationId);
+      metrics = metrics.filter((m) => m.organizationId === organizationId);
     }
 
     // Group by day
@@ -413,7 +412,7 @@ export const getSLATrend = query({
       { date: string; onTime: number; breached: number; avgResponseTime: number; count: number }
     > = {};
 
-    metrics.forEach((metric: any) => {
+    metrics.forEach((metric) => {
       const date = new Date(metric.submittedAt).toISOString().split('T')[0] || '';
       if (!date) return;
 
@@ -435,7 +434,7 @@ export const getSLATrend = query({
 
     // Calculate averages and convert to array
     return Object.values(dailyData)
-      .map((day: any) => ({
+      .map((day) => ({
         date: day.date,
         onTime: day.onTime,
         breached: day.breached,
@@ -446,7 +445,7 @@ export const getSLATrend = query({
             ? Math.round((day.onTime / (day.onTime + day.breached)) * 100)
             : 100,
       }))
-      .sort((a: any, b: any) => a.date.localeCompare(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date));
   },
 });
 

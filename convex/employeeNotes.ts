@@ -74,7 +74,7 @@ export const getNotes = query({
       .take(SMALL_LIST_CAP);
 
     // Filter by visibility
-    const filtered = allNotes.filter((note: any) => {
+    const filtered = allNotes.filter((note) => {
       if (note.visibility === 'employee_visible') return true;
       if (note.visibility === 'hr_only' && viewer.role === 'admin') return true;
       if (
@@ -109,7 +109,7 @@ export const updateNote = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
 
     if (args.content !== undefined) {
       updates.content = args.content;
@@ -163,16 +163,16 @@ export const getNotesSummary = query({
       .take(SMALL_LIST_CAP);
 
     const total = notes.length;
-    const positive = notes.filter((n: any) => n.sentiment === 'positive').length;
-    const negative = notes.filter((n: any) => n.sentiment === 'negative').length;
-    const neutral = notes.filter((n: any) => n.sentiment === 'neutral').length;
+    const positive = notes.filter((n) => n.sentiment === 'positive').length;
+    const negative = notes.filter((n) => n.sentiment === 'negative').length;
+    const neutral = notes.filter((n) => n.sentiment === 'neutral').length;
 
     const byType = {
-      performance: notes.filter((n: any) => n.type === 'performance').length,
-      behavior: notes.filter((n: any) => n.type === 'behavior').length,
-      achievement: notes.filter((n: any) => n.type === 'achievement').length,
-      concern: notes.filter((n: any) => n.type === 'concern').length,
-      general: notes.filter((n: any) => n.type === 'general').length,
+      performance: notes.filter((n) => n.type === 'performance').length,
+      behavior: notes.filter((n) => n.type === 'behavior').length,
+      achievement: notes.filter((n) => n.type === 'achievement').length,
+      concern: notes.filter((n) => n.type === 'concern').length,
+      general: notes.filter((n) => n.type === 'general').length,
     };
 
     return {

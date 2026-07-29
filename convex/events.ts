@@ -124,7 +124,7 @@ export const updateCompanyEvent = mutation({
       throw new Error('Only event creator or admin can update');
     }
 
-    const patch: any = { updatedAt: Date.now() };
+    const patch = { updatedAt: Date.now() };
     if (args.name) patch.name = args.name;
     if (args.description !== undefined) patch.description = args.description;
     if (args.startDate) patch.startDate = args.startDate;
@@ -222,15 +222,13 @@ export const getCompanyEvents = query({
     }
 
     // Enrich with creator info - batch load all unique creator IDs
-    const uniqueCreatorIds = [...new Set(events.map((e: any) => e.createdBy).filter(Boolean))];
-    const creatorsBatch = await Promise.all(uniqueCreatorIds.map((id: any) => ctx.db.get(id)));
+    const uniqueCreatorIds = [...new Set(events.map((e) => e.createdBy).filter(Boolean))];
+    const creatorsBatch = await Promise.all(uniqueCreatorIds.map((id) => ctx.db.get(id)));
     const creatorMap = new Map(
-      creatorsBatch
-        .filter((c): c is NonNullable<typeof c> => c !== null)
-        .map((c: any) => [c._id, c]),
+      creatorsBatch.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c]),
     );
 
-    const enriched = events.map((event: any) => {
+    const enriched = events.map((event) => {
       const creator = creatorMap.get(event.createdBy);
       return {
         ...event,
@@ -274,7 +272,7 @@ export const checkLeaveConflictsManual = mutation({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const overlappingEvents = events.filter((event: any) => {
+    const overlappingEvents = events.filter((event) => {
       // Check if leave overlaps with event
       return startDate <= event.endDate && endDate >= event.startDate;
     });
@@ -294,7 +292,7 @@ export const checkLeaveConflictsManual = mutation({
         const existingAlert = await ctx.db
           .query('leaveConflictAlerts')
           .withIndex('by_leave_request', (q) => q.eq('leaveRequestId', leaveRequestId))
-          .filter((q: any) => q.eq(q.field('eventId'), event._id))
+          .filter((q) => q.eq(q.field('eventId'), event._id))
           .first();
 
         if (!existingAlert) {
@@ -344,7 +342,7 @@ export const checkLeaveConflicts = mutation({
       .withIndex('by_org', (q) => q.eq('organizationId', user.organizationId!))
       .take(DEFAULT_LIST_CAP);
 
-    const overlappingEvents = events.filter((event: any) => {
+    const overlappingEvents = events.filter((event) => {
       // Check if leave overlaps with event
       return startDate <= event.endDate && endDate >= event.startDate;
     });
@@ -362,7 +360,7 @@ export const checkLeaveConflicts = mutation({
         const existingAlert = await ctx.db
           .query('leaveConflictAlerts')
           .withIndex('by_leave_request', (q) => q.eq('leaveRequestId', leaveRequestId))
-          .filter((q: any) => q.eq(q.field('eventId'), event._id))
+          .filter((q) => q.eq(q.field('eventId'), event._id))
           .first();
 
         if (!existingAlert) {
@@ -424,7 +422,7 @@ export const getLeaveConflictAlerts = query({
       .take(100);
 
     if (args.isReviewed !== undefined) {
-      alerts = alerts.filter((a: any) => a.isReviewed === args.isReviewed);
+      alerts = alerts.filter((a) => a.isReviewed === args.isReviewed);
     }
 
     // Enrich with event and user info
@@ -540,7 +538,7 @@ export const getEventAttendanceStatus = query({
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
         .take(DEFAULT_LIST_CAP)
-    ).filter((u: any) => u.role !== 'superadmin');
+    ).filter((u) => u.role !== 'superadmin');
 
     const requiredUsers = users.filter(
       (u) =>
@@ -578,7 +576,7 @@ export const getEventAttendanceStatus = query({
     return {
       event,
       totalRequired: requiredUsers.length,
-      hasConflicts: attendanceStatus.filter((s: any) => s.hasConflict).length,
+      hasConflicts: attendanceStatus.filter((s) => s.hasConflict).length,
       attendanceStatus,
     };
   },

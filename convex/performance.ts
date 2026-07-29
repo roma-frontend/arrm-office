@@ -66,7 +66,7 @@ export const listCycles = query({
     const cycles = await q.order('desc').take(DEFAULT_LIST_CAP);
 
     if (args.status) {
-      return cycles.filter((c: any) => c.status === args.status);
+      return cycles.filter((c) => c.status === args.status);
     }
     return cycles;
   },
@@ -85,9 +85,9 @@ export const getCycleDetails = query({
       .take(DEFAULT_LIST_CAP);
 
     const total = assignments.length;
-    const submitted = assignments.filter((a: any) => a.status === 'submitted').length;
-    const pending = assignments.filter((a: any) => a.status === 'pending').length;
-    const inProgress = assignments.filter((a: any) => a.status === 'in_progress').length;
+    const submitted = assignments.filter((a) => a.status === 'submitted').length;
+    const pending = assignments.filter((a) => a.status === 'pending').length;
+    const inProgress = assignments.filter((a) => a.status === 'in_progress').length;
 
     const createdByUser = await ctx.db.get(cycle.createdBy);
 
@@ -115,8 +115,8 @@ export const getMyAssignments = query({
       .take(DEFAULT_LIST_CAP);
 
     const filtered = args.status
-      ? assignments.filter((a: any) => a.status === args.status)
-      : assignments.filter((a: any) => a.status !== 'cancelled');
+      ? assignments.filter((a) => a.status === args.status)
+      : assignments.filter((a) => a.status !== 'cancelled');
 
     // Enrich with cycle and reviewee info
     const enriched = await Promise.all(
@@ -137,7 +137,7 @@ export const getMyAssignments = query({
     );
 
     // Only show assignments for active cycles
-    return enriched.filter((a: any) => a.cycleStatus === 'active');
+    return enriched.filter((a) => a.cycleStatus === 'active');
   },
 });
 
@@ -159,17 +159,17 @@ export const getRevieweeResults = query({
       .take(DEFAULT_LIST_CAP);
 
     // Group by type
-    const selfReview = responses.find((r: any) => r.type === 'self');
-    const managerReviews = responses.filter((r: any) => r.type === 'manager');
-    const peerReviews = responses.filter((r: any) => r.type === 'peer');
-    const directReportReviews = responses.filter((r: any) => r.type === 'direct_report');
+    const selfReview = responses.find((r) => r.type === 'self');
+    const managerReviews = responses.filter((r) => r.type === 'manager');
+    const peerReviews = responses.filter((r) => r.type === 'peer');
+    const directReportReviews = responses.filter((r) => r.type === 'direct_report');
 
     // Check anonymity threshold for peers
     const peerThreshold = cycle.peerAnonymityThreshold || 2;
     const canShowPeerDetails = peerReviews.length >= peerThreshold;
 
     // Get detailed ratings per competency
-    const allResponseIds = responses.map((r: any) => r._id);
+    const allResponseIds = responses.map((r) => r._id);
     const allRatings = await Promise.all(
       allResponseIds.map(async (responseId) => {
         return ctx.db
@@ -196,18 +196,15 @@ export const getRevieweeResults = query({
       name: data.name,
       average:
         data.scores.length > 0
-          ? Math.round(
-              (data.scores.reduce((s: any, v: any) => s + v, 0) / data.scores.length) * 10,
-            ) / 10
+          ? Math.round((data.scores.reduce((s, v) => s + v, 0) / data.scores.length) * 10) / 10
           : 0,
       count: data.scores.length,
     }));
 
     const overallAvg =
       responses.length > 0
-        ? Math.round(
-            (responses.reduce((s: any, r: any) => s + r.overallScore, 0) / responses.length) * 10,
-          ) / 10
+        ? Math.round((responses.reduce((s, r) => s + r.overallScore, 0) / responses.length) * 10) /
+          10
         : 0;
 
     return {
@@ -222,14 +219,14 @@ export const getRevieweeResults = query({
             improvements: selfReview.improvements,
           }
         : null,
-      managerReviews: managerReviews.map((r: any) => ({
+      managerReviews: managerReviews.map((r) => ({
         overallScore: r.overallScore,
         strengths: r.strengths,
         improvements: r.improvements,
         generalComments: r.generalComments,
       })),
       peerReviews: canShowPeerDetails
-        ? peerReviews.map((r: any) => ({
+        ? peerReviews.map((r) => ({
             overallScore: r.overallScore,
             strengths: r.strengths,
             improvements: r.improvements,
@@ -238,7 +235,7 @@ export const getRevieweeResults = query({
         : null,
       peerCount: peerReviews.length,
       peerThreshold,
-      directReportReviews: directReportReviews.map((r: any) => ({
+      directReportReviews: directReportReviews.map((r) => ({
         overallScore: r.overallScore,
         strengths: r.strengths,
         improvements: r.improvements,
@@ -271,15 +268,11 @@ export const getCycleSummary = query({
 
     // Batch-load all unique reviewee IDs upfront
     const uniqueRevieweeIds = Object.keys(byReviewee) as Id<'users'>[];
-    const revieweesBatch = await Promise.all(uniqueRevieweeIds.map((id: any) => ctx.db.get(id)));
+    const revieweesBatch = await Promise.all(uniqueRevieweeIds.map((id) => ctx.db.get(id)));
     const revieweeMap = new Map(
-      revieweesBatch
-        .filter((u): u is NonNullable<typeof u> => u !== null)
-        .map((u: any) => [u._id, u]),
+      revieweesBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
     );
-    const profilesBatch = await Promise.all(
-      uniqueRevieweeIds.map((id: any) => getProfile(ctx, id)),
-    );
+    const profilesBatch = await Promise.all(uniqueRevieweeIds.map((id) => getProfile(ctx, id)));
     const profileMap = new Map(uniqueRevieweeIds.map((id, i) => [id, profilesBatch[i]]));
 
     const summaries = Object.entries(byReviewee).map(([revieweeId, data]) => {
@@ -290,8 +283,7 @@ export const getCycleSummary = query({
         name: user?.name || 'Unknown',
         avatar: (profile?.avatarUrl ?? user?.avatarUrl) || user?.faceImageUrl || '',
         averageScore:
-          Math.round((data.scores.reduce((s: any, v: any) => s + v, 0) / data.scores.length) * 10) /
-          10,
+          Math.round((data.scores.reduce((s, v) => s + v, 0) / data.scores.length) * 10) / 10,
         reviewCount: data.scores.length,
         types: [...new Set(data.types)],
       };
@@ -299,7 +291,7 @@ export const getCycleSummary = query({
 
     return {
       cycle,
-      summaries: summaries.sort((a: any, b: any) => b.averageScore - a.averageScore),
+      summaries: summaries.sort((a, b) => b.averageScore - a.averageScore),
     };
   },
 });
@@ -533,9 +525,7 @@ export const addPeerAssignment = mutation({
       )
       .take(SMALL_LIST_CAP);
 
-    const duplicate = existing.find(
-      (a: any) => a.revieweeId === args.revieweeId && a.type === 'peer',
-    );
+    const duplicate = existing.find((a) => a.revieweeId === args.revieweeId && a.type === 'peer');
     if (duplicate) throw new Error('Assignment already exists');
 
     return ctx.db.insert('reviewAssignments', {
@@ -577,13 +567,12 @@ export const submitReview = mutation({
     if (!cycle || cycle.status !== 'active') throw new Error('Cycle is not active');
 
     // Validate ratings
-    if (args.ratings.some((r: any) => r.score < 1 || r.score > 5)) {
+    if (args.ratings.some((r) => r.score < 1 || r.score > 5)) {
       throw new Error('All ratings must be between 1 and 5');
     }
 
     const now = Date.now();
-    const overallScore =
-      args.ratings.reduce((sum: any, r: any) => sum + r.score, 0) / args.ratings.length;
+    const overallScore = args.ratings.reduce((sum, r) => sum + r.score, 0) / args.ratings.length;
 
     // Create response
     const responseId = await ctx.db.insert('reviewResponses', {
@@ -721,8 +710,8 @@ export const getEligibleParticipants = query({
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
-    const filtered = users.filter((u: any) => u.isActive && u.role !== 'superadmin');
-    const profiles = await Promise.all(filtered.map((u: any) => getProfile(ctx, u._id)));
+    const filtered = users.filter((u) => u.isActive && u.role !== 'superadmin');
+    const profiles = await Promise.all(filtered.map((u) => getProfile(ctx, u._id)));
     return filtered.map((u, i) => {
       const p = profiles[i];
       return {
@@ -764,7 +753,7 @@ export const checkDeadlineNotifications = internalMutation({
           const pendingAssignments = await ctx.db
             .query('reviewAssignments')
             .withIndex('by_cycle', (q) => q.eq('cycleId', cycle._id))
-            .filter((q: any) =>
+            .filter((q) =>
               q.or(q.eq(q.field('status'), 'pending'), q.eq(q.field('status'), 'in_progress')),
             )
             .take(DEFAULT_LIST_CAP);
@@ -774,7 +763,7 @@ export const checkDeadlineNotifications = internalMutation({
             const existingNotifications = await ctx.db
               .query('notifications')
               .withIndex('by_user', (q) => q.eq('userId', assignment.reviewerId))
-              .filter((q: any) =>
+              .filter((q) =>
                 q.and(
                   q.eq(q.field('type'), 'review_deadline'),
                   q.eq(q.field('relatedId'), assignment._id),

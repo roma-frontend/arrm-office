@@ -7,6 +7,7 @@ import { getAuthCaller } from './lib/getAuthCaller';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
 // Identity is derived from the verified JWT (getAuthCaller), never from client args.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function checkAccess(ctx: any, organizationId: any) {
   const caller = await getAuthCaller(ctx);
   if (!caller) throw new Error('Not authenticated');
@@ -42,11 +43,11 @@ export const listCourses = query({
       .take(MAX_PAGE_SIZE);
 
     if (!args.includeUnpublished || !isSuperadmin) {
-      courses = courses.filter((c: any) => c.isPublished);
+      courses = courses.filter((c) => c.isPublished);
     }
 
-    if (args.category) courses = courses.filter((c: any) => c.category === args.category);
-    if (args.difficulty) courses = courses.filter((c: any) => c.difficulty === args.difficulty);
+    if (args.category) courses = courses.filter((c) => c.category === args.category);
+    if (args.difficulty) courses = courses.filter((c) => c.difficulty === args.difficulty);
     if (args.search) {
       const lower = args.search.toLowerCase();
       courses = courses.filter(
@@ -166,7 +167,7 @@ export const updateCourse = mutation({
     const { isSuperadmin } = await checkAccess(ctx, course.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can update courses');
 
-    const patch: any = { updatedAt: Date.now() };
+    const patch = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
     if (args.category !== undefined) patch.category = args.category;
@@ -273,7 +274,7 @@ export const updateLesson = mutation({
     if (!lesson) throw new Error('Lesson not found');
     await checkAccess(ctx, lesson.organizationId);
 
-    const patch: any = { updatedAt: Date.now() };
+    const patch = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
     if (args.order !== undefined) patch.order = args.order;
@@ -300,7 +301,7 @@ export const deleteLesson = mutation({
     const progress = await ctx.db
       .query('lessonProgress')
       .withIndex('by_user_course', (q) => q.eq('organizationId', lesson.organizationId))
-      .filter((q: any) => q.eq(q.field('lessonId'), lesson._id))
+      .filter((q) => q.eq(q.field('lessonId'), lesson._id))
       .take(DEFAULT_LIST_CAP);
     for (const p of progress) await ctx.db.delete(p._id);
 
@@ -461,7 +462,7 @@ export const updateEnrollmentStatus = mutation({
     if (!enrollment) throw new Error('Enrollment not found');
     await checkAccess(ctx, enrollment.organizationId);
 
-    const patch: any = { status: args.status, updatedAt: Date.now() };
+    const patch = { status: args.status, updatedAt: Date.now() };
     if (args.progress !== undefined) patch.progress = args.progress;
     if (args.status === 'in_progress' && !enrollment.startedAt) patch.startedAt = Date.now();
     if (args.status === 'completed') {
@@ -519,7 +520,7 @@ export const updateLessonProgress = mutation({
 
     const now = Date.now();
     if (existing) {
-      const patch: any = {
+      const patch = {
         isCompleted: args.isCompleted,
         updatedAt: now,
       };
@@ -717,7 +718,7 @@ export const submitQuizAttempt = mutation({
     const totalPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
     let earnedPoints = 0;
 
-    const answerResults = args.answers.map((answer: any, idx: number) => {
+    const answerResults = args.answers.map((answer, idx: number) => {
       const question = questions[idx];
       if (!question) return { questionId: null, userAnswer: answer.userAnswer, isCorrect: false };
       const isCorrect = answer.userAnswer === question.correctAnswer;
@@ -900,10 +901,10 @@ export const getTeamLearningOverview = query({
       .take(DEFAULT_LIST_CAP);
 
     const totalEnrollments = enrollments.length;
-    const completedEnrollments = enrollments.filter((e: any) => e.status === 'completed').length;
-    const inProgressEnrollments = enrollments.filter((e: any) => e.status === 'in_progress').length;
+    const completedEnrollments = enrollments.filter((e) => e.status === 'completed').length;
+    const inProgressEnrollments = enrollments.filter((e) => e.status === 'in_progress').length;
     const totalCourses = courses.length;
-    const mandatoryCourses = courses.filter((c: any) => c.isMandatory).length;
+    const mandatoryCourses = courses.filter((c) => c.isMandatory).length;
 
     const completionRate =
       totalEnrollments > 0 ? Math.round((completedEnrollments / totalEnrollments) * 100) : 0;

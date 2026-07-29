@@ -36,7 +36,7 @@ export const getUser360 = query({
       // Tasks (assigned to user)
       ctx.db
         .query('tasks')
-        .filter((q: any) => q.eq(q.field('assignedTo'), args.userId))
+        .filter((q) => q.eq(q.field('assignedTo'), args.userId))
         .take(MAX_PAGE_SIZE),
 
       // Driver requests
@@ -55,14 +55,14 @@ export const getUser360 = query({
       // Login attempts (last 20)
       ctx.db
         .query('loginAttempts')
-        .filter((q: any) => q.eq(q.field('userId'), args.userId))
+        .filter((q) => q.eq(q.field('userId'), args.userId))
         .order('desc')
         .take(20),
 
       // Support tickets (created or assigned)
       ctx.db
         .query('supportTickets')
-        .filter((q: any) =>
+        .filter((q) =>
           q.or(q.eq(q.field('createdBy'), args.userId), q.eq(q.field('assignedTo'), args.userId)),
         )
         .take(MAX_PAGE_SIZE),
@@ -70,13 +70,13 @@ export const getUser360 = query({
       // Ticket comments
       ctx.db
         .query('ticketComments')
-        .filter((q: any) => q.eq(q.field('authorId'), args.userId))
+        .filter((q) => q.eq(q.field('authorId'), args.userId))
         .take(MAX_PAGE_SIZE),
 
       // Chat messages (last 100)
       ctx.db
         .query('chatMessages')
-        .filter((q: any) => q.eq(q.field('senderId'), args.userId))
+        .filter((q) => q.eq(q.field('senderId'), args.userId))
         .order('desc')
         .take(100),
 
@@ -134,17 +134,16 @@ export const getUser360 = query({
     // Calculate statistics
     const stats = {
       totalLeaves: leaves.length,
-      pendingLeaves: leaves.filter((l: any) => l.status === 'pending').length,
-      approvedLeaves: leaves.filter((l: any) => l.status === 'approved').length,
+      pendingLeaves: leaves.filter((l) => l.status === 'pending').length,
+      approvedLeaves: leaves.filter((l) => l.status === 'approved').length,
       totalTasks: tasks.length,
-      completedTasks: tasks.filter((t: any) => t.status === 'completed').length,
+      completedTasks: tasks.filter((t) => t.status === 'completed').length,
       totalDriverRequests: driverRequests.length,
       totalTickets: supportTickets.length,
-      openTickets: supportTickets.filter(
-        (t: any) => t.status !== 'closed' && t.status !== 'resolved',
-      ).length,
+      openTickets: supportTickets.filter((t) => t.status !== 'closed' && t.status !== 'resolved')
+        .length,
       totalLoginAttempts: loginAttempts.length,
-      failedLoginAttempts: loginAttempts.filter((l: any) => !l.success).length,
+      failedLoginAttempts: loginAttempts.filter((l) => !l.success).length,
     };
 
     return {

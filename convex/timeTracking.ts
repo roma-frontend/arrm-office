@@ -115,7 +115,7 @@ export const checkIn = mutation({
         .withIndex('by_org_user_created', (q) =>
           q.eq('organizationId', orgId).eq('userId', args.userId).gte('createdAt', todayStart),
         )
-        .filter((q: any) => q.eq(q.field('type'), 'earned_attendance'))
+        .filter((q) => q.eq(q.field('type'), 'earned_attendance'))
         .first();
 
       if (!existingPointsToday) {
@@ -276,7 +276,7 @@ export const getCurrentlyAtWork = query({
       .withIndex('by_date', (q) => q.eq('date', today))
       .take(DEFAULT_LIST_CAP);
 
-    const atWork = records.filter((r: any) => r.status === 'checked_in');
+    const atWork = records.filter((r) => r.status === 'checked_in');
 
     // Filter by organization if admin (not superadmin)
     const callerIsSuperadmin = isSuperadmin(admin);
@@ -412,24 +412,24 @@ export const getTodayAttendanceSummary = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('users').take(XLARGE_LIST_CAP);
     // Exclude superadmins from employee counts
-    let activeEmployees = totalEmployees.filter((u: any) => u.isActive && u.role !== 'superadmin');
+    let activeEmployees = totalEmployees.filter((u) => u.isActive && u.role !== 'superadmin');
 
     // Filter by org if admin
     if (orgToFilter) {
-      activeEmployees = activeEmployees.filter((u: any) => u.organizationId === orgToFilter);
+      activeEmployees = activeEmployees.filter((u) => u.organizationId === orgToFilter);
     }
 
     // Filter records by org if admin
     let filteredRecords = records;
     if (orgToFilter) {
-      const filteredUserIds = activeEmployees.map((u: any) => u._id);
-      filteredRecords = records.filter((r: any) => filteredUserIds.includes(r.userId));
+      const filteredUserIds = activeEmployees.map((u) => u._id);
+      filteredRecords = records.filter((r) => filteredUserIds.includes(r.userId));
     }
 
-    const checkedIn = filteredRecords.filter((r: any) => r.status === 'checked_in').length;
-    const checkedOut = filteredRecords.filter((r: any) => r.status === 'checked_out').length;
-    const late = filteredRecords.filter((r: any) => r.isLate).length;
-    const earlyLeave = filteredRecords.filter((r: any) => r.isEarlyLeave).length;
+    const checkedIn = filteredRecords.filter((r) => r.status === 'checked_in').length;
+    const checkedOut = filteredRecords.filter((r) => r.status === 'checked_out').length;
+    const late = filteredRecords.filter((r) => r.isLate).length;
+    const earlyLeave = filteredRecords.filter((r) => r.isEarlyLeave).length;
     const absent = activeEmployees.length - filteredRecords.length;
 
     return {
@@ -460,11 +460,11 @@ export const getMonthlyStats = query({
       .take(DEFAULT_LIST_CAP);
 
     // Filter by month
-    const monthRecords = records.filter((r: any) => r.date.startsWith(args.month));
+    const monthRecords = records.filter((r) => r.date.startsWith(args.month));
 
     const totalDays = monthRecords.length;
-    const lateDays = monthRecords.filter((r: any) => r.isLate).length;
-    const earlyLeaveDays = monthRecords.filter((r: any) => r.isEarlyLeave).length;
+    const lateDays = monthRecords.filter((r) => r.isLate).length;
+    const earlyLeaveDays = monthRecords.filter((r) => r.isEarlyLeave).length;
     const totalWorkedMinutes = monthRecords.reduce(
       (sum, r) => sum + (r.totalWorkedMinutes || 0),
       0,
@@ -506,11 +506,11 @@ export const getAllEmployeesAttendanceOverview = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('users').take(XLARGE_LIST_CAP);
     // Only include regular employees (not admins, superadmins, supervisors)
-    let activeUsers = users.filter((u: any) => u.isActive && u.role === 'employee');
+    let activeUsers = users.filter((u) => u.isActive && u.role === 'employee');
 
     // Filter by organization if admin
     if (orgToFilter) {
-      activeUsers = activeUsers.filter((u: any) => u.organizationId === orgToFilter);
+      activeUsers = activeUsers.filter((u) => u.organizationId === orgToFilter);
     }
 
     const results = await Promise.all(
@@ -520,10 +520,10 @@ export const getAllEmployeesAttendanceOverview = query({
           .withIndex('by_user', (q) => q.eq('userId', user._id))
           .take(DEFAULT_LIST_CAP);
 
-        const monthRecords = records.filter((r: any) => r.date.startsWith(args.month));
+        const monthRecords = records.filter((r) => r.date.startsWith(args.month));
         const totalDays = monthRecords.length;
-        const lateDays = monthRecords.filter((r: any) => r.isLate).length;
-        const absentDays = monthRecords.filter((r: any) => r.status === 'absent').length;
+        const lateDays = monthRecords.filter((r) => r.isLate).length;
+        const absentDays = monthRecords.filter((r) => r.status === 'absent').length;
         const totalWorkedMinutes = monthRecords.reduce(
           (s, r) => s + (r.totalWorkedMinutes ?? 0),
           0,
@@ -579,7 +579,7 @@ export const getEmployeeAttendanceHistory = query({
       .take(DEFAULT_LIST_CAP);
 
     return records
-      .filter((r: any) => r.date.startsWith(args.month))
+      .filter((r) => r.date.startsWith(args.month))
       .sort((a, b) => b.date.localeCompare(a.date));
   },
 });

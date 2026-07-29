@@ -22,9 +22,7 @@ export const initiateCall = mutation({
         joinedAt: now,
         offer: args.offer,
       },
-      ...args.participantIds
-        .filter((id: any) => id !== args.initiatorId)
-        .map((id: any) => ({ userId: id })),
+      ...args.participantIds.filter((id) => id !== args.initiatorId).map((id) => ({ userId: id })),
     ];
 
     const callId = await ctx.db.insert('chatCalls', {
@@ -64,7 +62,7 @@ export const answerCall = mutation({
     const call = await ctx.db.get(args.callId);
     if (!call) throw new Error('Call not found');
 
-    const participants = call.participants.map((p: any) => {
+    const participants = call.participants.map((p) => {
       if (p.userId === args.userId) {
         return { ...p, joinedAt: Date.now(), answer: args.answer };
       }
@@ -102,7 +100,7 @@ export const endCall = mutation({
     const now = Date.now();
     const duration = call.startedAt ? Math.floor((now - call.startedAt) / 1000) : 0;
 
-    const participants = call.participants.map((p: any) => {
+    const participants = call.participants.map((p) => {
       if (!p.leftAt) return { ...p, leftAt: now };
       return p;
     });
@@ -149,7 +147,7 @@ export const updateOffer = mutation({
     const call = await ctx.db.get(args.callId);
     if (!call) throw new Error('Call not found');
 
-    const participants = call.participants.map((p: any) => {
+    const participants = call.participants.map((p) => {
       if (p.userId === args.userId) {
         return { ...p, offer: args.offer };
       }
@@ -170,7 +168,7 @@ export const updateIceCandidates = mutation({
     const call = await ctx.db.get(args.callId);
     if (!call) throw new Error('Call not found');
 
-    const participants = call.participants.map((p: any) => {
+    const participants = call.participants.map((p) => {
       if (p.userId === args.userId) {
         // Append new candidates to existing array instead of replacing
         const existing = p.iceCandidates ?? [];

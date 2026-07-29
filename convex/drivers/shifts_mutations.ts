@@ -236,7 +236,7 @@ export const getShiftHistory = query({
       .order('desc')
       .take(limit || 50);
 
-    return shifts.map((shift: any) => ({
+    return shifts.map((shift) => ({
       ...shift,
       duration: shift.endTime ? (shift.endTime - shift.startTime) / (1000 * 60 * 60) : null,
     }));
@@ -270,25 +270,16 @@ export const getShiftStatistics = query({
     const shifts = await ctx.db
       .query('driverShifts')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q: any) => q.gte(q.field('startTime'), periodStart))
+      .filter((q) => q.gte(q.field('startTime'), periodStart))
       .take(MAX_PAGE_SIZE);
 
-    const completedShifts = shifts.filter((s: any) => s.status === 'completed');
+    const completedShifts = shifts.filter((s) => s.status === 'completed');
 
     const totalShifts = completedShifts.length;
-    const totalHours = completedShifts.reduce((sum: any, s: any) => sum + (s.totalHours || 0), 0);
-    const totalOvertime = completedShifts.reduce(
-      (sum: any, s: any) => sum + (s.overtimeHours || 0),
-      0,
-    );
-    const totalTrips = completedShifts.reduce(
-      (sum: any, s: any) => sum + (s.tripsCompleted || 0),
-      0,
-    );
-    const totalDistance = completedShifts.reduce(
-      (sum: any, s: any) => sum + (s.totalDistance || 0),
-      0,
-    );
+    const totalHours = completedShifts.reduce((sum, s) => sum + (s.totalHours || 0), 0);
+    const totalOvertime = completedShifts.reduce((sum, s) => sum + (s.overtimeHours || 0), 0);
+    const totalTrips = completedShifts.reduce((sum, s) => sum + (s.tripsCompleted || 0), 0);
+    const totalDistance = completedShifts.reduce((sum, s) => sum + (s.totalDistance || 0), 0);
 
     const avgShiftDuration = totalShifts > 0 ? totalHours / totalShifts : 0;
     const avgTripsPerShift = totalShifts > 0 ? totalTrips / totalShifts : 0;
@@ -301,7 +292,7 @@ export const getShiftStatistics = query({
       totalDistanceKm: totalDistance,
       avgShiftDuration,
       avgTripsPerShift,
-      activeShifts: shifts.filter((s: any) => s.status === 'active').length,
+      activeShifts: shifts.filter((s) => s.status === 'active').length,
     };
   },
 });

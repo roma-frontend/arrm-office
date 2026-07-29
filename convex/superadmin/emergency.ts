@@ -27,7 +27,7 @@ export const getEmergencyDashboard = query({
       // Critical tickets in last hour
       ctx.db
         .query('supportTickets')
-        .filter((q: any) =>
+        .filter((q) =>
           q.and(
             q.eq(q.field('priority'), 'critical'),
             q.neq(q.field('status'), 'closed'),
@@ -40,14 +40,14 @@ export const getEmergencyDashboard = query({
       // Active emergency incidents
       ctx.db
         .query('emergencyIncidents')
-        .filter((q: any) => q.eq(q.field('status'), 'investigating'))
+        .filter((q) => q.eq(q.field('status'), 'investigating'))
         .order('desc')
         .take(MAX_PAGE_SIZE),
 
       // SLA breaches in last 24h
       ctx.db
         .query('slaMetrics')
-        .filter((q: any) =>
+        .filter((q) =>
           q.and(
             q.eq(q.field('status'), 'breached'),
             q.gt(q.field('createdAt'), twentyFourHoursAgo),
@@ -59,7 +59,7 @@ export const getEmergencyDashboard = query({
       // Failed login attempts (potential attack)
       ctx.db
         .query('loginAttempts')
-        .filter((q: any) =>
+        .filter((q) =>
           q.and(q.eq(q.field('success'), false), q.gt(q.field('createdAt'), oneHourAgo)),
         )
         .order('desc')
@@ -68,7 +68,7 @@ export const getEmergencyDashboard = query({
       // Organizations in maintenance mode
       ctx.db
         .query('maintenanceMode')
-        .filter((q: any) => q.eq(q.field('isActive'), true))
+        .filter((q) => q.eq(q.field('isActive'), true))
         .order('desc')
         .take(MAX_PAGE_SIZE),
 
@@ -121,7 +121,7 @@ export const getEmergencyDashboard = query({
       .map(([ip, attempts]) => ({
         ip,
         attempts: attempts.length,
-        userIds: [...new Set(attempts.map((a: any) => a.userId.toString()))],
+        userIds: [...new Set(attempts.map((a) => a.userId.toString()))],
       }));
 
     // Calculate priority score
@@ -245,7 +245,7 @@ export const updateIncidentStatus = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    const updates: any = {
+    const updates: Record<string, unknown> = {
       status: args.status,
       updatedAt: now,
     };

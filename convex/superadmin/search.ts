@@ -41,14 +41,14 @@ export const globalSearch = query({
         ctx.db
           .query('users')
           .withIndex('by_email')
-          .filter((q: any) => q.eq(q.field('email'), searchQuery))
+          .filter((q) => q.eq(q.field('email'), searchQuery))
           .take(MAX_PAGE_SIZE),
 
         // Search organizations by slug and name
         ctx.db
           .query('organizations')
           .withIndex('by_slug')
-          .filter((q: any) => q.eq(q.field('slug'), searchQuery))
+          .filter((q) => q.eq(q.field('slug'), searchQuery))
           .take(MAX_PAGE_SIZE),
 
         // OPTIMIZED: Filter leave requests by org if provided
@@ -79,7 +79,7 @@ export const globalSearch = query({
         ctx.db
           .query('supportTickets')
           .withIndex('by_ticket_number')
-          .filter((q: any) => q.eq(q.field('ticketNumber'), args.query))
+          .filter((q) => q.eq(q.field('ticketNumber'), args.query))
           .take(MAX_PAGE_SIZE),
       ]);
 
@@ -101,25 +101,25 @@ export const globalSearch = query({
     // OPTIMIZED: Batch load all user IDs needed for enrichment.
     // Drivers are a separate table — `driverRequests.driverId` is `Id<'drivers'>`,
     // not `Id<'users'>` — so we have to look those up via a join (driver.userId).
-    const userIdsFromLeaves = leaveRequests.map((l: any) => l.userId);
+    const userIdsFromLeaves = leaveRequests.map((l) => l.userId);
     const userIdsFromDriverRequests = driverRequests
-      .map((d: any) => d.requesterId)
+      .map((d) => d.requesterId)
       .filter((id): id is Id<'users'> => Boolean(id));
     const userIdsFromTasks = tasks
-      .flatMap((t: any) => [t.assignedTo, t.assignedBy])
+      .flatMap((t) => [t.assignedTo, t.assignedBy])
       .filter((id): id is Id<'users'> => Boolean(id));
     const userIdsFromTickets = supportTickets
-      .flatMap((t: any) => [t.createdBy, t.assignedTo])
+      .flatMap((t) => [t.createdBy, t.assignedTo])
       .filter((id): id is Id<'users'> => Boolean(id));
 
     const driverIdsToLoad = [
       ...new Set(
-        driverRequests.map((d: any) => d.driverId).filter((id): id is Id<'drivers'> => Boolean(id)),
+        driverRequests.map((d) => d.driverId).filter((id): id is Id<'drivers'> => Boolean(id)),
       ),
     ];
 
     // Load drivers first so we can extract their linked userIds.
-    const driverDocs = await Promise.all(driverIdsToLoad.map((id: any) => ctx.db.get(id)));
+    const driverDocs = await Promise.all(driverIdsToLoad.map((id) => ctx.db.get(id)));
     const driverIdToUserId = new Map<Id<'drivers'>, Id<'users'>>();
     for (const d of driverDocs) {
       const driver = d as unknown as { _id: Id<'drivers'>; userId: Id<'users'> };
@@ -137,7 +137,7 @@ export const globalSearch = query({
       ]),
     ];
 
-    const userDocs = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
+    const userDocs = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
     const userMap = new Map<Id<'users'>, Doc<'users'>>();
     for (const u of userDocs) {
       if (u) userMap.set((u as unknown as Doc<'users'>)._id, u as unknown as Doc<'users'>);
@@ -152,13 +152,13 @@ export const globalSearch = query({
 
     // Enrich leave requests
     const enrichedLeaves = leaveRequests
-      .filter((l: any) => {
+      .filter((l) => {
         const startDate = l.startDate.includes(searchQuery);
         const endDate = l.endDate.includes(searchQuery);
         return startDate || endDate;
       })
       .slice(0, limit)
-      .map((leave: any) => {
+      .map((leave) => {
         const user = userMap.get(leave.userId);
         return {
           ...leave,
@@ -170,14 +170,14 @@ export const globalSearch = query({
 
     // Enrich driver requests
     const enrichedDrivers = driverRequests
-      .filter((d: any) => {
+      .filter((d) => {
         const from = d.tripInfo?.from?.toLowerCase().includes(searchQuery);
         const to = d.tripInfo?.to?.toLowerCase().includes(searchQuery);
         const purpose = d.tripInfo?.purpose?.toLowerCase().includes(searchQuery);
         return from || to || purpose;
       })
       .slice(0, limit)
-      .map((request: any) => {
+      .map((request) => {
         const requester = userMap.get(request.requesterId);
         return {
           ...request,
@@ -195,7 +195,7 @@ export const globalSearch = query({
           t.description?.toLowerCase().includes(searchQuery),
       )
       .slice(0, limit)
-      .map((task: any) => {
+      .map((task) => {
         const assignee = task.assignedTo ? userMap.get(task.assignedTo) : null;
         const creator = userMap.get(task.assignedBy);
         return {
@@ -214,7 +214,7 @@ export const globalSearch = query({
           t.ticketNumber.toLowerCase().includes(searchQuery.toLowerCase()),
       )
       .slice(0, limit)
-      .map((ticket: any) => {
+      .map((ticket) => {
         const creator = userMap.get(ticket.createdBy);
         const assignee = ticket.assignedTo ? userMap.get(ticket.assignedTo) : null;
         return {
@@ -257,7 +257,7 @@ export const quickSearch = query({
 
     // Format for quick display
     return {
-      users: fullResults.users.map((u: any) => ({
+      users: fullResults.users.map((u) => ({
         id: u._id,
         type: 'user' as const,
         title: u.name,
@@ -265,28 +265,28 @@ export const quickSearch = query({
         organization: u.organizationId,
         icon: '👤',
       })),
-      organizations: fullResults.organizations.map((o: any) => ({
+      organizations: fullResults.organizations.map((o) => ({
         id: o._id,
         type: 'organization' as const,
         title: o.name,
         subtitle: `${o.plan} • ${o.slug}`,
         icon: '🏢',
       })),
-      leaveRequests: fullResults.leaveRequests.map((l: any) => ({
+      leaveRequests: fullResults.leaveRequests.map((l) => ({
         id: l._id,
         type: 'leave' as const,
         title: `${l.userName} - ${l.type}`,
         subtitle: `${l.startDate} → ${l.endDate} • ${l.status}`,
         icon: '📅',
       })),
-      tasks: fullResults.tasks.map((t: any) => ({
+      tasks: fullResults.tasks.map((t) => ({
         id: t._id,
         type: 'task' as const,
         title: t.title,
         subtitle: `${t.status} • ${t.priority}`,
         icon: '✅',
       })),
-      tickets: fullResults.supportTickets.map((t: any) => ({
+      tickets: fullResults.supportTickets.map((t) => ({
         id: t._id,
         type: 'ticket' as const,
         title: t.ticketNumber,
@@ -317,7 +317,7 @@ export const searchUsersByPrefix = query({
             u.email.toLowerCase().startsWith(prefix) || u.name.toLowerCase().startsWith(prefix),
         )
         .slice(0, 10)
-        .map((u: any) => ({
+        .map((u) => ({
           id: u._id,
           name: u.name,
           email: u.email,
@@ -334,7 +334,7 @@ export const searchUsersByPrefix = query({
             u.email.toLowerCase().startsWith(prefix) || u.name.toLowerCase().startsWith(prefix),
         )
         .slice(0, 10)
-        .map((u: any) => ({
+        .map((u) => ({
           id: u._id,
           name: u.name,
           email: u.email,

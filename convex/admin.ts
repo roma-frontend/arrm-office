@@ -120,7 +120,7 @@ export const detectConflicts = query({
 
     // Filter by organization if provided
     if (organizationId) {
-      leaves = leaves.filter((l: any) => l.organizationId === organizationId);
+      leaves = leaves.filter((l) => l.organizationId === organizationId);
     }
 
     // Get all users
@@ -130,7 +130,7 @@ export const detectConflicts = query({
     const userMap = new Map(users.map((u) => [u._id, u]));
 
     // Load profiles in parallel
-    const dcProfiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
+    const dcProfiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
     const dcProfileMap = new Map(users.map((u, i) => [u._id, dcProfiles[i]]));
 
     // Group leaves by department
@@ -156,7 +156,7 @@ export const detectConflicts = query({
 
     // OPTIMIZED: Use interval-based approach for each department
     for (const [dept, deptLeaveList] of deptLeaves.entries()) {
-      const deptUsers = users.filter((u: any) => {
+      const deptUsers = users.filter((u) => {
         const p = dcProfileMap.get(u._id);
         return (p?.department ?? u.department ?? 'Unknown') === dept;
       });
@@ -177,12 +177,10 @@ export const detectConflicts = query({
       }
 
       // Sort events by date
-      events.sort((a: any, b: any) => a.date - b.date);
+      events.sort((a, b) => a.date - b.date);
 
       // Process events at each unique date
-      const uniqueDates = [...new Set(events.map((e: any) => e.date))].sort(
-        (a: any, b: any) => a - b,
-      );
+      const uniqueDates = [...new Set(events.map((e) => e.date))].sort((a, b) => a - b);
       const activeEmployees = new Set<string>();
       let eventIndex = 0;
 
@@ -235,7 +233,7 @@ export const detectConflicts = query({
       }
     }
 
-    return conflicts.sort((a: any, b: any) => {
+    return conflicts.sort((a, b) => {
       if (a.severity === b.severity) return a.date.localeCompare(b.date);
       return a.severity === 'critical' ? -1 : 1;
     });
@@ -272,16 +270,16 @@ export const getSmartSuggestions = query({
 
     // Filter by organization if provided
     if (organizationId) {
-      users = users.filter((u: any) => u.organizationId === organizationId);
-      leaves = leaves.filter((l: any) => l.organizationId === organizationId);
+      users = users.filter((u) => u.organizationId === organizationId);
+      leaves = leaves.filter((l) => l.organizationId === organizationId);
     }
 
     // Load profiles in parallel
-    const ssProfiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
+    const ssProfiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
     const ssProfileMap = new Map(users.map((u, i) => [u._id, ssProfiles[i]]));
 
     // Suggestion 1: Users with high leave balances
-    const highBalanceUsers = users.filter((u: any) => {
+    const highBalanceUsers = users.filter((u) => {
       const p = ssProfileMap.get(u._id);
       const totalBalance =
         (p?.paidLeaveBalance ?? u.paidLeaveBalance) +
@@ -302,7 +300,7 @@ export const getSmartSuggestions = query({
     }
 
     // Suggestion 2: Users with low balances
-    const lowBalanceUsers = users.filter((u: any) => {
+    const lowBalanceUsers = users.filter((u) => {
       const p = ssProfileMap.get(u._id);
       const totalBalance =
         (p?.paidLeaveBalance ?? u.paidLeaveBalance) +
@@ -335,12 +333,12 @@ export const getSmartSuggestions = query({
     }
 
     const allDepts = new Set(
-      users.map((u: any) => {
+      users.map((u) => {
         const p = ssProfileMap.get(u._id);
         return p?.department ?? u.department ?? 'Unknown';
       }),
     );
-    const deptsWithoutLeaves = Array.from(allDepts).filter((d: any) => !deptLeaves.has(d));
+    const deptsWithoutLeaves = Array.from(allDepts).filter((d) => !deptLeaves.has(d));
 
     if (deptsWithoutLeaves.length > 0) {
       suggestions.push({
@@ -354,15 +352,15 @@ export const getSmartSuggestions = query({
     }
 
     // Suggestion 4: Cost optimization
-    const contractorLeaves = leaves.filter((l: any) => {
-      const user = users.find((u: any) => u._id === l.userId);
+    const contractorLeaves = leaves.filter((l) => {
+      const user = users.find((u) => u._id === l.userId);
       if (!user) return false;
       const p = ssProfileMap.get(user._id);
       return (p?.employeeType ?? user?.employeeType) === 'contractor';
     });
 
     if (contractorLeaves.length > 0) {
-      const totalDays = contractorLeaves.reduce((sum: any, l: any) => sum + l.days, 0);
+      const totalDays = contractorLeaves.reduce((sum, l) => sum + l.days, 0);
       const estimatedCost = totalDays * 150; // $150/day for contractors
 
       suggestions.push({
@@ -412,13 +410,13 @@ export const getCalendarExportData = query({
     const userMap = new Map(users.map((u) => [u._id, u]));
 
     // Load profiles in parallel
-    const ceProfiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
+    const ceProfiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
     const ceProfileMap = new Map(users.map((u, i) => [u._id, ceProfiles[i]]));
 
     // Filter by date range if provided
     let filteredLeaves = leaves;
     if (args.startDate || args.endDate) {
-      filteredLeaves = leaves.filter((leave: any) => {
+      filteredLeaves = leaves.filter((leave) => {
         if (args.startDate && leave.endDate < args.startDate) return false;
         if (args.endDate && leave.startDate > args.endDate) return false;
         return true;
@@ -426,7 +424,7 @@ export const getCalendarExportData = query({
     }
 
     // Format for calendar export
-    return filteredLeaves.map((leave: any) => {
+    return filteredLeaves.map((leave) => {
       const user = userMap.get(leave.userId);
       const profile = ceProfileMap.get(leave.userId);
       return {
@@ -584,9 +582,9 @@ export const sendServiceBroadcast = mutation({
       .take(DEFAULT_LIST_CAP);
 
     console.warn(`[sendServiceBroadcast] Total users in org: ${allUsers.length}`);
-    const activeApprovedUsers = allUsers.filter((u: any) => u.isActive && u.isApproved);
+    const activeApprovedUsers = allUsers.filter((u) => u.isActive && u.isApproved);
     console.warn(`[sendServiceBroadcast] Active & approved users: ${activeApprovedUsers.length}`);
-    activeApprovedUsers.forEach((u: any) =>
+    activeApprovedUsers.forEach((u) =>
       console.warn(`  - ${u.name} (${u.email}) - active:${u.isActive}, approved:${u.isApproved}`),
     );
 
@@ -595,11 +593,11 @@ export const sendServiceBroadcast = mutation({
       .withIndex('by_conversation', (q) => q.eq('conversationId', announcementConv._id))
       .take(DEFAULT_LIST_CAP);
 
-    const existingMemberIds = new Set(existingMembers.map((m: any) => m.userId.toString()));
+    const existingMemberIds = new Set(existingMembers.map((m) => m.userId.toString()));
     const newMemberIds: Id<'users'>[] = [];
 
     console.warn(
-      `[sendServiceBroadcast] Existing members: ${existingMembers.length}, Active users: ${allUsers.filter((u: any) => u.isActive && u.isApproved).length}`,
+      `[sendServiceBroadcast] Existing members: ${existingMembers.length}, Active users: ${allUsers.filter((u) => u.isActive && u.isApproved).length}`,
     );
 
     // Add active, approved users
@@ -689,7 +687,7 @@ export const sendServiceBroadcast = mutation({
 
     // Mark as unread for existing members (except the sender)
     // New members already have unreadCount=1 from being added above
-    const newMemberIdSet = new Set(newMemberIds.map((id: any) => id.toString()));
+    const newMemberIdSet = new Set(newMemberIds.map((id) => id.toString()));
 
     for (const member of existingMembers) {
       // Skip new members (they were just added with unreadCount=1)
@@ -913,7 +911,7 @@ export const getSuperadminDashboard = query({
       }
     >();
 
-    allUsers.forEach((user: any) => {
+    allUsers.forEach((user) => {
       // Skip superadmins from organization counts
       if (user.role === 'superadmin') return;
 
@@ -922,13 +920,13 @@ export const getSuperadminDashboard = query({
       usersByOrg.get(orgId)!.push(user);
     });
 
-    allLeaves.forEach((leave: any) => {
+    allLeaves.forEach((leave) => {
       const orgId = leave.organizationId?.toString() || 'no-org';
       if (!leavesByOrg.has(orgId)) leavesByOrg.set(orgId, []);
       leavesByOrg.get(orgId)!.push(leave);
     });
 
-    allSubscriptions.forEach((sub: any) => {
+    allSubscriptions.forEach((sub) => {
       if (!sub.organizationId) return; // Skip subscriptions without organization
       subscriptionByOrg.set(sub.organizationId.toString(), {
         plan: sub.plan,
@@ -939,16 +937,16 @@ export const getSuperadminDashboard = query({
     });
 
     // Build dashboard data
-    const dashboard = orgs.map((org: any) => {
+    const dashboard = orgs.map((org) => {
       const orgId = org._id.toString();
       const orgUsers = usersByOrg.get(orgId) || [];
       const orgLeaves = leavesByOrg.get(orgId) || [];
       const subscription = subscriptionByOrg.get(orgId);
 
-      const activeUsers = orgUsers.filter((u: any) => u.isActive && u.isApproved);
-      const pendingUsers = orgUsers.filter((u: any) => !u.isApproved);
-      const pendingLeaves = orgLeaves.filter((l: any) => l.status === 'pending');
-      const approvedLeaves = orgLeaves.filter((l: any) => l.status === 'approved');
+      const activeUsers = orgUsers.filter((u) => u.isActive && u.isApproved);
+      const pendingUsers = orgUsers.filter((u) => !u.isApproved);
+      const pendingLeaves = orgLeaves.filter((l) => l.status === 'pending');
+      const approvedLeaves = orgLeaves.filter((l) => l.status === 'approved');
 
       // Calculate revenue based on plan
       const monthlyRevenue =
@@ -984,7 +982,7 @@ export const getSuperadminDashboard = query({
           total: orgLeaves.length,
           pending: pendingLeaves.length,
           approved: approvedLeaves.length,
-          rejected: orgLeaves.filter((l: any) => l.status === 'rejected').length,
+          rejected: orgLeaves.filter((l) => l.status === 'rejected').length,
         },
         subscription: subscription
           ? {
@@ -998,7 +996,7 @@ export const getSuperadminDashboard = query({
     });
 
     // Sort by revenue (highest first)
-    dashboard.sort((a: any, b: any) => {
+    dashboard.sort((a, b) => {
       const aRevenue = a.subscription?.monthlyRevenue || 0;
       const bRevenue = b.subscription?.monthlyRevenue || 0;
       return bRevenue - aRevenue;
@@ -1007,13 +1005,10 @@ export const getSuperadminDashboard = query({
     // Calculate totals
     const totalStats = {
       organizations: orgs.length,
-      activeOrganizations: orgs.filter((o: any) => o.isActive).length,
-      totalUsers: allUsers.filter((u: any) => u.organizationId).length,
-      totalRevenue: dashboard.reduce(
-        (sum: any, d: any) => sum + (d.subscription?.monthlyRevenue || 0),
-        0,
-      ),
-      pendingLeaves: dashboard.reduce((sum: any, d: any) => sum + d.leaves.pending, 0),
+      activeOrganizations: orgs.filter((o) => o.isActive).length,
+      totalUsers: allUsers.filter((u) => u.organizationId).length,
+      totalRevenue: dashboard.reduce((sum, d) => sum + (d.subscription?.monthlyRevenue || 0), 0),
+      pendingLeaves: dashboard.reduce((sum, d) => sum + d.leaves.pending, 0),
     };
 
     return {

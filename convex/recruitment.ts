@@ -48,12 +48,12 @@ export const listVacancies = query({
           managerName: manager?.name ?? 'Unknown',
           candidateCount: apps.length,
           stageCounts: {
-            applied: apps.filter((a: any) => a.stage === 'applied').length,
-            screening: apps.filter((a: any) => a.stage === 'screening').length,
-            interview: apps.filter((a: any) => a.stage === 'interview').length,
-            offer: apps.filter((a: any) => a.stage === 'offer').length,
-            hired: apps.filter((a: any) => a.stage === 'hired').length,
-            rejected: apps.filter((a: any) => a.stage === 'rejected').length,
+            applied: apps.filter((a) => a.stage === 'applied').length,
+            screening: apps.filter((a) => a.stage === 'screening').length,
+            interview: apps.filter((a) => a.stage === 'interview').length,
+            offer: apps.filter((a) => a.stage === 'offer').length,
+            hired: apps.filter((a) => a.stage === 'hired').length,
+            rejected: apps.filter((a) => a.stage === 'rejected').length,
           },
         };
       }),
@@ -111,9 +111,7 @@ export const listCandidatesByVacancy = query({
         const avgScore =
           scorecards.length > 0
             ? Math.round(
-                (scorecards.reduce((s: any, sc: any) => s + sc.overallScore, 0) /
-                  scorecards.length) *
-                  10,
+                (scorecards.reduce((s, sc) => s + sc.overallScore, 0) / scorecards.length) * 10,
               ) / 10
             : null;
         return {
@@ -125,7 +123,7 @@ export const listCandidatesByVacancy = query({
       }),
     );
 
-    return enriched.sort((a: any, b: any) => b.createdAt - a.createdAt);
+    return enriched.sort((a, b) => b.createdAt - a.createdAt);
   },
 });
 
@@ -201,9 +199,9 @@ export const getCandidate = query({
       ...app,
       candidate: profile,
       vacancy,
-      interviews: enrichedInterviews.sort((a: any, b: any) => b.scheduledAt - a.scheduledAt),
-      scorecards: enrichedScorecards.sort((a: any, b: any) => b.createdAt - a.createdAt),
-      events: enrichedEvents.sort((a: any, b: any) => b.createdAt - a.createdAt),
+      interviews: enrichedInterviews.sort((a, b) => b.scheduledAt - a.scheduledAt),
+      scorecards: enrichedScorecards.sort((a, b) => b.createdAt - a.createdAt),
+      events: enrichedEvents.sort((a, b) => b.createdAt - a.createdAt),
     };
   },
 });
@@ -240,7 +238,7 @@ export const getMyInterviews = query({
       }),
     );
 
-    return enriched.sort((a: any, b: any) => a.scheduledAt - b.scheduledAt);
+    return enriched.sort((a, b) => a.scheduledAt - b.scheduledAt);
   },
 });
 
@@ -264,12 +262,12 @@ export const getPipelineStats = query({
       openVacancies: openVacancies.length,
       totalCandidates: allApps.length,
       pipeline: {
-        applied: allApps.filter((a: any) => a.stage === 'applied').length,
-        screening: allApps.filter((a: any) => a.stage === 'screening').length,
-        interview: allApps.filter((a: any) => a.stage === 'interview').length,
-        offer: allApps.filter((a: any) => a.stage === 'offer').length,
-        hired: allApps.filter((a: any) => a.stage === 'hired').length,
-        rejected: allApps.filter((a: any) => a.stage === 'rejected').length,
+        applied: allApps.filter((a) => a.stage === 'applied').length,
+        screening: allApps.filter((a) => a.stage === 'screening').length,
+        interview: allApps.filter((a) => a.stage === 'interview').length,
+        offer: allApps.filter((a) => a.stage === 'offer').length,
+        hired: allApps.filter((a) => a.stage === 'hired').length,
+        rejected: allApps.filter((a) => a.stage === 'rejected').length,
       },
     };
   },
@@ -369,7 +367,7 @@ export const deleteVacancy = mutation({
       // TODO: add index for cleaner cascade).
       const events = await ctx.db
         .query('applicationEvents')
-        .filter((q: any) => q.eq(q.field('applicationId'), app._id))
+        .filter((q) => q.eq(q.field('applicationId'), app._id))
         .take(SMALL_LIST_CAP);
       for (const ev of events) {
         await ctx.db.delete(ev._id);
@@ -402,7 +400,7 @@ export const deleteCandidate = mutation({
     // Delete application events
     const events = await ctx.db
       .query('applicationEvents')
-      .filter((q: any) => q.eq(q.field('applicationId'), applicationId))
+      .filter((q) => q.eq(q.field('applicationId'), applicationId))
       .take(SMALL_LIST_CAP);
     for (const ev of events) {
       await ctx.db.delete(ev._id);
@@ -411,7 +409,7 @@ export const deleteCandidate = mutation({
     // Delete interviews for this application
     const interviews = await ctx.db
       .query('interviews')
-      .filter((q: any) => q.eq(q.field('applicationId'), applicationId))
+      .filter((q) => q.eq(q.field('applicationId'), applicationId))
       .take(SMALL_LIST_CAP);
     for (const interview of interviews) {
       await ctx.db.delete(interview._id);
@@ -423,7 +421,7 @@ export const deleteCandidate = mutation({
     // Check if candidate has other applications — if not, delete profile too
     const otherApps = await ctx.db
       .query('applications')
-      .filter((q: any) => q.eq(q.field('candidateId'), app.candidateId))
+      .filter((q) => q.eq(q.field('candidateId'), app.candidateId))
       .first();
 
     if (!otherApps) {
@@ -512,7 +510,7 @@ export const addCandidate = mutation({
     const orgAdmins = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q: any) => q.or(q.eq(q.field('role'), 'admin'), q.eq(q.field('role'), 'superadmin')))
+      .filter((q) => q.or(q.eq(q.field('role'), 'admin'), q.eq(q.field('role'), 'superadmin')))
       .take(SMALL_LIST_CAP);
 
     const vacancy = await ctx.db.get(vacancyId);
@@ -844,7 +842,7 @@ export const hireCandidate = mutation({
     const orgAdmins = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', app.organizationId))
-      .filter((q: any) => q.or(q.eq(q.field('role'), 'admin'), q.eq(q.field('role'), 'superadmin')))
+      .filter((q) => q.or(q.eq(q.field('role'), 'admin'), q.eq(q.field('role'), 'superadmin')))
       .take(SMALL_LIST_CAP);
 
     const candidate = await ctx.db.get(app.candidateId);
@@ -915,12 +913,12 @@ export const hireCandidate = mutation({
         const templates = await ctx.db
           .query('onboardingTemplates')
           .withIndex('by_org', (q) => q.eq('organizationId', app.organizationId))
-          .filter((q: any) => q.eq(q.field('isActive'), true))
+          .filter((q) => q.eq(q.field('isActive'), true))
           .take(SMALL_LIST_CAP);
 
         let templateId: Id<'onboardingTemplates'> | undefined;
         if (department) {
-          const deptTemplate = templates.find((t: any) => t.department === department);
+          const deptTemplate = templates.find((t) => t.department === department);
           if (deptTemplate) templateId = deptTemplate._id;
         }
         if (!templateId && templates.length > 0) {
@@ -935,7 +933,7 @@ export const hireCandidate = mutation({
         const employees = await ctx.db
           .query('users')
           .withIndex('by_org', (q) => q.eq('organizationId', app.organizationId))
-          .filter((q: any) =>
+          .filter((q) =>
             q.and(
               q.neq(q.field('_id'), managerId),
               q.neq(q.field('_id'), employeeId),

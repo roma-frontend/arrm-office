@@ -105,7 +105,7 @@ export const listAll = query({
           .take(MAX_PAGE_SIZE);
 
         // Filter out superadmins from employee counts
-        const filteredEmployees = employees.filter((e: any) => e.role !== 'superadmin');
+        const filteredEmployees = employees.filter((e) => e.role !== 'superadmin');
 
         return {
           ...org,
@@ -140,15 +140,15 @@ export const getAllOrganizations = query({
           .take(MAX_PAGE_SIZE);
 
         // Filter out superadmins from employee counts
-        const filteredEmployees = employees.filter((e: any) => e.role !== 'superadmin');
-        const admins = filteredEmployees.filter((u: any) => u.role === 'admin');
-        const activeCount = filteredEmployees.filter((u: any) => u.isActive && u.isApproved).length;
+        const filteredEmployees = employees.filter((e) => e.role !== 'superadmin');
+        const admins = filteredEmployees.filter((u) => u.role === 'admin');
+        const activeCount = filteredEmployees.filter((u) => u.isActive && u.isApproved).length;
 
         return {
           ...org,
           totalEmployees: filteredEmployees.length,
           activeEmployees: activeCount,
-          adminNames: admins.map((a: any) => a.name),
+          adminNames: admins.map((a) => a.name),
           memberCount: filteredEmployees.length,
         };
       }),
@@ -276,7 +276,7 @@ export const getOrganizationById = query({
       .take(MAX_PAGE_SIZE);
 
     // Filter out superadmins from employee count
-    const filteredMembers = members.filter((m: any) => m.role !== 'superadmin');
+    const filteredMembers = members.filter((m) => m.role !== 'superadmin');
 
     return {
       ...org,
@@ -320,13 +320,13 @@ export const getOrgMembers = query({
     const members = await query.take(effectiveLimit + 1);
 
     // Filter out superadmins (should never be in org, but just in case)
-    const filteredMembers = members.filter((m: any) => !isSuperadmin(m));
+    const filteredMembers = members.filter((m) => !isSuperadmin(m));
 
     // Load profiles in parallel for O(1) lookup
-    const profiles = await Promise.all(filteredMembers.map((m: any) => getProfile(ctx, m._id)));
+    const profiles = await Promise.all(filteredMembers.map((m) => getProfile(ctx, m._id)));
     const profileMap = new Map(filteredMembers.map((m, i) => [m._id, profiles[i]]));
 
-    return filteredMembers.map((m: any) => {
+    return filteredMembers.map((m) => {
       const profile = profileMap.get(m._id);
       return {
         _id: m._id,
@@ -415,21 +415,19 @@ export const searchOrganizations = query({
       .withIndex('by_active', (qb) => qb.eq('isActive', true))
       .take(MAX_PAGE_SIZE);
 
-    const byName = all.filter(
-      (org: any) => org.name.toLowerCase().includes(q) || org.slug.includes(q),
-    );
+    const byName = all.filter((org) => org.name.toLowerCase().includes(q) || org.slug.includes(q));
 
     // Merge and deduplicate
     const merged = [...bySlug, ...byName];
     const seen = new Set<string>();
-    const result = merged.filter((org: any) => {
+    const result = merged.filter((org) => {
       if (seen.has(org._id)) return false;
       seen.add(org._id);
       return org.isActive;
     });
 
     // Return only safe public fields
-    return result.slice(0, 5).map((org: any) => ({
+    return result.slice(0, 5).map((org) => ({
       _id: org._id,
       name: org.name,
       slug: org.slug,
@@ -992,7 +990,7 @@ export const getOrganizationsForPicker = query({
         .query('organizations')
         .withIndex('by_active', (q) => q.eq('isActive', true))
         .take(MAX_PAGE_SIZE);
-      return orgs.map((o: any) => ({ _id: o._id, name: o.name, slug: o.slug }));
+      return orgs.map((o) => ({ _id: o._id, name: o.name, slug: o.slug }));
     }
 
     // Regular users: only their own org

@@ -6,6 +6,7 @@ import { getProfile } from '../lib/userProfile';
  * Eliminates N+1 queries by pre-loading all users in one batch
  */
 export async function enrichLeavesWithUserData(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   leaves: Doc<'leaveRequests'>[],
   includeReviewer: boolean = true,

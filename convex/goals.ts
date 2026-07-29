@@ -66,11 +66,11 @@ export const listObjectives = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    if (periodYear) objectives = objectives.filter((o: any) => o.periodYear === periodYear);
-    if (periodType) objectives = objectives.filter((o: any) => o.periodType === periodType);
-    if (level) objectives = objectives.filter((o: any) => o.level === level);
-    if (ownerId) objectives = objectives.filter((o: any) => o.ownerId === ownerId);
-    if (status) objectives = objectives.filter((o: any) => o.status === status);
+    if (periodYear) objectives = objectives.filter((o) => o.periodYear === periodYear);
+    if (periodType) objectives = objectives.filter((o) => o.periodType === periodType);
+    if (level) objectives = objectives.filter((o) => o.level === level);
+    if (ownerId) objectives = objectives.filter((o) => o.ownerId === ownerId);
+    if (status) objectives = objectives.filter((o) => o.status === status);
 
     // Fetch owner names + task counts
     const enriched = await Promise.all(
@@ -86,7 +86,7 @@ export const listObjectives = query({
           .query('tasks')
           .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
           .take(SMALL_LIST_CAP);
-        const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
+        const completedTasks = tasks.filter((t) => t.status === 'completed').length;
         return {
           ...obj,
           ownerName: owner?.name ?? 'Unknown',
@@ -198,17 +198,17 @@ export const getTeamProgress = query({
       )
       .take(DEFAULT_LIST_CAP);
 
-    if (periodType) objectives = objectives.filter((o: any) => o.periodType === periodType);
+    if (periodType) objectives = objectives.filter((o) => o.periodType === periodType);
 
-    const active = objectives.filter((o: any) => o.status === 'active' || o.status === 'completed');
+    const active = objectives.filter((o) => o.status === 'active' || o.status === 'completed');
     const avgProgress =
       active.length > 0
         ? Math.round(active.reduce((s, o) => s + o.progress, 0) / active.length)
         : 0;
 
-    const onTrack = active.filter((o: any) => o.progress >= 60).length;
-    const atRisk = active.filter((o: any) => o.progress >= 30 && o.progress < 60).length;
-    const behind = active.filter((o: any) => o.progress < 30).length;
+    const onTrack = active.filter((o) => o.progress >= 60).length;
+    const atRisk = active.filter((o) => o.progress >= 30 && o.progress < 60).length;
+    const behind = active.filter((o) => o.progress < 30).length;
 
     return {
       total: objectives.length,
@@ -217,11 +217,11 @@ export const getTeamProgress = query({
       onTrack,
       atRisk,
       behind,
-      completed: objectives.filter((o: any) => o.status === 'completed').length,
+      completed: objectives.filter((o) => o.status === 'completed').length,
       byLevel: {
-        company: objectives.filter((o: any) => o.level === 'company').length,
-        team: objectives.filter((o: any) => o.level === 'team').length,
-        individual: objectives.filter((o: any) => o.level === 'individual').length,
+        company: objectives.filter((o) => o.level === 'company').length,
+        team: objectives.filter((o) => o.level === 'team').length,
+        individual: objectives.filter((o) => o.level === 'individual').length,
       },
     };
   },
@@ -560,7 +560,7 @@ export const checkin = mutation({
       .withIndex('by_objective', (q) => q.eq('objectiveId', kr.objectiveId))
       .take(SMALL_LIST_CAP);
     // Use updated value for this KR
-    const krsForCalc = allKRs.map((k: any) =>
+    const krsForCalc = allKRs.map((k) =>
       k._id === keyResultId ? { ...k, currentValue: newValue } : k,
     );
     const newProgress = computeObjectiveProgress(krsForCalc);
@@ -609,7 +609,7 @@ export const getObjectiveTaskStats = query({
       .take(DEFAULT_LIST_CAP);
 
     if (periodYear) {
-      objectives = objectives.filter((o: any) => o.periodYear === periodYear);
+      objectives = objectives.filter((o) => o.periodYear === periodYear);
     }
 
     // For each objective, count linked tasks
@@ -626,7 +626,7 @@ export const getObjectiveTaskStats = query({
       if (tasks.length > 0) {
         objectivesWithTasks++;
         totalLinked += tasks.length;
-        totalCompleted += tasks.filter((t: any) => t.status === 'completed').length;
+        totalCompleted += tasks.filter((t) => t.status === 'completed').length;
       }
     }
 
@@ -653,11 +653,11 @@ export const getTasksByObjective = query({
     if (tasks.length === 0) return [];
 
     // Batch load assignee users
-    const userIds = [...new Set(tasks.map((t: any) => t.assignedTo))];
+    const userIds = [...new Set(tasks.map((t) => t.assignedTo))];
     const users = await Promise.all(userIds.map((id: Id<'users'>) => ctx.db.get(id)));
-    const userMap = new Map(users.map((u: any) => [u?._id, u]));
+    const userMap = new Map(users.map((u) => [u?._id, u]));
 
-    return tasks.map((task: any) => {
+    return tasks.map((task) => {
       const assignedTo = userMap.get(task.assignedTo);
       return {
         ...task,
@@ -720,7 +720,7 @@ export const getRevieweeObjectivesWithReviews = query({
           .withIndex('by_objective', (q) => q.eq('objectiveId', obj._id))
           .take(DEFAULT_LIST_CAP);
 
-        const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
+        const completedTasks = tasks.filter((t) => t.status === 'completed').length;
 
         // Get latest review response for this reviewee
         const reviews = await ctx.db
@@ -794,7 +794,7 @@ export const getObjectivesForTaskCreation = query({
       .take(DEFAULT_LIST_CAP);
 
     // Only active objectives
-    objectives = objectives.filter((o: any) => o.status === 'active');
+    objectives = objectives.filter((o) => o.status === 'active');
 
     // If userId provided, prefer objectives where user is owner or has tasks
     const enriched = await Promise.all(
@@ -830,8 +830,8 @@ export const getObjectivesForTaskCreation = query({
     // Sort: user's objectives first, then by progress desc
     enriched.sort((a, b) => {
       if (userId) {
-        const aIsMine = objectives.find((o: any) => o._id === a._id)?.ownerId === userId ? 0 : 1;
-        const bIsMine = objectives.find((o: any) => o._id === b._id)?.ownerId === userId ? 0 : 1;
+        const aIsMine = objectives.find((o) => o._id === a._id)?.ownerId === userId ? 0 : 1;
+        const bIsMine = objectives.find((o) => o._id === b._id)?.ownerId === userId ? 0 : 1;
         if (aIsMine !== bIsMine) return aIsMine - bIsMine;
       }
       return b.progress - a.progress;
@@ -870,7 +870,7 @@ export const sendWeeklyCheckinReminders = internalMutation({
           const recentCheckin = await ctx.db
             .query('goalCheckins')
             .withIndex('by_kr', (q) => q.eq('keyResultId', kr._id))
-            .filter((q: any) => q.gt(q.field('createdAt'), now - oneWeekMs))
+            .filter((q) => q.gt(q.field('createdAt'), now - oneWeekMs))
             .first();
 
           if (!recentCheckin) {
@@ -878,7 +878,7 @@ export const sendWeeklyCheckinReminders = internalMutation({
             const existingReminder = await ctx.db
               .query('notifications')
               .withIndex('by_user', (q) => q.eq('userId', kr.ownerId))
-              .filter((q: any) =>
+              .filter((q) =>
                 q.and(
                   q.eq(q.field('type'), 'okr_checkin_reminder'),
                   q.eq(q.field('relatedId'), kr._id),

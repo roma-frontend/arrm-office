@@ -18,7 +18,7 @@ export const getConversations = query({
       .order('desc')
       .take(DEFAULT_LIST_CAP);
 
-    return conversations.map((conv: any) => ({
+    return conversations.map((conv) => ({
       ...conv,
       messages: [] as Array<{ _id: Id<'aiMessages'>; content: string; role: string }>,
     }));
@@ -123,7 +123,7 @@ export const getFullContext = query({
             plan: org.plan,
           }
         : null,
-      leaves: leaves.map((l: any) => ({
+      leaves: leaves.map((l) => ({
         id: l._id,
         type: l.type,
         startDate: l.startDate,
@@ -131,21 +131,21 @@ export const getFullContext = query({
         status: l.status,
         reason: l.reason,
       })),
-      tasks: tasks.map((t: any) => ({
+      tasks: tasks.map((t) => ({
         id: t._id,
         title: t.title,
         status: t.status,
         priority: t.priority,
         dueDate: t.deadline,
       })),
-      teamMembers: teamMembers.map((m: any) => ({
+      teamMembers: teamMembers.map((m) => ({
         id: m._id,
         name: m.name,
         email: m.email,
         role: m.role,
         department: m.department,
       })),
-      attendance: attendance.map((a: any) => ({
+      attendance: attendance.map((a) => ({
         id: a._id,
         date: a.date,
         checkIn: a.checkInTime,

@@ -147,7 +147,7 @@ export const getDriverScheduleWithSummary = query({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(q.gte(q.field('startTime'), startTime), q.lte(q.field('startTime'), endTime)),
       )
       .take(DEFAULT_LIST_CAP);
@@ -155,7 +155,7 @@ export const getDriverScheduleWithSummary = query({
     // Filter based on access level
     let visibleSchedules = schedules;
     if (!hasFullAccess && hasBusyOnlyAccess) {
-      visibleSchedules = schedules.map((s: any) => ({
+      visibleSchedules = schedules.map((s) => ({
         ...s,
         startTime: s.startTime,
         endTime: s.endTime,
@@ -249,7 +249,7 @@ async function checkDriverAvailability(
   const overlapping = await ctx.db
     .query('driverSchedules')
     .withIndex('by_driver_time', (q) => q.eq('driverId', driverId))
-    .filter((q: any) =>
+    .filter((q) =>
       q.and(
         q.eq(q.field('status'), 'scheduled'),
         q.or(
@@ -293,8 +293,8 @@ function generateAvailabilityResponse(
     };
   }
 
-  const availableDrivers = drivers.filter((d: any) => d.availability.available);
-  const busyDrivers = drivers.filter((d: any) => !d.availability.available);
+  const availableDrivers = drivers.filter((d) => d.availability.available);
+  const busyDrivers = drivers.filter((d) => !d.availability.available);
 
   if (availableDrivers.length === 0) {
     return {
@@ -304,7 +304,7 @@ function generateAvailabilityResponse(
         hy: 'Բոլոր վարորդները զբաղված են: Հաջորդ ազատ ժամանակը:',
       },
       type: 'all_busy',
-      suggestions: busyDrivers.map((d: any) => ({
+      suggestions: busyDrivers.map((d) => ({
         driverId: d._id,
         driverName: d.userName,
         nextAvailable: 'Tomorrow 9:00 AM', // Would calculate from schedule
@@ -319,7 +319,7 @@ function generateAvailabilityResponse(
       hy: `Գտնվել է ${availableDrivers.length} ազատ վարորդ:`,
     },
     type: 'available',
-    availableDrivers: availableDrivers.map((d: any) => ({
+    availableDrivers: availableDrivers.map((d) => ({
       driverId: d._id,
       driverName: d.userName,
       vehicle: `${d.vehicleInfo.model} (${d.vehicleInfo.plateNumber})`,
@@ -337,8 +337,8 @@ function generateScheduleSummary(schedules: Doc<'driverSchedules'>[], hasFullAcc
     return sum + (s.endTime - s.startTime) / (1000 * 60 * 60);
   }, 0);
 
-  const tripCount = schedules.filter((s: any) => s.type === 'trip').length;
-  const blockedCount = schedules.filter((s: any) => s.type === 'blocked').length;
+  const tripCount = schedules.filter((s) => s.type === 'trip').length;
+  const blockedCount = schedules.filter((s) => s.type === 'blocked').length;
 
   const summary = {
     totalHours: Math.round(totalHours * 10) / 10,

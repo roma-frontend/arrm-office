@@ -13,6 +13,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits'
  * - superadmin: sees all orgs (returns undefined orgId filter)
  * - admin: sees only their own org
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function requireAdmin(ctx: any, adminId: Id<'users'>) {
   const user = await ctx.db.get(adminId);
   if (!user) {
@@ -67,8 +68,8 @@ export const getAllSettings = query({
     const settings = await ctx.db.query('securitySettings').take(SMALL_LIST_CAP);
 
     // Merge with defaults so all features are always present
-    return SECURITY_FEATURES.map((feature: any) => {
-      const saved = settings.find((s: any) => s.key === feature.key);
+    return SECURITY_FEATURES.map((feature) => {
+      const saved = settings.find((s) => s.key === feature.key);
       return {
         key: feature.key,
         description: feature.description,
@@ -169,7 +170,7 @@ export const logLoginAttempt = mutation({
       const recentFails = await ctx.db
         .query('loginAttempts')
         .withIndex('by_user', (q) => q.eq('userId', args.userId!))
-        .filter((q: any) =>
+        .filter((q) =>
           q.and(q.eq(q.field('success'), false), q.gte(q.field('createdAt'), fifteenMinAgo)),
         )
         .take(SMALL_LIST_CAP);
@@ -353,13 +354,13 @@ export const getLoginStats = query({
       .take(DEFAULT_LIST_CAP);
 
     if (organizationId) {
-      attempts = attempts.filter((a: any) => a.organizationId === organizationId);
+      attempts = attempts.filter((a) => a.organizationId === organizationId);
     }
 
     const total = attempts.length;
-    const failed = attempts.filter((a: any) => !a.success).length;
-    const blocked = attempts.filter((a: any) => a.blockedReason).length;
-    const highRisk = attempts.filter((a: any) => (a.riskScore ?? 0) >= 60).length;
+    const failed = attempts.filter((a) => !a.success).length;
+    const blocked = attempts.filter((a) => a.blockedReason).length;
+    const highRisk = attempts.filter((a) => (a.riskScore ?? 0) >= 60).length;
     const byMethod = attempts.reduce(
       (acc, a) => {
         acc[a.method] = (acc[a.method] ?? 0) + 1;
@@ -370,8 +371,8 @@ export const getLoginStats = query({
 
     // Recent suspicious (failed + high risk)
     const suspicious = attempts
-      .filter((a: any) => !a.success || (a.riskScore ?? 0) >= 60)
-      .sort((a: any, b: any) => b.createdAt - a.createdAt)
+      .filter((a) => !a.success || (a.riskScore ?? 0) >= 60)
+      .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 20);
 
     return { total, failed, blocked, highRisk, byMethod, suspicious };
@@ -400,13 +401,13 @@ export const getRecentAuditLogs = query({
     }
 
     // Enrich with user names - batch load all unique user IDs
-    const uniqueUserIds = [...new Set(logs.map((log: any) => log.userId).filter(Boolean))];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
+    const uniqueUserIds = [...new Set(logs.map((log) => log.userId).filter(Boolean))];
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
     );
 
-    const enriched = logs.map((log: any) => {
+    const enriched = logs.map((log) => {
       const user = userMap.get(log.userId);
       return {
         ...log,
@@ -437,15 +438,15 @@ export const listAuditLogsPaginated = query({
       : await ctx.db.query('auditLogs').order('desc').paginate(paginationOpts);
 
     // Enrich page with user names
-    const uniqueUserIds = [...new Set(result.page.map((log: any) => log.userId).filter(Boolean))];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
+    const uniqueUserIds = [...new Set(result.page.map((log) => log.userId).filter(Boolean))];
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
     );
 
     return {
       ...result,
-      page: result.page.map((log: any) => {
+      page: result.page.map((log) => {
         const user = userMap.get(log.userId);
         return { ...log, userName: user?.name ?? 'Unknown', userEmail: user?.email ?? '' };
       }),
@@ -637,7 +638,7 @@ export const getSuspendedUsers = query({
     );
 
     // Sort by most recently suspended
-    return suspendedUsers.sort((a: any, b: any) => (b.suspendedAt || 0) - (a.suspendedAt || 0));
+    return suspendedUsers.sort((a, b) => (b.suspendedAt || 0) - (a.suspendedAt || 0));
   },
 });
 

@@ -38,13 +38,13 @@ export const listSurveys = query({
     const surveys = await surveyQuery.order('desc').take(pageSize);
 
     // Batch load creators
-    const creatorIds = [...new Set(surveys.map((s: any) => s.createdBy))];
-    const creators = await Promise.all(creatorIds.map((id: any) => ctx.db.get(id)));
-    const creatorMap = new Map(creators.filter(Boolean).map((u: any) => [u!._id, u!]));
-    const creatorProfiles = await Promise.all(creatorIds.map((id: any) => getProfile(ctx, id)));
+    const creatorIds = [...new Set(surveys.map((s) => s.createdBy))];
+    const creators = await Promise.all(creatorIds.map((id) => ctx.db.get(id)));
+    const creatorMap = new Map(creators.filter(Boolean).map((u) => [u!._id, u!]));
+    const creatorProfiles = await Promise.all(creatorIds.map((id) => getProfile(ctx, id)));
     const creatorProfileMap = new Map(creatorIds.map((id, i) => [id, creatorProfiles[i]]));
 
-    return surveys.map((survey: any) => ({
+    return surveys.map((survey) => ({
       ...survey,
       creator: creatorMap.get(survey.createdBy)
         ? {
@@ -120,8 +120,8 @@ export const getSurveyResults = query({
       .take(DEFAULT_LIST_CAP);
 
     // Aggregate answers per question
-    const questionResults = questions.map((question: any) => {
-      const questionAnswers = answers.filter((a: any) => a.questionId === question._id);
+    const questionResults = questions.map((question) => {
+      const questionAnswers = answers.filter((a) => a.questionId === question._id);
 
       const aggregation: any = { totalResponses: questionAnswers.length };
 
@@ -129,10 +129,10 @@ export const getSurveyResults = query({
         case 'rating':
         case 'nps': {
           const values = questionAnswers
-            .map((a: any) => a.ratingValue)
+            .map((a) => a.ratingValue)
             .filter((v): v is number => v !== undefined);
           aggregation.average =
-            values.length > 0 ? values.reduce((sum: any, v: any) => sum + v, 0) / values.length : 0;
+            values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
           aggregation.distribution = values.reduce(
             (acc, val) => {
               acc[val] = (acc[val] || 0) + 1;
@@ -144,8 +144,8 @@ export const getSurveyResults = query({
         }
         case 'multiple_choice': {
           const optionCounts: Record<string, number> = {};
-          questionAnswers.forEach((a: any) => {
-            a.selectedOptions?.forEach((opt: any) => {
+          questionAnswers.forEach((a) => {
+            a.selectedOptions?.forEach((opt) => {
               optionCounts[opt] = (optionCounts[opt] || 0) + 1;
             });
           });
@@ -153,14 +153,14 @@ export const getSurveyResults = query({
           break;
         }
         case 'yes_no': {
-          const yesCount = questionAnswers.filter((a: any) => a.booleanValue === true).length;
-          const noCount = questionAnswers.filter((a: any) => a.booleanValue === false).length;
+          const yesCount = questionAnswers.filter((a) => a.booleanValue === true).length;
+          const noCount = questionAnswers.filter((a) => a.booleanValue === false).length;
           aggregation.yesCount = yesCount;
           aggregation.noCount = noCount;
           break;
         }
         case 'text': {
-          aggregation.textResponses = questionAnswers.map((a: any) => a.textValue).filter(Boolean);
+          aggregation.textResponses = questionAnswers.map((a) => a.textValue).filter(Boolean);
           break;
         }
       }
@@ -463,7 +463,7 @@ export const reorderQuestions = mutation({
       .withIndex('by_survey', (q) => q.eq('surveyId', surveyId))
       .take(DEFAULT_LIST_CAP);
 
-    const questionMap = new Map(questions.map((q: any) => [q._id, q]));
+    const questionMap = new Map(questions.map((q) => [q._id, q]));
 
     for (let i = 0; i < questionIds.length; i++) {
       const questionId = questionIds[i]!;
@@ -499,7 +499,7 @@ export const updateQuestion = mutation({
       throw new Error('Can only edit questions in draft surveys');
     }
 
-    const patch: any = {};
+    const patch = {};
     if (updates.text !== undefined) patch.text = updates.text;
     if (updates.description !== undefined) patch.description = updates.description;
     if (updates.isRequired !== undefined) patch.isRequired = updates.isRequired;
@@ -582,7 +582,7 @@ export const updateSurvey = mutation({
       throw new Error('Only draft surveys can be updated');
     }
 
-    const patch: any = { updatedAt: Date.now() };
+    const patch = { updatedAt: Date.now() };
     if (updates.title !== undefined) patch.title = updates.title;
     if (updates.description !== undefined) patch.description = updates.description;
     if (updates.isAnonymous !== undefined) patch.isAnonymous = updates.isAnonymous;
@@ -675,9 +675,7 @@ export const activateScheduledSurveys = internalMutation({
       const surveysToActivate = await ctx.db
         .query('surveys')
         .withIndex('by_org_status', (q) => q.eq('organizationId', org._id).eq('status', 'draft'))
-        .filter((q: any) =>
-          q.and(q.lt(q.field('startsAt'), now), q.neq(q.field('startsAt'), undefined)),
-        )
+        .filter((q) => q.and(q.lt(q.field('startsAt'), now), q.neq(q.field('startsAt'), undefined)))
         .take(DEFAULT_LIST_CAP);
 
       for (const survey of surveysToActivate) {
@@ -715,9 +713,7 @@ export const closeExpiredSurveys = internalMutation({
       const surveysToClose = await ctx.db
         .query('surveys')
         .withIndex('by_org_status', (q) => q.eq('organizationId', org._id).eq('status', 'active'))
-        .filter((q: any) =>
-          q.and(q.lt(q.field('endsAt'), now), q.neq(q.field('endsAt'), undefined)),
-        )
+        .filter((q) => q.and(q.lt(q.field('endsAt'), now), q.neq(q.field('endsAt'), undefined)))
         .take(DEFAULT_LIST_CAP);
 
       for (const survey of surveysToClose) {
@@ -772,14 +768,14 @@ export const getSurveyResultsByDepartment = query({
 
     // Load respondent departments
     const respondentIds = responses
-      .map((r: any) => r.respondentId)
+      .map((r) => r.respondentId)
       .filter((id): id is Id<'users'> => id !== undefined);
 
-    const users = (await Promise.all(respondentIds.map((id: any) => ctx.db.get(id)))) as Array<{
+    const users = (await Promise.all(respondentIds.map((id) => ctx.db.get(id)))) as Array<{
       _id: string;
       department?: string;
     } | null>;
-    const profiles = await Promise.all(respondentIds.map((id: any) => getProfile(ctx, id)));
+    const profiles = await Promise.all(respondentIds.map((id) => getProfile(ctx, id)));
     const userDepartmentMap = new Map<string, string>();
     users.forEach((user, i) => {
       if (user) {
@@ -792,7 +788,7 @@ export const getSurveyResultsByDepartment = query({
 
     // Group responses by department
     const departmentGroups: Record<string, typeof responses> = {};
-    responses.forEach((resp: any) => {
+    responses.forEach((resp) => {
       const dept = userDepartmentMap.get(resp.respondentId ?? '') ?? 'Unknown';
       if (!departmentGroups[dept]) departmentGroups[dept] = [];
       departmentGroups[dept].push(resp);
@@ -806,9 +802,9 @@ export const getSurveyResultsByDepartment = query({
 
     // Aggregate per department per question
     const departmentResults = Object.entries(departmentGroups).map(([dept, deptResponses]) => {
-      const deptResponseIds = new Set(deptResponses.map((r: any) => r._id));
+      const deptResponseIds = new Set(deptResponses.map((r) => r._id));
 
-      const questionResults = questions.map((question: any) => {
+      const questionResults = questions.map((question) => {
         const questionAnswers = allAnswers.filter(
           (a) => a.questionId === question._id && deptResponseIds.has(a.responseId),
         );
@@ -819,21 +815,15 @@ export const getSurveyResultsByDepartment = query({
           case 'rating':
           case 'nps': {
             const values = questionAnswers
-              .map((a: any) => a.ratingValue)
+              .map((a) => a.ratingValue)
               .filter((v): v is number => v !== undefined);
             aggregation.average =
-              values.length > 0
-                ? values.reduce((sum: any, v: any) => sum + v, 0) / values.length
-                : 0;
+              values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
             break;
           }
           case 'yes_no': {
-            aggregation.yesCount = questionAnswers.filter(
-              (a: any) => a.booleanValue === true,
-            ).length;
-            aggregation.noCount = questionAnswers.filter(
-              (a: any) => a.booleanValue === false,
-            ).length;
+            aggregation.yesCount = questionAnswers.filter((a) => a.booleanValue === true).length;
+            aggregation.noCount = questionAnswers.filter((a) => a.booleanValue === false).length;
             break;
           }
         }
@@ -871,10 +861,10 @@ export const getSurveyTrends = query({
     const surveys = await ctx.db
       .query('surveys')
       .withIndex('by_org_created', (q) => q.eq('organizationId', organizationId))
-      .filter((q: any) => q.gt(q.field('createdAt'), cutoffDate))
+      .filter((q) => q.gt(q.field('createdAt'), cutoffDate))
       .take(DEFAULT_LIST_CAP);
 
-    const trends = surveys.map((survey: any) => ({
+    const trends = surveys.map((survey) => ({
       surveyId: survey._id,
       title: survey.title,
       status: survey.status,
@@ -883,7 +873,7 @@ export const getSurveyTrends = query({
       isAnonymous: survey.isAnonymous,
     }));
 
-    const totalResponses = trends.reduce((sum: any, t: any) => sum + t.responseCount, 0);
+    const totalResponses = trends.reduce((sum, t) => sum + t.responseCount, 0);
     const avgResponseRate = trends.length > 0 ? totalResponses / trends.length : 0;
 
     return {
@@ -982,8 +972,8 @@ export const getSurveyExportData = query({
           .take(DEFAULT_LIST_CAP);
 
         const answerMap: Record<string, any> = {};
-        answers.forEach((ans: any) => {
-          const question = questions.find((q: any) => q._id === ans.questionId);
+        answers.forEach((ans) => {
+          const question = questions.find((q) => q._id === ans.questionId);
           if (question) {
             if (ans.ratingValue !== undefined) answerMap[question.text] = ans.ratingValue;
             else if (ans.textValue !== undefined) answerMap[question.text] = ans.textValue;
@@ -1005,7 +995,7 @@ export const getSurveyExportData = query({
 
     return {
       survey: { title: survey.title, status: survey.status, isAnonymous: survey.isAnonymous },
-      questions: questions.map((q: any) => q.text),
+      questions: questions.map((q) => q.text),
       exportData,
     };
   },

@@ -108,8 +108,8 @@ export const getOrgChartTree = query({
 
     // Sort children by order field
     roots.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    const sortChildren = (node: any) => {
-      node.children.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+    const sortChildren = (node) => {
+      node.children.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       node.children.forEach(sortChildren);
     };
     roots.forEach(sortChildren);
@@ -402,6 +402,7 @@ export const moveNode = mutation({
 
 // Helper: check if potentialChild is a descendant of nodeId
 async function checkIsDescendant(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   organizationId: Id<'organizations'>,
   nodeId: Id<'orgChartNodes'>,
@@ -409,9 +410,7 @@ async function checkIsDescendant(
 ): Promise<boolean> {
   const children = await ctx.db
     .query('orgChartNodes')
-    .withIndex('by_parent', (q: any) =>
-      q.eq('organizationId', organizationId).eq('parentId', nodeId),
-    )
+    .withIndex('by_parent', (q) => q.eq('organizationId', organizationId).eq('parentId', nodeId))
     .take(MAX_PAGE_SIZE);
 
   for (const child of children) {

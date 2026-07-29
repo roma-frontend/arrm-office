@@ -14,24 +14,24 @@ export const list = query({
     const departments = orgId
       ? await ctx.db
           .query('departments')
-          .withIndex('by_org', (q: any) => q.eq('organizationId', orgId))
+          .withIndex('by_org', (q) => q.eq('organizationId', orgId))
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('departments').take(DEFAULT_LIST_CAP);
 
     const users = orgId
       ? await ctx.db
           .query('users')
-          .withIndex('by_org', (q: any) => q.eq('organizationId', orgId))
+          .withIndex('by_org', (q) => q.eq('organizationId', orgId))
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('users').take(DEFAULT_LIST_CAP);
 
     // Load profiles for departmentId lookup
-    const profiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
-    const profileMap = new Map(users.map((u: any, i: number) => [u._id, profiles[i]]));
+    const profiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
+    const profileMap = new Map(users.map((u, i: number) => [u._id, profiles[i]]));
 
-    return departments.map((dept: any) => {
-      const manager = users.find((u: any) => u._id === dept.managerId);
-      const employeeCount = users.filter((u: any) => {
+    return departments.map((dept) => {
+      const manager = users.find((u) => u._id === dept.managerId);
+      const employeeCount = users.filter((u) => {
         const p = profileMap.get(u._id);
         const deptId = p?.departmentId ?? u.departmentId;
         return deptId === dept._id && (orgId ? u.organizationId === orgId : true);
@@ -61,7 +61,7 @@ export const create = mutation({
     managerId: v.optional(v.id('users')),
     color: v.optional(v.string()),
   },
-  handler: async (ctx: any, args: any) => {
+  handler: async (ctx, args) => {
     const now = Date.now();
     return await ctx.db.insert('departments', {
       organizationId: args.organizationId,
@@ -85,7 +85,7 @@ export const update = mutation({
     color: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
-  handler: async (ctx: any, args: any) => {
+  handler: async (ctx, args) => {
     const { id, ...updates } = args;
     await ctx.db.patch(id, {
       ...updates,
@@ -96,7 +96,7 @@ export const update = mutation({
 
 export const remove = mutation({
   args: { id: v.id('departments') },
-  handler: async (ctx: any, args: any) => {
+  handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
   },
 });

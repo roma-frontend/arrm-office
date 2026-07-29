@@ -21,10 +21,10 @@ export const getActiveOrganizations = query({
   handler: async (ctx) => {
     const organizations = await ctx.db
       .query('organizations')
-      .filter((q: any) => q.eq(q.field('isActive'), true))
+      .filter((q) => q.eq(q.field('isActive'), true))
       .take(DEFAULT_LIST_CAP);
 
-    return organizations.map((org: any) => ({
+    return organizations.map((org) => ({
       _id: org._id,
       name: org.name,
       slug: org.slug,
@@ -50,11 +50,11 @@ export const getMyJoinRequests = query({
     const requests = await ctx.db
       .query('organizationInvites')
       .withIndex('by_email', (q) => q.eq('requestedByEmail', user.email))
-      .filter((q: any) => q.eq(q.field('status'), 'pending'))
+      .filter((q) => q.eq(q.field('status'), 'pending'))
       .take(SMALL_LIST_CAP);
 
     // Return requests without organizationName to avoid Promise issues
-    return requests.map((req: any) => ({
+    return requests.map((req) => ({
       ...req,
       organizationName: undefined, // Will be fetched separately if needed
     }));
@@ -79,18 +79,18 @@ export const getOrgJoinRequests = query({
     const uniqueUserIds = [
       ...new Set(
         requests
-          .map((req: any) => req.userId)
+          .map((req) => req.userId)
           .filter((id): id is Id<'users'> => id !== undefined && id !== null),
       ),
     ];
-    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
-    const profilesBatch = await Promise.all(uniqueUserIds.map((id: any) => getProfile(ctx, id)));
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
+    const profilesBatch = await Promise.all(uniqueUserIds.map((id) => getProfile(ctx, id)));
     const userMap = new Map(
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
     );
     const profileMap = new Map(uniqueUserIds.map((id, i) => [id, profilesBatch[i]]));
 
-    const enriched = requests.map((req: any) => {
+    const enriched = requests.map((req) => {
       const requester = req.userId ? userMap.get(req.userId) : null;
       const profile = req.userId ? profileMap.get(req.userId) : null;
       return {
@@ -135,7 +135,7 @@ export const requestJoinOrganization = mutation({
     const existing = await ctx.db
       .query('organizationInvites')
       .withIndex('by_email', (q) => q.eq('requestedByEmail', user.email))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(q.eq(q.field('organizationId'), organizationId), q.eq(q.field('status'), 'pending')),
       )
       .first();

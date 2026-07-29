@@ -177,7 +177,7 @@ export const getActiveImpersonation = query({
     const sessions = await ctx.db
       .query('impersonationSessions')
       .withIndex('by_superadmin', (q) => q.eq('superadminId', caller._id))
-      .filter((q: any) => q.and(q.eq(q.field('isActive'), true), q.gt(q.field('expiresAt'), now)))
+      .filter((q) => q.and(q.eq(q.field('isActive'), true), q.gt(q.field('expiresAt'), now)))
       .take(MAX_PAGE_SIZE);
 
     if (sessions.length === 0) return null;

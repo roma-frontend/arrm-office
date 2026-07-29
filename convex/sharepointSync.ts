@@ -11,6 +11,7 @@ import { DEFAULT_LIST_CAP } from './lib/limits';
 // ─────────────────────────────────────────────────────────────────────────────
 const RESTRICTED_ORG_SLUG = 'adb-arrm';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function verifyRestrictedOrg(ctx: any, organizationId: string) {
   const org = await ctx.db.get(organizationId);
   if (!org) {
@@ -124,13 +125,13 @@ export const deactivateSharePointUsers = mutation({
     // 🛡️ RESTRICTED ORG CHECK: Only ADB-ARRM can use SharePoint sync
     await verifyRestrictedOrg(ctx, args.organizationId);
 
-    const activeEmailSet = new Set(args.activeEmails.map((e: any) => e.toLowerCase().trim()));
+    const activeEmailSet = new Set(args.activeEmails.map((e) => e.toLowerCase().trim()));
 
     // Get all active users in the org
     const orgUsers = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .filter((q: any) => q.eq(q.field('isActive'), true))
+      .filter((q) => q.eq(q.field('isActive'), true))
       .take(DEFAULT_LIST_CAP);
 
     let deactivated = 0;

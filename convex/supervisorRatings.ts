@@ -192,7 +192,7 @@ export const getAverageRatings = query({
     cutoffDate.setMonth(cutoffDate.getMonth() - monthsToInclude);
     const cutoffPeriod = cutoffDate.toISOString().slice(0, 7);
 
-    const recentRatings = allRatings.filter((r: any) => r.ratingPeriod >= cutoffPeriod);
+    const recentRatings = allRatings.filter((r) => r.ratingPeriod >= cutoffPeriod);
     const ratingsToUse = recentRatings.length > 0 ? recentRatings : allRatings;
 
     const count = ratingsToUse.length;
@@ -258,11 +258,12 @@ export const getRatingTrends = query({
 });
 
 // ── Helper: Update Performance Metrics ───────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function updatePerformanceMetrics(ctx: any, employeeId: Id<'users'>, updatedBy: Id<'users'>) {
   // Get average ratings
   const ratings = await ctx.db
     .query('supervisorRatings')
-    .withIndex('by_employee', (q: any) => q.eq('employeeId', employeeId))
+    .withIndex('by_employee', (q) => q.eq('employeeId', employeeId))
     .take(SMALL_LIST_CAP);
 
   if (ratings.length === 0) return;
@@ -280,7 +281,7 @@ async function updatePerformanceMetrics(ctx: any, employeeId: Id<'users'>, updat
   // Get or create performance metrics
   const existing = await ctx.db
     .query('performanceMetrics')
-    .withIndex('by_user', (q: any) => q.eq('userId', employeeId))
+    .withIndex('by_user', (q) => q.eq('userId', employeeId))
     .first();
 
   const metricsData = {
@@ -331,7 +332,7 @@ export const getEmployeesNeedingRating = query({
       }
       allUsers = await ctx.db
         .query('users')
-        .withIndex('by_org', (q: any) => q.eq('organizationId', supervisor.organizationId))
+        .withIndex('by_org', (q) => q.eq('organizationId', supervisor.organizationId))
         .take(DEFAULT_LIST_CAP);
     } else {
       allUsers = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
@@ -365,6 +366,6 @@ export const getEmployeesNeedingRating = query({
       }),
     );
 
-    return needsRating.filter((item: any) => item.needsRating);
+    return needsRating.filter((item) => item.needsRating);
   },
 });

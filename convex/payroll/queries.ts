@@ -8,6 +8,7 @@ import { getAuthCaller } from '../lib/getAuthCaller';
 import type { Id } from '../_generated/dataModel';
 
 // Verified caller id from JWT (never trust a client-supplied requesterId).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function callerId(ctx: any): Promise<Id<'users'>> {
   const caller = await getAuthCaller(ctx);
   if (!caller) throw new Error('Not authenticated');
@@ -47,19 +48,16 @@ export const getDashboardStats = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const totalGross = records.reduce((sum: any, r: any) => sum + r.grossSalary, 0);
-    const totalNet = records.reduce((sum: any, r: any) => sum + r.netSalary, 0);
-    const totalDeductions = records.reduce(
-      (sum: any, r: any) => sum + (r.deductions?.total || 0),
-      0,
-    );
+    const totalGross = records.reduce((sum, r) => sum + r.grossSalary, 0);
+    const totalNet = records.reduce((sum, r) => sum + r.netSalary, 0);
+    const totalDeductions = records.reduce((sum, r) => sum + (r.deductions?.total || 0), 0);
 
-    const paidRuns = runs.filter((r: any) => r.status === 'paid').length;
+    const paidRuns = runs.filter((r) => r.status === 'paid').length;
     const pendingRuns = runs.filter(
       (r) => r.status === 'draft' || r.status === 'calculated',
     ).length;
 
-    const recentRuns = runs.sort((a: any, b: any) => b.createdAt - a.createdAt).slice(0, 5);
+    const recentRuns = runs.sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
 
     return {
       totalGross,
@@ -103,15 +101,15 @@ export const getPayrollRecords = query({
       .take(DEFAULT_LIST_CAP);
 
     if (status) {
-      records = records.filter((r: any) => r.status === status);
+      records = records.filter((r) => r.status === status);
     }
 
     if (period) {
-      records = records.filter((r: any) => r.period === period);
+      records = records.filter((r) => r.period === period);
     }
 
     if (userId) {
-      records = records.filter((r: any) => r.userId === userId);
+      records = records.filter((r) => r.userId === userId);
     }
 
     const enriched = await Promise.all(
@@ -139,7 +137,7 @@ export const getPayrollRecords = query({
       }),
     );
 
-    return enriched.sort((a: any, b: any) => b.createdAt - a.createdAt);
+    return enriched.sort((a, b) => b.createdAt - a.createdAt);
   },
 });
 
@@ -170,7 +168,7 @@ export const getPayrollRuns = query({
       .take(DEFAULT_LIST_CAP);
 
     if (status) {
-      runs = runs.filter((r: any) => r.status === status);
+      runs = runs.filter((r) => r.status === status);
     }
 
     const enriched = await Promise.all(
@@ -192,7 +190,7 @@ export const getPayrollRuns = query({
       }),
     );
 
-    return enriched.sort((a: any, b: any) => b.createdAt - a.createdAt);
+    return enriched.sort((a, b) => b.createdAt - a.createdAt);
   },
 });
 
@@ -282,15 +280,15 @@ export const getPayslips = query({
     }
 
     if (userId) {
-      payslips = payslips.filter((p: any) => p.userId === userId);
+      payslips = payslips.filter((p) => p.userId === userId);
     }
 
     if (period) {
-      payslips = payslips.filter((p: any) => p.period === period);
+      payslips = payslips.filter((p) => p.period === period);
     }
 
     const enriched = await Promise.all(
-      payslips.map(async (payslip: any) => {
+      payslips.map(async (payslip) => {
         const user = (await ctx.db.get(payslip.userId)) as { name: string; email: string } | null;
         const record = await ctx.db.get(payslip.payrollRecordId);
         const run = await ctx.db.get(payslip.payrollRunId);
@@ -304,7 +302,7 @@ export const getPayslips = query({
       }),
     );
 
-    return enriched.sort((a: any, b: any) => b.generatedAt - a.generatedAt);
+    return enriched.sort((a, b) => b.generatedAt - a.generatedAt);
   },
 });
 
@@ -390,7 +388,7 @@ export const getPayrollCalendar = query({
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const yearRuns = runs.filter((r: any) => r.period >= yearStart && r.period <= yearEnd);
+    const yearRuns = runs.filter((r) => r.period >= yearStart && r.period <= yearEnd);
 
     // Get salary settings for payment info
     const settings = await ctx.db
@@ -402,20 +400,20 @@ export const getPayrollCalendar = query({
     const months = [];
     for (let m = 1; m <= 12; m++) {
       const monthStr = `${year}-${String(m).padStart(2, '0')}`;
-      const monthRuns = yearRuns.filter((r: any) => r.period === monthStr);
-      const latestRun = monthRuns.sort((a: any, b: any) => b.createdAt - a.createdAt)[0] ?? null;
+      const monthRuns = yearRuns.filter((r) => r.period === monthStr);
+      const latestRun = monthRuns.sort((a, b) => b.createdAt - a.createdAt)[0] ?? null;
       const firstRun = latestRun;
       const allRecords = firstRun?._id
         ? await Promise.all([
             ctx.db
               .query('payrollRecords')
-              .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', firstRun._id))
+              .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', firstRun._id))
               .take(DEFAULT_LIST_CAP),
           ])
         : [];
 
       const records = allRecords.flat();
-      const paidRecords = records.filter((r: any) => r.status === 'paid');
+      const paidRecords = records.filter((r) => r.status === 'paid');
 
       months.push({
         month: m,
@@ -447,7 +445,7 @@ export const getPayrollCalendar = query({
     }
 
     const currentMonth = new Date().toISOString().slice(0, 7);
-    const currentRun = runs.find((r: any) => r.period === currentMonth);
+    const currentRun = runs.find((r) => r.period === currentMonth);
 
     return {
       year,
@@ -457,7 +455,7 @@ export const getPayrollCalendar = query({
       paymentMethod: settings?.paymentMethod ?? null,
       totalYearGross: yearRuns.reduce((s: number, r: any) => s + (r.totalGross ?? 0), 0),
       totalYearNet: yearRuns.reduce((s: number, r: any) => s + (r.totalNet ?? 0), 0),
-      completedMonths: yearRuns.filter((r: any) => r.status === 'paid' || r.status === 'approved')
+      completedMonths: yearRuns.filter((r) => r.status === 'paid' || r.status === 'approved')
         .length,
       currentMonthStatus: currentRun?.status ?? 'no_run',
     };
@@ -510,7 +508,7 @@ export const getMyPayslips = query({
       }),
     );
 
-    return enriched.sort((a: any, b: any) => b.generatedAt - a.generatedAt);
+    return enriched.sort((a, b) => b.generatedAt - a.generatedAt);
   },
 });
 
@@ -648,7 +646,7 @@ export const getUpcomingPayPeriods = query({
     if (payFrequency === 'monthly') {
       // Current month period (e.g. 2026-07)
       const currentDeadline = monthEnd(currentYear, currentMonth);
-      const currentRun = latestRuns.find((r: any) => r.period === currentPeriod);
+      const currentRun = latestRuns.find((r) => r.period === currentPeriod);
       const daysLeft = daysUntil(currentDeadline);
 
       if (!currentRun) {
@@ -690,7 +688,7 @@ export const getUpcomingPayPeriods = query({
       const nextY = currentMonth === 12 ? currentYear + 1 : currentYear;
       const nextPeriod = `${nextY}-${String(nextM).padStart(2, '0')}`;
       const nextDeadline = monthEnd(nextY, nextM);
-      const nextRun = latestRuns.find((r: any) => r.period === nextPeriod);
+      const nextRun = latestRuns.find((r) => r.period === nextPeriod);
 
       if (!nextRun) {
         upcoming.push({
@@ -710,7 +708,7 @@ export const getUpcomingPayPeriods = query({
     } else if (payFrequency === 'biweekly') {
       // For biweekly, we calculate next 2 pay periods (each ~14 days)
       // Use the latest paid run as reference, or start from current date
-      const latestPaid = latestRuns.find((r: any) => r.status === 'paid');
+      const latestPaid = latestRuns.find((r) => r.status === 'paid');
       const lastPayDate = latestPaid?.paidAt
         ? new Date(latestPaid.paidAt)
         : new Date(now.getFullYear(), now.getMonth(), 1);
@@ -725,7 +723,7 @@ export const getUpcomingPayPeriods = query({
 
         const periodStr = `${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, '0')}`;
         const daysLeft = daysUntil(periodEnd);
-        const existingRun = latestRuns.find((r: any) => r.period === periodStr);
+        const existingRun = latestRuns.find((r) => r.period === periodStr);
 
         upcoming.push({
           period: periodStr,
@@ -755,7 +753,7 @@ export const getUpcomingPayPeriods = query({
 
         const periodStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}`;
         const daysLeft = daysUntil(weekEnd);
-        const existingRun = latestRuns.find((r: any) => r.period === periodStr);
+        const existingRun = latestRuns.find((r) => r.period === periodStr);
 
         upcoming.push({
           period: periodStr,
@@ -776,7 +774,7 @@ export const getUpcomingPayPeriods = query({
     }
 
     // Determine current period status for the header
-    const currentRun = latestRuns.find((r: any) => r.period === currentPeriod);
+    const currentRun = latestRuns.find((r) => r.period === currentPeriod);
 
     return {
       upcoming,
@@ -815,7 +813,7 @@ export const getAuditLog = query({
       .take(DEFAULT_LIST_CAP);
 
     if (payrollRunId) {
-      logs = logs.filter((l: any) => l.payrollRunId === payrollRunId);
+      logs = logs.filter((l) => l.payrollRunId === payrollRunId);
     }
 
     const enriched = await Promise.all(
@@ -828,6 +826,6 @@ export const getAuditLog = query({
       }),
     );
 
-    return enriched.sort((a: any, b: any) => b.createdAt - a.createdAt);
+    return enriched.sort((a, b) => b.createdAt - a.createdAt);
   },
 });

@@ -114,7 +114,7 @@ export const detectAllConflicts = query({
     }
 
     // Сортируем: критические сначала, затем по дате
-    return conflicts.sort((a: any, b: any) => {
+    return conflicts.sort((a, b) => {
       if (a.severity === 'critical' && b.severity !== 'critical') return -1;
       if (b.severity === 'critical' && a.severity !== 'critical') return 1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -276,7 +276,7 @@ export const checkConflictsForRequest = query({
 
     return {
       conflicts,
-      hasCritical: conflicts.some((c: any) => c.severity === 'critical'),
+      hasCritical: conflicts.some((c) => c.severity === 'critical'),
     };
   },
 });
@@ -286,6 +286,7 @@ export const checkConflictsForRequest = query({
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function detectLeaveEventConflicts(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   args: { organizationId: Id<'organizations'>; startDate: number; endDate: number },
 ): Promise<Conflict[]> {
@@ -294,24 +295,24 @@ async function detectLeaveEventConflicts(
   // Получаем все мероприятия в периоде
   const events = await ctx.db
     .query('companyEvents')
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
   // Получаем все одобренные отпуска в периоде
   const leaves = await ctx.db
     .query('leaveRequests')
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
+  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
 
   // Batch-load all unique user IDs upfront to avoid N+1 queries
-  const uniqueUserIds = [...new Set(approvedLeaves.map((l: any) => l.userId))];
-  const usersForLeaves = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
-  const userMap = new Map(usersForLeaves.filter(Boolean).map((u: any) => [u._id, u]));
-  const profilesForLeaves = await Promise.all(uniqueUserIds.map((id: any) => getProfile(ctx, id)));
+  const uniqueUserIds = [...new Set(approvedLeaves.map((l) => l.userId))];
+  const usersForLeaves = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
+  const userMap = new Map(usersForLeaves.filter(Boolean).map((u) => [u._id, u]));
+  const profilesForLeaves = await Promise.all(uniqueUserIds.map((id) => getProfile(ctx, id)));
   const profileMapForLeaves = new Map(
-    uniqueUserIds.map((id: any, i: number) => [id, profilesForLeaves[i]]),
+    uniqueUserIds.map((id, i: number) => [id, profilesForLeaves[i]]),
   );
 
   for (const event of events) {
@@ -364,6 +365,7 @@ async function detectLeaveEventConflicts(
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function detectDepartmentConflicts(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   args: {
     organizationId: Id<'organizations'>;
@@ -378,23 +380,23 @@ async function detectDepartmentConflicts(
   const users = (
     await ctx.db
       .query('users')
-      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(MAX_PAGE_SIZE)
-  ).filter((u: any) => u.role !== 'superadmin');
+  ).filter((u) => u.role !== 'superadmin');
 
   // Load profiles in parallel for department field
-  const profiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
+  const profiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
   const profileMap = new Map<string, Awaited<ReturnType<typeof getProfile>>>(
-    users.map((u: any, i: number) => [u._id as string, profiles[i]!]),
+    users.map((u, i: number) => [u._id as string, profiles[i]!]),
   );
 
   // Get all approved leaves
   const leaves = await ctx.db
     .query('leaveRequests')
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
+  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
 
   // Build department user counts
   const deptUserCounts = new Map<string, number>();
@@ -428,14 +430,14 @@ async function detectDepartmentConflicts(
   }
 
   // Sort events by date
-  events.sort((a: any, b: any) => a.date - b.date);
+  events.sort((a, b) => a.date - b.date);
 
   // Track active leaves per department using a map
   const activeLeavesPerDept = new Map<string, Set<Id<'users'>>>();
   let eventIndex = 0;
 
   // Process events at each unique date point
-  const uniqueDates = [...new Set(events.map((e: any) => e.date))].sort((a: any, b: any) => a - b);
+  const uniqueDates = [...new Set(events.map((e) => e.date))].sort((a, b) => a - b);
 
   for (const date of uniqueDates) {
     // Process all events at this date
@@ -514,6 +516,7 @@ async function detectDepartmentConflicts(
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function detectDriverConflicts(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   args: { organizationId: Id<'organizations'>; startDate: number; endDate: number },
 ): Promise<Conflict[]> {
@@ -522,11 +525,11 @@ async function detectDriverConflicts(
   // Получаем все поездки в периоде
   const schedules = await ctx.db
     .query('driverSchedules')
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
   const activeSchedules = schedules.filter(
-    (s: any) => s.status === 'approved' || s.status === 'pending',
+    (s) => s.status === 'approved' || s.status === 'pending',
   );
 
   // Группируем по водителям и проверяем пересечения
@@ -577,6 +580,7 @@ async function detectDriverConflicts(
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function detectTaskConflicts(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   args: { organizationId: Id<'organizations'>; startDate: number; endDate: number },
 ): Promise<Conflict[]> {
@@ -585,25 +589,23 @@ async function detectTaskConflicts(
   // Получаем все задачи
   const tasks = await ctx.db
     .query('tasks')
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  const activeTasks = tasks.filter(
-    (t: any) => t.status !== 'completed' && t.status !== 'cancelled',
-  );
+  const activeTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled');
 
   // Получаем все отпуска
   const leaves = await ctx.db
     .query('leaveRequests')
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
+  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
 
   // Batch-load all unique assignee IDs upfront
-  const uniqueAssigneeIds = [...new Set(activeTasks.map((t: any) => t.assigneeId).filter(Boolean))];
-  const assigneeUsers = await Promise.all(uniqueAssigneeIds.map((id: any) => ctx.db.get(id)));
-  const assigneeMap = new Map(assigneeUsers.filter(Boolean).map((u: any) => [u._id, u]));
+  const uniqueAssigneeIds = [...new Set(activeTasks.map((t) => t.assigneeId).filter(Boolean))];
+  const assigneeUsers = await Promise.all(uniqueAssigneeIds.map((id) => ctx.db.get(id)));
+  const assigneeMap = new Map(assigneeUsers.filter(Boolean).map((u) => [u._id, u]));
 
   // Проверяем каждую задачу
   for (const task of activeTasks) {
@@ -668,14 +670,14 @@ export const getConflictSummaryForAI = query({
       userId: args.userId,
     });
 
-    const critical = conflicts.filter((c: any) => c.severity === 'critical');
-    const warnings = conflicts.filter((c: any) => c.severity === 'warning');
+    const critical = conflicts.filter((c) => c.severity === 'critical');
+    const warnings = conflicts.filter((c) => c.severity === 'warning');
 
     return {
       total: conflicts.length,
       critical: critical.length,
       warnings: warnings.length,
-      messages: conflicts.map((c: any) => ({
+      messages: conflicts.map((c) => ({
         type: c.type,
         severity: c.severity,
         title: c.title,

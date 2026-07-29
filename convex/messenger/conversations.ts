@@ -234,7 +234,7 @@ export const createGroupConversation = mutation({
     });
 
     // Add participants
-    const uniqueIds = [...new Set(participantIds.filter((id: any) => id !== creatorId))];
+    const uniqueIds = [...new Set(participantIds.filter((id) => id !== creatorId))];
     for (const uid of uniqueIds) {
       await ctx.db.insert('chatMembers', {
         conversationId: convId,
@@ -381,15 +381,15 @@ export const addParticipants = mutation({
     const addedNames: string[] = [];
 
     // Batch-load all users upfront to avoid N+1 queries
-    const usersBatch = await Promise.all(userIds.map((id: any) => ctx.db.get(id)));
-    const userMap = new Map(usersBatch.filter(Boolean).map((u: any) => [u._id, u]));
+    const usersBatch = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+    const userMap = new Map(usersBatch.filter(Boolean).map((u) => [u._id, u]));
 
     // Batch-check existing memberships
     const allMemberships = await ctx.db
       .query('chatMembers')
-      .withIndex('by_conversation', (q: any) => q.eq('conversationId', conversationId))
+      .withIndex('by_conversation', (q) => q.eq('conversationId', conversationId))
       .take(MAX_PAGE_SIZE);
-    const existingMemberIds = new Set(allMemberships.map((m: any) => m.userId));
+    const existingMemberIds = new Set(allMemberships.map((m) => m.userId));
 
     for (const uid of userIds) {
       if (existingMemberIds.has(uid)) continue;

@@ -13,6 +13,7 @@ import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
  * - superadmin: sees all orgs (returns undefined orgId filter)
  * - admin: sees only their own org
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function requireAdmin(ctx: any, adminId: Id<'users'>) {
   const user = await ctx.db.get(adminId);
   if (!user) {
@@ -99,19 +100,15 @@ export const updateGdprRequestStatus = mutation({
       throw new Error('Can only update GDPR requests for your organization');
     }
 
-    const updates: any = {
+    const updates = {
       status: args.status,
       processedBy: user._id,
       processedAt: Date.now(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(args.status === 'completed' ? ({ completedAt: Date.now() } as any) : {}),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(args.status === 'rejected' ? ({ rejectionReason: args.rejectionReason } as any) : {}),
     };
-
-    if (args.status === 'completed') {
-      updates.completedAt = Date.now();
-    }
-
-    if (args.status === 'rejected') {
-      updates.rejectionReason = args.rejectionReason;
-    }
 
     await ctx.db.patch(args.requestId, updates);
 
@@ -148,11 +145,11 @@ export const getGdprRequests = query({
       : await ctx.db.query('gdprRequests').order('desc').take(XLARGE_LIST_CAP);
 
     if (args.userId) {
-      requests = requests.filter((r: any) => r.userId === args.userId);
+      requests = requests.filter((r) => r.userId === args.userId);
     }
 
     if (args.status) {
-      requests = requests.filter((r: any) => r.status === args.status);
+      requests = requests.filter((r) => r.status === args.status);
     }
 
     requests = requests.slice(0, args.limit || 100);
@@ -160,20 +157,18 @@ export const getGdprRequests = query({
     // Enrich with user names
     const uniqueUserIds = [
       ...new Set([
-        ...requests.map((r: any) => r.userId),
-        ...requests.map((r: any) => r.requestedBy),
-        ...requests.map((r: any) => r.processedBy).filter(Boolean),
+        ...requests.map((r) => r.userId),
+        ...requests.map((r) => r.requestedBy),
+        ...requests.map((r) => r.processedBy).filter(Boolean),
       ]),
     ];
 
-    const usersBatch = await Promise.all(
-      uniqueUserIds.map((id: any) => ctx.db.get(id as Id<'users'>)),
-    );
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id as Id<'users'>)));
     const userMap = new Map(
-      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u) => [u._id, u]),
     );
 
-    return requests.map((request: any) => {
+    return requests.map((request) => {
       const user = userMap.get(request.userId);
       const requestedBy = userMap.get(request.requestedBy);
       const processedBy = request.processedBy ? userMap.get(request.processedBy) : null;
@@ -206,21 +201,19 @@ export const listGdprRequestsPaginated = query({
 
     const uniqueUserIds = [
       ...new Set([
-        ...result.page.map((r: any) => r.userId),
-        ...result.page.map((r: any) => r.requestedBy),
-        ...result.page.map((r: any) => r.processedBy).filter(Boolean),
+        ...result.page.map((r) => r.userId),
+        ...result.page.map((r) => r.requestedBy),
+        ...result.page.map((r) => r.processedBy).filter(Boolean),
       ]),
     ];
-    const usersBatch = await Promise.all(
-      uniqueUserIds.map((id: any) => ctx.db.get(id as Id<'users'>)),
-    );
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id as Id<'users'>)));
     const userMap = new Map(
-      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u) => [u._id, u]),
     );
 
     return {
       ...result,
-      page: result.page.map((r: any) => ({
+      page: result.page.map((r) => ({
         ...r,
         userName: userMap.get(r.userId)?.name ?? 'Unknown',
         userEmail: userMap.get(r.userId)?.email ?? '',
@@ -257,7 +250,7 @@ export const grantConsent = mutation({
       .withIndex('by_user_consent', (q) =>
         q.eq('userId', args.userId).eq('consentType', args.consentType),
       )
-      .filter((q: any) => q.eq(q.field('granted'), true))
+      .filter((q) => q.eq(q.field('granted'), true))
       .first();
 
     if (existing) {
@@ -311,7 +304,7 @@ export const withdrawConsent = mutation({
       .withIndex('by_user_consent', (q) =>
         q.eq('userId', args.userId).eq('consentType', args.consentType),
       )
-      .filter((q: any) => q.eq(q.field('granted'), true))
+      .filter((q) => q.eq(q.field('granted'), true))
       .first();
 
     if (!existing) {
@@ -357,7 +350,7 @@ export const getUserConsents = query({
       : await ctx.db.query('consentRecords').order('desc').take(XLARGE_LIST_CAP);
 
     if (args.userId) {
-      consents = consents.filter((c: any) => c.userId === args.userId);
+      consents = consents.filter((c) => c.userId === args.userId);
     }
 
     return consents;
@@ -377,14 +370,14 @@ export const getOrgConsentStats = query({
       .withIndex('by_org', (q) => q.eq('organizationId', orgId))
       .take(DEFAULT_LIST_CAP);
 
-    const consentTypes = new Set(allConsents.map((c: any) => c.consentType));
+    const consentTypes = new Set(allConsents.map((c) => c.consentType));
     const stats: Record<string, { granted: number; withdrawn: number }> = {};
 
     for (const type of consentTypes) {
-      const typeConsents = allConsents.filter((c: any) => c.consentType === type);
+      const typeConsents = allConsents.filter((c) => c.consentType === type);
       stats[type] = {
-        granted: typeConsents.filter((c: any) => c.granted).length,
-        withdrawn: typeConsents.filter((c: any) => !c.granted || c.withdrawnAt).length,
+        granted: typeConsents.filter((c) => c.granted).length,
+        withdrawn: typeConsents.filter((c) => !c.granted || c.withdrawnAt).length,
       };
     }
 
@@ -462,24 +455,22 @@ export const getDataAccessLogs = query({
       : await ctx.db.query('dataAccessLogs').order('desc').take(XLARGE_LIST_CAP);
 
     if (args.userId) {
-      logs = logs.filter((l: any) => l.userId === args.userId);
+      logs = logs.filter((l) => l.userId === args.userId);
     }
 
     logs = logs.slice(0, args.limit || 100);
 
     // Enrich with user names
     const uniqueUserIds = [
-      ...new Set([...logs.map((l: any) => l.userId), ...logs.map((l: any) => l.accessedBy)]),
+      ...new Set([...logs.map((l) => l.userId), ...logs.map((l) => l.accessedBy)]),
     ];
 
-    const usersBatch = await Promise.all(
-      uniqueUserIds.map((id: any) => ctx.db.get(id as Id<'users'>)),
-    );
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id as Id<'users'>)));
     const userMap = new Map(
-      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u) => [u._id, u]),
     );
 
-    return logs.map((log: any) => {
+    return logs.map((log) => {
       const user = userMap.get(log.userId);
       const accessedBy = userMap.get(log.accessedBy);
 
@@ -510,21 +501,16 @@ export const listDataAccessLogsPaginated = query({
       : await ctx.db.query('dataAccessLogs').order('desc').paginate(paginationOpts);
 
     const uniqueUserIds = [
-      ...new Set([
-        ...result.page.map((l: any) => l.userId),
-        ...result.page.map((l: any) => l.accessedBy),
-      ]),
+      ...new Set([...result.page.map((l) => l.userId), ...result.page.map((l) => l.accessedBy)]),
     ];
-    const usersBatch = await Promise.all(
-      uniqueUserIds.map((id: any) => ctx.db.get(id as Id<'users'>)),
-    );
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id as Id<'users'>)));
     const userMap = new Map(
-      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u) => [u._id, u]),
     );
 
     return {
       ...result,
-      page: result.page.map((log: any) => ({
+      page: result.page.map((log) => ({
         ...log,
         userName: userMap.get(log.userId)?.name ?? 'Unknown',
         userEmail: userMap.get(log.userId)?.email ?? '',
@@ -648,25 +634,20 @@ export const getPolicies = query({
       : await ctx.db.query('compliancePolicies').order('desc').take(XLARGE_LIST_CAP);
 
     if (args.policyType) {
-      policies = policies.filter((p: any) => p.policyType === args.policyType);
+      policies = policies.filter((p) => p.policyType === args.policyType);
     }
 
     // Enrich with creator/updater names
     const uniqueUserIds = [
-      ...new Set([
-        ...policies.map((p: any) => p.createdBy),
-        ...policies.map((p: any) => p.updatedBy),
-      ]),
+      ...new Set([...policies.map((p) => p.createdBy), ...policies.map((p) => p.updatedBy)]),
     ];
 
-    const usersBatch = await Promise.all(
-      uniqueUserIds.map((id: any) => ctx.db.get(id as Id<'users'>)),
-    );
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id as Id<'users'>)));
     const userMap = new Map(
-      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is Doc<'users'> => u !== null).map((u) => [u._id, u]),
     );
 
-    return policies.map((policy: any) => {
+    return policies.map((policy) => {
       const createdBy = userMap.get(policy.createdBy);
       const updatedBy = userMap.get(policy.updatedBy);
 
@@ -747,22 +728,22 @@ export const getComplianceStats = query({
       : await ctx.db.query('compliancePolicies').take(XLARGE_LIST_CAP);
 
     const gdprByStatus = {
-      pending: gdprRequests.filter((r: any) => r.status === 'pending').length,
-      in_progress: gdprRequests.filter((r: any) => r.status === 'in_progress').length,
-      completed: gdprRequests.filter((r: any) => r.status === 'completed').length,
-      rejected: gdprRequests.filter((r: any) => r.status === 'rejected').length,
+      pending: gdprRequests.filter((r) => r.status === 'pending').length,
+      in_progress: gdprRequests.filter((r) => r.status === 'in_progress').length,
+      completed: gdprRequests.filter((r) => r.status === 'completed').length,
+      rejected: gdprRequests.filter((r) => r.status === 'rejected').length,
     };
 
     const consentStats = {
       total: consentRecords.length,
-      active: consentRecords.filter((c: any) => c.granted && !c.withdrawnAt).length,
-      withdrawn: consentRecords.filter((c: any) => !c.granted || c.withdrawnAt).length,
+      active: consentRecords.filter((c) => c.granted && !c.withdrawnAt).length,
+      withdrawn: consentRecords.filter((c) => !c.granted || c.withdrawnAt).length,
     };
 
     const policyStats = {
       total: policies.length,
-      active: policies.filter((p: any) => p.isActive).length,
-      inactive: policies.filter((p: any) => !p.isActive).length,
+      active: policies.filter((p) => p.isActive).length,
+      inactive: policies.filter((p) => !p.isActive).length,
     };
 
     return {

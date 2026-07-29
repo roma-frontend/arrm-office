@@ -61,9 +61,7 @@ export const getTypingUsers = query({
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
       .take(MAX_PAGE_SIZE);
 
-    const active = typing.filter(
-      (t: any) => t.userId !== args.currentUserId && t.updatedAt > cutoff,
-    );
+    const active = typing.filter((t) => t.userId !== args.currentUserId && t.updatedAt > cutoff);
 
     return Promise.all(
       active.map(async (t) => {

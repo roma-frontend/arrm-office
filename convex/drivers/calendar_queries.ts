@@ -52,7 +52,7 @@ export const getCalendarAccessList = query({
     const accesses = await ctx.db
       .query('calendarAccess')
       .withIndex('by_owner', (q) => q.eq('ownerId', ownerId))
-      .filter((q: any) => q.eq(q.field('isActive'), true))
+      .filter((q) => q.eq(q.field('isActive'), true))
       .take(MAX_PAGE_SIZE);
 
     // Enrich with viewer info
@@ -114,7 +114,7 @@ export const getDriverCalendarForViewer = query({
     const schedules = await ctx.db
       .query('driverSchedules')
       .withIndex('by_driver_time', (q) => q.eq('driverId', driver._id))
-      .filter((q: any) =>
+      .filter((q) =>
         q.and(q.gte(q.field('startTime'), startTime), q.lte(q.field('startTime'), endTime)),
       )
       .take(MAX_PAGE_SIZE);
@@ -122,7 +122,7 @@ export const getDriverCalendarForViewer = query({
     // Filter based on access level
     if (access.accessLevel === 'busy_only') {
       return {
-        busySlots: schedules.map((s: any) => ({
+        busySlots: schedules.map((s) => ({
           startTime: s.startTime,
           endTime: s.endTime,
           type: s.type,

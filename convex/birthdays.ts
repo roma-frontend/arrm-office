@@ -31,10 +31,10 @@ export const checkBirthdaysToday = mutation({
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
         .take(DEFAULT_LIST_CAP)
-    ).filter((u: any) => u.role !== 'superadmin');
+    ).filter((u) => u.role !== 'superadmin');
 
     // Найти тех, у кого день рождения сегодня
-    const birthdayUsers = users.filter((user: any) => {
+    const birthdayUsers = users.filter((user) => {
       if (!user.dateOfBirth) return false;
       const birthDate = new Date(user.dateOfBirth);
       return birthDate.getMonth() + 1 === currentMonth && birthDate.getDate() === currentDay;
@@ -87,7 +87,7 @@ export const checkBirthdaysToday = mutation({
     return {
       birthdaysFound: birthdayUsers.length,
       notificationsSent: birthdayUsers.length * users.length,
-      birthdayUsers: birthdayUsers.map((u: any) => ({
+      birthdayUsers: birthdayUsers.map((u) => ({
         id: u._id,
         name: u.name,
         email: u.email,
@@ -127,7 +127,7 @@ export const checkUpcomingBirthdays = mutation({
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
         .take(DEFAULT_LIST_CAP)
-    ).filter((u: any) => u.role !== 'superadmin');
+    ).filter((u) => u.role !== 'superadmin');
 
     // Проверить следующие N дней
     for (let i = 1; i <= daysAhead; i++) {
@@ -137,7 +137,7 @@ export const checkUpcomingBirthdays = mutation({
       const checkMonth = checkDate.getMonth() + 1;
       const checkDay = checkDate.getDate();
 
-      const birthdayUsers = users.filter((user: any) => {
+      const birthdayUsers = users.filter((user) => {
         if (!user.dateOfBirth) return false;
         const birthDate = new Date(user.dateOfBirth);
         return birthDate.getMonth() + 1 === checkMonth && birthDate.getDate() === checkDay;
@@ -180,7 +180,7 @@ export const checkUpcomingBirthdays = mutation({
     }
 
     return {
-      upcomingBirthdays: upcomingBirthdays.map((b: any) => ({
+      upcomingBirthdays: upcomingBirthdays.map((b) => ({
         name: b.user.name,
         email: b.user.email,
         department: b.user.department,
@@ -208,9 +208,9 @@ export const getBirthdaysForMonth = query({
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
         .take(DEFAULT_LIST_CAP)
-    ).filter((u: any) => u.role !== 'superadmin');
+    ).filter((u) => u.role !== 'superadmin');
 
-    const birthdayUsers = users.filter((user: any) => {
+    const birthdayUsers = users.filter((user) => {
       if (!user.dateOfBirth) return false;
       const birthDate = new Date(user.dateOfBirth);
       return birthDate.getMonth() + 1 === targetMonth;
@@ -227,7 +227,7 @@ export const getBirthdaysForMonth = query({
     const currentYear = today.getFullYear();
 
     const birthdayProfiles = await Promise.all(
-      birthdayUsers.map((user: any) => getProfile(ctx, user._id)),
+      birthdayUsers.map((user) => getProfile(ctx, user._id)),
     );
 
     return birthdayUsers.map((user, i) => {

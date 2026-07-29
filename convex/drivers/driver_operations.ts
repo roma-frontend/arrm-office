@@ -226,7 +226,7 @@ export const submitPassengerRating = mutation({
     const existing = await ctx.db
       .query('passengerRatings')
       .withIndex('by_schedule', (q) => q.eq('scheduleId', args.scheduleId))
-      .filter((q: any) => q.eq(q.field('passengerId'), passengerId))
+      .filter((q) => q.eq(q.field('passengerId'), passengerId))
       .first();
 
     if (existing) {

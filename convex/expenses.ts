@@ -25,11 +25,11 @@ export const listExpenses = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('expenses').order('desc').take(XLARGE_LIST_CAP);
 
-    if (userId) expenses = expenses.filter((e: any) => e.userId === userId);
-    if (category) expenses = expenses.filter((e: any) => e.category === category);
-    if (status) expenses = expenses.filter((e: any) => e.status === status);
-    if (periodStart) expenses = expenses.filter((e: any) => e.expenseDate >= periodStart);
-    if (periodEnd) expenses = expenses.filter((e: any) => e.expenseDate <= periodEnd);
+    if (userId) expenses = expenses.filter((e) => e.userId === userId);
+    if (category) expenses = expenses.filter((e) => e.category === category);
+    if (status) expenses = expenses.filter((e) => e.status === status);
+    if (periodStart) expenses = expenses.filter((e) => e.expenseDate >= periodStart);
+    if (periodEnd) expenses = expenses.filter((e) => e.expenseDate <= periodEnd);
 
     // Enrich with user names
     const enriched = await Promise.all(
@@ -108,7 +108,7 @@ export const listExpenseCategories = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('expenseCategories').order('desc').take(XLARGE_LIST_CAP);
 
-    if (activeOnly) categories = categories.filter((c: any) => c.isActive);
+    if (activeOnly) categories = categories.filter((c) => c.isActive);
 
     return categories.sort((a, b) => a.name.localeCompare(b.name));
   },
@@ -154,8 +154,8 @@ export const listExpenseReports = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('expenseReports').order('desc').take(XLARGE_LIST_CAP);
 
-    if (userId) reports = reports.filter((r: any) => r.userId === userId);
-    if (status) reports = reports.filter((r: any) => r.status === status);
+    if (userId) reports = reports.filter((r) => r.userId === userId);
+    if (status) reports = reports.filter((r) => r.status === status);
 
     // Enrich with user names
     const enriched = await Promise.all(
@@ -228,8 +228,8 @@ export const getExpenseSummary = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('expenses').order('desc').take(XLARGE_LIST_CAP);
 
-    if (periodStart) expenses = expenses.filter((e: any) => e.expenseDate >= periodStart);
-    if (periodEnd) expenses = expenses.filter((e: any) => e.expenseDate <= periodEnd);
+    if (periodStart) expenses = expenses.filter((e) => e.expenseDate >= periodStart);
+    if (periodEnd) expenses = expenses.filter((e) => e.expenseDate <= periodEnd);
 
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
     const avgAmount = expenses.length > 0 ? totalAmount / expenses.length : 0;
@@ -243,12 +243,12 @@ export const getExpenseSummary = query({
     );
 
     const byStatus = {
-      draft: expenses.filter((e: any) => e.status === 'draft').length,
-      submitted: expenses.filter((e: any) => e.status === 'submitted').length,
-      under_review: expenses.filter((e: any) => e.status === 'under_review').length,
-      approved: expenses.filter((e: any) => e.status === 'approved').length,
-      rejected: expenses.filter((e: any) => e.status === 'rejected').length,
-      reimbursed: expenses.filter((e: any) => e.status === 'reimbursed').length,
+      draft: expenses.filter((e) => e.status === 'draft').length,
+      submitted: expenses.filter((e) => e.status === 'submitted').length,
+      under_review: expenses.filter((e) => e.status === 'under_review').length,
+      approved: expenses.filter((e) => e.status === 'approved').length,
+      rejected: expenses.filter((e) => e.status === 'rejected').length,
+      reimbursed: expenses.filter((e) => e.status === 'reimbursed').length,
     };
 
     const pendingApproval = expenses.filter(

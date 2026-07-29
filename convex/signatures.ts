@@ -25,7 +25,7 @@ export const listTemplates = query({
     return await ctx.db
       .query('documentTemplates')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .filter((q: any) => q.neq(q.field('isArchived'), true))
+      .filter((q) => q.neq(q.field('isArchived'), true))
       .take(DEFAULT_LIST_CAP);
   },
 });
@@ -81,7 +81,7 @@ export const listDocuments = query({
     });
 
     // Sort by createdAt desc
-    merged.sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    merged.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
 
     // Apply optional status filter
     if (status) {
@@ -135,7 +135,7 @@ export const getMyPendingSignatures = query({
       }),
     );
 
-    return enriched.filter((r: any) => r.document && r.document.status !== 'cancelled');
+    return enriched.filter((r) => r.document && r.document.status !== 'cancelled');
   },
 });
 
@@ -168,7 +168,7 @@ export const getStats = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const completed = allDocs.filter((d: any) => d.status === 'completed').length;
+    const completed = allDocs.filter((d) => d.status === 'completed').length;
     const awaitingOthers = allDocs.filter(
       (d) => d.status === 'pending' || d.status === 'partially_signed',
     ).length;

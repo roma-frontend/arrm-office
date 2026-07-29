@@ -10,10 +10,11 @@ import { getAuthCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 
 // Helper: get or create userSettings doc for a user
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getOrCreateSettings(ctx: any, userId: any) {
   const existing = await ctx.db
     .query('userSettings')
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
   if (existing) return existing;
 

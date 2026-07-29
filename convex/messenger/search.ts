@@ -28,7 +28,7 @@ export const searchMessages = query({
 
     const q = args.query.toLowerCase();
     const matches = messages
-      .filter((m: any) => !m.isDeleted && m.content.toLowerCase().includes(q))
+      .filter((m) => !m.isDeleted && m.content.toLowerCase().includes(q))
       .slice(-20);
 
     return Promise.all(

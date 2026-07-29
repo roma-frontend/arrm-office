@@ -126,7 +126,7 @@ export const evaluateLeaveRequest = query({
     const teamLeaves = await ctx.db
       .query('leaveRequests')
       .withIndex('by_status', (q) => q.eq('status', 'approved'))
-      .filter((q: any) => q.neq(q.field('userId'), leave.userId))
+      .filter((q) => q.neq(q.field('userId'), leave.userId))
       .take(DEFAULT_LIST_CAP);
 
     const overlappingLeaves = teamLeaves.filter(
@@ -253,9 +253,9 @@ function calculateAttendanceScore(
   // If we have real time tracking data, use it
   if (timeRecords && timeRecords.length > 0) {
     const totalDays = timeRecords.length;
-    const lateDays = timeRecords.filter((r: any) => r.isLate).length;
-    const earlyLeaveDays = timeRecords.filter((r: any) => r.isEarlyLeave).length;
-    const absentDays = timeRecords.filter((r: any) => r.status === 'absent').length;
+    const lateDays = timeRecords.filter((r) => r.isLate).length;
+    const earlyLeaveDays = timeRecords.filter((r) => r.isEarlyLeave).length;
+    const absentDays = timeRecords.filter((r) => r.status === 'absent').length;
 
     const punctualityRate = totalDays > 0 ? ((totalDays - lateDays) / totalDays) * 100 : 100;
     const attendanceRate = totalDays > 0 ? ((totalDays - absentDays) / totalDays) * 100 : 100;
@@ -281,9 +281,9 @@ function calculateAttendanceScore(
 function calculateBehaviorScore(notes: EmployeeNote[]): number {
   if (notes.length === 0) return 75;
 
-  const positive = notes.filter((n: any) => n.sentiment === 'positive').length;
-  const negative = notes.filter((n: any) => n.sentiment === 'negative').length;
-  const neutral = notes.filter((n: any) => n.sentiment === 'neutral').length;
+  const positive = notes.filter((n) => n.sentiment === 'positive').length;
+  const negative = notes.filter((n) => n.sentiment === 'negative').length;
+  const neutral = notes.filter((n) => n.sentiment === 'neutral').length;
 
   const score = (positive * 100 + neutral * 75 - negative * 50) / notes.length;
   return Math.max(0, Math.min(100, score));
@@ -291,14 +291,14 @@ function calculateBehaviorScore(notes: EmployeeNote[]): number {
 
 function calculateLeaveHistoryScore(leaves: LeaveRequest[], user: User): number {
   const thisYear = new Date().getFullYear();
-  const thisYearLeaves = leaves.filter((l: any) => {
+  const thisYearLeaves = leaves.filter((l) => {
     const year = new Date(l.startDate).getFullYear();
     return year === thisYear;
   });
 
   const usedDays = thisYearLeaves
-    .filter((l: any) => l.status === 'approved')
-    .reduce((sum: any, l: any) => sum + l.days, 0);
+    .filter((l) => l.status === 'approved')
+    .reduce((sum, l) => sum + l.days, 0);
 
   const totalBalance = (user.paidLeaveBalance ?? 24) + (user.sickLeaveBalance ?? 10);
   const utilizationRate = totalBalance > 0 ? (usedDays / totalBalance) * 100 : 0;
@@ -329,8 +329,8 @@ function generateFactors(
   overlapping: LeaveRequest[],
   user: User,
 ) {
-  const positive = notes.filter((n: any) => n.sentiment === 'positive').length;
-  const negative = notes.filter((n: any) => n.sentiment === 'negative').length;
+  const positive = notes.filter((n) => n.sentiment === 'positive').length;
+  const negative = notes.filter((n) => n.sentiment === 'negative').length;
 
   return {
     performance: [

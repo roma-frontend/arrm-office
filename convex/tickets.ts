@@ -44,7 +44,7 @@ export const createTicket = mutation({
     const ticketsToday = await ctx.db
       .query('supportTickets')
       .withIndex('by_created')
-      .filter((q: any) => q.gte(q.field('createdAt'), new Date(datePart).getTime()))
+      .filter((q) => q.gte(q.field('createdAt'), new Date(datePart).getTime()))
       .take(SMALL_LIST_CAP);
     const seqNum = String(ticketsToday.length + 1).padStart(4, '0');
     const ticketNumber = `SUP-${datePart}-${seqNum}`;
@@ -157,16 +157,16 @@ export const getAllTickets = query({
 
     // Apply filters
     if (args.status) {
-      tickets = tickets.filter((t: any) => t.status === args.status);
+      tickets = tickets.filter((t) => t.status === args.status);
     }
     if (args.priority) {
-      tickets = tickets.filter((t: any) => t.priority === args.priority);
+      tickets = tickets.filter((t) => t.priority === args.priority);
     }
     if (args.organizationId) {
-      tickets = tickets.filter((t: any) => t.organizationId === args.organizationId);
+      tickets = tickets.filter((t) => t.organizationId === args.organizationId);
     }
     if (args.assignedTo) {
-      tickets = tickets.filter((t: any) => t.assignedTo === args.assignedTo);
+      tickets = tickets.filter((t) => t.assignedTo === args.assignedTo);
     }
 
     // Sort by priority (critical first) then by createdAt (newest first)
@@ -259,7 +259,7 @@ export const getTicketById = query({
       organizationName: org?.name || null,
       isOverdue:
         ticket.status !== 'closed' && ticket.slaDeadline && Date.now() > ticket.slaDeadline,
-      comments: enrichedComments.sort((a: any, b: any) => a.createdAt - b.createdAt),
+      comments: enrichedComments.sort((a, b) => a.createdAt - b.createdAt),
     };
   },
 });
@@ -274,27 +274,23 @@ export const getTicketStats = query({
 
     const stats = {
       total: tickets.length,
-      open: tickets.filter((t: any) => t.status === 'open').length,
-      inProgress: tickets.filter((t: any) => t.status === 'in_progress').length,
-      waitingCustomer: tickets.filter((t: any) => t.status === 'waiting_customer').length,
-      resolved: tickets.filter((t: any) => t.status === 'resolved').length,
-      closed: tickets.filter((t: any) => t.status === 'closed').length,
-      critical: tickets.filter((t: any) => t.priority === 'critical' && t.status !== 'closed')
+      open: tickets.filter((t) => t.status === 'open').length,
+      inProgress: tickets.filter((t) => t.status === 'in_progress').length,
+      waitingCustomer: tickets.filter((t) => t.status === 'waiting_customer').length,
+      resolved: tickets.filter((t) => t.status === 'resolved').length,
+      closed: tickets.filter((t) => t.status === 'closed').length,
+      critical: tickets.filter((t) => t.priority === 'critical' && t.status !== 'closed').length,
+      high: tickets.filter((t) => t.priority === 'high' && t.status !== 'closed').length,
+      overdue: tickets.filter((t) => t.status !== 'closed' && t.slaDeadline && now > t.slaDeadline)
         .length,
-      high: tickets.filter((t: any) => t.priority === 'high' && t.status !== 'closed').length,
-      overdue: tickets.filter(
-        (t: any) => t.status !== 'closed' && t.slaDeadline && now > t.slaDeadline,
-      ).length,
     };
 
     // Calculate average response time (for tickets with firstResponseAt)
-    const respondedTickets = tickets.filter((t: any) => t.firstResponseAt);
+    const respondedTickets = tickets.filter((t) => t.firstResponseAt);
     const avgResponseTime =
       respondedTickets.length > 0
-        ? respondedTickets.reduce(
-            (sum: any, t: any) => sum + (t.firstResponseAt! - t.createdAt),
-            0,
-          ) / respondedTickets.length
+        ? respondedTickets.reduce((sum, t) => sum + (t.firstResponseAt! - t.createdAt), 0) /
+          respondedTickets.length
         : 0;
 
     // Calculate resolution rate
@@ -337,7 +333,7 @@ export const updateTicketStatus = mutation({
     if (!ticket) throw new Error('Ticket not found');
 
     const now = Date.now();
-    const updates: any = {
+    const updates: Record<string, unknown> = {
       status: args.status,
       updatedAt: now,
     };
@@ -576,7 +572,7 @@ export const bulkUpdateTickets = mutation({
           firstTicketOrgId = ticket.organizationId;
         }
 
-        const updates: any = { updatedAt: now };
+        const updates = { updatedAt: now };
         if (args.status) updates.status = args.status;
         if (args.assignedTo !== undefined) updates.assignedTo = args.assignedTo;
 
@@ -585,7 +581,7 @@ export const bulkUpdateTickets = mutation({
       }),
     );
 
-    failed = results.filter((r: any) => r.status === 'rejected').length;
+    failed = results.filter((r) => r.status === 'rejected').length;
 
     // Audit log: bulk ticket update
     if (success > 0 && firstTicketOrgId) {
@@ -621,7 +617,7 @@ export const getMyTickets = query({
     );
 
     // Sort by createdAt descending
-    myTickets.sort((a: any, b: any) => b.createdAt - a.createdAt);
+    myTickets.sort((a, b) => b.createdAt - a.createdAt);
 
     // Enrich with basic data
     return await Promise.all(

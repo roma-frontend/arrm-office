@@ -16,26 +16,26 @@ export const getStats = query({
     const last24h = now - 24 * 60 * 60 * 1000;
     const last7d = now - 7 * 24 * 60 * 60 * 1000;
 
-    const recentTasks = tasks.filter((t: any) => t.createdAt > last24h);
-    const previousTasks = tasks.filter((t: any) => t.createdAt > last7d && t.createdAt <= last24h);
+    const recentTasks = tasks.filter((t) => t.createdAt > last24h);
+    const previousTasks = tasks.filter((t) => t.createdAt > last7d && t.createdAt <= last24h);
 
-    const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
-    const pendingTasks = tasks.filter((t: any) => t.status === 'pending').length;
-    const failedTasks = tasks.filter((t: any) => t.status === 'failed').length;
+    const completedTasks = tasks.filter((t) => t.status === 'completed').length;
+    const pendingTasks = tasks.filter((t) => t.status === 'pending').length;
+    const failedTasks = tasks.filter((t) => t.status === 'failed').length;
 
     const completedTrend = calculateTrend(
-      tasks.filter((t: any) => t.status === 'completed' && t.createdAt > last24h).length,
-      previousTasks.filter((t: any) => t.status === 'completed').length,
+      tasks.filter((t) => t.status === 'completed' && t.createdAt > last24h).length,
+      previousTasks.filter((t) => t.status === 'completed').length,
     );
 
     const pendingTrend = calculateTrend(
-      tasks.filter((t: any) => t.status === 'pending' && t.createdAt > last24h).length,
-      previousTasks.filter((t: any) => t.status === 'pending').length,
+      tasks.filter((t) => t.status === 'pending' && t.createdAt > last24h).length,
+      previousTasks.filter((t) => t.status === 'pending').length,
     );
 
     const failedTrend = calculateTrend(
-      tasks.filter((t: any) => t.status === 'failed' && t.createdAt > last24h).length,
-      previousTasks.filter((t: any) => t.status === 'failed').length,
+      tasks.filter((t) => t.status === 'failed' && t.createdAt > last24h).length,
+      previousTasks.filter((t) => t.status === 'failed').length,
     );
 
     const tasksTrend = calculateTrend(recentTasks.length, previousTasks.length);
@@ -49,7 +49,7 @@ export const getStats = query({
       completedTrend,
       pendingTrend,
       failedTrend,
-      activeWorkflows: workflows.filter((w: any) => w.isActive).length,
+      activeWorkflows: workflows.filter((w) => w.isActive).length,
     };
   },
 });

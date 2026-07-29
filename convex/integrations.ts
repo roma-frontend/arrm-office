@@ -351,6 +351,7 @@ export const syncIntegration = action({
  * `triggeredBy` is undefined for scheduled runs.
  */
 async function runSync(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   organizationId: Id<'organizations'>,
   provider: Provider,
@@ -399,7 +400,7 @@ async function runSync(
     });
 
     return { success: true, message: result.message };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const message = error?.message ? String(error.message) : 'Sync failed';
 
     await ctx.runMutation(internal.integrations.logSync, {
@@ -838,6 +839,7 @@ export function normalizeEmployees(
  * Third-party error bodies can echo back the credentials we sent, and they land
  * in sync logs shown in the UI. Truncate and strip anything secret-looking.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function safeErrorBody(body: string, config: any): string {
   let out = body.slice(0, 300);
   for (const field of SECRET_FIELDS) {
@@ -850,6 +852,22 @@ function safeErrorBody(body: string, config: any): string {
     out = out.split(config.imidAccessToken).join(SECRET_MASK);
   }
   return out;
+}
+
+/**
+ * Base64 of a UTF-8 string, for HTTP Basic credentials.
+ *
+ * `btoa` alone throws on any code point above U+00FF, so an Armenian username
+ * or password — entirely normal for an Armenian ERP — would fail the sync
+ * before a request was ever made. RFC 7617 §2.1 lets the client pick the
+ * charset and names UTF-8 as the one to prefer, so encode to UTF-8 bytes first
+ * and hand `btoa` the latin1 view it actually accepts.
+ */
+function basicAuthHeader(username: string, password: string): string {
+  const bytes = new TextEncoder().encode(`${username}:${password}`);
+  let latin1 = '';
+  for (const byte of bytes) latin1 += String.fromCharCode(byte);
+  return `Basic ${btoa(latin1)}`;
 }
 
 /** Join a base URL and path without doubling or dropping the separator. */
@@ -892,6 +910,7 @@ async function fetchJson(
   url: string,
   init: RequestInit,
   label: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
 ): Promise<unknown> {
   let response: Response;
@@ -900,7 +919,7 @@ async function fetchJson(
       ...init,
       signal: AbortSignal.timeout(20_000),
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     const reason = e?.name === 'TimeoutError' ? 'request timed out' : 'network error';
     throw new Error(`${label}: ${reason}`);
   }
@@ -934,6 +953,7 @@ async function fetchTokenEndpoint(
   url: string,
   params: Record<string, string>,
   label: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
 ): Promise<Record<string, unknown>> {
   try {
@@ -950,7 +970,7 @@ async function fetchTokenEndpoint(
       label,
       config,
     )) as Record<string, unknown>;
-  } catch (e: any) {
+  } catch (e: unknown) {
     const message = String(e?.message ?? '');
     // Only retry when the server rejected the *encoding*, not the credentials.
     if (!/\((400|415)\)/.test(message)) throw e;
@@ -984,9 +1004,11 @@ type SyncOutcome = {
 };
 
 async function performSync(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   organizationId: Id<'organizations'>,
   provider: Provider,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
 ): Promise<SyncOutcome> {
   switch (provider) {
@@ -1005,9 +1027,11 @@ async function performSync(
  * Fetch → normalize → upsert, shared by every provider that imports people.
  */
 async function importEmployees(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   organizationId: Id<'organizations'>,
   provider: Provider,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
   url: string,
   headers: Record<string, string>,
@@ -1070,8 +1094,10 @@ async function importEmployees(
 
 // ── Lucky Carrot Sync ──────────────────────────────────────────────────────
 async function syncLuckyCarrot(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   organizationId: Id<'organizations'>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
 ): Promise<SyncOutcome> {
   if (!config.apiKey || !config.apiUrl) {
@@ -1315,7 +1341,7 @@ export const ingestLuckyCarrotWebhook = internalAction({
     let records: unknown[];
     try {
       records = extractWebhookRecords(payload, auth.employeesListKey);
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         status: 'invalid',
         message: error?.message ? String(error.message) : 'Unrecognized payload shape',
@@ -1332,7 +1358,7 @@ export const ingestLuckyCarrotWebhook = internalAction({
     let normalized;
     try {
       normalized = normalizeEmployees(records, auth.fieldMap);
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         status: 'invalid',
         message: error?.message ? String(error.message) : 'Could not read the payload',
@@ -1447,8 +1473,10 @@ export const rotateWebhookSecret = mutation({
  * grant and caches the resulting token for signing/verification calls.
  */
 async function syncImid(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   organizationId: Id<'organizations'>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
 ): Promise<SyncOutcome> {
   if (!config.clientId || !config.clientSecret) {
@@ -1770,7 +1798,7 @@ export const imidLoginCallback = internalAction({
         code,
         redirectUri,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         status: 'error',
         message: error?.message ? String(error.message) : 'Token exchange failed',
@@ -1784,7 +1812,7 @@ export const imidLoginCallback = internalAction({
         organizationId,
         accessToken: tokenResult.accessToken,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         status: 'error',
         message: error?.message ? String(error.message) : 'Failed to fetch user info',
@@ -1814,7 +1842,7 @@ export const imidLoginCallback = internalAction({
         isNewUser: result.isNewUser,
         needsApproval: result.needsApproval,
       } as const;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         status: 'error',
         message: error?.message ? String(error.message) : 'Failed to create session',
@@ -2385,8 +2413,10 @@ export const getUserForVerification = internalQuery({
 
 // ── Armsoft (ՀԾ) Sync ─────────────────────────────────────────────────────
 async function syncArmsoft(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: any,
   organizationId: Id<'organizations'>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
 ): Promise<SyncOutcome> {
   if (!config.apiEndpoint) {
