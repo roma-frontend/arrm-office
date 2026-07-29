@@ -106,7 +106,7 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
         if (!counts || Object.keys(counts).length === 0) {
           return <p className="text-sm text-muted-foreground">{t('surveys.empty')}</p>;
         }
-        const total = Object.values(counts).reduce((s: any, v: any) => s + v, 0);
+        const total = Object.values(counts).reduce((s, v) => s + v, 0);
         return (
           <div className="space-y-2">
             {Object.entries(counts)
@@ -217,7 +217,7 @@ function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {departmentResults.map((dept: any) => (
+          {departmentResults.map((dept) => (
             <div key={dept.department} className="p-3 rounded-lg border bg-card">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium text-sm">{dept.department}</span>
@@ -226,6 +226,7 @@ function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }
                 </Badge>
               </div>
               <div className="space-y-2">
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 {dept.questionResults.map((qr: any) => {
                   const avg = qr.average;
                   if (avg !== undefined) {
@@ -263,7 +264,7 @@ function SurveyTrendsChart({ trends }: { trends: any[] }) {
     );
   }
 
-  const maxResponses = Math.max(...trends.map((t: any) => t.responseCount), 1);
+  const maxResponses = Math.max(...trends.map((t) => t.responseCount), 1);
 
   return (
     <Card>
@@ -275,7 +276,7 @@ function SurveyTrendsChart({ trends }: { trends: any[] }) {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {trends.map((trend: any) => {
+          {trends.map((trend) => {
             const barWidth = (trend.responseCount / maxResponses) * 100;
             return (
               <div key={trend.surveyId} className="space-y-1">
@@ -328,10 +329,11 @@ function ExportButton({
 
     try {
       const headers = ['Respondent', 'Department', 'Submitted At', ...exportData.questions];
-      const rows = exportData.exportData.map((row: any) =>
+      const rows = exportData.exportData.map((row) =>
         headers
-          .map((h: any) => {
-            const val = row[h];
+          .map((h) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const val = (row as any)[h];
             if (val === undefined || val === null) return '';
             const str = String(val);
             if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -524,7 +526,7 @@ export default function SurveyResultsDashboard() {
 
         {!survey.isAnonymous && (
           <TabsContent value="responses" className="space-y-4 mt-4">
-            {responses?.responses?.map((resp: any) => (
+            {responses?.responses?.map((resp) => (
               <Card key={resp.responseId}>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
@@ -552,10 +554,8 @@ export default function SurveyResultsDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {resp.answers.map((answer: any) => {
-                      const question = survey.questions?.find(
-                        (q: any) => q._id === answer.questionId,
-                      );
+                    {resp.answers.map((answer) => {
+                      const question = survey.questions?.find((q) => q._id === answer.questionId);
                       if (!question) return null;
                       return (
                         <div key={answer._id} className="flex items-start gap-2 text-sm">

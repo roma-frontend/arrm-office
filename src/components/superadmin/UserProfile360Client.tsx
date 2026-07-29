@@ -99,7 +99,7 @@ export default function UserProfile360Page() {
                     <AvatarFallback className="text-2xl">
                       {user.name
                         .split(' ')
-                        .map((n: any) => n[0])
+                        .map((n) => n[0])
                         .join('')
                         .toUpperCase()}
                     </AvatarFallback>
@@ -312,7 +312,7 @@ export default function UserProfile360Page() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {leaves.map((leave: any) => (
+                    {leaves.map((leave) => (
                       <div
                         key={leave._id}
                         className="p-4 rounded-lg border"
@@ -386,7 +386,7 @@ export default function UserProfile360Page() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {tasks.map((task: any) => (
+                    {tasks.map((task) => (
                       <div
                         key={task._id}
                         className="p-4 rounded-lg border"
@@ -465,7 +465,7 @@ export default function UserProfile360Page() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {driverRequests.map((req: any) => (
+                    {driverRequests.map((req) => (
                       <div
                         key={req._id}
                         className="p-4 rounded-lg border"
@@ -527,7 +527,7 @@ export default function UserProfile360Page() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {supportTickets.map((ticket: any) => (
+                    {supportTickets.map((ticket) => (
                       <div
                         key={ticket._id}
                         className="p-4 rounded-lg border"
@@ -585,7 +585,7 @@ export default function UserProfile360Page() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.notifications?.slice(0, 20).map((notif: any) => (
+                  {data.notifications?.slice(0, 20).map((notif) => (
                     <div
                       key={notif._id}
                       className={`p-3 rounded-lg border flex items-start gap-3 ${!notif.isRead ? 'bg-blue-500/5 border-blue-500/30' : ''}`}
@@ -623,7 +623,7 @@ export default function UserProfile360Page() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {loginAttempts?.slice(0, 20).map((attempt: any) => (
+                  {loginAttempts?.slice(0, 20).map((attempt) => (
                     <div
                       key={attempt._id}
                       className={`p-3 rounded-lg border flex items-start gap-3 ${!attempt.success ? 'bg-red-500/5 border-red-500/30' : ''}`}
@@ -641,11 +641,15 @@ export default function UserProfile360Page() {
                             style={{ color: 'var(--text-primary)' }}
                           >
                             {attempt.success ? 'Успешный вход' : 'Неудачная попытка'}
-                          </span>
-                          <Badge variant="outline">{attempt.authMethod || 'password'}</Badge>
+                          </span>{' '}
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          <Badge variant="outline">
+                            {(attempt as any).authMethod || 'password'}
+                          </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          <div>IP: {attempt.ipAddress || 'N/A'}</div>
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          <div>IP: {(attempt as any).ipAddress || 'N/A'}</div>
                           <div>Устройство: {attempt.userAgent || 'N/A'}</div>
                           {attempt.riskScore && (
                             <div>
@@ -686,7 +690,7 @@ export default function UserProfile360Page() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.chatMessages?.slice(0, 20).map((msg: any) => (
+                  {data.chatMessages?.slice(0, 20).map((msg) => (
                     <div
                       key={msg._id}
                       className="p-3 rounded-lg border"

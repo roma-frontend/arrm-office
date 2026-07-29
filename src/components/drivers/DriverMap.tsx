@@ -258,6 +258,7 @@ export function DriverMap({
 
     // Click handler for interactive mode
     if (interactive) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       map.on('click', async (e: any) => {
         const { lat, lng } = e.latlng;
         const cb = onLocationSelectRef.current;
@@ -422,6 +423,7 @@ export function DriverMap({
     if (!mapInstanceRef.current || !interactive) return;
     const map = mapInstanceRef.current;
     map.off('click');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     map.on('click', async (e: any) => {
       const { lat, lng } = e.latlng;
       const cb = onLocationSelectRef.current;

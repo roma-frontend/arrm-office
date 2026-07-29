@@ -124,12 +124,12 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
   const availableRecipients = useMemo(() => {
     if (!orgUsers) return [];
     return orgUsers
-      .filter((u: any) => u._id !== senderId && u.isActive && u.role !== 'superadmin')
-      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      .filter((u) => u._id !== senderId && u.isActive && u.role !== 'superadmin')
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [orgUsers, senderId]);
 
   const selectedRecipient = useMemo(
-    () => availableRecipients.find((u: any) => u._id === receiverId),
+    () => availableRecipients.find((u) => u._id === receiverId),
     [availableRecipients, receiverId],
   );
 
@@ -193,6 +193,7 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
       });
       toast.success(t('recognition.kudosSent'));
       onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('recognition.errors.sendFailed'));
     } finally {
@@ -282,7 +283,7 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
                   {t('recognition.wizard.selectRecipientHint')}
                 </p>
                 <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto p-1">
-                  {availableRecipients.map((user: any) => (
+                  {availableRecipients.map((user) => (
                     <button
                       key={user._id}
                       type="button"

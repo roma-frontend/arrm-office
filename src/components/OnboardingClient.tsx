@@ -79,8 +79,8 @@ export default function OnboardingClient() {
   const [showTemplateWizard, setShowTemplateWizard] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<Id<'onboardingPrograms'> | null>(null);
 
-  const activeCount = programs?.filter((p: any) => p.status === 'active').length ?? 0;
-  const completedCount = programs?.filter((p: any) => p.status === 'completed').length ?? 0;
+  const activeCount = programs?.filter((p) => p.status === 'active').length ?? 0;
+  const completedCount = programs?.filter((p) => p.status === 'completed').length ?? 0;
 
   return (
     <div className="">
@@ -213,7 +213,7 @@ export default function OnboardingClient() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {programs.map((prog: any) => (
+              {programs.map((prog) => (
                 <Card
                   key={prog._id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
@@ -288,7 +288,7 @@ export default function OnboardingClient() {
               </Card>
             ) : (
               <div className="grid gap-3 md:grid-cols-2">
-                {templates.map((tpl: any) => (
+                {templates.map((tpl) => (
                   <Card key={tpl._id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
@@ -413,7 +413,7 @@ function MyOnboardingView({
       </Card>
 
       <div className="space-y-2">
-        {program.tasks.map((task: any) => (
+        {program.tasks.map((task) => (
           <Card key={task._id} className={task.status === 'completed' ? 'opacity-60' : ''}>
             <CardContent className="p-3 flex items-center gap-3">
               {task.status === 'completed' ? (
@@ -532,7 +532,7 @@ function ProgramDetailDialog({
               <p className="text-sm font-semibold">
                 {t('onboarding.tasks', 'Tasks')} ({program.completedTasks}/{program.totalTasks})
               </p>
-              {program.tasks.map((task: any) => (
+              {program.tasks.map((task) => (
                 <div
                   key={task._id}
                   className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
@@ -708,8 +708,8 @@ function StartOnboardingWizard({
                   </SelectTrigger>
                   <SelectContent>
                     {templates
-                      .filter((t: any) => t)
-                      .map((tpl: any) => (
+                      .filter((t) => t)
+                      .map((tpl) => (
                         <SelectItem key={tpl._id} value={tpl._id}>
                           {tpl.name}
                         </SelectItem>
@@ -968,7 +968,7 @@ function CreateTemplateWizard({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ASSIGNEE_TYPES.map((at: any) => (
+                      {ASSIGNEE_TYPES.map((at) => (
                         <SelectItem key={at} value={at}>
                           {t(`onboarding.assigneeType.${at}`, at)}
                         </SelectItem>
@@ -985,7 +985,7 @@ function CreateTemplateWizard({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {CATEGORIES.map((c: any) => (
+                      {CATEGORIES.map((c) => (
                         <SelectItem key={c} value={c}>
                           {t(`onboarding.category.${c}`, c)}
                         </SelectItem>

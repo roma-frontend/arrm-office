@@ -262,7 +262,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
         title: title.trim(),
         description: description.trim() || undefined,
         isAnonymous,
-        questions: questions.map((q: any) => ({
+        questions: questions.map((q) => ({
           type: q.type,
           text: q.text,
           description: q.description,
@@ -272,6 +272,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
       });
       toast.success(t('surveys.created'));
       onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('surveys.errors.createFailed'));
     } finally {
@@ -625,9 +626,9 @@ function TakeSurveyDialog({
   const handleSubmit = async () => {
     if (!surveyData) return;
 
-    const requiredQuestions = surveyData.questions.filter((q: any) => q.isRequired);
+    const requiredQuestions = surveyData.questions.filter((q) => q.isRequired);
     const missingRequired = requiredQuestions.filter(
-      (q: any) => !answers[q._id] && answers[q._id] !== 0 && answers[q._id] !== false,
+      (q) => !answers[q._id] && answers[q._id] !== 0 && answers[q._id] !== false,
     );
     if (missingRequired.length > 0) {
       toast.error(t('surveys.errors.requiredFields'));
@@ -637,8 +638,8 @@ function TakeSurveyDialog({
     setIsSubmitting(true);
     try {
       const formattedAnswers = surveyData.questions
-        .filter((q: any) => answers[q._id] !== undefined)
-        .map((q: any) => {
+        .filter((q) => answers[q._id] !== undefined)
+        .map((q) => {
           const answer: any = { questionId: q._id };
           const val = answers[q._id];
           switch (q.type) {
@@ -668,6 +669,7 @@ function TakeSurveyDialog({
 
       toast.success(t('surveys.responseSubmitted'));
       onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('surveys.errors.submitFailed'));
     } finally {
@@ -688,7 +690,7 @@ function TakeSurveyDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-6 py-4">
-          {surveyData.questions.map((question: any, idx: any) => (
+          {surveyData.questions.map((question, idx) => (
             <div key={question._id} className="space-y-2">
               <div className="flex items-start gap-2">
                 <span className="text-xs text-muted-foreground font-mono mt-0.5">{idx + 1}.</span>
@@ -706,7 +708,7 @@ function TakeSurveyDialog({
               {/* Rating input */}
               {question.type === 'rating' && (
                 <div className="flex gap-1 ml-5">
-                  {[1, 2, 3, 4, 5].map((val: any) => (
+                  {[1, 2, 3, 4, 5].map((val) => (
                     <button
                       key={val}
                       type="button"
@@ -728,7 +730,7 @@ function TakeSurveyDialog({
               {/* NPS input (0-10) */}
               {question.type === 'nps' && (
                 <div className="flex flex-wrap gap-1 ml-5">
-                  {Array.from({ length: 11 }, (_, i) => i).map((val: any) => (
+                  {Array.from({ length: 11 }, (_, i) => i).map((val) => (
                     <button
                       key={val}
                       type="button"
@@ -748,7 +750,7 @@ function TakeSurveyDialog({
               {/* Multiple choice */}
               {question.type === 'multiple_choice' && question.options && (
                 <div className="space-y-1 ml-5">
-                  {question.options.map((option: any) => {
+                  {question.options.map((option) => {
                     const selected = (answers[question._id] || []).includes(option);
                     return (
                       <button
@@ -1077,6 +1079,7 @@ export function SurveysClient() {
     try {
       await publishMutation({ surveyId, organizationId: orgId });
       toast.success(t('surveys.published'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('surveys.errors.publishFailed'));
     }
@@ -1087,6 +1090,7 @@ export function SurveysClient() {
     try {
       await closeMutation({ surveyId, organizationId: orgId });
       toast.success(t('surveys.closed'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('surveys.errors.closeFailed'));
     }
@@ -1097,6 +1101,7 @@ export function SurveysClient() {
     try {
       await deleteMutation({ surveyId, organizationId: orgId });
       toast.success(t('surveys.deleted'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error(error.message || t('surveys.errors.deleteFailed'));
     }
@@ -1200,7 +1205,7 @@ export function SurveysClient() {
             </CardContent>
           </Card>
         ) : (
-          surveys.map((survey: any) => (
+          surveys.map((survey) => (
             <Card
               key={survey._id}
               className="hover:shadow-sm transition-shadow cursor-pointer"

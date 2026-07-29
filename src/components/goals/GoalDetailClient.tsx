@@ -310,7 +310,7 @@ export default function GoalDetailClient() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {goal.keyResults.map((kr: any) => (
+              {goal.keyResults.map((kr) => (
                 <div key={kr._id} className="border rounded-lg p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">{kr.title}</h4>
@@ -345,7 +345,7 @@ export default function GoalDetailClient() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {goal.children.map((child: any) => (
+              {goal.children.map((child) => (
                 <div
                   key={child._id}
                   className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
@@ -355,7 +355,8 @@ export default function GoalDetailClient() {
                     <Target className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="font-medium">{child.title}</p>
-                      <p className="text-sm text-muted-foreground">{child.ownerName}</p>
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      <p className="text-sm text-muted-foreground">{(child as any).ownerName}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -433,13 +434,13 @@ export default function GoalDetailClient() {
               {/* Task Completion Stats */}
               {(() => {
                 const total = linkedTasks.length;
-                const completed = linkedTasks.filter((t: any) => t.status === 'completed').length;
+                const completed = linkedTasks.filter((t) => t.status === 'completed').length;
                 const inProgress = linkedTasks.filter(
-                  (t: any) => t.status === 'in_progress' || t.status === 'review',
+                  (t) => t.status === 'in_progress' || t.status === 'review',
                 ).length;
-                const pending = linkedTasks.filter((t: any) => t.status === 'pending').length;
+                const pending = linkedTasks.filter((t) => t.status === 'pending').length;
                 const overdue = linkedTasks.filter(
-                  (t: any) =>
+                  (t) =>
                     t.deadline && new Date(t.deadline) < new Date() && t.status !== 'completed',
                 ).length;
                 const completionPct = Math.round((completed / total) * 100);
@@ -481,7 +482,7 @@ export default function GoalDetailClient() {
 
               {/* Task List */}
               <div className="space-y-2">
-                {linkedTasks.map((task: any) => {
+                {linkedTasks.map((task) => {
                   const statusColors: Record<string, string> = {
                     pending: 'border-l-yellow-500',
                     in_progress: 'border-l-blue-500',

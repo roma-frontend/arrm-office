@@ -66,8 +66,8 @@ export default function OffboardingClient() {
   const [showWizard, setShowWizard] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<Id<'offboardingPrograms'> | null>(null);
 
-  const activeCount = programs?.filter((p: any) => p.status === 'active').length ?? 0;
-  const completedCount = programs?.filter((p: any) => p.status === 'completed').length ?? 0;
+  const activeCount = programs?.filter((p) => p.status === 'active').length ?? 0;
+  const completedCount = programs?.filter((p) => p.status === 'completed').length ?? 0;
 
   return (
     <div className="">
@@ -167,7 +167,7 @@ export default function OffboardingClient() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {programs.map((prog: any) => (
+              {programs.map((prog) => (
                 <Card
                   key={prog._id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
@@ -434,7 +434,7 @@ function ProgramDetailDialog({
                 {t('offboarding.checklist', 'Checklist')} ({program.completedTasks}/
                 {program.totalTasks})
               </p>
-              {program.tasks.map((task: any) => (
+              {program.tasks.map((task) => (
                 <div
                   key={task._id}
                   className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
@@ -486,7 +486,7 @@ function ProgramDetailDialog({
                   <Package className="h-4 w-4" />
                   {t('assets.title', 'Assets to Return')} ({activeAssets.length})
                 </p>
-                {activeAssets.map((a: any) => (
+                {activeAssets.map((a) => (
                   <div
                     key={a.assignmentId}
                     className="flex items-center gap-3 p-2.5 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20"
@@ -758,7 +758,7 @@ function StartOffboardingWizard({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {REASONS.map((r: any) => (
+                    {REASONS.map((r) => (
                       <SelectItem key={r} value={r}>
                         {t(`offboarding.reason.${r}`, r)}
                       </SelectItem>

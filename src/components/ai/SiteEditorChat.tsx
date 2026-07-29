@@ -377,7 +377,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
         <Card className="flex-1 flex flex-col min-h-0">
           <ScrollArea className="flex-1 p-4" ref={scrollRef}>
             <div className="space-y-4">
-              {messages.map((msg: any, idx: any) => (
+              {messages.map((msg, idx) => (
                 <div
                   key={idx}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -415,7 +415,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
                         <p className="text-xs font-medium text-muted-foreground mb-1">
                           📂 Изменённые файлы:
                         </p>
-                        {msg.appliedFiles.map((af: any) => {
+                        {msg.appliedFiles.map((af) => {
                           const key = `${af.filePath}:${af.timestamp}`;
                           const isRollingThisBack = rollingBack === key;
                           return (
@@ -521,7 +521,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
 
             {showBackups && (
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {backups.slice(0, 20).map((b: any) => {
+                {backups.slice(0, 20).map((b) => {
                   const key = `${b.originalPath}:${b.timestamp}`;
                   const isRollingThisBack = rollingBack === key;
                   return (
@@ -570,7 +570,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
               {t('aiSiteEditor.recentChanges')}
             </h3>
             <div className="space-y-2">
-              {history.slice(0, 5).map((session: any) => (
+              {history.slice(0, 5).map((session) => (
                 <div
                   key={session._id}
                   className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50 transition-colors"

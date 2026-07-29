@@ -164,7 +164,7 @@ export default function ComplianceClient() {
     return true;
   });
 
-  const filteredAuditLogs = auditLogs?.filter((log: any) => {
+  const filteredAuditLogs = auditLogs?.filter((log) => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -177,7 +177,7 @@ export default function ComplianceClient() {
     return true;
   });
 
-  const filteredDataAccessLogs = dataAccessLogs?.filter((log: any) => {
+  const filteredDataAccessLogs = dataAccessLogs?.filter((log) => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -469,7 +469,7 @@ export default function ComplianceClient() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredAuditLogs.map((log: any) => (
+              {filteredAuditLogs.map((log) => (
                 <div
                   key={log._id}
                   className="rounded-lg p-4 flex items-center gap-4 border"
@@ -538,7 +538,7 @@ export default function ComplianceClient() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredGdprRequests.map((req: any) => (
+              {filteredGdprRequests.map((req) => (
                 <div
                   key={req._id}
                   className="rounded-lg p-4 border"
@@ -628,7 +628,7 @@ export default function ComplianceClient() {
             </div>
           ) : (
             <div className="space-y-2">
-              {consents.map((consent: any) => (
+              {consents.map((consent) => (
                 <div
                   key={consent._id}
                   className="rounded-lg p-4 flex items-center gap-4 border"
@@ -698,7 +698,7 @@ export default function ComplianceClient() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredDataAccessLogs.map((log: any) => (
+              {filteredDataAccessLogs.map((log) => (
                 <div
                   key={log._id}
                   className="rounded-lg p-4 flex items-center gap-4 border"
@@ -754,7 +754,7 @@ export default function ComplianceClient() {
             </div>
           ) : (
             <div className="space-y-2">
-              {policies.map((policy: any) => (
+              {policies.map((policy) => (
                 <div
                   key={policy._id}
                   className="rounded-lg p-4 border"

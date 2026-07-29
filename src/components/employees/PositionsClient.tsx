@@ -133,7 +133,7 @@ function PositionWizard({
   };
 
   const departmentOptions =
-    departments?.map((dept: any) => ({
+    departments?.map((dept) => ({
       value: dept._id,
       title: dept.name,
       description: dept.description || '',
@@ -195,7 +195,7 @@ function PositionWizard({
               </SelectTrigger>
               <SelectContent>
                 {departmentOptions.length > 0 ? (
-                  departmentOptions.map((dept: any) => (
+                  departmentOptions.map((dept) => (
                     <SelectItem key={dept.value} value={dept.value}>
                       {dept.title}
                     </SelectItem>
@@ -287,7 +287,7 @@ function PositionWizard({
                 </span>
                 <span className="font-medium text-text-primary">
                   {(() => {
-                    const dept = departments?.find((d: any) => d._id === wizardData.departmentId);
+                    const dept = departments?.find((d) => d._id === wizardData.departmentId);
                     return dept?.name || t('positionWizard.steps.review.notSpecified');
                   })()}
                 </span>
@@ -480,6 +480,7 @@ export default function PositionsClient() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEdit = (pos: any) => {
     setEditingPosition(pos);
     setShowWizard(true);
@@ -497,13 +498,13 @@ export default function PositionsClient() {
 
   const getDepartmentName = (deptId: string | undefined) => {
     if (!deptId || !departments) return '';
-    const dept = departments.find((d: any) => d._id === deptId);
+    const dept = departments.find((d) => d._id === deptId);
     return dept?.name || '';
   };
 
   const getDepartmentColor = (deptId: string | undefined) => {
     if (!deptId || !departments) return '#6B7280';
-    const dept = departments.find((d: any) => d._id === deptId);
+    const dept = departments.find((d) => d._id === deptId);
     return dept?.color || '#6B7280';
   };
 

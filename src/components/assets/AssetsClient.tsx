@@ -500,6 +500,7 @@ function AssetDetailCard({
   onClose: () => void;
   userId: Id<'users'>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setQrCodeAsset: (a: any) => void;
 }) {
   const { t } = useTranslation();
@@ -840,6 +841,7 @@ function AssetDetailCard({
               {t('assets.assignmentHistory')}
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               {asset.assignments.slice(0, 5).map((a: any) => (
                 <div
                   key={a._id}
@@ -872,6 +874,7 @@ function AssetDetailCard({
               {t('assets.maintenanceHistory')}
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               {asset.maintenanceHistory.slice(0, 5).map((m: any) => (
                 <div
                   key={m._id}
@@ -905,6 +908,7 @@ function QRButton({
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
   asset: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setQrCodeAsset: (a: any) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1746,7 +1750,7 @@ export default function AssetsClient() {
 
                         {/* History */}
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {employeeAssets.filter((a: any) => a.status !== 'active').length > 0 && (
+                        {employeeAssets.filter((a) => a.status !== 'active').length > 0 && (
                           <div className="mt-6">
                             <h4 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">
                               <History className="w-4 h-4" />
@@ -1754,9 +1758,9 @@ export default function AssetsClient() {
                             </h4>
                             <div className="space-y-2">
                               {employeeAssets
-                                .filter((a: any) => a.status !== 'active')
+                                .filter((a) => a.status !== 'active')
                                 .slice(0, 5)
-                                .map((a: any) => (
+                                .map((a) => (
                                   <div
                                     key={a._id}
                                     className="flex items-center justify-between p-3 rounded-lg bg-(--background-subtle) border border-(--border) text-sm"
@@ -1783,7 +1787,7 @@ export default function AssetsClient() {
                               {t('assets.myRequests')}
                             </h4>
                             <div className="space-y-2">
-                              {myRequests.slice(0, 5).map((r: any) => (
+                              {myRequests.slice(0, 5).map((r) => (
                                 <div
                                   key={r._id}
                                   className="flex items-center justify-between p-3 rounded-lg bg-(--background-subtle) border border-(--border) text-sm"
@@ -1823,7 +1827,7 @@ export default function AssetsClient() {
                   <CardContent>
                     {requests && requests.length > 0 ? (
                       <div className="space-y-3">
-                        {requests.map((req: any) => {
+                        {requests.map((req) => {
                           const urgencyColors: Record<string, string> = {
                             low: 'bg-slate-500/15 text-slate-500',
                             medium: 'bg-amber-500/15 text-amber-500',
@@ -1914,7 +1918,7 @@ export default function AssetsClient() {
                   <CardContent>
                     {maintenanceRecords && maintenanceRecords.length > 0 ? (
                       <div className="space-y-3">
-                        {maintenanceRecords.map((m: any) => {
+                        {maintenanceRecords.map((m) => {
                           const typeIcons: Record<string, string> = {
                             scheduled: '🔧',
                             repair: '🔨',
@@ -1984,7 +1988,7 @@ export default function AssetsClient() {
                             boxShadow: tooltipShadow,
                           }}
                           labelStyle={{ color: tooltipColor, fontWeight: 500 }}
-                          formatter={(value: any, _name: any) => [value, t('assets.count')]}
+                          formatter={(value, _name) => [value, t('assets.count')]}
                         />
                         <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                           {categoryChartData.map((entry: any, idx: number) => (

@@ -308,8 +308,8 @@ export default function DepartmentsClient() {
     const largest =
       total > 0
         ? departments.reduce(
-            (max: any, d: any) => ((d.employeeCount || 0) > (max.employeeCount || 0) ? d : max),
-            departments[0],
+            (max, d) => ((d.employeeCount || 0) > (max?.employeeCount || 0) ? d : max),
+            departments[0]!,
           )
         : null;
     return { total, avgEmployees, largest };
@@ -325,6 +325,7 @@ export default function DepartmentsClient() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEdit = (dept: any) => {
     setEditingDepartment(dept);
     setShowWizard(true);

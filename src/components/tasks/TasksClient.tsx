@@ -214,6 +214,7 @@ function TaskCardContent({ task, isDragging = false }: { task: any; isDragging?:
       )}
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           {task.tags.slice(0, 3).map((tag: any) => (
             <span
               key={tag}
@@ -322,6 +323,7 @@ function DroppableKanbanColumn({
 }: {
   status: Status;
   tasks: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onOpen: (t: any) => void;
 }) {
   const cfg = STATUS_CONFIG[status];
