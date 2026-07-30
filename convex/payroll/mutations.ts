@@ -616,7 +616,7 @@ export const updatePayrollRecord = mutation({
       throw new Error(`Overtime hours exceed the configured maximum (${maxOvertime})`);
     }
 
-    const updates: Record<string, any> = {
+    const updates: Record<string, unknown> = {
       updatedAt: Date.now(),
     };
 

@@ -31,7 +31,7 @@ export function normalizePageSize(pageSize?: number): number {
 /**
  * Parse cursor from base64
  */
-export function decodeCursor(cursor: string): Record<string, any> {
+export function decodeCursor(cursor: string): Record<string, unknown> {
   try {
     return JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'));
   } catch {
@@ -42,7 +42,7 @@ export function decodeCursor(cursor: string): Record<string, any> {
 /**
  * Encode cursor to base64
  */
-export function encodeCursor(data: Record<string, any>): string {
+export function encodeCursor(data: Record<string, unknown>): string {
   return Buffer.from(JSON.stringify(data)).toString('base64');
 }
 

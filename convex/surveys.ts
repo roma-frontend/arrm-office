@@ -973,7 +973,7 @@ export const getSurveyExportData = query({
           .withIndex('by_response', (q) => q.eq('responseId', resp._id))
           .take(DEFAULT_LIST_CAP);
 
-        const answerMap: Record<string, any> = {};
+        const answerMap: Record<string, unknown> = {};
         answers.forEach((ans) => {
           const question = questions.find((q) => q._id === ans.questionId);
           if (question) {

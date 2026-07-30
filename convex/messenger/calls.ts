@@ -86,7 +86,7 @@ export const endCall = mutation({
     if (!call) throw new Error('Call not found');
 
     // Update call with duration
-    const patch: Record<string, any> = {
+    const patch: Record<string, unknown> = {
       callDuration: duration,
       content: `Call ended (${duration ? Math.floor(duration / 60) : 0}m ${duration ? duration % 60 : 0}s)`,
     };

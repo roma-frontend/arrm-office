@@ -155,7 +155,7 @@ export const sendMessage = mutation({
       members
         .filter((m) => m.userId !== args.senderId && !m.isMuted)
         .map((m) => {
-          const patch: Record<string, any> = { unreadCount: m.unreadCount + 1 };
+          const patch: Record<string, unknown> = { unreadCount: m.unreadCount + 1 };
           if (m.isDeleted) {
             patch.isDeleted = false;
             patch.deletedAt = undefined;

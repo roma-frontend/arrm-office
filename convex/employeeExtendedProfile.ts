@@ -63,7 +63,7 @@ export const updateExtendedProfile = mutation({
       .first();
 
     const now = Date.now();
-    const patch: Record<string, any> = { updatedAt: now };
+    const patch: Record<string, unknown> = { updatedAt: now };
 
     // Only include fields that were actually provided
     const optionalFields = [

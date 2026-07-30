@@ -357,7 +357,7 @@ export const updateDriverRequest = mutation({
     }
 
     // Update the request fields
-    const patch: Record<string, any> = {
+    const patch: Record<string, unknown> = {
       updatedAt: Date.now(),
       status: 'pending' as const,
       reviewedAt: undefined,

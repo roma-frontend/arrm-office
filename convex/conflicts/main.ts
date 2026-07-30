@@ -48,7 +48,7 @@ export interface Conflict {
   relatedEventId?: Id<'companyEvents'>;
   relatedTaskId?: Id<'tasks'>;
   relatedRequestId?: Id<'driverRequests'>;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
