@@ -12,7 +12,6 @@ const pdfMakeTyped = pdfMake as any;
 const pdfFontsTyped = pdfFonts as any;
 pdfMakeTyped.vfs = pdfFontsTyped.pdfMake?.vfs || pdfFontsTyped.vfs;
 
-
 interface TripData {
   date: string;
   driver: string;

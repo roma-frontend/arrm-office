@@ -144,7 +144,8 @@ export async function createGoogleCalendarEvent(accessToken: string, event: Cale
 
   if (!response.ok) {
     throw new Error('Failed to create Google Calendar event');
-  }    const eventResponse = (await response.json()) as { id: string };
+  }
+  const eventResponse = (await response.json()) as { id: string };
   return eventResponse;
 }
 
@@ -180,7 +181,8 @@ export async function createOutlookCalendarEvent(accessToken: string, event: Cal
 
   if (!response.ok) {
     throw new Error('Failed to create Outlook Calendar event');
-  }    const eventResponse = (await response.json()) as { id: string };
+  }
+  const eventResponse = (await response.json()) as { id: string };
   return eventResponse;
 }
 

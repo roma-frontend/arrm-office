@@ -102,7 +102,8 @@ async function createJwtSession(userData: {
 
     if (res.ok) {
       const data = (await res.json()) as JwtSessionData;
-      if (data.session) {          const { login } = useAuthStore.getState();
+      if (data.session) {
+        const { login } = useAuthStore.getState();
         login({
           id: data.session.userId,
           name: data.session.name,
@@ -111,7 +112,10 @@ async function createJwtSession(userData: {
           avatar: data.session.avatar ?? undefined,
           department: data.session.department ?? undefined,
           position: data.session.position ?? undefined,
-          employeeType: (data.session.employeeType ?? undefined) as 'staff' | 'contractor' | undefined,
+          employeeType: (data.session.employeeType ?? undefined) as
+            | 'staff'
+            | 'contractor'
+            | undefined,
           organizationId: data.session.organizationId ?? undefined,
           organizationSlug: data.session.organizationSlug ?? undefined,
           organizationName: data.session.organizationName ?? undefined,
@@ -179,13 +183,21 @@ export function useAuthSync() {
           id: jwtSession.userId,
           name: jwtSession.name || 'User',
           email: jwtSession.email || '',
-          role: (jwtSession.role || 'employee') as 'admin' | 'superadmin' | 'supervisor' | 'employee' | 'driver',
+          role: (jwtSession.role || 'employee') as
+            | 'admin'
+            | 'superadmin'
+            | 'supervisor'
+            | 'employee'
+            | 'driver',
           organizationId: jwtSession.organizationId ?? undefined,
           organizationSlug: jwtSession.organizationSlug ?? undefined,
           organizationName: jwtSession.organizationName ?? undefined,
           department: jwtSession.department ?? undefined,
           position: jwtSession.position ?? undefined,
-          employeeType: (jwtSession.employeeType || undefined) as 'staff' | 'contractor' | undefined,
+          employeeType: (jwtSession.employeeType || undefined) as
+            | 'staff'
+            | 'contractor'
+            | undefined,
           avatar: jwtSession.avatar ?? undefined,
           impersonation: jwtSession.impersonation
             ? {
@@ -243,7 +255,8 @@ export function useAuthSync() {
 
     if (currentUser) {
       let finalName = currentUser.name;
-      if (currentUser.name === 'User' || !currentUser.name) {          const sessionName = session.user.name?.trim() || '';
+      if (currentUser.name === 'User' || !currentUser.name) {
+        const sessionName = session.user.name?.trim() || '';
         if (sessionName && sessionName !== 'User') {
           finalName = sessionName;
         }

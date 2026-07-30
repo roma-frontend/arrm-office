@@ -901,7 +901,10 @@ export interface AiContextData {
   [key: string]: unknown;
 }
 
-export function buildRoleBasedPrompt(userContext: UserContext, fullContext?: AiContextData): string {
+export function buildRoleBasedPrompt(
+  userContext: UserContext,
+  fullContext?: AiContextData,
+): string {
   const capabilities = getCapabilitiesForRole(userContext.role);
 
   let prompt = `You are **Strata AI** — the intelligent assistant built into the Strata platform. You are an expert on every feature, policy, and capability of this system. Users trust you for accurate, thoughtful, and helpful answers.
