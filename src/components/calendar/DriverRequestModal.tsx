@@ -458,41 +458,41 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                       {alternativeDrivers
                         .filter((d): d is NonNullable<typeof d> => Boolean(d))
                         .map((driver) => (
-                        <div
-                          key={driver._id}
-                          className="flex items-center justify-between p-2 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={driver.userAvatar} />
-                              <AvatarFallback>{driver.userName?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="text-sm">
-                              <p className="font-medium text-amber-900 dark:text-amber-100">
-                                {driver.userName}
-                              </p>
-                              <p className="text-xs text-amber-700 dark:text-amber-300">
-                                {driver.vehicleInfo?.model} • {driver.vehicleInfo?.plateNumber}
-                                {driver.vehicleInfo?.capacity &&
-                                  ` • ${driver.vehicleInfo.capacity} ${t('driver.seats', 'мест')}`}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 text-xs border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900"
-                            onClick={() => {
-                              setSelectedDriver(driver._id);
-                              toast.success(
-                                `${t('driver.driverSelected', 'Выбран водитель')}: ${driver.userName}`,
-                              );
-                            }}
+                          <div
+                            key={driver._id}
+                            className="flex items-center justify-between p-2 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700"
                           >
-                            {t('driver.select', 'Выбрать')}
-                          </Button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={driver.userAvatar} />
+                                <AvatarFallback>{driver.userName?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="text-sm">
+                                <p className="font-medium text-amber-900 dark:text-amber-100">
+                                  {driver.userName}
+                                </p>
+                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                  {driver.vehicleInfo?.model} • {driver.vehicleInfo?.plateNumber}
+                                  {driver.vehicleInfo?.capacity &&
+                                    ` • ${driver.vehicleInfo.capacity} ${t('driver.seats', 'мест')}`}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900"
+                              onClick={() => {
+                                setSelectedDriver(driver._id);
+                                toast.success(
+                                  `${t('driver.driverSelected', 'Выбран водитель')}: ${driver.userName}`,
+                                );
+                              }}
+                            >
+                              {t('driver.select', 'Выбрать')}
+                            </Button>
+                          </div>
+                        ))}
                     </div>
                   </div>
                 )}

@@ -84,7 +84,9 @@ run-lighthouse.js
 analyze-lighthouse.js
 
 # JSON analysis files (temporary)
+# numeric suffixes too (eslint-report2.json) — these get committed by accident
 *-report.json
+*-report[0-9]*.json
 *-analysis.json
 
 # Windows
