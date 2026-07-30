@@ -29,9 +29,19 @@ export default defineConfig({
   webServer: process.env.E2E_BASE_URL
     ? undefined
     : {
-        command: 'npm run dev',
-        url: 'http://localhost:3000',
-        reuseExistingServer: true,
+        // CI runs the *production* server against a real build. `next dev`
+        // (Turbopack) compiles routes on demand, and on 2026-07-30 it came up
+        // with a broken route tree: the root layout rendered, but every nested
+        // route — /login, /api/auth/* — 404'd for the entire run, failing all
+        // 9 auth tests. A rerun of the same SHA passed, confirming a race
+        // rather than a code regression. `next start` serves a prebuilt
+        // manifest, so there is no such window.
+        command: process.env.CI ? 'npm run start' : 'npm run dev',
+        // Probe a real nested route rather than '/'. Playwright treats any
+        // status < 404 as "ready", so probing '/' would have accepted exactly
+        // the broken state above — the root served fine while routes 404'd.
+        url: 'http://localhost:3000/login',
+        reuseExistingServer: !process.env.CI,
         timeout: 120_000,
       },
 });

@@ -107,6 +107,7 @@ export function useIdleTimer({ onIdle, onActive, onLogout }: UseIdleTimerOptions
         window.removeEventListener(event, handleActivity);
       });
     };
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only initialisation
   }, [startIdleTimer, resetTimer, clearAllTimers]);
 
   return {

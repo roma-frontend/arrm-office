@@ -328,6 +328,23 @@ jobs:
         run: npx playwright install --with-deps chromium firefox webkit
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium firefox webkit
+      # Playwright serves the suite with `next start` on CI (see
+      # playwright.config.ts), which needs a real build. Built here rather than
+      # reusing the `build` job's artifact so the build- and run-time env match
+      # exactly — that job builds with the production NEXTAUTH_URL.
+      - name: Build for E2E
+        run: npm run build
+        env:
+          NEXTAUTH_SECRET: test-secret-for-ci-only-not-for-production
+          AUTH_SECRET: test-secret-for-ci-only-not-for-production
+          JWT_SECRET: test-secret-for-ci-only-not-for-production-32chars-xxx
+          CSRF_SECRET: test-secret-for-ci-only-not-for-production
+          NEXTAUTH_URL: http://localhost:3000
+          AUTH_URL: http://localhost:3000
+          CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT || 'dev:build-placeholder' }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL || 'https://build-placeholder.convex.cloud' }}
+          AUTH_GOOGLE_ID: build-placeholder
+          AUTH_GOOGLE_SECRET: build-placeholder
       - run: npm run test:e2e
         env:
           NEXTAUTH_SECRET: test-secret-for-ci-only-not-for-production

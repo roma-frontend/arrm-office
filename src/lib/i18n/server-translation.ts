@@ -18,7 +18,8 @@ function loadNamespace(locale: string, ns: string): Record<string, unknown> {
 
   try {
     const filePath = join(process.cwd(), 'public', 'locales', locale, `${ns}.json`);
-    const data = JSON.parse(readFileSync(filePath, 'utf-8'));
+    const fileContent = readFileSync(filePath, 'utf-8');
+    const data = JSON.parse(fileContent) as Record<string, unknown>;
     cache.set(cacheKey, data);
     return data;
   } catch {

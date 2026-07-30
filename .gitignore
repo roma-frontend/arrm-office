@@ -124,6 +124,14 @@ test-output*.txt
 typecheck-output.txt
 setup-hr-testing.sh
 
+# ESLint report artifacts (generated during lint runs)
+eslint_current.json
+eslint_final_*.json
+eslint_hooks*.json
+eslint_lib*.json
+eslint_nocache*.json
+eslint_targets.json
+
 # Reports and analysis directories
 /reports/
 tests/

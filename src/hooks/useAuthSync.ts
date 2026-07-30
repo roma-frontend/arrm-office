@@ -5,9 +5,55 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import type { Session } from 'next-auth';
 
-function extractUserName(session: any): string {
-  return session.user.name?.trim() || session.user.email!.split('@')[0] || 'User';
+interface JwtSessionData {
+  session: {
+    userId: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string | null;
+    department?: string | null;
+    position?: string | null;
+    employeeType?: string | null;
+    organizationId?: string | null;
+    organizationSlug?: string | null;
+    organizationName?: string | null;
+    impersonation?: {
+      sessionId: string;
+      expiresAt: number;
+      superadmin?: { name?: string; email?: string };
+    } | null;
+  };
+}
+
+interface JwtSessionResult {
+  success: boolean;
+  data: JwtSessionData['session'] | null;
+}
+
+interface JwtPayload {
+  userId: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  organizationId?: string;
+  organizationSlug?: string;
+  organizationName?: string;
+  department?: string;
+  position?: string;
+  employeeType?: string;
+  avatar?: string;
+  impersonation?: {
+    sessionId: string;
+    expiresAt: number;
+    superadmin?: { name?: string; email?: string };
+  } | null;
+}
+
+function extractUserName(session: Session): string {
+  return session.user?.name?.trim() || session.user?.email?.split('@')[0] || 'User';
 }
 
 function isDashboardPage(path: string): boolean {
@@ -42,7 +88,11 @@ function isPublicRoute(path: string): boolean {
   );
 }
 
-async function createJwtSession(userData: any) {
+async function createJwtSession(userData: {
+  email: string;
+  name: string;
+  avatarUrl?: string;
+}): Promise<JwtSessionResult> {
   try {
     const res = await fetch('/api/auth/oauth-session', {
       method: 'POST',
@@ -51,21 +101,20 @@ async function createJwtSession(userData: any) {
     });
 
     if (res.ok) {
-      const data = await res.json();
-      if (data.session) {
-        const { login } = useAuthStore.getState();
+      const data = (await res.json()) as JwtSessionData;
+      if (data.session) {          const { login } = useAuthStore.getState();
         login({
           id: data.session.userId,
           name: data.session.name,
           email: data.session.email,
-          role: data.session.role,
-          avatar: data.session.avatar,
-          department: data.session.department,
-          position: data.session.position,
-          employeeType: data.session.employeeType,
-          organizationId: data.session.organizationId,
-          organizationSlug: data.session.organizationSlug,
-          organizationName: data.session.organizationName,
+          role: data.session.role as 'admin' | 'superadmin' | 'supervisor' | 'employee' | 'driver',
+          avatar: data.session.avatar ?? undefined,
+          department: data.session.department ?? undefined,
+          position: data.session.position ?? undefined,
+          employeeType: (data.session.employeeType ?? undefined) as 'staff' | 'contractor' | undefined,
+          organizationId: data.session.organizationId ?? undefined,
+          organizationSlug: data.session.organizationSlug ?? undefined,
+          organizationName: data.session.organizationName ?? undefined,
         });
         return { success: true, data: data.session };
       }
@@ -101,10 +150,10 @@ export function useAuthSync() {
 
         // Check JWT FIRST — if cookie is gone, always force logout
         // regardless of what Zustand persist rehydrated from localStorage
-        let jwtSession: any = null;
+        let jwtSession: JwtPayload | null = null;
         try {
           const { getSessionAction } = await import('@/actions/auth');
-          jwtSession = await getSessionAction();
+          jwtSession = (await getSessionAction()) as JwtPayload | null;
         } catch {}
 
         if (!jwtSession || !jwtSession.userId) {
@@ -128,16 +177,16 @@ export function useAuthSync() {
 
         const userData = {
           id: jwtSession.userId,
-          name: jwtSession.name,
-          email: jwtSession.email,
-          role: jwtSession.role,
-          organizationId: jwtSession.organizationId,
-          organizationSlug: jwtSession.organizationSlug,
-          organizationName: jwtSession.organizationName,
-          department: jwtSession.department,
-          position: jwtSession.position,
-          employeeType: jwtSession.employeeType,
-          avatar: jwtSession.avatar,
+          name: jwtSession.name || 'User',
+          email: jwtSession.email || '',
+          role: (jwtSession.role || 'employee') as 'admin' | 'superadmin' | 'supervisor' | 'employee' | 'driver',
+          organizationId: jwtSession.organizationId ?? undefined,
+          organizationSlug: jwtSession.organizationSlug ?? undefined,
+          organizationName: jwtSession.organizationName ?? undefined,
+          department: jwtSession.department ?? undefined,
+          position: jwtSession.position ?? undefined,
+          employeeType: (jwtSession.employeeType || undefined) as 'staff' | 'contractor' | undefined,
+          avatar: jwtSession.avatar ?? undefined,
           impersonation: jwtSession.impersonation
             ? {
                 active: true,
@@ -149,15 +198,16 @@ export function useAuthSync() {
             : undefined,
         };
         login(userData);
-        setUserEmail(jwtSession.email);
+        if (jwtSession.email) setUserEmail(jwtSession.email);
         return;
       }
 
       if (status === 'authenticated' && session?.user && userEmail !== session.user.email) {
         try {
           const finalName = extractUserName(session);
+          const userEmailValue = session.user.email!;
           const userData = {
-            email: session.user.email!,
+            email: userEmailValue,
             name: finalName,
             avatarUrl: session.user.image || undefined,
           };
@@ -171,12 +221,12 @@ export function useAuthSync() {
           // `login()`. Without this, OAuth users land on /dashboard with an
           // empty store (no data, "Sign in" still showing).
           await createJwtSession({
-            email: session.user.email!,
+            email: userEmailValue,
             name: finalName,
             avatarUrl: session.user.image || undefined,
           });
 
-          setUserEmail(session.user.email!);
+          setUserEmail(userEmailValue);
         } catch (error) {
           console.error('[useAuthSync] Error syncing OAuth user:', error);
         }
@@ -193,8 +243,7 @@ export function useAuthSync() {
 
     if (currentUser) {
       let finalName = currentUser.name;
-      if (currentUser.name === 'User' || !currentUser.name) {
-        const sessionName = session.user.name?.trim();
+      if (currentUser.name === 'User' || !currentUser.name) {          const sessionName = session.user.name?.trim() || '';
         if (sessionName && sessionName !== 'User') {
           finalName = sessionName;
         }
@@ -203,7 +252,7 @@ export function useAuthSync() {
       const syncSession = async () => {
         const result = await createJwtSession({
           email: currentUser.email,
-          name: finalName,
+          name: finalName || currentUser.name || 'User',
           avatarUrl: currentUser.avatarUrl || session?.user?.image || undefined,
         });
 
@@ -211,7 +260,7 @@ export function useAuthSync() {
           const { login } = useAuthStore.getState();
           login({
             id: currentUser._id,
-            name: finalName,
+            name: (finalName || currentUser.name || 'User') as string,
             email: currentUser.email,
             role: currentUser.role,
             avatar: currentUser.avatarUrl,
@@ -226,7 +275,7 @@ export function useAuthSync() {
         } else {
           lastSyncedUserRef.current = currentUser.email;
           prevUserState.current = {
-            organizationId: result.data.organizationId,
+            organizationId: result.data?.organizationId ?? undefined,
             isApproved: currentUser.isApproved,
           };
         }
@@ -261,7 +310,7 @@ export function useAuthSync() {
         if (currentUser && !currentUser.organizationId) return;
 
         const callbackUrl = params.get('next');
-        const redirectTarget = callbackUrl || '/dashboard';
+        const _redirectTarget = callbackUrl || '/dashboard';
 
         if (!isDashboardPage(path) && !isPublicRoute(path)) {
           // Could redirect here if needed

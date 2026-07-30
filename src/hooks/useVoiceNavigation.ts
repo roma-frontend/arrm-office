@@ -22,6 +22,7 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
   const user = useAuthStore((s) => s.user);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SpeechRecognition API has incomplete TS types
   const recognitionRef = useRef<any>(null);
 
   const navigate = useCallback(
@@ -68,7 +69,8 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SpeechRecognition API has no TS types
+    const recognition: any = new SpeechRecognition();
 
     recognition.continuous = continuous;
     recognition.interimResults = false;
@@ -118,6 +120,7 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
         recognitionRef.current.stop();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional cleanup on unmount only
   }, []);
 
   return {

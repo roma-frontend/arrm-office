@@ -471,7 +471,7 @@ export function useOptimisticLeaveActions() {
   );
 
   const deleteOptimistic = useCallback(
-    async (leaveId: Id<'leaveRequests'>, requesterId: Id<'users'>) => {
+    async (leaveId: Id<'leaveRequests'>, _requesterId: Id<'users'>) => {
       try {
         startTransition(() => setOptimisticAction({ leaveId, action: 'delete' }));
 

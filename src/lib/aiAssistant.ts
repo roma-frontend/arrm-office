@@ -891,7 +891,17 @@ export function detectIntent(message: string, userRole: UserRole): AICapability 
 /**
  * Build comprehensive AI system prompt with deep ShieldOffice knowledge
  */
-export function buildRoleBasedPrompt(userContext: UserContext, fullContext?: any): string {
+export interface AiContextData {
+  userContext?: string;
+  fullContext?: string;
+  aiInsights?: string;
+  conflictCheckData?: string;
+  availableDriversInfo?: string;
+  dateContext?: string;
+  [key: string]: unknown;
+}
+
+export function buildRoleBasedPrompt(userContext: UserContext, fullContext?: AiContextData): string {
   const capabilities = getCapabilitiesForRole(userContext.role);
 
   let prompt = `You are **Strata AI** — the intelligent assistant built into the Strata platform. You are an expert on every feature, policy, and capability of this system. Users trust you for accurate, thoughtful, and helpful answers.
@@ -1429,7 +1439,7 @@ ${fullContext ? formatFullContext(fullContext) : ''}
 /**
  * Format full context data into readable AI prompt section
  */
-function formatFullContext(ctx: any): string {
+function formatFullContext(ctx: AiContextData): string {
   const sections: string[] = [];
 
   // User context

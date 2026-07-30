@@ -88,11 +88,16 @@ export async function exchangeSharePointCode(code: string): Promise<{
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to exchange SharePoint code for tokens: ${error}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to exchange SharePoint code for tokens: ${errorText}`);
   }
 
-  return response.json();
+  const tokenResponse = (await response.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+  };
+  return tokenResponse;
 }
 
 /**
@@ -124,11 +129,16 @@ export async function refreshSharePointToken(refreshToken: string): Promise<{
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to refresh SharePoint token: ${error}`);
+    const errorText = await response.text();
+    throw new Error(`Failed to refresh SharePoint token: ${errorText}`);
   }
 
-  return response.json();
+  const tokenResponse = (await response.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+  };
+  return tokenResponse;
 }
 
 // ── SharePoint List fetching ─────────────────────────────────────────────────
@@ -154,16 +164,16 @@ export async function fetchSharePointListItems(accessToken: string): Promise<Sha
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to fetch SharePoint list items: ${error}`);
+      const errorText2 = await response.text();
+      throw new Error(`Failed to fetch SharePoint list items: ${errorText2}`);
     }
 
-    const data: {
+    const responseData = (await response.json()) as {
       value?: Array<{ fields?: Record<string, unknown> }>;
       '@odata.nextLink'?: string;
-    } = await response.json();
+    };
 
-    for (const item of data.value || []) {
+    for (const item of responseData.value || []) {
       const fields = item.fields || {};
       const mapped = mapSharePointToEmployee(fields);
       if (mapped) {
@@ -171,8 +181,7 @@ export async function fetchSharePointListItems(accessToken: string): Promise<Sha
       }
     }
 
-    // Follow @odata.nextLink for pagination
-    url = data['@odata.nextLink'] || null;
+    url = responseData['@odata.nextLink'] || null;
   }
 
   return employees;

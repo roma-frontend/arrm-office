@@ -5,7 +5,13 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 
-(pdfMake as any).vfs = (pdfFonts as any).pdfMake?.vfs || (pdfFonts as any).vfs;
+// pdfmake has no TypeScript types — all operations are inherently unsafe
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment,
+    @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+const pdfMakeTyped = pdfMake as any;
+const pdfFontsTyped = pdfFonts as any;
+pdfMakeTyped.vfs = pdfFontsTyped.pdfMake?.vfs || pdfFontsTyped.vfs;
+
 
 interface TripData {
   date: string;

@@ -33,7 +33,7 @@ async function fetchLiveRates(): Promise<Record<string, number>> {
   try {
     const res = await fetch('/api/currency-rates');
     if (!res.ok) throw new Error('Failed to fetch rates');
-    const data = await res.json();
+    const data: { rates?: Record<string, number> } = await res.json();
     return data.rates || {};
   } catch {
     return {};
@@ -45,7 +45,7 @@ export async function getExchangeRates(): Promise<Record<string, number>> {
   if (typeof window !== 'undefined') {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
-      const parsed: CachedRates = JSON.parse(cached);
+      const parsed: CachedRates = JSON.parse(cached) as CachedRates;
       if (Date.now() - parsed.timestamp < CACHE_TTL) {
         return parsed.rates;
       }

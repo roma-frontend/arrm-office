@@ -79,6 +79,7 @@ export function useActiveSection(sectionIds: string[], options: Options = {}) {
       mo.disconnect();
       observer?.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- JSON.stringify(threshold) is intentional for deep comparison
   }, [idsKey, rootMargin, JSON.stringify(threshold)]);
 
   return active;

@@ -212,6 +212,13 @@ Team on leave: ${
   };
 }
 
+interface AIInsightsResponse {
+  balanceWarning?: string;
+  patterns?: string[];
+  bestDates?: string[];
+  teamConflicts?: string[];
+}
+
 async function processAIInsights(
   origin: string,
   authHeaders: Record<string, string>,
@@ -228,7 +235,7 @@ async function processAIInsights(
     );
     if (!res.ok) return '';
 
-    const insights = await res.json();
+    const insights = (await res.json()) as AIInsightsResponse | undefined;
     if (!insights) return '';
 
     return [
@@ -243,6 +250,12 @@ async function processAIInsights(
   } catch {
     return '';
   }
+}
+
+interface ConflictCheckResponse {
+  hasConflicts?: boolean;
+  conflictCount?: number;
+  aiMessage?: string;
 }
 
 async function processConflictCheck(
@@ -271,7 +284,7 @@ async function processConflictCheck(
     );
     if (!res.ok) return '';
 
-    const conflictData = await res.json();
+    const conflictData = (await res.json()) as ConflictCheckResponse;
     if (conflictData.hasConflicts) {
       return `⚠️ CONFLICTS: ${conflictData.conflictCount} found. ${conflictData.aiMessage || ''}`;
     }

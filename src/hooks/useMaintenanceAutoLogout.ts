@@ -55,7 +55,7 @@ export function useMaintenanceAutoLogout() {
 
       await new Promise((resolve) => setTimeout(resolve, 800));
       router.push(maintenanceUrl);
-    } catch (error) {
+    } catch (_error) {
       logout();
       localStorage.removeItem('hr-auth-storage');
       router.push(`/login?maintenance=true${organizationId ? `&org=${organizationId}` : ''}`);

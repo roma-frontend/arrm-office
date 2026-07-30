@@ -240,7 +240,7 @@ export async function logSecurityEvent(
   type: string,
   userId: string,
   ip: string,
-  details?: Record<string, any>,
+  details?: Record<string, unknown>,
 ): Promise<void> {
   const redis = getRedis();
 
@@ -266,14 +266,14 @@ export async function logSecurityEvent(
 /**
  * Get recent security events for user
  */
-export async function getSecurityEvents(userId: string): Promise<any[]> {
+export async function getSecurityEvents(userId: string): Promise<Record<string, unknown>[]> {
   const redis = getRedis();
 
   if (!redis) return [];
 
   try {
     const events = await redis.lrange(`security:${userId}`, 0, 99);
-    return events.map((e) => JSON.parse(e as string));
+    return events.map((e) => JSON.parse(e as string)) as Record<string, unknown>[];
   } catch {
     return [];
   }

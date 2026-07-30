@@ -20,6 +20,7 @@ export function useScrollDirection(threshold = 64): ScrollDirection {
       setDirection('up');
       lastY.current = window.scrollY;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only state reset
   }, [threshold]);
 
   useEffect(() => {

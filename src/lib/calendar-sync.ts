@@ -144,9 +144,8 @@ export async function createGoogleCalendarEvent(accessToken: string, event: Cale
 
   if (!response.ok) {
     throw new Error('Failed to create Google Calendar event');
-  }
-
-  return response.json();
+  }    const eventResponse = (await response.json()) as { id: string };
+  return eventResponse;
 }
 
 /**
@@ -181,9 +180,8 @@ export async function createOutlookCalendarEvent(accessToken: string, event: Cal
 
   if (!response.ok) {
     throw new Error('Failed to create Outlook Calendar event');
-  }
-
-  return response.json();
+  }    const eventResponse = (await response.json()) as { id: string };
+  return eventResponse;
 }
 
 /**
@@ -241,7 +239,12 @@ export async function exchangeCodeForTokens(
       throw new Error(`Failed to exchange Google code for tokens: ${error}`);
     }
 
-    return response.json();
+    const tokenResponse = (await response.json()) as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in?: number;
+    };
+    return tokenResponse;
   } else {
     // Outlook
     const tokenEndpoint = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
@@ -273,6 +276,11 @@ export async function exchangeCodeForTokens(
       throw new Error(`Failed to exchange Outlook code for tokens: ${error}`);
     }
 
-    return response.json();
+    const tokenResponse = (await response.json()) as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in?: number;
+    };
+    return tokenResponse;
   }
 }

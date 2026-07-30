@@ -226,7 +226,6 @@ export function interviewInvitationTemplate(args: InterviewInvitationArgs): {
 
 export function offerLetterTemplate(args: OfferLetterArgs): { subject: string; html: string } {
   const companyName = args.companyName || getCompanyName();
-  const accentColor = args.accentColor || getAccentColor();
   const subject = `Job Offer — ${args.position} at ${companyName}`;
 
   const content = `
@@ -285,7 +284,6 @@ export function rejectionNoticeTemplate(args: RejectionNoticeArgs): {
   html: string;
 } {
   const companyName = args.companyName || getCompanyName();
-  const accentColor = args.accentColor || getAccentColor();
   const subject = `Application Update — ${args.vacancyTitle}`;
 
   const content = `

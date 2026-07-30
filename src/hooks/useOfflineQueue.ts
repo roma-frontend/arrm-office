@@ -13,7 +13,8 @@ const STORAGE_KEY = 'hr-offline-queue';
 
 function loadQueue(): QueuedAction[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as QueuedAction[]) : [];
   } catch {
     return [];
   }
@@ -72,6 +73,7 @@ export function useOfflineQueue(processor: (action: string, payload: unknown) =>
       saveQueue(remaining);
       processing.current = false;
     })();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional queue processing
   }, [isOnline, queue, processor]);
 
   const enqueue = useCallback((action: string, payload: unknown) => {

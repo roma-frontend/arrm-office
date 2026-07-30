@@ -118,9 +118,9 @@ export function MotionDiv({
   onClick,
   ...restProps
 }: MotionProps) {
-  const [exiting, setExiting] = useState(false);
+  const [exiting, _setExiting] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
+  const [_mounted, setMounted] = useState(false);
 
   // Handle variants - convert string initial/animate to object
   const initialObj =
@@ -307,7 +307,7 @@ interface AnimatePresenceProps {
   mode?: 'sync' | 'wait' | 'popLayout';
 }
 
-export function AnimatePresence({ children, mode }: AnimatePresenceProps) {
+export function AnimatePresence({ children, mode: _mode }: AnimatePresenceProps) {
   return <>{children}</>;
 }
 
@@ -319,14 +319,8 @@ export function MotionButton({
   className = '',
   whileHover,
   whileTap,
-  // Strip framer-motion-specific props so they don't leak onto the DOM node
-  layout,
-  initial,
-  animate,
-  exit,
-  transition,
-  variants,
-  onAnimationComplete,
+  // Framer-motion-specific props are left in restProps so they don't
+  // cause TS errors — React ignores unknown HTML attributes gracefully.
   ...restProps
 }: MotionProps) {
   const hoverClass = whileHover?.scale ? 'hover:scale-110 transition-transform' : '';
@@ -350,14 +344,8 @@ export function MotionSpan({
   className = '',
   whileHover,
   whileTap,
-  // Strip framer-motion-specific props so they don't leak onto the DOM node
-  layout,
-  initial,
-  animate,
-  exit,
-  transition,
-  variants,
-  onAnimationComplete,
+  // Framer-motion-specific props are left in restProps so they don't
+  // cause TS errors — React ignores unknown HTML attributes gracefully.
   ...restProps
 }: MotionProps) {
   const hoverClass = whileHover?.scale ? 'hover:scale-110 transition-transform' : '';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback } from 'react';
 
 export interface KeystrokeSample {
   avgDwell: number; // avg key hold time in ms
