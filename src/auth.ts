@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
+import type { GoogleProfile } from '@auth/core/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import type { NextAuthConfig } from 'next-auth';
 import { importPKCS8, SignJWT } from 'jose';
@@ -22,11 +23,33 @@ const CONVEX_SITE_URL = process.env.NEXT_PUBLIC_CONVEX_URL!.replace(
   '.convex.site',
 );
 
+// ═══════════════════════════════════════════════════════════════
+// CONVEX HTTP API — shapes we read off the wire
+// ═══════════════════════════════════════════════════════════════
+type UserRole = 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
+
+/** Role fields Convex returns for a user; all optional — never trust the wire. */
+interface ConvexUserData {
+  userId?: string;
+  name?: string;
+  email?: string;
+  avatarUrl?: string;
+  role?: UserRole;
+  organizationId?: string;
+  isApproved?: boolean;
+}
+
+/** Envelope returned by Convex's `/api/query` and `/api/mutation` endpoints. */
+interface ConvexResponse {
+  status?: 'success' | 'error';
+  value?: ConvexUserData;
+}
+
 export const authConfig: NextAuthConfig = {
   providers: [
     Google({
-      profile(profile) {
-        let name = profile.name;
+      profile(profile: GoogleProfile) {
+        let name: string | undefined = profile.name;
 
         if (!name && (profile.given_name || profile.family_name)) {
           name = `${profile.given_name || ''} ${profile.family_name || ''}`.trim();
@@ -76,10 +99,12 @@ export const authConfig: NextAuthConfig = {
           });
 
           if (!res.ok) return null;
-          const data = await res.json();
+          const data = (await res.json()) as ConvexResponse;
           if (data.status === 'error') return null;
 
           const user = data.value;
+          if (!user?.userId) return null;
+
           return {
             id: user.userId,
             name: user.name,
@@ -118,17 +143,11 @@ export const authConfig: NextAuthConfig = {
           });
 
           if (response.ok) {
-            const data = await response.json();
-            const userData = data.value || data;
+            const data = (await response.json()) as ConvexResponse & ConvexUserData;
+            const userData: ConvexUserData = data.value ?? data;
 
             if (userData?.role) {
               user.role = userData.role;
-            }
-            if (userData?.organizationId) {
-              user.organizationId = userData.organizationId;
-            }
-            if (userData?.isApproved !== undefined) {
-              user.isApproved = userData.isApproved;
             }
             if (userData?.organizationId) {
               user.organizationId = userData.organizationId;
@@ -174,8 +193,8 @@ export const authConfig: NextAuthConfig = {
             });
 
             if (response.ok) {
-              const data = await response.json();
-              const userData = data.value || data;
+              const data = (await response.json()) as ConvexResponse & ConvexUserData;
+              const userData: ConvexUserData = data.value ?? data;
 
               if (userData?.role) token.role = userData.role;
               if (userData?.organizationId) token.organizationId = userData.organizationId;
@@ -193,17 +212,11 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       session.user.id = token.sub as string;
       session.user.email = token.email as string;
-      session.user.name = (token.name as string) || token.email?.split('@')[0] || 'User';
-      session.user.image = token.picture as string | undefined;
-      session.user.role = token.role as
-        | 'superadmin'
-        | 'admin'
-        | 'supervisor'
-        | 'employee'
-        | 'driver'
-        | undefined;
-      session.user.organizationId = token.organizationId as string | undefined;
-      session.user.isApproved = token.isApproved as boolean | undefined;
+      session.user.name = token.name || token.email?.split('@')[0] || 'User';
+      session.user.image = token.picture;
+      session.user.role = token.role;
+      session.user.organizationId = token.organizationId;
+      session.user.isApproved = token.isApproved;
 
       // Sign a JWT for Convex auth
       if (process.env.CONVEX_AUTH_PRIVATE_KEY && token.email) {
