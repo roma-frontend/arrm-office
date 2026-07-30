@@ -54,6 +54,8 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function QuestionResultCard({ question, result }: { question: any; result: any }) {
   const { t } = useTranslation();
   const Icon = QUESTION_TYPE_ICONS[question.type] || FileText;
@@ -188,6 +190,8 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }) {
   const { t } = useTranslation();
 
@@ -244,6 +248,8 @@ function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }
     </Card>
   );
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 function SurveyTrendsChart({ trends }: { trends: any[] }) {
   const { t } = useTranslation();

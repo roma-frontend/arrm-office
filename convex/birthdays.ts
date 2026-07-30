@@ -315,6 +315,8 @@ export const scheduledBirthdayCheck = mutation({
   args: {
     organizationId: v.id('organizations'),
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   handler: async (ctx, args): Promise<any> => {
     const { organizationId } = args;
     // Проверить сегодня

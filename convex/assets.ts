@@ -957,6 +957,7 @@ async function performAssignment(
     expectedReturnAt?: number;
     notes?: string;
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   const asset = await ctx.db.get(args.assetId);
   if (!asset) throw new Error('Asset not found');

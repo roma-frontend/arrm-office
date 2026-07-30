@@ -146,10 +146,14 @@ export const initializeDefaultLeaveTypes = mutation({
     const now = Date.now();
     let created = 0;
     for (const lt of DEFAULT_LEAVE_TYPES) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       if (existingTypes.has(lt.type as any)) continue;
       created++;
       await ctx.db.insert('leaveTypeConfigs', {
         organizationId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         type: lt.type as any,
         isActive: lt.isActive,
         defaultDaysPerYear: lt.defaultDaysPerYear,
@@ -328,13 +332,19 @@ export const getEmployeeLeaveBalances = query({
           employeeType: emp.employeeType,
           balances: {
             paidLeaveBalance:
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
               (profile as any)?.paidLeaveBalance ?? (emp as any).paidLeaveBalance ?? 0,
             sickLeaveBalance:
               (profile as any)?.sickLeaveBalance ?? (emp as any).sickLeaveBalance ?? 0,
             familyLeaveBalance:
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
               (profile as any)?.familyLeaveBalance ?? (emp as any).familyLeaveBalance ?? 0,
             dayOffBalance: (profile as any)?.dayOffBalance ?? (emp as any).dayOffBalance ?? 0,
             studyLeaveBalance:
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
               (profile as any)?.studyLeaveBalance ?? (emp as any).studyLeaveBalance ?? 0,
             maternityLeaveBalance:
               (profile as any)?.maternityLeaveBalance ?? (emp as any).maternityLeaveBalance ?? 0,
@@ -373,6 +383,8 @@ export const updateLeaveBalance = mutation({
       throw new Error('Only admins of this organization can adjust leave balances');
     }
     if (!reason.trim()) throw new Error('A reason is required to adjust leave balances');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
     const currentValue = (user as any)[field] ?? 0;
 

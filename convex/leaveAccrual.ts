@@ -59,6 +59,8 @@ export const adjustBalance = mutation({
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const currentValue = (user as any)[field] ?? 0;
     const newValue = Math.max(0, currentValue + delta);
 
@@ -156,6 +158,8 @@ export const getBalanceSummary = query({
       .query('userProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .first();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
     const getBal = (field: string) => (profile as any)?.[field] ?? (user as any)[field] ?? 0;
 

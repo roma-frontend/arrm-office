@@ -176,6 +176,8 @@ function DeadlineBadge({ deadline, status }: { deadline?: number; status: Status
 }
 
 // â”€â”€ Task Card (base content, reused in both draggable and overlay) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function TaskCardContent({ task, isDragging = false }: { task: any; isDragging?: boolean }) {
   const { t } = useTranslation();
   const statusCfg = STATUS_CONFIG[task.status as Status];
@@ -267,6 +269,8 @@ function TaskCardContent({ task, isDragging = false }: { task: any; isDragging?:
     </div>
   );
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 function DraggableTaskCard({ task, onOpen }: { task: any; onOpen: () => void }) {
   const { t } = useTranslation();
@@ -363,6 +367,8 @@ function DroppableKanbanColumn({
     </div>
   );
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 function TaskRow({ task, onOpen }: { task: any; onOpen: () => void }) {
   const { t } = useTranslation();

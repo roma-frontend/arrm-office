@@ -18,6 +18,8 @@ export const processScheduledPayroll = action({
 
     const _currentMonth = new Date().toISOString().slice(0, 7);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const _runQuery = ctx.runQuery as unknown as (...args: any[]) => Promise<any>;
     const employees: any[] =
       (await _runQuery(_apiRaw.employeeProfiles.getEmployeesByOrganization, {

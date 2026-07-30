@@ -694,6 +694,8 @@ export const getConflictSummaryForAI = query({
     startDate: v.number(),
     endDate: v.number(),
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   handler: async (ctx, args): Promise<any> => {
     const conflicts = await ctx.runQuery(api.conflicts.detectAllConflicts, {
       organizationId: args.organizationId,

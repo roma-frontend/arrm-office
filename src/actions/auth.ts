@@ -42,6 +42,7 @@ async function convexMutation(name: string, args: Record<string, unknown>) {
     });
 
     return data.value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     log.error('convexMutation failed', error, {
       name,
@@ -89,6 +90,7 @@ async function _convexQuery(name: string, args: Record<string, unknown>) {
     log.debug('convexQuery data parsed', { result: data.value });
 
     return data.value;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     log.error('convexQuery failed', error, {
       name,
@@ -275,6 +277,7 @@ export async function loginAction(
         userId: result.userId,
         role: result.role,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (convexError: any) {
       log.error('Convex auth:login mutation failed', convexError, {
         email,
@@ -356,6 +359,7 @@ export async function loginAction(
     log.debug('Login successful, cookies set');
 
     return { success: true };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     log.error('Login action failed', error, {
       action: 'login',

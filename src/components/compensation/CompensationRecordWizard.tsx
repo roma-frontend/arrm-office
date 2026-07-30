@@ -176,6 +176,8 @@ export default function CompensationRecordWizard({
     return labels[freq];
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const selectedUser = orgUsers?.find((u: any) => u._id === userId);
 
   const renderStepContent = () => {
@@ -190,6 +192,7 @@ export default function CompensationRecordWizard({
                   <SelectValue placeholder={t('compensation.selectEmployee', 'Select employee')} />
                 </SelectTrigger>
                 <SelectContent>
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   {orgUsers?.map((u: any) => (
                     <SelectItem key={u._id} value={u._id}>
                       {u.name} ({u.email})

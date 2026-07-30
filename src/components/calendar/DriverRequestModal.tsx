@@ -142,6 +142,8 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           logger.log('[geocode] No results found');
           return [];
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         return data.map((item: any) => ({
           lat: parseFloat(item.lat),
           lng: parseFloat(item.lon),

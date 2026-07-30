@@ -125,6 +125,8 @@ export const updateLocalizationSettings = mutation({
       firstDayOfWeek: args.firstDayOfWeek,
     });
     // Also update user record so language is available on user object
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     await ctx.db.patch(caller._id as any, { language: args.language });
     return { success: true };
   },

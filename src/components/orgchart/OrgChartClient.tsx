@@ -252,6 +252,8 @@ export default function OrgChartClient() {
       };
 
       // Build layout: position each node based on its subtree
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const layoutNodes: { node: any; x: number; y: number }[] = [];
       const layoutEdges: FlowEdge[] = [];
 

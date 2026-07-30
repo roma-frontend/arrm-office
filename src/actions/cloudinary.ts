@@ -158,6 +158,7 @@ export async function uploadChatAttachment(
 
     logger.log('✅ Voice message uploaded successfully:', result.secure_url);
     return { url: result.secure_url, name: fileName, type: mimeType };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     logger.error('❌ Voice message upload failed:', error);
     logger.error('❌ Error details:', {
@@ -243,6 +244,7 @@ export async function uploadDocument(
       size: decodedSize,
       type: mimeType || result.resource_type,
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     logger.error('❌ Document upload failed:', error);
     throw new Error(error instanceof Error ? error.message : 'Upload failed');

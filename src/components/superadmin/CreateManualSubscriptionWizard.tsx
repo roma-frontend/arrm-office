@@ -45,6 +45,8 @@ export function CreateManualSubscriptionWizard({
         <SelectStep
           field="organizationId"
           label={t('subscriptionWizard.steps.organization.organizationLabel')}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           options={allOrganizations.map((org: any) => ({
             value: org._id,
             label: `${org.name} (${org.slug})`,

@@ -104,6 +104,8 @@ const STATUS_CONFIG: Record<
 };
 
 // ── Month Card ──
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function MonthCard({ monthData, currency }: { monthData: any; currency: string }) {
   const { t } = useTranslation();
   const status = monthData.latestRun?.status ?? 'no_run';

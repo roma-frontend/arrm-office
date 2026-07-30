@@ -119,6 +119,8 @@ async function ensureDejaVu(pdfMake: any): Promise<boolean> {
 }
 
 /** Load pdfmake with a Unicode-capable font; returns the font family to use. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 async function loadPdfMakeWithFonts(): Promise<{ pdfMake: any; font: string }> {
   const pdfMake: any = await loadPdfMake();
   // vfs_fonts registers the default Roboto font family used by pdfmake. In

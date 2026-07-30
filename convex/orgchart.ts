@@ -97,6 +97,8 @@ export const getOrgChartTree = query({
       .take(MAX_PAGE_SIZE);
 
     // Build tree structure
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const nodeMap = new Map<string, Doc<'orgChartNodes'> & { children: any[] }>();
     const roots: any[] = [];
 

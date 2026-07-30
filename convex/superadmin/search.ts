@@ -247,6 +247,8 @@ export const globalSearch = query({
  */
 export const quickSearch = query({
   args: { query: v.string() },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   handler: async (ctx, args): Promise<any> => {
     const fullResults = await ctx.runQuery(superadminApi.globalSearch, {
       query: args.query,

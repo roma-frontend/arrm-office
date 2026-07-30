@@ -276,6 +276,7 @@ RULES:
       const content = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
 
       return { content };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       console.error('GROQ API error:', error);

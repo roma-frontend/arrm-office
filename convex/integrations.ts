@@ -409,6 +409,7 @@ async function runSync(
     });
 
     return { success: true, message: result.message };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message = error?.message ? String(error.message) : 'Sync failed';
@@ -1017,6 +1018,7 @@ async function fetchJson(
       ...init,
       signal: AbortSignal.timeout(20_000),
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const reason = e?.name === 'TimeoutError' ? 'request timed out' : 'network error';
@@ -1069,6 +1071,7 @@ async function fetchTokenEndpoint(
       label,
       config,
     )) as Record<string, unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const message = String(e?.message ?? '');
@@ -1472,6 +1475,7 @@ export const ingestLuckyCarrotWebhook = internalAction({
     let records: unknown[];
     try {
       records = extractWebhookRecords(payload, auth.employeesListKey);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
@@ -1490,6 +1494,7 @@ export const ingestLuckyCarrotWebhook = internalAction({
     let normalized;
     try {
       normalized = normalizeEmployees(records, auth.fieldMap);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
@@ -1931,6 +1936,7 @@ export const imidLoginCallback = internalAction({
         code,
         redirectUri,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
@@ -1946,6 +1952,7 @@ export const imidLoginCallback = internalAction({
         organizationId,
         accessToken: tokenResult.accessToken,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
@@ -1977,6 +1984,7 @@ export const imidLoginCallback = internalAction({
         isNewUser: result.isNewUser,
         needsApproval: result.needsApproval,
       } as const;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
@@ -2229,6 +2237,8 @@ export const ingestImidSignCallback = internalAction({
       if (documentId && documentId.startsWith('signature')) {
         try {
           await ctx.runMutation(internal.integrations.markImidSignComplete, {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
             documentId: documentId as any,
           });
         } catch {

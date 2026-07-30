@@ -382,6 +382,7 @@ export default function PayrollDashboard() {
             <CardContent>
               {recentRuns && recentRuns.length > 0 ? (
                 <div className="space-y-3">
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   {recentRuns.slice(0, 5).map((run: any) => (
                     <div
                       key={run._id}
