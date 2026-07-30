@@ -545,6 +545,7 @@ export const sendTestEmail = action({
   },
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatTelegramNewsletter(content: any): string {
   const appUrl = getPublicAppUrl();
   let msg = `🎯 <b>Strata Weekly Digest</b>\n\n`;

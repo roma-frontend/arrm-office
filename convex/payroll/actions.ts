@@ -30,6 +30,7 @@ export const processScheduledPayroll = action({
       return { processed: 0, totalGross: 0, totalNet: 0, message: 'No employees found' };
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const settings: any = await _runQuery(_apiRaw.settings.getOrganizationSettings, {
       organizationId: organizationId as Id<'organizations'>,
     });

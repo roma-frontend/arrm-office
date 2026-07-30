@@ -569,6 +569,7 @@ export const getBalancedScorecard = query({
  */
 function generatePerspectiveMetrics(
   id: BscPerspective,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   objectives: any[],
   avgProgress: number,
 ): Array<{ label: string; value: string; direction: 'up' | 'down' | 'neutral' }> {
@@ -814,6 +815,7 @@ export const getAlignmentTree = query({
  * overall metric based on organizational health.
  */
 function computeNorthStar(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   objectives: any[],
   perspectives: BscPerspectiveData[],
   overallScore: number,
@@ -823,7 +825,8 @@ function computeNorthStar(
   const completed = objectives.filter((o) => o.status === 'completed').length;
   const avgProgress =
     active.length > 0
-      ? Math.round(active.reduce((sum: number, o: any) => sum + o.progress, 0) / active.length)
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Math.round(active.reduce((sum: number, o: any) => sum + o.progress, 0) / active.length)
       : 0;
 
   // Find the best and worst performing perspectives

@@ -238,6 +238,7 @@ export const getLeavesPagederated = query({
     const normalizedPageSize = normalizePageSize(args.pageSize);
 
     // Get user's leaves based on role
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let items: any[] = [];
 
     if (isSuperadmin(requester)) {

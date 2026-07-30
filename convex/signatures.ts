@@ -67,6 +67,7 @@ export const listDocuments = query({
     const signerDocs = await Promise.all(signerDocIds.map((docId) => ctx.db.get(docId)));
 
     // Merge and deduplicate by _id
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allDocs: any[] = [
       ...createdDocs,
       ...signerDocs.filter((d): d is NonNullable<typeof d> => d != null),

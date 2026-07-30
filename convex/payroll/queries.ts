@@ -263,7 +263,7 @@ export const getPayslips = query({
       await requireOrgSupervisor(ctx, requesterId, organizationId);
     }
 
-    let payslips: any[] = [];
+    let payslips = [];
 
     if (organizationId) {
       payslips = await ctx.db
@@ -453,7 +453,9 @@ export const getPayrollCalendar = query({
       payFrequency: settings?.payFrequency ?? 'monthly',
       currency: settings?.currency ?? 'AMD',
       paymentMethod: settings?.paymentMethod ?? null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       totalYearGross: yearRuns.reduce((s: number, r: any) => s + (r.totalGross ?? 0), 0),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       totalYearNet: yearRuns.reduce((s: number, r: any) => s + (r.totalNet ?? 0), 0),
       completedMonths: yearRuns.filter((r) => r.status === 'paid' || r.status === 'approved')
         .length,

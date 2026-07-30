@@ -123,7 +123,7 @@ export const getSurveyResults = query({
     const questionResults = questions.map((question) => {
       const questionAnswers = answers.filter((a) => a.questionId === question._id);
 
-      const aggregation: any = { totalResponses: questionAnswers.length };
+      const aggregation: Record<string, unknown> = { totalResponses: questionAnswers.length };
 
       switch (question.type) {
         case 'rating':
@@ -811,7 +811,7 @@ export const getSurveyResultsByDepartment = query({
           (a) => a.questionId === question._id && deptResponseIds.has(a.responseId),
         );
 
-        const aggregation: any = { totalResponses: questionAnswers.length };
+        const aggregation: Record<string, unknown> = { totalResponses: questionAnswers.length };
 
         switch (question.type) {
           case 'rating':

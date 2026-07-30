@@ -679,6 +679,7 @@ export const debugOrgChart = query({
     });
 
     // Build tree
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const roots: any[] = [];
     nodes.forEach((node) => {
       const nodeData = nodeMap.get(node._id)!;
