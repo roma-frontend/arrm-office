@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation } from '../_generated/server';
-import type { MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { calculatePayroll } from '../lib/payrollCalculator';
 import { toCountryCode, type TaxRuleOverride } from '../lib/taxRules';

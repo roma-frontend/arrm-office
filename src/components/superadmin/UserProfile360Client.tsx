@@ -1,12 +1,11 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import {
-  User,
   Mail,
   Phone,
   MapPin,
@@ -25,7 +24,6 @@ import {
   MoreVertical,
   Ban,
   Key,
-  Eye,
   ArrowLeft,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -34,8 +32,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { toast } from 'sonner';
-
 export default function UserProfile360Page() {
   const params = useParams();
   const router = useRouter();

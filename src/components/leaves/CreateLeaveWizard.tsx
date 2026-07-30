@@ -42,7 +42,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
 
   // Загрузка данных пользователя
   const user = useQuery(api.users.queries.getUserById, { userId });
-  const userOrg = useQuery(
+  const _userOrg = useQuery(
     api.organizations.getMyOrganization,
     user?._id ? { userId: user._id as Id<'users'> } : 'skip',
   );

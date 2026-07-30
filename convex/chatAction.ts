@@ -28,7 +28,7 @@ export const sendChatMessage = action({
     }
 
     const isAdmin = userRole === 'admin' || userRole === 'supervisor';
-    const isEmployee = !isAdmin;
+    const _isEmployee = !isAdmin;
 
     // ── Fetch real data from Convex DB ──────────────────────────────────
     let userDataContext = '';
@@ -130,7 +130,7 @@ ${
       }
 
       // All users get team calendar (who else is on leave)
-      const requesterId = userProfile?._id ?? userId;
+      const _requesterId = userProfile?._id ?? userId;
       const organizationId = userProfile?.organizationId;
       // Identity is derived from auth on the server; pass org only as a fallback scope
       const allLeaves = organizationId

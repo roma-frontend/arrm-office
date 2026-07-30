@@ -42,9 +42,6 @@ import {
   TextareaStep,
   CardSelectionStep,
 } from '@/components/ui/wizard-step-components';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-
 const DEPARTMENT_COLORS = [
   { value: '#3B82F6', label: 'Blue', color: 'bg-blue-500/10 text-blue-600' },
   { value: '#10B981', label: 'Green', color: 'bg-green-500/10 text-green-600' },
@@ -82,7 +79,7 @@ function DepartmentWizard({
         }
       : { name: '', description: '', color: '#3B82F6' },
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [_isSubmitting, setIsSubmitting] = useState(false);
 
   const updateStepData = (key: string, value: string | number | boolean | null) => {
     setWizardData((prev) => ({ ...prev, [key]: value }));
@@ -211,7 +208,7 @@ function DepartmentWizard({
         toast.success(t('departmentWizard.toast.createSuccess'));
       }
       onComplete();
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('departmentWizard.toast.error'));
     } finally {
       setIsSubmitting(false);
@@ -256,7 +253,7 @@ function DepartmentWizard({
 export default function DepartmentsClient() {
   const { t } = useTranslation();
   const router = useRouter();
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const _isMobile = useMediaQuery('(max-width: 768px)');
 
   const { user, isAuthenticated } = useAuthStore(
     useShallow((state) => ({
@@ -320,7 +317,7 @@ export default function DepartmentsClient() {
     try {
       await removeDepartment({ id });
       toast.success(t('common.deleted'));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('common.error'));
     }
   };

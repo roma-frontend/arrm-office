@@ -167,6 +167,7 @@ function buildBodyContent(body: string) {
 
     // Look ahead to detect context
     const prevEmpty = i === 0 || rawLines[i - 1]?.trim() === '';
+    const _nextEmpty = i === rawLines.length - 1 || rawLines[i + 1]?.trim() === '';
 
     // Section header: short line, surrounded by blank lines (or at start/end)
     if (prevEmpty && isSectionHeader(trimmed) && trimmed.length < 45) {

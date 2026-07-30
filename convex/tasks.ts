@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { Id } from './_generated/dataModel';
-import type { MutationCtx } from './_generated/server';
 import { isSuperadmin } from './lib/auth';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';

@@ -21,20 +21,16 @@ import {
   ChevronRight,
   Clock,
   Calendar as CalendarIcon,
-  Car,
-  Coffee,
   Shield,
   Play,
   CheckCircle2,
-  Wrench,
 } from 'lucide-react';
 import { format, startOfWeek, addDays, isSameDay, isToday } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
-import { Input } from '../ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { TripDetailsModal } from './modals/TripDetailsModal';
 import { BlockTimeWizard } from './BlockTimeWizard';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface DriverCalendarProps {
   driverId: Id<'drivers'>;

@@ -1,8 +1,6 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { mutation } from './_generated/server';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { DEFAULT_LIST_CAP } from './lib/limits';
-
 // ── Update Extended Profile Fields ──────────────────────────────────────────
 export const updateExtendedProfile = mutation({
   args: {

@@ -29,7 +29,6 @@ import {
   CheckCircle,
   X,
   DollarSign,
-  Users,
   FileText,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';

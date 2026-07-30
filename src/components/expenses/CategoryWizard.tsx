@@ -7,7 +7,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Wizard, WizardStep, useWizardContext } from '@/components/ui/wizard';
+import { Wizard, WizardStep } from '@/components/ui/wizard';
 import { TextInputStep, TextareaStep, SelectStep } from '@/components/ui/wizard-step-components';
 import {
   FileText,
@@ -23,7 +23,7 @@ import {
   Receipt,
 } from 'lucide-react';
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+const _CATEGORY_ICONS: Record<string, React.ReactNode> = {
   travel: <Plane className="w-5 h-5" />,
   meals: <Utensils className="w-5 h-5" />,
   accommodation: <Hotel className="w-5 h-5" />,
@@ -36,7 +36,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   other: <FileText className="w-5 h-5" />,
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
+const _CATEGORY_COLORS: Record<string, string> = {
   travel: 'bg-blue-500/20 text-blue-400',
   meals: 'bg-orange-500/20 text-orange-400',
   accommodation: 'bg-purple-500/20 text-purple-400',

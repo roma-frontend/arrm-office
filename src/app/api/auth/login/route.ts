@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       const adaptiveEnabled = await convexQuery('security:getSetting', { key: 'adaptive_auth' });
 
       // ── Get recent failed attempts for risk score ─────────────────────────────
-      const fifteenMinAgo = Date.now() - 15 * 60 * 1000;
+      const _fifteenMinAgo = Date.now() - 15 * 60 * 1000;
       let recentFailedAttempts = 0;
       const isKnownDevice = false;
       const isTrustedDevice = false;

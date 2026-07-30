@@ -22,7 +22,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useWizardContext } from '@/components/ui/wizard';
 import { uploadTaskAttachment } from '@/actions/cloudinary';
 import { toast } from 'sonner';
@@ -612,7 +611,7 @@ export function FileUploadStep({
     }
   };
 
-  const handleRemoveLocal = (id: string) => {
+  const _handleRemoveLocal = (id: string) => {
     setLocalFiles((prev) => prev.filter((f) => f.id !== id));
   };
 

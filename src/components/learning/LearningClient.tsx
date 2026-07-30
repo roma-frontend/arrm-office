@@ -42,7 +42,7 @@ type CourseWithLessons = {
   lessonCount: number;
 };
 
-type EnrollmentWithCourse = {
+type _EnrollmentWithCourse = {
   _id: Id<'enrollments'>;
   _creationTime: number;
   organizationId: Id<'organizations'>;
@@ -116,7 +116,7 @@ export default function LearningClient() {
 
   // Quiz state
   const [showQuiz, setShowQuiz] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [_currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,7 +179,7 @@ export default function LearningClient() {
   );
 
   // Fetch lesson progress for the active lesson in the player
-  const activeLessonProgress = useQuery(
+  const _activeLessonProgress = useQuery(
     api.learning.getLessonProgress,
     showLessonPlayer && courseLessons.length > 0 && effectiveOrgId && user?.id
       ? {

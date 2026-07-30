@@ -44,7 +44,7 @@ export default function AIRecommendationsCard() {
         setInsights(data);
         setLastFetched(new Date());
       }
-    } catch (e) {
+    } catch (_e) {
       // silently fail
     } finally {
       setLoading(false);

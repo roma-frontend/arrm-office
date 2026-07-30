@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import bcrypt from 'bcryptjs';
-import { SUPERADMIN_EMAIL, isSuperadminEmail, isSuperadmin } from '../lib/auth';
+import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { checkTempAccessStillValid } from '../superadmin/accessTokens';
 

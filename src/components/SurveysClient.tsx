@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +14,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Send,
-  Eye,
   Trash2,
   Play,
   Square,
@@ -33,7 +32,7 @@ import type { Id } from '../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';

@@ -1,6 +1,4 @@
 'use client';
-import Image from 'next/image';
-
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -12,7 +10,6 @@ import {
   ShieldCheck,
   Copy,
   Check,
-  X,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,9 +47,9 @@ export function AdvancedSecuritySettings() {
 
   // Fetch 2FA status on mount
   useEffect(() => {
-    async function fetchStatus() {
+    async function _fetchStatus() {
       try {
-        const res = await fetch('/api/auth/totp/setup', { method: 'GET' }).catch(() => null);
+        const _res = await fetch('/api/auth/totp/setup', { method: 'GET' }).catch(() => null);
         // We don't have a GET endpoint, so use a different approach
         // Just check via the user's session — the status is fetched from Convex
         // For now, we'll use a dedicated status check

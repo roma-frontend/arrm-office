@@ -4,13 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { useAuthStore } from '@/store/useAuthStore';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Shield, Clock, LogOut, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -18,7 +12,7 @@ import { toast } from 'sonner';
 
 export function IdleTimeoutModal() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const _router = useRouter();
   const { logout: authLogout, user } = useAuthStore();
   const [showModal, setShowModal] = useState(false);
 
@@ -40,7 +34,7 @@ export function IdleTimeoutModal() {
     window.location.href = '/login';
   }, [authLogout]);
 
-  const handleExtendSession = useCallback(async () => {
+  const _handleExtendSession = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/refresh-session', { method: 'POST' });
       if (res.ok) {
@@ -54,8 +48,8 @@ export function IdleTimeoutModal() {
     }
   }, [handleLogout, t]);
 
-  const IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_IDLE_TIMEOUT || '900', 10);
-  const WARNING_DURATION = parseInt(process.env.NEXT_PUBLIC_IDLE_WARNING_DURATION || '120', 10);
+  const _IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_IDLE_TIMEOUT || '900', 10);
+  const _WARNING_DURATION = parseInt(process.env.NEXT_PUBLIC_IDLE_WARNING_DURATION || '120', 10);
 
   const { showWarning, countdownSeconds, extendSession, isLoggedOut } = useIdleTimer({
     onIdle: handleIdle,

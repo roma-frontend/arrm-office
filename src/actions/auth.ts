@@ -61,7 +61,7 @@ async function convexMutation(name: string, args: Record<string, unknown>) {
   }
 }
 
-async function convexQuery(name: string, args: Record<string, unknown>) {
+async function _convexQuery(name: string, args: Record<string, unknown>) {
   try {
     log.debug('convexQuery called', { name });
 

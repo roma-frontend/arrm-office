@@ -4,16 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
-import {
-  Plus,
-  Search,
-  CheckCircle,
-  XCircle,
-  Trash2,
-  Eye,
-  ChevronDown,
-  CalendarDays,
-} from 'lucide-react';
+import { Plus, Search, CheckCircle, XCircle, Trash2, Eye, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
@@ -103,7 +94,7 @@ export function LeavesClient() {
   const user = useAuthStore(useShallow((state: { user: User | null }) => state.user));
   const selectedOrgId = useSelectedOrganization();
   const lang = i18n.language || 'en';
-  const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
+  const _dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
   const [wizardOpen, setWizardOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -114,7 +105,7 @@ export function LeavesClient() {
 
   // Determine which query to use based on selectedOrgId
   const shouldUseOrgQuery = selectedOrgId && user?.id;
-  const queryParams = shouldUseOrgQuery
+  const _queryParams = shouldUseOrgQuery
     ? { organizationId: selectedOrgId as Id<'organizations'> }
     : user?.id
       ? {}
@@ -484,7 +475,7 @@ export function LeavesClient() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-(--border)">
-                      {filtered.map((req, i) => (
+                      {filtered.map((req, _i) => (
                         <React.Fragment key={req._id}>
                           <tr className="hover:bg-(--background-subtle) transition-colors">
                             <td

@@ -7,7 +7,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, TrendingUp, AlertTriangle, Award, Target } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, Award, Target } from 'lucide-react';
 import { motion } from '@/lib/cssMotion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { format } from 'date-fns';

@@ -5,7 +5,7 @@ import { useQuery } from 'convex/react';
 import { usePathname } from 'next/navigation';
 import { api } from '../../../convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
-import { playChatMessageSound, sendBrowserNotification } from '@/lib/notificationSound';
+import { playChatMessageSound } from '@/lib/notificationSound';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { MessageCircle } from 'lucide-react';

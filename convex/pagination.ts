@@ -4,8 +4,6 @@
  */
 
 import { v } from 'convex/values';
-import type { Id } from './_generated/dataModel';
-
 export interface PaginationOptions {
   pageSize?: number;
   cursor?: string;

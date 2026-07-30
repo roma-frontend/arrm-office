@@ -1,6 +1,5 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
-import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 

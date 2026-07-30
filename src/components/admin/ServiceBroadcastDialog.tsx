@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -231,7 +231,7 @@ export function ServiceBroadcastDialog({
     }
   };
 
-  const now = new Date();
+  const _now = new Date();
 
   const resetState = () => {
     setCurrentStep('audience');
@@ -624,7 +624,7 @@ export function ServiceBroadcastDialog({
     }
   };
 
-  const currentStepData = STEPS[currentStepIndex];
+  const _currentStepData = STEPS[currentStepIndex];
 
   return (
     <Dialog

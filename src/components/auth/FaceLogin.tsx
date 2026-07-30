@@ -43,7 +43,7 @@ export function FaceLogin() {
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [_stream, setStream] = useState<MediaStream | null>(null);
 
   const [matchStatus, setMatchStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>(
     'idle',

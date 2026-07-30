@@ -12,7 +12,6 @@
  */
 
 import { mutation, query, internalMutation } from './_generated/server';
-import type { MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { internal } from './_generated/api';
@@ -321,7 +320,7 @@ export const backupAllEnterpriseOrgs = internalMutation({
 
     for (const org of orgs) {
       try {
-        const result = await ctx.scheduler.runAfter(0, internal.backups.createOrgBackupsInternal, {
+        const _result = await ctx.scheduler.runAfter(0, internal.backups.createOrgBackupsInternal, {
           organizationId: org._id,
         });
         totalBackedUp++;

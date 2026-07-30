@@ -24,7 +24,6 @@ import {
   AlertCircle,
   TrendingUp,
   TrendingDown,
-  Calendar,
   Timer,
 } from 'lucide-react';
 
@@ -48,7 +47,7 @@ interface SLADashboardProps {
 
 function SLADashboard({ organizationId }: SLADashboardProps) {
   const { t, i18n } = useTranslation();
-  const locale = i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US';
+  const _locale = i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US';
   const slaMetricsRaw = useQuery(api.sla.getSLAStats, {
     organizationId: organizationId as Id<'organizations'> | undefined,
   });

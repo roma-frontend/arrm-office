@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
-import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { sanitizeText } from '../lib/sanitize';
 import { getAuthCaller } from '../lib/getAuthCaller';
@@ -47,7 +46,7 @@ export const getOrCreateDM = mutation({
           q.eq('conversationId', existing._id).eq('userId', args.currentUserId),
         )
         .first();
-      const targetMember = await ctx.db
+      const _targetMember = await ctx.db
         .query('chatMembers')
         .withIndex('by_conversation_user', (q) =>
           q.eq('conversationId', existing._id).eq('userId', args.targetUserId),

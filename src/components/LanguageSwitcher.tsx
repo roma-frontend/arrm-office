@@ -10,8 +10,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { logger } from '@/lib/logger';
-
 const languages = {
   en: { name: 'English', flag: '🇬🇧' },
   hy: { name: 'Հայերեն', flag: '🇦🇲' },

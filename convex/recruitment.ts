@@ -1,8 +1,7 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { query, mutation, action } from './_generated/server';
+import { query, mutation } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
-import type { MutationCtx } from './_generated/server';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 

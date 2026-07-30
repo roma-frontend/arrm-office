@@ -6,27 +6,21 @@ import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   Calendar,
-  Clock,
-  User,
-  MapPin,
   Users,
   Bell,
   Pencil,
   Trash2,
   Building2,
   AlertTriangle,
-  CheckCircle,
-  XCircle,
   FileText,
 } from 'lucide-react';
 import { format } from 'date-fns';

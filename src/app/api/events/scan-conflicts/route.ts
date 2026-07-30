@@ -3,7 +3,6 @@
  */
 
 import { NextRequest } from 'next/server';
-import { fetchMutation } from 'convex/nextjs';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {

@@ -12,8 +12,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp, MapPin, Clock, Calendar, Download, FileText, BarChart3 } from 'lucide-react';
+import { TrendingUp, MapPin, Clock, Download, FileText, BarChart3 } from 'lucide-react';
 import { exportTripsToExcel } from '@/lib/exportDriversToExcel';
 import { exportTripsToPDF } from '@/lib/exportDriversToPDF';
 

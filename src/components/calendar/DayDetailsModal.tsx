@@ -14,7 +14,6 @@ import {
   Car,
   CalendarPlus,
   ExternalLink,
-  Users,
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';

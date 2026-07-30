@@ -244,7 +244,7 @@ function RegisterPageContent() {
   const [_showPassword, _setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrg, setSelectedOrg] = useState<OrgResult | null>(null);
-  const [inviteToken, setInviteToken] = useState<string | null>(initialUrlParams.invite);
+  const [inviteToken, _setInviteToken] = useState<string | null>(initialUrlParams.invite);
   const [prefilledOrgSlug, setPrefilledOrgSlug] = useState<string | null>(initialUrlParams.orgSlug);
   const [formData, setFormData] = useState({
     name: '',

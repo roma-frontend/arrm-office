@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
-import { isSuperadmin, requireAuthUser } from '../lib/auth';
+import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 import { PLAN_EMPLOYEE_LIMITS } from '../lib/limits';
 import { logger } from '../../src/lib/logger';

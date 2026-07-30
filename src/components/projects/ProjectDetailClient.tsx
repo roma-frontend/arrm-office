@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
@@ -12,16 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import {
-  ArrowLeft,
-  Calendar,
-  Users,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Trash2,
-  Pencil,
-} from 'lucide-react';
+import { ArrowLeft, Calendar, Users, CheckCircle2, Clock, Trash2, Pencil } from 'lucide-react';
 
 type LabelStyle = { label: string; color: string };
 
@@ -52,7 +43,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
   const deleteProject = useMutation(api.projects.deleteProject);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editStatus, setEditStatus] = useState('');
+  const [_editStatus, _setEditStatus] = useState('');
 
   if (!project) return <ShieldLoader />;
 

@@ -4,8 +4,6 @@
  */
 
 import { internalMutation } from '../_generated/server';
-import { v } from 'convex/values';
-
 export default internalMutation({
   args: {},
   handler: async (ctx) => {

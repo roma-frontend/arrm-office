@@ -20,10 +20,7 @@ import {
   XCircle,
   BarChart3,
   ArrowUpRight,
-  Building2,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import Link from 'next/link';
@@ -115,7 +112,7 @@ function MonthCard({ monthData, currency }: { monthData: any; currency: string }
   const Icon = cfg.icon;
   const isCurrent = monthData.period === new Date().toISOString().slice(0, 7);
   const isFuture = monthData.period > new Date().toISOString().slice(0, 7);
-  const isPast = monthData.period < new Date().toISOString().slice(0, 7);
+  const _isPast = monthData.period < new Date().toISOString().slice(0, 7);
   const hasRun = monthData.hasRun;
 
   return (

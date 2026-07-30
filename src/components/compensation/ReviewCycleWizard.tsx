@@ -22,7 +22,6 @@ import {
   ChevronRight,
   CheckCircle,
   X,
-  Users,
   FileText,
   Settings,
 } from 'lucide-react';

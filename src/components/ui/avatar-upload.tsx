@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { Camera, X, User } from 'lucide-react';
+import { Camera, User } from 'lucide-react';
 import { ShieldLoader } from './ShieldLoader';
 import { useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';

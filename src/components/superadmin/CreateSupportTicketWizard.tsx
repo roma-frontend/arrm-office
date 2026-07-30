@@ -14,7 +14,7 @@ import {
   SelectStep,
   CardSelectionStep,
 } from '@/components/ui/wizard-step-components';
-import { Ticket, AlertCircle, User, Building } from 'lucide-react';
+import { Ticket, AlertCircle } from 'lucide-react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@/lib/convex-typed';
+import { useQuery } from '@/lib/convex-typed';
 import { useRouter } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -20,13 +20,11 @@ interface TicketData {
   assigneeName?: string;
 }
 import {
-  HelpCircle,
   Ticket,
   Clock,
   CheckCircle,
   AlertCircle,
   Plus,
-  Search,
   MessageSquare,
   XCircle,
 } from 'lucide-react';
@@ -37,7 +35,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -51,7 +48,7 @@ export default function HelpSupportPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [showPlanLimit, setShowPlanLimit] = useState(false);
+  const [_showPlanLimit, setShowPlanLimit] = useState(false);
 
   const myTickets = useQuery(
     api.tickets.getMyTickets,
@@ -68,10 +65,10 @@ export default function HelpSupportPage() {
 
   // Check plan limitations
   const canCreateTickets = userOrg?.plan === 'professional' || userOrg?.plan === 'enterprise';
-  const canUseCriticalPriority = userOrg?.plan === 'enterprise';
-  const hasSLA = userOrg?.plan === 'enterprise';
+  const _canUseCriticalPriority = userOrg?.plan === 'enterprise';
+  const _hasSLA = userOrg?.plan === 'enterprise';
   const ticketLimit = userOrg?.plan === 'professional' ? 10 : null;
-  const historyDays = userOrg?.plan === 'professional' ? 30 : null;
+  const _historyDays = userOrg?.plan === 'professional' ? 30 : null;
 
   // Count tickets this month
   const currentMonthTickets =
@@ -436,7 +433,7 @@ function QuickHelpCard({
 }
 
 // Plan Card Component
-function PlanCard({
+function _PlanCard({
   name,
   price,
   features,

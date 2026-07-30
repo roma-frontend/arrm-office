@@ -1,5 +1,4 @@
 import nextDynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart3 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';

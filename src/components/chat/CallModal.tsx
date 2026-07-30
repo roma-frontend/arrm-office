@@ -1,22 +1,10 @@
 'use client';
-import Image from 'next/image';
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Phone,
-  PhoneOff,
-  Video,
-  VideoOff,
-  Mic,
-  MicOff,
-  Monitor,
-  Volume2,
-  VolumeX,
-} from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { useTranslation } from 'react-i18next';

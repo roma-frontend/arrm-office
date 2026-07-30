@@ -732,7 +732,7 @@ function CheckinDialog({
 
 // ============ OBJECTIVE DETAIL DIALOG ============
 
-function ObjectiveDetailDialog({
+function _ObjectiveDetailDialog({
   objectiveId,
   onClose,
   onCheckin,

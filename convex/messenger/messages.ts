@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { markConversationRead } from './conversations';
-import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 

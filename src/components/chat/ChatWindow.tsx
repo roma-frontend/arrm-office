@@ -242,7 +242,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     return () => parent.removeEventListener('scroll', handleScroll);
   }, [allMessages]);
 
-  const handleTyping = useCallback(() => {
+  const _handleTyping = useCallback(() => {
     setTyping({ conversationId, userId: currentUserId, organizationId, isTyping: true });
     if (isTypingTimeout) clearTimeout(isTypingTimeout);
     const t = setTimeout(() => {

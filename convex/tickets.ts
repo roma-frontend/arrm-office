@@ -674,11 +674,11 @@ export const createTicketChat = mutation({
 
     // Get organization
     const org = ticket.organizationId ? await ctx.db.get(ticket.organizationId) : null;
-    const orgName = org?.name || 'Organization';
+    const _orgName = org?.name || 'Organization';
 
     // Get ticket creator to determine organization
     const creator = await ctx.db.get(ticket.createdBy);
-    const creatorName = creator?.name || 'Unknown';
+    const _creatorName = creator?.name || 'Unknown';
 
     // Determine organization ID for chat
     // Priority: ticket's org > creator's org > superadmin's org

@@ -1,6 +1,4 @@
 ﻿'use client';
-import Image from 'next/image';
-
 import { useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';

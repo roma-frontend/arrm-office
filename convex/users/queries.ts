@@ -2,13 +2,13 @@ import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { query } from '../_generated/server';
 import { paginationOptsValidator } from 'convex/server';
-import type { Id, Doc } from '../_generated/dataModel';
+import type { Id } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin } from '../lib/auth';
 
 // ── Helper: Get user ID from email or userId ────────────────────────────────
-async function getUserIdIdentityOrEmail(
+async function _getUserIdIdentityOrEmail(
   ctx: QueryCtx,
   email?: string,
   userId?: Id<'users'>,

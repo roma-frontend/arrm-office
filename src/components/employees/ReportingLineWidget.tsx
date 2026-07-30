@@ -5,17 +5,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { motion } from '@/lib/cssMotion';
-import {
-  ChevronDown,
-  Crown,
-  UserCheck,
-  User,
-  Car,
-  Shield,
-  Mail,
-  Building2,
-  Briefcase,
-} from 'lucide-react';
+import { ChevronDown, Crown, UserCheck, User, Car, Shield, Mail, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';

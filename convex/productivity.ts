@@ -11,7 +11,7 @@ import { getAuthCaller } from './lib/getAuthCaller';
 export const getTodayStats = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
-    const now = Date.now();
+    const _now = Date.now();
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayStartMs = todayStart.getTime();

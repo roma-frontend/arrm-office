@@ -103,9 +103,9 @@ export default function DashboardClient() {
   }, [stats.pieData, t]);
 
   const monthlyTrend = useMemo(() => {
-    const now = new Date();
+    const _now = new Date();
     return stats.monthlyTrend.map((entry) => {
-      const [year, month] = entry.key.split('-');
+      const [_year, month] = entry.key.split('-');
       const monthIdx = parseInt(month!, 10) - 1;
       const monthKey =
         ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][

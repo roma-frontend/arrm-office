@@ -80,7 +80,7 @@ export default function ProjectsClient({ userId, userRole }: { userId: string; u
     organizationId ? { organizationId } : 'skip',
   );
   const createProject = useMutation(api.projects.createProject);
-  const users = useQuery(api.tasks.getUsersForAssignment);
+  const _users = useQuery(api.tasks.getUsersForAssignment);
 
   const filtered = useMemo(() => {
     if (!projects) return [];

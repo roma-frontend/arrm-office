@@ -18,7 +18,7 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
   return data.value;
 }
 
-async function getAuthPayload(req: NextRequest) {
+async function getAuthPayload(_req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get('hr-auth-token')?.value;
   if (token) {

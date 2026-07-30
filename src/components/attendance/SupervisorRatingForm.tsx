@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 import { Star, Send, X } from 'lucide-react';
-import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Id } from '../../../convex/_generated/dataModel';

@@ -91,7 +91,7 @@ test.describe('Admin Leave Settings', () => {
       if (await approvalText.isVisible()) {
         // Should have role badges (supervisor, hr, etc.)
         const selectAdd = page.locator('[role="combobox"]');
-        const hasAddRole = await selectAdd.isVisible().catch(() => false);
+        const _hasAddRole = await selectAdd.isVisible().catch(() => false);
         // If the "Add role" combobox is visible, the approval chain section is accessible
       }
     }

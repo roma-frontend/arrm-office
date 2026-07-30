@@ -1,29 +1,11 @@
 ﻿'use client';
-import Image from 'next/image';
-
 import React, { useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  User,
-  Mail,
-  Phone,
-  Building2,
-  Calendar,
-  Briefcase,
-  Star,
-  Clock,
-  Target,
-  Award,
-  AlertTriangle,
-  Plus,
-  Edit2,
-  Trash2,
-  IdCard,
-} from 'lucide-react';
+import { Briefcase, Star, Clock, Target, AlertTriangle, Plus, Trash2, IdCard } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { format } from 'date-fns';
@@ -33,7 +15,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { SupervisorRatingForm } from '@/components/attendance/SupervisorRatingForm';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from '@/lib/cssMotion';
+import { AnimatePresence } from '@/lib/cssMotion';
 import {
   Dialog,
   DialogContent,

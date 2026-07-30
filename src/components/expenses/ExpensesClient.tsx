@@ -6,8 +6,6 @@ import { useTheme } from '@/components/ThemeProvider';
 import { motion } from '@/lib/cssMotion';
 import {
   DollarSign,
-  TrendingUp,
-  Users,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -183,7 +181,7 @@ export default function ExpensesClient() {
     queryOrgId !== undefined || isSuperadmin ? { organizationId: queryOrgId } : 'skip',
   );
 
-  const submitExpense = _useMutation(api.expenses.submitExpense);
+  const _submitExpense = _useMutation(api.expenses.submitExpense);
   const approveExpense = _useMutation(api.expenses.approveExpense);
   const rejectExpense = _useMutation(api.expenses.rejectExpense);
   const deleteExpense = _useMutation(api.expenses.deleteExpense);

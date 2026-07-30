@@ -737,7 +737,7 @@ function CreateDocumentWizard({
       toast.success(t('signatures.created', 'Document sent for signing!'));
       onClose();
       resetForm();
-    } catch (e: unknown) {
+    } catch (_e: unknown) {
       toast.error(t('signatures.errors.createFailed', 'Failed to create document'));
     }
   };

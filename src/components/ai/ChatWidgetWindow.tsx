@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef, useEffect, useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import {

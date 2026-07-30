@@ -5,13 +5,11 @@
 
 'use client';
 
-import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import {
   TextInputStep,
   TextareaStep,
-  SelectStep,
   CardSelectionStep,
   RadioGroupStep,
   CheckboxStep,

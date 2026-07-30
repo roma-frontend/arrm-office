@@ -24,14 +24,12 @@ import { useShallow } from 'zustand/shallow';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { toast } from 'sonner';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Button } from '@/components/ui/button';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -126,7 +124,7 @@ function PositionWizard({
         }
       : { title: '', description: '', departmentId: '', level: '', salaryMin: '', salaryMax: '' },
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [_isSubmitting, setIsSubmitting] = useState(false);
 
   const updateStepData = (key: string, value: string | number | boolean | null) => {
     setWizardData((prev) => ({ ...prev, [key]: value }));
@@ -357,7 +355,7 @@ function PositionWizard({
         toast.success(t('positionWizard.toast.createSuccess'));
       }
       onComplete();
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('positionWizard.toast.error'));
     } finally {
       setIsSubmitting(false);
@@ -402,7 +400,7 @@ function PositionWizard({
 export default function PositionsClient() {
   const { t } = useTranslation();
   const router = useRouter();
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const _isMobile = useMediaQuery('(max-width: 768px)');
 
   const { user, isAuthenticated } = useAuthStore(
     useShallow((state) => ({
@@ -475,7 +473,7 @@ export default function PositionsClient() {
     try {
       await removePosition({ id });
       toast.success(t('common.deleted'));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('common.error'));
     }
   };

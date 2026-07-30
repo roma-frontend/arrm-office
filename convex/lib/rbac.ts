@@ -9,7 +9,7 @@
 
 import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
-import { isSuperadminEmail, isSuperadmin as isSuperadminRole } from './auth';
+import { isSuperadmin as isSuperadminRole } from './auth';
 
 /** Valid role hierarchy (lower index = higher privilege) */
 export const ROLE_HIERARCHY = ['superadmin', 'admin', 'supervisor', 'driver', 'employee'] as const;

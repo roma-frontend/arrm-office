@@ -8,7 +8,6 @@ import { Id } from '../../../convex/_generated/dataModel';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import {
-  X,
   Save,
   User,
   Mail,

@@ -486,7 +486,7 @@ function TicketRow({
 }
 
 // Create Ticket Dialog Component
-function CreateTicketDialog({
+function _CreateTicketDialog({
   open,
   onOpenChange,
   userId,
@@ -641,7 +641,7 @@ function TicketDetailDialog({
   );
 
   const updateStatus = useMutation(api.tickets.updateTicketStatus);
-  const assignTicket = useMutation(api.tickets.assignTicket);
+  const _assignTicket = useMutation(api.tickets.assignTicket);
   const addComment = useMutation(api.tickets.addTicketComment);
   const resolveTicket = useMutation(api.tickets.resolveTicket);
   const createTicketChat = useMutation(api.tickets.createTicketChat);
@@ -664,7 +664,7 @@ function TicketDetailDialog({
       });
       setCommentText('');
       toast.success(t('superadmin.support.commentAdded'));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('superadmin.support.errorAddingComment'));
     }
   };
@@ -681,7 +681,7 @@ function TicketDetailDialog({
       });
       toast.success(t('superadmin.support.ticketResolved'));
       onOpenChange(false);
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('superadmin.support.errorResolvingTicket'));
     }
   };

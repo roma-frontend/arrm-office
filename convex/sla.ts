@@ -36,7 +36,7 @@ function calculateResponseTime(
     }
 
     const currentHour = current.getHours();
-    const currentMinutes = current.getMinutes();
+    const _currentMinutes = current.getMinutes();
 
     if (currentHour < businessStartHour) {
       // Before business hours - skip to start

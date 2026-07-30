@@ -7,7 +7,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation } from '../_generated/server';
-import { MAX_PAGE_SIZE } from '../pagination';
 import { SMALL_LIST_CAP } from '../lib/limits';
 import { isSuperadmin } from '../lib/auth';
 

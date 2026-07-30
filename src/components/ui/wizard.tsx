@@ -25,7 +25,7 @@ export function useWizardContext() {
   return context;
 }
 
-interface StepContent {
+interface _StepContent {
   stepData: Record<string, string | number | boolean | null | string[]>;
   updateStepData: (key: string, value: unknown) => void;
 }

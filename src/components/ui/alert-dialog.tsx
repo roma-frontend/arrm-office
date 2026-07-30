@@ -1,14 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from './dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './dialog';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
 

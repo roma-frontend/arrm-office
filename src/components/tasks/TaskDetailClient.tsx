@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -12,13 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
-  Calendar,
   Clock,
-  User,
   FileText,
   CheckCircle,
   XCircle,
@@ -29,7 +26,6 @@ import {
   Paperclip,
   MessageSquare,
   Target,
-  Layers,
   ChevronRight,
   BarChart3,
 } from 'lucide-react';
@@ -118,7 +114,7 @@ export default function TaskDetailClient() {
   const dateLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
 
   const task = useQuery(api.tasks.getTask, { taskId });
-  const currentUser = useQuery(
+  const _currentUser = useQuery(
     api.users.queries.getUserById,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
   );
@@ -129,7 +125,7 @@ export default function TaskDetailClient() {
     task?.objectiveId ? { objectiveId: task.objectiveId as Id<'objectives'> } : 'skip',
   );
 
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [_isUpdating, _setIsUpdating] = useState(false);
 
   if (!task) {
     return (

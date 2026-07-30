@@ -1,171 +1,327 @@
-#!/usr/bin/env node
-
-/**
- * Convert favicon SVGs to PNG files
- * Requires: npm install sharp svgexport or ImageMagick
- */
-
-const fs = require('fs');
-const path = require('path');
-
-// SVG to PNG conversion using Node.js canvas or similar
-// Since we don't have a proper converter installed, we'll create a simple HTML-based converter
-
-const html = `
-<!DOCTYPE html>
+#!/usr/bin/env node /** * Convert favicon SVGs to PNG files * Requires: npm install sharp svgexport
+or ImageMagick */ const fs = require('fs'); const path = require('path'); // SVG to PNG conversion
+using Node.js canvas or similar // Since we don't have a proper converter installed, we'll create a
+simple HTML-based converter const html = `
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>Favicon Converter</title>
     <style>
-        body { font-family: system-ui; background: #f5f5f5; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { color: #333; margin-bottom: 20px; }
-        .section { margin: 30px 0; }
-        .preview { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .icon-box { border: 1px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; }
-        .icon-box h3 { margin: 0 0 10px; font-size: 14px; color: #666; }
-        .icon-preview { height: 180px; display: flex; align-items: center; justify-content: center; background: #f9f9f9; border-radius: 4px; margin-bottom: 10px; }
-        .icon-preview img, .icon-preview svg { max-width: 100%; max-height: 100%; }
-        .copy-btn { background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        .copy-btn:hover { background: #1d4ed8; }
-        code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+      body {
+        font-family: system-ui;
+        background: #f5f5f5;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+      .section {
+        margin: 30px 0;
+      }
+      .preview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+      }
+      .icon-box {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+      }
+      .icon-box h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: #666;
+      }
+      .icon-preview {
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f9f9f9;
+        border-radius: 4px;
+        margin-bottom: 10px;
+      }
+      .icon-preview img,
+      .icon-preview svg {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      .copy-btn {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .copy-btn:hover {
+        background: #1d4ed8;
+      }
+      code {
+        background: #f5f5f5;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: monospace;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>🎨 Strata Favicon Preview</h1>
-        
-        <div class="section">
-            <h2>Favicon Files Created</h2>
-            <div class="preview">
-                <div class="icon-box">
-                    <h3>favicon.svg</h3>
-                    <div class="icon-preview">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="150" height="150">
-                            <defs>
-                                <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#3b82f6" />
-                                    <stop offset="100%" stop-color="#8b5cf6" />
-                                </linearGradient>
-                            </defs>
-                            <rect width="256" height="256" fill="#0a0a1a" rx="48"/>
-                            <circle cx="128" cy="128" r="110" fill="url(#g1)" opacity="0.15"/>
-                            <circle cx="128" cy="128" r="95" fill="none" stroke="url(#g1)" stroke-width="2" opacity="0.3"/>
-                            <text x="128" y="148" font-family="system-ui" font-size="96" font-weight="700" text-anchor="middle" fill="white" letter-spacing="-2">HR</text>
-                            <circle cx="180" cy="96" r="6" fill="url(#g1)"/>
-                        </svg>
-                    </div>
-                    <p><code>256x256</code> - Default</p>
-                </div>
-                
-                <div class="icon-box">
-                    <h3>favicon-animated.svg</h3>
-                    <div class="icon-preview">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="150" height="150">
-                            <defs>
-                                <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#3b82f6" />
-                                    <stop offset="100%" stop-color="#8b5cf6" />
-                                </linearGradient>
-                                <style>
-                                    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-                                    .pulse-circle { animation: pulse 2s ease-in-out infinite; }
-                                </style>
-                            </defs>
-                            <rect width="256" height="256" fill="#0a0a1a" rx="48"/>
-                            <circle cx="128" cy="128" r="110" fill="url(#g2)" opacity="0.1" class="pulse-circle"/>
-                            <circle cx="128" cy="128" r="95" fill="none" stroke="url(#g2)" stroke-width="2" opacity="0.4" class="pulse-circle"/>
-                            <text x="128" y="148" font-family="system-ui" font-size="96" font-weight="700" text-anchor="middle" fill="white" letter-spacing="-2">HR</text>
-                            <circle cx="180" cy="96" r="6" fill="url(#g2)"/>
-                        </svg>
-                    </div>
-                    <p><code>256x256</code> - Animated</p>
-                </div>
-                
-                <div class="icon-box">
-                    <h3>favicon-32x32.svg</h3>
-                    <div class="icon-preview">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="100" height="100">
-                            <defs>
-                                <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#3b82f6" />
-                                    <stop offset="100%" stop-color="#8b5cf6" />
-                                </linearGradient>
-                            </defs>
-                            <rect width="256" height="256" fill="#0a0a1a" rx="24"/>
-                            <circle cx="128" cy="128" r="85" fill="url(#g3)" opacity="0.12"/>
-                            <text x="128" y="144" font-family="system-ui" font-size="76" font-weight="700" text-anchor="middle" fill="white" letter-spacing="-1.5">HR</text>
-                        </svg>
-                    </div>
-                    <p><code>32x32</code></p>
-                </div>
-                
-                <div class="icon-box">
-                    <h3>favicon-16x16.svg</h3>
-                    <div class="icon-preview">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="50" height="50">
-                            <defs>
-                                <linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#3b82f6" />
-                                    <stop offset="100%" stop-color="#8b5cf6" />
-                                </linearGradient>
-                            </defs>
-                            <rect width="256" height="256" fill="#0a0a1a" rx="16"/>
-                            <circle cx="128" cy="128" r="75" fill="url(#g4)" opacity="0.15"/>
-                            <text x="128" y="148" font-family="system-ui" font-size="60" font-weight="700" text-anchor="middle" fill="white" letter-spacing="-1">HR</text>
-                        </svg>
-                    </div>
-                    <p><code>16x16</code></p>
-                </div>
-                
-                <div class="icon-box">
-                    <h3>apple-touch-icon.svg</h3>
-                    <div class="icon-preview">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="150" height="150">
-                            <defs>
-                                <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#3b82f6" />
-                                    <stop offset="100%" stop-color="#8b5cf6" />
-                                </linearGradient>
-                            </defs>
-                            <rect width="256" height="256" fill="#0a0a1a" rx="60"/>
-                            <circle cx="128" cy="128" r="110" fill="url(#g5)" opacity="0.12"/>
-                            <text x="128" y="152" font-family="system-ui" font-size="100" font-weight="700" text-anchor="middle" fill="white" letter-spacing="-2">HR</text>
-                            <circle cx="185" cy="90" r="7" fill="url(#g5)"/>
-                        </svg>
-                    </div>
-                    <p><code>180x180</code> - iOS</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>✅ Next Steps</h2>
-            <ol>
-                <li>All <strong>SVG favicon files</strong> have been created in <code>/public</code></li>
-                <li>Files support both <strong>light and dark themes</strong> using CSS media queries</li>
-                <li>Automatic theme detection based on <code>prefers-color-scheme</code></li>
-                <li>For PNG support, use an online converter or ImageMagick:
-                    <pre>convert public/apple-touch-icon.svg public/apple-touch-icon.png</pre>
-                </li>
-            </ol>
-        </div>
-        
-        <div class="section" style="background: #f0f9ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 15px;">
-            <h3>📁 Files Created:</h3>
-            <ul>
-                <li><code>/public/favicon.svg</code> - Main favicon (256x256)</li>
-                <li><code>/public/favicon-animated.svg</code> - Animated version</li>
-                <li><code>/public/favicon-32x32.svg</code> - Small size</li>
-                <li><code>/public/favicon-16x16.svg</code> - Smallest size</li>
-                <li><code>/public/apple-touch-icon.svg</code> - iOS home screen (180x180)</li>
-                <li><code>/public/site.webmanifest</code> - Already configured</li>
-            </ul>
-        </div>
-    </div>
-</body>
-</html>
-`;
+      <h1>🎨 Strata Favicon Preview</h1>
 
-fs.writeFileSync('favicon-preview.html', html);
-console.log('✅ Favicon preview created: favicon-preview.html');
+      <div class="section">
+        <h2>Favicon Files Created</h2>
+        <div class="preview">
+          <div class="icon-box">
+            <h3>favicon.svg</h3>
+            <div class="icon-preview">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 256 256"
+                width="150"
+                height="150"
+              >
+                <defs>
+                  <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6" />
+                    <stop offset="100%" stop-color="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+                <rect width="256" height="256" fill="#0a0a1a" rx="48" />
+                <circle cx="128" cy="128" r="110" fill="url(#g1)" opacity="0.15" />
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="95"
+                  fill="none"
+                  stroke="url(#g1)"
+                  stroke-width="2"
+                  opacity="0.3"
+                />
+                <text
+                  x="128"
+                  y="148"
+                  font-family="system-ui"
+                  font-size="96"
+                  font-weight="700"
+                  text-anchor="middle"
+                  fill="white"
+                  letter-spacing="-2"
+                >
+                  HR
+                </text>
+                <circle cx="180" cy="96" r="6" fill="url(#g1)" />
+              </svg>
+            </div>
+            <p><code>256x256</code> - Default</p>
+          </div>
+
+          <div class="icon-box">
+            <h3>favicon-animated.svg</h3>
+            <div class="icon-preview">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 256 256"
+                width="150"
+                height="150"
+              >
+                <defs>
+                  <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6" />
+                    <stop offset="100%" stop-color="#8b5cf6" />
+                  </linearGradient>
+                  <style>
+                    @keyframes pulse {
+                      0%,
+                      100% {
+                        opacity: 0.5;
+                      }
+                      50% {
+                        opacity: 1;
+                      }
+                    }
+                    .pulse-circle {
+                      animation: pulse 2s ease-in-out infinite;
+                    }
+                  </style>
+                </defs>
+                <rect width="256" height="256" fill="#0a0a1a" rx="48" />
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="110"
+                  fill="url(#g2)"
+                  opacity="0.1"
+                  class="pulse-circle"
+                />
+                <circle
+                  cx="128"
+                  cy="128"
+                  r="95"
+                  fill="none"
+                  stroke="url(#g2)"
+                  stroke-width="2"
+                  opacity="0.4"
+                  class="pulse-circle"
+                />
+                <text
+                  x="128"
+                  y="148"
+                  font-family="system-ui"
+                  font-size="96"
+                  font-weight="700"
+                  text-anchor="middle"
+                  fill="white"
+                  letter-spacing="-2"
+                >
+                  HR
+                </text>
+                <circle cx="180" cy="96" r="6" fill="url(#g2)" />
+              </svg>
+            </div>
+            <p><code>256x256</code> - Animated</p>
+          </div>
+
+          <div class="icon-box">
+            <h3>favicon-32x32.svg</h3>
+            <div class="icon-preview">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 256 256"
+                width="100"
+                height="100"
+              >
+                <defs>
+                  <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6" />
+                    <stop offset="100%" stop-color="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+                <rect width="256" height="256" fill="#0a0a1a" rx="24" />
+                <circle cx="128" cy="128" r="85" fill="url(#g3)" opacity="0.12" />
+                <text
+                  x="128"
+                  y="144"
+                  font-family="system-ui"
+                  font-size="76"
+                  font-weight="700"
+                  text-anchor="middle"
+                  fill="white"
+                  letter-spacing="-1.5"
+                >
+                  HR
+                </text>
+              </svg>
+            </div>
+            <p><code>32x32</code></p>
+          </div>
+
+          <div class="icon-box">
+            <h3>favicon-16x16.svg</h3>
+            <div class="icon-preview">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="50" height="50">
+                <defs>
+                  <linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6" />
+                    <stop offset="100%" stop-color="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+                <rect width="256" height="256" fill="#0a0a1a" rx="16" />
+                <circle cx="128" cy="128" r="75" fill="url(#g4)" opacity="0.15" />
+                <text
+                  x="128"
+                  y="148"
+                  font-family="system-ui"
+                  font-size="60"
+                  font-weight="700"
+                  text-anchor="middle"
+                  fill="white"
+                  letter-spacing="-1"
+                >
+                  HR
+                </text>
+              </svg>
+            </div>
+            <p><code>16x16</code></p>
+          </div>
+
+          <div class="icon-box">
+            <h3>apple-touch-icon.svg</h3>
+            <div class="icon-preview">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 256 256"
+                width="150"
+                height="150"
+              >
+                <defs>
+                  <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#3b82f6" />
+                    <stop offset="100%" stop-color="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+                <rect width="256" height="256" fill="#0a0a1a" rx="60" />
+                <circle cx="128" cy="128" r="110" fill="url(#g5)" opacity="0.12" />
+                <text
+                  x="128"
+                  y="152"
+                  font-family="system-ui"
+                  font-size="100"
+                  font-weight="700"
+                  text-anchor="middle"
+                  fill="white"
+                  letter-spacing="-2"
+                >
+                  HR
+                </text>
+                <circle cx="185" cy="90" r="7" fill="url(#g5)" />
+              </svg>
+            </div>
+            <p><code>180x180</code> - iOS</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>✅ Next Steps</h2>
+        <ol>
+          <li>All <strong>SVG favicon files</strong> have been created in <code>/public</code></li>
+          <li>Files support both <strong>light and dark themes</strong> using CSS media queries</li>
+          <li>Automatic theme detection based on <code>prefers-color-scheme</code></li>
+          <li>
+            For PNG support, use an online converter or ImageMagick:
+            <pre>convert public/apple-touch-icon.svg public/apple-touch-icon.png</pre>
+          </li>
+        </ol>
+      </div>
+
+      <div
+        class="section"
+        style="background: #f0f9ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 15px"
+      >
+        <h3>📁 Files Created:</h3>
+        <ul>
+          <li><code>/public/favicon.svg</code> - Main favicon (256x256)</li>
+          <li><code>/public/favicon-animated.svg</code> - Animated version</li>
+          <li><code>/public/favicon-32x32.svg</code> - Small size</li>
+          <li><code>/public/favicon-16x16.svg</code> - Smallest size</li>
+          <li><code>/public/apple-touch-icon.svg</code> - iOS home screen (180x180)</li>
+          <li><code>/public/site.webmanifest</code> - Already configured</li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>
+`; fs.writeFileSync('favicon-preview.html', html); console.log('✅ Favicon preview created:
+favicon-preview.html');

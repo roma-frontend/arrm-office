@@ -44,7 +44,7 @@ export async function GET() {
     );
 
     // Late arrivals this week (from time tracking)
-    const monthStr = today.toISOString().slice(0, 7);
+    const _monthStr = today.toISOString().slice(0, 7);
     const lateThisMonth: Array<{ name: string; lateCount: number }> = [];
     for (const emp of activeEmployees.slice(0, 20)) {
       try {

@@ -1,19 +1,17 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Calendar, User, Heart, Star, Award, MessageSquare, Users } from 'lucide-react';
+import { ArrowLeft, User, Heart, Star, Award, MessageSquare, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 
@@ -53,7 +51,7 @@ export default function RecognitionDetailClient() {
   const dateLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
 
   const kudo = useQuery(api.recognition.getKudoById, { kudoId });
-  const currentUser = useQuery(
+  const _currentUser = useQuery(
     api.users.queries.getUserById,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
   );

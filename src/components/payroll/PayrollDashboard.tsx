@@ -8,14 +8,12 @@ import { motion } from '@/lib/cssMotion';
 import {
   DollarSign,
   TrendingUp,
-  TrendingDown,
   Users,
   Clock,
   CheckCircle,
   AlertCircle,
   ArrowRight,
   FileText,
-  Download,
   Settings,
 } from 'lucide-react';
 import { useQuery } from 'convex/react';

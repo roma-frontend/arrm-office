@@ -3,8 +3,6 @@ import { mutation, query } from './_generated/server';
 import type { QueryCtx, MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
-import { DEFAULT_LIST_CAP } from './lib/limits';
-
 /**
  * Helper to get current user ID from session token
  */

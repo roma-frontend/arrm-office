@@ -3,8 +3,6 @@ import { query } from '../_generated/server';
 import { Id, Doc } from '../_generated/dataModel';
 import { api } from '../_generated/api';
 import { MAX_PAGE_SIZE } from '../pagination';
-import { getProfile } from '../lib/userProfile';
-
 // Isolate API references at module level
 const superadminApi = api.superadmin;
 

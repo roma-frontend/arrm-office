@@ -5,10 +5,8 @@ import dynamic from 'next/dynamic';
 import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
 import { useTranslation } from 'react-i18next';
 import '@/i18n/config';
-import Link from 'next/link';
 import { Plus, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useAuthStore } from '@/store/useAuthStore';
 import CompensationRecordWizard from '@/components/compensation/CompensationRecordWizard';
 

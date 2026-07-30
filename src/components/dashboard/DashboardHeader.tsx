@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
 import { Building2, CreditCard, ShieldCheck, CalendarDays, Plus } from 'lucide-react';
 import Link from 'next/link';

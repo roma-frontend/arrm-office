@@ -192,7 +192,7 @@ function CheckCircleIcon({
   );
 }
 
-function DollarIcon({ className }: { className?: string }) {
+function _DollarIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}

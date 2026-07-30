@@ -51,7 +51,7 @@ export function NotificationBanner() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const router = useRouter();
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const _isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const notifications = useQuery(
     api.notifications.getUserNotifications,

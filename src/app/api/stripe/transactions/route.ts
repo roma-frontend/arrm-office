@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { verifyJWT } from '@/lib/jwt';
 import { logger } from '@/lib/logger';
 
-const isDev = process.env.NODE_ENV === 'development';
+const _isDev = process.env.NODE_ENV === 'development';
 
 // Safe Stripe initialization - only create if key exists
 function getStripe(): Stripe | null {

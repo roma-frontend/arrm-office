@@ -14,16 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  AlertCircle,
-  Calendar,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Users,
-  FileText,
-  ChevronRight,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, Users, FileText, ChevronRight } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
   Dialog,

@@ -45,7 +45,7 @@ export function FocusMode({ currentPresence, onFocusChange }: FocusModeProps) {
           description: t('focusMode.backToNormal'),
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('focusMode.toggleFailed'));
     }
   };

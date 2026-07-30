@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -29,10 +29,8 @@ import {
   Circle,
   SkipForward,
   Users,
-  UserPlus,
   ClipboardList,
   FileText,
-  Layout,
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react';

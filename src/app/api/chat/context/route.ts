@@ -3,7 +3,7 @@ import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
 import { signConvexJWT, type JWTPayload } from '@/lib/jwt';
 
-const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
+const _CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
 
 // Opt out of static generation — uses cookies
 export const revalidate = 0;
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       role: session.role as JWTPayload['role'],
       organizationId: session.organizationId,
     });
-    const userLeaves = await fetchQuery(api.leaves.getUserLeaves, { userId });
+    const _userLeaves = await fetchQuery(api.leaves.getUserLeaves, { userId });
     const analytics = await fetchQuery(api.analytics.getUserAnalytics, { userId });
     const teamCalendar = await fetchQuery(
       api.analytics.getTeamCalendar,

@@ -14,18 +14,15 @@ import {
   Users,
   Edit2,
   Trash2,
-  Plus,
   Search,
   LayoutGrid,
   List,
   TrendingUp,
-  DollarSign,
   Building2,
   AlertCircle,
   User,
   ChevronRight,
   CheckCircle,
-  Palette,
   BarChart3,
   Wallet,
 } from 'lucide-react';
@@ -133,7 +130,7 @@ function PositionWizard({
         }
       : { title: '', description: '', departmentId: '', level: '', salaryMin: '', salaryMax: '' },
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [_isSubmitting, setIsSubmitting] = useState(false);
 
   const updateStepData = (key: string, value: string | number | boolean | null) => {
     setWizardData((prev) => ({ ...prev, [key]: value }));
@@ -364,7 +361,7 @@ function PositionWizard({
         toast.success(t('positionWizard.toast.createSuccess'));
       }
       onComplete();
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('positionWizard.toast.error'));
     } finally {
       setIsSubmitting(false);
@@ -411,7 +408,7 @@ export default function PositionDetailClient() {
   const router = useRouter();
   const params = useParams();
   const positionId = params.id as string;
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const _isMobile = useMediaQuery('(max-width: 768px)');
 
   const { user, isAuthenticated } = useAuthStore(
     useShallow((state) => ({
@@ -469,7 +466,7 @@ export default function PositionDetailClient() {
       await removePosition({ id: position._id as Id<'positions'> });
       toast.success(t('common.deleted'));
       router.push('/employees/positions');
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('common.error'));
     }
   };

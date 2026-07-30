@@ -15,22 +15,17 @@ import {
   Search,
   UserCheck,
   UserCog,
-  Shield,
   Crown,
   User,
   Car,
   ChevronRight,
   Building2,
-  Briefcase,
   CheckCircle2,
-  AlertCircle,
   Loader2,
-  Star,
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
 
@@ -52,7 +47,7 @@ function roleConfig(role: string) {
   return ROLE_CONFIG[role as RoleKey] ?? ROLE_CONFIG.employee;
 }
 
-interface PotentialManager {
+interface _PotentialManager {
   _id: Id<'users'>;
   name: string;
   email: string;

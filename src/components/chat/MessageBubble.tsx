@@ -28,7 +28,6 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import i18n from 'i18next';
 import { SmartReply } from './SmartReply';
 import { LinkPreview, extractUrl } from './LinkPreview';
 import { createPortal } from 'react-dom';
@@ -37,7 +36,7 @@ import { useOptimisticReaction } from '@/hooks/useOptimisticActions';
 // ── i18n labels for delivered / seen ──────────────────────────────────────────
 type Lang = 'en' | 'ru' | 'hy';
 
-function getLang(): Lang {
+function _getLang(): Lang {
   if (typeof window === 'undefined') return 'en';
   const l = document.documentElement.lang || navigator.language || 'en';
   if (l.startsWith('ru')) return 'ru';
@@ -361,7 +360,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   const { t } = useTranslation();
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
   const [showActions, setShowActions] = useState(false);
-  const [actionBarBelow, setActionBarBelow] = useState(false);
+  const [_actionBarBelow, setActionBarBelow] = useState(false);
   const [actionBarPos, setActionBarPos] = useState<{ top: number; left: number } | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [menuOpenDown, setMenuOpenDown] = useState(false);
@@ -381,10 +380,10 @@ export const MessageBubble = React.memo(function MessageBubble({
   const msgRowRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const toggleReaction = useMutation(api.chat.mutations.toggleReaction);
+  const _toggleReaction = useMutation(api.chat.mutations.toggleReaction);
   const editMessage = useMutation(api.chat.mutations.editMessage);
   const deleteMessage = useMutation(api.chat.mutations.deleteMessage);
-  const deleteMessageForMe = useMutation(api.chat.mutations.deleteMessageForMe);
+  const _deleteMessageForMe = useMutation(api.chat.mutations.deleteMessageForMe);
   const pinMessage = useMutation(api.chat.mutations.pinMessage);
   const votePoll = useMutation(api.chat.mutations.votePoll);
   const closePoll = useMutation(api.chat.mutations.closePoll);
@@ -434,7 +433,7 @@ export const MessageBubble = React.memo(function MessageBubble({
     // Service broadcast: official company-wide announcement
     if (message.isServiceBroadcast) {
       const icon = message.broadcastIcon || 'ℹ️';
-      const senderIcon = '🔧'; // System icon
+      const _senderIcon = '🔧'; // System icon
 
       // Remove sender name prefix (e.g., "Roman: ") from content for system announcements
       let cleanContent = message.content;

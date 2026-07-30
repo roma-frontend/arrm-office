@@ -6,22 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import {
-  Users,
-  Plus,
-  CreditCard,
-  Calendar,
-  DollarSign,
-  Shield,
-  X,
-  CheckCircle,
-  AlertCircle,
-  ShieldAlert,
-} from 'lucide-react';
+import { Users, Plus, Calendar, Shield, X, CheckCircle, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -37,12 +23,12 @@ export default function SubscriptionsManagementPage() {
   // Get current user from useAuthStore (works with both email/password and OAuth)
   const { user } = useAuthStore();
 
-  const allOrganizations = useQuery(
+  const _allOrganizations = useQuery(
     api.organizations.getAllOrganizations,
     user?.id ? { superadminUserId: user.id as Id<'users'> } : 'skip',
   );
 
-  const createManual = useMutation(api.subscriptions_admin.createManualSubscription);
+  const _createManual = useMutation(api.subscriptions_admin.createManualSubscription);
 
   const [showForm, setShowForm] = useState(false);
 
@@ -80,7 +66,7 @@ export default function SubscriptionsManagementPage() {
     );
   }
 
-  const handleCancel = async (subId: Id<'subscriptions'>) => {
+  const handleCancel = async (_subId: Id<'subscriptions'>) => {
     if (!confirm(t('superadmin.subscriptions.confirmCancelSub'))) return;
 
     toast.error(t('superadmin.subscriptions.cancelNotImplemented'));

@@ -11,7 +11,6 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Building2,
@@ -298,7 +297,7 @@ export default function AlignmentViewDashboard() {
     | Id<'organizations'>
     | undefined;
 
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [filterYear, _setFilterYear] = useState(new Date().getFullYear());
   const [compact, setCompact] = useState(false);
 
   const alignmentTree = useQuery(

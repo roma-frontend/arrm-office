@@ -6,7 +6,6 @@
 
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
-import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { isSuperadmin } from '../lib/auth';

@@ -22,8 +22,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import { AnimatePresence } from '@/lib/cssMotion';
-
 import { useTheme } from '@/components/ThemeProvider';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 
@@ -161,7 +159,7 @@ function scrollToHash(hash: string, offset = 84) {
  * Liquid hover background (Stripe/Linear vibe)
  * - работает и на desktop hover, и на mobile (tap = активный state)
  */
-function LiquidHoverBg({ accent, active }: { accent: string; active: boolean }) {
+function _LiquidHoverBg({ accent, active }: { accent: string; active: boolean }) {
   const x = useMotionValue(60);
   const y = useMotionValue(20);
 

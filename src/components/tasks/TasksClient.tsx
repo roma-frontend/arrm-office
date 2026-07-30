@@ -1,10 +1,10 @@
 ﻿'use client';
 
-import { useState, useMemo, useRef, useCallback, useTransition, useEffect } from 'react';
+import { useState, useMemo, useRef, useTransition, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -15,14 +15,12 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AssignSupervisorModal } from './AssignSupervisorModal';
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   TouchSensor,
   useSensor,
   useSensors,
   useDroppable,
   useDraggable,
-  useDndMonitor,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
@@ -489,8 +487,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const [filterEmployee, setFilterEmployee] = useState<string>('all');
   const [search, setSearch] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [activeTask, setActiveTask] = useState<any>(null);
-  const [isPending, startTransition] = useTransition();
+  const [_activeTask, setActiveTask] = useState<any>(null);
+  const [_isPending, startTransition] = useTransition();
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {

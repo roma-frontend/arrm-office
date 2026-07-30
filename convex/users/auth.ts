@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { mutation, query } from '../_generated/server';
+import { mutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from '../lib/auth';
 import { SMALL_LIST_CAP } from '../lib/limits';
@@ -76,7 +76,7 @@ export const createOAuthUser = mutation({
           .take(SMALL_LIST_CAP)
       : [];
 
-    const isFirstMember = orgMembers.length === 0;
+    const _isFirstMember = orgMembers.length === 0;
     const role = isSuperAdmin ? 'superadmin' : 'employee';
 
     // Superadmin is auto-approved, regular users need onboarding (isApproved: false)

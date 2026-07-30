@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, usePaginatedQuery } from 'convex/react';
+import { useQuery, usePaginatedQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -12,7 +12,6 @@ import {
   FileText,
   ClipboardList,
   Eye,
-  Clock,
   CheckCircle,
   XCircle,
   ChevronRight,
@@ -21,13 +20,8 @@ import {
   User,
   Lock,
   AlertTriangle,
-  Plus,
   Search,
   Filter,
-  Download,
-  Trash2,
-  Edit,
-  X,
 } from 'lucide-react';
 
 type TabId = 'stats' | 'audit' | 'gdpr' | 'consents' | 'dataAccess' | 'policies';

@@ -9,7 +9,7 @@ import { Id } from '@/convex/_generated/dataModel';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import { TextInputStep, TextareaStep, SelectStep } from '@/components/ui/wizard-step-components';
-import { FileText, DollarSign, Calendar, Shield } from 'lucide-react';
+import { FileText, DollarSign, Shield } from 'lucide-react';
 
 interface PolicyWizardProps {
   open: boolean;

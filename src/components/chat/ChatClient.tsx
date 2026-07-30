@@ -48,8 +48,8 @@ export default function ChatClient({
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
   const [mobileShowChat, setMobileShowChat] = useState(false);
   const [chatVisible, setChatVisible] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
-  const [offlineMessages, setOfflineMessages] = useState<
+  const [isOnline, _setIsOnline] = useState(true);
+  const [_offlineMessages, _setOfflineMessages] = useState<
     { conversationId: string; content: string; type?: string }[]
   >([]);
   const [listCollapsed, setListCollapsed] = useState(false);

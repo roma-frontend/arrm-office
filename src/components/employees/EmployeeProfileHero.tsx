@@ -64,7 +64,7 @@ function getInitials(name: string): string {
 }
 
 // Theme-aware gradient using CSS variables
-function getRoleGradientStyle(): React.CSSProperties {
+function _getRoleGradientStyle(): React.CSSProperties {
   return {
     background:
       'linear-gradient(135deg, rgba(var(--primary-rgb), 0.8), rgba(var(--primary-rgb), 0.35))',

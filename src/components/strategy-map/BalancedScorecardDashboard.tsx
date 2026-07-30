@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -10,7 +10,6 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import {
   DollarSign,
@@ -88,7 +87,7 @@ const PERSPECTIVE_CONFIG: Record<
   },
 };
 
-const PERSPECTIVE_LABELS: Record<BscPerspective, string> = {
+const _PERSPECTIVE_LABELS: Record<BscPerspective, string> = {
   financial: 'Financial',
   customer: 'Customer',
   internal: 'Internal Process',

@@ -72,7 +72,7 @@ export const queryDriverAvailability = query({
       .take(SMALL_LIST_CAP);
 
     // Filter by driver name if mentioned
-    const targetDrivers = drivers;
+    const _targetDrivers = drivers;
     if (intent.driverName) {
       // Get user info for name matching - filtering logic would go here
     }
@@ -332,7 +332,7 @@ function generateAvailabilityResponse(
 /**
  * Generate AI summary for driver schedule
  */
-function generateScheduleSummary(schedules: Doc<'driverSchedules'>[], hasFullAccess: boolean) {
+function generateScheduleSummary(schedules: Doc<'driverSchedules'>[], _hasFullAccess: boolean) {
   const totalHours = schedules.reduce((sum, s) => {
     return sum + (s.endTime - s.startTime) / (1000 * 60 * 60);
   }, 0);

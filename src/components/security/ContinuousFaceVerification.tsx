@@ -30,7 +30,7 @@ export default function ContinuousFaceVerification({
   const streamRef = useRef<MediaStream | null>(null);
   const failCountRef = useRef(0);
   const [status, setStatus] = useState<'idle' | 'checking' | 'ok' | 'warning' | 'failed'>('idle');
-  const [showWarning, setShowWarning] = useState(false);
+  const [_showWarning, setShowWarning] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout>(null);
 
   const stopCamera = useCallback(() => {

@@ -1,23 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Offline — Strata</title>
-  <style>
-    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #0f172a; color: #e2e8f0; }
-    .container { text-align: center; padding: 2rem; }
-    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    p { color: #94a3b8; margin-bottom: 1.5rem; }
-    button { background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-size: 1rem; cursor: pointer; }
-    button:hover { background: #1d4ed8; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>You're offline</h1>
-    <p>Check your internet connection and try again.</p>
-    <button onclick="window.location.reload()">Retry</button>
-  </div>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline — Strata</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .container {
+        text-align: center;
+        padding: 2rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+      p {
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+      }
+      button {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #1d4ed8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>You're offline</h1>
+      <p>Check your internet connection and try again.</p>
+      <button onclick="window.location.reload()">Retry</button>
+    </div>
+  </body>
 </html>

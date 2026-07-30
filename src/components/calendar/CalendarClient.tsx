@@ -34,7 +34,6 @@ import {
   isToday,
   isBefore,
   startOfDay,
-  Locale,
 } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';

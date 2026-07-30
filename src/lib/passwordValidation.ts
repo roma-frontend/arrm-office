@@ -131,6 +131,8 @@ export function validatePassword(password: string, t?: Translator): PasswordVali
 
   const requiredMet = requirements.filter((r) => r.required).every((r) => r.met);
 
+  const _allMet = requirements.every((r) => r.met);
+
   // Calculate strength score (0-100)
   let score = 0;
   requirements.forEach((req) => {

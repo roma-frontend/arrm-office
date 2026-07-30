@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from '@/lib/cssMotion';
 import { Fingerprint } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
@@ -71,7 +70,7 @@ export function WebAuthnButton({ mode, userId, onSuccess, disabled }: WebAuthnBu
 
       if (!credential) throw new Error('No credential created');
 
-      const response = credential.response as AuthenticatorAttestationResponse;
+      const _response = credential.response as AuthenticatorAttestationResponse;
       const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
 
       // Store credential ID for future logins

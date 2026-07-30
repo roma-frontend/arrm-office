@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query, internalMutation } from './_generated/server';
-import type { MutationCtx } from './_generated/server';
 import { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';

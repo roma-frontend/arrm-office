@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useStatusUpdate } from '@/context/StatusUpdateContext';
-import { X, CheckCircle2, Clock, Phone, Home, Zap, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle2, Clock, Phone, Zap, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const statusConfig: Record<

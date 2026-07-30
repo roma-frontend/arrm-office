@@ -109,14 +109,14 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
   // Geocode search state
   const [pickupQuery, setPickupQuery] = useState('');
   const [dropoffQuery, setDropoffQuery] = useState('');
-  const [pickupResults, setPickupResults] = useState<
+  const [_pickupResults, setPickupResults] = useState<
     { lat: number; lng: number; display_name: string }[]
   >([]);
-  const [dropoffResults, setDropoffResults] = useState<
+  const [_dropoffResults, setDropoffResults] = useState<
     { lat: number; lng: number; display_name: string }[]
   >([]);
-  const [showPickupResults, setShowPickupResults] = useState(false);
-  const [showDropoffResults, setShowDropoffResults] = useState(false);
+  const [_showPickupResults, setShowPickupResults] = useState(false);
+  const [_showDropoffResults, setShowDropoffResults] = useState(false);
   const pickupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -168,7 +168,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handlePickupInputChange = (value: string) => {
+  const _handlePickupInputChange = (value: string) => {
     setPickupQuery(value);
     setTripInfo((prev) => ({ ...prev, from: value }));
     setPickupCoords(undefined);
@@ -185,7 +185,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
     }
   };
 
-  const handleDropoffInputChange = (value: string) => {
+  const _handleDropoffInputChange = (value: string) => {
     setDropoffQuery(value);
     setTripInfo((prev) => ({ ...prev, to: value }));
     setDropoffCoords(undefined);
@@ -202,7 +202,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
     }
   };
 
-  const selectPickupResult = (result: { lat: number; lng: number; display_name: string }) => {
+  const _selectPickupResult = (result: { lat: number; lng: number; display_name: string }) => {
     logger.log('[selectPickupResult]', result);
     setPickupCoords({ lat: result.lat, lng: result.lng, address: result.display_name });
     setTripInfo((prev) => ({ ...prev, from: result.display_name }));
@@ -212,7 +212,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
     // Map will auto-center via DriverMap useEffect when pickupCoords changes
   };
 
-  const selectDropoffResult = (result: { lat: number; lng: number; display_name: string }) => {
+  const _selectDropoffResult = (result: { lat: number; lng: number; display_name: string }) => {
     logger.log('[selectDropoffResult]', result);
     setDropoffCoords({ lat: result.lat, lng: result.lng, address: result.display_name });
     setTripInfo((prev) => ({ ...prev, to: result.display_name }));

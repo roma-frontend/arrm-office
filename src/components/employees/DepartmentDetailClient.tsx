@@ -14,27 +14,17 @@ import {
   Users,
   Edit2,
   Trash2,
-  Plus,
   Search,
   LayoutGrid,
   List,
-  Briefcase,
   Mail,
   Phone,
   MapPin,
-  Calendar,
   User,
   AlertCircle,
-  TrendingUp,
-  DollarSign,
   ChevronRight,
-  BarChart3,
-  Eye,
-  Download,
-  Filter,
   Palette,
   CheckCircle,
-  X,
 } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -43,7 +33,6 @@ import { toast } from 'sonner';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import {
@@ -99,7 +88,7 @@ function DepartmentWizard({
         }
       : { name: '', description: '', color: '#3B82F6' },
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [_isSubmitting, setIsSubmitting] = useState(false);
 
   const updateStepData = (key: string, value: string | number | boolean | null) => {
     setWizardData((prev) => ({ ...prev, [key]: value }));
@@ -228,7 +217,7 @@ function DepartmentWizard({
         toast.success(t('departmentWizard.toast.createSuccess'));
       }
       onComplete();
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('departmentWizard.toast.error'));
     } finally {
       setIsSubmitting(false);
@@ -275,7 +264,7 @@ export default function DepartmentDetailClient() {
   const router = useRouter();
   const params = useParams();
   const departmentId = params.id as string;
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const _isMobile = useMediaQuery('(max-width: 768px)');
 
   const { user, isAuthenticated } = useAuthStore(
     useShallow((state) => ({
@@ -334,7 +323,7 @@ export default function DepartmentDetailClient() {
       await removeDepartment({ id: department._id as Id<'departments'> });
       toast.success(t('common.deleted'));
       router.push('/employees/departments');
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('common.error'));
     }
   };

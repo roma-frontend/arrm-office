@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,7 +19,6 @@ import {
   XCircle,
   Star,
   Clock,
-  Award,
   TrendingUp,
   Calendar,
   UserCheck,

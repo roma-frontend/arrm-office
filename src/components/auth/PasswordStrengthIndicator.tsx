@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { Check, X, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import {
   validatePassword,
   getStrengthColor,

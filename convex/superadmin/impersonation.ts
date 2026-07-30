@@ -1,6 +1,5 @@
 import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
-import { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { requireAuthUserOrThrow } from '../lib/auth';
 

@@ -21,7 +21,6 @@ import {
   Clock,
   Search,
   Briefcase,
-  DollarSign,
   ChevronRight,
   X,
   Send,
@@ -506,7 +505,7 @@ function VacancyDetailModal({
         }),
       }).catch(() => {});
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
+    } catch (_e: any) {
       toast.error(t('careers.submitError', 'Error submitting application'));
     } finally {
       setSubmitting(false);

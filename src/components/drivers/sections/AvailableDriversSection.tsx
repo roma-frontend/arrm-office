@@ -17,19 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  CarFront,
-  Search,
-  Filter,
-  SortAsc,
-  Car,
-  Users,
-  MapPin,
-  Star,
-  Calendar,
-  Heart,
-  Plus,
-} from 'lucide-react';
+import { CarFront, Search, Filter, SortAsc, Heart } from 'lucide-react';
 import { DriverCard } from '../cards/DriverCard';
 import { NoDriversEmptyState } from '../empty-states/NoDriversEmptyState';
 

@@ -2,7 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
-import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import { format, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
 

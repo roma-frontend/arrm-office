@@ -1,18 +1,10 @@
 ﻿'use client';
 
-import React, { Suspense, useMemo, memo } from 'react';
+import React, { useMemo, memo } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
-import {
-  Clock,
-  CheckCircle,
-  XCircle,
-  Plus,
-  Calendar as CalendarIcon,
-  TrendingUp,
-  Star,
-} from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Plus, Calendar as CalendarIcon, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
@@ -32,7 +24,7 @@ import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import PayrollUpcomingBanner from '@/components/payroll/PayrollUpcomingBanner';
 
 // Lazy load heavy dashboard components to reduce initial JS bundle
-const AttendanceDashboard = dynamic(
+const _AttendanceDashboard = dynamic(
   () =>
     import('@/components/attendance/AttendanceDashboard').then((mod) => ({
       default: mod.AttendanceDashboard,

@@ -2,7 +2,6 @@
  * Migrations for fixing duplicate users
  */
 
-import { v } from 'convex/values';
 import { mutation, internalMutation } from './_generated/server';
 import { XLARGE_LIST_CAP } from './lib/limits';
 
@@ -26,7 +25,7 @@ export const fixDuplicateUsers = mutation({
 
     let fixedCount = 0;
 
-    for (const [email, users] of emailMap.entries()) {
+    for (const [_email, users] of emailMap.entries()) {
       if (users.length <= 1) continue;
 
       // Find the approved user (prefer approved over non-approved)

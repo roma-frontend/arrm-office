@@ -22,16 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Award,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle,
-  X,
-  DollarSign,
-  Users,
-  FileText,
-} from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight, CheckCircle, X, Users, FileText } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 
 type BonusType = 'performance' | 'retention' | 'signing' | 'referral' | 'holiday' | 'custom';

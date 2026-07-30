@@ -10,7 +10,7 @@ import { Camera, CheckCircle, XCircle } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
-import { detectFace, loadFaceApiModels, createCanvasFromVideo, canvasToBlob } from '@/lib/faceApi';
+import { detectFace, loadFaceApiModels, createCanvasFromVideo } from '@/lib/faceApi';
 import { uploadAvatarToCloudinary } from '@/actions/cloudinary';
 import { Id } from '../../../convex/_generated/dataModel';
 import { logger } from '@/lib/logger';

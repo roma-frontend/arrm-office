@@ -14,7 +14,6 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
-  Pencil,
   Save,
   Sun,
   Heart,

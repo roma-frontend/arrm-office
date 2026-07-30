@@ -28,24 +28,6 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import DocumentUploadWizard from '@/components/documents/DocumentUploadWizard';
 import DocumentTemplateWizard from '@/components/documents/DocumentTemplateWizard';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
 type DocumentWithUploader = {
   _id: Id<'documents'>;
   _creationTime: number;
@@ -67,7 +49,7 @@ type DocumentWithUploader = {
   uploaderName: string;
 };
 
-type DocumentView = {
+type _DocumentView = {
   _id: Id<'documentViews'>;
   _creationTime: number;
   organizationId: Id<'organizations'>;
@@ -90,7 +72,7 @@ export default function DocumentsClient() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showUploadWizard, setShowUploadWizard] = useState(false);
   const [showTemplateWizard, setShowTemplateWizard] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<DocumentWithUploader | null>(null);
+  const [_selectedDocument, setSelectedDocument] = useState<DocumentWithUploader | null>(null);
   const [createDocFromTemplate, setCreateDocFromTemplate] =
     useState<Id<'documentTemplates'> | null>(null);
 
@@ -132,7 +114,7 @@ export default function DocumentsClient() {
       : 'skip',
   );
 
-  const categories = useQuery(
+  const _categories = useQuery(
     api.documents.getDocumentCategories,
     effectiveOrgId && user?.id
       ? {
@@ -194,7 +176,7 @@ export default function DocumentsClient() {
     }
   };
 
-  const isViewed = (documentId: Id<'documents'>) => {
+  const _isViewed = (documentId: Id<'documents'>) => {
     return myViews?.some((v) => v.documentId === documentId);
   };
 

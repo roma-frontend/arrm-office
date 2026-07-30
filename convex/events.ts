@@ -8,7 +8,6 @@
 
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { logger } from '../src/lib/logger';

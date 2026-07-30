@@ -5,7 +5,6 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,20 +19,15 @@ import {
   Download,
   Users,
   TrendingUp,
-  TrendingDown,
-  Minus,
   Star,
   MessageSquare,
   ThumbsUp,
   ThumbsDown,
   Hash,
   FileText,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   Calendar,
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 

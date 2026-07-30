@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
 import { UserPlus, Search, X, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import type { Id } from '@/convex/_generated/dataModel';

@@ -9,7 +9,6 @@ import { useAuthUser } from '@/store/useAuthStore';
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

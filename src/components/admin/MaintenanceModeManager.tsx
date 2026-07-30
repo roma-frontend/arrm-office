@@ -7,8 +7,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Power, PowerOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { AlertTriangle, PowerOff } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 
 interface MaintenanceModeManagerProps {

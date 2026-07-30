@@ -1,7 +1,5 @@
 import { query, mutation, internalMutation } from './_generated/server';
-import type { MutationCtx } from './_generated/server';
-import type { Id } from './_generated/dataModel';
-import { internal, api } from './_generated/api';
+import { internal } from './_generated/api';
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
@@ -589,7 +587,7 @@ export const activateOnboardingTasks = internalMutation({
 
           if (!existingNotif) {
             const assignee = task.assigneeId ? await ctx.db.get(task.assigneeId) : null;
-            const employee = await ctx.db.get(program.employeeId);
+            const _employee = await ctx.db.get(program.employeeId);
 
             await ctx.db.insert('notifications', {
               organizationId: org._id,
@@ -630,7 +628,7 @@ export const sendOnboardingStartNotifications = internalMutation({
     const creator = await ctx.db.get(args.createdBy);
 
     const orgName = org?.name ?? 'your organization';
-    const creatorName = creator?.name ?? 'HR';
+    const _creatorName = creator?.name ?? 'HR';
 
     // Notify employee
     if (employee) {

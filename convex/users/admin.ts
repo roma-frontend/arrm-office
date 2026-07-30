@@ -6,8 +6,6 @@ import type { Doc } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
-import { DEFAULT_LIST_CAP } from '../lib/limits';
-
 // ── Security helpers ──────────────────────────────────────────────────────────
 /** Verify caller has admin/superadmin role and return their organizationId */
 async function requireAdmin(ctx: QueryCtx | MutationCtx) {

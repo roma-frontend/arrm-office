@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   Search,
-  Download,
   FileSpreadsheet,
   Copy,
   CheckCircle,
@@ -32,7 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDate, formatDateTime, getLocaleString } from '@/lib/date-format';
 import { toast } from 'sonner';
 
-const SUPERADMIN_EMAIL = (process.env.NEXT_PUBLIC_BOOTSTRAP_SUPERADMIN_EMAIL ?? '').toLowerCase();
+const _SUPERADMIN_EMAIL = (process.env.NEXT_PUBLIC_BOOTSTRAP_SUPERADMIN_EMAIL ?? '').toLowerCase();
 
 interface Transaction {
   id: string;
@@ -65,7 +64,7 @@ export default function StripeDataStudioClient() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState<StripeData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 

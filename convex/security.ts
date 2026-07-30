@@ -2,7 +2,6 @@ import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
-import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';

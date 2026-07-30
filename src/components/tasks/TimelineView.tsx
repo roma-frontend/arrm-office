@@ -344,7 +344,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                 {t('tasksClient.noTasksFound', 'No tasks found')}
               </div>
             ) : (
-              sortedTasks.map((task, idx) => (
+              sortedTasks.map((task, _idx) => (
                 <div
                   key={task._id}
                   className="flex items-center gap-3 px-4 cursor-pointer hover:bg-(--background-subtle)/50 transition-colors border-b border-(--border)/50 group"
@@ -426,9 +426,9 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
               {taskBars.map(
                 (
                   { task, leftOffset, barWidth, isOverdue, completionPercent, isCancelled },
-                  idx,
+                  _idx,
                 ) => {
-                  const cfg = STATUS_COLORS[task.status];
+                  const _cfg = STATUS_COLORS[task.status];
                   return (
                     <div
                       key={task._id}

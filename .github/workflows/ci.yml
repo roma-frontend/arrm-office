@@ -14,21 +14,21 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20.18.0"
+  NODE_VERSION: '20.18.0'
   CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT }}
   NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
 
 jobs:
   lint:
-    name: "🔍 Lint (strict)"
+    name: '🔍 Lint (strict)'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - run: npm ci --prefer-offline --no-audit
       - name: ESLint (max-warnings=0 where possible; enforced on changed files)
         run: npm run lint
@@ -36,28 +36,28 @@ jobs:
         run: npx prettier --check "**/*.{ts,tsx,js,jsx,json,css,md}"
 
   type-check:
-    name: "🔠 Type Check"
+    name: '🔠 Type Check'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - run: npm ci --prefer-offline --no-audit
       - run: npx tsc --noEmit
 
   unit-tests:
-    name: "🧪 Unit Tests"
+    name: '🧪 Unit Tests'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - run: npm ci --prefer-offline --no-audit
       - name: Run tests with coverage
         run: npm run test:coverage -- --ci --reporters=default --reporters=jest-junit
@@ -106,7 +106,7 @@ jobs:
           retention-days: 30
 
   coverage-report:
-    name: "📊 Coverage Report"
+    name: '📊 Coverage Report'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [unit-tests]
@@ -165,7 +165,7 @@ jobs:
           edit-mode: replace
 
   coverage-badge:
-    name: "🏷️ Coverage Badge"
+    name: '🏷️ Coverage Badge'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [unit-tests]
@@ -225,7 +225,7 @@ jobs:
   # SECURITY — supply-chain + static analysis
   # ═════════════════════════════════════════════════════════════
   security-audit:
-    name: "🔒 Security Audit"
+    name: '🔒 Security Audit'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # dependency-review-action queries the repo's Dependency Graph, which needs
@@ -237,8 +237,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - name: npm audit (high+ report; non-blocking — known transitive advisories tracked separately)
         run: npm audit --audit-level=high
         continue-on-error: true
@@ -254,7 +254,7 @@ jobs:
           comment-summary-in-pr: always
 
   codeql:
-    name: "🔒 CodeQL Static Analysis"
+    name: '🔒 CodeQL Static Analysis'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -269,10 +269,10 @@ jobs:
           queries: +security-and-quality
       - uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:javascript-typescript"
+          category: '/language:javascript-typescript'
 
   build:
-    name: "🏗 Build"
+    name: '🏗 Build'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [lint, type-check, unit-tests]
@@ -280,8 +280,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - run: npm ci --prefer-offline --no-audit
       - run: npm run build
         env:
@@ -308,7 +308,7 @@ jobs:
           retention-days: 7
 
   e2e-tests:
-    name: "🎭 E2E Tests"
+    name: '🎭 E2E Tests'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [build]
@@ -316,8 +316,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - run: npm ci --prefer-offline --no-audit
       - uses: actions/cache@v4
         id: playwright-cache
@@ -377,7 +377,7 @@ jobs:
   # lets CI pass on forks / before secrets are configured, while the deploy
   # runs automatically once the token is added in repo settings.
   check-deploy-secret:
-    name: "🔑 Deploy Secret Check"
+    name: '🔑 Deploy Secret Check'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     outputs:
@@ -387,7 +387,7 @@ jobs:
         run: echo "enabled=${{ secrets.VERCEL_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
 
   deploy-preview:
-    name: "🔍 Deploy Preview"
+    name: '🔍 Deploy Preview'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [build, check-deploy-secret]
@@ -399,8 +399,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - run: npm install -g vercel
       - run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
       - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
@@ -410,7 +410,7 @@ jobs:
           echo "preview-url=$URL" >> $GITHUB_OUTPUT
 
   deploy-production:
-    name: "🚀 Deploy Production"
+    name: '🚀 Deploy Production'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [build, e2e-tests, codeql, security-audit, check-deploy-secret]
@@ -422,8 +422,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "npm"
+          node-version-file: '.nvmrc'
+          cache: 'npm'
       - run: npm install -g vercel
       - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}

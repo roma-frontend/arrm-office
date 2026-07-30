@@ -78,7 +78,7 @@ export const endShift = mutation({
     if (!driverRecord || driverRecord.userId !== caller._id) {
       throw new Error('Only the driver can end a shift');
     }
-    const userId = caller._id;
+    const _userId = caller._id;
     const shift = await ctx.db
       .query('driverShifts')
       .withIndex('by_driver_status', (q) => q.eq('driverId', driverId).eq('status', 'active'))

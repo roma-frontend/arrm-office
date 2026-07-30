@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation } from '../_generated/server';
-import type { MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin, isSuperadminEmail } from '../lib/auth';
 import { MAX_PAGE_SIZE } from '../pagination';

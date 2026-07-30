@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { Sparkles, RefreshCw, X, BarChart3, Clock, Users, AlertTriangle } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface DigestStats {
@@ -36,7 +35,7 @@ export default function WeeklyDigestWidget() {
         setStats(data.stats);
         setGeneratedAt(data.generatedAt);
       }
-    } catch (e) {
+    } catch (_e) {
       setDigest('Failed to generate digest. Please try again.');
     } finally {
       setLoading(false);

@@ -5,7 +5,7 @@ import { createGroq } from '@ai-sdk/groq';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { logger } from '@/lib/logger';
 
-const google = createGoogleGenerativeAI({
+const _google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 

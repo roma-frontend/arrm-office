@@ -13,7 +13,6 @@ import {
   Users,
   CheckCircle2,
   XCircle,
-  Clock,
   Search,
   Mail,
   Calendar,
@@ -21,10 +20,9 @@ import {
   Link2,
   Copy,
   Check,
-  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Id } from '@/convex/_generated/dataModel';

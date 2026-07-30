@@ -11,15 +11,11 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { motion } from '@/lib/cssMotion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   Layers,
   Target,
-  TrendingUp,
   CheckCircle,
   AlertTriangle,
-  AlertCircle,
   ArrowRight,
   Building2,
   Users,
@@ -65,7 +61,7 @@ export default function StrategyDashboardWidget() {
         ? 'bg-amber-500'
         : 'bg-red-500';
 
-  const totalActive = strategySummary.active;
+  const _totalActive = strategySummary.active;
   const issuesCount = strategySummary.atRisk + strategySummary.behind;
   const issuesColor =
     issuesCount === 0 ? 'text-emerald-500' : issuesCount <= 2 ? 'text-amber-500' : 'text-red-500';

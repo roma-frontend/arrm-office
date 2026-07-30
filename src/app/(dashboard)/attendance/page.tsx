@@ -16,7 +16,6 @@ import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
 import { formatTime } from '@/lib/date-format';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
-import i18n from 'i18next';
 import type { Id } from '../../../../convex/_generated/dataModel';
 import type { AttendanceRecord } from '@/components/attendance/AttendanceDetailModal';
 import type { EmployeeInfo } from '@/components/attendance/EmployeeAttendanceDrawer';

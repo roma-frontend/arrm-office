@@ -9,7 +9,7 @@ import { Id } from '@/convex/_generated/dataModel';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import { TextInputStep, TextareaStep, SelectStep } from '@/components/ui/wizard-step-components';
-import { FileText, Calendar, DollarSign } from 'lucide-react';
+import { FileText, Calendar } from 'lucide-react';
 
 interface ReportWizardProps {
   open: boolean;

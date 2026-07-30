@@ -1,6 +1,4 @@
 'use client';
-import Image from 'next/image';
-
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
@@ -10,20 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { formatTime as formatTimeUtil } from '@/lib/date-format';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
-import {
-  X,
-  Clock,
-  Calendar,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  LogIn,
-  LogOut,
-  Timer,
-  Building2,
-  UserCog,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { X, Calendar, LogIn, LogOut, Timer, Building2, UserCog } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 
 export interface EmployeeInfo {
@@ -43,7 +28,7 @@ interface Props {
 function formatTime(ts: number, lang: string) {
   return formatTimeUtil(ts, lang, { hour: '2-digit', minute: '2-digit' });
 }
-function formatDuration(min: number) {
+function _formatDuration(min: number) {
   return `${Math.floor(min / 60)}h ${min % 60}m`;
 }
 

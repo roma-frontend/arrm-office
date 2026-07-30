@@ -28,7 +28,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { ru, hy, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
@@ -253,7 +252,7 @@ export const ConversationList = React.memo(function ConversationList({
     }
   };
 
-  const [showContent, setShowContent] = useState(!collapsed);
+  const [_showContent, setShowContent] = useState(!collapsed);
   const showCollapse = collapsed !== undefined;
 
   React.useEffect(() => {

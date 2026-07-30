@@ -7,7 +7,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { History, Clock, TrendingUp, CheckCircle, Coffee } from 'lucide-react';
+import { History, Clock, CheckCircle, Coffee } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 

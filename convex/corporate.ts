@@ -10,7 +10,6 @@
 
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
-import type { Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
@@ -82,9 +81,9 @@ export const approveRequest = mutation({
       .filter((d) => d.isAvailable && d.isOnShift)
       .sort((a, b) => {
         // Priority: P0 > P1 > P2 > P3
-        const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 };
-        const aPriority = request.priority || 'P2';
-        const bPriority = request.priority || 'P2';
+        const _priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 };
+        const _aPriority = request.priority || 'P2';
+        const _bPriority = request.priority || 'P2';
 
         // For now, just sort by rating
         return b.rating - a.rating;
@@ -420,7 +419,7 @@ export const autoAssignDriver = mutation({
     });
 
     // Notify requester
-    const requester = await ctx.db.get(request.requesterId);
+    const _requester = await ctx.db.get(request.requesterId);
     const driverUser = await ctx.db.get(assignedDriver.userId);
 
     await ctx.db.insert('notifications', {

@@ -14,7 +14,6 @@ import {
   Copy,
   Check,
   Plus,
-  User,
   History,
   Trash2,
 } from 'lucide-react';

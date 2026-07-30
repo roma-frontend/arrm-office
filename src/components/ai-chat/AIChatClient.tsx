@@ -192,8 +192,8 @@ export default function AIChatPage() {
   // Convex queries
   const {
     results: savedConversations,
-    loadMore: loadMoreConversations,
-    status: convsStatus,
+    loadMore: _loadMoreConversations,
+    status: _convsStatus,
   } = usePaginatedQuery(api.aiChat.listConversationsPaginated, userId ? { userId } : 'skip', {
     initialNumItems: 30,
   });

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, usePaginatedQuery } from '@/lib/convex-typed';
+import { useMutation, usePaginatedQuery } from '@/lib/convex-typed';
 import { useDebouncedCallback } from 'use-debounce';
 import { api } from '../../../convex/_generated/api';
 import { Doc, Id } from '../../../convex/_generated/dataModel';
@@ -369,7 +369,7 @@ export function EmployeesClient() {
                   ]
                 : []),
             ].map(({ value, setter, options, label }) => {
-              const getTranslation = (o: string) => {
+              const _getTranslation = (o: string) => {
                 if (o === 'all') {
                   if (label === 'Role')
                     return t('employees.allRoles', { defaultValue: 'All Roles' });
@@ -453,7 +453,7 @@ export function EmployeesClient() {
             return cfg[status ?? 'available'] ?? cfg['available'];
           };
 
-          const renderMenu = (emp: Doc<'users'>) =>
+          const _renderMenu = (emp: Doc<'users'>) =>
             canManage ? (
               <div className="relative shrink-0">
                 <button
@@ -529,7 +529,7 @@ export function EmployeesClient() {
                         TYPE_CONFIG.staff;
                       const RoleIcon = roleConf.icon;
                       const presenceStatus = emp.presenceStatus;
-                      const presence = presenceStatus ? getPresenceBadge(presenceStatus) : null;
+                      const _presence = presenceStatus ? getPresenceBadge(presenceStatus) : null;
                       return (
                         <motion.div
                           key={emp._id}
@@ -789,7 +789,7 @@ export function EmployeesClient() {
                           TYPE_CONFIG.staff;
                         const RoleIcon = roleConf.icon;
                         const presenceStatus = emp.presenceStatus;
-                        const presence = presenceStatus ? getPresenceBadge(presenceStatus) : null;
+                        const _presence = presenceStatus ? getPresenceBadge(presenceStatus) : null;
                         return (
                           <motion.div
                             key={emp._id}

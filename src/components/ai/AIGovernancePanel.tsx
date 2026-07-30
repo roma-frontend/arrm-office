@@ -7,18 +7,7 @@ import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Id } from '@/convex/_generated/dataModel';
 import { formatRelativeTime } from '@/lib/date-format';
-import {
-  Shield,
-  ShieldCheck,
-  Activity,
-  Eye,
-  Clock,
-  XCircle,
-  Bot,
-  Filter,
-  Lock,
-  Sliders,
-} from 'lucide-react';
+import { Shield, Activity, Eye, Clock, XCircle, Bot, Filter, Lock, Sliders } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';

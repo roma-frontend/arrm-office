@@ -6,7 +6,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Id } from '../../../convex/_generated/dataModel';
-import { Play, Pause, RotateCcw, Coffee, Timer, CheckCircle2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -134,7 +134,7 @@ export function PomodoroTimer() {
       setSessionId(id);
       setIsRunning(true);
       toast.success(t('pomodoro.sessionStarted'));
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('errors.sessionStartFailed'));
     }
   };

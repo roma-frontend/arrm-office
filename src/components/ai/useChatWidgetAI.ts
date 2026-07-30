@@ -6,12 +6,7 @@ import { logger } from '@/lib/logger';
 import type {
   Message,
   AnyAction,
-  BookLeaveAction,
   DeleteLeaveAction,
-  BookDriverAction,
-  BackupOrgAction,
-  BackupEmployeeAction,
-  RestoreBackupAction,
   SpeechRecognition,
   SpeechRecognitionEvent,
 } from './chatWidgetTypes';
@@ -25,7 +20,7 @@ export function useChatWidgetAI() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
-  const [wakeWordActive, setWakeWordActive] = useState(false);
+  const [wakeWordActive, _setWakeWordActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const user = useAuthStore((s) => s.user);

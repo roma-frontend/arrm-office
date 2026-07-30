@@ -1,6 +1,4 @@
 'use client';
-import Image from 'next/image';
-
 import { useTranslation } from 'react-i18next';
 import { formatTime as formatTimeUtil } from '@/lib/date-format';
 import React, { useEffect, useState } from 'react';

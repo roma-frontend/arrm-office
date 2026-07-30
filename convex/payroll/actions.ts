@@ -16,7 +16,7 @@ export const processScheduledPayroll = action({
   ): Promise<{ processed: number; totalGross: number; totalNet: number; message: string }> => {
     const { organizationId } = args;
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const _currentMonth = new Date().toISOString().slice(0, 7);
 
     const _runQuery = ctx.runQuery as unknown as (...args: any[]) => Promise<any>;
     const employees: any[] =

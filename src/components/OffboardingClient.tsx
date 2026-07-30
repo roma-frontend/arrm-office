@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Plus,
   UserMinus,
   CheckCircle2,
   Circle,

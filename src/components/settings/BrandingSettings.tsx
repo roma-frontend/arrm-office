@@ -46,7 +46,7 @@ export default function BrandingSettingsPage() {
   const [settings, setSettings] = useState<BrandingSettings>(DEFAULT_BRANDING);
   const [previewMode, setPreviewMode] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const faviconInputRef = useRef<HTMLInputElement>(null);
+  const _faviconInputRef = useRef<HTMLInputElement>(null);
 
   const userRole = user?.role;
   const isAdmin = userRole === 'admin' || userRole === 'superadmin';

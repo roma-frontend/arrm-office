@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
@@ -265,7 +265,7 @@ export default function OrgChartClient() {
 
         // Calculate total width needed for all children
         const totalLeafCount = nodes.reduce((sum, n) => sum + getLeafCount(n), 0);
-        const totalWidth = totalLeafCount * (NODE_WIDTH + NODE_GAP) - NODE_GAP;
+        const _totalWidth = totalLeafCount * (NODE_WIDTH + NODE_GAP) - NODE_GAP;
 
         let currentX = startX;
         const y = depth * LEVEL_HEIGHT;

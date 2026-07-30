@@ -13,9 +13,7 @@ import {
   Users,
   UserCheck,
   UserX,
-  ChevronRight,
   AlertCircle,
-  CheckCircle,
   Clock,
   ShieldAlert,
   ShieldCheck,
@@ -33,7 +31,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { motion } from '@/lib/cssMotion';
 
-interface Member {
+interface _Member {
   _id: string;
   name: string;
   email: string;

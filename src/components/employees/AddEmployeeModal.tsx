@@ -15,7 +15,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
@@ -86,7 +85,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   );
 
   const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(1);
+  const [_direction, setDirection] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
   // Form state
