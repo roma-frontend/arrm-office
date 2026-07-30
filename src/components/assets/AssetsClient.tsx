@@ -499,7 +499,7 @@ function AssetDetailCard({
   onReturn?: () => void;
   onClose: () => void;
   userId: Id<'users'>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setQrCodeAsset: (a: any) => void;
 }) {
@@ -841,13 +841,13 @@ function AssetDetailCard({
               {t('assets.assignmentHistory')}
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {asset.assignments.slice(0, 5).map((a: any) => (
                 <div
                   key={a._id}
                   className="flex items-center justify-between p-2.5 rounded-lg bg-background-subtle border border-border text-sm"
                 >
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {}
                   <div className="flex items-center gap-2">
                     {a.status === 'active' ? (
                       <ArrowUpRight className="w-3.5 h-3.5 text-blue-500" />
@@ -874,13 +874,13 @@ function AssetDetailCard({
               {t('assets.maintenanceHistory')}
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {asset.maintenanceHistory.slice(0, 5).map((m: any) => (
                 <div
                   key={m._id}
                   className="flex items-center justify-between p-2.5 rounded-lg bg-background-subtle border border-border text-sm"
                 >
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {}
                   <div>
                     <p className="text-foreground font-medium">{m.description}</p>
                     <p className="text-xs text-muted-foreground">
@@ -908,7 +908,7 @@ function QRButton({
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
   asset: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setQrCodeAsset: (a: any) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1720,7 +1720,6 @@ export default function AssetsClient() {
                                     </span>
                                   )}
                                   <QRButton
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                     asset={{
                                       _id: a.assetId,
                                       name: a.assetName,
@@ -1753,7 +1752,7 @@ export default function AssetsClient() {
                           })}
 
                         {/* History */}
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {}
                         {employeeAssets.filter((a) => a.status !== 'active').length > 0 && (
                           <div className="mt-6">
                             <h4 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">

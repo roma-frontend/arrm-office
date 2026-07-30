@@ -390,7 +390,7 @@ export default function ExpensesClient() {
                   <CardContent>
                     {filteredExpenses && filteredExpenses.length > 0 ? (
                       <div className="space-y-3">
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {filteredExpenses.slice(0, 10).map((expense: any) => (
                           <div
                             key={expense._id}
@@ -492,7 +492,7 @@ export default function ExpensesClient() {
                   <CardContent>
                     {expenseReports && expenseReports.length > 0 ? (
                       <div className="space-y-3">
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {expenseReports.map((report: any) => (
                           <div
                             key={report._id}
@@ -548,7 +548,7 @@ export default function ExpensesClient() {
                   <CardContent>
                     {expenseCategories && expenseCategories.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {expenseCategories.map((category: any) => (
                           <Card key={category._id}>
                             <CardHeader>

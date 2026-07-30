@@ -226,7 +226,7 @@ function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }
                 </Badge>
               </div>
               <div className="space-y-2">
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {dept.questionResults.map((qr: any) => {
                   const avg = qr.average;
                   if (avg !== undefined) {

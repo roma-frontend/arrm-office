@@ -400,7 +400,7 @@ export default function CompensationClient() {
                   <CardContent>
                     {filteredRecords && filteredRecords.length > 0 ? (
                       <div className="space-y-3">
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {filteredRecords.slice(0, 10).map((record: any) => (
                           <div
                             key={record._id}
@@ -465,7 +465,7 @@ export default function CompensationClient() {
                   <CardContent>
                     {compensationBands && compensationBands.length > 0 ? (
                       <div className="space-y-3">
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {compensationBands.map((band: any) => (
                           <div
                             key={band._id}
@@ -524,7 +524,7 @@ export default function CompensationClient() {
                   <CardContent>
                     {bonusPrograms && bonusPrograms.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {bonusPrograms.map((program: any) => (
                           <Card key={program._id}>
                             <CardHeader>
@@ -610,7 +610,7 @@ export default function CompensationClient() {
                   <CardContent>
                     {reviewCycles && reviewCycles.length > 0 ? (
                       <div className="space-y-3">
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {reviewCycles.map((cycle: any) => (
                           <div
                             key={cycle._id}
