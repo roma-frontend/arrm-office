@@ -1,8 +1,8 @@
 import NextAuth from 'next-auth';
+import type { NextAuthConfig } from 'next-auth';
 import Google from 'next-auth/providers/google';
 import type { GoogleProfile } from '@auth/core/providers/google';
 import Credentials from 'next-auth/providers/credentials';
-import type { NextAuthConfig } from 'next-auth';
 import { importPKCS8, SignJWT } from 'jose';
 
 // ═══════════════════════════════════════════════════════════════
