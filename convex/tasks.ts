@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { mutation, query, type QueryCtx } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
@@ -13,27 +13,26 @@ import { sanitizeTitle, sanitizeText } from './lib/sanitize';
  * Helper to batch load users and enrich task data
  * Eliminates N+1 queries for task lists
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function enrichTasksWithUserData(ctx: any, tasks: any[]) {
+async function enrichTasksWithUserData(ctx: QueryCtx, tasks: Doc<'tasks'>[]) {
   if (tasks.length === 0) return [];
 
   // Collect all unique user IDs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const assignedToIds = [...new Set(tasks.map((t: any) => t.assignedTo))];
+  const assignedToIds = [...new Set(tasks.map((t: Doc<'tasks'>) => t.assignedTo))];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const assignedByIds = [...new Set(tasks.map((t: any) => t.assignedBy))];
+  const assignedByIds = [...new Set(tasks.map((t: Doc<'tasks'>) => t.assignedBy))];
   const allUserIds = [...new Set([...assignedToIds, ...assignedByIds])];
 
   // Batch load all users
   const users = await Promise.all(allUserIds.map((id: Id<'users'>) => ctx.db.get(id)));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userMap = new Map(users.map((u: any) => [u?._id, u]));
+  const userMap = new Map(users.map((u: Doc<'users'> | null) => [u?._id, u]));
 
   // Batch load comments per-task via by_task index (avoids scanning the whole
   // taskComments table just to filter by taskId). Caps at SMALL_LIST_CAP per task.
-  const commentsPerTask: any[][] = await Promise.all(
+  const commentsPerTask: Doc<'taskComments'>[][] = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tasks.map((t: any) =>
+    tasks.map((t: Doc<'tasks'>) =>
       ctx.db
         .query('taskComments')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,27 +40,28 @@ async function enrichTasksWithUserData(ctx: any, tasks: any[]) {
         .take(SMALL_LIST_CAP),
     ),
   );
-  const allComments: any[] = commentsPerTask.flat();
-  const commentsByTask = new Map<Id<'tasks'>, any[]>();
+  const allComments: Doc<'taskComments'>[] = commentsPerTask.flat();
+  const commentsByTask = new Map<Id<'tasks'>, Doc<'taskComments'>[]>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tasks.forEach((t: any, i: any) => {
+  tasks.forEach((t: Doc<'tasks'>, i: number) => {
     commentsByTask.set(t._id, commentsPerTask[i] ?? []);
   });
 
   // Collect all comment author IDs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const commentAuthorIds = [...new Set(allComments.map((c: any) => c.authorId))];
+  const commentAuthorIds = [...new Set(allComments.map((c: Doc<'taskComments'>) => c.authorId))];
   const commentAuthors = await Promise.all(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    commentAuthorIds.map((id: any) => ctx.db.get(id as Id<'users'>)),
+    commentAuthorIds.map((id: Id<'users'>) => ctx.db.get(id)),
   );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const commentAuthorMap = new Map(commentAuthors.map((a: any) => [a?._id, a]));
+  const commentAuthorMap = new Map(commentAuthors.map((a: Doc<'users'> | null) => [a?._id, a]));
 
   // Batch load profiles for all users
   const profiles = await Promise.all(allUserIds.map((id: Id<'users'>) => getProfile(ctx, id)));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const profileMap = new Map(profiles.filter(Boolean).map((p: any) => [p!.userId, p!]));
+  const profileMap = new Map(
+    profiles.filter((p): p is NonNullable<typeof p> => p !== null).map((p) => [p.userId, p]),
+  );
 
   // Enrich tasks
   return tasks.map((task) => {
@@ -496,13 +496,13 @@ export const getTeamTasks = query({
       .take(DEFAULT_LIST_CAP);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const employeeIds = employees.map((e: any) => e._id);
+    const employeeIds = employees.map((e: Doc<'users'>) => e._id);
 
     // Fetch tasks per employee via by_assigned_to index (no full-table scan).
     // Caps at SMALL_LIST_CAP per employee; team size is bounded by supervisor.
     const tasksPerEmployee = await Promise.all(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      employeeIds.map((id: any) =>
+      employeeIds.map((id: Id<'users'>) =>
         ctx.db
           .query('tasks')
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -526,9 +526,11 @@ export const getMyEmployees = query({
       .withIndex('by_supervisor', (q: any) => q.eq('supervisorId', args.supervisorId))
       .take(DEFAULT_LIST_CAP);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const empProfiles = await Promise.all(employees.map((e: any) => getProfile(ctx, e._id)));
+    const empProfiles = await Promise.all(
+      employees.map((e: Doc<'users'>) => getProfile(ctx, e._id)),
+    );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return employees.map((e: any, i: any) => {
+    return employees.map((e: Doc<'users'>, i: number) => {
       const profile = empProfiles[i];
       return {
         ...e,
@@ -541,10 +543,9 @@ export const getMyEmployees = query({
 // ── Get all users for assignment (admin/supervisor) ────────────────────────
 export const getUsersForAssignment = query({
   args: {},
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handler: async (ctx: any) => {
+  handler: async (ctx, _args) => {
     const requester = await getAuthCaller(ctx);
-    let users: any[] = [];
+    let users: Doc<'users'>[] = [];
     if (requester) {
       if (requester?.organizationId) {
         users = await ctx.db
@@ -559,13 +560,12 @@ export const getUsersForAssignment = query({
       users = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    users = users.filter((u: any) => u.role !== 'superadmin');
+    users = users.filter((u: Doc<'users'>) => u.role !== 'superadmin');
 
     // Return all active users (employees, supervisors, admins, AND drivers)
     // Anyone in the organization can be assigned a task
     const activeUsers = users.filter(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (u: any) =>
+      (u: Doc<'users'>) =>
         u.isActive !== false &&
         u.isApproved !== false &&
         (u.role === 'employee' ||
@@ -575,10 +575,12 @@ export const getUsersForAssignment = query({
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userProfiles = await Promise.all(activeUsers.map((u: any) => getProfile(ctx, u._id)));
+    const userProfiles = await Promise.all(
+      activeUsers.map((u: Doc<'users'>) => getProfile(ctx, u._id)),
+    );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return activeUsers.map((u: any, i: any) => {
+    return activeUsers.map((u: Doc<'users'>, i: number) => {
       const profile = userProfiles[i];
       return {
         _id: u._id,
@@ -596,8 +598,7 @@ export const getUsersForAssignment = query({
 // ── Get supervisors list ───────────────────────────────────────────────────
 export const getSupervisors = query({
   args: {},
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handler: async (ctx: any) => {
+  handler: async (ctx, _args) => {
     const requester = await getAuthCaller(ctx);
     let supervisors = await ctx.db
       .query('users')
@@ -613,23 +614,25 @@ export const getSupervisors = query({
     // Filter by organization
     if (requester && requester.organizationId) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      supervisors = supervisors.filter((u: any) => u.organizationId === requester.organizationId);
+      supervisors = supervisors.filter(
+        (u: Doc<'users'>) => u.organizationId === requester.organizationId,
+      );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      admins = admins.filter((u: any) => u.organizationId === requester.organizationId);
+      admins = admins.filter((u: Doc<'users'>) => u.organizationId === requester.organizationId);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeSupervisors = [...supervisors, ...admins].filter(
-      (u: any) => u.isActive && u.isApproved,
+      (u: Doc<'users'>) => u.isActive && u.isApproved,
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supProfiles = await Promise.all(
-      activeSupervisors.map((u: any) => getProfile(ctx, u._id)),
+      activeSupervisors.map((u: Doc<'users'>) => getProfile(ctx, u._id)),
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return activeSupervisors.map((u: any, i: any) => {
+    return activeSupervisors.map((u: Doc<'users'>, i: number) => {
       const profile = supProfiles[i];
       return {
         _id: u._id,
@@ -695,7 +698,7 @@ export const removeAttachment = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error('Task not found');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const attachments = (task.attachments ?? []).filter((a: any) => a.url !== args.url);
+    const attachments = (task.attachments ?? []).filter((a: { url: string }) => a.url !== args.url);
     await ctx.db.patch(args.taskId, { attachments, updatedAt: Date.now() });
 
     // Audit log: attachment removed
@@ -726,10 +729,10 @@ export const getTaskComments = query({
 
     // Batch load all authors
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const authorIds = [...new Set(comments.map((c: any) => c.authorId))];
+    const authorIds = [...new Set(comments.map((c: Doc<'taskComments'>) => c.authorId))];
     const authors = await Promise.all(authorIds.map((id: Id<'users'>) => ctx.db.get(id)));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const authorMap = new Map(authors.map((a: any) => [a?._id, a]));
+    const authorMap = new Map(authors.map((a: Doc<'users'> | null) => [a?._id, a]));
 
     return comments.map((c) => ({
       ...c,
@@ -751,11 +754,11 @@ export const listCommentsPaginated = query({
       .paginate(paginationOpts);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const authorIds = [...new Set(result.page.map((c: any) => c.authorId))];
+    const authorIds = [...new Set(result.page.map((c: Doc<'taskComments'>) => c.authorId))];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const authors = await Promise.all(authorIds.map((id: any) => ctx.db.get(id)));
+    const authors = await Promise.all(authorIds.map((id: Id<'users'>) => ctx.db.get(id)));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const authorMap = new Map(authors.map((a: any) => [a?._id, a]));
+    const authorMap = new Map(authors.map((a: Doc<'users'> | null) => [a?._id, a]));
 
     return {
       ...result,
@@ -779,8 +782,7 @@ export const backfillTaskOrg = mutation({
 // ── Get ALL tasks raw (for migration only) ────────────────────────────────
 export const getAllTasksRaw = query({
   args: {},
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handler: async (ctx: any) => {
+  handler: async (ctx, _args) => {
     return await ctx.db.query('tasks').take(DEFAULT_LIST_CAP);
   },
 });
@@ -808,11 +810,12 @@ export const getTask = query({
       .take(DEFAULT_LIST_CAP);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const commentAuthorIds = [...new Set(comments.map((c: any) => c.authorId))];
+    const commentAuthorIds = [...new Set(comments.map((c: Doc<'taskComments'>) => c.authorId))];
+    const commentAuthors = await Promise.all(
+      commentAuthorIds.map((id: Id<'users'>) => ctx.db.get(id)),
+    );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const commentAuthors = await Promise.all(commentAuthorIds.map((id: any) => ctx.db.get(id)));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const commentAuthorMap = new Map(commentAuthors.map((a: any) => [a?._id, a]));
+    const commentAuthorMap = new Map(commentAuthors.map((a: Doc<'users'> | null) => [a?._id, a]));
 
     return {
       ...task,

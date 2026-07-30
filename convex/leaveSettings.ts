@@ -31,7 +31,7 @@ export const getLeaveTypeConfigs = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, { organizationId }) => {
     const caller = await getAuthCaller(ctx);
-    if (!caller || !canReadOrg(caller, organizationId)) return [];
+    if (!caller || !canReadOrg(caller, organizationId)) return [] as const;
 
     return await ctx.db
       .query('leaveTypeConfigs')
@@ -146,19 +146,15 @@ export const initializeDefaultLeaveTypes = mutation({
     const now = Date.now();
     let created = 0;
     for (const lt of DEFAULT_LEAVE_TYPES) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-      if (existingTypes.has(lt.type as any)) continue;
+      if (existingTypes.has(lt.type)) continue;
       created++;
       await ctx.db.insert('leaveTypeConfigs', {
         organizationId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-        type: lt.type as any,
+        type: lt.type,
         isActive: lt.isActive,
         defaultDaysPerYear: lt.defaultDaysPerYear,
         requiresDocumentation: lt.requiresDocumentation,
-        approvalChain: lt.approvalChain,
+        approvalChain: lt.approvalChain as unknown as string[],
         balanceEditable: lt.balanceEditable,
         color: lt.color,
         icon: lt.icon,
@@ -178,7 +174,7 @@ export const getHolidays = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, { organizationId }) => {
     const caller = await getAuthCaller(ctx);
-    if (!caller || !canReadOrg(caller, organizationId)) return [];
+    if (!caller || !canReadOrg(caller, organizationId)) return [] as const;
 
     return await ctx.db
       .query('holidays')
@@ -197,7 +193,7 @@ export const getHolidaysByDateRange = query({
   },
   handler: async (ctx, { organizationId, startDate, endDate }) => {
     const caller = await getAuthCaller(ctx);
-    if (!caller || !canReadOrg(caller, organizationId)) return [];
+    if (!caller || !canReadOrg(caller, organizationId)) return [] as const;
 
     const all = await ctx.db
       .query('holidays')
@@ -309,7 +305,7 @@ export const getEmployeeLeaveBalances = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, { organizationId }) => {
     const caller = await getAuthCaller(ctx);
-    if (!caller || !canReadOrg(caller, organizationId)) return [];
+    if (!caller || !canReadOrg(caller, organizationId)) return [] as const;
 
     const employees = await ctx.db
       .query('users')
@@ -332,22 +328,29 @@ export const getEmployeeLeaveBalances = query({
           employeeType: emp.employeeType,
           balances: {
             paidLeaveBalance:
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-              (profile as any)?.paidLeaveBalance ?? (emp as any).paidLeaveBalance ?? 0,
+              (profile as unknown as Record<string, number | undefined>)?.paidLeaveBalance ??
+              (emp as unknown as Record<string, number | undefined>).paidLeaveBalance ??
+              0,
             sickLeaveBalance:
-              (profile as any)?.sickLeaveBalance ?? (emp as any).sickLeaveBalance ?? 0,
+              (profile as unknown as Record<string, number | undefined>)?.sickLeaveBalance ??
+              (emp as unknown as Record<string, number | undefined>).sickLeaveBalance ??
+              0,
             familyLeaveBalance:
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-              (profile as any)?.familyLeaveBalance ?? (emp as any).familyLeaveBalance ?? 0,
-            dayOffBalance: (profile as any)?.dayOffBalance ?? (emp as any).dayOffBalance ?? 0,
+              (profile as unknown as Record<string, number | undefined>)?.familyLeaveBalance ??
+              (emp as unknown as Record<string, number | undefined>).familyLeaveBalance ??
+              0,
+            dayOffBalance:
+              (profile as unknown as Record<string, number | undefined>)?.dayOffBalance ??
+              (emp as unknown as Record<string, number | undefined>).dayOffBalance ??
+              0,
             studyLeaveBalance:
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-              (profile as any)?.studyLeaveBalance ?? (emp as any).studyLeaveBalance ?? 0,
+              (profile as unknown as Record<string, number | undefined>)?.studyLeaveBalance ??
+              (emp as unknown as Record<string, number | undefined>).studyLeaveBalance ??
+              0,
             maternityLeaveBalance:
-              (profile as any)?.maternityLeaveBalance ?? (emp as any).maternityLeaveBalance ?? 0,
+              (profile as unknown as Record<string, number | undefined>)?.maternityLeaveBalance ??
+              (emp as unknown as Record<string, number | undefined>).maternityLeaveBalance ??
+              0,
           },
         };
       }),
@@ -384,9 +387,7 @@ export const updateLeaveBalance = mutation({
     }
     if (!reason.trim()) throw new Error('A reason is required to adjust leave balances');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const currentValue = (user as any)[field] ?? 0;
+    const currentValue = (user as unknown as Record<string, number | undefined>)[field] ?? 0;
 
     await patchProfile(ctx, userId, { [field]: value });
 
@@ -503,4 +504,4 @@ const DEFAULT_LEAVE_TYPES = [
     color: '#a855f7',
     icon: '📚',
   },
-];
+] as const;
