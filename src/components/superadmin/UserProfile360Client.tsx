@@ -642,7 +642,6 @@ export default function UserProfile360Page() {
                           >
                             {attempt.success ? 'Успешный вход' : 'Неудачная попытка'}
                           </span>{' '}
-                          {}
                           <Badge variant="outline">
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                             {(attempt as any).authMethod || 'password'}
