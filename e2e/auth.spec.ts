@@ -21,6 +21,11 @@ test.describe('Auth Flow', () => {
   });
 
   test('locks account after 5 failed attempts', async ({ page }) => {
+    // Six full navigate + submit round-trips do not fit the 30s default. This
+    // test is inherently ~6x the cost of a single-login test, so give it room
+    // rather than racing the shared budget.
+    test.setTimeout(90_000);
+
     const fakeEmail = `locktest-${Date.now()}@example.com`;
     for (let i = 0; i < 6; i++) {
       await login(page, fakeEmail, 'wrong');

@@ -9,7 +9,11 @@ const TEST_PASSWORD = process.env.E2E_USER_PASSWORD || 'Test123!@#';
  */
 export async function login(page: Page, email = TEST_EMAIL, password = TEST_PASSWORD) {
   await page.goto('/login');
-  await page.waitForLoadState('networkidle');
+
+  // No waitForLoadState('networkidle') here. The app holds a live Convex
+  // subscription, so the network never goes fully idle on its own and the wait
+  // burns seconds before timing out. The emailInput.waitFor() below is the
+  // real readiness signal — the form being interactive is what we need.
 
   // Fill email (SmartEmailInput renders an input inside)
   const emailInput = page
