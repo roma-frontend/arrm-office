@@ -70,6 +70,8 @@ import {
 import Link from 'next/link';
 import AssetWizard from './AssetWizard';
 import { Id } from '@/convex/_generated/dataModel';
+import type { FunctionReturnType } from 'convex/server';
+import type { TFunction } from 'i18next';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
 import {
@@ -79,6 +81,23 @@ import {
 } from '@/lib/exportDocument';
 import type { AccentColor } from '@/lib/documentCatalog';
 import QRCodeModal from './QRCodeModal';
+
+/** Enriched asset returned by api.assets.getAsset (detail card). */
+type AssetDetail = NonNullable<FunctionReturnType<typeof api.assets.getAsset>>;
+
+/** Enriched asset item returned by api.assets.listAssets. */
+type AssetListItem = FunctionReturnType<typeof api.assets.listAssets>[number];
+
+/** Shape accepted by QRCodeModal for a sticker payload. */
+interface QrAssetData {
+  _id: Id<'assetCatalog'> | string;
+  name: string;
+  serialNumber?: string | null;
+  assetTag?: string | null;
+  category?: string;
+  brand?: string | null;
+  model?: string | null;
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -270,8 +289,7 @@ function AssignDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
-  asset: any;
+  asset: { _id: Id<'assetCatalog'>; name: string };
   orgId: Id<'organizations'>;
   userId: Id<'users'>;
 }) {
@@ -404,8 +422,7 @@ function ReturnDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
-  assignment: any;
+  assignment: { _id: Id<'assetAssignments'>; assetName: string };
   userId: Id<'users'>;
 }) {
   const { t } = useTranslation();
@@ -493,14 +510,12 @@ function AssetDetailCard({
   userId,
   setQrCodeAsset,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
-  asset: any;
+  asset: AssetDetail;
   onAssign: () => void;
   onReturn?: () => void;
   onClose: () => void;
   userId: Id<'users'>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setQrCodeAsset: (a: any) => void;
+  setQrCodeAsset: (a: QrAssetData) => void;
 }) {
   const { t } = useTranslation();
   const cfg = getCategoryCfg(asset.category);
@@ -509,14 +524,8 @@ function AssetDetailCard({
 
   const _sendMovementForm = useMutation(api.assets.sendMovementForm);
   const [sending, setSending] = useState(false);
-  const mfDocId = asset.currentAssignment?.movementFormDocId as
-    | Id<'signatureDocuments'>
-    | undefined;
-  const sigDoc = useQuery(
-    api.signatures.getDocument,
-    mfDocId ? { documentId: mfDocId } : 'skip',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) as any;
+  const mfDocId = asset.currentAssignment?.movementFormDocId;
+  const sigDoc = useQuery(api.signatures.getDocument, mfDocId ? { documentId: mfDocId } : 'skip');
   const labels = useDocumentLabels();
 
   const [downloading, setDownloading] = useState(false);
@@ -840,8 +849,7 @@ function AssetDetailCard({
               {t('assets.assignmentHistory')}
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {asset.assignments.slice(0, 5).map((a: any) => (
+              {asset.assignments.slice(0, 5).map((a) => (
                 <div
                   key={a._id}
                   className="flex items-center justify-between p-2.5 rounded-lg bg-background-subtle border border-border text-sm"
@@ -872,8 +880,7 @@ function AssetDetailCard({
               {t('assets.maintenanceHistory')}
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {asset.maintenanceHistory.slice(0, 5).map((m: any) => (
+              {asset.maintenanceHistory.slice(0, 5).map((m) => (
                 <div
                   key={m._id}
                   className="flex items-center justify-between p-2.5 rounded-lg bg-background-subtle border border-border text-sm"
@@ -903,12 +910,9 @@ function QRButton({
   setQrCodeAsset,
   t,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
-  asset: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setQrCodeAsset: (a: any) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  t: any;
+  asset: QrAssetData;
+  setQrCodeAsset: (a: QrAssetData) => void;
+  t: TFunction;
 }) {
   return (
     <Button
@@ -969,16 +973,17 @@ export default function AssetsClient() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedAsset, setSelectedAsset] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [assignDialogAsset, setAssignDialogAsset] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [returnDialogAssignment, setReturnDialogAssignment] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [deleteConfirmAsset, setDeleteConfirmAsset] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [qrCodeAsset, setQrCodeAsset] = useState<any>(null);
+  const [selectedAsset, setSelectedAsset] = useState<{ _id: Id<'assetCatalog'> } | null>(null);
+  const [assignDialogAsset, setAssignDialogAsset] = useState<{
+    _id: Id<'assetCatalog'>;
+    name: string;
+  } | null>(null);
+  const [returnDialogAssignment, setReturnDialogAssignment] = useState<{
+    _id: Id<'assetAssignments'>;
+    assetName: string;
+  } | null>(null);
+  const [deleteConfirmAsset, setDeleteConfirmAsset] = useState<AssetListItem | null>(null);
+  const [qrCodeAsset, setQrCodeAsset] = useState<QrAssetData | null>(null);
 
   // Deep-link: open an asset's detail card when the URL carries `?asset=<id>`
   // (e.g. when a QR-code sticker is scanned). Runs once on mount.
@@ -986,6 +991,7 @@ export default function AssetsClient() {
     if (typeof window === 'undefined') return;
     const assetIdParam = new URLSearchParams(window.location.search).get('asset');
     if (assetIdParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only deep-link handling
       setActiveTab('catalog');
       setSelectedAsset({ _id: assetIdParam as Id<'assetCatalog'> });
     }
@@ -1077,6 +1083,7 @@ export default function AssetsClient() {
 
   // Reset page when filters change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional filter-change page reset
     setPage(0);
   }, [searchQuery, categoryFilter, statusFilter]);
 
@@ -1085,7 +1092,7 @@ export default function AssetsClient() {
     if (!stats?.byCategory) return [];
     return Object.entries(stats.byCategory).map(([key, value]) => ({
       name: t(`assets.category.${key}`) || key,
-      value: value as number,
+      value,
       color: CATEGORY_CONFIG[key]?.color || '#64748b',
     }));
   }, [stats, t]);
@@ -1719,15 +1726,11 @@ export default function AssetsClient() {
                                     asset={{
                                       _id: a.assetId,
                                       name: a.assetName,
-                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                      serialNumber: (a as any).assetSerialNumber,
-                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                      assetTag: (a as any).assetTag,
+                                      serialNumber: a.assetSerialNumber,
+                                      assetTag: a.assetTag,
                                       category: a.assetCategory,
-                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                      brand: (a as any).assetBrand,
-                                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                      model: (a as any).assetModel,
+                                      brand: a.assetBrand,
+                                      model: a.assetModel,
                                     }}
                                     setQrCodeAsset={setQrCodeAsset}
                                     t={t}
@@ -1989,7 +1992,7 @@ export default function AssetsClient() {
                           formatter={(value, _name) => [value, t('assets.count')]}
                         />
                         <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                          {categoryChartData.map((entry: any, idx: number) => (
+                          {categoryChartData.map((entry, idx) => (
                             <Cell key={idx} fill={entry.color || COLORS[idx % COLORS.length]} />
                           ))}
                         </Bar>
@@ -2178,7 +2181,12 @@ export default function AssetsClient() {
                 <Button variant="outline" onClick={() => setDeleteConfirmAsset(null)}>
                   {t('common.cancel')}
                 </Button>
-                <Button variant="destructive" onClick={() => handleDelete(deleteConfirmAsset._id)}>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (deleteConfirmAsset) handleDelete(deleteConfirmAsset._id);
+                  }}
+                >
                   <X className="w-4 h-4 mr-2" />
                   {t('common.delete')}
                 </Button>

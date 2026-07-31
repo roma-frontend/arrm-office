@@ -12,13 +12,81 @@
  */
 
 import { mutation, query, internalMutation } from './_generated/server';
+import type { MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { internal } from './_generated/api';
-import type { Id } from './_generated/dataModel';
+import type { Id, Doc } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 
 const BACKUP_RETENTION_HOURS = 48;
+
+/* ═══════════════════════════════════════════════════════════════
+   Snapshot types
+   ═══════════════════════════════════════════════════════════════ */
+
+/** User fields that must never be written into a backup. */
+const SENSITIVE_USER_FIELDS = [
+  'passwordHash',
+  'sessionToken',
+  'totpSecret',
+  'backupCodes',
+  'webauthnChallenge',
+  'faceDescriptor',
+  'faceImageUrl',
+  'resetPasswordToken',
+  'resetPasswordExpiry',
+] as const;
+
+type SensitiveUserField = (typeof SENSITIVE_USER_FIELDS)[number];
+
+/** A user document with all secrets stripped out. */
+type SanitizedUser = Omit<Doc<'users'>, SensitiveUserField> & {
+  [K in SensitiveUserField]?: undefined;
+};
+
+/**
+ * Copy a user doc with every sensitive field set to `undefined` so it is
+ * dropped by JSON.stringify and never lands in a backup.
+ */
+function sanitizeUser(user: Doc<'users'>): SanitizedUser {
+  const safe: Record<string, unknown> = { ...user };
+  for (const field of SENSITIVE_USER_FIELDS) {
+    safe[field] = undefined;
+  }
+  return safe as SanitizedUser;
+}
+
+/** Serializable snapshot of one employee's data. */
+interface EmployeeSnapshot {
+  user: SanitizedUser | null;
+  employeeProfile: Doc<'employeeProfiles'> | null;
+  leaves: Doc<'leaveRequests'>[];
+  tasks: Doc<'tasks'>[];
+  createdTasks: Doc<'tasks'>[];
+  events: Doc<'companyEvents'>[];
+  reviewCycles: number;
+  reviewAssignments: Doc<'reviewAssignments'>[];
+  reviewResponses: Doc<'reviewResponses'>[];
+  kudos: Doc<'kudos'>[];
+  sentKudos: Doc<'kudos'>[];
+  userPoints: Doc<'userPoints'> | null;
+  pointTransactions: Doc<'pointTransactions'>[];
+  objectives: Doc<'objectives'>[];
+  documents: Doc<'employeeDocuments'>[];
+  notes: Doc<'employeeNotes'>[];
+  performanceMetrics: Doc<'performanceMetrics'>[];
+  timeTracking: Doc<'timeTracking'>[];
+  ratings: Doc<'supervisorRatings'>[];
+  signatureDocs: Doc<'signatureDocuments'>[];
+  signatureRequests: Doc<'signatureRequests'>[];
+  snapshotTimestamp: number;
+}
+
+/** Parse a stored snapshot string with the correct shape. */
+function parseSnapshot(snapshot: string): EmployeeSnapshot {
+  return JSON.parse(snapshot) as EmployeeSnapshot;
+}
 
 /**
  * Создать бэкап для одного сотрудника
@@ -115,8 +183,7 @@ export const createOrgBackups = mutation({
 
     const employees = await ctx.db
       .query('users')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
 
     let backedUp = 0;
@@ -150,8 +217,7 @@ export const getOrgBackups = query({
 
     const backups = await ctx.db
       .query('employeeBackups')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
 
     const activeBackups = backups.filter((b) => b.expiresAt > now);
@@ -165,7 +231,14 @@ export const getOrgBackups = query({
       groupedByUser.get(key)!.push(backup);
     }
 
-    const result = [];
+    const result: {
+      userId: string;
+      userName: string;
+      userEmail: string;
+      backupCount: number;
+      latestBackup: number;
+      latestSize: number;
+    }[] = [];
     for (const [userId, userBackups] of groupedByUser.entries()) {
       const latest = userBackups.reduce((a, b) => (a.createdAt > b.createdAt ? a : b));
       result.push({
@@ -236,7 +309,7 @@ export const getBackupDetails = query({
       snapshotSize: backup.snapshotSize,
       createdAt: backup.createdAt,
       expiresAt: backup.expiresAt,
-      snapshot: JSON.parse(backup.snapshot),
+      snapshot: parseSnapshot(backup.snapshot),
     };
   },
 });
@@ -256,8 +329,7 @@ export const restoreEmployeeBackup = mutation({
 
     const adminUser = await ctx.db
       .query('users')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_email', (q: any) => q.eq('email', identity.email!.toLowerCase()))
+      .withIndex('by_email', (q) => q.eq('email', identity.email!.toLowerCase()))
       .unique();
 
     if (!adminUser || adminUser.role !== 'superadmin') {
@@ -273,7 +345,7 @@ export const restoreEmployeeBackup = mutation({
       throw new Error('Backup has expired');
     }
 
-    const snapshot = JSON.parse(backup.snapshot);
+    const snapshot = parseSnapshot(backup.snapshot);
 
     await restoreEmployeeData(ctx, backup.userId, snapshot);
 
@@ -290,8 +362,7 @@ export const cleanupExpiredBackups = mutation({
 
     const expiredBackups = await ctx.db
       .query('employeeBackups')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_expires', (q: any) => q.lte('expiresAt', now))
+      .withIndex('by_expires', (q) => q.lte('expiresAt', now))
       .take(DEFAULT_LIST_CAP);
 
     let deleted = 0;
@@ -311,8 +382,7 @@ export const backupAllEnterpriseOrgs = internalMutation({
   handler: async (ctx) => {
     const orgs = await ctx.db
       .query('organizations')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_plan', (q: any) => q.eq('plan', 'enterprise'))
+      .withIndex('by_plan', (q) => q.eq('plan', 'enterprise'))
       .take(DEFAULT_LIST_CAP);
 
     let totalBackedUp = 0;
@@ -320,7 +390,7 @@ export const backupAllEnterpriseOrgs = internalMutation({
 
     for (const org of orgs) {
       try {
-        const _result = await ctx.scheduler.runAfter(0, internal.backups.createOrgBackupsInternal, {
+        await ctx.scheduler.runAfter(0, internal.backups.createOrgBackupsInternal, {
           organizationId: org._id,
         });
         totalBackedUp++;
@@ -346,8 +416,7 @@ export const createOrgBackupsInternal = internalMutation({
 
     const employees = await ctx.db
       .query('users')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
 
     for (const employee of employees) {
@@ -372,8 +441,7 @@ export const cleanupExpiredBackupsInternal = internalMutation({
 
     const expiredBackups = await ctx.db
       .query('employeeBackups')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_expires', (q: any) => q.lte('expiresAt', now))
+      .withIndex('by_expires', (q) => q.lte('expiresAt', now))
       .take(DEFAULT_LIST_CAP);
 
     let deleted = 0;
@@ -399,8 +467,7 @@ export const getBackupStats = query({
 
     const adminUser = await ctx.db
       .query('users')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_email', (q: any) => q.eq('email', identity.email!.toLowerCase()))
+      .withIndex('by_email', (q) => q.eq('email', identity.email!.toLowerCase()))
       .unique();
 
     if (!adminUser || adminUser.role !== 'superadmin') {
@@ -442,153 +509,118 @@ export const hasBackupAccess = query({
    ═══════════════════════════════════════════════════════════════ */
 
 async function buildEmployeeSnapshot(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: MutationCtx,
   organizationId: Id<'organizations'>,
   userId: Id<'users'>,
-) {
+): Promise<EmployeeSnapshot> {
   const user = await ctx.db.get(userId);
 
   const employeeProfile = await ctx.db
     .query('employeeProfiles')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
 
   const leaves = await ctx.db
     .query('leaveRequests')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const tasks = await ctx.db
     .query('tasks')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_assigned_to', (q: any) => q.eq('assignedTo', userId))
+    .withIndex('by_assigned_to', (q) => q.eq('assignedTo', userId))
     .take(DEFAULT_LIST_CAP);
 
   const createdTasks = await ctx.db
     .query('tasks')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_assigned_by', (q: any) => q.eq('assignedBy', userId))
+    .withIndex('by_assigned_by', (q) => q.eq('assignedBy', userId))
     .take(DEFAULT_LIST_CAP);
 
   // TODO: companyEvents has no by_creator index; currently scoped to org then
   // filtered in-memory. Acceptable for backup job — cap bounds memory usage.
   const events = await ctx.db
     .query('companyEvents')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
     .take(DEFAULT_LIST_CAP)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .then((all: any[]) => all.filter((e) => e.createdBy === userId));
+    .then((all) => all.filter((e) => e.createdBy === userId));
 
   const reviewCycles = await ctx.db
     .query('reviewCycles')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
     .take(DEFAULT_LIST_CAP);
 
   const reviewAssignments = await ctx.db
     .query('reviewAssignments')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_reviewer', (q: any) => q.eq('reviewerId', userId))
+    .withIndex('by_reviewer', (q) => q.eq('reviewerId', userId))
     .take(DEFAULT_LIST_CAP);
 
   // TODO: reviewResponses has no by_reviewee index; inline filter forces full
   // table scan. Add index when refactoring performance module.
   const reviewResponses = await ctx.db
     .query('reviewResponses')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .filter((q: any) => q.eq(q.field('revieweeId'), userId))
+    .filter((q) => q.eq(q.field('revieweeId'), userId))
     .take(DEFAULT_LIST_CAP);
 
   const kudos = await ctx.db
     .query('kudos')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_receiver', (q: any) => q.eq('receiverId', userId))
+    .withIndex('by_receiver', (q) => q.eq('receiverId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const sentKudos = await ctx.db
     .query('kudos')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_sender', (q: any) => q.eq('senderId', userId))
+    .withIndex('by_sender', (q) => q.eq('senderId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const userPoints = await ctx.db
     .query('userPoints')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
 
   const pointTransactions = await ctx.db
     .query('pointTransactions')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const objectives = await ctx.db
     .query('objectives')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_owner', (q: any) => q.eq('ownerId', userId))
+    .withIndex('by_owner', (q) => q.eq('ownerId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const documents = await ctx.db
     .query('employeeDocuments')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const notes = await ctx.db
     .query('employeeNotes')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_employee', (q: any) => q.eq('employeeId', userId))
+    .withIndex('by_employee', (q) => q.eq('employeeId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const performanceMetrics = await ctx.db
     .query('performanceMetrics')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const timeTracking = await ctx.db
     .query('timeTracking')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const ratings = await ctx.db
     .query('supervisorRatings')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_employee', (q: any) => q.eq('employeeId', userId))
+    .withIndex('by_employee', (q) => q.eq('employeeId', userId))
     .take(DEFAULT_LIST_CAP);
 
   const signatureDocs = await ctx.db
     .query('signatureDocuments')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_creator', (q: any) => q.eq('createdBy', userId))
+    .withIndex('by_creator', (q) => q.eq('createdBy', userId))
     .take(DEFAULT_LIST_CAP);
 
   const signatureRequests = await ctx.db
     .query('signatureRequests')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_signer', (q: any) => q.eq('signerId', userId))
+    .withIndex('by_signer', (q) => q.eq('signerId', userId))
     .take(DEFAULT_LIST_CAP);
 
-  const sanitizedUser = user
-    ? {
-        ...user,
-        passwordHash: undefined,
-        sessionToken: undefined,
-        totpSecret: undefined,
-        backupCodes: undefined,
-        webauthnChallenge: undefined,
-        faceDescriptor: undefined,
-        faceImageUrl: undefined,
-        resetPasswordToken: undefined,
-        resetPasswordExpiry: undefined,
-      }
-    : null;
+  const sanitizedUser: SanitizedUser | null = user ? sanitizeUser(user) : null;
 
   return {
     user: sanitizedUser,
@@ -616,9 +648,12 @@ async function buildEmployeeSnapshot(
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function restoreEmployeeData(ctx: any, userId: Id<'users'>, snapshot: any) {
-  const { user, employeeProfile, leaves, tasks, createdTasks, events, ...rest } = snapshot;
+async function restoreEmployeeData(
+  ctx: MutationCtx,
+  userId: Id<'users'>,
+  snapshot: EmployeeSnapshot,
+) {
+  const { user, employeeProfile } = snapshot;
 
   if (user) {
     const existingUser = await ctx.db.get(userId);
@@ -631,8 +666,7 @@ async function restoreEmployeeData(ctx: any, userId: Id<'users'>, snapshot: any)
   if (employeeProfile) {
     const existing = await ctx.db
       .query('employeeProfiles')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_user', (q: any) => q.eq('userId', userId))
+      .withIndex('by_user', (q) => q.eq('userId', userId))
       .first();
 
     if (existing) {
@@ -658,8 +692,7 @@ export const secureCreateOrgBackups = mutation({
 
     const employees = await ctx.db
       .query('users')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
     for (const employee of employees) {

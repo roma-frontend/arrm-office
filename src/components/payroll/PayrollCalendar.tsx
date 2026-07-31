@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from 'convex/react';
+import { useTypedQuery } from '@/lib/convex-typed';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { api } from '@/convex/_generated/api';
@@ -103,10 +103,47 @@ const STATUS_CONFIG: Record<
   },
 };
 
-// ── Month Card ──
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// ── Calendar types (mirrors `getPayrollCalendar` return) ──
+interface PayrollCalendarLatestRun {
+  _id: Id<'payrollRuns'>;
+  status: string;
+  totalGross: number;
+  totalNet: number;
+  totalDeductions: number;
+  employeeCount: number;
+  approvedAt?: number;
+  paidAt?: number;
+  createdAt: number;
+}
 
-function MonthCard({ monthData, currency }: { monthData: any; currency: string }) {
+interface PayrollCalendarMonth {
+  month: number;
+  period: string;
+  hasRun: boolean;
+  latestRun: PayrollCalendarLatestRun | null;
+  stats: {
+    employeeCount: number;
+    totalGross: number;
+    totalNet: number;
+    paidRecords: number;
+  };
+  daysSinceLastPaid: number | null;
+}
+
+interface PayrollCalendarData {
+  year: number;
+  months: PayrollCalendarMonth[];
+  payFrequency: string;
+  currency: string;
+  paymentMethod: string | null;
+  totalYearGross: number;
+  totalYearNet: number;
+  completedMonths: number;
+  currentMonthStatus: string;
+}
+
+// ── Month Card ──
+function MonthCard({ monthData, currency }: { monthData: PayrollCalendarMonth; currency: string }) {
   const { t } = useTranslation();
   const status = monthData.latestRun?.status ?? 'no_run';
   const cfg = STATUS_CONFIG[status];
@@ -272,14 +309,10 @@ export default function PayrollCalendar() {
     user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'supervisor';
   const [year, setYear] = useState(new Date().getFullYear());
 
-  const _useQuery = useQuery as unknown as (...args: any[]) => any;
-  const _calRef = api.payroll.queries.getPayrollCalendar as unknown as never;
-
-  const calendarData = _useQuery(
-    _calRef,
+  const calendarData = useTypedQuery<PayrollCalendarData | undefined>(
+    api.payroll.queries.getPayrollCalendar,
     orgId && isAdmin ? { organizationId: orgId, year } : 'skip',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) as any;
+  );
 
   // Stats from calendar data
   const yearlyStats = useMemo(() => {
@@ -288,8 +321,7 @@ export default function PayrollCalendar() {
       totalGross: calendarData.totalYearGross,
       totalNet: calendarData.totalYearNet,
       completedMonths: calendarData.completedMonths,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      totalMonths: calendarData.months.filter((m: any) => m.hasRun).length,
+      totalMonths: calendarData.months.filter((m) => m.hasRun).length,
       payFrequency: calendarData.payFrequency,
       currency: calendarData.currency,
       paymentMethod: calendarData.paymentMethod,
@@ -404,8 +436,7 @@ export default function PayrollCalendar() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {calendarData.months.map((monthData: any) => (
+          {calendarData.months.map((monthData) => (
             <MonthCard
               key={monthData.month}
               monthData={monthData}

@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
-import { mutation } from '../_generated/server';
+import { mutation, type MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { calculatePayroll } from '../lib/payrollCalculator';
 import { toCountryCode, type TaxRuleOverride } from '../lib/taxRules';
@@ -16,12 +16,13 @@ type RunTotals = {
   employeeCount: number;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function recomputeRunTotals(ctx: any, payrollRunId: Id<'payrollRuns'>): Promise<RunTotals> {
+async function recomputeRunTotals(
+  ctx: MutationCtx,
+  payrollRunId: Id<'payrollRuns'>,
+): Promise<RunTotals> {
   const records = await ctx.db
     .query('payrollRecords')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', payrollRunId))
+    .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', payrollRunId))
     .take(DEFAULT_LIST_CAP);
 
   let totalGross = 0;
@@ -41,8 +42,7 @@ async function recomputeRunTotals(ctx: any, payrollRunId: Id<'payrollRuns'>): Pr
     totalNet: round2(totalNet),
     totalDeductions: round2(totalDeductions),
     totalEmployerCost: round2(totalEmployerCost),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    employeeCount: records.filter((r: any) => r.status !== 'cancelled').length,
+    employeeCount: records.filter((r) => r.status !== 'cancelled').length,
   };
 
   await ctx.db.patch(payrollRunId, {
@@ -88,8 +88,7 @@ function validateTaxRuleOverride(o: TaxRuleOverride): void {
 }
 
 // Verified caller id from JWT (never trust a client-supplied requesterId).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function callerId(ctx: any): Promise<Id<'users'>> {
+async function callerId(ctx: MutationCtx): Promise<Id<'users'>> {
   const caller = await getAuthCaller(ctx);
   if (!caller) throw new Error('Not authenticated');
   return caller._id;
@@ -130,8 +129,7 @@ export const createPayrollRun = mutation({
 
     const existing = await ctx.db
       .query('payrollRuns')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org_period', (q: any) =>
+      .withIndex('by_org_period', (q) =>
         q.eq('organizationId', organizationId).eq('period', period),
       )
       .first();
@@ -184,14 +182,12 @@ export const calculatePayrollRun = mutation({
 
     const employees = await ctx.db
       .query('employeeProfiles')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', run.organizationId!))
+      .withIndex('by_org', (q) => q.eq('organizationId', run.organizationId!))
       .take(DEFAULT_LIST_CAP);
 
     const settings = await ctx.db
       .query('salarySettings')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', run.organizationId!))
+      .withIndex('by_org', (q) => q.eq('organizationId', run.organizationId!))
       .first();
 
     // Prefer explicit salary settings, then fall back to the organization's country.
@@ -212,13 +208,10 @@ export const calculatePayrollRun = mutation({
     const skipped: { userId: Id<'users'>; reason: string }[] = [];
 
     // Batch-load all unique user IDs upfront to avoid N+1 queries
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const uniqueUserIds = [...new Set(employees.map((emp: any) => emp.userId))];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const usersBatch = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
+    const uniqueUserIds = [...new Set(employees.map((emp) => emp.userId))];
+    const usersBatch = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
     const userMap = new Map(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u: any) => [u._id, u]),
+      usersBatch.filter((u): u is NonNullable<typeof u> => u !== null).map((u) => [u._id, u]),
     );
 
     for (const emp of employees) {
@@ -354,8 +347,7 @@ export const approvePayrollRun = mutation({
 
     const records = await ctx.db
       .query('payrollRecords')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', args.payrollRunId))
+      .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', args.payrollRunId))
       .take(DEFAULT_LIST_CAP);
 
     for (const record of records) {
@@ -405,8 +397,7 @@ export const markPayrollRunAsPaid = mutation({
 
     const records = await ctx.db
       .query('payrollRecords')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', args.payrollRunId))
+      .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', args.payrollRunId))
       .take(DEFAULT_LIST_CAP);
 
     for (const record of records) {
@@ -455,8 +446,7 @@ export const cancelPayrollRun = mutation({
 
     const records = await ctx.db
       .query('payrollRecords')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_payroll_run', (q: any) => q.eq('payrollRunId', args.payrollRunId))
+      .withIndex('by_payroll_run', (q) => q.eq('payrollRunId', args.payrollRunId))
       .take(DEFAULT_LIST_CAP);
 
     for (const record of records) {
@@ -497,8 +487,7 @@ export const generatePayslip = mutation({
 
     const existing = await ctx.db
       .query('payslips')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_payroll_record', (q: any) => q.eq('payrollRecordId', args.payrollRecordId))
+      .withIndex('by_payroll_record', (q) => q.eq('payrollRecordId', args.payrollRecordId))
       .first();
 
     if (existing) {
@@ -601,8 +590,7 @@ export const updatePayrollRecord = mutation({
 
     const settings = await ctx.db
       .query('salarySettings')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', record.organizationId!))
+      .withIndex('by_org', (q) => q.eq('organizationId', record.organizationId!))
       .first();
     const minWage = settings?.minimumWage ?? 0;
     const maxOvertime = settings?.maximumOvertime ?? 0;
@@ -718,8 +706,7 @@ export const deletePayrollRecord = mutation({
 
     const payslips = await ctx.db
       .query('payslips')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_payroll_record', (q: any) => q.eq('payrollRecordId', args.payrollRecordId))
+      .withIndex('by_payroll_record', (q) => q.eq('payrollRecordId', args.payrollRecordId))
       .take(SMALL_LIST_CAP);
 
     for (const payslip of payslips) {
@@ -797,8 +784,7 @@ export const saveSalarySettings = mutation({
 
     const existing = await ctx.db
       .query('salarySettings')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .first();
 
     const now = Date.now();

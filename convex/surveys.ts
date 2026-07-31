@@ -499,12 +499,12 @@ export const updateQuestion = mutation({
       throw new Error('Can only edit questions in draft surveys');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = {};
-    if (updates.text !== undefined) patch.text = updates.text;
-    if (updates.description !== undefined) patch.description = updates.description;
-    if (updates.isRequired !== undefined) patch.isRequired = updates.isRequired;
-    if (updates.options !== undefined) patch.options = updates.options;
+    const patch = {
+      ...(updates.text !== undefined ? { text: updates.text } : {}),
+      ...(updates.description !== undefined ? { description: updates.description } : {}),
+      ...(updates.isRequired !== undefined ? { isRequired: updates.isRequired } : {}),
+      ...(updates.options !== undefined ? { options: updates.options } : {}),
+    };
 
     if (Object.keys(patch).length > 0) {
       await ctx.db.patch(questionId, patch);
@@ -583,16 +583,18 @@ export const updateSurvey = mutation({
       throw new Error('Only draft surveys can be updated');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = { updatedAt: Date.now() };
-    if (updates.title !== undefined) patch.title = updates.title;
-    if (updates.description !== undefined) patch.description = updates.description;
-    if (updates.isAnonymous !== undefined) patch.isAnonymous = updates.isAnonymous;
-    if (updates.targetRoles !== undefined) patch.targetRoles = updates.targetRoles;
-    if (updates.targetDepartments !== undefined)
-      patch.targetDepartments = updates.targetDepartments;
-    if (updates.startsAt !== undefined) patch.startsAt = updates.startsAt;
-    if (updates.endsAt !== undefined) patch.endsAt = updates.endsAt;
+    const patch = {
+      updatedAt: Date.now(),
+      ...(updates.title !== undefined ? { title: updates.title } : {}),
+      ...(updates.description !== undefined ? { description: updates.description } : {}),
+      ...(updates.isAnonymous !== undefined ? { isAnonymous: updates.isAnonymous } : {}),
+      ...(updates.targetRoles !== undefined ? { targetRoles: updates.targetRoles } : {}),
+      ...(updates.targetDepartments !== undefined
+        ? { targetDepartments: updates.targetDepartments }
+        : {}),
+      ...(updates.startsAt !== undefined ? { startsAt: updates.startsAt } : {}),
+      ...(updates.endsAt !== undefined ? { endsAt: updates.endsAt } : {}),
+    };
 
     await ctx.db.patch(surveyId, patch);
     return surveyId;

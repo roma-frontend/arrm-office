@@ -1,10 +1,29 @@
 import { NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
 
+interface PayrollExportRecord {
+  user?: { name?: string; email?: string } | null;
+  period: string;
+  baseSalary: number;
+  grossSalary: number;
+  netSalary: number;
+  bonuses?: number;
+  overtimePay?: number;
+  deductions?: { incomeTax?: number; socialSecurity?: number; total?: number };
+  status: string;
+  createdAt: number | string | Date;
+}
+
+interface PayrollExportBody {
+  records?: PayrollExportRecord[];
+  organizationName?: string;
+  period?: string;
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { records, organizationName, period } = body;
+    const body = (await request.json()) as PayrollExportBody;
+    const { records, period } = body;
 
     if (!records || !Array.isArray(records)) {
       return NextResponse.json({ error: 'Records array is required' }, { status: 400 });

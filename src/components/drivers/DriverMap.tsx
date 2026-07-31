@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { logger } from '@/lib/logger';
+import type { Map as LeafletMap, Marker, Polyline, LeafletMouseEvent } from 'leaflet';
 
 interface Location {
   lat: number;
@@ -82,15 +83,12 @@ export function DriverMap({
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapDivRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const polylineRef = useRef<any>(null);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const markersRef = useRef<Marker[]>([]);
+  const polylineRef = useRef<Polyline | null>(null);
   const [ready, setReady] = useState(false);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const LRef = useRef<any>(null);
+  const LRef = useRef<typeof import('leaflet') | null>(null);
 
   // Get user's current location
   useEffect(() => {
@@ -183,6 +181,7 @@ export function DriverMap({
     }
 
     const L = LRef.current;
+    if (!L) return;
 
     logger.log('[DriverMap] Initializing map...', { width: rect.width, height: rect.height });
 
@@ -204,14 +203,12 @@ export function DriverMap({
       zoom: userLocation ? 14 : 13,
       scrollWheelZoom: false,
       dragging: true,
-      zoomControl: false, // We'll add custom zoom control
+      zoomControl: false,
       doubleClickZoom: true,
       boxZoom: false,
       keyboard: false,
       fadeAnimation: true,
       zoomAnimation: true,
-      minZoom: 3,
-      maxZoom: 19,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -231,9 +228,9 @@ export function DriverMap({
     // Safe invalidateSize helper — guards against detached containers
     const safeInvalidate = () => {
       const m = mapInstanceRef.current;
-      if (!m || !m._container || !m._container.parentNode) return;
+      if (!m) return;
       try {
-        m.getCenter();
+        m.getContainer();
       } catch {
         return;
       }
@@ -262,8 +259,7 @@ export function DriverMap({
 
     // Click handler for interactive mode
     if (interactive) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      map.on('click', async (e: any) => {
+      map.on('click', async (e: LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
         const cb = onLocationSelectRef.current;
         if (!cb) return;
@@ -296,8 +292,12 @@ export function DriverMap({
     const L = LRef.current;
     const map = mapInstanceRef.current;
 
+    if (!L || !map) return;
+
     // Check if map container still exists and is attached to DOM
-    if (!map || !map._container || !map._container.parentNode) {
+    try {
+      map.getContainer();
+    } catch {
       logger.warn('[DriverMap] Map container not found or detached, skipping update');
       return;
     }
@@ -327,7 +327,7 @@ export function DriverMap({
     }
 
     const icon = (color: string) =>
-      L.divIcon({
+      L!.divIcon({
         className: '',
         html: `<div style="width:42px;height:42px;border-radius:50%;background:${color};border:4px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;"><div style="width:16px;height:16px;border-radius:50%;background:white;opacity:0.3"></div></div>`,
         iconSize: [42, 42],
@@ -337,7 +337,8 @@ export function DriverMap({
     const bounds: [number, number][] = [];
 
     if (pickupCoords) {
-      const m = L.marker([pickupCoords.lat, pickupCoords.lng], { icon: icon('#10B981') })
+      const m = L!
+        .marker([pickupCoords.lat, pickupCoords.lng], { icon: icon('#10B981') })
         .addTo(map)
         .bindPopup(
           `<b>${t('driver.pickup', 'Pickup')}</b><br/>${pickupCoords.address || pickupLocation || ''}`,
@@ -347,7 +348,8 @@ export function DriverMap({
     }
 
     if (dropoffCoords) {
-      const m = L.marker([dropoffCoords.lat, dropoffCoords.lng], { icon: icon('#EF4444') })
+      const m = L!
+        .marker([dropoffCoords.lat, dropoffCoords.lng], { icon: icon('#EF4444') })
         .addTo(map)
         .bindPopup(
           `<b>${t('driver.dropoff', 'Dropoff')}</b><br/>${dropoffCoords.address || dropoffLocation || ''}`,
@@ -357,7 +359,8 @@ export function DriverMap({
     }
 
     if (driverCoords) {
-      const m = L.marker([driverCoords.lat, driverCoords.lng], { icon: icon('#3B82F6') })
+      const m = L!
+        .marker([driverCoords.lat, driverCoords.lng], { icon: icon('#3B82F6') })
         .addTo(map)
         .bindPopup(`<b>${t('driver.driver', 'Driver')}</b>`);
       markersRef.current.push(m);
@@ -365,13 +368,15 @@ export function DriverMap({
     }
 
     if (pickupCoords && dropoffCoords) {
-      polylineRef.current = L.polyline(
-        [
-          [pickupCoords.lat, pickupCoords.lng],
-          [dropoffCoords.lat, dropoffCoords.lng],
-        ],
-        { color: '#3B82F6', weight: 3, opacity: 0.7, dashArray: '8,8' },
-      ).addTo(map);
+      polylineRef.current = L!
+        .polyline(
+          [
+            [pickupCoords.lat, pickupCoords.lng],
+            [dropoffCoords.lat, dropoffCoords.lng],
+          ],
+          { color: '#3B82F6', weight: 3, opacity: 0.7, dashArray: '8,8' },
+        )
+        .addTo(map);
     }
 
     // Center map on all markers — guard against detached map
@@ -381,11 +386,10 @@ export function DriverMap({
         map.fitBounds(bounds, {
           padding: [50, 50],
           maxZoom: 16,
-          minZoom: 10,
         });
       } else if (bounds.length === 1) {
         logger.log('[DriverMap] Setting view:', bounds[0]);
-        map.setView(bounds[0], 14);
+        map.setView(bounds[0]!, 14);
       }
     } catch (e) {
       logger.warn('[DriverMap] Error centering map:', e);
@@ -407,9 +411,8 @@ export function DriverMap({
     const m = mapInstanceRef.current;
     if (!m || !ready || !userLocation) return;
     if (pickupCoords || dropoffCoords || driverCoords) return; // Don't center if we already have coords
-    if (!m._container || !m._container.parentNode) return;
     try {
-      m.getCenter();
+      m.getContainer();
     } catch {
       return;
     }
@@ -427,8 +430,7 @@ export function DriverMap({
     if (!mapInstanceRef.current || !interactive) return;
     const map = mapInstanceRef.current;
     map.off('click');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    map.on('click', async (e: any) => {
+    map.on('click', async (e: LeafletMouseEvent) => {
       const { lat, lng } = e.latlng;
       const cb = onLocationSelectRef.current;
       if (!cb) return;
@@ -555,8 +557,8 @@ const NAVIGATORS = [
 function NavigatorButtons({
   pickupCoords,
   dropoffCoords,
-  pickupLabel,
-  dropoffLabel,
+  pickupLabel: _pickupLabel,
+  dropoffLabel: _dropoffLabel,
 }: {
   pickupCoords?: Location;
   dropoffCoords?: Location;

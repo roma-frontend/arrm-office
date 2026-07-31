@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface GoogleCalendarEventItem {
+  id?: string;
+  summary?: string;
+  description?: string;
+  start?: { date?: string; dateTime?: string };
+  end?: { date?: string; dateTime?: string };
+  location?: string;
+  htmlLink?: string;
+}
+
+interface GoogleCalendarEventsResponse {
+  items?: GoogleCalendarEventItem[];
+}
+
 export async function GET(request: NextRequest) {
   const accessToken = request.cookies.get('google_access_token')?.value;
   const refreshToken = request.cookies.get('google_refresh_token')?.value;
@@ -25,7 +39,7 @@ export async function GET(request: NextRequest) {
         });
 
         if (tokenRes.ok) {
-          const tokens = await tokenRes.json();
+          const tokens = (await tokenRes.json()) as { access_token?: string };
           token = tokens.access_token;
         }
       } catch {
@@ -69,11 +83,9 @@ export async function GET(request: NextRequest) {
       throw new Error(`Google API error: ${res.status}`);
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as GoogleCalendarEventsResponse;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const events = (data.items || []).map((item: any) => ({
+    const events = (data.items ?? []).map((item) => ({
       id: item.id,
       title: item.summary || '(No title)',
       description: item.description || '',

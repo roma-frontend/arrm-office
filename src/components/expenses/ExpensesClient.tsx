@@ -153,57 +153,50 @@ export default function ExpensesClient() {
   const [reportWizardOpen, setReportWizardOpen] = useState(false);
   const [policyWizardOpen, setPolicyWizardOpen] = useState(false);
 
-  const _useQuery = useQuery as unknown as (...args: any[]) => any;
-  const _useMutation = useMutation as unknown as (...args: any[]) => any;
-
-  const expenses = _useQuery(
+  const expenses = useQuery(
     api.expenses.listExpenses,
     queryOrgId !== undefined || isSuperadmin ? { organizationId: queryOrgId } : 'skip',
   );
 
-  const expenseSummary = _useQuery(
+  const expenseSummary = useQuery(
     api.expenses.getExpenseSummary,
     queryOrgId !== undefined || isSuperadmin ? { organizationId: queryOrgId } : 'skip',
   );
 
-  const expenseCategories = _useQuery(
+  const expenseCategories = useQuery(
     api.expenses.listExpenseCategories,
     queryOrgId !== undefined || isSuperadmin ? { organizationId: queryOrgId } : 'skip',
   );
 
-  const expensePolicy = _useQuery(
+  const expensePolicy = useQuery(
     api.expenses.getExpensePolicy,
     queryOrgId !== undefined || isSuperadmin ? { organizationId: queryOrgId } : 'skip',
   );
 
-  const expenseReports = _useQuery(
+  const expenseReports = useQuery(
     api.expenses.listExpenseReports,
     queryOrgId !== undefined || isSuperadmin ? { organizationId: queryOrgId } : 'skip',
   );
 
-  const _submitExpense = _useMutation(api.expenses.submitExpense);
-  const approveExpense = _useMutation(api.expenses.approveExpense);
-  const rejectExpense = _useMutation(api.expenses.rejectExpense);
-  const deleteExpense = _useMutation(api.expenses.deleteExpense);
+  const approveExpense = useMutation(api.expenses.approveExpense);
+  const rejectExpense = useMutation(api.expenses.rejectExpense);
+  const deleteExpense = useMutation(api.expenses.deleteExpense);
 
   const filteredExpenses = useMemo(() => {
     if (!expenses) return [];
     let result = expenses;
     if (searchQuery) {
       result = result.filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (e: any) =>
+        (e) =>
           e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           e.userName.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
     if (categoryFilter !== 'all') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      result = result.filter((e: any) => e.category === categoryFilter);
+      result = result.filter((e) => e.category === categoryFilter);
     }
     if (statusFilter !== 'all') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      result = result.filter((e: any) => e.status === statusFilter);
+      result = result.filter((e) => e.status === statusFilter);
     }
     return result;
   }, [expenses, searchQuery, categoryFilter, statusFilter]);
@@ -212,17 +205,17 @@ export default function ExpensesClient() {
     if (!expenseSummary?.byCategory) return [];
     return Object.entries(expenseSummary.byCategory).map(([key, value]) => ({
       name: t(`expenses.categoryNames.${key}`) || key,
-      value: value as number,
+      value,
     }));
   }, [expenseSummary, t]);
 
   const statusChartData = useMemo(() => {
     if (!expenseSummary?.byStatus) return [];
     return Object.entries(expenseSummary.byStatus)
-      .filter(([_, value]) => (value as number) > 0)
+      .filter(([, value]) => value > 0)
       .map(([key, value]) => ({
         name: t(`expenses.${key}`) || key,
-        value: value as number,
+        value,
       }));
   }, [expenseSummary, t]);
 
@@ -388,8 +381,7 @@ export default function ExpensesClient() {
                   <CardContent>
                     {filteredExpenses && filteredExpenses.length > 0 ? (
                       <div className="space-y-3">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {filteredExpenses.slice(0, 10).map((expense: any) => (
+                        {filteredExpenses.slice(0, 10).map((expense) => (
                           <div
                             key={expense._id}
                             className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"
@@ -490,8 +482,7 @@ export default function ExpensesClient() {
                   <CardContent>
                     {expenseReports && expenseReports.length > 0 ? (
                       <div className="space-y-3">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {expenseReports.map((report: any) => (
+                        {expenseReports.map((report) => (
                           <div
                             key={report._id}
                             className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"
@@ -546,8 +537,7 @@ export default function ExpensesClient() {
                   <CardContent>
                     {expenseCategories && expenseCategories.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {expenseCategories.map((category: any) => (
+                        {expenseCategories.map((category) => (
                           <Card key={category._id}>
                             <CardHeader>
                               <div className="flex items-start justify-between">

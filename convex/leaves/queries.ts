@@ -1,11 +1,12 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { query } from '../_generated/server';
+import type { Doc } from '../_generated/dataModel';
 import { paginationOptsValidator } from 'convex/server';
 import {
   paginationArgs,
   normalizePageSize,
-  decodeCursor,
+  decodeCreationTimeCursor,
   encodeCursor,
   MAX_PAGE_SIZE,
 } from '../pagination';
@@ -238,16 +239,15 @@ export const getLeavesPagederated = query({
     const normalizedPageSize = normalizePageSize(args.pageSize);
 
     // Get user's leaves based on role
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let items: any[] = [];
+    const cursorCreationTime = args.cursor ? decodeCreationTimeCursor(args.cursor) : undefined;
+    let items: Doc<'leaveRequests'>[] = [];
 
     if (isSuperadmin(requester)) {
       // Superadmin sees all
       const query = ctx.db.query('leaveRequests').order('desc');
-      if (args.cursor) {
-        const cursorData = decodeCursor(args.cursor);
+      if (cursorCreationTime !== undefined) {
         items = await query
-          .filter((q) => q.lt(q.field('_creationTime'), cursorData._creationTime))
+          .filter((q) => q.lt(q.field('_creationTime'), cursorCreationTime))
           .take(normalizedPageSize + 1);
       } else {
         items = await query.take(normalizedPageSize + 1);
@@ -259,10 +259,9 @@ export const getLeavesPagederated = query({
         .query('leaveRequests')
         .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
         .order('desc');
-      if (args.cursor) {
-        const cursorData = decodeCursor(args.cursor);
+      if (cursorCreationTime !== undefined) {
         items = await query
-          .filter((q) => q.lt(q.field('_creationTime'), cursorData._creationTime))
+          .filter((q) => q.lt(q.field('_creationTime'), cursorCreationTime))
           .take(normalizedPageSize + 1);
       } else {
         items = await query.take(normalizedPageSize + 1);
@@ -275,14 +274,12 @@ export const getLeavesPagederated = query({
     }
 
     const enriched = await enrichLeavesWithUserData(ctx, items);
+    const last = items[items.length - 1];
 
     return {
       items: enriched,
       hasMore,
-      nextCursor:
-        hasMore && items.length > 0
-          ? encodeCursor({ _creationTime: items[items.length - 1]._creationTime })
-          : undefined,
+      nextCursor: hasMore && last ? encodeCursor({ _creationTime: last._creationTime }) : undefined,
     };
   },
 });

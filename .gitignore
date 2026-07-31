@@ -131,6 +131,10 @@ eslint_hooks*.json
 eslint_lib*.json
 eslint_nocache*.json
 eslint_targets.json
+eslint_report*.json
+eslint_check*.json
+eslint_fix*.json
+eslint-ci-errors.json
 
 # Reports and analysis directories
 /reports/

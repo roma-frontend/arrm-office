@@ -123,7 +123,7 @@ export function ServiceBroadcastsManager({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {broadcasts.map((broadcast: any) => (
               <div
                 key={broadcast._id}

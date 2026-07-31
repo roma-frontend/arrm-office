@@ -433,7 +433,8 @@ function QuickHelpCard({
 }
 
 // Plan Card Component
-function _PlanCard({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for upcoming plan comparison section
+function PlanCard({
   name,
   price,
   features,

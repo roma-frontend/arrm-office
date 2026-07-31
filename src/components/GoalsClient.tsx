@@ -169,10 +169,7 @@ function CreateObjectiveWizard({
   };
 
   const updateKR = (index: number, field: keyof KRInput, value: string | number) => {
-    const updated = [...keyResults];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (updated[index] as any)[field] = value;
-    setKeyResults(updated);
+    setKeyResults((prev) => prev.map((kr, i) => (i === index ? { ...kr, [field]: value } : kr)));
   };
 
   const handleSubmit = async () => {
@@ -732,7 +729,8 @@ function CheckinDialog({
 
 // ============ OBJECTIVE DETAIL DIALOG ============
 
-function _ObjectiveDetailDialog({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for upcoming objective detail view
+function ObjectiveDetailDialog({
   objectiveId,
   onClose,
   onCheckin,

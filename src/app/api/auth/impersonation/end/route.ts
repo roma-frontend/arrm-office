@@ -1,9 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT, signJWT } from '@/lib/jwt';
+import { verifyJWT, signJWT, type JWTPayload } from '@/lib/jwt';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
-async function convexMutation(path: string, args: Record<string, unknown>) {
+interface ConvexResponse {
+  status: string;
+  value?: unknown;
+  errorMessage?: string;
+}
+
+/** Shape of the restored superadmin user returned by `superadmin:endImpersonationWithToken`. */
+interface RestoredSuperadmin {
+  id?: string;
+  email?: string;
+  name: string;
+  role: string;
+  organizationId?: string;
+  organizationSlug?: string;
+  organizationName?: string;
+  isApproved?: boolean;
+  department?: string;
+  position?: string;
+  employeeType?: string;
+  avatar?: string;
+}
+
+interface EndImpersonationResult {
+  superadmin?: RestoredSuperadmin | null;
+}
+
+async function convexMutation<T>(path: string, args: Record<string, unknown>): Promise<T> {
   if (!CONVEX_URL) {
     throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
   }
@@ -15,12 +41,12 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
     cache: 'no-store',
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as ConvexResponse;
   if (!res.ok || data.status === 'error') {
     throw new Error(data.errorMessage ?? `HTTP ${res.status}`);
   }
 
-  return data.value;
+  return data.value as T;
 }
 
 export async function POST(req: NextRequest) {
@@ -58,12 +84,15 @@ export async function POST(req: NextRequest) {
     const restoredSessionToken = crypto.randomUUID();
     const restoredSessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
 
-    const result = await convexMutation('superadmin:endImpersonationWithToken', {
-      sessionId: payload.impersonation.sessionId,
-      token: payload.impersonation.sessionToken,
-      restoredSessionToken,
-      restoredSessionExpiry,
-    });
+    const result = await convexMutation<EndImpersonationResult>(
+      'superadmin:endImpersonationWithToken',
+      {
+        sessionId: payload.impersonation.sessionId,
+        token: payload.impersonation.sessionToken,
+        restoredSessionToken,
+        restoredSessionExpiry,
+      },
+    );
 
     const superadmin = result.superadmin;
     if (!superadmin?.id || !superadmin?.email) {
@@ -74,14 +103,14 @@ export async function POST(req: NextRequest) {
       userId: String(superadmin.id),
       name: superadmin.name,
       email: superadmin.email,
-      role: superadmin.role,
+      role: superadmin.role as JWTPayload['role'],
       organizationId: superadmin.organizationId,
       organizationSlug: superadmin.organizationSlug,
       organizationName: superadmin.organizationName,
       isApproved: superadmin.isApproved,
       department: superadmin.department,
       position: superadmin.position,
-      employeeType: superadmin.employeeType,
+      employeeType: superadmin.employeeType as JWTPayload['employeeType'] | undefined,
       avatar: superadmin.avatar,
     });
 
@@ -126,12 +155,9 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error('Impersonation end error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to end impersonation' },
-      { status: 500 },
-    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to end impersonation';
+    console.error('Impersonation end error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

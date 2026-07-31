@@ -5,6 +5,24 @@ import type { Id } from '@/convex/_generated/dataModel';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
+/** Minimal shape of a Telegram update (poll callback or chat message). */
+interface TelegramUpdate {
+  callback_query?: {
+    id: string;
+    data?: string;
+    message?: { chat?: { id: number | string } };
+  };
+  message?: {
+    text?: string;
+    chat?: { id: number | string };
+    from?: { first_name?: string; language_code?: string };
+  };
+}
+
+interface ChatCompletionResponse {
+  choices?: { message?: { content?: string } }[];
+}
+
 const REPLIES = {
   en: {
     subscribed: '🎉 Subscribed! Every Monday you will receive an AI-generated HR digest.',
@@ -63,7 +81,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as TelegramUpdate;
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) return NextResponse.json({ ok: true });
 
@@ -282,7 +300,7 @@ async function getAIResponse(
     });
 
     if (!res.ok) throw new Error('AI API error');
-    const data = await res.json();
+    const data = (await res.json()) as ChatCompletionResponse;
     return data.choices?.[0]?.message?.content?.trim() || 'Sorry, try again.';
   } catch {
     return language === 'ru'

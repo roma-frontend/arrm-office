@@ -37,6 +37,31 @@ import TimelineView from './TimelineView';
 
 type ViewMode = 'kanban' | 'list' | 'timeline';
 
+interface TaskAttachment {
+  name: string;
+  url?: string;
+}
+
+interface TaskAssignee {
+  _id?: string;
+  name?: string;
+  avatarUrl?: string | null;
+  department?: string;
+}
+
+interface TaskItem {
+  _id: string;
+  title: string;
+  description?: string;
+  status: Status;
+  priority: Priority;
+  deadline?: number;
+  tags?: string[];
+  attachments?: TaskAttachment[];
+  assignedToUser?: TaskAssignee | null;
+  commentCount: number;
+}
+
 const STATUS_CONFIG: Record<
   Status,
   { labelKey: string; color: string; bg: string; border: string; dot: string }
@@ -132,6 +157,7 @@ function Avatar({
       className={`${dim} rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white bg-linear-to-br from-blue-500 to-sky-500`}
     >
       {url ? (
+        /* eslint-disable-next-line @next/next/no-img-element -- external avatar URLs */
         <img
           src={url}
           alt={name}
@@ -149,6 +175,7 @@ function Avatar({
 function DeadlineBadge({ deadline, status }: { deadline?: number; status: Status }) {
   const { t, i18n } = useTranslation();
   if (!deadline) return null;
+  // eslint-disable-next-line react-hooks/purity -- intentional: badge must compare against current time
   const now = Date.now();
   const diff = deadline - now;
   const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
@@ -176,9 +203,7 @@ function DeadlineBadge({ deadline, status }: { deadline?: number; status: Status
 }
 
 // â”€â”€ Task Card (base content, reused in both draggable and overlay) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-function TaskCardContent({ task, isDragging = false }: { task: any; isDragging?: boolean }) {
+function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragging?: boolean }) {
   const { t } = useTranslation();
   const statusCfg = STATUS_CONFIG[task.status as Status];
   const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
@@ -214,8 +239,8 @@ function TaskCardContent({ task, isDragging = false }: { task: any; isDragging?:
       )}
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {task.tags.slice(0, 3).map((tag: any) => (
+          {' '}
+          {task.tags.slice(0, 3).map((tag: string) => (
             <span
               key={tag}
               className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full"
@@ -227,7 +252,7 @@ function TaskCardContent({ task, isDragging = false }: { task: any; isDragging?:
       )}
       {task.attachments && task.attachments.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {task.attachments.slice(0, 3).map((att: any, idx: number) => (
+          {task.attachments.slice(0, 3).map((att: TaskAttachment, idx: number) => (
             <div
               key={idx}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-(--background-subtle) text-(--text-secondary) border border-(--border)"
@@ -270,10 +295,7 @@ function TaskCardContent({ task, isDragging = false }: { task: any; isDragging?:
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-function DraggableTaskCard({ task, onOpen }: { task: any; onOpen: () => void }) {
-  const { t } = useTranslation();
+function DraggableTaskCard({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
     data: {
@@ -324,9 +346,8 @@ function DroppableKanbanColumn({
   onOpen,
 }: {
   status: Status;
-  tasks: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onOpen: (t: any) => void;
+  tasks: TaskItem[];
+  onOpen: (t: TaskItem) => void;
 }) {
   const cfg = STATUS_CONFIG[status];
   const { t } = useTranslation();
@@ -368,9 +389,7 @@ function DroppableKanbanColumn({
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-function TaskRow({ task, onOpen }: { task: any; onOpen: () => void }) {
+function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
   const { t } = useTranslation();
   const statusCfg = STATUS_CONFIG[task.status as Status];
   const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
@@ -492,8 +511,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
   const [filterEmployee, setFilterEmployee] = useState<string>('all');
   const [search, setSearch] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [_activeTask, setActiveTask] = useState<any>(null);
+  const [_activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [_isPending, startTransition] = useTransition();
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -513,7 +531,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         mainEl.removeEventListener('scroll', handleScroll);
       }
     };
-  }, []);
+  }, [mainRef]);
 
   const convexId = userId && userId !== '' ? (userId as Id<'users'>) : null;
   const canManage = userRole === 'admin' || userRole === 'supervisor';
@@ -629,6 +647,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       overdue: all.filter(
         (t) =>
           t.deadline &&
+          // eslint-disable-next-line react-hooks/purity -- intentional: overdue stat compares against current time
           t.deadline < Date.now() &&
           t.status !== 'completed' &&
           t.status !== 'cancelled',
@@ -637,7 +656,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   }, [rawTasksWithOptimistic]);
 
   const tasksByStatus = useMemo(() => {
-    const map: Record<Status, any[]> = {
+    const map: Record<Status, TaskItem[]> = {
       pending: [],
       in_progress: [],
       review: [],

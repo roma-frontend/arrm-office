@@ -2,8 +2,9 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
+import { useTypedQuery } from '@/lib/convex-typed';
 import { api } from '@/convex/_generated/api';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, type Doc } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
@@ -45,6 +46,72 @@ const QUESTION_TYPE_ICONS: Record<string, typeof Star> = {
   nps: BarChart3,
 };
 
+// ── Types mirroring convex/surveys.ts returns ────────────────────────────────
+
+interface SurveyQuestionResult {
+  question: Doc<'surveyQuestions'>;
+  totalResponses: number;
+  average?: number;
+  distribution?: Record<string, number>;
+  optionCounts?: Record<string, number>;
+  yesCount?: number;
+  noCount?: number;
+  textResponses?: (string | null | undefined)[];
+}
+
+interface SurveyResultsData {
+  totalResponses: number;
+  questionResults: SurveyQuestionResult[];
+}
+
+interface DepartmentQuestionResult {
+  questionId: Id<'surveyQuestions'>;
+  totalResponses: number;
+  average?: number;
+  yesCount?: number;
+  noCount?: number;
+}
+
+interface DepartmentResult {
+  department: string;
+  responseCount: number;
+  questionResults: DepartmentQuestionResult[];
+}
+
+interface SurveyDepartmentResultsData {
+  departmentResults: DepartmentResult[];
+}
+
+interface SurveyTrend {
+  surveyId: string;
+  title: string;
+  status: string;
+  responseCount: number;
+  createdAt: number;
+  isAnonymous: boolean;
+}
+
+interface SurveyTrendsData {
+  trends: SurveyTrend[];
+}
+
+interface SurveyResponseDetail {
+  responseId: string;
+  respondent: { name: string; email: string; department?: string } | null;
+  submittedAt: number;
+  answers: Doc<'surveyAnswers'>[];
+}
+
+interface SurveyResponsesData {
+  responses: SurveyResponseDetail[];
+}
+
+interface SurveyExportData {
+  survey: { title: string; status: string; isAnonymous: boolean };
+  questions: string[];
+  exportData: Record<string, unknown>[];
+}
+
 function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
   return (
@@ -54,9 +121,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-function QuestionResultCard({ question, result }: { question: any; result: any }) {
+function QuestionResultCard({
+  question,
+  result,
+}: {
+  question: Doc<'surveyQuestions'>;
+  result: SurveyQuestionResult;
+}) {
   const { t } = useTranslation();
   const Icon = QUESTION_TYPE_ICONS[question.type] || FileText;
 
@@ -78,7 +149,7 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
             <Progress value={pct} className="h-2" />
             {result.distribution && (
               <div className="flex gap-1 mt-2">
-                {Object.entries(result.distribution as Record<string, number>)
+                {Object.entries(result.distribution ?? {})
                   .sort(([a], [b]) => Number(a) - Number(b))
                   .map(([val, count]) => (
                     <div key={val} className="flex flex-col items-center gap-1">
@@ -98,7 +169,7 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
         );
       }
       case 'multiple_choice': {
-        const counts = result.optionCounts as Record<string, number> | undefined;
+        const counts = result.optionCounts;
         if (!counts || Object.keys(counts).length === 0) {
           return <p className="text-sm text-muted-foreground">{t('surveys.empty')}</p>;
         }
@@ -150,7 +221,7 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
         );
       }
       case 'text': {
-        const responses = result.textResponses as string[] | undefined;
+        const responses = result.textResponses;
         if (!responses || responses.length === 0) {
           return <p className="text-sm text-muted-foreground">{t('surveys.empty')}</p>;
         }
@@ -190,9 +261,7 @@ function QuestionResultCard({ question, result }: { question: any; result: any }
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }) {
+function DepartmentBreakdown({ departmentResults }: { departmentResults: DepartmentResult[] }) {
   const { t } = useTranslation();
 
   if (!departmentResults || departmentResults.length === 0) {
@@ -224,8 +293,7 @@ function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }
                 </Badge>
               </div>
               <div className="space-y-2">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {dept.questionResults.map((qr: any) => {
+                {dept.questionResults.map((qr) => {
                   const avg = qr.average;
                   if (avg !== undefined) {
                     return (
@@ -249,9 +317,7 @@ function DepartmentBreakdown({ departmentResults }: { departmentResults: any[] }
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-function SurveyTrendsChart({ trends }: { trends: any[] }) {
+function SurveyTrendsChart({ trends }: { trends: SurveyTrend[] }) {
   const { t } = useTranslation();
 
   if (!trends || trends.length === 0) {
@@ -318,7 +384,7 @@ function ExportButton({
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
 
-  const exportData = useQuery(api.surveys.getSurveyExportData, {
+  const exportData = useTypedQuery<SurveyExportData | null>(api.surveys.getSurveyExportData, {
     surveyId,
     organizationId,
   });
@@ -332,8 +398,7 @@ function ExportButton({
       const rows = exportData.exportData.map((row) =>
         headers
           .map((h) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const val = (row as any)[h];
+            const val = row[h];
             if (val === undefined || val === null) return '';
             const str = String(val);
             if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -382,19 +447,19 @@ export default function SurveyResultsDashboard() {
   const dateLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
 
   const survey = useQuery(api.surveys.getSurveyWithQuestions, { surveyId });
-  const results = useQuery(
+  const results = useTypedQuery<SurveyResultsData>(
     api.surveys.getSurveyResults,
     survey ? { surveyId, organizationId: survey.organizationId as Id<'organizations'> } : 'skip',
   );
-  const deptResults = useQuery(
+  const deptResults = useTypedQuery<SurveyDepartmentResultsData>(
     api.surveys.getSurveyResultsByDepartment,
     survey ? { surveyId, organizationId: survey.organizationId as Id<'organizations'> } : 'skip',
   );
-  const trends = useQuery(
+  const trends = useTypedQuery<SurveyTrendsData>(
     api.surveys.getSurveyTrends,
     survey ? { organizationId: survey.organizationId as Id<'organizations'>, months: 6 } : 'skip',
   );
-  const responses = useQuery(
+  const responses = useTypedQuery<SurveyResponsesData>(
     api.surveys.getSurveyResponses,
     survey && !survey.isAnonymous
       ? { surveyId, organizationId: survey.organizationId as Id<'organizations'>, limit: 50 }

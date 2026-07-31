@@ -16,7 +16,8 @@
 import { v } from 'convex/values';
 import { api } from '../_generated/api';
 import { query } from '../_generated/server';
-import type { Id } from '../_generated/dataModel';
+import type { QueryCtx } from '../_generated/server';
+import type { Id, Doc } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
 
@@ -49,6 +50,29 @@ export interface Conflict {
   relatedTaskId?: Id<'tasks'>;
   relatedRequestId?: Id<'driverRequests'>;
   metadata?: Record<string, unknown>;
+}
+
+/** Free-form metadata accepted by `checkConflictsForRequest`. */
+interface RequestMetadata {
+  driverId?: Id<'drivers'>;
+  assigneeId?: Id<'users'>;
+  taskId?: Id<'tasks'>;
+  leaveType?: string;
+}
+
+/** Shape returned by `getConflictSummaryForAI`. */
+export interface ConflictSummary {
+  total: number;
+  critical: number;
+  warnings: number;
+  messages: Array<{
+    type: ConflictType;
+    severity: ConflictSeverity;
+    title: string;
+    message: string;
+    suggestion: string;
+  }>;
+  hasBlockingConflicts: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,8 +138,7 @@ export const detectAllConflicts = query({
     }
 
     // Сортируем: критические сначала, затем по дате
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return conflicts.sort((a: any, b: any) => {
+    return conflicts.sort((a, b) => {
       if (a.severity === 'critical' && b.severity !== 'critical') return -1;
       if (b.severity === 'critical' && a.severity !== 'critical') return 1;
       return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -143,6 +166,7 @@ export const checkConflictsForRequest = query({
   },
   handler: async (ctx, args) => {
     const conflicts: Conflict[] = [];
+    const metadata = (args.metadata ?? {}) as RequestMetadata;
 
     if (args.requestType === 'leave') {
       // Проверка конфликтов отпуска
@@ -155,8 +179,7 @@ export const checkConflictsForRequest = query({
       // 1. Проверка мероприятий
       const events = await ctx.db
         .query('companyEvents')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+        .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
         .take(MAX_PAGE_SIZE);
 
       for (const event of events) {
@@ -205,13 +228,12 @@ export const checkConflictsForRequest = query({
 
     if (args.requestType === 'driver') {
       // Проверка конфликтов водителя
-      const driverId = args.metadata?.driverId as Id<'drivers'> | undefined;
+      const driverId = metadata.driverId;
 
       if (driverId) {
         const existingTrips = await ctx.db
           .query('driverSchedules')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .withIndex('by_driver', (q: any) => q.eq('driverId', driverId))
+          .withIndex('by_driver', (q) => q.eq('driverId', driverId))
           .take(MAX_PAGE_SIZE);
 
         for (const trip of existingTrips) {
@@ -239,14 +261,13 @@ export const checkConflictsForRequest = query({
 
     if (args.requestType === 'task') {
       // Проверка конфликтов задач
-      const assigneeId = args.metadata?.assigneeId as Id<'users'> | undefined;
+      const assigneeId = metadata.assigneeId;
 
       if (assigneeId) {
         // Проверяем, не в отпуске ли исполнитель
         const leaveRequests = await ctx.db
           .query('leaveRequests')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .withIndex('by_user', (q: any) => q.eq('userId', assigneeId))
+          .withIndex('by_user', (q) => q.eq('userId', assigneeId))
           .take(MAX_PAGE_SIZE);
 
         for (const leave of leaveRequests) {
@@ -265,7 +286,7 @@ export const checkConflictsForRequest = query({
                 'Переназначьте задачу на другого сотрудника или измените срок выполнения.',
               date: leave.startDate,
               affectedUsers: [assigneeId],
-              relatedTaskId: args.metadata?.taskId,
+              relatedTaskId: metadata.taskId,
               metadata: {
                 leaveId: leave._id,
                 leaveType: leave.type,
@@ -280,8 +301,7 @@ export const checkConflictsForRequest = query({
 
     return {
       conflicts,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      hasCritical: conflicts.some((c: any) => c.severity === 'critical'),
+      hasCritical: conflicts.some((c) => c.severity === 'critical'),
     };
   },
 });
@@ -291,8 +311,7 @@ export const checkConflictsForRequest = query({
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function detectLeaveEventConflicts(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: QueryCtx,
   args: { organizationId: Id<'organizations'>; startDate: number; endDate: number },
 ): Promise<Conflict[]> {
   const conflicts: Conflict[] = [];
@@ -300,31 +319,26 @@ async function detectLeaveEventConflicts(
   // Получаем все мероприятия в периоде
   const events = await ctx.db
     .query('companyEvents')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
   // Получаем все одобренные отпуска в периоде
   const leaves = await ctx.db
     .query('leaveRequests')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
+  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
 
   // Batch-load all unique user IDs upfront to avoid N+1 queries
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const uniqueUserIds = [...new Set(approvedLeaves.map((l: any) => l.userId))];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const usersForLeaves = await Promise.all(uniqueUserIds.map((id: any) => ctx.db.get(id)));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userMap = new Map(usersForLeaves.filter(Boolean).map((u: any) => [u._id, u]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const profilesForLeaves = await Promise.all(uniqueUserIds.map((id: any) => getProfile(ctx, id)));
+  const uniqueUserIds = [...new Set(approvedLeaves.map((l) => l.userId))];
+  const usersForLeaves = await Promise.all(uniqueUserIds.map((id) => ctx.db.get(id)));
+  const userMap = new Map(
+    usersForLeaves.filter((u): u is Doc<'users'> => u !== null).map((u) => [u._id, u] as const),
+  );
+  const profilesForLeaves = await Promise.all(uniqueUserIds.map((id) => getProfile(ctx, id)));
   const profileMapForLeaves = new Map(
-    uniqueUserIds.map((id, i: number) => [id, profilesForLeaves[i]]),
+    uniqueUserIds.map((id, i) => [id, profilesForLeaves[i]] as const),
   );
 
   for (const event of events) {
@@ -341,7 +355,7 @@ async function detectLeaveEventConflicts(
       const profile = profileMapForLeaves.get(leave.userId);
       const userDepartment = (profile?.department ?? user.department) || '';
       const isRequiredDept = event.requiredDepartments.some(
-        (dept: string) => dept.toLowerCase() === userDepartment.toLowerCase(),
+        (dept) => dept.toLowerCase() === userDepartment.toLowerCase(),
       );
       const isRequiredEmployee = event.requiredEmployeeIds?.includes(leave.userId);
 
@@ -377,8 +391,7 @@ async function detectLeaveEventConflicts(
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function detectDepartmentConflicts(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: QueryCtx,
   args: {
     organizationId: Id<'organizations'>;
     startDate: number;
@@ -392,45 +405,35 @@ async function detectDepartmentConflicts(
   const users = (
     await ctx.db
       .query('users')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(MAX_PAGE_SIZE)
-  )
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .filter((u: any) => u.role !== 'superadmin');
+  ).filter((u) => u.role !== 'superadmin');
 
   // Load profiles in parallel for department field
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const profiles = await Promise.all(users.map((u: any) => getProfile(ctx, u._id)));
+  const profiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
   const profileMap = new Map<string, Awaited<ReturnType<typeof getProfile>>>(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    users.map((u: any, i: number) => [u._id as string, profiles[i]!]),
+    users.map((u, i) => [u._id, profiles[i]!]),
   );
 
   // Get all approved leaves
   const leaves = await ctx.db
     .query('leaveRequests')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
+  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
 
   // Build department user counts
   const deptUserCounts = new Map<string, number>();
-  const deptUserIds = new Map<string, Id<'users'>[]>();
   for (const user of users) {
     const p = profileMap.get(user._id);
     const dept = (p?.department ?? user.department) || 'Unknown';
     deptUserCounts.set(dept, (deptUserCounts.get(dept) || 0) + 1);
-    if (!deptUserIds.has(dept)) deptUserIds.set(dept, []);
-    deptUserIds.get(dept)!.push(user._id);
   }
 
   // Build user map for O(1) lookups
   type UserDoc = { _id: Id<'users'>; department?: string; name: string };
-  const userMap = new Map<Id<'users'>, UserDoc>(users.map((u: UserDoc) => [u._id, u]));
+  const userMap = new Map<Id<'users'>, UserDoc>(users.map((u) => [u._id, u]));
 
   // OPTIMIZED: Use interval-based approach instead of daily iteration
   // Collect all "events" (leave start/end) and process only at change points
@@ -439,7 +442,7 @@ async function detectDepartmentConflicts(
   for (const leave of approvedLeaves) {
     const leaveStart = new Date(leave.startDate).getTime();
     const leaveEnd = new Date(leave.endDate).getTime();
-    const user = userMap.get(leave.userId) as UserDoc | undefined;
+    const user = userMap.get(leave.userId);
     if (!user) continue;
     const p = profileMap.get(leave.userId);
     const dept = (p?.department ?? user.department) || 'Unknown';
@@ -449,16 +452,14 @@ async function detectDepartmentConflicts(
   }
 
   // Sort events by date
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  events.sort((a: any, b: any) => a.date - b.date);
+  events.sort((a, b) => a.date - b.date);
 
   // Track active leaves per department using a map
   const activeLeavesPerDept = new Map<string, Set<Id<'users'>>>();
   let eventIndex = 0;
 
   // Process events at each unique date point
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const uniqueDates = [...new Set(events.map((e: any) => e.date))].sort((a: any, b: any) => a - b);
+  const uniqueDates = [...new Set(events.map((e) => e.date))].sort((a, b) => a - b);
 
   for (const date of uniqueDates) {
     // Process all events at this date
@@ -537,8 +538,7 @@ async function detectDepartmentConflicts(
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function detectDriverConflicts(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: QueryCtx,
   args: { organizationId: Id<'organizations'>; startDate: number; endDate: number },
 ): Promise<Conflict[]> {
   const conflicts: Conflict[] = [];
@@ -546,17 +546,15 @@ async function detectDriverConflicts(
   // Получаем все поездки в периоде
   const schedules = await ctx.db
     .query('driverSchedules')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
   const activeSchedules = schedules.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (s: any) => s.status === 'approved' || s.status === 'pending',
+    (s) => s.status === 'scheduled' || s.status === 'in_progress',
   );
 
   // Группируем по водителям и проверяем пересечения
-  const driverTrips = new Map<Id<'drivers'>, typeof activeSchedules>();
+  const driverTrips = new Map<Id<'drivers'>, Doc<'driverSchedules'>[]>();
 
   for (const schedule of activeSchedules) {
     if (!driverTrips.has(schedule.driverId)) {
@@ -569,8 +567,9 @@ async function detectDriverConflicts(
     // Проверяем на пересечения по времени
     for (let i = 0; i < trips.length; i++) {
       for (let j = i + 1; j < trips.length; j++) {
-        const trip1 = trips[i];
-        const trip2 = trips[j];
+        // Loop bounds guarantee these indices exist.
+        const trip1 = trips[i]!;
+        const trip2 = trips[j]!;
 
         const overlaps = trip1.startTime <= trip2.endTime && trip1.endTime >= trip2.startTime;
 
@@ -580,10 +579,10 @@ async function detectDriverConflicts(
             type: 'driver_schedule',
             severity: 'critical',
             title: 'Двойная бронь водителя',
-            message: `Водитель забронирован одновременно на две поездки: "${trip1.tripInfo.purpose}" и "${trip2.tripInfo.purpose}".`,
+            message: `Водитель забронирован одновременно на две поездки: "${trip1.tripInfo?.purpose || 'Поездка'}" и "${trip2.tripInfo?.purpose || 'Поездка'}".`,
             suggestion: 'Переназначьте одну из поездок на другого водителя.',
             date: new Date(trip1.startTime).toISOString(),
-            affectedUsers: [trip1.requestedBy, trip2.requestedBy],
+            affectedUsers: [trip1.userId, trip2.userId],
             metadata: {
               driverId,
               trip1Id: trip1._id,
@@ -603,8 +602,7 @@ async function detectDriverConflicts(
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function detectTaskConflicts(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: QueryCtx,
   args: { organizationId: Id<'organizations'>; startDate: number; endDate: number },
 ): Promise<Conflict[]> {
   const conflicts: Conflict[] = [];
@@ -612,44 +610,37 @@ async function detectTaskConflicts(
   // Получаем все задачи
   const tasks = await ctx.db
     .query('tasks')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const activeTasks = tasks.filter(
-    (t: any) => t.status !== 'completed' && t.status !== 'cancelled',
-  );
+  const activeTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled');
 
   // Получаем все отпуска
   const leaves = await ctx.db
     .query('leaveRequests')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_org', (q: any) => q.eq('organizationId', args.organizationId))
+    .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
     .take(MAX_PAGE_SIZE);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const approvedLeaves = leaves.filter((l: any) => l.status === 'approved');
+  const approvedLeaves = leaves.filter((l) => l.status === 'approved');
 
   // Batch-load all unique assignee IDs upfront
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const uniqueAssigneeIds = [...new Set(activeTasks.map((t: any) => t.assigneeId).filter(Boolean))];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const assigneeUsers = await Promise.all(uniqueAssigneeIds.map((id: any) => ctx.db.get(id)));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const assigneeMap = new Map(assigneeUsers.filter(Boolean).map((u: any) => [u._id, u]));
+  const uniqueAssigneeIds = [...new Set(activeTasks.map((t) => t.assignedTo))];
+  const assigneeUsers = await Promise.all(uniqueAssigneeIds.map((id) => ctx.db.get(id)));
+  const assigneeMap = new Map(
+    assigneeUsers.filter((u): u is Doc<'users'> => u !== null).map((u) => [u._id, u] as const),
+  );
 
   // Проверяем каждую задачу
   for (const task of activeTasks) {
-    const assignee = assigneeMap.get(task.assigneeId);
+    const assignee = assigneeMap.get(task.assignedTo);
     if (!assignee) continue;
 
-    const taskDeadline = task.dueDate ? new Date(task.dueDate).getTime() : null;
+    const taskDeadline = task.deadline;
 
     // Проверяем, не попадает ли дедлайн в период отпусков
     if (taskDeadline) {
       for (const leave of approvedLeaves) {
-        if (leave.userId !== task.assigneeId) continue;
+        if (leave.userId !== task.assignedTo) continue;
 
         const leaveStart = new Date(leave.startDate).getTime();
         const leaveEnd = new Date(leave.endDate).getTime();
@@ -663,7 +654,7 @@ async function detectTaskConflicts(
             message: `Дедлайн задачи "${task.title}" попадает на период отпуска исполнителя.`,
             suggestion: 'Перенесите дедлайн или переназначьте задачу.',
             date: new Date(taskDeadline).toISOString(),
-            affectedUsers: [task.assigneeId],
+            affectedUsers: [task.assignedTo],
             relatedTaskId: task._id,
             metadata: {
               taskId: task._id,
@@ -694,9 +685,9 @@ export const getConflictSummaryForAI = query({
     startDate: v.number(),
     endDate: v.number(),
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  handler: async (ctx, args): Promise<any> => {
+  // Explicit return type breaks the circular `api` type inference that
+  // `ctx.runQuery(api.conflicts.detectAllConflicts, ...)` would otherwise create.
+  handler: async (ctx, args): Promise<ConflictSummary> => {
     const conflicts = await ctx.runQuery(api.conflicts.detectAllConflicts, {
       organizationId: args.organizationId,
       startDate: args.startDate,
@@ -704,10 +695,8 @@ export const getConflictSummaryForAI = query({
       userId: args.userId,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const critical = conflicts.filter((c: any) => c.severity === 'critical');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const warnings = conflicts.filter((c: any) => c.severity === 'warning');
+    const critical = conflicts.filter((c) => c.severity === 'critical');
+    const warnings = conflicts.filter((c) => c.severity === 'warning');
 
     return {
       total: conflicts.length,

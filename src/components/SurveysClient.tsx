@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useTypedQuery } from '@/lib/convex-typed';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
   ClipboardList,
@@ -69,9 +71,48 @@ interface QuestionDraft {
   isRequired: boolean;
 }
 
+interface QuestionTypeConfig {
+  icon: LucideIcon;
+  labelKey: string;
+}
+
+type AnswerValue = number | string | boolean | string[];
+
+interface SurveyAnswerInput {
+  questionId: Id<'surveyQuestions'>;
+  ratingValue?: number;
+  textValue?: string;
+  selectedOptions?: string[];
+  booleanValue?: boolean;
+}
+
+interface SurveyQuestionResult {
+  question: {
+    _id: Id<'surveyQuestions'>;
+    type: QuestionType;
+    text: string;
+    description?: string | null;
+    isRequired: boolean;
+    options?: string[] | null;
+  };
+  totalResponses: number;
+  average?: number;
+  distribution?: Record<number, number>;
+  optionCounts?: Record<string, number>;
+  yesCount?: number;
+  noCount?: number;
+  textResponses?: (string | null | undefined)[];
+}
+
+interface SurveyResultsData {
+  survey: { title: string; [key: string]: unknown };
+  totalResponses: number;
+  questionResults: SurveyQuestionResult[];
+}
+
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const QUESTION_TYPE_CONFIG: Record<QuestionType, { icon: LucideIcon; labelKey: string }> = {
+const QUESTION_TYPE_CONFIG: Record<QuestionType, QuestionTypeConfig> = {
   rating: { icon: Star, labelKey: 'surveys.questionType.rating' },
   multiple_choice: { icon: Hash, labelKey: 'surveys.questionType.multipleChoice' },
   text: { icon: MessageSquare, labelKey: 'surveys.questionType.text' },
@@ -96,7 +137,7 @@ function SortableQuestion({
   question: QuestionDraft;
   index: number;
   onRemove: (idx: number) => void;
-  t: any;
+  t: TFunction;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `question-${index}`,
@@ -271,9 +312,8 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
       });
       toast.success(t('surveys.created'));
       onClose();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('surveys.errors.createFailed'));
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('surveys.errors.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -420,25 +460,25 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
                   </p>
                   {/* Question type */}
                   <div className="flex flex-wrap gap-1">
-                    {(Object.entries(QUESTION_TYPE_CONFIG) as [QuestionType, any][]).map(
-                      ([key, config]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() =>
-                            setNewQuestion((p) => ({ ...p, type: key, options: undefined }))
-                          }
-                          className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
-                            newQuestion.type === key
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                          }`}
-                        >
-                          <config.icon className="h-3 w-3" />
-                          {t(config.labelKey)}
-                        </button>
-                      ),
-                    )}
+                    {(
+                      Object.entries(QUESTION_TYPE_CONFIG) as [QuestionType, QuestionTypeConfig][]
+                    ).map(([key, config]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() =>
+                          setNewQuestion((p) => ({ ...p, type: key, options: undefined }))
+                        }
+                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
+                          newQuestion.type === key
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                        }`}
+                      >
+                        <config.icon className="h-3 w-3" />
+                        {t(config.labelKey)}
+                      </button>
+                    ))}
                   </div>
                   {/* Question text */}
                   <Input
@@ -611,14 +651,14 @@ function TakeSurveyDialog({
   userId,
 }: TakeSurveyDialogProps) {
   const { t } = useTranslation();
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const surveyData = useQuery(api.surveys.getSurveyWithQuestions, surveyId ? { surveyId } : 'skip');
 
   const submitMutation = useMutation(api.surveys.submitResponse);
 
-  const handleAnswer = (questionId: string, value: any) => {
+  const handleAnswer = (questionId: string, value: AnswerValue) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
@@ -639,22 +679,21 @@ function TakeSurveyDialog({
       const formattedAnswers = surveyData.questions
         .filter((q) => answers[q._id] !== undefined)
         .map((q) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const answer: any = { questionId: q._id };
+          const answer: SurveyAnswerInput = { questionId: q._id };
           const val = answers[q._id];
           switch (q.type) {
             case 'rating':
             case 'nps':
-              answer.ratingValue = val;
+              answer.ratingValue = val as number;
               break;
             case 'text':
-              answer.textValue = val;
+              answer.textValue = val as string;
               break;
             case 'multiple_choice':
-              answer.selectedOptions = Array.isArray(val) ? val : [val];
+              answer.selectedOptions = Array.isArray(val) ? (val as string[]) : [val as string];
               break;
             case 'yes_no':
-              answer.booleanValue = val;
+              answer.booleanValue = val as boolean;
               break;
           }
           return answer;
@@ -669,9 +708,8 @@ function TakeSurveyDialog({
 
       toast.success(t('surveys.responseSubmitted'));
       onClose();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('surveys.errors.submitFailed'));
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('surveys.errors.submitFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -720,7 +758,7 @@ function TakeSurveyDialog({
                       }`}
                     >
                       <Star
-                        className={`h-4 w-4 ${answers[question._id] >= val ? 'fill-current' : ''}`}
+                        className={`h-4 w-4 ${(answers[question._id] as number) >= val ? 'fill-current' : ''}`}
                       />
                     </button>
                   ))}
@@ -751,15 +789,17 @@ function TakeSurveyDialog({
               {question.type === 'multiple_choice' && question.options && (
                 <div className="space-y-1 ml-5">
                   {question.options.map((option) => {
-                    const selected = (answers[question._id] || []).includes(option);
+                    const current = Array.isArray(answers[question._id])
+                      ? (answers[question._id] as string[])
+                      : [];
+                    const selected = current.includes(option);
                     return (
                       <button
                         key={option}
                         type="button"
                         onClick={() => {
-                          const current = answers[question._id] || [];
                           const updated = selected
-                            ? current.filter((o: string) => o !== option)
+                            ? current.filter((o) => o !== option)
                             : [...current, option];
                           handleAnswer(question._id, updated);
                         }}
@@ -808,7 +848,7 @@ function TakeSurveyDialog({
               {question.type === 'text' && (
                 <div className="ml-5">
                   <Textarea
-                    value={answers[question._id] || ''}
+                    value={(answers[question._id] as string) || ''}
                     onChange={(e) => handleAnswer(question._id, e.target.value)}
                     placeholder={t('surveys.form.typePlaceholder')}
                     rows={2}
@@ -851,7 +891,7 @@ function SurveyResultsDialog({
 }: SurveyResultsDialogProps) {
   const { t } = useTranslation();
 
-  const results = useQuery(
+  const results = useTypedQuery<SurveyResultsData>(
     api.surveys.getSurveyResults,
     surveyId && organizationId ? { surveyId, organizationId } : 'skip',
   );
@@ -877,7 +917,7 @@ function SurveyResultsDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 py-4">
-          {results.questionResults.map((qr: any, idx: number) => (
+          {results.questionResults.map((qr, idx) => (
             <Card key={idx}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-start gap-2">
@@ -932,8 +972,8 @@ function SurveyResultsDialog({
                 {qr.question.type === 'multiple_choice' && qr.optionCounts && (
                   <div className="space-y-2">
                     {Object.entries(qr.optionCounts)
-                      .sort(([, a]: [string, any], [, b]: [string, any]) => b - a)
-                      .map(([opt, count]: [string, any]) => {
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([opt, count]) => {
                         const pct = qr.totalResponses > 0 ? (count / qr.totalResponses) * 100 : 0;
                         return (
                           <div key={opt} className="flex items-center gap-2">
@@ -964,7 +1004,7 @@ function SurveyResultsDialog({
                         </span>
                         <span className="text-sm font-bold text-green-600">
                           {qr.totalResponses > 0
-                            ? Math.round((qr.yesCount / qr.totalResponses) * 100)
+                            ? Math.round(((qr.yesCount ?? 0) / qr.totalResponses) * 100)
                             : 0}
                           %
                         </span>
@@ -974,7 +1014,9 @@ function SurveyResultsDialog({
                           className="h-full bg-green-500 rounded-full transition-all duration-300"
                           style={{
                             width: `${
-                              qr.totalResponses > 0 ? (qr.yesCount / qr.totalResponses) * 100 : 0
+                              qr.totalResponses > 0
+                                ? ((qr.yesCount ?? 0) / qr.totalResponses) * 100
+                                : 0
                             }%`,
                           }}
                         />
@@ -989,7 +1031,7 @@ function SurveyResultsDialog({
                         </span>
                         <span className="text-sm font-bold text-red-600">
                           {qr.totalResponses > 0
-                            ? Math.round((qr.noCount / qr.totalResponses) * 100)
+                            ? Math.round(((qr.noCount ?? 0) / qr.totalResponses) * 100)
                             : 0}
                           %
                         </span>
@@ -999,7 +1041,9 @@ function SurveyResultsDialog({
                           className="h-full bg-red-500 rounded-full transition-all duration-300"
                           style={{
                             width: `${
-                              qr.totalResponses > 0 ? (qr.noCount / qr.totalResponses) * 100 : 0
+                              qr.totalResponses > 0
+                                ? ((qr.noCount ?? 0) / qr.totalResponses) * 100
+                                : 0
                             }%`,
                           }}
                         />
@@ -1015,7 +1059,7 @@ function SurveyResultsDialog({
                     {qr.textResponses.length === 0 ? (
                       <p className="text-sm text-muted-foreground italic">No text responses yet</p>
                     ) : (
-                      qr.textResponses.map((text: string, i: number) => (
+                      qr.textResponses.map((text, i) => (
                         <div
                           key={i}
                           className="text-sm bg-muted/50 p-3 rounded-lg border border-border/50"
@@ -1079,9 +1123,8 @@ export function SurveysClient() {
     try {
       await publishMutation({ surveyId, organizationId: orgId });
       toast.success(t('surveys.published'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('surveys.errors.publishFailed'));
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('surveys.errors.publishFailed'));
     }
   };
 
@@ -1090,9 +1133,8 @@ export function SurveysClient() {
     try {
       await closeMutation({ surveyId, organizationId: orgId });
       toast.success(t('surveys.closed'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('surveys.errors.closeFailed'));
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('surveys.errors.closeFailed'));
     }
   };
 
@@ -1101,9 +1143,8 @@ export function SurveysClient() {
     try {
       await deleteMutation({ surveyId, organizationId: orgId });
       toast.success(t('surveys.deleted'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('surveys.errors.deleteFailed'));
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('surveys.errors.deleteFailed'));
     }
   };
 

@@ -6,7 +6,17 @@ import { logger as log, logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
-async function convexMutation(name: string, args: Record<string, unknown>) {
+interface ConvexResponse<T> {
+  status: string;
+  value?: T;
+  errorMessage?: string;
+}
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+async function convexMutation<T>(name: string, args: Record<string, unknown>): Promise<T> {
   try {
     logger.log('🔧 convexMutation called', { name, CONVEX_URL, hasURL: !!CONVEX_URL });
     log.debug('convexMutation called', { name });
@@ -31,38 +41,42 @@ async function convexMutation(name: string, args: Record<string, unknown>) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as ConvexResponse<T>;
 
     if (data.status === 'error') {
       throw new Error(data.errorMessage ?? 'Convex error');
     }
 
     log.debug('convexMutation returning value', {
-      resultKeys: data.value ? Object.keys(data.value) : null,
+      resultKeys: data.value && typeof data.value === 'object' ? Object.keys(data.value) : null,
     });
 
+    if (data.value === undefined) {
+      throw new Error('Convex mutation returned no value');
+    }
+
     return data.value;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    log.error('convexMutation failed', error, {
+  } catch (error: unknown) {
+    const err = toError(error);
+    log.error('convexMutation failed', err, {
       name,
-      errorMessage: error?.message,
-      errorType: error?.name,
-      errorStack: error?.stack,
+      errorMessage: err.message,
+      errorType: err.name,
+      errorStack: err.stack,
     });
 
     // Provide better error messages
-    if (error?.name === 'AbortError') {
+    if (err.name === 'AbortError') {
       throw new Error('Request timeout - server is not responding');
-    } else if (error?.message?.includes('fetch')) {
+    } else if (err.message.includes('fetch')) {
       throw new Error('Network error - cannot reach Convex server');
     }
 
-    throw error;
+    throw err;
   }
 }
 
-async function _convexQuery(name: string, args: Record<string, unknown>) {
+async function _convexQuery<T>(name: string, args: Record<string, unknown>): Promise<T> {
   try {
     log.debug('convexQuery called', { name });
 
@@ -81,7 +95,7 @@ async function _convexQuery(name: string, args: Record<string, unknown>) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as ConvexResponse<T>;
 
     if (data.status === 'error') {
       throw new Error(data.errorMessage ?? 'Convex error');
@@ -89,25 +103,53 @@ async function _convexQuery(name: string, args: Record<string, unknown>) {
 
     log.debug('convexQuery data parsed', { result: data.value });
 
+    if (data.value === undefined) {
+      throw new Error('Convex query returned no value');
+    }
+
     return data.value;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    log.error('convexQuery failed', error, {
+  } catch (error: unknown) {
+    const err = toError(error);
+    log.error('convexQuery failed', err, {
       name,
-      errorMessage: error?.message,
-      errorType: error?.name,
-      errorStack: error?.stack,
+      errorMessage: err.message,
+      errorType: err.name,
+      errorStack: err.stack,
     });
 
     // Provide better error messages
-    if (error?.name === 'AbortError') {
+    if (err.name === 'AbortError') {
       throw new Error('Request timeout - server is not responding');
-    } else if (error?.message?.includes('fetch')) {
+    } else if (err.message.includes('fetch')) {
       throw new Error('Network error - cannot reach Convex server');
     }
 
-    throw error;
+    throw err;
   }
+}
+
+interface AuthRegisterResult {
+  userId?: string;
+  role: 'admin' | 'supervisor' | 'employee' | 'superadmin' | 'driver';
+  needsApproval: boolean;
+  organizationId?: string;
+}
+
+export interface AuthLoginResult {
+  userId: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'supervisor' | 'employee' | 'superadmin' | 'driver';
+  organizationId?: string;
+  organizationSlug?: string;
+  organizationName?: string;
+  department?: string;
+  position?: string;
+  employeeType?: 'staff' | 'contractor';
+  avatarUrl?: string;
+  travelAllowance: number;
+  isApproved: boolean;
+  totpEnabled: boolean;
 }
 
 export async function registerAction(formData: FormData) {
@@ -121,7 +163,7 @@ export async function registerAction(formData: FormData) {
   if (!name || !email || !password) throw new Error('All fields required');
   if (password.length < 8) throw new Error('Password must be at least 8 characters');
 
-  const result = await convexMutation('auth:register', {
+  const result = await convexMutation<AuthRegisterResult>('auth:register', {
     name,
     email,
     password,
@@ -156,7 +198,7 @@ export async function registerAction(formData: FormData) {
   const sessionToken = crypto.randomUUID();
   const sessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
 
-  const loginResult = await convexMutation('auth:login', {
+  const loginResult = await convexMutation<AuthLoginResult>('auth:login', {
     email,
     password,
     sessionToken,
@@ -257,9 +299,9 @@ export async function loginAction(
 
     log.api.call('POST', 'auth:login', { email, isFaceLogin });
 
-    let result;
+    let result: AuthLoginResult;
     try {
-      result = await convexMutation('auth:login', {
+      result = await convexMutation<AuthLoginResult>('auth:login', {
         email,
         password: password || '', // Empty password for Face ID login
         sessionToken,
@@ -277,16 +319,16 @@ export async function loginAction(
         userId: result.userId,
         role: result.role,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (convexError: any) {
-      log.error('Convex auth:login mutation failed', convexError, {
+    } catch (convexError: unknown) {
+      const err = toError(convexError);
+      log.error('Convex auth:login mutation failed', err, {
         email,
         isFaceLogin,
-        errorMessage: convexError?.message,
-        errorName: convexError?.name,
+        errorMessage: err.message,
+        errorName: err.name,
       });
       // Re-throw with a cleaner message
-      throw new Error(convexError?.message || 'Authentication failed');
+      throw new Error(err.message || 'Authentication failed');
     }
 
     log.debug('Creating JWT token', { userId: result.userId, name: result.name });
@@ -359,9 +401,8 @@ export async function loginAction(
     log.debug('Login successful, cookies set');
 
     return { success: true };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    log.error('Login action failed', error, {
+  } catch (error: unknown) {
+    log.error('Login action failed', toError(error), {
       action: 'login',
       email,
       isFaceLogin,

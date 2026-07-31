@@ -4,9 +4,18 @@ import { useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore, type User } from '@/store/useAuthStore';
 import type { Id } from '@/convex/_generated/dataModel';
-import { User, Search, Shield, Clock, AlertTriangle, LogOut, History, Eye } from 'lucide-react';
+import {
+  User as UserIcon,
+  Search,
+  Shield,
+  Clock,
+  AlertTriangle,
+  LogOut,
+  History,
+  Eye,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +61,33 @@ interface ImpersonationSession {
   };
   expiresAt?: string | number | Date;
   sessionId: Id<'impersonationSessions'>;
+}
+
+interface ImpersonationSessionPayload {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  organizationId?: string;
+  organizationSlug?: string;
+  organizationName?: string;
+  isApproved?: boolean;
+  department?: string;
+  position?: string;
+  employeeType?: string;
+  avatar?: string;
+  impersonation?: {
+    active: boolean;
+    sessionId: string;
+    expiresAt: number;
+    superadminName: string;
+    superadminEmail: string;
+  };
+}
+
+interface ImpersonationApiResponse {
+  session?: ImpersonationSessionPayload;
+  error?: string;
 }
 
 export default function ImpersonationClient() {
@@ -103,7 +139,7 @@ export default function ImpersonationClient() {
         }),
       });
 
-      const payload = await response.json();
+      const payload = (await response.json()) as ImpersonationApiResponse;
       if (!response.ok || !payload?.session) {
         throw new Error(payload?.error || 'Failed to activate impersonation session');
       }
@@ -112,14 +148,14 @@ export default function ImpersonationClient() {
         id: payload.session.userId,
         name: payload.session.name,
         email: payload.session.email,
-        role: payload.session.role,
+        role: payload.session.role as User['role'],
         organizationId: payload.session.organizationId,
         organizationSlug: payload.session.organizationSlug,
         organizationName: payload.session.organizationName,
         isApproved: payload.session.isApproved,
         department: payload.session.department,
         position: payload.session.position,
-        employeeType: payload.session.employeeType,
+        employeeType: payload.session.employeeType as User['employeeType'],
         avatar: payload.session.avatar,
         impersonation: payload.session.impersonation,
       });
@@ -145,7 +181,7 @@ export default function ImpersonationClient() {
         method: 'POST',
       });
 
-      const payload = await response.json();
+      const payload = (await response.json()) as ImpersonationApiResponse;
       if (!response.ok || !payload?.session) {
         throw new Error(payload?.error || 'Failed to end impersonation');
       }
@@ -154,14 +190,14 @@ export default function ImpersonationClient() {
         id: payload.session.userId,
         name: payload.session.name,
         email: payload.session.email,
-        role: payload.session.role,
+        role: payload.session.role as User['role'],
         organizationId: payload.session.organizationId,
         organizationSlug: payload.session.organizationSlug,
         organizationName: payload.session.organizationName,
         isApproved: payload.session.isApproved,
         department: payload.session.department,
         position: payload.session.position,
-        employeeType: payload.session.employeeType,
+        employeeType: payload.session.employeeType as User['employeeType'],
         avatar: payload.session.avatar,
       });
 
@@ -338,7 +374,7 @@ export default function ImpersonationClient() {
 
               {searchQuery.length >= 2 && (!searchResults || searchResults.length === 0) && (
                 <div className="mt-4 text-center py-8 text-muted-foreground">
-                  <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <UserIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
                   <p>{t('impersonate.usersNotFound')}</p>
                 </div>
               )}

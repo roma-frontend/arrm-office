@@ -486,7 +486,8 @@ function TicketRow({
 }
 
 // Create Ticket Dialog Component
-function _CreateTicketDialog({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for upcoming ticket creation flow
+function CreateTicketDialog({
   open,
   onOpenChange,
   userId,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { signJWT } from '@/lib/jwt';
+import { signJWT, type JWTPayload } from '@/lib/jwt';
 import { log } from '@/lib/logger';
 import { applyRateLimit, FACE_LOGIN_RATE_LIMIT } from '@/lib/rate-limit';
 
@@ -13,28 +13,60 @@ if (!CONVEX_URL) {
   throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
 }
 
-async function convexMutation(name: string, args: Record<string, unknown>) {
+interface ConvexResponse {
+  status: string;
+  value?: unknown;
+  errorMessage?: string;
+}
+
+/** Shape of the result returned by `faceRecognition:loginWithFace`. */
+interface FaceVerificationResult {
+  faceVerificationToken: string;
+}
+
+/** Fields consumed from the `auth:login` mutation result. */
+interface LoginResult {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  organizationId?: string;
+  organizationSlug?: string;
+  organizationName?: string;
+  isApproved?: boolean;
+  department?: string;
+  position?: string;
+  employeeType?: string;
+  avatarUrl?: string;
+}
+
+interface MaintenanceMode {
+  isActive: boolean;
+  startTime: number;
+}
+
+async function convexMutation<T>(name: string, args: Record<string, unknown>): Promise<T> {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: name, args }),
     cache: 'no-store',
   });
-  const data = await res.json();
+  const data = (await res.json()) as ConvexResponse;
   if (data.status === 'error') throw new Error(data.errorMessage ?? 'Convex error');
-  return data.value;
+  return data.value as T;
 }
 
-async function convexQuery(name: string, args: Record<string, unknown>) {
+async function convexQuery<T>(name: string, args: Record<string, unknown>): Promise<T | null> {
   const res = await fetch(`${CONVEX_URL}/api/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: name, args }),
     cache: 'no-store',
   });
-  const data = await res.json();
+  const data = (await res.json()) as ConvexResponse;
   if (data.status === 'error') return null;
-  return data.value;
+  return data.value as T;
 }
 
 function getClientIp(request: NextRequest): string {
@@ -78,9 +110,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1 — server-side face matching → issues short-lived verification token
-    let verification;
+    let verification: FaceVerificationResult;
     try {
-      verification = await convexMutation('faceRecognition:loginWithFace', {
+      verification = await convexMutation<FaceVerificationResult>('faceRecognition:loginWithFace', {
         email,
         faceDescriptor,
         ip,
@@ -98,7 +130,7 @@ export async function POST(request: NextRequest) {
     const sessionToken = crypto.randomUUID();
     const sessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
 
-    const result = await convexMutation('auth:login', {
+    const result = await convexMutation<LoginResult>('auth:login', {
       email,
       password: '', // Not used when faceVerificationToken is valid
       sessionToken,
@@ -109,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     // Maintenance mode check — block non-superadmin login
     if (result.role !== 'superadmin' && result.organizationId) {
-      const maintenanceData = await convexQuery('admin:getMaintenanceMode', {
+      const maintenanceData = await convexQuery<MaintenanceMode>('admin:getMaintenanceMode', {
         organizationId: result.organizationId,
       });
       if (maintenanceData?.isActive && maintenanceData.startTime <= Date.now()) {
@@ -125,14 +157,14 @@ export async function POST(request: NextRequest) {
       userId: result.userId,
       name: result.name,
       email: result.email,
-      role: result.role,
+      role: result.role as JWTPayload['role'],
       organizationId: result.organizationId,
       organizationSlug: result.organizationSlug,
       organizationName: result.organizationName,
       isApproved: result.isApproved,
       department: result.department,
       position: result.position,
-      employeeType: result.employeeType,
+      employeeType: result.employeeType as JWTPayload['employeeType'] | undefined,
       avatar: result.avatarUrl,
     });
 

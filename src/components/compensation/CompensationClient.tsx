@@ -18,7 +18,7 @@ import {
   Award,
   Calendar,
 } from 'lucide-react';
-import { useQuery } from 'convex/react';
+import { useQuery } from '@/lib/convex-typed';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useAuthStore } from '@/store/useAuthStore';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -151,29 +151,27 @@ export default function CompensationClient() {
   const [showBonusWizard, setShowBonusWizard] = useState(false);
   const [showCycleWizard, setShowCycleWizard] = useState(false);
 
-  const _useQuery = useQuery as unknown as (...args: any[]) => any;
-
-  const compensationRecords = _useQuery(
+  const compensationRecords = useQuery(
     api.compensation.listCompensationRecords,
     orgId ? { organizationId: orgId } : 'skip',
   );
 
-  const compensationSummary = _useQuery(
+  const compensationSummary = useQuery(
     api.compensation.getCompensationSummary,
     orgId ? { organizationId: orgId } : 'skip',
   );
 
-  const compensationBands = _useQuery(
+  const compensationBands = useQuery(
     api.compensation.listCompensationBands,
     orgId ? { organizationId: orgId } : 'skip',
   );
 
-  const bonusPrograms = _useQuery(
+  const bonusPrograms = useQuery(
     api.compensation.listBonusPrograms,
     orgId ? { organizationId: orgId } : 'skip',
   );
 
-  const reviewCycles = _useQuery(
+  const reviewCycles = useQuery(
     api.compensation.listReviewCycles,
     orgId ? { organizationId: orgId } : 'skip',
   );
@@ -182,18 +180,13 @@ export default function CompensationClient() {
     if (!compensationRecords) return [];
     let records = compensationRecords;
     if (searchQuery) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      records = records.filter((r: any) =>
-        r.userName.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
+      records = records.filter((r) => r.userName.toLowerCase().includes(searchQuery.toLowerCase()));
     }
     if (typeFilter !== 'all') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      records = records.filter((r: any) => r.type === typeFilter);
+      records = records.filter((r) => r.type === typeFilter);
     }
     if (statusFilter !== 'all') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      records = records.filter((r: any) => r.status === statusFilter);
+      records = records.filter((r) => r.status === statusFilter);
     }
     return records;
   }, [compensationRecords, searchQuery, typeFilter, statusFilter]);
@@ -400,8 +393,7 @@ export default function CompensationClient() {
                   <CardContent>
                     {filteredRecords && filteredRecords.length > 0 ? (
                       <div className="space-y-3">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {filteredRecords.slice(0, 10).map((record: any) => (
+                        {filteredRecords.slice(0, 10).map((record) => (
                           <div
                             key={record._id}
                             className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"
@@ -465,8 +457,7 @@ export default function CompensationClient() {
                   <CardContent>
                     {compensationBands && compensationBands.length > 0 ? (
                       <div className="space-y-3">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {compensationBands.map((band: any) => (
+                        {compensationBands.map((band) => (
                           <div
                             key={band._id}
                             className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"
@@ -524,8 +515,7 @@ export default function CompensationClient() {
                   <CardContent>
                     {bonusPrograms && bonusPrograms.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {bonusPrograms.map((program: any) => (
+                        {bonusPrograms.map((program) => (
                           <Card key={program._id}>
                             <CardHeader>
                               <div className="flex items-start justify-between">
@@ -610,8 +600,7 @@ export default function CompensationClient() {
                   <CardContent>
                     {reviewCycles && reviewCycles.length > 0 ? (
                       <div className="space-y-3">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {reviewCycles.map((cycle: any) => (
+                        {reviewCycles.map((cycle) => (
                           <div
                             key={cycle._id}
                             className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"

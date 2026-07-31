@@ -33,10 +33,19 @@ export function normalizePageSize(pageSize?: number): number {
  */
 export function decodeCursor(cursor: string): Record<string, unknown> {
   try {
-    return JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'));
+    return JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8')) as Record<string, unknown>;
   } catch {
     return {};
   }
+}
+
+/**
+ * Parse cursor and extract its `_creationTime` marker.
+ * Returns undefined for missing/malformed cursors so callers can skip the filter.
+ */
+export function decodeCreationTimeCursor(cursor: string): number | undefined {
+  const { _creationTime } = decodeCursor(cursor);
+  return typeof _creationTime === 'number' ? _creationTime : undefined;
 }
 
 /**

@@ -5,25 +5,24 @@
  */
 
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { mutation, query, type QueryCtx } from './_generated/server';
+import type { Doc, Id } from './_generated/dataModel';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 
 // Helper: get or create userSettings doc for a user
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getOrCreateSettings(ctx: any, userId: any) {
+async function getOrCreateSettings(ctx: QueryCtx, userId: Id<'users'>) {
   const existing = await ctx.db
     .query('userSettings')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', userId))
+    .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
-  if (existing) return existing;
+  if (existing) return existing as Doc<'userSettings'>;
 
   // Fallback: read from users table (pre-migration) and create settings doc
-  const user = await ctx.db.get(userId);
+  const user = (await ctx.db.get(userId)) as Doc<'users'> | null;
   if (!user) throw new Error('User not found');
 
-  const settingsId = await ctx.db.insert('userSettings', {
+  const settingsId = await (ctx.db as any).insert('userSettings', {
     userId,
     language: user.language,
     timezone: user.timezone,
@@ -46,7 +45,7 @@ async function getOrCreateSettings(ctx: any, userId: any) {
     dailyTaskGoal: user.dailyTaskGoal,
   });
 
-  return await ctx.db.get(settingsId);
+  return (await ctx.db.get(settingsId)) as Doc<'userSettings'>;
 }
 
 /**
@@ -125,9 +124,7 @@ export const updateLocalizationSettings = mutation({
       firstDayOfWeek: args.firstDayOfWeek,
     });
     // Also update user record so language is available on user object
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    await ctx.db.patch(caller._id as any, { language: args.language });
+    await ctx.db.patch(caller._id, { language: args.language });
     return { success: true };
   },
 });

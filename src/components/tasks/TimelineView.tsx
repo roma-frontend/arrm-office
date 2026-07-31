@@ -16,7 +16,7 @@ interface Task {
   priority: Priority;
   deadline?: number;
   createdAt: number;
-  assignedToUser?: { name: string; avatarUrl?: string | null };
+  assignedToUser?: { name: string; avatarUrl?: string | null } | null;
   tags?: string[];
 }
 

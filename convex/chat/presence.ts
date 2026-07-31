@@ -1,27 +1,15 @@
 import { v } from 'convex/values';
 import { query } from '../_generated/server';
-import type { Id, Doc } from '../_generated/dataModel';
+import type { QueryCtx } from '../_generated/server';
+import type { Id } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
-
-interface LeaveQuery {
-  order: (direction: 'asc' | 'desc') => { take: (n: number) => Promise<Doc<'leaveRequests'>[]> };
-  collect: () => Promise<Doc<'leaveRequests'>[]>;
-}
 
 /**
  * Helper to batch-load users and their leave status
  * Eliminates N+1 queries for presence status calculation
  */
-export async function getUsersWithLeaveStatus(
-  ctx: {
-    db: {
-      get: (id: Id<'users'>) => Promise<Doc<'users'> | null>;
-      query: (table: 'leaveRequests') => LeaveQuery;
-    };
-  },
-  userIds: Id<'users'>[],
-) {
+export async function getUsersWithLeaveStatus(ctx: Pick<QueryCtx, 'db'>, userIds: Id<'users'>[]) {
   if (userIds.length === 0) return { userMap: new Map(), result: new Map() };
 
   const today = new Date().toISOString().split('T')[0];

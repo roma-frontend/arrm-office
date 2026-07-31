@@ -1,9 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT, signJWT } from '@/lib/jwt';
+import { verifyJWT, signJWT, type JWTPayload } from '@/lib/jwt';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
-async function convexMutation(path: string, args: Record<string, unknown>) {
+interface ConvexResponse {
+  status: string;
+  value?: unknown;
+  errorMessage?: string;
+}
+
+/** Shape of the target user doc returned by `superadmin:activateImpersonationSession`. */
+interface ImpersonationTargetUser {
+  id?: string;
+  email?: string;
+  name: string;
+  role: string;
+  organizationId?: string;
+  organizationSlug?: string;
+  organizationName?: string;
+  isApproved?: boolean;
+  department?: string;
+  position?: string;
+  employeeType?: string;
+  avatar?: string;
+}
+
+interface ActivateImpersonationResult {
+  targetUser?: ImpersonationTargetUser | null;
+  sessionId?: string;
+  token?: string;
+  expiresAt?: number;
+}
+
+async function convexMutation<T>(path: string, args: Record<string, unknown>): Promise<T> {
   if (!CONVEX_URL) {
     throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
   }
@@ -15,12 +44,12 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
     cache: 'no-store',
   });
 
-  const data = await res.json();
+  const data = (await res.json()) as ConvexResponse;
   if (!res.ok || data.status === 'error') {
     throw new Error(data.errorMessage ?? `HTTP ${res.status}`);
   }
 
-  return data.value;
+  return data.value as T;
 }
 
 export async function POST(req: NextRequest) {
@@ -33,9 +62,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await req.json();
-    const sessionId = body?.sessionId as string | undefined;
-    const token = body?.token as string | undefined;
+    const { sessionId, token } = (await req.json()) as {
+      sessionId?: string;
+      token?: string;
+    };
 
     if (!sessionId || !token) {
       return NextResponse.json({ error: 'sessionId and token are required' }, { status: 400 });
@@ -44,13 +74,16 @@ export async function POST(req: NextRequest) {
     const targetSessionToken = crypto.randomUUID();
     const targetSessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
 
-    const activation = await convexMutation('superadmin:activateImpersonationSession', {
-      sessionId,
-      token,
-      superadminId: payload.userId,
-      targetSessionToken,
-      targetSessionExpiry,
-    });
+    const activation = await convexMutation<ActivateImpersonationResult>(
+      'superadmin:activateImpersonationSession',
+      {
+        sessionId,
+        token,
+        superadminId: payload.userId,
+        targetSessionToken,
+        targetSessionExpiry,
+      },
+    );
 
     const target = activation.targetUser;
     if (!target?.id || !target?.email) {
@@ -82,14 +115,14 @@ export async function POST(req: NextRequest) {
       userId: String(target.id),
       name: target.name,
       email: target.email,
-      role: target.role,
+      role: target.role as JWTPayload['role'],
       organizationId: target.organizationId,
       organizationSlug: target.organizationSlug,
       organizationName: target.organizationName,
       isApproved: target.isApproved,
       department: target.department,
       position: target.position,
-      employeeType: target.employeeType,
+      employeeType: target.employeeType as JWTPayload['employeeType'] | undefined,
       avatar: target.avatar,
       impersonation: impersonationPayload,
     });
@@ -142,12 +175,9 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error('Impersonation start error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to start impersonation' },
-      { status: 500 },
-    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to start impersonation';
+    console.error('Impersonation start error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

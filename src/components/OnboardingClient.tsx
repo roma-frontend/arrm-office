@@ -6,6 +6,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAuthStore, User } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Button } from '@/components/ui/button';
@@ -366,7 +367,7 @@ function MyOnboardingView({
   user,
 }: {
   program: NonNullable<ReturnType<typeof useQuery<typeof api.onboarding.getMyOnboarding>>>;
-  t: any;
+  t: TFunction;
   user: User | null;
 }) {
   const complete = useMutation(api.onboarding.completeTask);
@@ -454,7 +455,7 @@ function ProgramDetailDialog({
   programId: Id<'onboardingPrograms'>;
   onClose: () => void;
   user: User | null;
-  t: any;
+  t: TFunction;
 }) {
   const program = useQuery(api.onboarding.getProgram, { programId });
   const complete = useMutation(api.onboarding.completeTask);
@@ -603,7 +604,7 @@ function StartOnboardingWizard({
   onClose: () => void;
   templates: { _id: Id<'onboardingTemplates'>; name: string; department?: string }[];
   user: User | null;
-  t: any;
+  t: TFunction;
 }) {
   const [step, setStep] = useState(0);
   const [employeeId, setEmployeeId] = useState('');
@@ -793,7 +794,7 @@ function CreateTemplateWizard({
   open: boolean;
   onClose: () => void;
   user: User | null;
-  t: any;
+  t: TFunction;
 }) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');

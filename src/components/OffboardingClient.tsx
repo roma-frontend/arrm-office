@@ -6,6 +6,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAuthStore, User } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Button } from '@/components/ui/button';
@@ -316,7 +317,7 @@ function ProgramDetailDialog({
   programId: Id<'offboardingPrograms'>;
   onClose: () => void;
   user: User | null;
-  t: any;
+  t: TFunction;
 }) {
   const program = useQuery(api.offboarding.getProgram, { programId });
   const complete = useMutation(api.offboarding.completeTask);
@@ -638,7 +639,7 @@ function StartOffboardingWizard({
   open: boolean;
   onClose: () => void;
   user: User | null;
-  t: any;
+  t: TFunction;
 }) {
   const [step, setStep] = useState(0);
   const [employeeId, setEmployeeId] = useState('');

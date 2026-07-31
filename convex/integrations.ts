@@ -6,6 +6,7 @@ import {
   internalQuery,
   internalMutation,
   internalAction,
+  type ActionCtx,
 } from './_generated/server';
 import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
@@ -357,9 +358,12 @@ export const syncIntegration = action({
  * Shared sync body for both the admin-triggered action and the cron sweep.
  * `triggeredBy` is undefined for scheduled runs.
  */
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 async function runSync(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: ActionCtx,
   organizationId: Id<'organizations'>,
   provider: Provider,
   triggeredBy?: Id<'users'>,
@@ -409,10 +413,8 @@ async function runSync(
     });
 
     return { success: true, message: result.message };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const message = error?.message ? String(error.message) : 'Sync failed';
+  } catch (error: unknown) {
+    const message = toError(error).message;
 
     await ctx.runMutation(internal.integrations.logSync, {
       organizationId,
@@ -490,6 +492,14 @@ export const getSyncLogs = query({
 // ═══════════════════════════════════════════════════════════════════════════
 // EMPLOYEE UPSERT — the write half of a sync
 // ═══════════════════════════════════════════════════════════════════════════
+
+/** Result of an employee batch upsert. */
+interface UpsertBatchResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  notes: string[];
+}
 
 const incomingEmployeeValidator = v.object({
   email: v.string(),
@@ -938,8 +948,7 @@ export function normalizeEmployees(
  * Third-party error bodies can echo back the credentials we sent, and they land
  * in sync logs shown in the UI. Truncate and strip anything secret-looking.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function safeErrorBody(body: string, config: any): string {
+function safeErrorBody(body: string, config: Record<string, unknown>): string {
   let out = body.slice(0, 300);
   for (const field of SECRET_FIELDS) {
     const secret = config?.[field];
@@ -1018,10 +1027,11 @@ async function fetchJson(
       ...init,
       signal: AbortSignal.timeout(20_000),
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const reason = e?.name === 'TimeoutError' ? 'request timed out' : 'network error';
+  } catch (e: unknown) {
+    const reason =
+      e && typeof e === 'object' && 'name' in e && (e as { name: string }).name === 'TimeoutError'
+        ? 'request timed out'
+        : 'network error';
     throw new Error(`${label}: ${reason}`);
   }
 
@@ -1054,8 +1064,7 @@ async function fetchTokenEndpoint(
   url: string,
   params: Record<string, string>,
   label: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
+  config: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   try {
     return (await fetchJson(
@@ -1071,10 +1080,10 @@ async function fetchTokenEndpoint(
       label,
       config,
     )) as Record<string, unknown>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const message = String(e?.message ?? '');
+  } catch (e: unknown) {
+    const message = String(
+      e && typeof e === 'object' && 'message' in e ? (e as { message: unknown }).message : '',
+    );
     // Only retry when the server rejected the *encoding*, not the credentials.
     if (!/\((400|415)\)/.test(message)) throw e;
 
@@ -1228,11 +1237,9 @@ async function importEmployees(
 
 // ── Lucky Carrot Sync ──────────────────────────────────────────────────────
 async function syncLuckyCarrot(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: ActionCtx,
   organizationId: Id<'organizations'>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
+  config: Record<string, unknown>,
 ): Promise<SyncOutcome> {
   if (!config.apiKey || !config.apiUrl) {
     throw new Error('Lucky Carrot: API key and URL required');
@@ -1248,9 +1255,9 @@ async function syncLuckyCarrot(
     };
   }
 
-  const base = assertSafeUrl(config.apiUrl, 'Lucky Carrot API URL');
+  const base = assertSafeUrl(config.apiUrl as string, 'Lucky Carrot API URL');
   const url = assertSafeUrl(
-    joinUrl(base, config.employeesPath || '/api/v1/employees'),
+    joinUrl(base, (config.employeesPath as string) || '/api/v1/employees'),
     'Lucky Carrot employees URL',
   );
 
@@ -1261,7 +1268,7 @@ async function syncLuckyCarrot(
     config,
     url,
     {
-      Authorization: `Bearer ${config.apiKey}`,
+      Authorization: `Bearer ${config.apiKey as string}`,
       Accept: 'application/json',
     },
     'Lucky Carrot',
@@ -1475,12 +1482,13 @@ export const ingestLuckyCarrotWebhook = internalAction({
     let records: unknown[];
     try {
       records = extractWebhookRecords(payload, auth.employeesListKey);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: unknown) {
       return {
         status: 'invalid',
-        message: error?.message ? String(error.message) : 'Unrecognized payload shape',
+        message:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Unrecognized payload shape',
       };
     }
 
@@ -1494,12 +1502,13 @@ export const ingestLuckyCarrotWebhook = internalAction({
     let normalized;
     try {
       normalized = normalizeEmployees(records, auth.fieldMap);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: unknown) {
       return {
         status: 'invalid',
-        message: error?.message ? String(error.message) : 'Could not read the payload',
+        message:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Could not read the payload',
       };
     }
 
@@ -1611,32 +1620,30 @@ export const rotateWebhookSecret = mutation({
  * grant and caches the resulting token for signing/verification calls.
  */
 async function syncImid(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: ActionCtx,
   organizationId: Id<'organizations'>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
+  config: Record<string, unknown>,
 ): Promise<SyncOutcome> {
   if (!config.clientId || !config.clientSecret) {
     throw new Error('imID: Client ID and Client Secret required');
   }
-  if (config.enableLogin && !config.redirectUri) {
+  if ((config.enableLogin as boolean) && !config.redirectUri) {
     throw new Error('imID: Redirect URI is required when login with imID is enabled');
   }
   if (config.redirectUri) {
-    assertSafeUrl(config.redirectUri, 'imID Redirect URI');
+    assertSafeUrl(config.redirectUri as string, 'imID Redirect URI');
   }
 
   const tokenUrl = assertSafeUrl(
-    config.tokenPath || 'https://api.imid.am/v1/oauth/token',
+    (config.tokenPath as string) || 'https://api.imid.am/v1/oauth/token',
     'imID token URL',
   );
 
   const payload = await fetchTokenEndpoint(
     tokenUrl,
     {
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
+      client_id: config.clientId as string,
+      client_secret: config.clientSecret as string,
       grant_type: 'client_credentials',
     },
     'imID auth',
@@ -1936,12 +1943,13 @@ export const imidLoginCallback = internalAction({
         code,
         redirectUri,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: unknown) {
       return {
         status: 'error',
-        message: error?.message ? String(error.message) : 'Token exchange failed',
+        message:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Token exchange failed',
       } as const;
     }
 
@@ -1952,12 +1960,13 @@ export const imidLoginCallback = internalAction({
         organizationId,
         accessToken: tokenResult.accessToken,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: unknown) {
       return {
         status: 'error',
-        message: error?.message ? String(error.message) : 'Failed to fetch user info',
+        message:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Failed to fetch user info',
       } as const;
     }
 
@@ -1984,12 +1993,13 @@ export const imidLoginCallback = internalAction({
         isNewUser: result.isNewUser,
         needsApproval: result.needsApproval,
       } as const;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: unknown) {
       return {
         status: 'error',
-        message: error?.message ? String(error.message) : 'Failed to create session',
+        message:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Failed to create session',
       } as const;
     }
   },
@@ -2237,9 +2247,7 @@ export const ingestImidSignCallback = internalAction({
       if (documentId && documentId.startsWith('signature')) {
         try {
           await ctx.runMutation(internal.integrations.markImidSignComplete, {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-            documentId: documentId as any,
+            documentId: documentId as Id<'signatureDocuments'>,
           });
         } catch {
           // Document may not exist — log and continue.
@@ -2559,11 +2567,9 @@ export const getUserForVerification = internalQuery({
 
 // ── Armsoft (ՀԾ) Sync ─────────────────────────────────────────────────────
 async function syncArmsoft(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: ActionCtx,
   organizationId: Id<'organizations'>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
+  config: Record<string, unknown>,
 ): Promise<SyncOutcome> {
   if (!config.apiEndpoint) {
     throw new Error('ՀԾ Armsoft: API endpoint required');
@@ -2582,9 +2588,9 @@ async function syncArmsoft(
     };
   }
 
-  const base = assertSafeUrl(config.apiEndpoint, 'ՀԾ Armsoft API endpoint');
+  const base = assertSafeUrl(config.apiEndpoint as string, 'ՀԾ Armsoft API endpoint');
   const headers = {
-    Authorization: basicAuthHeader(config.apiUsername, config.apiPassword),
+    Authorization: basicAuthHeader(config.apiUsername as string, config.apiPassword as string),
     Accept: 'application/json',
   };
 
@@ -2610,7 +2616,7 @@ async function syncArmsoft(
   }
 
   const url = assertSafeUrl(
-    joinUrl(base, config.employeesPath || '/api/hr/employees'),
+    joinUrl(base, (config.employeesPath as string) || '/api/hr/employees'),
     'ՀԾ Armsoft employees URL',
   );
   const outcome = await importEmployees(

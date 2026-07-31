@@ -81,6 +81,36 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+interface ReactionGroup {
+  emoji: string;
+  users: Array<{ userId: string; userName: string }>;
+}
+
+interface FeedComment {
+  _id: string;
+  authorName: string;
+  authorAvatar?: string;
+  content: string;
+  createdAt: number;
+}
+
+interface NewsFeedAnnouncement {
+  _id: Id<'announcements'>;
+  title: string;
+  content: string;
+  category: 'news' | 'announcement' | 'event' | 'birthday' | 'achievement' | 'policy' | 'general';
+  isPinned: boolean;
+  isUrgent: boolean;
+  imageUrl?: string;
+  publishedAt: number;
+  viewCount: number;
+  authorName: string;
+  authorAvatar: string;
+  reactionsByEmoji: ReactionGroup[];
+  comments: FeedComment[];
+  totalComments: number;
+}
+
 // ── Create Announcement Dialog ───────────────────────────────────────────────
 
 function CreateAnnouncementDialog({
@@ -366,8 +396,7 @@ function AnnouncementCard({
   t,
   onDelete,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
-  announcement: any;
+  announcement: NewsFeedAnnouncement;
   organizationId: Id<'organizations'>;
   userId: Id<'users'>;
   userRole: string;
@@ -508,6 +537,7 @@ function AnnouncementCard({
           {/* Image */}
           {announcement.imageUrl && (
             <div className="mt-2 rounded-lg overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={announcement.imageUrl}
                 alt={announcement.title}

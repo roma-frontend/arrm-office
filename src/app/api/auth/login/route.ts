@@ -1,30 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { AuthLoginResult } from '@/actions/auth';
 import { signJWT } from '@/lib/jwt';
 import { calculateRiskScore } from '@/lib/riskScore';
 import { withTracing, addSpanAttributes } from '@/lib/tracing';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
-async function convexMutation(path: string, args: Record<string, unknown>) {
+interface ConvexResponse<T> {
+  status: string;
+  value?: T;
+  errorMessage?: string;
+}
+
+interface LoginRequestBody {
+  email?: string;
+  password?: string;
+  deviceFingerprint?: string;
+  keystrokeSample?: Record<string, unknown>;
+}
+
+interface LoginStatsResult {
+  suspicious?: Array<{ email?: string; success?: boolean }>;
+}
+
+interface MaintenanceModeResult {
+  isActive: boolean;
+  startTime: number;
+}
+
+interface RegisterDeviceResult {
+  isNew: boolean;
+  isTrusted: boolean;
+}
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+async function convexMutation<T>(path: string, args: Record<string, unknown>): Promise<T> {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as ConvexResponse<T>;
   if (data.status === 'error') throw new Error(data.errorMessage ?? 'Convex error');
+  if (data.value === undefined) throw new Error('Convex mutation returned no value');
   return data.value;
 }
 
-async function convexQuery(path: string, args: Record<string, unknown>) {
+async function convexQuery<T>(path: string, args: Record<string, unknown>): Promise<T | null> {
   const res = await fetch(`${CONVEX_URL}/api/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as ConvexResponse<T>;
   if (data.status === 'error') return null;
-  return data.value;
+  return data.value ?? null;
 }
 
 export async function POST(req: NextRequest) {
@@ -38,7 +71,7 @@ export async function POST(req: NextRequest) {
     let email = '';
 
     try {
-      const body = await req.json();
+      const body = (await req.json()) as LoginRequestBody;
       email = body.email ?? '';
       const { password, deviceFingerprint, keystrokeSample } = body;
 
@@ -57,8 +90,12 @@ export async function POST(req: NextRequest) {
       }
 
       // ── Check if audit_logging is enabled ────────────────────────────────────
-      const auditEnabled = await convexQuery('security:getSetting', { key: 'audit_logging' });
-      const adaptiveEnabled = await convexQuery('security:getSetting', { key: 'adaptive_auth' });
+      const auditEnabled = await convexQuery<boolean>('security:getSetting', {
+        key: 'audit_logging',
+      });
+      const adaptiveEnabled = await convexQuery<boolean>('security:getSetting', {
+        key: 'adaptive_auth',
+      });
 
       // ── Get recent failed attempts for risk score ─────────────────────────────
       const _fifteenMinAgo = Date.now() - 15 * 60 * 1000;
@@ -70,14 +107,11 @@ export async function POST(req: NextRequest) {
 
       // We'll check these after we find the user — for now fetch by email first
       // (we do a pre-check via loginAttempts by email)
-      const recentByEmail = await convexQuery('security:getLoginStats', {
+      const recentByEmail = await convexQuery<LoginStatsResult>('security:getLoginStats', {
         hours: 0.25, // last 15 min
       });
       if (recentByEmail) {
-        const suspicious = (recentByEmail.suspicious ?? []) as Array<{
-          email?: string;
-          success?: boolean;
-        }>;
+        const suspicious = recentByEmail.suspicious ?? [];
         const emailFails = suspicious.filter((a) => a.email === email && !a.success);
         recentFailedAttempts = emailFails.length;
       }
@@ -138,7 +172,7 @@ export async function POST(req: NextRequest) {
         }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as ConvexResponse<AuthLoginResult>;
 
       if (data.status === 'error') {
         // Log failed attempt
@@ -157,6 +191,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: data.errorMessage || 'Login failed' }, { status: 401 });
       }
 
+      if (data.value === undefined) {
+        return NextResponse.json({ error: 'Login failed' }, { status: 401 });
+      }
       const result = data.value;
 
       // ── Check if 2FA is enabled ─────────────────────────────────────────────
@@ -187,9 +224,12 @@ export async function POST(req: NextRequest) {
 
       // ── Check maintenance mode — block non-superadmin login ──────────────────
       if (result.role !== 'superadmin' && result.organizationId) {
-        const maintenanceData = await convexQuery('admin:getMaintenanceMode', {
-          organizationId: result.organizationId,
-        });
+        const maintenanceData = await convexQuery<MaintenanceModeResult>(
+          'admin:getMaintenanceMode',
+          {
+            organizationId: result.organizationId,
+          },
+        );
         if (maintenanceData?.isActive && maintenanceData.startTime <= Date.now()) {
           return NextResponse.json(
             { error: 'maintenance', organizationId: result.organizationId },
@@ -200,14 +240,14 @@ export async function POST(req: NextRequest) {
 
       // ── Register device fingerprint ──────────────────────────────────────────
       if (deviceFingerprint && result.userId) {
-        const deviceResult = await convexMutation('security:registerDevice', {
+        const deviceResult = await convexMutation<RegisterDeviceResult>('security:registerDevice', {
           userId: result.userId,
           fingerprint: deviceFingerprint,
           userAgent,
         });
 
         // If new device and feature enabled — notify admin
-        const newDeviceAlertEnabled = await convexQuery('security:getSetting', {
+        const newDeviceAlertEnabled = await convexQuery<boolean>('security:getSetting', {
           key: 'new_device_alert',
         });
         if (newDeviceAlertEnabled && deviceResult?.isNew) {
@@ -245,7 +285,7 @@ export async function POST(req: NextRequest) {
 
       // ── Save keystroke profile if available ──────────────────────────────────
       if (keystrokeSample && result.userId) {
-        const keystrokeEnabled = await convexQuery('security:getSetting', {
+        const keystrokeEnabled = await convexQuery<boolean>('security:getSetting', {
           key: 'keystroke_dynamics',
         });
         if (keystrokeEnabled) {
@@ -307,9 +347,9 @@ export async function POST(req: NextRequest) {
       });
 
       return response;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error('Login error:', error);
+    } catch (error: unknown) {
+      const err = toError(error);
+      console.error('Login error:', err);
       // Log server error attempt
       try {
         await convexMutation('security:logLoginAttempt', {
@@ -318,13 +358,10 @@ export async function POST(req: NextRequest) {
           method: 'password',
           ip,
           userAgent,
-          blockedReason: `Server error: ${error.message}`,
+          blockedReason: `Server error: ${err.message}`,
         });
       } catch {}
-      return NextResponse.json(
-        { error: error.message || 'Internal server error' },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
     }
   });
 }

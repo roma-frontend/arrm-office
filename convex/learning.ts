@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
-import { query, mutation } from './_generated/server';
+import { query, mutation, type QueryCtx, type MutationCtx } from './_generated/server';
+import type { Id, Doc } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
@@ -7,8 +8,7 @@ import { getAuthCaller } from './lib/getAuthCaller';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
 // Identity is derived from the verified JWT (getAuthCaller), never from client args.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function checkAccess(ctx: any, organizationId: any) {
+async function checkAccess(ctx: QueryCtx | MutationCtx, organizationId: Id<'organizations'>) {
   const caller = await getAuthCaller(ctx);
   if (!caller) throw new Error('Not authenticated');
   const requester = await ctx.db.get(caller._id);
@@ -22,6 +22,10 @@ async function checkAccess(ctx: any, organizationId: any) {
     requesterId: caller._id,
     isSuperadmin: userIsSuperadmin || requester.role === 'admin',
   };
+}
+
+interface QuizAnswerInput {
+  userAnswer: string;
 }
 
 // ─── COURSES ─────────────────────────────────────────────────────────────────
@@ -167,8 +171,7 @@ export const updateCourse = mutation({
     const { isSuperadmin } = await checkAccess(ctx, course.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can update courses');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = { updatedAt: Date.now() };
+    const patch: Partial<Doc<'courses'>> = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
     if (args.category !== undefined) patch.category = args.category;
@@ -275,8 +278,7 @@ export const updateLesson = mutation({
     if (!lesson) throw new Error('Lesson not found');
     await checkAccess(ctx, lesson.organizationId);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = { updatedAt: Date.now() };
+    const patch: Partial<Doc<'lessons'>> = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
     if (args.order !== undefined) patch.order = args.order;
@@ -464,8 +466,7 @@ export const updateEnrollmentStatus = mutation({
     if (!enrollment) throw new Error('Enrollment not found');
     await checkAccess(ctx, enrollment.organizationId);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = { status: args.status, updatedAt: Date.now() };
+    const patch: Partial<Doc<'enrollments'>> = { status: args.status, updatedAt: Date.now() };
     if (args.progress !== undefined) patch.progress = args.progress;
     if (args.status === 'in_progress' && !enrollment.startedAt) patch.startedAt = Date.now();
     if (args.status === 'completed') {
@@ -523,8 +524,7 @@ export const updateLessonProgress = mutation({
 
     const now = Date.now();
     if (existing) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const patch: any = {
+      const patch: Partial<Doc<'lessonProgress'>> = {
         isCompleted: args.isCompleted,
         updatedAt: now,
       };
@@ -722,8 +722,8 @@ export const submitQuizAttempt = mutation({
     const totalPoints = questions.reduce((sum, q) => sum + (q.points ?? 1), 0);
     let earnedPoints = 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const answerResults = args.answers.map((answer: any, idx: number) => {
+    const answers = args.answers as QuizAnswerInput[];
+    const answerResults = answers.map((answer, idx) => {
       const question = questions[idx];
       if (!question) return { questionId: null, userAnswer: answer.userAnswer, isCorrect: false };
       const isCorrect = answer.userAnswer === question.correctAnswer;
@@ -834,7 +834,7 @@ export const issueCertificate = mutation({
       certificateId,
       issuedAt: now,
       expiresAt: args.expiresAt,
-      metadata: args.metadata,
+      metadata: args.metadata as Record<string, unknown> | undefined,
       createdAt: now,
     });
 

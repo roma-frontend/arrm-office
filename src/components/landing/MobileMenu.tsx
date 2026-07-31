@@ -159,7 +159,8 @@ function scrollToHash(hash: string, offset = 84) {
  * Liquid hover background (Stripe/Linear vibe)
  * - работает и на desktop hover, и на mobile (tap = активный state)
  */
-function _LiquidHoverBg({ accent, active }: { accent: string; active: boolean }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for upcoming menu hover treatment
+function LiquidHoverBg({ accent, active }: { accent: string; active: boolean }) {
   const x = useMotionValue(60);
   const y = useMotionValue(20);
 

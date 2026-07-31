@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
-import { query, mutation } from '../_generated/server';
+import { mutation, query, type MutationCtx } from '../_generated/server';
+import type { Id } from '../_generated/dataModel';
 import bcrypt from 'bcryptjs';
 import { requireAuthUserOrThrow } from '../lib/auth';
 
@@ -29,15 +30,13 @@ export const generateAccessToken = mutation({
 
     const staleUser = await ctx.db
       .query('users')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_email', (q: any) => q.eq('email', email))
+      .withIndex('by_email', (q) => q.eq('email', email))
       .unique();
 
     if (staleUser) {
       const staleToken = await ctx.db
         .query('superadminAccessTokens')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .withIndex('by_temp_user', (q: any) => q.eq('tempUserId', staleUser._id))
+        .withIndex('by_temp_user', (q) => q.eq('tempUserId', staleUser._id))
         .unique();
       if (staleToken) await ctx.db.delete(staleToken._id);
       await ctx.db.delete(staleUser._id);
@@ -152,21 +151,18 @@ export const revokeAccessToken = mutation({
  */
 export const listAccessTokens = query({
   args: {},
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  handler: async (ctx: any) => {
+  handler: async (ctx) => {
     const caller = await requireAuthUserOrThrow(ctx);
     if (caller.role !== 'superadmin') throw new Error('Unauthorized');
 
     const tokens = await ctx.db
       .query('superadminAccessTokens')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_creator', (q: any) => q.eq('createdBy', caller._id))
+      .withIndex('by_creator', (q) => q.eq('createdBy', caller._id))
       .order('desc')
       .take(100);
 
     const enriched = await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tokens.map(async (t: any) => {
+      tokens.map(async (t) => {
         const tempUser = await ctx.db.get(t.tempUserId);
         const now = Date.now();
         const isExpired = now > t.expiresAt;
@@ -191,14 +187,12 @@ export const listAccessTokens = query({
  * Used by the login mutation to block expired tokens.
  */
 export async function checkTempAccessStillValid(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
-  userId: string,
+  ctx: MutationCtx,
+  userId: Id<'users'>,
 ): Promise<{ valid: boolean; reason?: string }> {
   const token = await ctx.db
     .query('superadminAccessTokens')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_temp_user', (q: any) => q.eq('tempUserId', userId))
+    .withIndex('by_temp_user', (q) => q.eq('tempUserId', userId))
     .unique();
 
   if (!token) return { valid: true };

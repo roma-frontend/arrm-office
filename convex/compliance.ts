@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { mutation, query } from './_generated/server';
+import { mutation, query, type QueryCtx } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
@@ -12,9 +12,8 @@ import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
  * - superadmin: sees all orgs (returns undefined orgId filter)
  * - admin: sees only their own org
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function requireAdmin(ctx: any, adminId: Id<'users'>) {
-  const user = await ctx.db.get(adminId);
+async function requireAdmin(ctx: QueryCtx, adminId: Id<'users'>) {
+  const user = (await ctx.db.get(adminId)) as Doc<'users'> | null;
   if (!user) {
     throw new Error('User not found');
   }
@@ -99,15 +98,17 @@ export const updateGdprRequestStatus = mutation({
       throw new Error('Can only update GDPR requests for your organization');
     }
 
-    const updates = {
+    const updates: Record<string, unknown> = {
       status: args.status,
       processedBy: user._id,
       processedAt: Date.now(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(args.status === 'completed' ? ({ completedAt: Date.now() } as any) : {}),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(args.status === 'rejected' ? ({ rejectionReason: args.rejectionReason } as any) : {}),
     };
+    if (args.status === 'completed') {
+      updates.completedAt = Date.now();
+    }
+    if (args.status === 'rejected' && args.rejectionReason) {
+      updates.rejectionReason = args.rejectionReason;
+    }
 
     await ctx.db.patch(args.requestId, updates);
 
@@ -265,7 +266,7 @@ export const grantConsent = mutation({
     }
 
     const consentId = await ctx.db.insert('consentRecords', {
-      organizationId: orgId || targetUser.organizationId,
+      organizationId: orgId! ?? targetUser.organizationId,
       userId: args.userId,
       consentType: args.consentType,
       granted: true,
@@ -277,7 +278,7 @@ export const grantConsent = mutation({
     });
 
     await ctx.db.insert('auditLogs', {
-      organizationId: orgId || targetUser.organizationId,
+      organizationId: orgId! ?? targetUser.organizationId,
       userId: user._id,
       action: 'consent_granted',
       target: `consent_${args.consentType}`,
@@ -411,7 +412,7 @@ export const logDataAccess = mutation({
     }
 
     await ctx.db.insert('dataAccessLogs', {
-      organizationId: orgId || targetUser.organizationId,
+      organizationId: orgId! ?? targetUser.organizationId,
       userId: args.userId,
       accessedBy: user._id,
       accessType: args.accessType,
@@ -423,7 +424,7 @@ export const logDataAccess = mutation({
     });
 
     await ctx.db.insert('auditLogs', {
-      organizationId: orgId || targetUser.organizationId,
+      organizationId: orgId! ?? targetUser.organizationId,
       userId: user._id,
       action: `data_access_${args.accessType}`,
       target: `${args.dataType}${args.recordId ? ` (${args.recordId})` : ''}`,

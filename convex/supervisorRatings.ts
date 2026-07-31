@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
-import { Id } from './_generated/dataModel';
+import { mutation, query, type MutationCtx } from './_generated/server';
+import type { Id, Doc } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
@@ -32,14 +32,12 @@ export const createRating = mutation({
       args.reliability,
     ];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (ratings.some((r: any) => r < 1 || r > 5)) {
+    if (ratings.some((r) => r < 1 || r > 5)) {
       throw new Error('All ratings must be between 1 and 5');
     }
 
     // Calculate overall rating
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const overallRating = ratings.reduce((sum: any, r: any) => sum + r, 0) / ratings.length;
+    const overallRating = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
 
     // Use current month if period not specified
     const period = args.ratingPeriod || new Date().toISOString().slice(0, 7); // "2026-02"
@@ -74,8 +72,7 @@ export const createRating = mutation({
 
         const userPointsRecord = await ctx.db
           .query('userPoints')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .withIndex('by_org_user', (q: any) =>
+          .withIndex('by_org_user', (q) =>
             q.eq('organizationId', orgId).eq('userId', args.employeeId),
           )
           .first();
@@ -122,15 +119,14 @@ export const getEmployeeRatings = query({
   handler: async (ctx, args) => {
     const ratings = await ctx.db
       .query('supervisorRatings')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_employee', (q: any) => q.eq('employeeId', args.employeeId))
+      .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
       .order('desc')
       .take(args.limit || 12); // Last 12 months by default
 
     // Get supervisor info for each rating
     const withSupervisors = await Promise.all(
       ratings.map(async (rating) => {
-        const supervisor = await ctx.db.get(rating.supervisorId);
+        const supervisor = (await ctx.db.get(rating.supervisorId)) as Doc<'users'> | null;
         return {
           ...rating,
           supervisor,
@@ -150,14 +146,13 @@ export const getLatestRating = query({
   handler: async (ctx, args) => {
     const rating = await ctx.db
       .query('supervisorRatings')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_employee', (q: any) => q.eq('employeeId', args.employeeId))
+      .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
       .order('desc')
       .first();
 
     if (!rating) return null;
 
-    const supervisor = await ctx.db.get(rating.supervisorId);
+    const supervisor = (await ctx.db.get(rating.supervisorId)) as Doc<'users'> | null;
 
     return {
       ...rating,
@@ -175,8 +170,7 @@ export const getAverageRatings = query({
   handler: async (ctx, args) => {
     const allRatings = await ctx.db
       .query('supervisorRatings')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_employee', (q: any) => q.eq('employeeId', args.employeeId))
+      .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
       .take(SMALL_LIST_CAP);
 
     if (allRatings.length === 0) {
@@ -198,27 +192,19 @@ export const getAverageRatings = query({
     cutoffDate.setMonth(cutoffDate.getMonth() - monthsToInclude);
     const cutoffPeriod = cutoffDate.toISOString().slice(0, 7);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const recentRatings = allRatings.filter((r: any) => r.ratingPeriod >= cutoffPeriod);
+    const recentRatings = allRatings.filter((r) => r.ratingPeriod >= cutoffPeriod);
     const ratingsToUse = recentRatings.length > 0 ? recentRatings : allRatings;
 
     const count = ratingsToUse.length;
 
     const avg = {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      qualityOfWork: ratingsToUse.reduce((sum: any, r: any) => sum + r.qualityOfWork, 0) / count,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      efficiency: ratingsToUse.reduce((sum: any, r: any) => sum + r.efficiency, 0) / count,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      teamwork: ratingsToUse.reduce((sum: any, r: any) => sum + r.teamwork, 0) / count,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      initiative: ratingsToUse.reduce((sum: any, r: any) => sum + r.initiative, 0) / count,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      communication: ratingsToUse.reduce((sum: any, r: any) => sum + r.communication, 0) / count,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      reliability: ratingsToUse.reduce((sum: any, r: any) => sum + r.reliability, 0) / count,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      overall: ratingsToUse.reduce((sum: any, r: any) => sum + r.overallRating, 0) / count,
+      qualityOfWork: ratingsToUse.reduce((sum, r) => sum + r.qualityOfWork, 0) / count,
+      efficiency: ratingsToUse.reduce((sum, r) => sum + r.efficiency, 0) / count,
+      teamwork: ratingsToUse.reduce((sum, r) => sum + r.teamwork, 0) / count,
+      initiative: ratingsToUse.reduce((sum, r) => sum + r.initiative, 0) / count,
+      communication: ratingsToUse.reduce((sum, r) => sum + r.communication, 0) / count,
+      reliability: ratingsToUse.reduce((sum, r) => sum + r.reliability, 0) / count,
+      overall: ratingsToUse.reduce((sum, r) => sum + r.overallRating, 0) / count,
       totalRatings: count,
     };
 
@@ -235,15 +221,14 @@ export const getRatingsBySupervisor = query({
   handler: async (ctx, args) => {
     const ratings = await ctx.db
       .query('supervisorRatings')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_supervisor', (q: any) => q.eq('supervisorId', args.supervisorId))
+      .withIndex('by_supervisor', (q) => q.eq('supervisorId', args.supervisorId))
       .order('desc')
       .take(args.limit || 50);
 
     // Get employee info for each rating
     const withEmployees = await Promise.all(
       ratings.map(async (rating) => {
-        const employee = await ctx.db.get(rating.employeeId);
+        const employee = (await ctx.db.get(rating.employeeId)) as Doc<'users'> | null;
         return {
           ...rating,
           employee,
@@ -264,8 +249,7 @@ export const getRatingTrends = query({
   handler: async (ctx, args) => {
     const ratings = await ctx.db
       .query('supervisorRatings')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .withIndex('by_employee', (q: any) => q.eq('employeeId', args.employeeId))
+      .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
       .order('desc')
       .take(args.months || 6);
 
@@ -274,13 +258,15 @@ export const getRatingTrends = query({
 });
 
 // ── Helper: Update Performance Metrics ───────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function updatePerformanceMetrics(ctx: any, employeeId: Id<'users'>, updatedBy: Id<'users'>) {
+async function updatePerformanceMetrics(
+  ctx: MutationCtx,
+  employeeId: Id<'users'>,
+  updatedBy: Id<'users'>,
+) {
   // Get average ratings
   const ratings = await ctx.db
     .query('supervisorRatings')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_employee', (q: any) => q.eq('employeeId', employeeId))
+    .withIndex('by_employee', (q) => q.eq('employeeId', employeeId))
     .take(SMALL_LIST_CAP);
 
   if (ratings.length === 0) return;
@@ -288,22 +274,17 @@ async function updatePerformanceMetrics(ctx: any, employeeId: Id<'users'>, updat
   const recent = ratings.slice(-3); // Last 3 ratings
   const count = recent.length;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const avgQuality = recent.reduce((sum: number, r: any) => sum + r.qualityOfWork, 0) / count;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const avgEfficiency = recent.reduce((sum: number, r: any) => sum + r.efficiency, 0) / count;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const avgTeamwork = recent.reduce((sum: number, r: any) => sum + r.teamwork, 0) / count;
+  const avgQuality = recent.reduce((sum: number, r) => sum + r.qualityOfWork, 0) / count;
+  const avgEfficiency = recent.reduce((sum: number, r) => sum + r.efficiency, 0) / count;
+  const avgTeamwork = recent.reduce((sum: number, r) => sum + r.teamwork, 0) / count;
 
   // Convert 1-5 scale to 0-5 scale for kpiScore
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const kpiScore = recent.reduce((sum: number, r: any) => sum + r.overallRating, 0) / count;
+  const kpiScore = recent.reduce((sum: number, r) => sum + r.overallRating, 0) / count;
 
   // Get or create performance metrics
   const existing = await ctx.db
     .query('performanceMetrics')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .withIndex('by_user', (q: any) => q.eq('userId', employeeId))
+    .withIndex('by_user', (q) => q.eq('userId', employeeId))
     .first();
 
   const metricsData = {
@@ -311,8 +292,7 @@ async function updatePerformanceMetrics(ctx: any, employeeId: Id<'users'>, updat
     projectCompletion: avgQuality * 20, // Convert to percentage
     deadlineAdherence: avgEfficiency * 20,
     teamworkRating: avgTeamwork,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    communicationScore: recent.reduce((sum: number, r: any) => sum + r.communication, 0) / count,
+    communicationScore: recent.reduce((sum: number, r) => sum + r.communication, 0) / count,
   };
 
   if (existing) {
@@ -340,7 +320,7 @@ export const getEmployeesNeedingRating = query({
     supervisorId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const supervisor = await ctx.db.get(args.supervisorId);
+    const supervisor = (await ctx.db.get(args.supervisorId)) as Doc<'users'> | null;
     if (!supervisor) throw new Error('Supervisor not found');
 
     const userIsSuperadmin = isSuperadmin(supervisor);
@@ -355,8 +335,7 @@ export const getEmployeesNeedingRating = query({
       }
       allUsers = await ctx.db
         .query('users')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .withIndex('by_org', (q: any) => q.eq('organizationId', supervisor.organizationId))
+        .withIndex('by_org', (q) => q.eq('organizationId', supervisor.organizationId))
         .take(DEFAULT_LIST_CAP);
     } else {
       allUsers = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
@@ -364,8 +343,7 @@ export const getEmployeesNeedingRating = query({
 
     // Exclude superadmins and admins from rating list
     const activeEmployees = allUsers.filter(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (u: any) => u.isActive && u.role !== 'admin' && u.role !== 'superadmin',
+      (u) => u.isActive && u.role !== 'admin' && u.role !== 'superadmin',
     );
 
     // Check which ones don't have a rating this month
@@ -373,8 +351,7 @@ export const getEmployeesNeedingRating = query({
       activeEmployees.map(async (employee) => {
         const rating = await ctx.db
           .query('supervisorRatings')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .withIndex('by_employee', (q: any) => q.eq('employeeId', employee._id))
+          .withIndex('by_employee', (q) => q.eq('employeeId', employee._id))
           .order('desc')
           .first();
 
