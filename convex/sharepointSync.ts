@@ -10,7 +10,10 @@ import type { Id } from './_generated/dataModel';
 // ─────────────────────────────────────────────────────────────────────────────
 const RESTRICTED_ORG_SLUG = 'adb-arrm';
 
-async function verifyRestrictedOrg(ctx: QueryCtx | MutationCtx, organizationId: Id<'organizations'>) {
+async function verifyRestrictedOrg(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<'organizations'>,
+) {
   const org = await ctx.db.get(organizationId);
   if (!org) {
     throw new Error('Organization not found');

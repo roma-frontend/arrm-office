@@ -448,4 +448,3 @@ export const getSLATrend = query({
       .sort((a, b) => a.date.localeCompare(b.date));
   },
 });
-

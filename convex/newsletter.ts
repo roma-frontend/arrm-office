@@ -321,7 +321,6 @@ export const sendWeeklyDigest = internalAction({
         await ctx.runMutation(internal.newsletter.updateLastSent, { id: sub._id });
       }
     }
-
   },
 });
 

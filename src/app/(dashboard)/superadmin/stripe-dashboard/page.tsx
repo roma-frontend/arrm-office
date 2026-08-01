@@ -79,34 +79,37 @@ export default function StripeDashboardPage() {
   const [data, setData] = useState<StripeData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStripeData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(null);
+  const fetchStripeData = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
 
-    try {
-      const response = await fetch('/api/stripe/transactions');
-      const result = await response.json();
+      try {
+        const response = await fetch('/api/stripe/transactions');
+        const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch data');
-      }
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to fetch data');
+        }
 
-      setData(result);
-      if (isRefresh) {
-        toast.success(t('stripeDashboard.dataUpdated'));
+        setData(result);
+        if (isRefresh) {
+          toast.success(t('stripeDashboard.dataUpdated'));
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        setError(err.message);
+        if (isRefresh) {
+          toast.error(t('stripeDashboard.updateError'));
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setError(err.message);
-      if (isRefresh) {
-        toast.error(t('stripeDashboard.updateError'));
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [t]);
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (currentUser) {

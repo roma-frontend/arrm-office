@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 
-async function _getUserId(
-  req: NextRequest,
-  body: { userId?: string },
-): Promise<string | null> {
+async function _getUserId(req: NextRequest, body: { userId?: string }): Promise<string | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get('hr-auth-token')?.value;
   if (token) {

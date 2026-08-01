@@ -6,7 +6,10 @@ import { logger } from '@/lib/logger';
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-async function convexMutation<T = unknown>(name: string, args: Record<string, unknown>): Promise<T> {
+async function convexMutation<T = unknown>(
+  name: string,
+  args: Record<string, unknown>,
+): Promise<T> {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -57,7 +60,7 @@ export async function POST(req: NextRequest) {
       const isDomainVerified = process.env.RESEND_DOMAIN_VERIFIED === 'true';
       const testEmail =
         process.env.RESEND_TEST_EMAIL || process.env.BOOTSTRAP_SUPERADMIN_EMAIL || '';
-      const toEmail = isDomainVerified ? result.email ?? '' : testEmail;
+      const toEmail = isDomainVerified ? (result.email ?? '') : testEmail;
       const fromEmail = isDomainVerified
         ? 'Strata <hr@strata.work>'
         : 'Strata <onboarding@resend.dev>';
