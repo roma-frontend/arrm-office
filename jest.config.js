@@ -1,4 +1,6 @@
 /** @type {import('jest').Config} */
+const path = require('path');
+
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
@@ -12,7 +14,12 @@ module.exports = {
     // unnecessary ES5 polyfills (Lighthouse "Legacy JavaScript"). Pointing
     // babel-jest at an explicitly-named file keeps Jest working while letting
     // the production build use SWC + the modern `browserslist` target.
-    '^.+\\.jsx?$': ['babel-jest', { configFile: '<rootDir>/jest.babel.config.js' }],
+    //
+    // The path must be absolute: Jest does not expand `<rootDir>` inside
+    // transformer options, so a literal '<rootDir>/…' made Babel fail with
+    // "Cannot find module '<rootDir>/jest.babel.config.js'" for every suite that
+    // transforms a .js file (i.e. anything importing `convex`).
+    '^.+\\.jsx?$': ['babel-jest', { configFile: path.join(__dirname, 'jest.babel.config.js') }],
   },
   transformIgnorePatterns: ['/node_modules/(?!(convex|convex-test)/)'],
   moduleNameMapper: {
