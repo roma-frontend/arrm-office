@@ -34,6 +34,8 @@ jobs:
         run: npm run lint
       - name: Prettier check
         run: npx prettier --check "**/*.{ts,tsx,js,jsx,json,css,md}"
+      - name: Locale parity (EN is the reference)
+        run: npm run check:locales
 
   type-check:
     name: '🔠 Type Check'
