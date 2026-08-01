@@ -33,7 +33,7 @@ async function fetchLiveRates(): Promise<Record<string, number>> {
   try {
     const res = await fetch('/api/currency-rates');
     if (!res.ok) throw new Error('Failed to fetch rates');
-    const data: { rates?: Record<string, number> } = await res.json();
+    const data = (await res.json()) as { rates?: Record<string, number> };
     return data.rates || {};
   } catch {
     return {};

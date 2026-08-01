@@ -42,7 +42,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
       const authStorage = localStorage.getItem('hr-auth-storage');
       if (authStorage) {
         try {
-          const parsed = JSON.parse(authStorage);
+          const parsed = JSON.parse(authStorage) as { state?: { sessionToken?: string } };
           // eslint-disable-next-line react-hooks/set-state-in-effect -- read persisted session token from localStorage
           setSessionToken(parsed.state?.sessionToken);
         } catch (e) {

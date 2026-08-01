@@ -640,13 +640,11 @@ export default function UserProfile360Page() {
                             {attempt.success ? 'Успешный вход' : 'Неудачная попытка'}
                           </span>{' '}
                           <Badge variant="outline">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {(attempt as any).authMethod || 'password'}
+                            {(attempt as { authMethod?: string }).authMethod || 'password'}
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          <div>IP: {(attempt as any).ipAddress || 'N/A'}</div>
+                          <div>IP: {(attempt as { ipAddress?: string }).ipAddress || 'N/A'}</div>
                           <div>Устройство: {attempt.userAgent || 'N/A'}</div>
                           {attempt.riskScore && (
                             <div>

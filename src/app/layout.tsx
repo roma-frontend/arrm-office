@@ -13,12 +13,16 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 // Validate environment variables at startup
 validateEnvironment();
 
-// Primary text font — IBM Plex Sans (Corporate & Professional)
+// Primary text font — IBM Plex Sans (Corporate & Professional).
+// `preload: true` because this font renders the LCP <h1>: Next then emits a
+// real <link rel="preload"> for the font file. With preload disabled on *every*
+// font, Next falls back to emitting a self-origin `<link rel="preconnect" />`
+// that is never used, which Lighthouse flags as an unused preconnect.
 const ibmPlexSans = IBM_Plex_Sans({
   variable: '--font-ibm-plex',
   subsets: ['latin', 'cyrillic'],
   display: 'swap',
-  preload: false,
+  preload: true,
   weight: ['400', '500', '600', '700'],
   fallback: ['sans-serif'],
   adjustFontFallback: true,
@@ -164,17 +168,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         {/* Safari pinned tab */}
         <link rel="mask-icon" href="/favicon.svg?v=3" color="#2563eb" />
 
-        {/* ── Resource hints: preconnect to critical origins ──
-            Only origins used during the initial render are preconnected.
-            Sentry needs `crossOrigin` for the preconnect to actually be reused by
-            the SDK's CORS request (without it Lighthouse flags an "unused
-            preconnect"). Cloudinary/Google OAuth are not requested on the landing
-            page, so they are not preconnected here. */}
-        <link
-          rel="preconnect"
-          href="https://o4505283179249664.ingest.us.sentry.io"
-          crossOrigin="anonymous"
-        />
+        {/* ── Resource hints ──
+            No preconnect to Sentry: MonitoringProvider loads the SDK inside
+            `requestIdleCallback` (see providers/MonitoringProvider.tsx), i.e.
+            long after LCP and after the browser would have dropped the unused
+            socket. Lighthouse correctly flagged it as an unused preconnect, and
+            a warm socket nobody uses only competes with the critical path.
+            Cloudinary / Google OAuth are not requested on the landing page
+            either, so they are deliberately not preconnected. */}
 
         {/* Apply the persisted theme BEFORE first paint to avoid a light→dark
             flash (FOUC). Reads the `next-theme` cookie / `theme` localStorage

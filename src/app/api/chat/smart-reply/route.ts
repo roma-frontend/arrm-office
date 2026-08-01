@@ -48,7 +48,9 @@ Rules:
 
     // Parse JSON array from response
     const match = text.match(/\[[\s\S]*\]/);
-    const replies: string[] = match ? JSON.parse(match[0]) : ['👍 OK', 'Понял!', 'Позже'];
+    const replies: string[] = match
+      ? (JSON.parse(match[0]) as string[])
+      : ['👍 OK', 'Понял!', 'Позже'];
 
     return NextResponse.json({ replies: replies.slice(0, 3) });
   } catch (err) {

@@ -354,8 +354,9 @@ export default function GoalDetailClient() {
                     <Target className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="font-medium">{child.title}</p>
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      <p className="text-sm text-muted-foreground">{(child as any).ownerName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(child as { ownerName?: string }).ownerName}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

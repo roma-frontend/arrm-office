@@ -34,9 +34,11 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(drivers);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get drivers error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to get drivers' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to get drivers' },
+      { status: 500 },
+    );
   }
 }

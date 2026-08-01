@@ -61,8 +61,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
     try {
       await updateProject({
         projectId: project._id,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        status: newStatus as any,
+        status: newStatus as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
       });
       toast.success(t('projects.statusUpdated', 'Status updated'));
       setIsEditing(false);

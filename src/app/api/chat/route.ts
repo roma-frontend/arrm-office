@@ -103,7 +103,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
   const authOrgId = auth.organizationId || '';
 
   try {
-    const body = await req.json();
+    const body: unknown = await req.json();
 
     // SECURITY: Validate input
     const validation = chatRequestSchema.safeParse(body);

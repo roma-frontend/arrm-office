@@ -171,16 +171,28 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
       await createAsset({
         organizationId: orgId,
         name: String(data.name).trim(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        category: String(data.category || 'laptop') as any,
+        category: (String(data.category || 'laptop') || 'laptop') as
+          | 'laptop'
+          | 'monitor'
+          | 'phone'
+          | 'tablet'
+          | 'peripheral'
+          | 'furniture'
+          | 'software_license'
+          | 'vehicle'
+          | 'other',
         brand: data.brand ? String(data.brand).trim() : undefined,
         model: data.model ? String(data.model).trim() : undefined,
         serialNumber: data.serialNumber ? String(data.serialNumber).trim() : undefined,
         purchaseDate: data.purchaseDate ? new Date(String(data.purchaseDate)).getTime() : undefined,
         purchasePrice: data.purchasePrice ? Number(data.purchasePrice) : undefined,
         location: data.location ? String(data.location).trim() : undefined,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        condition: (data.condition || 'new') as any,
+        condition: (String(data.condition || 'new') || 'new') as
+          | 'new'
+          | 'good'
+          | 'fair'
+          | 'poor'
+          | 'damaged',
         notes: data.notes ? String(data.notes).trim() : undefined,
         createdBy: userId,
       });

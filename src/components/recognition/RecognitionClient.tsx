@@ -193,9 +193,8 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
       });
       toast.success(t('recognition.kudosSent'));
       onClose();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('recognition.errors.sendFailed'));
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('recognition.errors.sendFailed'));
     } finally {
       setIsSubmitting(false);
     }

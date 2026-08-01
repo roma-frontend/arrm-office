@@ -278,7 +278,7 @@ export function CreateTaskWizard({
 
       const attachmentsJson = data.attachments as string | undefined;
       if (attachmentsJson && attachmentsJson !== '[]' && attachmentsJson.length > 2) {
-        const attachments: AttachmentData[] = JSON.parse(attachmentsJson);
+        const attachments = JSON.parse(attachmentsJson) as AttachmentData[];
         for (const attachment of attachments) {
           await addAttachment({
             taskId,

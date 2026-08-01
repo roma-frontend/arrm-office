@@ -738,6 +738,18 @@ html {
 body {
   background: var(--landing-bg);
   color: var(--text-primary);
+  /* Apply the next/font families loaded in app/layout.tsx. Without this the
+     `--font-*` variables were set on <body> but never consumed, so the whole
+     app silently rendered in the browser's default sans-serif and Next emitted
+     an unused self-origin `preconnect` (Lighthouse "Unused preconnect"). */
+  font-family:
+    var(--font-ibm-plex),
+    var(--font-inter),
+    var(--font-armenian),
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
   font-feature-settings:
     'rlig' 1,
     'calt' 1;

@@ -15,7 +15,7 @@ export const POST = withCsrfProtection(async (req: Request) => {
       return NextResponse.json({ error: 'Only superadmins can run backups' }, { status: 403 });
     }
 
-    const { organizationId } = await req.json();
+    const { organizationId } = (await req.json()) as { organizationId?: string };
     if (!organizationId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }

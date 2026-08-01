@@ -30,7 +30,7 @@ export function SmartReply({ message, context, onSelect, lang = 'en' }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, context, lang }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { replies?: string[] };
       setReplies(data.replies ?? []);
       setFetched(true);
     } catch {

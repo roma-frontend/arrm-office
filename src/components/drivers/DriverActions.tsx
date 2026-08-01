@@ -141,9 +141,12 @@ export function InAppCallButton({
         remoteUserId,
         remoteUserName: remoteName,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('driverActions.callStartFailed', 'Failed to start call'));
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('driverActions.callStartFailed', 'Failed to start call'),
+      );
     } finally {
       setCalling(false);
     }

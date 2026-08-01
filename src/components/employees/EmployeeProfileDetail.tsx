@@ -98,9 +98,12 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
       });
       toast.success(t('employees.employeeDeleted', 'Employee deleted successfully'));
       window.history.back();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('employees.deleteFailed', 'Failed to delete employee'));
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('employees.deleteFailed', 'Failed to delete employee'),
+      );
     } finally {
       setDeleting(false);
     }

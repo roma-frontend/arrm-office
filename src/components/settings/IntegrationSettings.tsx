@@ -171,7 +171,7 @@ export function IntegrationSettings() {
         toast.error(t('toasts.pleaseLoginAgain'));
         return;
       }
-      const user = JSON.parse(storedUser);
+      const user = JSON.parse(storedUser) as { _id: string; organizationId?: string };
       const res = await fetch('/api/sharepoint/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,7 +180,13 @@ export function IntegrationSettings() {
           organizationId: activeOrganizationId ?? user.organizationId,
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as {
+        error?: string;
+        created?: number;
+        updated?: number;
+        deactivated?: number;
+        errors?: unknown[];
+      };
 
       if (!res.ok) {
         toast.error(data.error || t('settings.syncFailed'));
@@ -188,7 +194,7 @@ export function IntegrationSettings() {
       }
 
       toast.success(
-        `Sync complete: ${data.created} created, ${data.updated} updated, ${data.deactivated} deactivated` +
+        `Sync complete: ${data.created ?? 0} created, ${data.updated ?? 0} updated, ${data.deactivated ?? 0} deactivated` +
           (data.errors?.length ? `, ${data.errors.length} errors` : ''),
       );
     } catch {

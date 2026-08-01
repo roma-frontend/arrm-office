@@ -78,7 +78,7 @@ export async function GET(_req: NextRequest) {
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as unknown;
     const { filePath, content, description } = body as {
       filePath: string;
       content: string;
@@ -145,7 +145,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
 
 export const DELETE = withCsrfProtection(async (req: NextRequest) => {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as unknown;
     const { filePath, timestamp } = body as { filePath: string; timestamp: number };
 
     if (!filePath || !timestamp) {

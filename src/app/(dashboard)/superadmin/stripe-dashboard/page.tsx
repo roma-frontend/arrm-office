@@ -87,7 +87,7 @@ export default function StripeDashboardPage() {
 
       try {
         const response = await fetch('/api/stripe/transactions');
-        const result = await response.json();
+        const result = (await response.json()) as StripeData & { error?: string };
 
         if (!response.ok) {
           throw new Error(result.error || 'Failed to fetch data');
@@ -97,9 +97,8 @@ export default function StripeDashboardPage() {
         if (isRefresh) {
           toast.success(t('stripeDashboard.dataUpdated'));
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
         if (isRefresh) {
           toast.error(t('stripeDashboard.updateError'));
         }

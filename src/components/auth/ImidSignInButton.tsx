@@ -63,9 +63,10 @@ export function ImidSignInButton() {
       });
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
+        const errData = (await response.json().catch(() => ({}))) as unknown;
         throw new Error(
-          (errData as { errorMessage?: string })?.errorMessage || 'Failed to initiate imID login',
+          (errData as { errorMessage?: string } | null)?.errorMessage ||
+            'Failed to initiate imID login',
         );
       }
 

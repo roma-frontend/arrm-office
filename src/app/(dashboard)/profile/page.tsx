@@ -127,7 +127,7 @@ export default function ProfilePage() {
       logger.log('[Profile] API response status:', res.status);
 
       if (!res.ok) {
-        const error = await res.json();
+        const error = (await res.json()) as { error?: string };
         console.error('[Profile] API error:', error);
         throw new Error(error.error || 'Failed to update session');
       }

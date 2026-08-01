@@ -526,7 +526,7 @@ export function FileUploadStep({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const storedJson = (data[field] as string | undefined) || '[]';
-  const storedAttachments: AttachmentData[] = JSON.parse(storedJson);
+  const storedAttachments = JSON.parse(storedJson) as AttachmentData[];
 
   const handleFileSelect = useCallback(
     async (files: FileList | File[]) => {

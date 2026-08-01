@@ -34,8 +34,10 @@ export default function BreakReminderService({
   const playBreakSound = () => {
     try {
       if (!audioContextRef.current) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioCtor =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        audioContextRef.current = new AudioCtor();
       }
 
       const ctx = audioContextRef.current;

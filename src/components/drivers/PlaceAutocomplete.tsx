@@ -61,13 +61,19 @@ export function PlaceAutocomplete({
           headers: { 'User-Agent': 'OfficeApp/1.0' },
         },
       );
-      const data: PlaceSuggestion[] = await res.json();
+      const data = (await res.json()) as PlaceSuggestion[];
       setSuggestions(data);
       setIsOpen(data.length > 0);
       setHighlightedIndex(-1);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      if (e.name !== 'AbortError') {
+    } catch (e: unknown) {
+      if (
+        e &&
+        typeof e === 'object' &&
+        'name' in e &&
+        (e as { name?: unknown }).name === 'AbortError'
+      ) {
+        // aborted — ignore
+      } else {
         setSuggestions([]);
         setIsOpen(false);
       }

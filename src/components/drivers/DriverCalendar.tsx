@@ -288,10 +288,11 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
       toast.success(
         t('driverCalendar.tripStatusUpdated', 'Trip status updated to {{status}}', { status }),
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error.message || t('driverCalendar.failedToUpdateStatus', 'Failed to update status'),
+        error instanceof Error
+          ? error.message
+          : t('driverCalendar.failedToUpdateStatus', 'Failed to update status'),
       );
     }
   };

@@ -15,7 +15,10 @@ export const POST = withCsrfProtection(async (req: Request) => {
       return NextResponse.json({ error: 'Only superadmins can run backups' }, { status: 403 });
     }
 
-    const { organizationId, employeeId } = await req.json();
+    const { organizationId, employeeId } = (await req.json()) as {
+      organizationId?: string;
+      employeeId?: string;
+    };
     if (!organizationId || !employeeId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -23,7 +26,9 @@ export const POST = withCsrfProtection(async (req: Request) => {
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
     convex.setAuth(auth.token);
 
-    const employee = await convex.query(api.users.queries.getUserById, { userId: employeeId });
+    const employee = await convex.query(api.users.queries.getUserById, {
+      userId: employeeId as Id<'users'>,
+    });
     if (!employee) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }

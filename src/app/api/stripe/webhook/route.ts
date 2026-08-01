@@ -141,7 +141,9 @@ export async function POST(req: NextRequest) {
             typeof session.subscription === 'string'
               ? session.subscription
               : session.subscription.id;
-          const sub = await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
+          const sub = (await stripe.subscriptions.retrieve(subId, {
+            expand: ['items.data.price'],
+          })) as unknown as Stripe.Subscription;
           const priceId = sub.items.data[0]?.price?.id ?? '';
           const plan = (session.metadata?.plan as string) ?? resolvePlanFromPriceId(priceId);
 
@@ -170,12 +172,13 @@ export async function POST(req: NextRequest) {
             plan,
             status: sub.status,
             email: session.customer_email ?? session.customer_details?.email ?? undefined,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            currentPeriodStart: (sub as any).current_period_start * 1000,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            currentPeriodEnd: (sub as any).current_period_end * 1000,
+            currentPeriodStart:
+              ((sub as unknown as { current_period_start?: number }).current_period_start ?? 0) *
+              1000,
+            currentPeriodEnd:
+              ((sub as unknown as { current_period_end?: number }).current_period_end ?? 0) * 1000,
             cancelAtPeriodEnd: sub.cancel_at_period_end,
-            trialEnd: sub.trial_end ? (sub.trial_end as number) * 1000 : undefined,
+            trialEnd: sub.trial_end ? sub.trial_end * 1000 : undefined,
           });
 
           logger.log('[Stripe] ✅ Subscription saved:', sub.id, plan);
@@ -203,10 +206,11 @@ export async function POST(req: NextRequest) {
           stripeSubscriptionId: sub.id,
           status: sub.status,
           cancelAtPeriodEnd: sub.cancel_at_period_end,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          currentPeriodStart: (sub as any).current_period_start * 1000,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          currentPeriodEnd: (sub as any).current_period_end * 1000,
+          currentPeriodStart:
+            ((sub as unknown as { current_period_start?: number }).current_period_start ?? 0) *
+            1000,
+          currentPeriodEnd:
+            ((sub as unknown as { current_period_end?: number }).current_period_end ?? 0) * 1000,
         });
         break;
       }
@@ -225,8 +229,8 @@ export async function POST(req: NextRequest) {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const sub = (invoice as any).subscription;
+        const sub = (invoice as unknown as { subscription?: string | { id?: string } | null })
+          .subscription;
         const subId = typeof sub === 'string' ? sub : sub?.id;
         logger.log('[Stripe] ⚠️ invoice.payment_failed:', invoice.id);
         if (subId) {
@@ -241,8 +245,8 @@ export async function POST(req: NextRequest) {
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const sub = (invoice as any).subscription;
+        const sub = (invoice as unknown as { subscription?: string | { id?: string } | null })
+          .subscription;
         const subId = typeof sub === 'string' ? sub : sub?.id;
         logger.log('[Stripe] 💰 invoice.payment_succeeded:', invoice.id);
         if (subId) {

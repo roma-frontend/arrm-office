@@ -284,7 +284,7 @@ export default function LoginPage() {
       if (orgId && !showMaintenanceBanner) {
         try {
           const response = await fetch(`/api/maintenance/check?org=${orgId}`);
-          const data = await response.json();
+          const data = (await response.json()) as { isActive?: boolean };
           if (data.isActive) {
             // Redirect to maintenance mode URL
             router.push(`/login?maintenance=true&org=${orgId}`);

@@ -63,7 +63,7 @@ export default function StrategyCascadeSection() {
           <div className="h-8 w-48 rounded-lg bg-white/5 animate-pulse mb-12 mx-auto" />
           <div className="h-6 w-96 rounded-lg bg-white/5 animate-pulse mb-16 mx-auto" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
+            {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse" />
             ))}
           </div>

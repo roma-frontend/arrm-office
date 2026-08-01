@@ -24,7 +24,7 @@ export function LinkPreview({ url, isOwn }: Props) {
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/chat/link-preview?url=${encodeURIComponent(url)}`)
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<Preview>)
       .then((data) => {
         if (!cancelled) setPreview(data);
       })

@@ -37,7 +37,7 @@ export function SecurityMonitor() {
       try {
         const response = await fetch('/api/security/metrics');
         if (response.ok) {
-          const data = await response.json();
+          const data = (await response.json()) as SecurityMetrics;
           setMetrics(data);
           setIsVisible(true);
         }

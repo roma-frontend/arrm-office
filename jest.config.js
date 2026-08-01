@@ -6,7 +6,13 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { useESM: false }],
-    '^.+\\.jsx?$': 'babel-jest',
+    // The Babel config is deliberately NOT named `babel.config.js`: Next.js
+    // auto-detects that filename and silently disables SWC for the whole app
+    // build, which falls back to `@babel/preset-env` and ships ~25 KiB of
+    // unnecessary ES5 polyfills (Lighthouse "Legacy JavaScript"). Pointing
+    // babel-jest at an explicitly-named file keeps Jest working while letting
+    // the production build use SWC + the modern `browserslist` target.
+    '^.+\\.jsx?$': ['babel-jest', { configFile: '<rootDir>/jest.babel.config.js' }],
   },
   transformIgnorePatterns: ['/node_modules/(?!(convex|convex-test)/)'],
   moduleNameMapper: {

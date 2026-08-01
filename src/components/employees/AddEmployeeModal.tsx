@@ -210,7 +210,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
             : computeGrossFromNet({ country: salary.country, net: salary.amount }).grossSalary
           : undefined;
 
-      const passportProvided = Object.values(passport).some((v) => v.trim() !== '');
+      const passportProvided = Object.values(passport).some(
+        (v) => typeof v === 'string' && v.trim() !== '',
+      );
 
       const newUserId = (await createUser({
         adminId: currentUser.id as Id<'users'>,

@@ -417,10 +417,8 @@ export function ChatWidgetButton({
         <motion.div
           className="fixed bottom-24 lg:bottom-6 right-6 z-50 w-10 sm:w-14 h-10 sm:h-14 rounded-full bg-primary/20"
           animate={{
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            scale: [1, 1.2, 1] as any,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            opacity: [0.7, 0, 0.7] as any,
+            scale: [1, 1.2, 1] as unknown as number,
+            opacity: [0.7, 0, 0.7] as unknown as number,
           }}
           transition={{
             duration: 2,

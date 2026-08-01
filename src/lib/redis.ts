@@ -273,7 +273,7 @@ export async function getSecurityEvents(userId: string): Promise<Record<string, 
 
   try {
     const events = await redis.lrange(`security:${userId}`, 0, 99);
-    return events.map((e) => JSON.parse(e as string)) as Record<string, unknown>[];
+    return events.map((e) => JSON.parse(e as string) as Record<string, unknown>);
   } catch {
     return [];
   }

@@ -150,7 +150,7 @@ export function DriverMap({
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
           { headers: { 'Accept-Language': 'en' } },
         );
-        const data = await res.json();
+        const data = (await res.json()) as { display_name?: string };
         return data.display_name || undefined;
       } catch {
         return undefined;
@@ -186,8 +186,7 @@ export function DriverMap({
     logger.log('[DriverMap] Initializing map...', { width: rect.width, height: rect.height });
 
     // Fix marker icons
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',

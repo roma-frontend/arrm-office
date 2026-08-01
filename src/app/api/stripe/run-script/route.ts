@@ -60,7 +60,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
   }
 
   try {
-    const { script } = await req.json();
+    const { script } = (await req.json()) as { script?: string };
 
     if (!script || !ALLOWED_SCRIPTS.includes(script)) {
       return NextResponse.json({ error: 'Invalid or disallowed script name' }, { status: 400 });

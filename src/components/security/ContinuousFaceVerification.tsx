@@ -94,7 +94,7 @@ export default function ContinuousFaceVerification({
         }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as { match?: boolean };
 
       if (data.match) {
         failCountRef.current = 0;

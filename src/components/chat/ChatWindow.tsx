@@ -872,7 +872,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               role="status"
               aria-label={t('chat.loadingMessages', 'Loading messages')}
             >
-              {[...Array(5)].map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className={cn('flex gap-3', i % 2 === 0 ? '' : 'flex-row-reverse')}>
                   <div className="w-8 h-8 rounded-full bg-white/5 shrink-0" />
                   <div className={cn('space-y-1', i % 2 === 0 ? '' : 'items-end flex flex-col')}>

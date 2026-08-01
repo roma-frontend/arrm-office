@@ -154,9 +154,12 @@ export function AssignManagerModal({
       );
       onSuccess?.();
       onClose();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('employees.managerAssignFailed', 'Failed to assign manager'));
+    } catch (error: unknown) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('employees.managerAssignFailed', 'Failed to assign manager'),
+      );
     } finally {
       setIsSubmitting(false);
     }

@@ -40,7 +40,7 @@ export default function AIRecommendationsCard() {
     try {
       const res = await fetch(`/api/chat/insights?userId=${user.id}`);
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as Insights;
         setInsights(data);
         setLastFetched(new Date());
       }

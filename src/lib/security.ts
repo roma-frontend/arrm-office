@@ -72,7 +72,7 @@ export function sanitizeHTML(html: string): string {
   const allowedTags = ['b', 'i', 'em', 'strong', 'p', 'br', 'ul', 'ol', 'li', 'a'];
   const tagPattern = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi;
 
-  return html.replace(tagPattern, (match, tag) => {
+  return html.replace(tagPattern, (match: string, tag: string) => {
     return allowedTags.includes(tag.toLowerCase()) ? match : '';
   });
 }
@@ -170,7 +170,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
     } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       sanitized[key as keyof T] = sanitizeObject(value as Record<string, unknown>) as T[keyof T];
     } else if (Array.isArray(value)) {
-      sanitized[key as keyof T] = value.map((item) =>
+      sanitized[key as keyof T] = value.map((item: unknown) =>
         typeof item === 'string' ? sanitizeString(item) : item,
       ) as T[keyof T];
     } else {

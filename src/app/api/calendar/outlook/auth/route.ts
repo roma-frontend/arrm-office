@@ -48,7 +48,10 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to exchange code for token');
     }
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = (await tokenResponse.json()) as {
+      access_token?: string;
+      refresh_token?: string;
+    };
 
     // Redirect back with success
     const response = NextResponse.redirect(
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Set HTTP-only cookie with access token
-    response.cookies.set('outlook_access_token', tokenData.access_token, {
+    response.cookies.set('outlook_access_token', tokenData.access_token ?? '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

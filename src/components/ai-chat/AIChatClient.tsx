@@ -163,7 +163,7 @@ export default function AIChatPage() {
     try {
       const handoff = sessionStorage.getItem('ai-chat-handoff');
       if (handoff) {
-        setMessages(JSON.parse(handoff));
+        setMessages(JSON.parse(handoff) as Message[]);
         sessionStorage.removeItem('ai-chat-handoff');
       }
     } catch {}

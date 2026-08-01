@@ -232,8 +232,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
   useEffect(() => {
     if (isSuperadmin && supervisors && supervisors.length > 0) {
       const supIds = supervisors.map((s) => s._id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (form.supervisorId && !supIds.includes(form.supervisorId as any)) {
+      if (form.supervisorId && !supIds.includes(form.supervisorId as Id<'users'>)) {
         setForm((prev) => ({ ...prev, supervisorId: '' }));
       }
     }

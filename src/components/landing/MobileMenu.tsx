@@ -475,10 +475,8 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
                     const localY = ev.clientY - rect.top;
                     // прокидываем через dataset (чтобы LiquidHoverBg мог читать — но мы делаем проще: через CSS layer)
                     // Здесь используем motion values через кастомный компонент ниже:
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (target as any).__lhx = localX;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (target as any).__lhy = localY;
+                    (target as HTMLElement & { __lhx?: number }).__lhx = localX;
+                    (target as HTMLElement & { __lhy?: number }).__lhy = localY;
                   }}
                 >
                   {/* Liquid hover / active */}

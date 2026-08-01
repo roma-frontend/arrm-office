@@ -37,7 +37,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import type { User as UserType } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { AddEmployeeModal } from './AddEmployeeModal';
-import { EditEmployeeModal } from './EditEmployeeModal';
+import { EditEmployeeModal, type Employee as EditEmployeeType } from './EditEmployeeModal';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { TeamSidebar } from './TeamSidebar';
 import { toast } from 'sonner';
@@ -989,8 +989,7 @@ export function EmployeesClient() {
 
         {editEmployee && (
           <EditEmployeeModal
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Doc<'users'> ≠ local Employee type
-            employee={editEmployee as any}
+            employee={editEmployee as unknown as EditEmployeeType}
             open={!!editEmployee}
             onClose={() => setEditEmployee(null)}
           />

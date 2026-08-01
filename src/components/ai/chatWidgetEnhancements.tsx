@@ -302,7 +302,11 @@ const PINNED_KEY = 'hr-chat-pinned';
 export function getPinnedMessages(): { id: string; content: string; pinnedAt: number }[] {
   if (typeof window === 'undefined') return [];
   try {
-    return JSON.parse(localStorage.getItem(PINNED_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(PINNED_KEY) || '[]') as {
+      id: string;
+      content: string;
+      pinnedAt: number;
+    }[];
   } catch {
     return [];
   }

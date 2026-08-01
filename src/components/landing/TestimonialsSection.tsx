@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Star, Quote } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface Testimonial {
   id: number;
@@ -99,8 +99,10 @@ function TestimonialCard({
           className="flex items-center gap-3 pt-4 border-t"
           style={{ borderColor: 'var(--landing-card-border)' }}
         >
+          {/* No AvatarImage: these testimonials are placeholders with no real
+              headshots, so every card renders the gradient-initials fallback.
+              (A hardcoded `/testimonials/sarah.jpg` used to 404 here.) */}
           <Avatar className="w-10 h-10">
-            <AvatarImage src={index === 0 ? '/testimonials/sarah.jpg' : undefined} />
             <AvatarFallback
               className="text-xs text-white font-semibold"
               style={{

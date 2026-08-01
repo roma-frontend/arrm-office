@@ -79,9 +79,9 @@ function getStoredFilters(): FilterType[] {
   const stored = localStorage.getItem(CHAT_FILTER_KEY);
   if (stored) {
     try {
-      const parsed = JSON.parse(stored);
+      const parsed = JSON.parse(stored) as unknown;
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed as FilterType[];
       }
     } catch {
       // If not valid JSON, treat as single filter

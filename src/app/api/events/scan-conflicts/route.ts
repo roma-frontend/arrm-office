@@ -7,7 +7,7 @@ import { withCsrfProtection } from '@/lib/csrf-middleware';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as { organizationId?: string };
     const { organizationId } = body;
 
     if (!organizationId) {
