@@ -5,7 +5,7 @@
  */
 
 import { format as dateFnsFormat } from 'date-fns';
-import { enUS, ru, hy } from 'date-fns/locale';
+import { enUS, ru, hy, de } from 'date-fns/locale';
 
 export type SupportedLocale = 'en' | 'ru' | 'hy' | 'de';
 
@@ -20,7 +20,7 @@ const DATE_FNS_LOCALE_MAP: Record<string, typeof enUS> = {
   en: enUS,
   ru: ru,
   hy: hy,
-  de: enUS, // date-fns doesn't have 'de' bundled here, fallback to en
+  de: de,
 };
 
 /**

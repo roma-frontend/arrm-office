@@ -54,10 +54,22 @@ import { motion, AnimatePresence } from '@/lib/cssMotion';
 import {
   exportDocumentToPDF,
   renderDocumentPdfBase64,
+  documentBodyToPlainText,
   type RenderableDocument,
   type DocumentLabels,
+  type DocumentBlock,
 } from '@/lib/exportDocument';
+import {
+  assetFormDocumentNumber,
+  assetFormFileName,
+  assetFormInputFromParsed,
+  assetFormTitle,
+  buildAssetFormBlocks,
+  parseAssetFormContent,
+  type AssetFormInput,
+} from '@/lib/assetFormDocument';
 import type { AccentColor } from '@/lib/documentCatalog';
+import { getLocaleString } from '@/lib/date-format';
 import { uploadDocument } from '@/actions/cloudinary';
 
 /** Localized static labels for the themed PDF footer / signature block. */
@@ -76,158 +88,34 @@ function useDocumentLabels(): DocumentLabels {
 // ============ MOVEMENT / RETURN FORM HELPERS ============
 
 /**
- * Pull the value of a `**Label:**` field out of a legacy markdown form. The
- * legacy body is a single flattened line, so a value runs until the next
- * structural token: another bold field (`**`), a heading (`##`), a rule
- * (`---`), or a bullet separator (` - `). Returns '' when the field is absent.
+ * Localized title for a stored document. Asset acts are created with an English
+ * technical title (`Movement Form - <asset>`) so they stay searchable in the DB;
+ * every UI surface shows the act name in the active language instead.
  */
-function extractLegacyField(md: string, label: string): string {
-  const m = md.match(new RegExp('\\*\\*\\s*' + label + '\\s*:\\*\\*\\s*(.+)'));
-  if (!m || !m[1]) return '';
-  // Cut at the first structural delimiter that follows the value.
-  const value = m[1].split(/\s+(?:\*\*|#{1,3}\s|-{2,}|-\s)/)[0] ?? '';
-  return value.trim();
+function localizedDocTitle(
+  doc: { title: string; content?: string } | null | undefined,
+  t: TFunction,
+): string {
+  if (!doc) return '';
+  const parsed = doc.content ? parseAssetFormContent(doc.content) : null;
+  if (!parsed) return doc.title;
+  return assetFormTitle(parsed.type === 'return', t);
 }
 
 /**
- * Parse structured form content stored in the database into a locale-agnostic
- * shape so {@link buildFormBody} can re-render it cleanly in the active language.
- *
- * Three storage generations are handled:
- *  - New forms: JSON prefixed with `__MF__` (movement) / `__RF__` (return).
- *  - Legacy forms: raw English markdown (`# Asset Movement Form`, `**Handed
- *    To:**`, …). We regex out the fields so old documents localize too instead
- *    of leaking literal `#`/`**`/`---` markup in a single language.
- *  - Anything else (generic documents): return null → caller shows raw content.
+ * Build the fully localized, structured body of an asset act stored on a
+ * signature document. Returns `null` for generic documents.
  */
-function parseFormContent(content: string): {
-  type: 'movement' | 'return';
-  data: Record<string, string>;
-} | null {
-  if (content.startsWith('__MF__')) {
-    try {
-      const data = JSON.parse(content.slice(6)) as Record<string, string>;
-      return { type: 'movement', data };
-    } catch {
-      return null;
-    }
-  }
-  if (content.startsWith('__RF__')) {
-    try {
-      const data = JSON.parse(content.slice(6)) as Record<string, string>;
-      return { type: 'return', data };
-    } catch {
-      return null;
-    }
-  }
-
-  // ── Legacy markdown forms ──
-  // Only treat content as a form when it carries the tell-tale field markers,
-  // so unrelated documents pass through untouched (parsed = null).
-  const isReturnForm = /Return Form/i.test(content) || /\*\*\s*Returned By\s*:\*\*/i.test(content);
-  const isMovementForm =
-    /Movement Form/i.test(content) || /\*\*\s*Handed To\s*:\*\*/i.test(content);
-  if (!isReturnForm && !isMovementForm) return null;
-
-  const assetName = extractLegacyField(content, 'Asset');
-  if (isReturnForm) {
-    return {
-      type: 'return',
-      data: {
-        assetName,
-        returnerName: extractLegacyField(content, 'Returned By'),
-        assignerName: extractLegacyField(content, 'Received By'),
-        condition: extractLegacyField(content, 'Condition'),
-        date: extractLegacyField(content, 'Date of Return') || extractLegacyField(content, 'Date'),
-      },
-    };
-  }
-  return {
-    type: 'movement',
-    data: {
-      assetName,
-      assigneeName: extractLegacyField(content, 'Handed To'),
-      assignerName: extractLegacyField(content, 'Handed By'),
-      date: extractLegacyField(content, 'Date of Transfer') || extractLegacyField(content, 'Date'),
-    },
-  };
-}
-
-/** Build a clean localized body string for a structured movement/return form. */
-function buildFormBody(
-  parsed: NonNullable<ReturnType<typeof parseFormContent>>,
+function buildActBody(
+  doc: { content?: string } | null | undefined,
   t: TFunction,
-): string {
-  const { type, data } = parsed;
-  const isReturn = type === 'return';
-  const date = data.date || '';
-  const assignee = data.assigneeName || data.returnerName || '';
-  const assigner = data.assignerName || data.returnerName || '';
-
-  const lines: string[] = [
-    isReturn
-      ? t('assets.pdf.returnForm', 'Asset Return Form')
-      : t('assets.pdf.movementForm', 'Asset Movement Form'),
-    '',
-    t('assets.pdf.date', 'Date') + ': ' + date,
-    '',
-    t('assets.pdf.assetDetails', 'Asset Details'),
-    '- ' + t('assets.pdf.asset', 'Asset') + ': ' + (data.assetName || ''),
-    '- ' +
-      t('assets.pdf.type', 'Type') +
-      ': ' +
-      (isReturn
-        ? t('assets.pdf.equipmentReturn', 'Equipment Return')
-        : t('assets.pdf.equipmentTransfer', 'Equipment Transfer')),
-    '',
-  ];
-
-  if (isReturn) {
-    lines.push(
-      t('assets.pdf.returnDetails', 'Return Details'),
-      '- ' + t('assets.pdf.returnedBy', 'Returned By') + ': ' + assignee,
-      '- ' + t('assets.pdf.receivedBy', 'Received By') + ': ' + assigner,
-      '- ' + t('assets.pdf.dateOfReturn', 'Date of Return') + ': ' + date,
-      '- ' +
-        t('assets.pdf.condition', 'Condition on Return') +
-        ': ' +
-        (data.condition || t('common.good', 'Good')),
-      '',
-      t('assets.pdf.acknowledgement', 'Acknowledgement'),
-      t(
-        'assets.pdf.ackBody',
-        'I confirm that I have returned the above equipment. The asset has been received in the condition noted above and I am released from further responsibility for this item.',
-      ),
-      '',
-    );
-  } else {
-    lines.push(
-      t('assets.pdf.handoverDetails', 'Handover Details'),
-      '- ' + t('assets.pdf.handedTo', 'Handed To') + ': ' + assignee,
-      '- ' + t('assets.pdf.handedBy', 'Handed By') + ': ' + assigner,
-      '- ' + t('assets.pdf.date', 'Date of Transfer') + ': ' + date,
-      '',
-      t('assets.pdf.terms', 'Terms and Conditions'),
-      t(
-        'assets.pdf.termsBody',
-        'I confirm that I have received the above equipment in good condition. I agree to take full responsibility for the item and will return it upon request or at the end of my employment.',
-      ),
-      '',
-    );
-  }
-
-  lines.push(
-    t('assets.pdf.signatures', 'Signatures'),
-    t('assets.pdf.employeeSignature', 'Employee Signature') + ': ___________________________',
-    t('assets.pdf.name', 'Name') + ': ' + assignee,
-    t('assets.pdf.date', 'Date') + ': ' + date,
-    '',
-    t('assets.pdf.adminSignature', 'Admin Signature') + ': ___________________________',
-    t('assets.pdf.name', 'Name') + ': ' + assigner,
-    t('assets.pdf.date', 'Date') + ': ' + date,
-  );
-
-  return lines.join('\n');
+  lang: string | undefined,
+  signature?: AssetFormInput['signature'],
+): { blocks: DocumentBlock[]; input: AssetFormInput } | null {
+  const parsed = doc?.content ? parseAssetFormContent(doc.content) : null;
+  if (!parsed) return null;
+  const input = assetFormInputFromParsed(parsed, { t, signature });
+  return { blocks: buildAssetFormBlocks(input, t, lang), input };
 }
 
 // ============ THEMED RENDER HELPERS ============
@@ -269,26 +157,35 @@ function toRenderableDocument(
   doc: SignatureDoc,
   labels: DocumentLabels,
   t?: TFunction,
+  lang?: string,
 ): RenderableDocument {
   // The primary signed request supplies the signature image + signer name/date.
   const signedReq = (doc.requests || [])
     .filter((r) => r.status === 'signed' && r.signatureData)
     .sort((a, b) => a.order - b.order)[0];
 
-  // Detect structured movement/return forms and build localized body
-  const parsed = doc.content ? parseFormContent(doc.content) : null;
-  const body = parsed && t ? buildFormBody(parsed, t) : doc.content;
+  // Structured asset act → typed blocks (definition tables + signature grid).
+  const act = t
+    ? buildActBody(doc, t, lang, {
+        image: signedReq?.signatureData,
+        signerName: signedReq?.signerName,
+        signedAt: signedReq?.signedAt,
+      })
+    : null;
 
   return {
-    title: doc.title,
-    body,
+    title: act && t ? assetFormTitle(act.input.isReturn, t) : doc.title,
+    subtitle: act?.input.assetName || undefined,
+    documentNumber: act && t ? assetFormDocumentNumber(act.input, t) : undefined,
+    body: act ? act.blocks : doc.content,
     accent: (doc.accent as AccentColor) || 'blue',
-    // Show the signature block if the doc was themed with one, or if we have a
-    // signature to place (legacy docs have no `signatureBlock` flag).
-    signature: doc.signatureBlock ?? Boolean(signedReq),
+    // Acts render their own two-party signature grid; generic documents keep the
+    // legacy block (shown when themed with one, or when we have a signature).
+    signature: act ? false : (doc.signatureBlock ?? Boolean(signedReq)),
     orgName: doc.orgName || '',
     contentHash: doc.contentHash || undefined,
     now: doc.completedAt || doc.createdAt || 0,
+    lang,
     labels,
     signed: signedReq
       ? {
@@ -315,13 +212,18 @@ async function archiveSignedDocument(
   userId: Id<'users'>,
   labels: DocumentLabels,
   t: TFunction,
+  lang?: string,
 ): Promise<boolean> {
   const doc = await convex.query(api.signatures.getDocument, { documentId });
   if (!doc || doc.status !== 'completed' || doc.signedPdfUrl) return false;
 
-  const base64 = await renderDocumentPdfBase64(toRenderableDocument(doc, labels, t));
+  const renderable = toRenderableDocument(doc, labels, t, lang);
+  const base64 = await renderDocumentPdfBase64(renderable);
 
-  const fileName = `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`;
+  const act = buildActBody(doc, t, lang);
+  const fileName = act
+    ? assetFormFileName(act.input).replace(/\.pdf$/, '_signed.pdf')
+    : `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`;
   const uploaded = await uploadDocument(base64, fileName, 'application/pdf');
   await attachSignedPdf({
     documentId,
@@ -1022,7 +924,7 @@ interface SignDocumentDialogProps {
 }
 
 function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [declineMode, setDeclineMode] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
   const [signatureData, setSignatureData] = useState<string | null>(null);
@@ -1032,9 +934,11 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
     request ? { documentId: request.documentId } : 'skip',
   );
 
-  // For structured movement/return forms, build localized display body
-  const formParsed = doc?.content ? parseFormContent(doc.content) : null;
-  const displayBody = formParsed ? buildFormBody(formParsed, t) : doc?.content || '';
+  // Asset acts render as a structured, localized document; generic documents
+  // show their raw content.
+  const act = buildActBody(doc, t, i18n.language);
+  const displayBody = act ? documentBodyToPlainText(act.blocks) : doc?.content || '';
+  const displayTitle = localizedDocTitle(doc, t);
 
   const signMutation = useMutation(api.signatures.signDocument);
   const declineMutation = useMutation(api.signatures.declineDocument);
@@ -1063,6 +967,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
             userId,
             labels,
             t,
+            i18n.language,
           );
           if (archived) {
             toast.success(t('signatures.archived', 'Signed document archived'));
@@ -1116,7 +1021,10 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
           {doc && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold">{doc.title}</h3>
+                <h3 className="font-semibold">{displayTitle}</h3>
+                {act?.input.assetName && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{act.input.assetName}</p>
+                )}
                 <div className="mt-2 p-3 bg-muted/50 rounded-lg text-sm whitespace-pre-wrap max-h-[200px] overflow-y-auto">
                   {displayBody}
                 </div>
@@ -1213,7 +1121,7 @@ interface DocumentDetailDialogProps {
 }
 
 function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDetailDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const doc = useQuery(api.signatures.getDocument, documentId ? { documentId } : 'skip');
   const auditLog = useQuery(api.signatures.getAuditLog, documentId ? { documentId } : 'skip');
   const cancelMutation = useMutation(api.signatures.cancelDocument);
@@ -1223,9 +1131,11 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
   const labels = useDocumentLabels();
   const [archiving, setArchiving] = useState(false);
 
-  // For structured movement/return forms, build localized display body
-  const formParsed = doc?.content ? parseFormContent(doc.content) : null;
-  const displayBody = formParsed ? buildFormBody(formParsed, t) : doc?.content || '';
+  // Asset acts render as a structured, localized document; generic documents
+  // show their raw content.
+  const act = buildActBody(doc, t, i18n.language);
+  const displayBody = act ? documentBodyToPlainText(act.blocks) : doc?.content || '';
+  const displayTitle = localizedDocTitle(doc, t);
 
   const handleArchive = async () => {
     if (!documentId) return;
@@ -1238,6 +1148,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
         userId,
         labels,
         t,
+        i18n.language,
       );
       toast.success(
         archived
@@ -1284,10 +1195,10 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
     try {
       // Export the themed document with the signature baked in — the same copy
       // HR archives — instead of a generic audit report.
-      await exportDocumentToPDF(
-        toRenderableDocument(doc, labels, t),
-        `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`,
-      );
+      const fileName = act
+        ? assetFormFileName(act.input).replace(/\.pdf$/, '_signed.pdf')
+        : `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.pdf`;
+      await exportDocumentToPDF(toRenderableDocument(doc, labels, t, i18n.language), fileName);
       toast.success(t('signatures.pdfExported', 'PDF exported successfully'));
     } catch {
       toast.error(t('signatures.errors.exportFailed', 'Failed to export PDF'));
@@ -1317,7 +1228,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden max-h-[85vh]">
         <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle>{doc?.title ?? '...'}</DialogTitle>
+          <DialogTitle>{displayTitle || '...'}</DialogTitle>
           <DialogDescription className="sr-only">Document details</DialogDescription>
         </DialogHeader>
 
@@ -1330,7 +1241,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
                 {doc.expiresAt && (
                   <span className="text-xs text-muted-foreground">
                     {t('signatures.expiresOn', 'Expires')}:{' '}
-                    {new Date(doc.expiresAt).toLocaleDateString()}
+                    {new Date(doc.expiresAt).toLocaleDateString(getLocaleString(i18n.language))}
                   </span>
                 )}
               </div>
@@ -1394,7 +1305,9 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
                             {String(t(`signatures.actions.${entry.action}`, entry.action))}
                           </span>
                           <span className="ml-auto">
-                            {new Date(entry.timestamp).toLocaleString()}
+                            {new Date(entry.timestamp).toLocaleString(
+                              getLocaleString(i18n.language),
+                            )}
                           </span>
                         </div>
                       );
@@ -1614,7 +1527,7 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
 // ============ MAIN CLIENT ============
 
 export function ESignaturesClient() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuthStore(useShallow((state) => ({ user: state.user })));
 
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -1848,9 +1761,11 @@ export function ESignaturesClient() {
                         <FileText className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{doc.title}</p>
+                        <p className="font-medium text-sm truncate">{localizedDocTitle(doc, t)}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(doc.createdAt).toLocaleDateString()}
+                          {new Date(doc.createdAt).toLocaleDateString(
+                            getLocaleString(i18n.language),
+                          )}
                         </p>
                       </div>
                     </div>

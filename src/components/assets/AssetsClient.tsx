@@ -79,6 +79,16 @@ import {
   type RenderableDocument,
   type DocumentLabels,
 } from '@/lib/exportDocument';
+import {
+  assetFormDocumentNumber,
+  assetFormFileName,
+  assetFormTitle,
+  assetFormInputFromParsed,
+  buildAssetFormBlocks,
+  parseAssetFormContent,
+  type AssetFormInput,
+} from '@/lib/assetFormDocument';
+import { getLocaleString } from '@/lib/date-format';
 import type { AccentColor } from '@/lib/documentCatalog';
 import QRCodeModal from './QRCodeModal';
 
@@ -142,8 +152,9 @@ function formatCurrency(amount: number, currency = 'AMD'): string {
   }).format(amount);
 }
 
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString('en-US', {
+/** Short date in the active UI language (falls back to English). */
+function formatDate(timestamp: number, lang?: string): string {
+  return new Date(timestamp).toLocaleDateString(getLocaleString(lang), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -197,86 +208,6 @@ function useDocumentLabels(): DocumentLabels {
     generatedOn: _t('docLibrary.generatedOn', 'Generated on'),
     integrity: _t('docLibrary.integrity', 'Integrity'),
   };
-}
-
-/** Build localized body text for asset movement/return form PDFs. */
-function buildLocalizedFormBody(params: {
-  isReturn: boolean;
-  assetName: string;
-  assetSerial?: string;
-  categoryLabel: string;
-  employeeName: string;
-  adminName: string;
-  date: string;
-  condition?: string;
-  t: (key: string, defaultValue?: string) => string;
-}): string {
-  const {
-    isReturn,
-    assetName,
-    assetSerial,
-    categoryLabel,
-    employeeName,
-    adminName,
-    date,
-    condition,
-    t,
-  } = params;
-  const typeLabel = isReturn
-    ? t('assets.pdf.returnForm', 'Asset Return Form')
-    : t('assets.pdf.movementForm', 'Asset Movement Form');
-  const typeSub = isReturn
-    ? t('assets.pdf.equipmentReturn', 'Equipment Return')
-    : t('assets.pdf.equipmentTransfer', 'Equipment Transfer');
-  const detailsTitle = isReturn
-    ? t('assets.pdf.returnDetails', 'Return Details')
-    : t('assets.pdf.handoverDetails', 'Handover Details');
-  const personLabel = isReturn
-    ? t('assets.pdf.returnedBy', 'Returned By')
-    : t('assets.pdf.handedTo', 'Handed To');
-  const termsText = isReturn
-    ? t(
-        'assets.pdf.returnTerms',
-        'I confirm that I have returned the above equipment. The asset has been received in the noted condition and I am released from further responsibility for this item.',
-      )
-    : t(
-        'assets.pdf.assignTerms',
-        'I confirm that I have received the above equipment in good condition. I agree to take full responsibility for the item and will return it upon request or at the end of my employment.',
-      );
-  const lines = [
-    typeLabel + ' — ' + assetName,
-    '',
-    t('assets.pdf.date', 'Date') + ': ' + date,
-    '',
-    t('assets.pdf.assetDetails', 'Asset Details'),
-    '',
-    '• ' + t('assets.name') + ': ' + assetName,
-    assetSerial ? '• ' + t('assets.serialNumber') + ': ' + assetSerial : '',
-    '• ' + t('assets.categoryLabel') + ': ' + categoryLabel,
-    '• ' + t('assets.pdf.type', 'Type') + ': ' + typeSub,
-    '',
-    detailsTitle,
-    '',
-    '• ' + personLabel + ': ' + employeeName,
-    '• ' + t('assets.pdf.handedBy', 'Handed By') + ': ' + adminName,
-    '• ' + t('assets.pdf.transferDate', 'Transfer Date') + ': ' + date,
-    ...(condition ? ['• ' + t('assets.conditionLabel', 'Condition') + ': ' + condition] : []),
-    '',
-    t('assets.pdf.terms', 'Terms and Conditions'),
-    '',
-    termsText,
-    '',
-    t('assets.pdf.signatures', 'Signatures'),
-    '',
-    t('assets.pdf.employeeSignature', 'Employee Signature') + ': _________________________',
-    t('assets.pdf.signerName', 'Name') + ': ' + employeeName,
-    t('assets.pdf.date', 'Date') + ': ' + date,
-    '',
-    t('assets.pdf.adminSignature', 'Admin/HR Signature') + ': _________________________',
-    t('assets.pdf.signerName', 'Name') + ': ' + adminName,
-    t('assets.pdf.date', 'Date') + ': ' + date,
-  ];
-  return lines.filter(Boolean).join('\n');
 }
 
 // ──────────── ASSIGN DIALOG ────────────
@@ -517,7 +448,7 @@ function AssetDetailCard({
   userId: Id<'users'>;
   setQrCodeAsset: (a: QrAssetData) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const cfg = getCategoryCfg(asset.category);
   const Icon = cfg.icon;
   const isAssigned = asset.status === 'assigned' && asset.currentUser;
@@ -533,39 +464,46 @@ function AssetDetailCard({
     if (!sigDoc || !asset.currentAssignment) return;
     setDownloading(true);
     try {
-      const isReturn = sigDoc.title?.toLowerCase().includes('return');
-      const date = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      const categoryLabel = t(`assets.category.${asset.category}`) || asset.category;
-      const employeeName = asset.currentUser?.name || t('common.unknown');
-      const adminName = asset.currentAssignment?.assignedByName || t('common.unknown');
-      const body = buildLocalizedFormBody({
+      // Prefer the act data stored with the signature document (locale-agnostic
+      // JSON), then enrich it with the live asset/assignment details that older
+      // forms may predate.
+      const parsed = sigDoc.content ? parseAssetFormContent(sigDoc.content) : null;
+      const stored = parsed ? assetFormInputFromParsed(parsed, { t }) : null;
+      const isReturn = stored?.isReturn ?? /return/i.test(sigDoc.title || '');
+
+      const input: AssetFormInput = {
         isReturn,
         assetName: asset.name,
-        assetSerial: asset.serialNumber,
-        categoryLabel,
-        employeeName,
-        adminName,
-        date,
-        t: t as (key: string, defaultValue?: string) => string,
-      });
-      const title = isReturn
-        ? `${t('assets.movementForm.title', 'Return Form')} — ${asset.name}`
-        : `${t('assets.movementForm.title', 'Movement Form')} — ${asset.name}`;
+        assetSerial: asset.serialNumber || undefined,
+        assetTag: asset.assetTag || undefined,
+        categoryLabel: t(`assets.category.${asset.category}`, asset.category),
+        brand: asset.brand || undefined,
+        model: asset.model || undefined,
+        location: asset.location || undefined,
+        employeeName: asset.currentUser?.name || stored?.employeeName || t('common.unknown'),
+        employeeEmail: asset.currentUser?.email || stored?.employeeEmail,
+        employeePosition: asset.currentUser?.position || stored?.employeePosition,
+        adminName:
+          asset.currentAssignment?.assignedByName || stored?.adminName || t('common.unknown'),
+        dateTs: stored?.dateTs ?? asset.currentAssignment?.assignedAt ?? Date.now(),
+        dateText: stored?.dateText,
+        condition: stored?.condition || asset.condition,
+      };
+
       const renderable: RenderableDocument = {
-        title,
-        body,
+        title: assetFormTitle(isReturn, t),
+        subtitle: asset.name,
+        documentNumber: assetFormDocumentNumber(input, t),
+        body: buildAssetFormBlocks(input, t, i18n.language),
         accent: (sigDoc.accent as AccentColor) || 'blue',
-        signature: true,
+        // The structured body renders its own two-party signature grid.
+        signature: false,
         orgName: sigDoc.orgName || '',
         now: Date.now(),
+        lang: i18n.language,
         labels,
       };
-      const filename = `${asset.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_form.pdf`;
-      await exportDocumentToPDF(renderable, filename);
+      await exportDocumentToPDF(renderable, assetFormFileName(input));
       toast.success(t('assets.movementForm.pdfDownloaded', 'PDF downloaded'));
     } catch {
       toast.error(t('assets.movementForm.pdfError', 'Failed to generate PDF'));
@@ -863,7 +801,7 @@ function AssetDetailCard({
                     <span className="text-foreground">{a.userName || t('common.unknown')}</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{formatDate(a.assignedAt)}</span>
+                    <span>{formatDate(a.assignedAt, i18n.language)}</span>
                     {getStatusBadge(a.status, t)}
                   </div>
                 </div>
@@ -944,7 +882,7 @@ function QRButton({
 // ═══════════════════════════════════════════════════════════════
 
 export default function AssetsClient() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -1697,7 +1635,7 @@ export default function AssetsClient() {
                                     </p>
                                     <p className="text-xs text-(--text-muted)">
                                       {t(`assets.category.${a.assetCategory}`)} ·{' '}
-                                      {formatDate(a.assignedAt)}
+                                      {formatDate(a.assignedAt, i18n.language)}
                                     </p>
                                   </div>
                                 </div>
@@ -1719,7 +1657,8 @@ export default function AssetsClient() {
                                   )}
                                   {a.expectedReturnAt && (
                                     <span className="text-xs text-(--text-muted)">
-                                      {t('assets.returnBy')} {formatDate(a.expectedReturnAt)}
+                                      {t('assets.returnBy')}{' '}
+                                      {formatDate(a.expectedReturnAt, i18n.language)}
                                     </span>
                                   )}
                                   <QRButton
@@ -1770,9 +1709,13 @@ export default function AssetsClient() {
                                       <span className="text-(--text-primary)">{a.assetName}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-xs text-(--text-muted)">
-                                      <span>{formatDate(a.assignedAt)}</span>
+                                      <span>{formatDate(a.assignedAt, i18n.language)}</span>
                                       <span>→</span>
-                                      <span>{a.returnedAt ? formatDate(a.returnedAt) : '—'}</span>
+                                      <span>
+                                        {a.returnedAt
+                                          ? formatDate(a.returnedAt, i18n.language)
+                                          : '—'}
+                                      </span>
                                     </div>
                                   </div>
                                 ))}

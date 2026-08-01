@@ -281,8 +281,8 @@
       "error": "Failed to send form"
     },
     "pdf": {
-      "returnForm": "Asset Return Form",
-      "movementForm": "Asset Movement Form",
+      "returnForm": "Asset Return Act",
+      "movementForm": "Asset Handover Act",
       "equipmentReturn": "Equipment Return",
       "equipmentTransfer": "Equipment Transfer",
       "returnDetails": "Return Details",
@@ -308,7 +308,15 @@
       "signerName": "Name",
       "name": "Name",
       "date": "Date",
-      "transferDate": "Transfer Date"
+      "transferDate": "Transfer Date",
+      "documentNo": "Doc. No.",
+      "assetTag": "Asset Tag",
+      "brandModel": "Brand / Model",
+      "email": "Email",
+      "position": "Position",
+      "employeeParty": "Employee",
+      "adminParty": "Admin / HR",
+      "copiesNote": "This act is executed in two counterparts of equal legal force — one for each party. By signing, the parties confirm that the equipment listed above has been inspected and accepted."
     },
     "qr": {
       "title": "QR Code",

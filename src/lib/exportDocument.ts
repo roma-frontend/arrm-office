@@ -11,11 +11,105 @@
 
 import { loadPdfMake, loadDocx } from './dynamic-imports';
 import { ACCENT_HEX, type AccentColor } from './documentCatalog';
+import { formatDate as formatLocalizedDate } from './date-format';
+
+/** A numbered/plain section heading with an accent rule underneath. */
+export interface DocumentSectionBlock {
+  type: 'section';
+  title: string;
+  /** Optional ordinal rendered as `1.` before the title. */
+  index?: number;
+}
+
+/** Free-form justified prose (legal terms, acknowledgements…). */
+export interface DocumentParagraphBlock {
+  type: 'paragraph';
+  text: string;
+  /** Render smaller/greyed — for hints and legal fine print. */
+  muted?: boolean;
+}
+
+/** Label → value row of a definition table. */
+export interface DocumentFieldRow {
+  label: string;
+  value: string;
+}
+
+/** A definition table: the backbone of a formal act (label left, value right). */
+export interface DocumentFieldsBlock {
+  type: 'fields';
+  rows: DocumentFieldRow[];
+}
+
+export interface DocumentBulletsBlock {
+  type: 'bullets';
+  items: string[];
+}
+
+/** Highlighted note with an accent bar on the left. */
+export interface DocumentCalloutBlock {
+  type: 'callout';
+  text: string;
+}
+
+/** One signing party of a signature grid. */
+export interface DocumentSignatureParty {
+  /** Role caption above the line, e.g. "Employee" / "Admin / HR". */
+  role: string;
+  nameLabel: string;
+  name: string;
+  dateLabel: string;
+  date?: string;
+  positionLabel?: string;
+  position?: string;
+  /** Base64 PNG data URL placed on the signature line when already signed. */
+  signatureImage?: string;
+}
+
+/** Side-by-side signature lines for every party of the document. */
+export interface DocumentSignaturesBlock {
+  type: 'signatures';
+  parties: DocumentSignatureParty[];
+}
+
+export interface DocumentSpacerBlock {
+  type: 'spacer';
+  /** Vertical gap in pt (default 8). */
+  size?: number;
+}
+
+/**
+ * Typed content block. Structured bodies replace the old "one big string that
+ * the renderer tries to reverse-engineer" approach, which collapsed formal
+ * acts into a single justified paragraph.
+ */
+export type DocumentBlock =
+  | DocumentSectionBlock
+  | DocumentParagraphBlock
+  | DocumentFieldsBlock
+  | DocumentBulletsBlock
+  | DocumentCalloutBlock
+  | DocumentSignaturesBlock
+  | DocumentSpacerBlock;
+
+/** Either legacy plain text (heuristically laid out) or typed blocks. */
+export type DocumentBody = string | DocumentBlock[];
+
+export function isBlockBody(body: DocumentBody): body is DocumentBlock[] {
+  return Array.isArray(body);
+}
 
 export interface RenderableDocument {
   title: string;
-  /** Body text with all {{tokens}} already resolved. Paragraphs split on \n. */
-  body: string;
+  /** Optional second line under the title (e.g. the asset a form is about). */
+  subtitle?: string;
+  /** Formal document reference printed in the header meta line. */
+  documentNumber?: string;
+  /**
+   * Body with all {{tokens}} already resolved. A string is split on \n and laid
+   * out heuristically; a {@link DocumentBlock} array is rendered structurally.
+   */
+  body: DocumentBody;
   accent: AccentColor;
   /** Append a signature block (name / position / date placeholders). */
   signature: boolean;
@@ -25,6 +119,11 @@ export interface RenderableDocument {
   contentHash?: string;
   /** Absolute timestamp used for the "generated on" footer. */
   now: number;
+  /**
+   * Active i18n language code (`en` | `ru` | `hy` | `de`). Drives date
+   * formatting so a Russian document never prints "August 1, 2026".
+   */
+  lang?: string;
   /** Localized static labels so exports match the UI language. */
   labels: DocumentLabels;
   /**
@@ -58,12 +157,57 @@ function paragraphs(body: string): string[] {
   return body.split(/\n/).map((line) => line.replace(/\s+$/, ''));
 }
 
-function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString('en-US', {
+/** Long date in the document's language (falls back to English). */
+function formatDate(ts: number, lang?: string): string {
+  return formatLocalizedDate(ts, lang || 'en', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+}
+
+/**
+ * Flatten a document body to readable plain text. Used for the in-app preview
+ * (`whitespace-pre-wrap`) and the DOCX exporter, so every surface shows the same
+ * localized content as the PDF.
+ */
+export function documentBodyToPlainText(body: DocumentBody): string {
+  if (!isBlockBody(body)) return body;
+  const out: string[] = [];
+  for (const block of body) {
+    switch (block.type) {
+      case 'section':
+        if (out.length) out.push('');
+        out.push((block.index != null ? `${block.index}. ` : '') + block.title.toUpperCase());
+        break;
+      case 'fields':
+        for (const row of block.rows) out.push(`${row.label}: ${row.value || '—'}`);
+        break;
+      case 'bullets':
+        for (const item of block.items) out.push(`•  ${item}`);
+        break;
+      case 'paragraph':
+      case 'callout':
+        out.push(block.text);
+        break;
+      case 'signatures':
+        for (const party of block.parties) {
+          out.push(party.role);
+          out.push(`${party.nameLabel}: ${party.name || '—'}`);
+          if (party.positionLabel) out.push(`${party.positionLabel}: ${party.position || '—'}`);
+          out.push(`${party.dateLabel}: ${party.date || '____________'}`);
+          out.push('');
+        }
+        break;
+      case 'spacer':
+        out.push('');
+        break;
+    }
+  }
+  return out
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -235,12 +379,171 @@ function buildBodyContent(body: string) {
   return content;
 }
 
+/** A4 content width at our page margins (60pt each side). */
+const PAGE_WIDTH = 495;
+
+/** Stack for a single signing party inside a `signatures` block. */
+function signaturePartyStack(party: DocumentSignatureParty, accent: string): any[] {
+  const stack: any[] = [{ text: party.role, style: 'sigRole', color: accent }];
+  stack.push(
+    party.signatureImage
+      ? { image: party.signatureImage, fit: [150, 38], margin: [0, 2, 0, 2] }
+      : { text: ' ', margin: [0, 16, 0, 0] },
+  );
+  stack.push({
+    canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 0.7, lineColor: '#94a3b8' }],
+    margin: [0, 0, 0, 5],
+  });
+  stack.push({
+    text: [
+      { text: `${party.nameLabel}: `, style: 'sigMetaLabel' },
+      { text: party.name || '—', style: 'sigMetaValue' },
+    ],
+    margin: [0, 0, 0, 2],
+  });
+  if (party.positionLabel) {
+    stack.push({
+      text: [
+        { text: `${party.positionLabel}: `, style: 'sigMetaLabel' },
+        { text: party.position || '—', style: 'sigMetaValue' },
+      ],
+      margin: [0, 0, 0, 2],
+    });
+  }
+  stack.push({
+    text: [
+      { text: `${party.dateLabel}: `, style: 'sigMetaLabel' },
+      { text: party.date || '____________', style: 'sigMetaValue' },
+    ],
+  });
+  return stack;
+}
+
+/**
+ * Render typed blocks into pdfmake content. Definition tables, ruled section
+ * headings and a signature grid give the output the look of a formal act
+ * instead of one long justified paragraph.
+ */
+function buildStructuredContent(blocks: DocumentBlock[], accent: string): any[] {
+  const content: any[] = [];
+
+  for (const block of blocks) {
+    switch (block.type) {
+      case 'section': {
+        const title = (block.index != null ? `${block.index}.  ` : '') + block.title;
+        content.push({ text: title.toUpperCase(), style: 'blockSection', color: accent });
+        content.push({
+          canvas: [
+            {
+              type: 'line',
+              x1: 0,
+              y1: 0,
+              x2: PAGE_WIDTH,
+              y2: 0,
+              lineWidth: 0.75,
+              lineColor: accent,
+              opacity: 0.4,
+            },
+          ],
+          margin: [0, 3, 0, 11],
+        });
+        break;
+      }
+
+      case 'fields': {
+        const rows = block.rows.filter((row) => row.label);
+        if (!rows.length) break;
+        content.push({
+          table: {
+            widths: [155, '*'],
+            body: rows.map((row) => [
+              { text: row.label, style: 'fieldLabel' },
+              { text: row.value || '—', style: 'fieldValue' },
+            ]),
+          },
+          layout: {
+            hLineWidth: (i: number, node: any) =>
+              i === 0 || i === node.table.body.length ? 0 : 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => '#e2e8f0',
+            paddingTop: () => 5,
+            paddingBottom: () => 5,
+            paddingLeft: () => 0,
+            paddingRight: () => 4,
+          },
+          margin: [0, 0, 0, 16],
+        });
+        break;
+      }
+
+      case 'bullets': {
+        const items = block.items.filter(Boolean);
+        if (!items.length) break;
+        content.push({ ul: items, style: 'bulletItem', margin: [0, 0, 0, 14] });
+        break;
+      }
+
+      case 'paragraph':
+        content.push({
+          text: block.text,
+          style: block.muted ? 'blockMuted' : 'body',
+          margin: [0, 0, 0, 12],
+        });
+        break;
+
+      case 'callout':
+        content.push({
+          table: { widths: ['*'], body: [[{ text: block.text, style: 'callout' }]] },
+          layout: {
+            hLineWidth: () => 0,
+            vLineWidth: (i: number) => (i === 0 ? 2.5 : 0),
+            vLineColor: () => accent,
+            paddingLeft: () => 10,
+            paddingRight: () => 10,
+            paddingTop: () => 8,
+            paddingBottom: () => 8,
+            fillColor: () => '#f8fafc',
+          },
+          margin: [0, 0, 0, 14],
+        });
+        break;
+
+      case 'signatures': {
+        const parties = block.parties.slice(0, 2);
+        if (!parties.length) break;
+        content.push({
+          columns: parties.map((party) => ({
+            width: '*',
+            stack: signaturePartyStack(party, accent),
+          })),
+          columnGap: 28,
+          margin: [0, 4, 0, 0],
+        });
+        break;
+      }
+
+      case 'spacer':
+        content.push({ text: '', margin: [0, block.size ?? 8, 0, 0] });
+        break;
+    }
+  }
+
+  return content;
+}
+
 /** Build the pdfmake document definition shared by the download and render paths. */
 function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
   const accent = ACCENT_HEX[doc.accent];
-  const PAGE_WIDTH = 495; // A4 at default margins
+  const structured = isBlockBody(doc.body);
+  // A structured body renders its own signature grid — don't append the generic
+  // one on top of it.
+  const hasOwnSignatures =
+    structured && (doc.body as DocumentBlock[]).some((b) => b.type === 'signatures');
 
   // ── Header Section ────────────────────────────────────────────────────────
+  const metaParts = [`${doc.labels.generatedOn} ${formatDate(doc.now, doc.lang)}`];
+  if (doc.documentNumber) metaParts.unshift(doc.documentNumber);
+
   const content: any[] = [
     // Bold accent top bar
     {
@@ -263,25 +566,35 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
     { text: doc.orgName.toUpperCase(), style: 'orgName', color: accent },
     // Title
     { text: doc.title, style: 'title' },
-    // Meta: generated date
+  ];
+
+  if (doc.subtitle) {
+    content.push({ text: doc.subtitle, style: 'subtitle', margin: [0, 3, 0, 0] });
+  }
+
+  content.push(
+    // Meta: document reference + generated date
     {
-      text: `${doc.labels.generatedOn} ${formatDate(doc.now)}`,
+      text: metaParts.join('   ·   '),
       style: 'meta',
-      margin: [0, 4, 0, 0],
+      margin: [0, 5, 0, 0],
     },
     // Decorative accent divider (short)
     {
       canvas: [{ type: 'line', x1: 0, y1: 0, x2: 70, y2: 0, lineWidth: 2, lineColor: accent }],
-      margin: [0, 22, 0, 28],
+      margin: [0, 20, 0, 26],
     },
-  ];
+  );
 
   // ── Body Content ──────────────────────────────────────────────────────────
-  const bodyBlocks = buildBodyContent(doc.body);
-  content.push(...bodyBlocks);
+  content.push(
+    ...(structured
+      ? buildStructuredContent(doc.body as DocumentBlock[], accent)
+      : buildBodyContent(doc.body as string)),
+  );
 
   // ── Signature Block ───────────────────────────────────────────────────────
-  if (doc.signature) {
+  if (doc.signature && !hasOwnSignatures) {
     // Accent divider before signature
     content.push({
       canvas: [
@@ -348,7 +661,7 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
       { text: doc.labels.date, style: 'sigLabel' },
     ];
     if (signed?.signedAt) {
-      dateCol.push({ text: new Date(signed.signedAt).toLocaleDateString(), style: 'sigValue' });
+      dateCol.push({ text: formatDate(signed.signedAt, doc.lang), style: 'sigValue' });
     } else {
       dateCol.push({ text: '_________________', style: 'sigPlaceholder' });
     }
@@ -365,7 +678,8 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
   }
 
   // ── Footer ────────────────────────────────────────────────────────────────
-  const footerParts = [`${doc.labels.generatedOn} ${formatDate(doc.now)}`];
+  const footerParts = [`${doc.labels.generatedOn} ${formatDate(doc.now, doc.lang)}`];
+  if (doc.documentNumber) footerParts.unshift(doc.documentNumber);
   if (doc.contentHash)
     footerParts.push(`${doc.labels.integrity}: ${doc.contentHash?.slice(0, 16)}…`);
 
@@ -388,12 +702,21 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
     }),
     styles: {
       orgName: { fontSize: 9, bold: true, letterSpacing: 1.5, margin: [0, 0, 0, 2] },
-      title: { fontSize: 22, bold: true, color: '#1e293b', margin: [0, 0, 0, 2] },
+      title: { fontSize: 20, bold: true, color: '#0f172a', margin: [0, 0, 0, 2] },
+      subtitle: { fontSize: 12, color: '#475569' },
       meta: { fontSize: 8, color: '#94a3b8', italics: true },
       sectionHeader: { fontSize: 12, bold: true, color: '#1e293b', margin: [0, 20, 0, 6] },
+      blockSection: { fontSize: 10, bold: true, letterSpacing: 0.8, margin: [0, 8, 0, 0] },
+      blockMuted: { fontSize: 8.5, color: '#64748b', italics: true, lineHeight: 1.5 },
+      fieldLabel: { fontSize: 9, color: '#64748b' },
+      fieldValue: { fontSize: 10, bold: true, color: '#0f172a' },
+      callout: { fontSize: 9.5, color: '#334155', lineHeight: 1.5 },
       body: { fontSize: 10, lineHeight: 1.65, color: '#334155', alignment: 'justify' },
       bulletItem: { fontSize: 10, lineHeight: 1.55, color: '#334155', margin: [0, 0, 0, 3] },
       signatureTitle: { fontSize: 11, bold: true, margin: [0, 0, 0, 12] },
+      sigRole: { fontSize: 9, bold: true, letterSpacing: 0.5, margin: [0, 0, 0, 2] },
+      sigMetaLabel: { fontSize: 8.5, color: '#94a3b8' },
+      sigMetaValue: { fontSize: 9.5, color: '#0f172a', bold: true },
       sigLabel: { fontSize: 8, color: '#94a3b8', italics: true, margin: [0, 4, 0, 0] },
       sigValue: { fontSize: 10, color: '#1e293b', bold: true, margin: [0, 2, 0, 0] },
       sigPlaceholder: { fontSize: 10, color: '#64748b', margin: [0, 2, 0, 0] },
@@ -461,6 +784,13 @@ export async function exportDocumentToDOCX(
     await loadDocx();
 
   const accentHex = ACCENT_HEX[doc.accent].replace('#', '');
+  const sectionTitles = new Set(
+    isBlockBody(doc.body)
+      ? doc.body
+          .filter((b): b is DocumentSectionBlock => b.type === 'section')
+          .map((b) => ((b.index != null ? `${b.index}. ` : '') + b.title).toUpperCase())
+      : [],
+  );
 
   const children: any[] = [
     new Paragraph({
@@ -473,16 +803,43 @@ export async function exportDocumentToDOCX(
     new Paragraph({
       heading: HeadingLevel.HEADING_1,
       children: [new TextRun({ text: doc.title, bold: true, size: 40, color: accentHex })],
-      spacing: { after: 240 },
+      spacing: { after: doc.subtitle ? 80 : 240 },
     }),
-    ...paragraphs(doc.body).map(
-      (line) =>
-        new Paragraph({
-          children: [new TextRun({ text: line, size: 22 })],
-          spacing: { after: 120 },
-        }),
-    ),
   ];
+
+  if (doc.subtitle) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: doc.subtitle, size: 26, color: '475569' })],
+        spacing: { after: 160 },
+      }),
+    );
+  }
+  if (doc.documentNumber) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: doc.documentNumber, size: 18, color: '94a3b8' })],
+        spacing: { after: 240 },
+      }),
+    );
+  }
+
+  children.push(
+    ...paragraphs(documentBodyToPlainText(doc.body)).map((line) => {
+      const isSection = sectionTitles.has(line.trim());
+      return new Paragraph({
+        children: [
+          new TextRun({
+            text: line,
+            size: 22,
+            bold: isSection,
+            color: isSection ? accentHex : undefined,
+          }),
+        ],
+        spacing: { before: isSection ? 240 : 0, after: 120 },
+      });
+    }),
+  );
 
   if (doc.signature) {
     children.push(
@@ -506,7 +863,7 @@ export async function exportDocumentToDOCX(
     );
   }
 
-  const footerParts = [`${doc.labels.generatedOn} ${new Date(doc.now).toLocaleString()}`];
+  const footerParts = [`${doc.labels.generatedOn} ${formatDate(doc.now, doc.lang)}`];
   if (doc.contentHash) footerParts.push(`${doc.labels.integrity}: ${doc.contentHash}`);
   children.push(
     new Paragraph({

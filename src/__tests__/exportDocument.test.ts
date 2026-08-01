@@ -11,7 +11,9 @@ import {
   exportDocumentToPDF,
   renderDocumentPdfBase64,
   exportDocumentToDOCX,
+  documentBodyToPlainText,
   type RenderableDocument,
+  type DocumentBlock,
 } from '@/lib/exportDocument';
 
 // Mock URL.createObjectURL and related
@@ -228,6 +230,138 @@ describe('exportDocumentToDOCX', () => {
 
     const result = await exportDocumentToDOCX(docWithHash);
     expect(result).toEqual({ success: true });
+  });
+});
+
+describe('structured block bodies', () => {
+  const blocks: DocumentBlock[] = [
+    { type: 'section', index: 1, title: 'Asset Details' },
+    {
+      type: 'fields',
+      rows: [
+        { label: 'Name', value: 'Lenovo X1' },
+        { label: 'Serial Number', value: 'EVG56LV44' },
+        { label: 'Location', value: '' },
+      ],
+    },
+    { type: 'bullets', items: ['first', 'second'] },
+    { type: 'paragraph', text: 'I confirm that I have received the equipment.' },
+    { type: 'callout', text: 'Two counterparts of equal force.' },
+    { type: 'spacer', size: 12 },
+    { type: 'section', title: 'Signatures' },
+    {
+      type: 'signatures',
+      parties: [
+        {
+          role: 'Employee',
+          nameLabel: 'Name',
+          name: 'Alice',
+          dateLabel: 'Date',
+          date: '1 August 2026',
+          signatureImage: 'data:image/png;base64,AAA',
+        },
+        { role: 'Admin / HR', nameLabel: 'Name', name: 'Bob', dateLabel: 'Date' },
+      ],
+    },
+  ];
+
+  it('renders sections, tables, bullets, callouts and a signature grid', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF({ ...baseDoc, body: blocks }, 'act.pdf');
+
+    const def = mockPdf.createPdf.mock.calls[0][0];
+    const json = JSON.stringify(def.content);
+    // Definition table: label/value pairs, blank values kept as a dash so the
+    // row can be filled in by hand on a printed copy.
+    expect(json).toContain('EVG56LV44');
+    expect(json).toContain('"fieldLabel"');
+    expect(json).toContain('"fieldValue"');
+    // Numbered, upper-cased section heading
+    expect(json).toContain('1.  ASSET DETAILS');
+    // Bullet list rendered as a real list, not inline text
+    expect(def.content.some((c: any) => Array.isArray(c.ul))).toBe(true);
+    // Two signing parties side by side, with the drawn signature embedded
+    expect(json).toContain('data:image/png;base64,AAA');
+    expect(json).toContain('Admin / HR');
+  });
+
+  it('does not append the generic signature block when the body has its own', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF({ ...baseDoc, body: blocks, signature: true }, 'act.pdf');
+
+    const def = mockPdf.createPdf.mock.calls[0][0];
+    // 'Signature' is the generic block's title label — the act uses party roles.
+    expect(JSON.stringify(def.content)).not.toContain('"signatureTitle"');
+  });
+
+  it('prints the header title, subtitle and document reference', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF(
+      {
+        ...baseDoc,
+        title: 'Акт приёма-передачи',
+        subtitle: 'Lenovo X1',
+        documentNumber: 'Документ № HO-20260801-AB12',
+        body: blocks,
+      },
+      'act.pdf',
+    );
+
+    const json = JSON.stringify(mockPdf.createPdf.mock.calls[0][0]);
+    expect(json).toContain('Акт приёма-передачи');
+    expect(json).toContain('Lenovo X1');
+    expect(json).toContain('HO-20260801-AB12');
+  });
+
+  it('formats the generated-on date in the document language', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    const now = new Date(2026, 7, 1, 12).getTime();
+    await exportDocumentToPDF({ ...baseDoc, now, lang: 'ru', body: blocks }, 'act.pdf');
+
+    const json = JSON.stringify(mockPdf.createPdf.mock.calls[0][0]);
+    expect(json).toContain('1 августа 2026');
+    expect(json).not.toContain('August 1, 2026');
+  });
+
+  it('exports block bodies to DOCX as readable text', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    loadDocx.mockResolvedValue(createMockDocx());
+
+    await expect(
+      exportDocumentToDOCX({ ...baseDoc, body: blocks, subtitle: 'Lenovo X1' }, 'act.docx'),
+    ).resolves.toEqual({ success: true });
+  });
+});
+
+describe('documentBodyToPlainText', () => {
+  it('passes string bodies through unchanged', () => {
+    expect(documentBodyToPlainText('plain body')).toBe('plain body');
+  });
+
+  it('flattens blocks into labelled lines', () => {
+    const text = documentBodyToPlainText([
+      { type: 'section', index: 2, title: 'Handover Details' },
+      { type: 'fields', rows: [{ label: 'Handed To', value: 'Alice' }] },
+      {
+        type: 'signatures',
+        parties: [{ role: 'Employee', nameLabel: 'Name', name: 'Alice', dateLabel: 'Date' }],
+      },
+    ]);
+    expect(text).toContain('2. HANDOVER DETAILS');
+    expect(text).toContain('Handed To: Alice');
+    expect(text).toContain('Date: ____________');
   });
 });
 

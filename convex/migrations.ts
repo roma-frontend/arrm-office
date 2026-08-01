@@ -4,6 +4,7 @@
 
 import { mutation, internalMutation } from './_generated/server';
 import { XLARGE_LIST_CAP } from './lib/limits';
+import { backfillAssetActContent } from '../src/lib/assetActContent';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fix duplicate users — merge users with same email
@@ -189,5 +190,77 @@ export const migrateProfilesToUserProfiles = internalMutation({
     }
 
     return { migrated, total: users.length };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Backfill asset handover / return acts ("Акт приёма-передачи")
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Upgrade historical acts to the current storage format so they render in the
+ * reader's language.
+ *
+ * Acts created before this migration stored the date as pre-formatted English
+ * text (and the oldest ones stored the whole body as English markdown), so a
+ * Russian/Armenian/German reader still saw "August 1, 2026". Here we add the
+ * canonical `dateTs`, convert legacy markdown bodies to JSON, and fill the
+ * asset/party details that were not captured at creation time.
+ *
+ * Idempotent: only missing values are written. Run from the Convex dashboard
+ * (Functions → migrations:backfillAssetActMetadata → Run) or via
+ * `npx convex run migrations:backfillAssetActMetadata`.
+ */
+export const backfillAssetActMetadata = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const documents = await ctx.db.query('signatureDocuments').take(XLARGE_LIST_CAP);
+    const acts = documents.filter((d) => typeof d.content === 'string' && d.content.length > 0);
+    if (acts.length === 0) return { updated: 0, totalDocuments: documents.length };
+
+    // No index maps a signature document back to its assignment, so build the
+    // reverse lookup in a single pass instead of scanning per document.
+    const assignments = await ctx.db.query('assetAssignments').take(XLARGE_LIST_CAP);
+    const assignmentByDocId = new Map<string, (typeof assignments)[number]>();
+    for (const assignment of assignments) {
+      if (assignment.movementFormDocId) {
+        assignmentByDocId.set(assignment.movementFormDocId, assignment);
+      }
+      if (assignment.returnFormDocId) {
+        assignmentByDocId.set(assignment.returnFormDocId, assignment);
+      }
+    }
+
+    let updated = 0;
+
+    for (const doc of acts) {
+      const assignment = assignmentByDocId.get(doc._id);
+      const asset = assignment ? await ctx.db.get(assignment.assetId) : null;
+      const assignee = assignment ? await ctx.db.get(assignment.assignedTo) : null;
+      const assigner = assignment ? await ctx.db.get(assignment.assignedBy) : null;
+
+      const next = backfillAssetActContent(doc.content, {
+        createdAt: doc.createdAt,
+        asset: asset
+          ? {
+              serialNumber: asset.serialNumber,
+              assetTag: asset.assetTag,
+              category: asset.category,
+              brand: asset.brand,
+              model: asset.model,
+              location: asset.location,
+              condition: asset.condition,
+            }
+          : null,
+        assignee: assignee ? { email: assignee.email, position: assignee.position } : null,
+        assigner: assigner ? { position: assigner.position } : null,
+      });
+
+      // `null` means the document is not an act, or is already up to date.
+      if (next === null || next === doc.content) continue;
+      await ctx.db.patch(doc._id, { content: next });
+      updated++;
+    }
+
+    return { updated, totalDocuments: documents.length };
   },
 });

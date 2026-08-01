@@ -285,10 +285,18 @@ export const getAsset = query({
     // enrichment of `listAssets` so the detail card can show who holds the
     // asset (previously the card typed this field as `any` and it was
     // silently undefined at runtime, hiding the assignment UI).
-    let currentUser: { _id: Id<'users'>; name: string; email: string } | null = null;
+    // `position` is included so the handover/return act can print it.
+    let currentUser: {
+      _id: Id<'users'>;
+      name: string;
+      email: string;
+      position?: string;
+    } | null = null;
     if (currentAssignment) {
       const user = await ctx.db.get(currentAssignment.assignedTo);
-      currentUser = user ? { _id: user._id, name: user.name, email: user.email } : null;
+      currentUser = user
+        ? { _id: user._id, name: user.name, email: user.email, position: user.position }
+        : null;
     }
 
     return {
@@ -1429,8 +1437,11 @@ export const createAssetMovementForm = internalMutation({
     if (!assignee) return;
 
     const now = Date.now();
+    const asset = await ctx.db.get(args.assetId);
 
-    // Build the movement form content — locale-agnostic structured JSON
+    // Build the movement form content — locale-agnostic structured JSON.
+    // `dateTs` is the canonical value: the client formats it in the active
+    // language. `date` stays for backwards compatibility with older readers.
     const dateStr = new Date(now).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -1440,8 +1451,19 @@ export const createAssetMovementForm = internalMutation({
     const formData = {
       _type: 'movement',
       assetName: args.assetName,
+      assetSerial: asset?.serialNumber || '',
+      assetTag: asset?.assetTag || '',
+      category: asset?.category || '',
+      brand: asset?.brand || '',
+      model: asset?.model || '',
+      location: asset?.location || '',
+      condition: asset?.condition || '',
       assigneeName: assignee.name || 'Employee',
+      assigneeEmail: assignee.email || '',
+      assigneePosition: assignee.position || '',
       assignerName: assigner?.name || 'Admin',
+      assignerPosition: assigner?.position || '',
+      dateTs: now,
       date: dateStr,
     };
     const content = `__MF__${JSON.stringify(formData)}`;
@@ -1575,8 +1597,10 @@ export const createReturnMovementForm = internalMutation({
     if (!assignee) return;
 
     const now = Date.now();
+    const asset = await ctx.db.get(args.assetId);
 
-    // Build the return form content — locale-agnostic structured JSON
+    // Build the return form content — locale-agnostic structured JSON.
+    // `dateTs` is canonical; `date` remains for backwards compatibility.
     const dateStr = new Date(now).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -1586,8 +1610,17 @@ export const createReturnMovementForm = internalMutation({
     const formData = {
       _type: 'return',
       assetName: args.assetName,
+      assetSerial: asset?.serialNumber || '',
+      assetTag: asset?.assetTag || '',
+      category: asset?.category || '',
+      brand: asset?.brand || '',
+      model: asset?.model || '',
+      location: asset?.location || '',
       assigneeName: assignee.name || 'Employee',
+      assigneeEmail: assignee.email || '',
+      assigneePosition: assignee.position || '',
       returnerName: returner?.name || 'Admin',
+      dateTs: now,
       date: dateStr,
       condition: args.condition || 'good',
     };

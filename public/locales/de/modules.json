@@ -281,8 +281,8 @@
       "error": "Fehler beim Senden des Formulars"
     },
     "pdf": {
-      "returnForm": "Anlagenrückgabeformular",
-      "movementForm": "Anlagenübergabeformular",
+      "returnForm": "Rückgabeprotokoll",
+      "movementForm": "Übergabeprotokoll",
       "equipmentReturn": "Geräterückgabe",
       "equipmentTransfer": "Geräteübergabe",
       "returnDetails": "Rückgabedetails",
@@ -308,7 +308,15 @@
       "signerName": "Name",
       "name": "Name",
       "date": "Datum",
-      "transferDate": "Übergabedatum"
+      "transferDate": "Übergabedatum",
+      "documentNo": "Dok.-Nr.",
+      "assetTag": "Inventarnummer",
+      "brandModel": "Marke / Modell",
+      "email": "E-Mail",
+      "position": "Position",
+      "employeeParty": "Mitarbeiter",
+      "adminParty": "Administrator / HR",
+      "copiesNote": "Dieses Protokoll wird in zwei Exemplaren mit gleicher Rechtskraft ausgefertigt – je eines für jede Partei. Mit der Unterschrift bestätigen die Parteien, dass die oben aufgeführte Ausrüstung geprüft und übernommen wurde."
     },
     "qr": {
       "title": "QR-Code",
