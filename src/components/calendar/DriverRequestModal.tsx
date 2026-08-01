@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -88,8 +89,10 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
 
+  const now = useNow();
+
   // Minimum selectable datetime — now (local). Driver bookings can't be in the past.
-  const minDateTime = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+  const minDateTime = new Date(now - new Date().getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 16);
 
@@ -136,15 +139,17 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           console.error('[geocode] HTTP error:', res.status);
           return [];
         }
-        const data = await res.json();
+        const data = (await res.json()) as Array<{
+          lat: string;
+          lon: string;
+          display_name: string;
+        }>;
         logger.log('[geocode] Results:', data.length, data);
         if (data.length === 0) {
           logger.log('[geocode] No results found');
           return [];
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-        return data.map((item: any) => ({
+        return data.map((item) => ({
           lat: parseFloat(item.lat),
           lng: parseFloat(item.lon),
           display_name: item.display_name,
@@ -363,10 +368,11 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
       });
       setPickupCoords(undefined);
       setDropoffCoords(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error.message || t('driver.failedToRequestDriver', 'Не удалось запросить водителя'),
+        error instanceof Error
+          ? error.message
+          : t('driver.failedToRequestDriver', 'Не удалось запросить водителя'),
       );
     }
   };

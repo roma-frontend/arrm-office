@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { LayoutDashboard, Eye, Home } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { User } from '@/store/useAuthStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
@@ -14,23 +15,32 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
+interface DashboardUser extends User {
+  defaultView?: string;
+  dataRefreshRate?: string;
+  compactMode?: boolean;
+  dashboardWidgets?: Record<string, boolean>;
+}
+
 interface DashboardCustomizationProps {
-  user: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSettingsChange: (settings: any) => void;
+  user: DashboardUser | null;
+  onSettingsChange: (settings: Record<string, unknown>) => void;
 }
 
 export function DashboardCustomization({ user, onSettingsChange }: DashboardCustomizationProps) {
   const { t } = useTranslation();
 
-  const defaultWidgets = {
-    quickStats: true,
-    leaveCalendar: true,
-    upcomingTasks: true,
-    teamActivity: true,
-    recentLeaves: false,
-    analytics: true,
-  };
+  const defaultWidgets = useMemo(
+    () => ({
+      quickStats: true,
+      leaveCalendar: true,
+      upcomingTasks: true,
+      teamActivity: true,
+      recentLeaves: false,
+      analytics: true,
+    }),
+    [],
+  );
 
   const [defaultView, setDefaultView] = useState(user?.defaultView ?? 'dashboard');
   const [refreshRate, setRefreshRate] = useState(user?.dataRefreshRate ?? 'realtime');
@@ -46,17 +56,18 @@ export function DashboardCustomization({ user, onSettingsChange }: DashboardCust
       compactMode,
       dashboardWidgets: widgets,
     });
-  }, [defaultView, refreshRate, compactMode, widgets]);
+  }, [defaultView, refreshRate, compactMode, widgets, onSettingsChange]);
 
   // Sync when user data changes
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local settings state when user data loads
       setDefaultView(user.defaultView ?? 'dashboard');
       setRefreshRate(user.dataRefreshRate ?? 'realtime');
       setCompactMode(user.compactMode ?? false);
       setWidgets(user.dashboardWidgets ?? defaultWidgets);
     }
-  }, [user?.defaultView, user?.dataRefreshRate, user?.compactMode, user?.dashboardWidgets]);
+  }, [user, defaultWidgets]);
 
   const toggleWidget = (key: keyof typeof widgets) => {
     setWidgets((prev: Record<string, boolean>) => ({

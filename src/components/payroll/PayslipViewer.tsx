@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -102,14 +103,14 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Payslip Document ──
 function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: string }) {
-  const { t } = useTranslation();
   const printRef = useRef<HTMLDivElement>(null);
+  const now = useNow();
   const currency = payslip.record?.currency ?? 'AMD';
   const deductions = payslip.record?.deductions;
   const isOverdue =
     payslip.status !== 'paid' &&
     payslip.status !== 'viewed' &&
-    payslip.generatedAt < Date.now() - 30 * 24 * 60 * 60 * 1000;
+    payslip.generatedAt < now - 30 * 24 * 60 * 60 * 1000;
 
   const earnings = [
     { label: 'Base Salary', value: payslip.record?.baseSalary ?? 0 },
@@ -374,7 +375,7 @@ export default function PayslipViewer() {
   const isAdmin =
     user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'supervisor';
 
-  const _useQuery = useQuery as unknown as (...args: any[]) => any;
+  const _useQuery = useQuery as unknown as (...args: unknown[]) => unknown;
   const _payslipsRef = api.payroll.queries.getMyPayslips as unknown as never;
 
   const myPayslips = _useQuery(_payslipsRef, !isAdmin && user?.id ? {} : 'skip') as

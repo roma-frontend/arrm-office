@@ -54,6 +54,7 @@ export function IncomingCallProvider() {
         }
       }
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mirror the realtime incoming-call query into local state
       setIncomingCall({
         callId: incomingCallData._id,
         conversationId: incomingCallData.conversationId,

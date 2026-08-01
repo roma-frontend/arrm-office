@@ -148,7 +148,7 @@ export function CourseDetailDialog({
             </div>
 
             {courseWithLessons?.lessons && courseWithLessons.lessons.length > 0 ? (
-              courseWithLessons.lessons.map((lesson: any, index: number) => {
+              courseWithLessons.lessons.map((lesson, index: number) => {
                 const ContentTypeIcon = contentTypeIcons[lesson.contentType] || FileText;
                 return (
                   <div

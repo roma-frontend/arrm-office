@@ -168,7 +168,7 @@ export default function DocumentUploadWizard({
         mainEl.style.overflow = original;
       };
     }
-  }, []);
+  }, [mainRef]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);

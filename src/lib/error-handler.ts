@@ -101,6 +101,16 @@ export function isError(value: unknown): value is Error {
   return value instanceof Error;
 }
 
+/**
+ * Safely extracts the `name` from any thrown value (works for DOMException,
+ * Error subclasses, and plain objects). Returns '' when unavailable.
+ */
+export function getErrorName(error: unknown): string {
+  return error && typeof error === 'object' && 'name' in error
+    ? String((error as { name?: unknown }).name ?? '')
+    : '';
+}
+
 export function isAppError(value: unknown): value is AppError {
   return value instanceof AppError;
 }
@@ -122,6 +132,7 @@ export function isNetworkError(value: unknown): value is NetworkError {
 /**
  * Extract a user-friendly error message from any error type.
  * Safe to use with unknown catch variables.
+ * Handles Error subclasses, plain strings, DOMException-like objects, and more.
  */
 export function getErrorMessage(error: unknown): string {
   if (isError(error)) {
@@ -129,6 +140,14 @@ export function getErrorMessage(error: unknown): string {
   }
   if (typeof error === 'string') {
     return error;
+  }
+  // DOMException and other error-like objects carry a `message` property
+  // without being instanceof Error in all environments.
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
   }
   return 'An unexpected error occurred';
 }

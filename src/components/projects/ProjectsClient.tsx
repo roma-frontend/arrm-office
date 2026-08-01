@@ -54,7 +54,7 @@ const STATUS_CONFIG: Record<string, StatusStyle> = {
   cancelled: { label: 'Cancelled', color: 'text-rose-500', bg: 'bg-rose-500/10' },
 };
 
-export default function ProjectsClient({ userId, userRole }: { userId: string; userRole: string }) {
+export default function ProjectsClient({ userRole }: { userId: string; userRole: string }) {
   const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthUser();

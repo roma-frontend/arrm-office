@@ -43,7 +43,7 @@ export const createUser = mutation({
     nationality: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { adminId, organizationId, ...restArgs } = args;
+    const { adminId, organizationId } = args;
     // RBAC: require org admin access (superadmin can create in any org)
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);

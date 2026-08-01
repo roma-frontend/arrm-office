@@ -1,10 +1,20 @@
+import { api } from '../_generated/api';
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
-import { calculatePayroll } from '../lib/payrollCalculator';
-import type { Id } from '../_generated/dataModel';
+import { calculatePayroll, type CountryCode } from '../lib/payrollCalculator';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const _apiRaw: any = require('../_generated/api').api;
+/** Payroll-relevant fields carried by employee profile docs. */
+interface PayrollEmployee {
+  _id: string;
+  baseSalary?: number;
+  bonuses?: number;
+  overtimeHours?: number;
+}
+
+/** Settings returned by `settings.getOrganizationSettings`. */
+interface PayrollOrgSettings {
+  taxCountry?: CountryCode;
+}
 
 export const processScheduledPayroll = action({
   args: {
@@ -18,22 +28,19 @@ export const processScheduledPayroll = action({
 
     const _currentMonth = new Date().toISOString().slice(0, 7);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const _runQuery = ctx.runQuery as unknown as (...args: any[]) => Promise<any>;
-    const employees: any[] =
-      (await _runQuery(_apiRaw.employeeProfiles.getEmployeesByOrganization, {
-        organizationId: organizationId as Id<'organizations'>,
-      })) ?? [];
+    const runQuery = ctx.runQuery as unknown as (fn: unknown, args: unknown) => Promise<unknown>;
+    const employees =
+      ((await runQuery(api.employeeProfiles.getEmployeesByOrganization, {
+        organizationId,
+      })) as PayrollEmployee[] | null | undefined) ?? [];
 
     if (!employees || employees.length === 0) {
       return { processed: 0, totalGross: 0, totalNet: 0, message: 'No employees found' };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const settings: any = await _runQuery(_apiRaw.settings.getOrganizationSettings, {
-      organizationId: organizationId as Id<'organizations'>,
-    });
+    const settings = (await runQuery(api.settings.getOrganizationSettings, {
+      organizationId,
+    })) as PayrollOrgSettings | null | undefined;
 
     const taxCountry = settings?.taxCountry ?? 'armenia';
 

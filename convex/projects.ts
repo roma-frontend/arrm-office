@@ -3,7 +3,7 @@ import { mutation, query } from './_generated/server';
 import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 
 // ── Access helpers ──────────────────────────────────────────────────────────
 // Projects are org-scoped: a caller may only touch their own organization
@@ -315,7 +315,7 @@ export const listTemplates = query({
       .take(DEFAULT_LIST_CAP);
 
     const allTemplates = [...orgTemplates, ...publicTemplates];
-    const unique = new Map();
+    const unique = new Map<Id<'projectTemplates'>, Doc<'projectTemplates'>>();
     for (const t of allTemplates) {
       if (!unique.has(t._id)) unique.set(t._id, t);
     }

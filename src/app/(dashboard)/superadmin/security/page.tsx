@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
@@ -605,9 +605,12 @@ export default function SecurityDashboard() {
                           {/* Avatar */}
                           <div className="shrink-0">
                             {user.avatarUrl ? (
-                              <img
+                              <Image
                                 src={user.avatarUrl}
                                 alt={user.name}
+                                width={48}
+                                height={48}
+                                unoptimized
                                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
                               />
                             ) : (

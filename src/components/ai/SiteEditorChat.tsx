@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
-import { useSubscription } from '@/hooks/useSubscription';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
   Send,
@@ -101,7 +100,6 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const { features, plan } = usePlanFeatures();
-  const { isActive } = useSubscription();
 
   const usage = useQuery(api.aiSiteEditor.getCurrentMonthUsage, {
     userId: userId as Id<'users'>,
@@ -124,7 +122,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
     try {
       const res = await fetch('/api/ai-site-editor/apply');
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as { backups?: BackupMeta[] };
         setBackups(data.backups || []);
       }
     } catch {
@@ -175,11 +173,11 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const error = (await response.json()) as { limitReached?: boolean; error?: string };
         setMessages((prev) => prev.slice(0, -1));
 
         if (error.limitReached) {
-          toast.error(error.error, {
+          toast.error(error.error || 'Server error', {
             action: {
               label: t('aiSiteEditor.upgradePlan'),
               onClick: () => router.push('/settings?tab=billing'),
@@ -189,7 +187,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
             ...prev,
             {
               role: 'system',
-              content: `⚠️ ${error.error}`,
+              content: `⚠️ ${error.error || ''}`,
               timestamp: Date.now(),
             },
           ]);
@@ -199,7 +197,11 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
       }
 
       // Парсим JSON ответ
-      const data = await response.json();
+      const data = (await response.json()) as {
+        response?: string;
+        appliedFiles?: AppliedFile[];
+        editType?: Message['editType'];
+      };
       const { response: aiText, appliedFiles, editType } = data;
 
       // Обновляем сообщение с результатом
@@ -207,7 +209,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: 'assistant',
-          content: aiText,
+          content: aiText ?? '',
           editType,
           timestamp: Date.now(),
         };
@@ -256,7 +258,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
         body: JSON.stringify({ filePath, timestamp }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as { success?: boolean; error?: string };
 
       if (res.ok && data.success) {
         toast.success(`↩️ Откат выполнен: ${filePath}`);

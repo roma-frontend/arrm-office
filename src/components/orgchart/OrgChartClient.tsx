@@ -37,6 +37,8 @@ import {
   Panel,
   BackgroundVariant,
   Handle,
+  NodeChange,
+  EdgeChange,
   applyNodeChanges,
   applyEdgeChanges,
 } from '@xyflow/react';
@@ -48,12 +50,29 @@ import { toast } from 'sonner';
 // ─── Types ────────────────────────────────────────────────────
 type OrgNodeType = 'person' | 'department' | 'group';
 
+// Tree node shape returned by api.orgchart.getOrgChartTree
+interface OrgTreeNode {
+  _id: string;
+  name: string;
+  type: OrgNodeType;
+  title?: string;
+  avatarUrl?: string;
+  user?: {
+    email?: string;
+    phone?: string;
+    department?: string;
+    position?: string;
+    avatarUrl?: string;
+  } | null;
+  children?: OrgTreeNode[];
+}
+
 interface OrgNodeData extends Record<string, unknown> {
   _id: string;
   name: string;
   type: OrgNodeType;
   title?: string;
-  children?: OrgNodeData[];
+  children?: OrgTreeNode[];
   avatarUrl?: string;
   user?: {
     email?: string;
@@ -190,13 +209,11 @@ export default function OrgChartClient() {
   const [nodes, setNodes] = useState<FlowNode[]>([]);
   const [edges, setEdges] = useState<FlowEdge[]>([]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onNodesChange = useCallback((changes: any) => {
+  const onNodesChange = useCallback((changes: NodeChange<FlowNode>[]) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onEdgesChange = useCallback((changes: any) => {
+  const onEdgesChange = useCallback((changes: EdgeChange<FlowEdge>[]) => {
     setEdges((eds) => applyEdgeChanges(changes, eds));
   }, []);
   const [searchQuery, setSearchQuery] = useState('');
@@ -246,19 +263,18 @@ export default function OrgChartClient() {
       const LEVEL_HEIGHT = 220;
 
       // Calculate subtree leaf count for proper positioning
-      const getLeafCount = (node: any): number => {
+      const getLeafCount = (node: OrgTreeNode): number => {
         if (!node.children || node.children.length === 0) return 1;
-        return node.children.reduce((sum: number, child: any) => sum + getLeafCount(child), 0);
+        return node.children.reduce((sum, child) => sum + getLeafCount(child), 0);
       };
 
       // Build layout: position each node based on its subtree
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
-      const layoutNodes: { node: any; x: number; y: number }[] = [];
+      const layoutNodes: { node: OrgTreeNode; x: number; y: number }[] = [];
       const layoutEdges: FlowEdge[] = [];
 
       const layoutTree = (
-        nodes: any[],
+        nodes: OrgTreeNode[],
         startX: number,
         depth: number,
         parentId: string | null,
@@ -309,7 +325,7 @@ export default function OrgChartClient() {
         return currentX;
       };
 
-      layoutTree(treeData, 0, 0, null);
+      layoutTree(treeData as OrgTreeNode[], 0, 0, null);
 
       const flowNodes: FlowNode[] = layoutNodes.map(({ node, x, y }) => ({
         id: node._id,
@@ -333,6 +349,7 @@ export default function OrgChartClient() {
   useEffect(() => {
     if (orgTree && orgTree.length > 0) {
       const { nodes: flowNodes, edges: flowEdges } = buildFlowElements(orgTree);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync flow elements when the org tree query resolves
       setNodes(flowNodes);
       setEdges(flowEdges);
     }
@@ -444,7 +461,7 @@ export default function OrgChartClient() {
   };
 
   const handleNodeDrag = useCallback(
-    (_event: any, node: Node) => {
+    (_event: React.MouseEvent, node: Node) => {
       if (!isAdmin) return;
 
       setNodes((nds) =>

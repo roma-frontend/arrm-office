@@ -10,7 +10,6 @@ import {
   Clock,
   History,
   Repeat,
-  Plus,
   Eye,
   Star,
   Car,
@@ -270,12 +269,9 @@ export const MyRequestsSection = memo(function MyRequestsSection({
   onCancel,
   onToggleRecurring,
   onDeleteRecurring,
-  onRequestDriver,
 }: MyRequestsSectionProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('active');
-  const lang = i18n.language || 'en';
-  const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
   return (
     <Card className="mb-6 sm:mb-8 border-(--border)">

@@ -31,10 +31,25 @@ interface LeaveConflictAlertsProps {
   userId: Id<'users'>;
 }
 
+interface ConflictAlert {
+  _id: Id<'leaveConflictAlerts'>;
+  employeeName?: string;
+  employeeEmail?: string;
+  department?: string;
+  leaveStartDate?: string;
+  leaveEndDate?: string;
+  leaveType?: string;
+  eventName?: string;
+  eventStartDate?: string | number;
+  eventEndDate?: string | number;
+  conflictType?: string;
+  severity?: string;
+  [key: string]: unknown;
+}
+
 export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAlertsProps) {
   const { t } = useTranslation();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedAlert, setSelectedAlert] = useState<any>(null);
+  const [selectedAlert, setSelectedAlert] = useState<ConflictAlert | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [isReviewing, setIsReviewing] = useState(false);
 
@@ -64,8 +79,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
 
       setSelectedAlert(null);
       setReviewNotes('');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to review alert:', error);
       toast.error(t('events.reviewFailed', 'Failed to review alert'));
     } finally {
@@ -267,7 +281,8 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
                     </p>
                     <p className="font-medium text-foreground capitalize">
                       {(() => {
-                        const conflictType = selectedAlert.conflictType || 'required_department';
+                        const conflictType =
+                          (selectedAlert.conflictType as string) || 'required_department';
                         const typeText = t(`events.conflictType.${conflictType}`);
                         return typeof typeText === 'string'
                           ? typeText
@@ -277,9 +292,9 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
                   </div>
                   <div>
                     <p className="text-muted-foreground">{t('events.severity', 'Severity')}</p>
-                    <Badge className={getSeverityColor(selectedAlert.severity)}>
+                    <Badge className={getSeverityColor(selectedAlert.severity ?? 'medium')}>
                       {(() => {
-                        const severity = selectedAlert.severity || 'medium';
+                        const severity = (selectedAlert.severity as string) || 'medium';
                         const severityText = t(`events.priority.${severity}`);
                         return typeof severityText === 'string' ? severityText : severity;
                       })()}

@@ -53,11 +53,13 @@ export const validateEmail = action({
         return { valid: false, reason: 'no_mx_records' };
       }
       return { valid: true };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: unknown) {
       // ENOTFOUND = domain doesn't exist, ENODATA = no MX records
-      if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
+      const code =
+        err && typeof err === 'object' && 'code' in err
+          ? (err as { code?: string }).code
+          : undefined;
+      if (code === 'ENOTFOUND' || code === 'ENODATA') {
         return { valid: false, reason: 'domain_not_found' };
       }
       // Network error — allow through (don't block on temporary failures)

@@ -11,7 +11,7 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as { status: string; errorMessage?: string; value?: unknown };
   if (data.status === 'error') throw new Error(data.errorMessage ?? 'Convex error');
   return data.value;
 }
@@ -44,7 +44,11 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
   }
 
   try {
-    const { userId, event, details } = await req.json();
+    const { userId, event, details } = (await req.json()) as {
+      userId?: string;
+      event?: string;
+      details?: Record<string, unknown>;
+    };
     if (!userId || !event) {
       return NextResponse.json({ error: 'Missing userId or event' }, { status: 400 });
     }

@@ -1,16 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useHydrated } from '@/hooks/useHydrated';
 import { ArrowUp } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 export default function ScrollToTop() {
   const [isVisible, setIsVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHydrated();
 
   // Throttled scroll handler using requestAnimationFrame
   const handleScroll = useCallback(() => {
@@ -33,6 +30,7 @@ export default function ScrollToTop() {
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- set initial visibility based on scroll position on mount
     handleScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, [handleScroll]);

@@ -123,8 +123,7 @@ export function ServiceBroadcastsManager({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {broadcasts.map((broadcast: any) => (
+            {broadcasts.map((broadcast) => (
               <div
                 key={broadcast._id}
                 className="flex flex-col sm:flex-row  items-start justify-between gap-4 p-4 rounded-lg transition-colors"

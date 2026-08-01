@@ -12,7 +12,7 @@ async function convexQuery(path: string, args: Record<string, unknown>, token?: 
     },
     body: JSON.stringify({ path, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as { status: string; value?: unknown };
   if (data.status === 'error') return null;
   return data.value;
 }
@@ -31,7 +31,10 @@ export async function POST(req: NextRequest) {
   const authenticatedUserId = auth.payload.userId;
 
   try {
-    const { userId, descriptor } = await req.json();
+    const { userId, descriptor } = (await req.json()) as {
+      userId?: string;
+      descriptor?: number[];
+    };
 
     if (!userId || !descriptor) {
       return NextResponse.json({ error: 'Missing userId or descriptor' }, { status: 400 });
@@ -46,7 +49,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Get stored face descriptor
-    const profile = await convexQuery('faceRecognition:getFaceDescriptor', { userId }, auth.token);
+    const profile = (await convexQuery(
+      'faceRecognition:getFaceDescriptor',
+      { userId },
+      auth.token,
+    )) as { faceDescriptor?: number[] } | null;
 
     if (!profile?.faceDescriptor) {
       // No face registered → skip verification (allow)

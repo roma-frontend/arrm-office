@@ -11,7 +11,7 @@ import { v } from 'convex/values';
 import { query } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -569,8 +569,7 @@ export const getBalancedScorecard = query({
  */
 function generatePerspectiveMetrics(
   id: BscPerspective,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  objectives: any[],
+  objectives: Doc<'objectives'>[],
   avgProgress: number,
 ): Array<{ label: string; value: string; direction: 'up' | 'down' | 'neutral' }> {
   const active = objectives.filter((o) => o.status === 'active');
@@ -815,8 +814,7 @@ export const getAlignmentTree = query({
  * overall metric based on organizational health.
  */
 function computeNorthStar(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  objectives: any[],
+  objectives: Doc<'objectives'>[],
   perspectives: BscPerspectiveData[],
   overallScore: number,
 ): NorthStarMetric {
@@ -825,8 +823,7 @@ function computeNorthStar(
   const completed = objectives.filter((o) => o.status === 'completed').length;
   const avgProgress =
     active.length > 0
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Math.round(active.reduce((sum: number, o: any) => sum + o.progress, 0) / active.length)
+      ? Math.round(active.reduce((sum, o) => sum + o.progress, 0) / active.length)
       : 0;
 
   // Find the best and worst performing perspectives

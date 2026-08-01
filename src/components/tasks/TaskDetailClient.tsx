@@ -6,6 +6,7 @@ import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useState } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -126,6 +127,7 @@ export default function TaskDetailClient() {
   );
 
   const [_isUpdating, _setIsUpdating] = useState(false);
+  const now = useNow();
 
   if (!task) {
     return (
@@ -249,8 +251,8 @@ export default function TaskDetailClient() {
                 </span>
                 <span className={`font-medium ${isOverdue ? 'text-red-500' : 'text-green-500'}`}>
                   {isOverdue
-                    ? `${Math.ceil((Date.now() - deadline.getTime()) / (1000 * 60 * 60 * 24))} ${t('tasksClient.daysOverdue')}`
-                    : `${Math.ceil((deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24))} ${t('tasksClient.daysLeft')}`}
+                    ? `${Math.ceil((now - deadline.getTime()) / (1000 * 60 * 60 * 24))} ${t('tasksClient.daysOverdue')}`
+                    : `${Math.ceil((deadline.getTime() - now) / (1000 * 60 * 60 * 24))} ${t('tasksClient.daysLeft')}`}
                 </span>
               </div>
             )}
@@ -302,7 +304,7 @@ export default function TaskDetailClient() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {task.attachments.map((attachment: any, index: number) => (
+              {task.attachments.map((attachment, index: number) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"

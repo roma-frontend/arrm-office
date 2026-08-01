@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import { Shield, ScanFace } from 'lucide-react';
@@ -83,9 +83,12 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
                 <div className="flex items-center gap-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20 overflow-hidden">
                   <div className="w-16 h-16 rounded-full overflow-hidden bg-(--surface-hover) border-2 border-green-500/30 shrink-0">
                     {faceData.faceImageUrl ? (
-                      <img
+                      <Image
                         src={faceData.faceImageUrl}
                         alt="Registered face"
+                        width={64}
+                        height={64}
+                        unoptimized
                         className="w-full h-full object-cover"
                       />
                     ) : (

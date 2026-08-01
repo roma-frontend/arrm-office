@@ -32,7 +32,7 @@ export const getTotalUnread = query({
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
-    const { userId, organizationId } = args;
+    const { userId } = args;
     const memberships = await ctx.db
       .query('chatMembers')
       .withIndex('by_user', (q) => q.eq('userId', userId))

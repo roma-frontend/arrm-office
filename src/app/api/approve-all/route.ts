@@ -16,7 +16,7 @@ async function convexMutation(name: string, args: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: name, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as { status: string; errorMessage?: string; value?: unknown };
   if (data.status === 'error') throw new Error(data.errorMessage ?? 'Convex error');
   return data.value;
 }

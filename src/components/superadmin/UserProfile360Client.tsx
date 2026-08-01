@@ -26,6 +26,7 @@ import {
   Key,
   ArrowLeft,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -728,7 +729,7 @@ function StatCard({
 }: {
   title: string;
   value: number | string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
 }) {
   const colorClasses: Record<string, string> = {

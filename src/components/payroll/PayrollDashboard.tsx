@@ -41,6 +41,23 @@ import { Id } from '@/convex/_generated/dataModel';
 import { api } from '@/convex/_generated/api';
 import { CreatePayrollRunDialog } from './PayrollRunDialogs';
 import PayslipViewer from './PayslipViewer';
+
+interface PayrollStats {
+  totalGross: number;
+  totalNet: number;
+  totalDeductions: number;
+  pendingRuns: number;
+  paidRuns: number;
+}
+
+interface PayrollRunItem {
+  _id: string;
+  period: string;
+  status: string;
+  totalGross?: number;
+  totalNet?: number;
+  recordCount: number;
+}
 import PayrollCalendar from './PayrollCalendar';
 import PayrollUpcomingBanner from './PayrollUpcomingBanner';
 
@@ -119,18 +136,18 @@ export default function PayrollDashboard() {
     }
   }, [searchParams, router]);
 
-  const _useQuery = useQuery as unknown as (...args: any[]) => any;
+  const _useQuery = useQuery as unknown as (...args: unknown[]) => unknown;
   const _statsRef = api.payroll.queries.getDashboardStats as unknown as never;
   const _runsRef = api.payroll.queries.getPayrollRuns as unknown as never;
   const stats = _useQuery(
     _statsRef,
     orgId && user?.id && isAdmin ? { organizationId: orgId } : 'skip',
-  );
+  ) as PayrollStats | undefined;
 
   const recentRuns = _useQuery(
     _runsRef,
     orgId && user?.id && isAdmin ? { organizationId: orgId } : 'skip',
-  );
+  ) as PayrollRunItem[] | undefined;
 
   const safeStats = stats ?? {
     totalGross: 0,
@@ -382,8 +399,7 @@ export default function PayrollDashboard() {
             <CardContent>
               {recentRuns && recentRuns.length > 0 ? (
                 <div className="space-y-3">
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {recentRuns.slice(0, 5).map((run: any) => (
+                  {recentRuns.slice(0, 5).map((run) => (
                     <div
                       key={run._id}
                       className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"

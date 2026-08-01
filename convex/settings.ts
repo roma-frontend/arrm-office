@@ -5,7 +5,7 @@
  */
 
 import { v } from 'convex/values';
-import { mutation, query, type QueryCtx } from './_generated/server';
+import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
@@ -22,7 +22,7 @@ async function getOrCreateSettings(ctx: QueryCtx, userId: Id<'users'>) {
   const user = (await ctx.db.get(userId)) as Doc<'users'> | null;
   if (!user) throw new Error('User not found');
 
-  const settingsId = await (ctx.db as any).insert('userSettings', {
+  const settingsId = await (ctx.db as unknown as MutationCtx['db']).insert('userSettings', {
     userId,
     language: user.language,
     timezone: user.timezone,
@@ -172,7 +172,13 @@ export const updateThemeSettings = mutation({
  */
 export const updateSessionProfile = mutation({
   args: {
-    profile: v.any(),
+    profile: v.object({
+      language: v.optional(v.string()),
+      timezone: v.optional(v.string()),
+      dateFormat: v.optional(v.string()),
+      timeFormat: v.optional(v.string()),
+      firstDayOfWeek: v.optional(v.string()),
+    }),
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);

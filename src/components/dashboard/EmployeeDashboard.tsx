@@ -280,7 +280,7 @@ export function EmployeeDashboard() {
                 { label: t('dashboard.initiative'), value: latestRating.initiative },
                 { label: t('dashboard.communication'), value: latestRating.communication },
                 { label: t('dashboard.reliability'), value: latestRating.reliability },
-              ].map(({ label, value }: any) => (
+              ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-sm text-(--text-muted) w-36">{label}</span>
                   <div className="flex items-center gap-2">

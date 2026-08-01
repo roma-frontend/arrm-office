@@ -144,10 +144,8 @@ export const initializeDefaultLeaveTypes = mutation({
     const existingTypes = new Set(existing.map((c) => c.type));
 
     const now = Date.now();
-    let created = 0;
     for (const lt of DEFAULT_LEAVE_TYPES) {
       if (existingTypes.has(lt.type)) continue;
-      created++;
       await ctx.db.insert('leaveTypeConfigs', {
         organizationId,
         type: lt.type,

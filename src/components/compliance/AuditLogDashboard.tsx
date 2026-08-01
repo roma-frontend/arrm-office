@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import {
   Search,
@@ -127,13 +126,13 @@ function formatTimeAgo(creationTime: number): string {
 
 export default function AuditLogDashboard() {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
 
   // Fetch real audit logs from Convex — sorted newest-first
-  const rawLogs: Doc<'auditLogs'>[] = useQuery(api.users.queries.getAuditLogs) ?? [];
+  const rawLogsQuery = useQuery(api.users.queries.getAuditLogs);
+  const rawLogs: Doc<'auditLogs'>[] = useMemo(() => rawLogsQuery ?? [], [rawLogsQuery]);
 
   // Enrich logs with derived fields
   const enrichedLogs = useMemo(() => {

@@ -9,8 +9,9 @@ import { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStore, type User } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { useHydrated } from '@/hooks/useHydrated';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
@@ -83,21 +84,17 @@ const EMPLOYMENT_TYPE_KEYS: Record<string, string> = {
 
 // ─── Main Page ───────────────────────────────────────────────
 export default function CareersClient() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const vacancies = useQuery(api.careers.listAllOpenVacancies);
   const allOrgs = useQuery(api.careers.listActiveOrganizations);
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useHydrated();
 
   const [search, setSearch] = useState('');
   const [selectedOrg, setSelectedOrg] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedDept, setSelectedDept] = useState<string>('');
   const [selectedVacancy, setSelectedVacancy] = useState<VacancyItem | null>(null);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // Derive filter options
   const orgs = useMemo(() => {
@@ -438,7 +435,7 @@ function VacancyDetailModal({
 }: {
   vacancy: VacancyItem;
   onClose: () => void;
-  user: any;
+  user: User | null;
 }) {
   const { t } = useTranslation();
   const detail = useQuery(api.careers.getVacancyDetails, { vacancyId: vacancy._id });

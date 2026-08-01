@@ -156,7 +156,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
     user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
   const isEmployee = user?.role === 'employee' || user?.role === 'driver';
 
-  const _useQuery = useQuery as unknown as (...args: any[]) => any;
+  const _useQuery = useQuery as unknown as (...args: unknown[]) => unknown;
 
   // Admins see full data; employees see date-only upcoming periods
   const adminData = _useQuery(
@@ -193,13 +193,12 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
   }, [adminData, employeePeriods, isEmployee]);
 
   // Group by urgency for display
-  const { critical, warning, info, success } = useMemo(() => {
-    if (!data?.upcoming) return { critical: [], warning: [], info: [], success: [] };
+  const { critical, warning, info } = useMemo(() => {
+    if (!data?.upcoming) return { critical: [], warning: [], info: [] };
     return {
       critical: data.upcoming.filter((p) => p.urgency === 'critical'),
       warning: data.upcoming.filter((p) => p.urgency === 'warning'),
       info: data.upcoming.filter((p) => p.urgency === 'info'),
-      success: data.upcoming.filter((p) => p.urgency === 'success'),
     };
   }, [data]);
 

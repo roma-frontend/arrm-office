@@ -66,8 +66,8 @@ export function IntegrationSettings() {
   const checkGoogleStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/calendar/google/status');
-      const data = await res.json();
-      setGoogleConnected(data.connected);
+      const data = (await res.json()) as { connected?: boolean; email?: string | null };
+      setGoogleConnected(data.connected ?? false);
       setGoogleEmail(data.email || null);
     } catch {
       setGoogleConnected(false);
@@ -119,8 +119,8 @@ export function IntegrationSettings() {
   const checkSharepointStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/sharepoint/status');
-      const data = await res.json();
-      setSharepointConnected(data.connected);
+      const data = (await res.json()) as { connected?: boolean; email?: string | null };
+      setSharepointConnected(data.connected ?? false);
       setSharepointEmail(data.email || null);
     } catch {
       setSharepointConnected(false);
@@ -142,7 +142,7 @@ export function IntegrationSettings() {
     } else if (status === 'error') {
       toast.error(t('toasts.sharePointConnectFailed'));
     }
-  }, [searchParams, checkSharepointStatus]);
+  }, [searchParams, checkSharepointStatus, t]);
 
   const handleSharepointConnect = () => {
     router.push('/api/sharepoint/auth');

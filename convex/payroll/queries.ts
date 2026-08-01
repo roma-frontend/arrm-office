@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { query } from '../_generated/server';
+import { query, type QueryCtx, type MutationCtx } from '../_generated/server';
 import { requireOrgAdmin, requireOrgSupervisor, requireUser } from '../lib/rbac';
 import { isSuperadminEmail } from '../lib/auth';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
@@ -8,8 +8,7 @@ import { getAuthCaller } from '../lib/getAuthCaller';
 import type { Id } from '../_generated/dataModel';
 
 // Verified caller id from JWT (never trust a client-supplied requesterId).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function callerId(ctx: any): Promise<Id<'users'>> {
+async function callerId(ctx: QueryCtx | MutationCtx): Promise<Id<'users'>> {
   const caller = await getAuthCaller(ctx);
   if (!caller) throw new Error('Not authenticated');
   return caller._id;
@@ -453,10 +452,8 @@ export const getPayrollCalendar = query({
       payFrequency: settings?.payFrequency ?? 'monthly',
       currency: settings?.currency ?? 'AMD',
       paymentMethod: settings?.paymentMethod ?? null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      totalYearGross: yearRuns.reduce((s: number, r: any) => s + (r.totalGross ?? 0), 0),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      totalYearNet: yearRuns.reduce((s: number, r: any) => s + (r.totalNet ?? 0), 0),
+      totalYearGross: yearRuns.reduce((s, r) => s + (r.totalGross ?? 0), 0),
+      totalYearNet: yearRuns.reduce((s, r) => s + (r.totalNet ?? 0), 0),
       completedMonths: yearRuns.filter((r) => r.status === 'paid' || r.status === 'approved')
         .length,
       currentMonthStatus: currentRun?.status ?? 'no_run',

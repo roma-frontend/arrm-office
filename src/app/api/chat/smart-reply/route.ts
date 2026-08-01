@@ -3,7 +3,11 @@ import { withCsrfProtection } from '@/lib/csrf-middleware';
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
   try {
-    const { message, context, lang } = await req.json();
+    const { message, context, lang } = (await req.json()) as {
+      message?: string;
+      context?: string;
+      lang?: string;
+    };
 
     const systemPrompt = `You are a smart reply assistant for a corporate HR chat app.
 Generate exactly 3 short, natural, professional reply suggestions for the given message.
@@ -37,7 +41,9 @@ Rules:
       throw new Error(`Groq API error: ${groqRes.status}`);
     }
 
-    const data = await groqRes.json();
+    const data = (await groqRes.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
     const text = data.choices?.[0]?.message?.content ?? '[]';
 
     // Parse JSON array from response

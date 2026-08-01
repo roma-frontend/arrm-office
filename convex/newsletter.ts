@@ -12,6 +12,21 @@ import { Resend } from 'resend';
 import { WeeklyDigestEmail } from '../src/emails/WeeklyDigestEmail';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 
+/** Shape of the JSON the AI is asked to return for the weekly digest. */
+export interface NewsletterContent {
+  subject: string;
+  greeting: string;
+  tips: Array<{ title: string; body: string; emoji: string }>;
+  trends: Array<{ title: string; body: string }>;
+  quote: { text: string; author: string };
+  promo: { title: string; body: string; cta: string; link: string };
+}
+
+/** Minimal shape of an OpenRouter chat-completion response. */
+interface AiChatResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
 function getResendClient(): Resend | null {
   const key = process.env.RESEND_API_KEY;
   if (!key || key.includes('your_api_key')) return null;
@@ -222,16 +237,16 @@ Keep content professional, actionable, and concise. Return ONLY valid JSON.`;
       throw new Error(`OpenRouter API error: ${response.status} ${await response.text()}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as AiChatResponse;
     const content = data.choices?.[0]?.message?.content || '';
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse AI response as JSON');
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonMatch[0]) as Partial<NewsletterContent>;
     // Override promo link to ensure correct URL
     if (parsed.promo) {
       parsed.promo.link = appUrl;
     }
-    return parsed;
+    return parsed as NewsletterContent;
   },
 });
 
@@ -240,7 +255,6 @@ export const sendWeeklyDigest = internalAction({
   handler: async (ctx) => {
     const subscribers = await ctx.runQuery(internal.newsletter.getActiveSubscribers, {});
     if (subscribers.length === 0) {
-      console.log('No active subscribers, skipping newsletter');
       return;
     }
 
@@ -308,9 +322,6 @@ export const sendWeeklyDigest = internalAction({
       }
     }
 
-    console.log(
-      `Newsletter sent to ${subscribers.length} subscribers in ${Object.keys(groups).length} groups`,
-    );
   },
 });
 
@@ -545,8 +556,7 @@ export const sendTestEmail = action({
   },
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatTelegramNewsletter(content: any): string {
+function formatTelegramNewsletter(content: NewsletterContent): string {
   const appUrl = getPublicAppUrl();
   let msg = `🎯 <b>Strata Weekly Digest</b>\n\n`;
   msg += `${content.greeting}\n\n`;

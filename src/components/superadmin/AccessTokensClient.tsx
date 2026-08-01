@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -161,8 +162,10 @@ export default function AccessTokensClient() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const now = useNow();
+
   const formatExpiry = (ts: number) => {
-    const remaining = ts - Date.now();
+    const remaining = ts - now;
     if (remaining <= 0) return t('admin:accessTokens.statusExpired');
     const hours = Math.floor(remaining / 3600000);
     const minutes = Math.floor((remaining % 3600000) / 60000);

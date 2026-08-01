@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
+import { useHydrated } from '@/hooks/useHydrated';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -345,7 +346,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const mainRef = useMainRef();
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
@@ -381,7 +382,10 @@ export const CalendarClient = React.memo(function CalendarClient() {
       const timeMin = start.toISOString();
       const timeMax = end.toISOString();
       const res = await fetch(`/api/calendar/google/events?timeMin=${timeMin}&timeMax=${timeMax}`);
-      const data = await res.json();
+      const data = (await res.json()) as {
+        connected?: boolean;
+        events?: GoogleCalendarEvent[];
+      };
       setGoogleConnected(data.connected ?? false);
       setGoogleEvents(data.events ?? []);
     } catch {
@@ -390,8 +394,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
   }, []);
 
   useEffect(() => {
-    setMounted(true);
     logger.log('📅 CalendarClient mounted');
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync Google calendar events when the month changes
     fetchGoogleEvents(currentMonth);
   }, [currentMonth, fetchGoogleEvents]);
 
@@ -455,7 +459,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
     shouldUseOrgQuery ? api.leaves.getLeavesForOrganization : api.leaves.getAllLeaves,
     mounted && user?.id && queryParams !== 'skip' ? queryParams : 'skip',
   );
-  const leaves: LeaveRequest[] = leavesData ?? [];
+  const leaves: LeaveRequest[] = useMemo(() => leavesData ?? [], [leavesData]);
 
   // Debug: Log data load
   useEffect(() => {

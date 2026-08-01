@@ -52,7 +52,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { api } from '@/convex/_generated/api';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, Doc } from '@/convex/_generated/dataModel';
 
 const POSITION_LEVELS = [
   {
@@ -96,8 +96,8 @@ const POSITION_LEVELS = [
 interface PositionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingPosition: any | null;
-  departments: any[] | undefined;
+  editingPosition: Doc<'positions'> | null;
+  departments: Doc<'departments'>[] | undefined;
   onComplete: () => void;
 }
 
@@ -415,7 +415,7 @@ export default function PositionsClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showWizard, setShowWizard] = useState(false);
-  const [editingPosition, setEditingPosition] = useState<any | null>(null);
+  const [editingPosition, setEditingPosition] = useState<Doc<'positions'> | null>(null);
 
   const positions = useQuery(
     api.positions.list,
@@ -454,13 +454,10 @@ export default function PositionsClient() {
   const stats = useMemo(() => {
     if (!positions) return { total: 0, totalEmployees: 0, avgSalary: 0 };
     const total = positions.length;
-    const totalEmployees = positions.reduce(
-      (sum: number, p: any) => sum + (p.employeeCount || 0),
-      0,
-    );
+    const totalEmployees = positions.reduce((sum, p) => sum + (p.employeeCount || 0), 0);
     const avgSalary =
       total > 0
-        ? positions.reduce((sum: number, p: any) => {
+        ? positions.reduce((sum, p) => {
             const mid = ((p.salaryMin || 0) + (p.salaryMax || 0)) / 2;
             return sum + mid;
           }, 0) / total
@@ -478,8 +475,7 @@ export default function PositionsClient() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleEdit = (pos: any) => {
+  const handleEdit = (pos: Doc<'positions'>) => {
     setEditingPosition(pos);
     setShowWizard(true);
   };

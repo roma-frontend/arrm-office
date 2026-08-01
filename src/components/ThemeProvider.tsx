@@ -66,6 +66,7 @@ export function ThemeProvider({
   useEffect(() => {
     const stored = getStoredTheme();
     if (stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate theme state from cookie/localStorage
       setThemeState(stored);
       setResolvedTheme(stored === 'system' ? getSystemTheme() : stored);
     } else {
@@ -107,7 +108,7 @@ export function ThemeProvider({
         // Use double rAF to ensure style has been applied before reading offsetHeight
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            document.documentElement.offsetHeight;
+            void document.documentElement.offsetHeight;
             el.remove();
           });
         });

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import type { Id } from '@/convex/_generated/dataModel';
+import type { Doc, Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { cn } from '@/lib/utils';
@@ -65,7 +65,7 @@ const DEPARTMENT_COLORS = [
 interface DepartmentWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingDepartment: any | null;
+  editingDepartment: Doc<'departments'> | null;
   onComplete: () => void;
 }
 
@@ -295,7 +295,7 @@ export default function DepartmentDetailClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showWizard, setShowWizard] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState<any | null>(null);
+  const [editingDepartment, setEditingDepartment] = useState<Doc<'departments'> | null>(null);
 
   const isLoading = department === undefined || employees === undefined;
 

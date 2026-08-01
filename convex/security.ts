@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { mutation, query } from './_generated/server';
+import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { Id } from './_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from './lib/auth';
@@ -12,8 +12,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits'
  * - superadmin: sees all orgs (returns undefined orgId filter)
  * - admin: sees only their own org
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function requireAdmin(ctx: any, adminId: Id<'users'>) {
+async function requireAdmin(ctx: QueryCtx | MutationCtx, adminId: Id<'users'>) {
   const user = await ctx.db.get(adminId);
   if (!user) {
     throw new Error('User not found');

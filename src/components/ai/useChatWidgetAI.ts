@@ -7,6 +7,7 @@ import type {
   Message,
   AnyAction,
   DeleteLeaveAction,
+  ConflictMessage,
   SpeechRecognition,
   SpeechRecognitionEvent,
 } from './chatWidgetTypes';
@@ -33,7 +34,7 @@ export function useChatWidgetAI() {
     fetch('/api/csrf-token')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data) csrfRef.current = data;
+        if (data) csrfRef.current = data as { token: string; signature: string };
       })
       .catch(() => {});
   }, []);
@@ -153,7 +154,12 @@ export function useChatWidgetAI() {
           );
 
           if (conflictCheckRes.ok) {
-            const conflictData = await conflictCheckRes.json();
+            const conflictData = (await conflictCheckRes.json()) as {
+              hasCriticalConflicts?: boolean;
+              aiMessage?: string;
+              conflicts?: ConflictMessage[];
+              alternativeDates?: string[];
+            };
 
             if (conflictData.hasCriticalConflicts) {
               setMessages((prev) =>
@@ -230,7 +236,11 @@ export function useChatWidgetAI() {
         );
 
         if (conflictCheckRes.ok) {
-          const conflictData = await conflictCheckRes.json();
+          const conflictData = (await conflictCheckRes.json()) as {
+            hasCriticalConflicts?: boolean;
+            aiMessage?: string;
+            conflicts?: ConflictMessage[];
+          };
 
           if (conflictData.hasCriticalConflicts) {
             setMessages((prev) =>
@@ -309,7 +319,7 @@ export function useChatWidgetAI() {
 
       let data: Record<string, unknown>;
       try {
-        data = await res.json();
+        data = (await res.json()) as Record<string, unknown>;
       } catch {
         data = { error: `Server error (${res.status})` };
       }
@@ -584,7 +594,7 @@ export function useChatWidgetAI() {
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
+        const errData = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(errData.error || `Server error ${res.status}`);
       }
 

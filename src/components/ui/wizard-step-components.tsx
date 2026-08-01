@@ -5,6 +5,7 @@
 
 'use client';
 
+import Image from 'next/image';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -216,7 +217,7 @@ export function CardSelectionStep({
   required = false,
   columns = 2,
 }: CardSelectionStepProps) {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const context = useWizardContext();
   const data = stepData ?? context.stepData;
   const update = updateStepData ?? context.updateStepData;
@@ -576,6 +577,7 @@ export function FileUploadStep({
       // Auto-upload files immediately after selection
       await uploadFiles([...localFiles, ...newFiles]);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uploadFiles is declared below (TDZ); localFiles tracked via length to avoid recreating the callback on every file add
     [localFiles.length, maxFiles, maxSizeMB, storedAttachments, update],
   );
 
@@ -693,7 +695,14 @@ export function FileUploadStep({
                   className="relative rounded-lg border border-(--border) overflow-hidden bg-(--background-subtle)"
                 >
                   {file.preview ? (
-                    <img src={file.preview} alt={file.name} className="w-full h-20 object-cover" />
+                    <Image
+                      src={file.preview}
+                      alt={file.name}
+                      width={300}
+                      height={80}
+                      unoptimized
+                      className="w-full h-20 object-cover"
+                    />
                   ) : (
                     <div className="h-20 flex items-center justify-center">
                       {getFileIcon(file.type)}
@@ -733,9 +742,12 @@ export function FileUploadStep({
                     className="relative rounded-lg border border-(--border) overflow-hidden bg-(--background-subtle)"
                   >
                     {isImage ? (
-                      <img
+                      <Image
                         src={attachment.url}
                         alt={attachment.name}
+                        width={300}
+                        height={80}
+                        unoptimized
                         className="w-full h-20 object-cover"
                       />
                     ) : (

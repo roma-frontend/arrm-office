@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { useNow } from '@/hooks/useNow';
 import { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +26,7 @@ interface CertificatesTabProps {
 
 export function CertificatesTab({ certificates }: CertificatesTabProps) {
   const { t } = useTranslation();
+  const now = useNow();
 
   if (!certificates || certificates.length === 0) {
     return (
@@ -45,7 +47,7 @@ export function CertificatesTab({ certificates }: CertificatesTabProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {certificates.map((cert) => {
-        const isExpired = cert.expiresAt && cert.expiresAt < Date.now();
+        const isExpired = cert.expiresAt && cert.expiresAt < now;
         return (
           <Card key={cert._id} className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6">

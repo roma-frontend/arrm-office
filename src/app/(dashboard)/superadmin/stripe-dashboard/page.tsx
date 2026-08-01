@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -79,7 +79,7 @@ export default function StripeDashboardPage() {
   const [data, setData] = useState<StripeData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStripeData = async (isRefresh = false) => {
+  const fetchStripeData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -106,19 +106,15 @@ export default function StripeDashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
-    let mounted = true;
     if (currentUser) {
       fetchStripeData();
     } else {
       setLoading(false);
     }
-    return () => {
-      mounted = false;
-    };
-  }, [currentUser]);
+  }, [currentUser, fetchStripeData]);
 
   if (!currentUser) {
     return (
@@ -183,31 +179,6 @@ export default function StripeDashboardPage() {
   if (!data) return null;
 
   const { metrics, subscriptions, recentTransactions } = data;
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      active: 'bg-green-500',
-      trialing: 'bg-blue-500',
-      canceled: 'bg-red-500',
-      past_due: 'bg-yellow-500',
-      incomplete: 'bg-gray-500',
-    };
-    return colors[status] || 'bg-gray-500';
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<
-      string,
-      { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
-    > = {
-      active: { label: t('stripeDashboard.activeSubs'), variant: 'default' },
-      trialing: { label: t('stripeDashboard.trialSubs'), variant: 'default' },
-      canceled: { label: t('stripeDashboard.canceledSubs'), variant: 'destructive' },
-      past_due: { label: t('stripeDashboard.pastDueSubs'), variant: 'outline' },
-      incomplete: { label: t('stripeDashboard.incompleteSubs'), variant: 'secondary' },
-    };
-    return variants[status] || { label: status, variant: 'secondary' as const };
-  };
 
   return (
     <div className="mx-auto space-y-6">

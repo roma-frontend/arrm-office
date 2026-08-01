@@ -24,7 +24,15 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { userId, organizationId, requestType, startDate, endDate, metadata } = await req.json();
+    const { userId, organizationId, requestType, startDate, endDate, metadata } =
+      (await req.json()) as {
+        userId?: string;
+        organizationId?: string;
+        requestType?: string;
+        startDate?: string;
+        endDate?: string;
+        metadata?: Record<string, unknown>;
+      };
 
     logger.log('[conflict-check] Request:', {
       userId,

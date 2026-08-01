@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import type { User } from '@/store/useAuthStore';
 import React, { useState, useEffect } from 'react';
 import { Globe, Calendar, Clock, CheckCircle2 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -20,18 +21,21 @@ import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
 
-interface LocalizationSettingsProps {
-  userId: Id<'users'>;
-  user: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSettingsChange: (settings: any) => void;
+interface LocalizationUser extends User {
+  language?: string;
+  timezone?: string;
+  dateFormat?: string;
+  firstDayOfWeek?: string;
+  timeFormat?: string;
 }
 
-export function LocalizationSettings({
-  userId,
-  user,
-  onSettingsChange,
-}: LocalizationSettingsProps) {
+interface LocalizationSettingsProps {
+  userId: Id<'users'>;
+  user: LocalizationUser | null;
+  onSettingsChange: (settings: Record<string, unknown>) => void;
+}
+
+export function LocalizationSettings({ user, onSettingsChange }: LocalizationSettingsProps) {
   const { t, i18n } = useTranslation();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -52,7 +56,7 @@ export function LocalizationSettings({
       timeFormat,
       firstDayOfWeek,
     });
-  }, [language, timezone, dateFormat, timeFormat, firstDayOfWeek]);
+  }, [language, timezone, dateFormat, timeFormat, firstDayOfWeek, onSettingsChange]);
 
   // Sync when user data changes
   useEffect(() => {
@@ -63,7 +67,7 @@ export function LocalizationSettings({
       setFirstDayOfWeek(user.firstDayOfWeek ?? 'monday');
       setTimeFormat(user.timeFormat ?? '24h');
     }
-  }, [user?.language, user?.timezone, user?.dateFormat, user?.timeFormat, user?.firstDayOfWeek]);
+  }, [user]);
 
   const handleSave = async () => {
     setIsSaving(true);

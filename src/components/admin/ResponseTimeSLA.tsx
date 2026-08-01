@@ -171,13 +171,16 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
                   dataKey="date"
                   tick={{ fontSize: 12, fill: axisTickFill }}
                   tickFormatter={(value) =>
-                    new Date(value).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+                    new Date(value as string).toLocaleDateString(locale, {
+                      month: 'short',
+                      day: 'numeric',
+                    })
                   }
                 />
                 <YAxis yAxisId="left" tick={{ fill: axisTickFill }} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fill: axisTickFill }} />
                 <Tooltip
-                  labelFormatter={(value) => new Date(value).toLocaleDateString(locale)}
+                  labelFormatter={(value) => new Date(value as string).toLocaleDateString(locale)}
                   contentStyle={{
                     background: tooltipBg,
                     border: `1px solid ${tooltipBorder}`,
@@ -226,12 +229,15 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
                   dataKey="date"
                   tick={{ fontSize: 12, fill: axisTickFill }}
                   tickFormatter={(value) =>
-                    new Date(value).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+                    new Date(value as string).toLocaleDateString(locale, {
+                      month: 'short',
+                      day: 'numeric',
+                    })
                   }
                 />
                 <YAxis tick={{ fill: axisTickFill }} />
                 <Tooltip
-                  labelFormatter={(value) => new Date(value).toLocaleDateString(locale)}
+                  labelFormatter={(value) => new Date(value as string).toLocaleDateString(locale)}
                   contentStyle={{
                     background: tooltipBg,
                     border: `1px solid ${tooltipBorder}`,

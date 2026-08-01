@@ -13,7 +13,7 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as { status: string; errorMessage?: string; value?: unknown };
   if (data.status === 'error') throw new Error(data.errorMessage ?? 'Convex error');
   return data.value;
 }
@@ -31,7 +31,7 @@ async function getAuthPayload(_req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = (await req.json().catch(() => ({}))) as { userId?: string; email?: string };
 
     let payload = await getAuthPayload(req);
 

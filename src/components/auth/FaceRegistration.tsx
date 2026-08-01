@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState, useEffect } from 'react';
 import { useMutation } from 'convex/react';
@@ -14,6 +14,7 @@ import { detectFace, loadFaceApiModels, createCanvasFromVideo } from '@/lib/face
 import { uploadAvatarToCloudinary } from '@/actions/cloudinary';
 import { Id } from '../../../convex/_generated/dataModel';
 import { logger } from '@/lib/logger';
+import { getErrorName, getErrorMessage } from '@/lib/error-handler';
 
 interface FaceRegistrationProps {
   userId: Id<'users'>;
@@ -63,7 +64,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [stream]);
+  }, [stream, t]);
 
   const startWebcam = async () => {
     try {
@@ -174,36 +175,36 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
           playVideo();
         }
       }, 1000);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error accessing webcam:', error);
 
       // Reset state on error
       setIsWebcamActive(false);
       setStream(null);
 
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      const errName = getErrorName(error);
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
         toast.error(
           t(
             'faceRegistration.cameraPermissionDenied',
             'Camera permission denied. Please allow camera access in your browser settings.',
           ),
         );
-      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
         toast.error(
           t(
             'faceRegistration.noCameraFound',
             'No camera found. Please connect a camera and try again.',
           ),
         );
-      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+      } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
         toast.error(
           t('faceRegistration.cameraInUse', 'Camera is already in use by another application.'),
         );
       } else {
         toast.error(
           t('faceRegistration.cameraAccessError', 'Unable to access camera: {{message}}', {
-            message: error.message || 'Unknown error',
+            message: getErrorMessage(error),
           }),
         );
       }
@@ -387,7 +388,14 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
           )}
 
           {capturedImage && (
-            <img src={capturedImage} alt="Captured face" className="w-full h-full object-cover" />
+            <Image
+              src={capturedImage}
+              alt="Captured face"
+              width={640}
+              height={480}
+              unoptimized
+              className="w-full h-full object-cover"
+            />
           )}
         </div>
 

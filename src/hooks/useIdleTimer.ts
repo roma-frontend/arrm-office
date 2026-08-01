@@ -89,6 +89,7 @@ export function useIdleTimer({ onIdle, onActive, onLogout }: UseIdleTimerOptions
   }, [onLogout, clearAllTimers]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only timer start
     startIdleTimer();
 
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
@@ -107,7 +108,6 @@ export function useIdleTimer({ onIdle, onActive, onLogout }: UseIdleTimerOptions
         window.removeEventListener(event, handleActivity);
       });
     };
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only initialisation
   }, [startIdleTimer, resetTimer, clearAllTimers]);
 
   return {

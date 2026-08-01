@@ -59,7 +59,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
       toast.error(t('calendarSync.connectionFailed', 'Failed to connect to calendar'));
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, []);
+  }, [t]);
 
   const handleExportICS = async () => {
     if (!calendarData) return;
@@ -100,8 +100,8 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
           throw new Error('Sync failed');
         }
 
-        const result = await response.json();
-        toast.success(result.message);
+        const result = (await response.json()) as { message?: string };
+        toast.success(result.message || 'Synced');
       } catch (error) {
         console.error('Google sync error:', error);
         toast.error(t('calendarSync.googleSyncFailed', 'Failed to sync with Google Calendar'));
@@ -142,8 +142,8 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
           throw new Error('Sync failed');
         }
 
-        const result = await response.json();
-        toast.success(result.message);
+        const result = (await response.json()) as { message?: string };
+        toast.success(result.message || 'Synced');
       } catch (error) {
         console.error('Outlook sync error:', error);
         toast.error(t('calendarSync.outlookSyncFailed', 'Failed to sync with Outlook Calendar'));

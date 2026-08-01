@@ -143,8 +143,9 @@ export function LeavesClient() {
         soundType: 'new_request',
       });
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- remember previous unread count to detect new requests
     setPreviousUnreadCount(unreadCount);
-  }, [unreadCount, user?.role, previousUnreadCount]);
+  }, [unreadCount, user?.role, previousUnreadCount, t]);
 
   const filtered = useMemo(() => {
     if (!leaves) return [];
@@ -339,7 +340,7 @@ export function LeavesClient() {
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-xl bg-[#2563eb]/20 flex items-center justify-center shrink-0">
                             <span className="text-sm font-bold text-[#2563eb]">
-                              {(req.userName ?? '?')[0].toUpperCase()}
+                              {(req.userName ?? '?').charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="min-w-0">

@@ -716,9 +716,12 @@ export function EmployeesClient() {
                           avatar={
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-linear-to-r from-(--primary) to-(--primary-dark,var(--primary)) flex items-center justify-center text-white text-xs font-bold">
                               {emp.avatarUrl ? (
-                                <img
+                                <Image
                                   src={emp.avatarUrl}
                                   alt={emp.name}
+                                  width={40}
+                                  height={40}
+                                  unoptimized
                                   className="w-full h-full object-cover"
                                   referrerPolicy="no-referrer"
                                 />

@@ -29,11 +29,15 @@ export default function WeeklyDigestWidget() {
     setLoading(true);
     try {
       const res = await fetch(`/api/chat/weekly-digest?adminId=${user.id}`);
-      const data = await res.json();
+      const data = (await res.json()) as {
+        digest?: string;
+        stats?: DigestStats;
+        generatedAt?: string;
+      };
       if (data.digest) {
         setDigest(data.digest);
-        setStats(data.stats);
-        setGeneratedAt(data.generatedAt);
+        setStats(data.stats ?? null);
+        setGeneratedAt(data.generatedAt ?? null);
       }
     } catch (_e) {
       setDigest('Failed to generate digest. Please try again.');

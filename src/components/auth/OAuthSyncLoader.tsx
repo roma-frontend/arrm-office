@@ -17,6 +17,7 @@ export function OAuthSyncLoader() {
   useEffect(() => {
     // Start showing loader when OAuth authenticated but not yet in useAuthStore
     if (status === 'authenticated' && !isAuthenticated && pathname === '/login') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- show loader while OAuth session syncs into the auth store
       setIsSyncing(true);
 
       // Hide loader after successful sync or timeout

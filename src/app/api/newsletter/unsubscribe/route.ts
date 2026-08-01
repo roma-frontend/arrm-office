@@ -8,7 +8,7 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as { status: string; errorMessage?: string; value?: unknown };
   if (data.status === 'error') throw new Error(data.errorMessage ?? 'Convex error');
   return data.value;
 }
@@ -24,7 +24,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await convexMutation('newsletter:unsubscribe', { token });
+    const result = (await convexMutation('newsletter:unsubscribe', { token })) as {
+      success?: boolean;
+    } | null;
 
     if (!result?.success) {
       return new NextResponse(htmlPage('Not Found', 'Invalid or expired unsubscribe link.'), {

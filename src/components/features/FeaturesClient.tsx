@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useHydrated } from '@/hooks/useHydrated';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -123,12 +123,8 @@ const PLATFORM_FEATURES = [
 export default function FeaturesClient() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { isAuthenticated, needsOnboarding } = useAuthStoreShallow();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { isAuthenticated } = useAuthStoreShallow();
+  const mounted = useHydrated();
 
   const handleModuleClick = (mod: (typeof MODULES)[number]) => {
     if (isAuthenticated) {

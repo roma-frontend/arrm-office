@@ -26,7 +26,6 @@ import {
   Car,
   Ticket,
   AlertTriangle,
-  HelpCircle,
   Cpu,
   Wallet,
   DollarSign,
@@ -692,7 +691,6 @@ export function Sidebar() {
                         ? signatureBadgeCount
                         : 0;
               const hasChildren = item.children && item.children.length > 0;
-              const activeClass = isActive ? 'scale-110' : '';
 
               return (
                 <div

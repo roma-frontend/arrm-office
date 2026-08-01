@@ -56,7 +56,7 @@ export const queryDriverAvailability = query({
     contextDate: v.optional(v.number()), // Reference date (default: now)
   },
   handler: async (ctx, args) => {
-    const { userId, organizationId, query, contextDate } = args;
+    const { organizationId, query, contextDate } = args;
     const now = contextDate || Date.now();
     const queryLower = query.toLowerCase();
 

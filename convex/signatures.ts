@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import type { Doc } from './_generated/dataModel';
 
 /**
  * Deterministic, Unicode-safe content hash for integrity display. Uses a DJB2
@@ -67,8 +68,7 @@ export const listDocuments = query({
     const signerDocs = await Promise.all(signerDocIds.map((docId) => ctx.db.get(docId)));
 
     // Merge and deduplicate by _id
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const allDocs: any[] = [
+    const allDocs: Array<Doc<'signatureDocuments'> | null> = [
       ...createdDocs,
       ...signerDocs.filter((d): d is NonNullable<typeof d> => d != null),
     ];

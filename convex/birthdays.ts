@@ -306,6 +306,30 @@ function getMonthName(month: number): string {
   return months[month - 1] ?? 'января';
 }
 
+/** Result of a single day's birthday notification run (`checkBirthdaysToday`). */
+interface BirthdayCheckTodayResult {
+  birthdaysFound: number;
+  notificationsSent: number;
+  birthdayUsers: Array<{
+    id: string;
+    name: string;
+    email: string;
+    department?: string;
+  }>;
+}
+
+/** Result of the upcoming-birthdays notification run (`checkUpcomingBirthdays`). */
+interface UpcomingBirthdaysCheckResult {
+  upcomingBirthdays: Array<{
+    name: string;
+    email: string;
+    department?: string;
+    date: string;
+    age: number;
+    daysUntil: number;
+  }>;
+}
+
 /**
  * Scheduled job: проверять дни рождения каждое утро в 9:00
  * Настроить в Convex Dashboard: Functions → birthdays → scheduledBirthdayCheck
@@ -315,9 +339,12 @@ export const scheduledBirthdayCheck = mutation({
   args: {
     organizationId: v.id('organizations'),
   },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  handler: async (ctx, args): Promise<any> => {
+  // Explicit return type breaks the circular `api` type inference created by
+  // `ctx.runMutation(api.birthdays.checkBirthdaysToday, ...)` inside the handler.
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ today: BirthdayCheckTodayResult; upcoming: UpcomingBirthdaysCheckResult }> => {
     const { organizationId } = args;
     // Проверить сегодня
     const today = await ctx.runMutation(api.birthdays.checkBirthdaysToday, {

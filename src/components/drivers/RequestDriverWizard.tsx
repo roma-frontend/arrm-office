@@ -14,7 +14,7 @@ import {
   CardSelectionStep,
 } from '@/components/ui/wizard-step-components';
 import { Car, MapPin, Clock, Calendar, Users } from 'lucide-react';
-import { useMutation, useQuery } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
@@ -31,12 +31,7 @@ interface RequestDriverWizardProps {
   preselectedDriverId?: string;
 }
 
-export function RequestDriverWizard({
-  userId,
-  onComplete,
-  onCancel,
-  preselectedDriverId,
-}: RequestDriverWizardProps) {
+export function RequestDriverWizard({ userId, onComplete, onCancel }: RequestDriverWizardProps) {
   const { t } = useTranslation();
   const { requestOptimistic } = useOptimisticDriverRequest();
   const { user } = useAuthStore();

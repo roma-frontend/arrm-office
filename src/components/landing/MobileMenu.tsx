@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
+import { useHydrated } from '@/hooks/useHydrated';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 
 type MenuItem = {
@@ -206,7 +207,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
   const { theme, setTheme } = useTheme();
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [visibleItems, setVisibleItems] = useState(false);
   const [hash, setHash] = useState<string>('');
   const [shouldRender, setShouldRender] = useState(isOpen);
@@ -215,6 +216,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
   // Smooth open/close animation
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- keep menu mounted while the close animation plays
       setShouldRender(true);
       // Double rAF ensures the closed state is painted first
       requestAnimationFrame(() => {
@@ -237,8 +239,6 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
       };
     }
   }, [isOpen]);
-
-  useEffect(() => setMounted(true), []);
 
   // hash state (нужен для active подсветки, потому что usePathname hash не дает)
   useEffect(() => {

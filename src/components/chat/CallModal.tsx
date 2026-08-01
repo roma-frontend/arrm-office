@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -100,7 +101,7 @@ export function CallModal({
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_METERED_URL || 'https://hr-project.metered.live'}/api/v1/turn/credentials?apiKey=${process.env.NEXT_PUBLIC_METERED_API_KEY}`,
         );
-        const servers = await response.json();
+        const servers = (await response.json()) as RTCIceServer[];
         if (Array.isArray(servers) && servers.length > 0) {
           setIceServers(servers);
         }
@@ -315,7 +316,18 @@ export function CallModal({
         setMediaError(t('chat.call.mediaGenericError'));
       }
     }
-  }, [call, currentUserId, iceServers, retryCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleEnd is declared below (TDZ); remaining deps are stable mutations/callbacks
+  }, [
+    call,
+    currentUserId,
+    iceServers,
+    retryCount,
+    cleanup,
+    setInCallStatusMutation,
+    t,
+    updateIceMutation,
+    updateOfferMutation,
+  ]);
 
   useEffect(() => {
     initMedia();
@@ -342,7 +354,7 @@ export function CallModal({
       setCallStatus('ended');
       setTimeout(() => onEnd(), 100);
     }
-  }, [callData, callStatus]);
+  }, [callData, callStatus, cleanup, onEnd]);
 
   // Poll for answer from remote peer
   useEffect(() => {
@@ -354,7 +366,7 @@ export function CallModal({
       if (!call.isInitiator && p.userId !== currentUserId && p.offer && !pc.remoteDescription) {
         try {
           logger.log('[CallModal] Receiver: setting remote description from initiator offer');
-          const offerSDP = JSON.parse(p.offer);
+          const offerSDP = JSON.parse(p.offer) as RTCSessionDescriptionInit;
           await pc.setRemoteDescription(new RTCSessionDescription(offerSDP));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
@@ -373,7 +385,7 @@ export function CallModal({
       if (call.isInitiator && p.userId !== currentUserId && p.answer && !pc.remoteDescription) {
         try {
           logger.log('[CallModal] Initiator: setting remote description from receiver answer');
-          const answerSDP = JSON.parse(p.answer);
+          const answerSDP = JSON.parse(p.answer) as RTCSessionDescriptionInit;
           await pc.setRemoteDescription(new RTCSessionDescription(answerSDP));
         } catch (e) {
           console.error('[CallModal] Error processing answer:', e);
@@ -386,7 +398,7 @@ export function CallModal({
           if (addedIceCandidatesRef.current.has(candStr)) continue;
           addedIceCandidatesRef.current.add(candStr);
           try {
-            const cand = new RTCIceCandidate(JSON.parse(candStr));
+            const cand = new RTCIceCandidate(JSON.parse(candStr) as RTCIceCandidateInit);
             if (pc.remoteDescription) {
               await pc.addIceCandidate(cand);
             }
@@ -396,7 +408,7 @@ export function CallModal({
         }
       }
     });
-  }, [callData]);
+  }, [callData, answerCallMutation, call.callId, call.isInitiator, currentUserId]);
 
   const handleEnd = async () => {
     logger.log('[CallModal] Ending call and turning off media devices...');
@@ -610,7 +622,14 @@ export function CallModal({
           <div className="flex items-center gap-2">
             <Avatar className="w-7 h-7">
               {currentUserAvatar && (
-                <img src={currentUserAvatar} className="w-full h-full object-cover rounded-full" />
+                <Image
+                  src={currentUserAvatar}
+                  alt=""
+                  width={28}
+                  height={28}
+                  unoptimized
+                  className="w-full h-full object-cover rounded-full"
+                />
               )}
               <AvatarFallback className="text-xs text-white bg-gray-700">
                 {getInitials(currentUserName)}

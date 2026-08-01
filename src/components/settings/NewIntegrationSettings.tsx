@@ -33,6 +33,21 @@ const SECRET_MASK = '••••••••';
 const SECRET_FIELDS = new Set(['apiKey', 'clientSecret', 'apiPassword']);
 
 /**
+ * Typed view of a provider's stored config. Known fields mirror the
+ * integrations schema; provider-specific field keys stay `unknown` and are
+ * narrowed where they are read.
+ */
+interface ProviderConfig {
+  isEnabled?: boolean;
+  lastSyncAt?: number;
+  syncStatus?: 'idle' | 'syncing' | 'success' | 'error';
+  lastError?: string;
+  lastWebhookAt?: number;
+  hasWebhookSecret?: boolean;
+  [key: string]: unknown;
+}
+
+/**
  * Shared advanced options. Provider payload shapes are not fixed, so an admin
  * can point the sync at the right path and name the fields without a code change.
  */
@@ -185,7 +200,7 @@ export default function NewIntegrationSettings() {
   const organizationId = useSelectedOrganization() as Id<'organizations'> | undefined;
 
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
-  const [formState, setFormState] = useState<Record<string, any>>({});
+  const [formState, setFormState] = useState<Record<string, string | boolean>>({});
   /** Secret fields the admin explicitly cleared, keyed `provider_field`. */
   const [clearedSecrets, setClearedSecrets] = useState<Record<string, boolean>>({});
   const [syncing, setSyncing] = useState<string | null>(null);
@@ -214,8 +229,8 @@ export default function NewIntegrationSettings() {
 
   if (!organizationId || !user) return <ShieldLoader />;
 
-  const getConfig = (providerId: string) => {
-    return configs?.find((c) => c.provider === providerId)?.config;
+  const getConfig = (providerId: string): ProviderConfig | undefined => {
+    return configs?.find((c) => c.provider === providerId)?.config as ProviderConfig | undefined;
   };
 
   // Secrets never leave the server — the query returns a mask. Show such fields
@@ -223,32 +238,33 @@ export default function NewIntegrationSettings() {
   const isSecretSet = (providerId: string, fieldKey: string) => {
     if (clearedSecrets[`${providerId}_${fieldKey}`]) return false;
     const cfg = getConfig(providerId);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (cfg as any)?.[fieldKey] === SECRET_MASK;
+    return cfg?.[fieldKey] === SECRET_MASK;
   };
 
-  const getFieldValue = (providerId: string, fieldKey: string) => {
+  const getFieldValue = (providerId: string, fieldKey: string): string => {
     const local = formState[`${providerId}_${fieldKey}`];
-    if (local !== undefined) return local;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stored = (getConfig(providerId) as any)?.[fieldKey];
-    return stored === SECRET_MASK ? '' : (stored ?? '');
+    if (local !== undefined) return typeof local === 'string' ? local : '';
+    const stored = getConfig(providerId)?.[fieldKey];
+    return stored === SECRET_MASK ? '' : typeof stored === 'string' ? stored : '';
   };
 
-  const getToggleValue = (providerId: string, toggleKey: string) => {
+  const getToggleValue = (providerId: string, toggleKey: string): boolean => {
     const cfg = getConfig(providerId);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return formState[`${providerId}_${toggleKey}`] ?? (cfg as any)?.[toggleKey] ?? false;
+    const local = formState[`${providerId}_${toggleKey}`];
+    if (local !== undefined) return local === true;
+    return cfg?.[toggleKey] === true;
   };
 
   // Enablement resolves the same way for the switch and for the save payload, so
   // the card can never show one state and persist another. A provider with no
   // saved config yet defaults to on: filling in credentials and hitting Save
   // should produce a working integration, not a silently disabled one.
-  const getIsEnabled = (providerId: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stored = getConfig(providerId) as any;
-    return formState[`${providerId}_isEnabled`] ?? stored?.isEnabled ?? !stored;
+  const getIsEnabled = (providerId: string): boolean => {
+    const stored = getConfig(providerId);
+    const local = formState[`${providerId}_isEnabled`];
+    if (local !== undefined) return local === true;
+    if (!stored) return true;
+    return stored.isEnabled === true;
   };
 
   const handleExpand = (providerId: string) => {
@@ -290,8 +306,7 @@ export default function NewIntegrationSettings() {
 
     setSavingProvider(providerId);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const config: any = {
+      const config: Record<string, string | boolean> = {
         isEnabled: getIsEnabled(providerId),
       };
 
@@ -315,18 +330,16 @@ export default function NewIntegrationSettings() {
 
       await saveConfig({
         organizationId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        provider: providerId as any,
-        config,
+        provider: providerId as ProviderId,
+        config: config as unknown as Parameters<typeof saveConfig>[0]['config'],
         ...(clearSecrets.length ? { clearSecrets } : {}),
       });
       toast.success(t('admin.integrations.saved', { provider: provider.name }));
       // Drop local edits so freshly saved values come back from the server.
       setFormState({});
       setClearedSecrets({});
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      toast.error(e?.message ? String(e.message) : String(e));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSavingProvider(null);
     }
@@ -337,8 +350,7 @@ export default function NewIntegrationSettings() {
     try {
       const result = await syncIntegration({
         organizationId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        provider: providerId as any,
+        provider: providerId as ProviderId,
       });
       // The action reports failure in its return value rather than throwing.
       if (result?.success) {
@@ -346,9 +358,8 @@ export default function NewIntegrationSettings() {
       } else {
         toast.error(result?.error || t('admin.integrations.syncFailed', 'Sync failed'));
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      toast.error(e?.message ? String(e.message) : String(e));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSyncing(null);
     }
@@ -384,9 +395,8 @@ export default function NewIntegrationSettings() {
       toast.success(
         t('admin.integrations.webhookSecretCreated', 'Webhook secret generated — copy it now'),
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      toast.error(e?.message ? String(e.message) : String(e));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
     } finally {
       setRotatingSecret(false);
     }

@@ -158,14 +158,19 @@ export async function uploadChatAttachment(
 
     logger.log('✅ Voice message uploaded successfully:', result.secure_url);
     return { url: result.secure_url, name: fileName, type: mimeType };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     logger.error('❌ Voice message upload failed:', error);
+    const details = error as {
+      message?: string;
+      error?: string;
+      status?: number;
+      http_code?: number;
+    };
     logger.error('❌ Error details:', {
-      message: error?.message,
-      error: error?.error,
-      status: error?.status,
-      http_code: error?.http_code,
+      message: details.message,
+      error: details.error,
+      status: details.status,
+      http_code: details.http_code,
     });
     const errorMessage = error instanceof Error ? error.message : 'Upload failed';
     throw new Error(`Voice message upload error: ${errorMessage}`);
@@ -180,7 +185,9 @@ export async function deleteAvatarFromCloudinary(userId: string): Promise<void> 
     const publicId = `hr-office/avatars/${userId}`;
     logger.log('📤 Deleting from Cloudinary:', publicId);
 
-    const result = await cloudinary.uploader.destroy(publicId);
+    const result = (await cloudinary.uploader.destroy(publicId)) as {
+      result?: string;
+    };
 
     logger.log('✅ Delete result:', result);
 
@@ -244,8 +251,7 @@ export async function uploadDocument(
       size: decodedSize,
       type: mimeType || result.resource_type,
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     logger.error('❌ Document upload failed:', error);
     throw new Error(error instanceof Error ? error.message : 'Upload failed');
   }
@@ -275,9 +281,9 @@ export async function deleteTaskAttachmentFromCloudinary(url: string): Promise<v
 
     logger.log('📤 Deleting from Cloudinary:', publicId);
 
-    const result = await cloudinary.uploader.destroy(publicId, {
+    const result = (await cloudinary.uploader.destroy(publicId, {
       resource_type: 'raw', // task attachments can be any file type
-    });
+    })) as { result?: string };
 
     logger.log('✅ Delete result:', result);
 

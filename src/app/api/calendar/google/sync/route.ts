@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createGoogleCalendarEvent } from '@/lib/calendar-sync';
+import { createGoogleCalendarEvent, type CalendarEvent } from '@/lib/calendar-sync';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {
@@ -13,14 +13,19 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
       );
     }
 
-    const { events } = await request.json();
+    const { events } = (await request.json()) as { events?: CalendarEvent[] };
 
     if (!Array.isArray(events)) {
       return NextResponse.json({ error: 'Invalid events data' }, { status: 400 });
     }
 
     // Create events in Google Calendar
-    const results = [];
+    const results: Array<{
+      success: boolean;
+      eventId: string;
+      googleEventId?: string;
+      error?: string;
+    }> = [];
     for (const event of events) {
       try {
         const result = await createGoogleCalendarEvent(accessToken, event);

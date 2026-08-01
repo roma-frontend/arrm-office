@@ -1,7 +1,9 @@
 'use client';
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import { formatTime as formatTimeUtil } from '@/lib/date-format';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useHydrated } from '@/hooks/useHydrated';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import {
@@ -70,8 +72,7 @@ function formatDuration(minutes: number) {
 
 export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetailModalProps) {
   const { t, i18n } = useTranslation(['modules', 'common']);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
   const currentMonth = new Date().toISOString().slice(0, 7); // "2026-02"
   const monthlyStats = useQuery(
     api.timeTracking.getMonthlyStats,
@@ -139,9 +140,12 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                     <div className="flex items-end gap-4">
                       <div className="w-16 h-16 rounded-full shrink-0 overflow-hidden shadow-lg bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center text-white text-2xl font-bold">
                         {record.user?.avatarUrl ? (
-                          <img
+                          <Image
                             src={record.user.avatarUrl}
                             alt={record.user.name ?? ''}
+                            width={64}
+                            height={64}
+                            unoptimized
                             className="w-full h-full object-cover scale-110"
                             referrerPolicy="no-referrer"
                           />

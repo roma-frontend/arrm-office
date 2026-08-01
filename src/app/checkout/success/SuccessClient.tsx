@@ -47,7 +47,7 @@ export default function SuccessClient() {
     }
     const timer = setTimeout(() => setCount((c) => c - 1), 1000);
     return () => clearTimeout(timer);
-  }, [count]);
+  }, [count, router]);
 
   // Show loading while verifying
   if (verified === null && sessionId) {

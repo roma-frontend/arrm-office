@@ -16,8 +16,8 @@ export function useSelectedOrganization() {
 
   useEffect(() => {
     // Mark as hydrated after first render to ensure localStorage is read
-    setHydrated(true);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only hydration flag
+    setHydrated(true);
   }, []);
 
   if (!hydrated) {

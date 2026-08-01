@@ -468,25 +468,28 @@ export default function SurveyEditClient() {
                   </p>
                   {/* Question type */}
                   <div className="flex flex-wrap gap-1">
-                    {(Object.entries(QUESTION_TYPE_CONFIG) as [QuestionType, any][]).map(
-                      ([key, config]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() =>
-                            setNewQuestion((p) => ({ ...p, type: key, options: undefined }))
-                          }
-                          className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
-                            newQuestion.type === key
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                          }`}
-                        >
-                          <config.icon className="h-3 w-3" />
-                          {t(config.labelKey)}
-                        </button>
-                      ),
-                    )}
+                    {(
+                      Object.entries(QUESTION_TYPE_CONFIG) as [
+                        QuestionType,
+                        (typeof QUESTION_TYPE_CONFIG)[QuestionType],
+                      ][]
+                    ).map(([key, config]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() =>
+                          setNewQuestion((p) => ({ ...p, type: key, options: undefined }))
+                        }
+                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
+                          newQuestion.type === key
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                        }`}
+                      >
+                        <config.icon className="h-3 w-3" />
+                        {t(config.labelKey)}
+                      </button>
+                    ))}
                   </div>
                   {/* Question text */}
                   <Input

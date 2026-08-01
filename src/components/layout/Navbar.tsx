@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 // framer-motion removed — replaced with CSS transitions to reduce main-thread work,
@@ -202,8 +203,10 @@ export function Navbar() {
     await markRead({ notificationId: id });
   };
 
+  const now = useNow();
+
   const timeAgo = (timestamp: number) => {
-    const diff = Date.now() - timestamp;
+    const diff = now - timestamp;
     const mins = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -335,7 +338,10 @@ export function Navbar() {
                       {(() => {
                         if (n.metadata) {
                           try {
-                            const meta = JSON.parse(n.metadata);
+                            const meta = JSON.parse(n.metadata) as {
+                              messageKey?: string;
+                              params?: Record<string, string | number>;
+                            };
                             if (meta.messageKey)
                               return String(t(meta.messageKey, meta.params ?? {}));
                           } catch {}

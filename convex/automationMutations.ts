@@ -74,7 +74,7 @@ export const createWorkflow = mutation({
     const workflowId = await ctx.db.insert('automationWorkflows', {
       name: args.name,
       description: args.description || '',
-      config: args.config,
+      config: args.config as Record<string, unknown>,
       isActive: true,
       createdAt: Date.now(),
       updatedAt: Date.now(),

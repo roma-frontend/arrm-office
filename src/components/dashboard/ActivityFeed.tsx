@@ -5,14 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/convex/_generated/api';
-import { Id } from '@/convex/_generated/dataModel';
 import { motion } from '@/lib/cssMotion';
 import {
   Clock,
   UserPlus,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   FileText,
   DollarSign,
   Target,
@@ -57,6 +55,16 @@ interface Activity {
   user: { name: string; avatarUrl?: string | null } | null;
   route?: string;
   severity?: 'info' | 'success' | 'warning' | 'error';
+}
+
+/** Minimal shape of the audit log entries consumed by this widget. */
+interface AuditLogEntry {
+  _id: string;
+  _creationTime: number;
+  action: string;
+  details?: string;
+  createdAt?: number;
+  user?: { name?: string; avatarUrl?: string } | null;
 }
 
 // ── Config ──
@@ -211,46 +219,10 @@ function formatAction(action: string): ActivityAction {
   return known[normalized] ?? 'unknown';
 }
 
-// ── Avatar ──
-function Avatar({
-  name,
-  url,
-  size = 'sm',
-}: {
-  name: string;
-  url?: string | null;
-  size?: 'sm' | 'md';
-}) {
-  const dim = size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-sm';
-  const initials = name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-  return (
-    <div
-      className={`${dim} rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white bg-gradient-to-br from-blue-500 to-sky-500`}
-    >
-      {url ? (
-        <img
-          src={url}
-          alt={name}
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-      ) : (
-        initials
-      )}
-    </div>
-  );
-}
-
 // ── Activity Item ──
 function ActivityItem({
   activity,
   index,
-  t,
 }: {
   activity: Activity;
   index: number;
@@ -335,14 +307,13 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
   // getAuditLogs server-side only allows admin/superadmin (not supervisor)
   const canViewAuditLogs = user?.role === 'admin' || user?.role === 'superadmin';
 
-  const _useQuery = useQuery as unknown as (...args: any[]) => any;
+  const _useQuery = useQuery as unknown as (...args: unknown[]) => unknown;
 
   // Only admins/superadmins can fetch audit logs; employees/supervisors see empty state
   const auditLogs = _useQuery(
     api.users.queries.getAuditLogs as never,
     user?.id && canViewAuditLogs ? {} : 'skip',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) as any[] | undefined;
+  ) as AuditLogEntry[] | undefined;
 
   const allActivities = useMemo(() => {
     if (!auditLogs) return undefined;
@@ -352,7 +323,10 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
     // Convert audit logs to activities
     for (const log of auditLogs) {
       try {
-        const details = log.details ? JSON.parse(log.details) : {};
+        const details = (log.details ? JSON.parse(log.details) : {}) as Record<string, unknown> & {
+          title?: string;
+          taskId?: string;
+        };
         const action = formatAction(log.action);
 
         activities.push({

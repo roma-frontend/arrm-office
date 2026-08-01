@@ -299,8 +299,19 @@ export const getOrgHierarchyTree = query({
     }
 
     // Recursively build tree
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const buildNode = (u: (typeof activeUsers)[number]): any => ({
+    type OrgTreeNode = {
+      _id: Id<'users'>;
+      name: string;
+      role: string;
+      position?: string;
+      department?: string;
+      avatarUrl?: string;
+      email: string;
+      employeeType?: string;
+      children: OrgTreeNode[];
+      directReportCount: number;
+    };
+    const buildNode = (u: (typeof activeUsers)[number]): OrgTreeNode => ({
       _id: u._id,
       name: u.name,
       role: u.role,

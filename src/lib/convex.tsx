@@ -46,8 +46,9 @@ function useAuthForConvex() {
           setIsAuthenticated(false);
           return null;
         }
-        const { token } = await res.json();
-        tokenRef.current = token ?? null;
+        const data = (await res.json()) as { token?: string | null };
+        const token = data.token ?? null;
+        tokenRef.current = token;
         setIsAuthenticated(!!token);
         return tokenRef.current;
       } catch {
@@ -60,12 +61,14 @@ function useAuthForConvex() {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch the auth token once on mount
     fetchAccessToken({ forceRefreshToken: true });
   }, [fetchAccessToken]);
 
   // Re-fetch the Convex token whenever the app auth state changes (login/logout)
   // so the Convex client picks up the freshly-set `hr-auth-token` cookie.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-fetch the token after login/logout
     fetchAccessToken({ forceRefreshToken: true });
   }, [storeAuthenticated, fetchAccessToken]);
 

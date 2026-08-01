@@ -20,6 +20,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import dynamic from 'next/dynamic';
 import { useActiveSection } from '@/hooks/useActiveSection';
+import { useHydrated } from '@/hooks/useHydrated';
 
 const MobileMenu = dynamic(() => import('./MobileMenu'), {
   ssr: false,
@@ -50,7 +51,7 @@ export default function Navbar() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const [scrolled, setScrolled] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -63,8 +64,6 @@ export default function Navbar() {
   const activeSection = useActiveSection(sectionIds);
 
   useEffect(() => {
-    setMounted(true);
-
     const checkScreenSize = () => {
       setIsDesktop(window.innerWidth >= 1024);
     };

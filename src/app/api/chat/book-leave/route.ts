@@ -18,7 +18,22 @@ export const POST = withCsrfProtection(async (req: Request) => {
     const locale = cookieStore.get('i18nextLng')?.value || 'en';
     const { t } = await getServerTranslation('common', locale);
 
-    const { type, startDate, endDate, days, reason } = await req.json();
+    const { type, startDate, endDate, days, reason } = (await req.json()) as {
+      type?:
+        | 'paid'
+        | 'unpaid'
+        | 'sick'
+        | 'family'
+        | 'doctor'
+        | 'day_off'
+        | 'maternity'
+        | 'paternity'
+        | 'study';
+      startDate?: string;
+      endDate?: string;
+      days?: number;
+      reason?: string;
+    };
 
     if (!type || !startDate || !endDate || !days || !reason) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

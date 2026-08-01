@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { detectIntent, type UserRole } from '@/lib/aiAssistant';
 import { logger } from '@/lib/logger';
+import type { SpeechRecognition, SpeechRecognitionEvent } from '@/components/ai/chatWidgetTypes';
 
 interface VoiceNavigationOptions {
   enabled?: boolean;
@@ -22,8 +23,7 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
   const user = useAuthStore((s) => s.user);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SpeechRecognition API has incomplete TS types
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const navigate = useCallback(
     (route: string) => {
@@ -69,8 +69,7 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- SpeechRecognition API has no TS types
-    const recognition: any = new SpeechRecognition();
+    const recognition = new SpeechRecognition();
 
     recognition.continuous = continuous;
     recognition.interimResults = false;
@@ -81,14 +80,17 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
       logger.log('🎤 Voice recognition started');
     });
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const last = event.results[event.results.length - 1];
-      const command = last[0].transcript.toLowerCase().trim();
-      processVoiceCommand(command);
+      const transcript = last?.[0]?.transcript;
+      if (transcript) {
+        processVoiceCommand(transcript.toLowerCase().trim());
+      }
     };
 
-    recognition.onerror = (event: any) => {
-      logger.error('❌ Voice recognition error:', event.error);
+    recognition.onerror = (event: Event) => {
+      const errorCode = (event as { error?: string }).error ?? 'unknown';
+      logger.error('❌ Voice recognition error:', errorCode);
       setIsListening(false);
     };
 
@@ -120,7 +122,6 @@ export function useVoiceNavigation(options: VoiceNavigationOptions = {}) {
         recognitionRef.current.stop();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional cleanup on unmount only
   }, []);
 
   return {

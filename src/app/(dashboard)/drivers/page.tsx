@@ -58,6 +58,20 @@ interface TripRequest {
   };
 }
 
+/** Shape of the request object passed by `DriverBookingPage`. */
+interface BookingPageRequest {
+  _id: string;
+  status: string;
+  startTime?: number;
+  tripInfo?: {
+    from: string;
+    to: string;
+  };
+  assignedDriver?: {
+    userName: string;
+  };
+}
+
 interface _RecurringTrip {
   _id: Id<'recurringTrips'>;
   isActive: boolean;
@@ -177,6 +191,7 @@ export default function DriversPage() {
   useEffect(() => {
     if (favoriteDrivers && favoriteDrivers.length > 0) {
       const serverIds = new Set(favoriteDrivers.filter(Boolean).map((fav) => String(fav!._id)));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync optimistic state with server data when it loads
       setOptimisticFavoriteIds(serverIds);
     }
   }, [favoriteDrivers]);
@@ -283,7 +298,7 @@ export default function DriversPage() {
         }
       };
     }
-  }, [showRequestWizard, showTripDetails, showCalendarDialog]);
+  }, [showRequestWizard, showTripDetails, showCalendarDialog, mainRef]);
 
   // 8. Callback hooks (MUST be before early returns!)
   const handleBook = useCallback(
@@ -300,9 +315,8 @@ export default function DriversPage() {
     [mainRef],
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- type compatible with DriverBookingPage.Request
   const handleViewRequestDetails = useCallback(
-    (request: any) => {
+    (request: BookingPageRequest) => {
       setSelectedRequest(request as TripRequest);
       setShowTripDetails(true);
       const mainEl = mainRef.current;

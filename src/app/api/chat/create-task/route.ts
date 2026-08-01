@@ -24,7 +24,14 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { title, description, assignedTo, priority, deadline, tags } = await req.json();
+    const { title, description, assignedTo, priority, deadline, tags } = (await req.json()) as {
+      title?: string;
+      description?: string;
+      assignedTo?: string;
+      priority?: string;
+      deadline?: string;
+      tags?: string[];
+    };
 
     // Creator identity comes from the trusted session, never the request body
     const assignedBy = auth.payload.userId as Id<'users'>;

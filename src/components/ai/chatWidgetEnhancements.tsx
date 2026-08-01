@@ -17,7 +17,7 @@ export function TypingStages() {
   useEffect(() => {
     const timer = setInterval(() => setIdx((i) => (i + 1) % stages.length), 2000);
     return () => clearInterval(timer);
-  }, []);
+  }, [stages.length]);
 
   return (
     <span className="text-xs text-(--text-muted) transition-opacity duration-300">
@@ -27,7 +27,10 @@ export function TypingStages() {
 }
 
 // === MOOD GREETING ===
-export function getMoodGreeting(name: string, t: (key: string, opts?: any) => string): string {
+export function getMoodGreeting(
+  name: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const hour = new Date().getHours();
   if (hour < 6)
     return t('chatWidget.moodNight', {
@@ -58,7 +61,7 @@ export function getMoodGreeting(name: string, t: (key: string, opts?: any) => st
 // === CONTEXT-AWARE SUGGESTIONS ===
 export function getContextSuggestions(
   pathname: string,
-  t: (key: string, opts?: any) => string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
 ): string[] {
   if (pathname.includes('/leaves'))
     return [
@@ -113,7 +116,9 @@ export interface SlashCommand {
   description: string;
 }
 
-export function getSlashCommands(t: (key: string, opts?: any) => string): SlashCommand[] {
+export function getSlashCommands(
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): SlashCommand[] {
   return [
     {
       command: '/leave',
@@ -168,7 +173,7 @@ export function getSlashCommands(t: (key: string, opts?: any) => string): SlashC
 
 export function filterSlashCommands(
   input: string,
-  t: (key: string, opts?: any) => string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
 ): SlashCommand[] {
   if (!input.startsWith('/')) return [];
   const commands = getSlashCommands(t);

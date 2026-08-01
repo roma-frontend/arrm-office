@@ -17,10 +17,10 @@ export function useScrollDirection(threshold = 64): ScrollDirection {
   // Reset on mount — ensures navbar shows after navigation
   useEffect(() => {
     if (window.scrollY <= threshold) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only reset
       setDirection('up');
       lastY.current = window.scrollY;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only state reset
   }, [threshold]);
 
   useEffect(() => {

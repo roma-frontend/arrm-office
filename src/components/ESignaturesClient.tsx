@@ -1,5 +1,5 @@
 'use client';
-
+import NextImage from 'next/image';
 import React, { useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -106,7 +106,7 @@ function parseFormContent(content: string): {
 } | null {
   if (content.startsWith('__MF__')) {
     try {
-      const data = JSON.parse(content.slice(6));
+      const data = JSON.parse(content.slice(6)) as Record<string, string>;
       return { type: 'movement', data };
     } catch {
       return null;
@@ -114,7 +114,7 @@ function parseFormContent(content: string): {
   }
   if (content.startsWith('__RF__')) {
     try {
-      const data = JSON.parse(content.slice(6));
+      const data = JSON.parse(content.slice(6)) as Record<string, string>;
       return { type: 'return', data };
     } catch {
       return null;
@@ -1130,7 +1130,14 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
                   {signatureData ? (
                     <div className="space-y-2">
                       <div className="border rounded-lg p-3 bg-white">
-                        <img src={signatureData} alt="Signature" className="max-h-[80px] mx-auto" />
+                        <NextImage
+                          src={signatureData}
+                          alt="Signature"
+                          width={200}
+                          height={80}
+                          unoptimized
+                          className="max-h-[80px] mx-auto"
+                        />
                       </div>
                       <Button variant="outline" size="sm" onClick={() => setSignatureData(null)}>
                         {t('signatures.pad.redraw', 'Redraw')}

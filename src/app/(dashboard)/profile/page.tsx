@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import { motion } from '@/lib/cssMotion';
@@ -493,9 +493,12 @@ export default function ProfilePage() {
           >
             <div className="shrink-0">
               {user?.avatar ? (
-                <img
+                <Image
                   src={user.avatar}
                   alt={t('profile.currentAvatar')}
+                  width={64}
+                  height={64}
+                  unoptimized
                   className="w-16 h-16 rounded-full object-cover"
                 />
               ) : (

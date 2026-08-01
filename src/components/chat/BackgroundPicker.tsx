@@ -28,7 +28,7 @@ export const BackgroundPicker = React.memo(function BackgroundPicker({
   onSelect,
   onClose,
 }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const updateChatBackground = useMutation(api.users.mutations.updateChatBackground);
   const [selectedCategory, setSelectedCategory] =
     React.useState<(typeof CHAT_BACKGROUNDS)[number]['category']>('neutral');

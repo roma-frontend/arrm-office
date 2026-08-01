@@ -43,6 +43,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
       if (authStorage) {
         try {
           const parsed = JSON.parse(authStorage);
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- read persisted session token from localStorage
           setSessionToken(parsed.state?.sessionToken);
         } catch (e) {
           console.error('Failed to parse auth storage', e);
@@ -68,6 +69,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(`tour_seen_${tourId}`);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- read persisted tour-seen flag from localStorage
       setHasSeenTourLocal(stored === 'true');
       setLocalStorageChecked(true);
     }
@@ -249,6 +251,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   useEffect(() => {
     if (shouldShowTour) {
       // Calculate position synchronously before showing
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- position the tooltip synchronously before showing the tour
       updateTargetPosition();
 
       // Minimal delay to ensure DOM is ready and position is set
@@ -262,6 +265,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
   useEffect(() => {
     if (!isVisible) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reposition tooltip on step change / resize
     updateTargetPosition();
 
     // Throttle resize event to avoid excessive recalculations

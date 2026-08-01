@@ -1,7 +1,9 @@
 'use client';
 
 import { useRef, useEffect, useCallback, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import type { TFunction } from 'i18next';
+import type { i18n as I18nInstance } from 'i18next';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import {
   X,
@@ -32,7 +34,9 @@ import type {
   BackupOrgAction,
   BackupEmployeeAction,
   RestoreBackupAction,
+  ConflictMessage,
 } from './chatWidgetTypes';
+import type { User } from '@/store/useAuthStore';
 import { LEAVE_TYPE_LABELS, getInitialSuggestions } from './chatWidgetUtils';
 import {
   TypingStages,
@@ -59,13 +63,13 @@ interface ChatWidgetWindowProps {
   error: string | null;
   isListening: boolean;
   inputRef: React.RefObject<HTMLInputElement | null>;
-  user: any;
+  user: User | null;
   sendMessage: (text: string, setIsOpen: (v: boolean) => void) => Promise<void>;
   handleAction: (messageId: string, action: AnyAction, actionIndex: number) => Promise<void>;
   startVoiceInput: () => void;
-  router: any;
-  t: (key: string, options?: any) => string;
-  i18n: any;
+  router: ReturnType<typeof useRouter>;
+  t: TFunction;
+  i18n: I18nInstance;
 }
 
 export function ChatWidgetWindow({
@@ -300,7 +304,8 @@ export function ChatWidgetWindow({
                             const pinned = togglePinMessage(m.id, m.content);
                             setPinnedIds((prev) => {
                               const s = new Set(prev);
-                              pinned ? s.add(m.id) : s.delete(m.id);
+                              if (pinned) s.add(m.id);
+                              else s.delete(m.id);
                               return s;
                             });
                           }}
@@ -476,20 +481,22 @@ export function ChatWidgetWindow({
 
                                       {state.conflicts && state.conflicts.length > 0 && (
                                         <div className="mt-2 space-y-1">
-                                          {state.conflicts.map((conflict: any, idx: number) => (
-                                            <div
-                                              key={idx}
-                                              className="text-xs text-red-700 dark:text-red-300 bg-red-500/5 p-2 rounded border border-red-500/10"
-                                            >
-                                              <p className="font-medium">{conflict.title}</p>
-                                              <p className="mt-0.5 text-red-600 dark:text-red-400">
-                                                {conflict.message}
-                                              </p>
-                                              <p className="mt-1 text-red-500 dark:text-red-300">
-                                                💡 {conflict.suggestion}
-                                              </p>
-                                            </div>
-                                          ))}
+                                          {state.conflicts.map(
+                                            (conflict: ConflictMessage, idx: number) => (
+                                              <div
+                                                key={idx}
+                                                className="text-xs text-red-700 dark:text-red-300 bg-red-500/5 p-2 rounded border border-red-500/10"
+                                              >
+                                                <p className="font-medium">{conflict.title}</p>
+                                                <p className="mt-0.5 text-red-600 dark:text-red-400">
+                                                  {conflict.message}
+                                                </p>
+                                                <p className="mt-1 text-red-500 dark:text-red-300">
+                                                  💡 {conflict.suggestion}
+                                                </p>
+                                              </div>
+                                            ),
+                                          )}
                                         </div>
                                       )}
 

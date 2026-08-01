@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useHydrated } from '@/hooks/useHydrated';
 import { useTranslation } from 'react-i18next';
 import { Palette, Sun, Moon, Monitor } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,12 +10,7 @@ import { useTheme } from '@/components/ThemeProvider';
 export function AppearanceSettings() {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // Avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHydrated();
 
   const themes = [
     {

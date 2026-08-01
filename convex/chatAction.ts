@@ -1,10 +1,30 @@
 import { action } from './_generated/server';
 import { api } from './_generated/api';
 import { v } from 'convex/values';
+import type { Id } from './_generated/dataModel';
 
 // Isolate API references at module level to avoid deep type instantiation in handler
 const usersApi = api.users;
 const leavesApi = api.leaves;
+
+/** Shape of the user profile used to build the AI context string. */
+interface ChatUserProfile {
+  _id?: Id<'users'>;
+  name?: string;
+  role?: string;
+  department?: string;
+  position?: string;
+  organizationId?: Id<'organizations'>;
+  leaveBalance?: { paid?: number; sick?: number; family?: number };
+  paidLeaveBalance?: number;
+  sickLeaveBalance?: number;
+  familyLeaveBalance?: number;
+}
+
+/** Minimal shape of a GROQ chat-completion response. */
+interface GroqChatResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
@@ -33,8 +53,7 @@ export const sendChatMessage = action({
     // ── Fetch real data from Convex DB ──────────────────────────────────
     let userDataContext = '';
     let teamDataContext = '';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let userProfile: any = null;
+    let userProfile: ChatUserProfile | null = null;
 
     try {
       if (userEmail) {
@@ -272,15 +291,15 @@ RULES:
         throw new Error(`GROQ API error: ${response.status} ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as GroqChatResponse;
       const content = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
 
       return { content };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: unknown) {
       console.error('GROQ API error:', error);
-      throw new Error(`Failed to get AI response: ${error.message}`);
+      throw new Error(
+        `Failed to get AI response: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   },
 });

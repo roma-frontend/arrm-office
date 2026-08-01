@@ -30,6 +30,7 @@ export function CSRFProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       const existingToken = sessionStorage.getItem('csrf_token');
       if (existingToken) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate CSRF token from sessionStorage on mount
         setToken(existingToken);
       } else {
         refreshToken();

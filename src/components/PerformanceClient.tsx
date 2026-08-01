@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import React, { useState } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useTranslation } from 'react-i18next';
@@ -466,6 +466,20 @@ function CreateCycleWizard({
 // FILL REVIEW WIZARD
 // ══════════════════════════════════════════════════════════════════════════════
 
+interface ReviewAssignment {
+  _id: Id<'reviewAssignments'>;
+  cycleId: Id<'reviewCycles'>;
+  reviewerId: Id<'users'>;
+  revieweeId: Id<'users'>;
+  organizationId?: Id<'organizations'>;
+  status: string;
+  type: string;
+  competencies: CompetencyDraft[];
+  revieweeName?: string;
+  cycleName?: string;
+  cycleStatus?: string;
+}
+
 function FillReviewDialog({
   open,
   onClose,
@@ -473,8 +487,7 @@ function FillReviewDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape from Convex query
-  assignment: any;
+  assignment: ReviewAssignment;
 }) {
   const { t } = useTranslation();
   const [ratings, setRatings] = useState<Record<string, number>>({});
@@ -486,7 +499,7 @@ function FillReviewDialog({
   const [showObjectives, setShowObjectives] = useState(false);
 
   const submitReview = useMutation(api.performance.submitReview);
-  const competencies: CompetencyDraft[] = assignment?.competencies || [];
+  const competencies: CompetencyDraft[] = assignment.competencies || [];
 
   // Fetch reviewee's OKRs linked to this review period
   const revieweeObjectives = useQuery(
@@ -1027,8 +1040,7 @@ export function PerformanceClient() {
     | undefined;
 
   const [showCreateWizard, setShowCreateWizard] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<ReviewAssignment | null>(null);
   const [launchCycleId, setLaunchCycleId] = useState<Id<'reviewCycles'> | null>(null);
   const [viewResults, setViewResults] = useState<{
     cycleId: Id<'reviewCycles'>;
@@ -1194,8 +1206,11 @@ export function PerformanceClient() {
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                       {a.revieweeAvatar ? (
-                        <img
+                        <Image
                           src={a.revieweeAvatar}
+                          width={40}
+                          height={40}
+                          unoptimized
                           className="w-10 h-10 rounded-full object-cover"
                           alt=""
                         />
@@ -1405,7 +1420,14 @@ function CycleSummaryCard({
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden">
                   {s.avatar ? (
-                    <img src={s.avatar} className="w-8 h-8 object-cover" alt="" />
+                    <Image
+                      src={s.avatar}
+                      width={32}
+                      height={32}
+                      unoptimized
+                      className="w-8 h-8 object-cover"
+                      alt=""
+                    />
                   ) : (
                     <Users className="h-4 w-4 text-muted-foreground" />
                   )}

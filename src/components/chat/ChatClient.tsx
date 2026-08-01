@@ -162,6 +162,7 @@ export default function ChatClient({
       setMobileShowChat(false);
       setChatVisible(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally clear selection only when the organization changes
   }, [effectiveOrgId]);
 
   // Global notification sound for new messages in ANY conversation

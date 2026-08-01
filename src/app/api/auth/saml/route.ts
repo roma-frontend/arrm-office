@@ -14,6 +14,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 // Force Node.js runtime for Buffer usage in SAML response decoding
 export const runtime = 'nodejs';
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
     const decoded = Buffer.from(samlResponse, 'base64').toString('utf-8');
 
     // Log the raw assertion for debugging
-    console.log('[SAML] Received assertion:', decoded.substring(0, 200) + '...');
+    logger.info('[SAML] Received assertion:', decoded.substring(0, 200) + '...');
 
     // TODO: Validate SAML assertion signature
     // TODO: Extract NameID and attributes

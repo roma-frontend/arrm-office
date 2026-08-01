@@ -8,7 +8,7 @@ async function convexQuery(path: string, args: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as { status: string; value?: unknown };
   if (data.status === 'error') return null;
   return data.value;
 }
@@ -22,11 +22,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ isActive: false });
     }
 
-    const maintenanceData = await convexQuery('admin:getMaintenanceMode', {
+    const maintenanceData = (await convexQuery('admin:getMaintenanceMode', {
       organizationId: orgId,
-    });
+    })) as { isActive?: boolean; startTime?: number } | null;
 
-    const isActive = maintenanceData?.isActive && maintenanceData.startTime <= Date.now();
+    const isActive =
+      maintenanceData?.isActive &&
+      typeof maintenanceData.startTime === 'number' &&
+      maintenanceData.startTime <= Date.now();
 
     return NextResponse.json({ isActive });
   } catch (error) {

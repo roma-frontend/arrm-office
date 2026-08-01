@@ -7,6 +7,7 @@
  */
 
 import type { NextRequest } from 'next/server';
+import type { JWTPayload } from './jwt';
 
 export const RESTRICTED_ORG_NAME = 'ADB-ARRM';
 export const RESTRICTED_ORG_SLUG = 'adb-arrm';
@@ -58,7 +59,8 @@ export function validateRestrictedAccess(
 export async function validateRestrictedOrgFromRequest(
   request: NextRequest,
 ): Promise<
-  { allowed: true; payload: any } | { allowed: false; status: number; body: { error: string } }
+  | { allowed: true; payload: JWTPayload }
+  | { allowed: false; status: number; body: { error: string } }
 > {
   const token = request.cookies.get('hr-auth-token')?.value;
 

@@ -12,6 +12,7 @@ import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getProfile } from '../lib/userProfile';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { isSuperadmin } from '../lib/auth';
+import type { Doc } from '../_generated/dataModel';
 
 /** Get pending driver requests for a driver */
 export const getDriverRequests = query({
@@ -186,7 +187,7 @@ export const getCompletedTrips = query({
           .take(DEFAULT_LIST_CAP),
       ),
     );
-    const scheduleMap = new Map<string, any>();
+    const scheduleMap = new Map<string, Doc<'driverSchedules'>>();
     for (const driverSchedules of schedulesByDriver) {
       for (const schedule of driverSchedules) {
         if (schedule.status === 'completed') {
@@ -229,7 +230,7 @@ export const getCompletedTrips = query({
       .query('passengerRatings')
       .withIndex('by_passenger', (q) => q.eq('passengerId', userId))
       .take(DEFAULT_LIST_CAP);
-    const ratingMap = new Map<string, any>();
+    const ratingMap = new Map<string, Doc<'passengerRatings'>>();
     for (const rating of allRatings) {
       ratingMap.set(rating.scheduleId, rating);
     }

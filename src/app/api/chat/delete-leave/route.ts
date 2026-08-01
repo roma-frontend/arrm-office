@@ -20,7 +20,13 @@ export const POST = withCsrfProtection(async (req: Request) => {
     const requesterId = auth.payload.userId;
     const convexAuth = { token: auth.token };
 
-    const body = await req.json();
+    const body = (await req.json()) as {
+      leaveId?: string;
+      employeeName?: string;
+      startDate?: string;
+      endDate?: string;
+      leaveType?: string;
+    };
     const leaveId: string = body.leaveId ?? '';
     const searchEmployeeName: string = body.employeeName ?? '';
     const searchStartDate: string = body.startDate ?? '';

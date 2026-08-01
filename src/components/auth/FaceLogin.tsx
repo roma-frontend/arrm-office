@@ -12,6 +12,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { detectFace, loadFaceApiModels } from '@/lib/faceApi';
+import { getErrorName, getErrorMessage } from '@/lib/error-handler';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 
@@ -254,12 +255,12 @@ export function FaceLogin() {
       setTimeout(() => {
         if (videoRef.current && streamRef.current && isWebcamActive) playVideoOnce();
       }, 1000);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error accessing webcam:', error);
       stopWebcam();
 
-      if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') {
+      const errName = getErrorName(error);
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
         toast.error(
           'Camera permission denied. Please allow camera access in your browser settings.',
           {
@@ -267,14 +268,14 @@ export function FaceLogin() {
             description: 'Click the lock icon in the address bar and allow camera access.',
           },
         );
-      } else if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
         toast.error(t('auth.noCameraFound'));
-      } else if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') {
+      } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
         toast.error(
           'Camera is already in use by another application. Please close other apps using the camera.',
         );
       } else {
-        toast.error(`Unable to access camera: ${error?.message || 'Unknown error'}`);
+        toast.error(`Unable to access camera: ${getErrorMessage(error)}`);
       }
     }
   };
@@ -493,7 +494,21 @@ export function FaceLogin() {
         throw new Error(errorData?.error || 'Login failed');
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        session?: {
+          userId: string;
+          name: string;
+          email: string;
+          role: 'admin' | 'superadmin' | 'supervisor' | 'employee' | 'driver';
+          organizationId?: string;
+          organizationSlug?: string;
+          organizationName?: string;
+          department?: string;
+          position?: string;
+          employeeType?: 'staff' | 'contractor';
+          avatar?: string;
+        };
+      };
 
       setFailedAttempts(0);
       setMatchedUser(data?.session?.name ?? email);
@@ -521,13 +536,13 @@ export function FaceLogin() {
       const params = new URLSearchParams(window.location.search);
       const nextUrl = params.get('next');
       router.push(nextUrl || '/dashboard');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Error during face login:', error);
 
-      const msg = error?.message?.includes('Failed to fetch')
+      const errMessage = error instanceof Error ? error.message : '';
+      const msg = errMessage.includes('Failed to fetch')
         ? 'Network error: Cannot connect to server. Please check your connection.'
-        : error?.message || 'Failed to login with Face ID. Please try again.';
+        : errMessage || 'Failed to login with Face ID. Please try again.';
 
       toast.error(msg, { id: 'face-login-error', duration: 5000 });
 
@@ -545,6 +560,7 @@ export function FaceLogin() {
       processingRef.current = false;
       setIsProcessing(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stopWebcam is recreated each render; including it would change callback identity every render
   }, [isBlocked, emailInput, failedAttempts, t, router]);
 
   return (

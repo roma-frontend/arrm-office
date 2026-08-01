@@ -109,7 +109,7 @@ export const declineCall = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { callMessageId, userId } = args;
+    const { callMessageId } = args;
     const call = await ctx.db.get(callMessageId);
     if (!call) throw new Error('Call not found');
 
@@ -170,7 +170,7 @@ export const getIncomingCalls = query({
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
-    const { userId, organizationId } = args;
+    const { userId } = args;
     // Get all conversations for this user
     const memberships = await ctx.db
       .query('chatMembers')

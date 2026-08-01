@@ -55,14 +55,11 @@ export interface TripSchedule {
 
 export function TripDetailsModal({
   schedule,
-  currentTime,
   onClose,
   onRate,
   onReassign,
   onMessage,
   onCall,
-  userId,
-  isAdmin = false,
 }: TripDetailsModalProps & { isAdmin?: boolean }) {
   const { t, i18n } = useTranslation();
   const [showMapMenu, setShowMapMenu] = useState(false);
@@ -83,16 +80,6 @@ export function TripDetailsModal({
   if (!schedule) return null;
 
   const isTrip = schedule.type === 'trip';
-  const statusColors: Record<string, string> = {
-    scheduled: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-    pending: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-    approved: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    rejected: 'bg-red-500/10 text-red-600 dark:text-red-400',
-    in_progress: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
-    completed: 'bg-green-500/10 text-green-600 dark:text-green-400',
-    cancelled: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
-  };
-
   const statusTranslations: Record<string, string> = {
     scheduled: t('driver.status.scheduled', 'Scheduled'),
     pending: t('driver.status.pending', 'Pending'),

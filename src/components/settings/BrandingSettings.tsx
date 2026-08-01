@@ -1,9 +1,18 @@
 'use client';
-
+import Image from 'next/image';
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Palette, Globe, Image, Eye, Save, RotateCcw, Upload, Building2 } from 'lucide-react';
+import {
+  Palette,
+  Globe,
+  Image as ImageIcon,
+  Eye,
+  Save,
+  RotateCcw,
+  Upload,
+  Building2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -154,7 +163,7 @@ export default function BrandingSettingsPage() {
         {/* Logo upload */}
         <Card className="p-5 border border-(--border) bg-(--card)">
           <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-            <Image className="w-4 h-4 text-purple-500" />
+            <ImageIcon className="w-4 h-4 text-purple-500" />
             {t('branding.logo', 'Logo & Icon')}
           </h3>
           <div className="space-y-4">
@@ -178,9 +187,12 @@ export default function BrandingSettingsPage() {
                 onClick={() => logoInputRef.current?.click()}
               >
                 {settings.logoUrl ? (
-                  <img
+                  <Image
                     src={settings.logoUrl}
                     alt="Logo"
+                    width={192}
+                    height={96}
+                    unoptimized
                     className="max-h-24 max-w-48 object-contain"
                   />
                 ) : (
@@ -346,7 +358,14 @@ export default function BrandingSettingsPage() {
             >
               <div className="flex items-center gap-2">
                 {settings.logoUrl ? (
-                  <img src={settings.logoUrl} alt="" className="h-8 w-8 rounded" />
+                  <Image
+                    src={settings.logoUrl}
+                    alt=""
+                    width={32}
+                    height={32}
+                    unoptimized
+                    className="h-8 w-8 rounded"
+                  />
                 ) : (
                   <div
                     className="w-8 h-8 rounded flex items-center justify-center text-white text-xs font-bold"

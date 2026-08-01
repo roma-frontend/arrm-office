@@ -21,12 +21,10 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 5000): 
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error) {
+      const errMessage = error instanceof Error ? error.message : String(error);
       const isRateLimit =
-        error?.message?.includes('quota') ||
-        error?.message?.includes('rate') ||
-        error?.message?.includes('429');
+        errMessage.includes('quota') || errMessage.includes('rate') || errMessage.includes('429');
       if (isRateLimit && i < retries - 1) {
         const wait = delayMs * (i + 1);
         logger.log(`[AI Site Editor] Rate limit hit, retrying in ${wait}ms...`);
@@ -676,14 +674,19 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
   try {
     logger.log('[AI Site Editor] Request received');
 
-    const body = await req.json();
+    const body = (await req.json()) as {
+      message?: string;
+      userId?: string;
+      organizationId?: string;
+      plan?: string;
+    };
     logger.log('[AI Site Editor] Body parsed:', {
       message: body.message?.substring(0, 50),
       userId: body.userId,
       plan: body.plan,
     });
 
-    const { message, userId, organizationId, plan } = body;
+    const { message, userId, organizationId, plan = '' } = body;
 
     if (!message || !userId || !organizationId) {
       console.error('[AI Site Editor] Missing fields:', {
@@ -790,8 +793,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     const changesMade = appliedFiles;
 
     // Обновляем сессию в Convex
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateSessionMutation: any = api.aiSiteEditor.updateSession;
+    const updateSessionMutation = api.aiSiteEditor.updateSession;
     await fetchMutation(updateSessionMutation, {
       sessionId: sessionId as Id<'aiSiteEditorSessions'>,
       aiResponse: aiText,
@@ -801,8 +803,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     });
 
     // Увеличиваем счётчик использования
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const incrementUsageMutation: any = api.aiSiteEditor.incrementUsage;
+    const incrementUsageMutation = api.aiSiteEditor.incrementUsage;
     await fetchMutation(incrementUsageMutation, {
       userId: userId as Id<'users'>,
       organizationId: organizationId as Id<'organizations'>,
@@ -817,21 +818,21 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       editType,
       sessionId,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
     console.error('=== AI Site Editor Error ===');
-    console.error('Message:', error?.message);
-    console.error('Stack:', error?.stack);
+    console.error('Message:', err.message);
+    console.error('Stack:', err.stack);
     console.error('Full error:', error);
 
     // Возвращаем детальную ошибку для отладки
     return NextResponse.json(
       {
-        error: error?.message || 'Internal server error',
+        error: err.message || 'Internal server error',
         details: String(error),
-        type: error?.name || 'Error',
+        type: err.name || 'Error',
         // Всегда показываем stack в dev режиме
-        stack: error?.stack,
+        stack: err.stack,
       },
       { status: 500 },
     );

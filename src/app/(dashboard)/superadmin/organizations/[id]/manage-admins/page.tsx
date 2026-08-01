@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../../../../convex/_generated/api';
 import type { Id } from '../../../../../../../convex/_generated/dataModel';
@@ -285,9 +285,12 @@ export default function ManageAdminsPage() {
                 >
                   <div className="flex items-center gap-4 flex-1">
                     {admin.avatarUrl && (
-                      <img
+                      <Image
                         src={admin.avatarUrl}
                         alt={admin.name}
+                        width={48}
+                        height={48}
+                        unoptimized
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     )}
@@ -359,9 +362,12 @@ export default function ManageAdminsPage() {
                 >
                   <div className="flex items-center gap-4 flex-1">
                     {employee.avatarUrl && (
-                      <img
+                      <Image
                         src={employee.avatarUrl}
                         alt={employee.name}
+                        width={48}
+                        height={48}
+                        unoptimized
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     )}

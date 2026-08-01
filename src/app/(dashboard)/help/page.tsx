@@ -330,8 +330,6 @@ function StatCard({
 
 // Ticket List Component
 function TicketList({ tickets, emptyMessage }: { tickets: TicketData[]; emptyMessage: string }) {
-  const { t } = useTranslation();
-
   if (tickets.length === 0) {
     return (
       <Card style={{ background: 'var(--card)' }}>

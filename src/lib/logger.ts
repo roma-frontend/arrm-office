@@ -1,4 +1,4 @@
-// eslint-disable no-console — this logger module intentionally wraps console methods
+/* eslint-disable no-console -- this logger module intentionally wraps console methods */
 
 const isDev = process.env.NODE_ENV === 'development';
 

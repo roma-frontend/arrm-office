@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -8,13 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,13 +24,10 @@ interface DriverShiftControlsProps {
   organizationId: Id<'organizations'>;
 }
 
-export function DriverShiftControls({
-  driverId,
-  userId,
-  organizationId,
-}: DriverShiftControlsProps) {
+export function DriverShiftControls({ driverId, organizationId }: DriverShiftControlsProps) {
   const { t, i18n } = useTranslation();
   const dfLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
+  const now = useNow();
   const [showEndShiftModal, setShowEndShiftModal] = useState(false);
   const [breakTime, setBreakTime] = useState('');
   const [driverNotes, setDriverNotes] = useState('');
@@ -65,9 +57,11 @@ export function DriverShiftControls({
           : undefined,
       });
       toast.success(t('driver.shift.started', 'Shift started successfully!'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('driver.shift.startFailed', 'Failed to start shift'));
+    } catch (error) {
+      toast.error(
+        (error instanceof Error ? error.message : '') ||
+          t('driver.shift.startFailed', 'Failed to start shift'),
+      );
     }
   };
 
@@ -82,9 +76,11 @@ export function DriverShiftControls({
       setShowEndShiftModal(false);
       setBreakTime('');
       setDriverNotes('');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('driver.shift.endFailed', 'Failed to end shift'));
+    } catch (error) {
+      toast.error(
+        (error instanceof Error ? error.message : '') ||
+          t('driver.shift.endFailed', 'Failed to end shift'),
+      );
     }
   };
 
@@ -92,9 +88,11 @@ export function DriverShiftControls({
     try {
       await pauseShiftMutation({ driverId });
       toast.success(t('driver.shift.paused', 'Shift paused'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('driver.shift.pauseFailed', 'Failed to pause shift'));
+    } catch (error) {
+      toast.error(
+        (error instanceof Error ? error.message : '') ||
+          t('driver.shift.pauseFailed', 'Failed to pause shift'),
+      );
     }
   };
 
@@ -102,9 +100,11 @@ export function DriverShiftControls({
     try {
       await resumeShiftMutation({ driverId });
       toast.success(t('driver.shift.resumed', 'Shift resumed'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('driver.shift.resumeFailed', 'Failed to resume shift'));
+    } catch (error) {
+      toast.error(
+        (error instanceof Error ? error.message : '') ||
+          t('driver.shift.resumeFailed', 'Failed to resume shift'),
+      );
     }
   };
 
@@ -173,7 +173,7 @@ export function DriverShiftControls({
                     {formatDuration(
                       currentShift.endTime
                         ? currentShift.endTime - currentShift.startTime
-                        : Date.now() - currentShift.startTime,
+                        : now - currentShift.startTime,
                     )}
                   </p>
                 </div>

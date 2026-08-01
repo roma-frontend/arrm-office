@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
+import type { Doc } from '../_generated/dataModel';
 
 // ─── EMERGENCY DASHBOARD ─────────────────────────────────────────────────────
 /**
@@ -112,7 +113,7 @@ export const getEmergencyDashboard = query({
         acc[ip].push(attempt);
         return acc;
       },
-      {} as Record<string, any[]>,
+      {} as Record<string, Doc<'loginAttempts'>[]>,
     );
 
     const suspiciousIPs = Object.entries(failedLoginsByIP)
@@ -120,7 +121,13 @@ export const getEmergencyDashboard = query({
       .map(([ip, attempts]) => ({
         ip,
         attempts: attempts.length,
-        userIds: [...new Set(attempts.map((a) => a.userId.toString()))],
+        userIds: [
+          ...new Set(
+            attempts
+              .map((a) => a.userId?.toString())
+              .filter((id): id is string => id !== undefined),
+          ),
+        ],
       }));
 
     // Calculate priority score

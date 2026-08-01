@@ -123,7 +123,15 @@ export const getSurveyResults = query({
     const questionResults = questions.map((question) => {
       const questionAnswers = answers.filter((a) => a.questionId === question._id);
 
-      const aggregation: Record<string, unknown> = { totalResponses: questionAnswers.length };
+      const aggregation: {
+        totalResponses: number;
+        average?: number;
+        distribution?: Record<number, number>;
+        optionCounts?: Record<string, number>;
+        yesCount?: number;
+        noCount?: number;
+        textResponses?: string[];
+      } = { totalResponses: questionAnswers.length };
 
       switch (question.type) {
         case 'rating':
@@ -160,7 +168,9 @@ export const getSurveyResults = query({
           break;
         }
         case 'text': {
-          aggregation.textResponses = questionAnswers.map((a) => a.textValue).filter(Boolean);
+          aggregation.textResponses = questionAnswers
+            .map((a) => a.textValue)
+            .filter((v): v is string => v !== undefined && v.length > 0);
           break;
         }
       }

@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
-import type { Id } from '../../../convex/_generated/dataModel';
+import type { Id, Doc } from '../../../convex/_generated/dataModel';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { cn } from '@/lib/utils';
 import {
@@ -56,7 +56,7 @@ const DEPARTMENT_COLORS = [
 interface DepartmentWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingDepartment: any | null;
+  editingDepartment: Doc<'departments'> | null;
   onComplete: () => void;
 }
 
@@ -268,7 +268,7 @@ export default function DepartmentsClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showWizard, setShowWizard] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState<any | null>(null);
+  const [editingDepartment, setEditingDepartment] = useState<Doc<'departments'> | null>(null);
 
   const departments = useQuery(
     api.departments.list,
@@ -298,9 +298,7 @@ export default function DepartmentsClient() {
     const total = departments.length;
     const avgEmployees =
       total > 0
-        ? Math.round(
-            departments.reduce((sum: number, d: any) => sum + (d.employeeCount || 0), 0) / total,
-          )
+        ? Math.round(departments.reduce((sum, d) => sum + (d.employeeCount || 0), 0) / total)
         : 0;
     const largest =
       total > 0
@@ -322,8 +320,7 @@ export default function DepartmentsClient() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleEdit = (dept: any) => {
+  const handleEdit = (dept: Doc<'departments'>) => {
     setEditingDepartment(dept);
     setShowWizard(true);
   };

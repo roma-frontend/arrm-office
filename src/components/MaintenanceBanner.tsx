@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -20,6 +21,7 @@ export function MaintenanceBanner() {
     api.admin.getMaintenanceMode,
     organizationId ? { organizationId: organizationId as Id<'organizations'> } : 'skip',
   );
+  const now = useNow();
 
   // Countdown timer
   useEffect(() => {
@@ -64,7 +66,6 @@ export function MaintenanceBanner() {
   // Don't show if no maintenance, dismissed, or user is superadmin (they manage it)
   if (!maintenance?.isActive || dismissed) return null;
 
-  const now = Date.now();
   const hasStarted = now >= maintenance.startTime;
 
   // If already started and user is not superadmin — MaintenanceScreen handles it

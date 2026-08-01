@@ -6,15 +6,15 @@ import { logger } from '@/lib/logger';
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-async function convexMutation(name: string, args: Record<string, unknown>) {
+async function convexMutation<T = unknown>(name: string, args: Record<string, unknown>): Promise<T> {
   const res = await fetch(`${CONVEX_URL}/api/mutation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: name, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as { status: string; errorMessage?: string; value?: unknown };
   if (data.status === 'error') throw new Error(data.errorMessage ?? 'Convex error');
-  return data.value;
+  return data.value as T;
 }
 
 export async function POST(req: NextRequest) {
@@ -23,11 +23,14 @@ export async function POST(req: NextRequest) {
   if (rateLimitResponse) return rateLimitResponse;
 
   try {
-    const { email } = await req.json();
+    const { email } = (await req.json()) as { email?: string };
     if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
 
     // Request reset token from Convex
-    const result = await convexMutation('auth:requestPasswordReset', { email });
+    const result = await convexMutation<{ token?: string; email?: string; name?: string }>(
+      'auth:requestPasswordReset',
+      { email },
+    );
 
     // If user not found, still return success (security)
     // SECURITY: Add timing attack mitigation — constant delay regardless of user existence
@@ -54,7 +57,7 @@ export async function POST(req: NextRequest) {
       const isDomainVerified = process.env.RESEND_DOMAIN_VERIFIED === 'true';
       const testEmail =
         process.env.RESEND_TEST_EMAIL || process.env.BOOTSTRAP_SUPERADMIN_EMAIL || '';
-      const toEmail = isDomainVerified ? result.email : testEmail;
+      const toEmail = isDomainVerified ? result.email ?? '' : testEmail;
       const fromEmail = isDomainVerified
         ? 'Strata <hr@strata.work>'
         : 'Strata <onboarding@resend.dev>';

@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import type { Id } from '@/convex/_generated/dataModel';
+import type { Id, Doc } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import type { LeaveType } from '@/lib/types';
 import { calculateDays } from '@/lib/types';
@@ -62,7 +62,6 @@ interface StepData {
 
 export function LeaveRequestWizard({
   userId,
-  orgId,
   isSuperadmin = false,
   selectedOrgId,
   onComplete,
@@ -72,8 +71,6 @@ export function LeaveRequestWizard({
 }: LeaveRequestWizardProps) {
   const { t } = useTranslation();
   const createLeave = useMutation(api.leaves.createLeave);
-  const lang = i18n.language || 'en';
-  const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
   const useOrgFilter = isSuperadmin && selectedOrgId;
   const safeUserId = userId && userId !== '' ? (userId as Id<'users'>) : null;
@@ -87,11 +84,11 @@ export function LeaveRequestWizard({
           }
         : {}
       : 'skip',
-  );
+  ) as Doc<'users'>[] | undefined;
   const currentUser = useQuery(
     api.users.queries.getUserById,
     safeUserId ? { userId: safeUserId } : 'skip',
-  );
+  ) as Doc<'users'> | undefined;
 
   const canSelectEmployee = isSuperadmin ?? false;
 
@@ -162,7 +159,7 @@ export function LeaveRequestWizard({
       });
       onComplete?.();
       onCancel?.();
-    } catch (error) {
+    } catch {
       toast.error(t('leaveWizard.toast.error', 'Failed to submit request'));
     } finally {
       setIsSubmitting(false);
@@ -352,7 +349,7 @@ function EmployeeStep({
   value,
   onChange,
 }: {
-  allUsers: any[] | undefined;
+  allUsers: Doc<'users'>[] | undefined;
   value?: string;
   onChange: (v: string) => void;
 }) {
@@ -583,14 +580,13 @@ function DetailsStep({
   stepData,
   allUsers,
   currentUser,
-  canSelectEmployee,
   calculateDays,
   onReasonChange,
   onCommentChange,
 }: {
   stepData: StepData;
-  allUsers: any[] | undefined;
-  currentUser: any | undefined;
+  allUsers: Doc<'users'>[] | undefined;
+  currentUser: Doc<'users'> | undefined;
   canSelectEmployee: boolean;
   calculateDays: (s: string, e: string) => number;
   onReasonChange: (v: string) => void;

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Zap, Clock, Target, Keyboard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { User } from '@/store/useAuthStore';
 import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -16,10 +17,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+interface ProductivityUser extends User {
+  focusModeEnabled?: boolean;
+  breakRemindersEnabled?: boolean;
+  workHoursStart?: string;
+  workHoursEnd?: string;
+  breakInterval?: number;
+  dailyTaskGoal?: number;
+}
+
 interface ProductivitySettingsProps {
-  user: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSettingsChange: (settings: any) => void;
+  user: ProductivityUser | null;
+  onSettingsChange: (settings: Record<string, unknown>) => void;
 }
 
 export function ProductivitySettings({ user, onSettingsChange }: ProductivitySettingsProps) {
@@ -57,6 +66,7 @@ export function ProductivitySettings({ user, onSettingsChange }: ProductivitySet
   // Sync when user data changes
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local settings state when user data loads
       setFocusMode(user.focusModeEnabled ?? false);
       setBreakReminders(user.breakRemindersEnabled ?? true);
       setWorkHoursStart(user.workHoursStart ?? '09:00');
@@ -64,14 +74,7 @@ export function ProductivitySettings({ user, onSettingsChange }: ProductivitySet
       setBreakInterval(String(user.breakInterval ?? 120));
       setDailyGoal(String(user.dailyTaskGoal ?? 5));
     }
-  }, [
-    user?.focusModeEnabled,
-    user?.breakRemindersEnabled,
-    user?.workHoursStart,
-    user?.workHoursEnd,
-    user?.breakInterval,
-    user?.dailyTaskGoal,
-  ]);
+  }, [user]);
 
   return (
     <div className="space-y-6">

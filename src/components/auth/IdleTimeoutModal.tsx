@@ -51,7 +51,7 @@ export function IdleTimeoutModal() {
   const _IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_IDLE_TIMEOUT || '900', 10);
   const _WARNING_DURATION = parseInt(process.env.NEXT_PUBLIC_IDLE_WARNING_DURATION || '120', 10);
 
-  const { showWarning, countdownSeconds, extendSession, isLoggedOut } = useIdleTimer({
+  const { showWarning, countdownSeconds, extendSession } = useIdleTimer({
     onIdle: handleIdle,
     onActive: handleActive,
     onLogout: handleLogout,
@@ -59,6 +59,7 @@ export function IdleTimeoutModal() {
 
   useEffect(() => {
     if (showWarning) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- show modal when the idle timer enters warning state
       setShowModal(true);
     }
   }, [showWarning]);

@@ -243,7 +243,7 @@ export default function SurveyDetailClient() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {survey.questions.map((question: any, index: number) => (
+              {survey.questions.map((question, index: number) => (
                 <div key={question._id} className="border rounded-lg p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">
@@ -293,7 +293,7 @@ export default function SurveyDetailClient() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {results.questionResults.map((result: any, index: number) => (
+              {results.questionResults.map((result, index: number) => (
                 <div key={index} className="border rounded-lg p-4 space-y-3">
                   <h4 className="font-medium">{survey.questions?.[index]?.text}</h4>
                   {result.average !== undefined && (
@@ -304,7 +304,7 @@ export default function SurveyDetailClient() {
                   )}
                   {result.optionCounts && (
                     <div className="space-y-2">
-                      {Object.entries(result.optionCounts).map(([option, count]: [string, any]) => (
+                      {Object.entries(result.optionCounts).map(([option, count]) => (
                         <div key={option} className="flex items-center gap-2">
                           <span className="text-sm w-24">{option}</span>
                           <Progress

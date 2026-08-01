@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, useEffect } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useTranslation } from 'react-i18next';
 import { Calendar, AlertTriangle, CheckCircle2, Clock, Circle } from 'lucide-react';
 
@@ -217,6 +218,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
   }, [tasks]);
 
   // Calculate bar position and width for each task
+  const now = useNow();
   const taskBars = useMemo(() => {
     return sortedTasks.map((task) => {
       const { start } = dateRange;
@@ -233,7 +235,6 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
         dayWidth * 2, // minimum width
       );
 
-      const now = Date.now();
       const isOverdue =
         !!task.deadline &&
         task.deadline < now &&
@@ -258,7 +259,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
         isCancelled: task.status === 'cancelled',
       };
     });
-  }, [sortedTasks, dateRange, dayWidth]);
+  }, [sortedTasks, dateRange, dayWidth, now]);
 
   // Today marker position
   const todayOffset = useMemo(() => {

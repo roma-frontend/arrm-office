@@ -1,7 +1,8 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { mutation, query } from './_generated/server';
+import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import type { Id } from './_generated/dataModel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADB-ARRM ORGANIZATION RESTRICTION
@@ -9,8 +10,7 @@ import { DEFAULT_LIST_CAP } from './lib/limits';
 // ─────────────────────────────────────────────────────────────────────────────
 const RESTRICTED_ORG_SLUG = 'adb-arrm';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function verifyRestrictedOrg(ctx: any, organizationId: string) {
+async function verifyRestrictedOrg(ctx: QueryCtx | MutationCtx, organizationId: Id<'organizations'>) {
   const org = await ctx.db.get(organizationId);
   if (!org) {
     throw new Error('Organization not found');

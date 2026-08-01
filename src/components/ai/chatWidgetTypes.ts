@@ -41,10 +41,16 @@ declare global {
   }
 }
 
+export interface ConflictMessage {
+  title: string;
+  message: string;
+  suggestion: string;
+}
+
 export interface BookingState {
   status: 'pending' | 'booked' | 'conflict' | 'loading';
   result?: string;
-  conflicts?: any[];
+  conflicts?: ConflictMessage[];
   alternativeDates?: string[];
 }
 

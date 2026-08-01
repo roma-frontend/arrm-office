@@ -3,6 +3,24 @@ import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { patchProfile } from './lib/userProfile';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import type { Doc } from './_generated/dataModel';
+
+/** Leave-balance keys present on the users document. */
+type BalanceField =
+  | 'paidLeaveBalance'
+  | 'sickLeaveBalance'
+  | 'familyLeaveBalance'
+  | 'dayOffBalance'
+  | 'studyLeaveBalance'
+  | 'maternityLeaveBalance';
+
+type HasBalanceFields = Pick<Doc<'users'>, BalanceField> & Record<string, number | undefined>;
+
+/** Read a balance field from either a user or profile document. */
+function readBalance(doc: unknown, field: string): number {
+  const value = (doc as HasBalanceFields | null | undefined)?.[field];
+  return typeof value === 'number' ? value : 0;
+}
 
 // ── Default annual leave policies ──────────────────────────────────────────
 // Each org can override these via organization settings in the future.
@@ -19,7 +37,7 @@ const DEFAULT_POLICIES = {
 // ── Get Org Leave Policies ────────────────────────────────────────────────
 export const getLeavePolicies = query({
   args: { organizationId: v.id('organizations') },
-  handler: async (ctx, { organizationId }) => {
+  handler: async () => {
     // In future, these can come from org_settings
     return {
       ...DEFAULT_POLICIES,
@@ -59,9 +77,7 @@ export const adjustBalance = mutation({
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const currentValue = (user as any)[field] ?? 0;
+    const currentValue = readBalance(user, field);
     const newValue = Math.max(0, currentValue + delta);
 
     await patchProfile(ctx, userId, { [field]: newValue });
@@ -159,9 +175,7 @@ export const getBalanceSummary = query({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .first();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const getBal = (field: string) => (profile as any)?.[field] ?? (user as any)[field] ?? 0;
+    const getBal = (field: string) => readBalance(profile, field) || readBalance(user, field);
 
     return {
       paid: { used: 0, total: getBal('paidLeaveBalance'), label: 'Paid Vacation' },
@@ -191,7 +205,7 @@ export const getAccrualHistory = query({
 
     return logs.map((log) => ({
       ...log,
-      details: JSON.parse(log.details || '{}'),
+      details: JSON.parse(log.details || '{}') as Record<string, unknown>,
     }));
   },
 });

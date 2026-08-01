@@ -12,7 +12,7 @@ async function convexMutation(path: string, args: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, args }),
   });
-  const data = await res.json();
+  const data = (await res.json()) as { status: string; errorMessage?: string; value?: unknown };
   if (data.status === 'error') throw new Error(data.errorMessage ?? 'Convex error');
   return data.value;
 }
@@ -25,7 +25,10 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
       return NextResponse.json(validation.body, { status: validation.status });
     }
 
-    const { adminId, organizationId } = await request.json();
+    const { adminId, organizationId } = (await request.json()) as {
+      adminId?: string;
+      organizationId?: string;
+    };
 
     if (!adminId || !organizationId) {
       return NextResponse.json(
@@ -73,7 +76,7 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
     // Upsert each employee
     for (const emp of employees) {
       try {
-        const upsertResult = await convexMutation('sharepointSync:upsertSharePointUser', {
+        const upsertResult = (await convexMutation('sharepointSync:upsertSharePointUser', {
           adminId,
           organizationId,
           email: emp.email,
@@ -83,7 +86,7 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
           phone: emp.phone,
           location: emp.location,
           employeeType: emp.employeeType,
-        });
+        })) as { action: string };
 
         if (upsertResult.action === 'created') {
           result.created++;
@@ -100,11 +103,11 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
     // Deactivate users no longer in SharePoint
     try {
       const activeEmails = employees.map((e) => e.email);
-      const deactivateResult = await convexMutation('sharepointSync:deactivateSharePointUsers', {
+      const deactivateResult = (await convexMutation('sharepointSync:deactivateSharePointUsers', {
         adminId,
         organizationId,
         activeEmails,
-      });
+      })) as { deactivated: number };
       result.deactivated = deactivateResult.deactivated;
     } catch (err) {
       result.errors.push(

@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -21,21 +22,21 @@ interface DriverStatsCardProps {
   organizationId: Id<'organizations'>;
 }
 
-export function DriverStatsCard({ driverId, organizationId }: DriverStatsCardProps) {
+export function DriverStatsCard({ driverId }: DriverStatsCardProps) {
   const { t, i18n } = useTranslation(['drivers', 'common']);
   const [period, setPeriod] = React.useState<'week' | 'month' | 'year'>('month');
 
   const stats = useQuery(api.drivers.requests_queries.getDriverStats, { driverId, period });
 
   // Calculate time range with useMemo to prevent infinite re-renders
+  const now = useNow();
   const timeRange = useMemo(() => {
-    const now = Date.now();
     const days = period === 'week' ? 7 : period === 'month' ? 30 : 365;
     return {
       startTime: now - days * 24 * 60 * 60 * 1000,
       endTime: now,
     };
-  }, [period]);
+  }, [period, now]);
 
   const schedules = useQuery(
     api.drivers.queries.getDriverSchedule,

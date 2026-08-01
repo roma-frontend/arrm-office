@@ -265,6 +265,7 @@ function RegisterPageContent() {
     if (!prefilledOrgSlug) return;
     if (prefilledOrg === undefined) return; // still loading
     if (prefilledOrg && !selectedOrg && !inviteToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- auto-select the org once the slug query resolves
       setSelectedOrg(prefilledOrg);
       setStep('details');
     } else if (prefilledOrg === null && !selectedOrg && !inviteToken) {

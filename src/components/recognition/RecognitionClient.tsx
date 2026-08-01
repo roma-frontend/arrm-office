@@ -39,7 +39,7 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
-import { Id } from '@/convex/_generated/dataModel';
+import { Id, Doc } from '@/convex/_generated/dataModel';
 import { api } from '@/convex/_generated/api';
 
 // ── Category Config ──────────────────────────────────────────────────────────
@@ -706,8 +706,25 @@ export function RecognitionClient() {
 
 // ── KudoCard Component ───────────────────────────────────────────────────────
 
+interface KudoFeedItem extends Doc<'kudos'> {
+  sender: {
+    _id: Id<'users'>;
+    name: string;
+    avatarUrl?: string;
+    position?: string;
+    department?: string;
+  } | null;
+  receiver: {
+    _id: Id<'users'>;
+    name: string;
+    avatarUrl?: string;
+    position?: string;
+    department?: string;
+  } | null;
+}
+
 interface KudoCardProps {
-  kudo: any;
+  kudo: KudoFeedItem;
   currentUserId: Id<'users'>;
   onReact: (kudoId: Id<'kudos'>, emoji: string) => void;
   t: (key: string) => string;
@@ -722,7 +739,7 @@ function KudoCard({ kudo, onReact, t, onClick }: KudoCardProps) {
 
   const reactions = kudo.reactions ?? [];
   const reactionCounts = reactions.reduce(
-    (acc: Record<string, number>, r: any) => {
+    (acc: Record<string, number>, r: { emoji: string }) => {
       acc[r.emoji] = (acc[r.emoji] || 0) + 1;
       return acc;
     },

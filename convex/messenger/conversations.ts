@@ -22,7 +22,7 @@ export const getMyConversations = query({
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
-    const { userId, organizationId } = args;
+    const { userId } = args;
     const user = await ctx.db.get(userId);
     if (!user) return [];
 

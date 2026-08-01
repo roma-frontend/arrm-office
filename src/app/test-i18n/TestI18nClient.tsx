@@ -3,14 +3,14 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useHydrated } from '@/hooks/useHydrated';
 
 export default function TestI18nClient() {
   const { t, i18n } = useTranslation();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
 
   useEffect(() => {
-    setMounted(true);
     // Debug logs are gated by the parent server page (dev-only).
     console.warn('i18n initialized:', i18n.isInitialized);
     console.warn('Current language:', i18n.language);

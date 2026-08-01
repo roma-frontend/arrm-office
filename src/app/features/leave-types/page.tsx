@@ -195,6 +195,7 @@ export default function LeaveTypesPage() {
   useEffect(() => {
     const type = searchParams.get('type');
     if (type && TABS.includes(type as (typeof TABS)[number])) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync tab from the URL ?type= param
       setActiveTab(type);
     }
   }, [searchParams]);

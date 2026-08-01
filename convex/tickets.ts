@@ -5,7 +5,7 @@
 
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
-import { Id } from './_generated/dataModel';
+import { Id, type Doc } from './_generated/dataModel';
 import { getTranslation, getUserLocale } from './translations';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
@@ -572,8 +572,7 @@ export const bulkUpdateTickets = mutation({
           firstTicketOrgId = ticket.organizationId;
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const updates: any = { updatedAt: now };
+        const updates: Partial<Doc<'supportTickets'>> = { updatedAt: now };
         if (args.status) updates.status = args.status;
         if (args.assignedTo !== undefined) updates.assignedTo = args.assignedTo;
 

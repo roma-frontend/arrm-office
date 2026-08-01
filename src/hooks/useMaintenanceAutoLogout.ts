@@ -90,12 +90,5 @@ export function useMaintenanceAutoLogout() {
       clearTimeout(timeoutId);
       abortControllerRef.current?.abort();
     };
-  }, [
-    maintenance?.isActive,
-    maintenance?.startTime,
-    user?.id,
-    user?.role,
-    organizationId,
-    performLogout,
-  ]);
+  }, [maintenance?.isActive, maintenance?.startTime, user, organizationId, performLogout]);
 }

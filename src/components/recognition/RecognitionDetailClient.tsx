@@ -11,13 +11,22 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, User, Heart, Star, Award, MessageSquare, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  User,
+  Heart,
+  Star,
+  Award,
+  MessageSquare,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 
 const CategoryBadge = ({ category }: { category: string }) => {
   const { t } = useTranslation();
-  const categoryIcons: Record<string, any> = {
+  const categoryIcons: Record<string, LucideIcon> = {
     teamwork: Users,
     innovation: Star,
     leadership: Award,

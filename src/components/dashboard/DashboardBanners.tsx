@@ -23,7 +23,6 @@ export function DashboardBanners({
   sickLeaveBalance,
   familyLeaveBalance,
   userCreatedAt,
-  lastLoginAt,
 }: DashboardBannersProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -36,6 +35,7 @@ export function DashboardBanners({
     if (typeof window !== 'undefined') {
       const justLoggedIn = sessionStorage.getItem('just_logged_in');
       if (justLoggedIn === 'true') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- read one-shot sessionStorage flag after login
         setShowLoginSuccess(true);
         sessionStorage.removeItem('just_logged_in');
       }
@@ -50,6 +50,7 @@ export function DashboardBanners({
     if (typeof window !== 'undefined') {
       const suspicious = sessionStorage.getItem('suspicious_login');
       if (suspicious) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- read one-shot sessionStorage flag after login
         setShowSuspiciousLogin(true);
         setSuspiciousDetails(suspicious);
         sessionStorage.removeItem('suspicious_login');
@@ -113,6 +114,7 @@ export function DashboardBanners({
     const dismissed = localStorage.getItem('welcome_banner_dismissed');
 
     if (isNewUser && !dismissed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- show welcome banner once for new accounts (24h window)
       setShowWelcome(true);
     }
   }, [userCreatedAt]);

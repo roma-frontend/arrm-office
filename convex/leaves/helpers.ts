@@ -1,4 +1,5 @@
 import type { Doc, Id } from '../_generated/dataModel';
+import type { QueryCtx } from '../_generated/server';
 import { getProfile } from '../lib/userProfile';
 
 /**
@@ -6,8 +7,7 @@ import { getProfile } from '../lib/userProfile';
  * Eliminates N+1 queries by pre-loading all users in one batch
  */
 export async function enrichLeavesWithUserData(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: Pick<QueryCtx, 'db'>,
   leaves: Doc<'leaveRequests'>[],
   includeReviewer: boolean = true,
 ) {

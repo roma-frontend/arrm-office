@@ -161,23 +161,20 @@ export function containsXSS(input: string): boolean {
 /**
  * Универсальная санитизация объекта
  */
-export function sanitizeObject<T extends Record<string, any>>(obj: T): T {
+export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
   const sanitized = {} as T;
 
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-      sanitized[key as keyof T] = sanitizeString(value) as any;
+      sanitized[key as keyof T] = sanitizeString(value) as T[keyof T];
     } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      sanitized[key as keyof T] = sanitizeObject(value);
+      sanitized[key as keyof T] = sanitizeObject(value as Record<string, unknown>) as T[keyof T];
     } else if (Array.isArray(value)) {
-      sanitized[key as keyof T] = value.map(
-        (item) => (typeof item === 'string' ? sanitizeString(item) : item),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ) as any;
+      sanitized[key as keyof T] = value.map((item) =>
+        typeof item === 'string' ? sanitizeString(item) : item,
+      ) as T[keyof T];
     } else {
-      sanitized[key as keyof T] = value;
+      sanitized[key as keyof T] = value as T[keyof T];
     }
   }
 

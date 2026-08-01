@@ -422,7 +422,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
           onToggle={() => toggleSection('recent')}
         >
           <div className="space-y-1.5 sm:space-y-2">
-            {recentEmployees.map((emp: any, index: number) => (
+            {recentEmployees.map((emp, index: number) => (
               <motion.div
                 key={emp._id}
                 initial={{ opacity: 0, x: -10 }}

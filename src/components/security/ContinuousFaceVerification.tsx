@@ -115,6 +115,7 @@ export default function ContinuousFaceVerification({
       stopCamera();
       setStatus('idle');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleVerificationFailed is declared below (TDZ); only used inside async callback
   }, [enabled, userId, stopCamera]);
 
   const handleVerificationFailed = useCallback(

@@ -138,7 +138,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     });
   }, [messages]);
 
-  const { sendOptimistic, optimisticMessages: optMessages } = useOptimisticSendMessage(
+  const { optimisticMessages: optMessages } = useOptimisticSendMessage(
     conversationId,
     currentUserId,
     organizationId,
@@ -252,27 +252,30 @@ export const ChatWindow = React.memo(function ChatWindow({
   }, [conversationId, currentUserId, organizationId, isTypingTimeout, setTyping]);
 
   // â”€â”€ File picking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length) return;
-    // reset input so same file can be picked again
-    e.target.value = '';
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? []);
+      if (!files.length) return;
+      // reset input so same file can be picked again
+      e.target.value = '';
 
-    const MAX_SIZE = 1 * 1024 * 1024; // 1MB
-    const tooBig = files.filter((f) => f.size > MAX_SIZE);
-    if (tooBig.length > 0) {
-      toast.error(t('chat.fileSizeLimit'));
-      return;
-    }
+      const MAX_SIZE = 1 * 1024 * 1024; // 1MB
+      const tooBig = files.filter((f) => f.size > MAX_SIZE);
+      if (tooBig.length > 0) {
+        toast.error(t('chat.fileSizeLimit'));
+        return;
+      }
 
-    const newPending: PendingFile[] = files.map((file) => ({
-      file,
-      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
-      isPDF: file.type === 'application/pdf',
-      uploading: false,
-    }));
-    setPendingFiles((prev) => [...prev, ...newPending]);
-  }, []);
+      const newPending: PendingFile[] = files.map((file) => ({
+        file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+        isPDF: file.type === 'application/pdf',
+        uploading: false,
+      }));
+      setPendingFiles((prev) => [...prev, ...newPending]);
+    },
+    [t],
+  );
 
   const removePendingFile = (idx: number) => {
     setPendingFiles((prev) => {
@@ -394,6 +397,8 @@ export const ChatWindow = React.memo(function ChatWindow({
     setTyping,
     members,
     isTypingTimeout,
+    scheduleMessage,
+    scheduledFor,
   ]);
 
   // Compute mention suggestions from conversation members
@@ -637,7 +642,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     } else if (Notification.permission === 'default') {
       Notification.requestPermission();
     }
-  }, [allMessages, conv?.membership?.isMuted, currentUserId, conversationId, markAsRead]);
+  }, [allMessages, conv?.membership?.isMuted, currentUserId, conversationId, markAsRead, t]);
 
   const canSend = (input.trim().length > 0 || pendingFiles.length > 0) && !sending;
 

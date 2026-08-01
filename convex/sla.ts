@@ -449,11 +449,3 @@ export const getSLATrend = query({
   },
 });
 
-('// �� Get All SLA Metrics (for dashboard) �����������������������������������');
-('export const getAllSLAMetrics = query({');
-('  args: {},');
-('  handler: async (ctx) => {');
-('    const metrics = await ctx.db.query("slaMetrics").take(DEFAULT_LIST_CAP);');
-('    return metrics;');
-('  },');
-('});');

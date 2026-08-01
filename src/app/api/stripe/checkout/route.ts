@@ -44,7 +44,11 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
   }
 
   try {
-    const { plan, email, organizationId } = await req.json();
+    const { plan, email, organizationId } = (await req.json()) as {
+      plan?: string;
+      email?: string;
+      organizationId?: string;
+    };
 
     if (!plan || !PLANS[plan]) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });

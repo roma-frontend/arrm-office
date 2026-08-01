@@ -33,7 +33,9 @@ export function BlockTimeWizard({
   const { t } = useTranslation();
   const blockTimeOff = useMutation(api.drivers.driver_operations.blockTimeOff);
 
-  const [wizardData, setWizardData] = useState<Record<string, any>>({});
+  const [wizardData, setWizardData] = useState<Record<string, string | number | boolean | null>>(
+    {},
+  );
 
   const updateStepData = (key: string, value: string | number | boolean | null) => {
     setWizardData((prev) => ({ ...prev, [key]: value }));

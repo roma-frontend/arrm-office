@@ -32,7 +32,7 @@ const itemVariants = {
 };
 
 export default function DashboardClient() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const user = useAuthUser();
 
   const [mounted, setMounted] = React.useState(false);
@@ -118,7 +118,7 @@ export default function DashboardClient() {
         rejected: entry.rejected,
       };
     });
-  }, [stats.monthlyTrend, t, i18n?.language]);
+  }, [stats.monthlyTrend, t]);
 
   if (!mounted) return null;
 

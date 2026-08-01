@@ -37,6 +37,7 @@ export function useOfflineQueue(processor: (action: string, payload: unknown) =>
 
   // Load queue from localStorage on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only queue load
     setQueue(loadQueue());
   }, []);
 
@@ -73,7 +74,6 @@ export function useOfflineQueue(processor: (action: string, payload: unknown) =>
       saveQueue(remaining);
       processing.current = false;
     })();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional queue processing
   }, [isOnline, queue, processor]);
 
   const enqueue = useCallback((action: string, payload: unknown) => {

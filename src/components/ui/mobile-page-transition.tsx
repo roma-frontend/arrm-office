@@ -20,6 +20,7 @@ export function MobilePageTransition({ children, className }: MobilePageTransiti
 
   useEffect(() => {
     if (pathname !== prevPath.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- fade out before the slide-in transition on route change
       setVisible(false);
       // Short delay then slide in
       const t = setTimeout(() => {

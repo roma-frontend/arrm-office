@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from 'convex/react';
@@ -76,7 +76,7 @@ export function AssignManagerModal({
   onClose,
   onSuccess,
 }: AssignManagerModalProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const currentUser = useAuthStore(useShallow((state: { user: UserType | null }) => state.user));
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -418,9 +418,12 @@ export function AssignManagerModal({
                               }}
                             >
                               {manager.avatarUrl && !avatarErrors.has(manager._id) ? (
-                                <img
+                                <Image
                                   src={manager.avatarUrl}
                                   alt={manager.name}
+                                  width={64}
+                                  height={64}
+                                  unoptimized
                                   className="w-full h-full object-cover"
                                   onError={() =>
                                     setAvatarErrors((prev) => new Set(prev).add(manager._id))

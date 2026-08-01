@@ -12,7 +12,9 @@ const AlertDialogTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof Button> & {
     asChild?: boolean;
   }
->(({ className, ...props }, ref) => <Button ref={ref} variant="outline" {...props} />);
+>(({ className, ...props }, ref) => (
+  <Button ref={ref} variant="outline" className={className} {...props} />
+));
 AlertDialogTrigger.displayName = 'AlertDialogTrigger';
 
 interface AlertDialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogContent> {

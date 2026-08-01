@@ -55,6 +55,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
         i18n.changeLanguage('en');
         setLanguageCookie('en');
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- i18n init is one-time, gated by the initialized ref
       setIsReady(true);
     }
   }, [i18n]);

@@ -20,15 +20,16 @@ import {
   User,
   Users,
   Calendar,
-  FileBox,
   Building,
   RefreshCw,
 } from 'lucide-react';
 import { useState, useMemo, useCallback } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
-import type { Id } from '@/convex/_generated/dataModel';
+import type { Id, Doc } from '@/convex/_generated/dataModel';
+import type { TFunction } from 'i18next';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,7 +73,7 @@ export default function BackupsManagementPage() {
     window.location.reload();
   }, []);
 
-  const orgs = allOrganizations ?? [];
+  const orgs = useMemo(() => allOrganizations ?? [], [allOrganizations]);
   const isLoading = !allOrganizations;
 
   // Если на дашборде выбрана организация — используем её по умолчанию
@@ -178,7 +179,7 @@ export default function BackupsManagementPage() {
       } else {
         toast.error(t('superadmin.backups.manualBackupFailed', { reason: result.reason }));
       }
-    } catch (error) {
+    } catch {
       toast.error(t('superadmin.backups.manualBackupError'));
     } finally {
       setRunningBackup(null);
@@ -202,7 +203,7 @@ export default function BackupsManagementPage() {
       } else {
         toast.error(t('superadmin.backups.employeeBackupFailed', { reason: result.reason }));
       }
-    } catch (error) {
+    } catch {
       toast.error(t('superadmin.backups.employeeBackupError'));
     } finally {
       setRunningBackup(null);
@@ -219,7 +220,7 @@ export default function BackupsManagementPage() {
       } else {
         toast.error(t('superadmin.backups.restoreError'));
       }
-    } catch (error) {
+    } catch {
       toast.error(t('superadmin.backups.restoreError'));
     }
 
@@ -270,7 +271,7 @@ export default function BackupsManagementPage() {
       if (totalFailed > 0) {
         toast.warning(t('superadmin.backups.manualBackupPartial', { count: totalFailed }));
       }
-    } catch (error) {
+    } catch {
       toast.error(t('superadmin.backups.manualBackupError'));
     } finally {
       setRunningBackup(null);
@@ -512,6 +513,15 @@ export default function BackupsManagementPage() {
   );
 }
 
+interface OrgBackupSummary {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  backupCount: number;
+  latestBackup: number;
+  latestSize: number;
+}
+
 function OrgBackups({
   org,
   isExpanded,
@@ -525,10 +535,13 @@ function OrgBackups({
   formatSize,
   formatDate,
   t,
-  superadminUserId,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  org: any;
+  org: Doc<'organizations'> & {
+    totalEmployees: number;
+    activeEmployees: number;
+    adminNames: string[];
+    memberCount: number;
+  };
   isExpanded: boolean;
   onToggle: () => void;
   expandedEmployees: Map<string, string>;
@@ -544,7 +557,7 @@ function OrgBackups({
   runningBackup: string | null;
   formatSize: (bytes: number) => string;
   formatDate: (timestamp: number) => string;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: TFunction;
   superadminUserId: string;
 }) {
   const orgBackups = useQuery(
@@ -562,7 +575,7 @@ function OrgBackups({
   );
 
   const backupMap = useMemo(() => {
-    const map = new Map<string, any>();
+    const map = new Map<string, OrgBackupSummary>();
     orgBackups?.forEach((emp) => {
       map.set(String(emp.userId), emp);
     });
@@ -678,8 +691,7 @@ function EmployeeBackups({
   formatDate,
   t,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  emp: any;
+  emp: Doc<'users'>;
   orgId: string;
   isExpanded: boolean;
   onToggle: () => void;
@@ -690,13 +702,13 @@ function EmployeeBackups({
     createdAt: number,
   ) => void;
   onBackup: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  backupData?: any;
+  backupData?: OrgBackupSummary;
   runningBackup: string | null;
   formatSize: (bytes: number) => string;
   formatDate: (timestamp: number) => string;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: TFunction;
 }) {
+  const now = useNow();
   const userBackups = useQuery(
     api.backups.getUserBackups,
     isExpanded
@@ -805,7 +817,6 @@ function EmployeeBackups({
                 </thead>
                 <tbody>
                   {userBackups.map((backup) => {
-                    const now = Date.now();
                     const isExpired = backup.expiresAt < now;
                     return (
                       <tr

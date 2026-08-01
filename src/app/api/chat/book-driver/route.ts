@@ -19,7 +19,18 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     const locale = cookieStore.get('i18nextLng')?.value || 'en';
     const { t } = await getServerTranslation('common', locale);
 
-    const { driverId, startTime, endTime, tripInfo } = await req.json();
+    const { driverId, startTime, endTime, tripInfo } = (await req.json()) as {
+      driverId?: string;
+      startTime?: number;
+      endTime?: number;
+      tripInfo?: {
+        from?: string;
+        to?: string;
+        purpose?: string;
+        passengerCount?: number;
+        notes?: string;
+      };
+    };
 
     // Identity comes from the verified session, never from the request body
     const userId = auth.payload.userId as Id<'users'>;
@@ -117,8 +128,8 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
  */
 function buildDriverConflictMessage(
   conflicts: Array<{ severity?: string; title?: string; message?: string; suggestion?: string }>,
-  startTime: string,
-  endTime: string,
+  startTime: string | number,
+  endTime: string | number,
 ): string {
   if (conflicts.length === 0) return '';
 

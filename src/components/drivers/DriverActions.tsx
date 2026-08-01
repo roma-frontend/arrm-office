@@ -11,14 +11,12 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PhoneCall, MessageSquare, Navigation2, ExternalLink, Check, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { CallModal } from '@/components/chat/CallModal';
@@ -118,7 +116,6 @@ export function InAppCallButton({
   callerAvatar,
   remoteUserId,
   remoteName,
-  remotePhone,
   organizationId,
 }: InAppCallButtonProps) {
   const { t } = useTranslation();
@@ -218,11 +215,8 @@ const DRIVER_TEMPLATES = [
 
 export function DriverQuickMessage({
   passengerUserId,
-  passengerName,
-  passengerPhone,
   driverUserId,
   organizationId,
-  tripInfo,
 }: DriverQuickMessageProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -245,8 +239,7 @@ export function DriverQuickMessage({
       });
       toast.success(t('driverActions.toasts.messageSentToDriver', 'Message sent'));
       setOpen(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch {
       toast.error(t('driverActions.toasts.messageFailedToSend', 'Failed to send message'));
     }
   };
@@ -315,10 +308,8 @@ const PASSENGER_TEMPLATES = [
 
 export function PassengerQuickMessage({
   driverUserId,
-  driverName,
   passengerUserId,
   organizationId,
-  tripInfo,
 }: PassengerQuickMessageProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -341,8 +332,7 @@ export function PassengerQuickMessage({
       });
       toast.success(t('driverActions.toasts.messageSentToDriver', 'Message sent'));
       setOpen(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch {
       toast.error(t('driverActions.toasts.messageFailedToSend', 'Failed to send message'));
     }
   };

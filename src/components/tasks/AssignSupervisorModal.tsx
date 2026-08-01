@@ -1,4 +1,5 @@
 ﻿'use client';
+import Image from 'next/image';
 import { useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
@@ -22,9 +23,12 @@ function Avatar({ name, url }: { name: string; url?: string | null }) {
   return (
     <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-xs bg-linear-to-br from-blue-500 to-sky-500">
       {url ? (
-        <img
+        <Image
           src={url}
           alt={name}
+          width={32}
+          height={32}
+          unoptimized
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
         />

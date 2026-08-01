@@ -356,12 +356,23 @@ function countAllDescendants(node: TreeNode): number {
 
 // ── Stats Dashboard Header ───────────────────────────────────────────────────
 
+interface StrategySummary {
+  total: number;
+  active: number;
+  onTrack: number;
+  atRisk: number;
+  behind: number;
+  completed: number;
+  avgProgress: number;
+  byLevel: { company: number; team: number; individual: number };
+}
+
 function StrategyStats({
   summary,
   compact,
   onToggleCompact,
 }: {
-  summary: any;
+  summary: StrategySummary | undefined;
   compact: boolean;
   onToggleCompact: () => void;
 }) {

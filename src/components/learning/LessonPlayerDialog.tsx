@@ -85,8 +85,6 @@ export function LessonPlayerDialog({
   onOpenChange,
   lessons,
   activeLessonIndex,
-  setActiveLessonIndex,
-  lessonProgress,
   onCompleteLesson,
   onNextLesson,
   onPrevLesson,

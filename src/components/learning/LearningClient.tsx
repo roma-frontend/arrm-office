@@ -79,6 +79,12 @@ type Lesson = {
   isPreview?: boolean;
 };
 
+type QuizResult = {
+  passed: boolean;
+  score: number;
+  attemptNumber: number;
+};
+
 type CourseWithLessonsDetail = CourseWithLessons & {
   lessons: Lesson[];
 };
@@ -119,15 +125,13 @@ export default function LearningClient() {
   const [_currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [quizResult, setQuizResult] = useState<any>(null);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
   const [quizStartTime, setQuizStartTime] = useState<number>(0);
 
   // Lesson management state
   const [showCreateLesson, setShowCreateLesson] = useState(false);
   const [showEditLesson, setShowEditLesson] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [editingLesson, setEditingLesson] = useState<any>(null);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [lessonForm, setLessonForm] = useState({
     title: '',
     description: '',
@@ -467,8 +471,7 @@ export default function LearningClient() {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const openEditLessonDialog = (lesson: any) => {
+  const openEditLessonDialog = (lesson: Lesson) => {
     setEditingLesson(lesson);
     setLessonForm({
       title: lesson.title || '',

@@ -246,7 +246,7 @@ export function useAuthSync() {
     };
 
     syncAuth();
-  }, [status, session?.user?.email, userEmail, createOAuthUser, isAuthenticated]);
+  }, [status, session, userEmail, createOAuthUser, isAuthenticated, login, logout]);
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -332,7 +332,7 @@ export function useAuthSync() {
 
       setTimeout(createSession, 0);
     }
-  }, [currentUser]);
+  }, [currentUser, session?.user?.email, session?.user?.image, session?.user?.name]);
 
   // Reactive logout: when user doc is deleted (revoke), currentUser becomes null
   useEffect(() => {

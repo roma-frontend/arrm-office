@@ -58,7 +58,7 @@ interface StripeData {
 }
 
 export default function StripeDataStudioClient() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -82,28 +82,35 @@ export default function StripeDataStudioClient() {
       const response = await fetch('/api/stripe/transactions', {
         signal: fetchAbortRef.current.signal,
       });
-      const result = await response.json();
+      const result = (await response.json()) as {
+        error?: string;
+        metrics?: StripeData['metrics'];
+        recentTransactions?: Transaction[];
+      };
 
       if (!response.ok) throw new Error(result.error || 'Failed to fetch');
 
       // Calculate success rate
       const txs = result.recentTransactions || [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const successCount = txs.filter((t: any) => t.status === 'succeeded').length;
+      const successCount = txs.filter((t) => t.status === 'succeeded').length;
       const successRate = txs.length > 0 ? (successCount / txs.length) * 100 : 0;
 
       setData({
         metrics: {
-          ...result.metrics,
+          ...(result.metrics ?? {
+            totalRevenue: 0,
+            last30DaysRevenue: 0,
+            successRate: 0,
+            totalTransactions: 0,
+          }),
           successRate,
           totalTransactions: txs.length,
         },
         recentTransactions: txs,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : String(err));
       toast.error('Ошибка загрузки данных');
     } finally {
       setLoading(false);
@@ -141,7 +148,7 @@ export default function StripeDataStudioClient() {
 
       return emailMatch || amountMatch || cardMatch || idMatch || dateMatch;
     });
-  }, [data, searchQuery]);
+  }, [data, searchQuery, i18n.language]);
 
   const handleExport = (): void => {
     if (!filteredData.length) {

@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import type { User } from '@/store/useAuthStore';
 
 interface ProfileSettingsProps {
-  user: any;
+  user: User | null;
   onNameChange: (name: string) => void;
   onEmailChange: (email: string) => void;
   name: string;
@@ -42,7 +43,7 @@ export function ProfileSettings({
             currentUrl={user?.avatar}
             name={user?.name ?? 'User'}
             size="lg"
-            onSuccess={(url) => {
+            onSuccess={() => {
               toast.success(t('settingsProfile.avatarUpdated'));
             }}
           />

@@ -23,7 +23,10 @@ export async function GET(request: NextRequest) {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (res.ok) {
-        const profile = await res.json();
+        const profile = (await res.json()) as {
+          mail?: string;
+          userPrincipalName?: string;
+        };
         return NextResponse.json({
           connected: true,
           email: profile.mail || profile.userPrincipalName,

@@ -60,7 +60,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(loc);
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as {
+      status?: string;
+      value?: unknown;
+      errorMessage?: string;
+    };
     if (data.status === 'error' || !data.value) {
       console.error('[imid-callback] Session verification failed:', data.errorMessage);
       const loc = new URL('/login?error=imid_session_expired', request.url);

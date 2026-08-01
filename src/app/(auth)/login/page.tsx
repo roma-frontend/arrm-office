@@ -296,7 +296,7 @@ export default function LoginPage() {
     };
 
     checkMaintenanceMode();
-  }, [showMaintenanceBanner]);
+  }, [showMaintenanceBanner, router]);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const deviceFingerprintRef = useRef<string | undefined>(undefined);
   const { getSample, reset } = useKeystrokeDynamics();
@@ -550,7 +550,7 @@ export default function LoginPage() {
         setTotpCode('');
       }
     },
-    [totpCode, tempToken, isBackupCode, login],
+    [totpCode, tempToken, isBackupCode, login, router],
   );
 
   // Auto-submit when 6 digits entered (TOTP mode only)

@@ -176,7 +176,7 @@ export default function CompensationRecordWizard({
     return labels[freq];
   };
 
-  const selectedUser = orgUsers?.find((u: any) => u._id === userId);
+  const selectedUser = orgUsers?.find((u) => u._id === userId);
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -190,8 +190,7 @@ export default function CompensationRecordWizard({
                   <SelectValue placeholder={t('compensation.selectEmployee', 'Select employee')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {orgUsers?.map((u: any) => (
+                  {orgUsers?.map((u) => (
                     <SelectItem key={u._id} value={u._id}>
                       {u.name} ({u.email})
                     </SelectItem>

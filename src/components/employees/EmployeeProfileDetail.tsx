@@ -24,15 +24,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { EditEmployeeModal } from './EditEmployeeModal';
+import { EditEmployeeModal, type Employee } from './EditEmployeeModal';
 import { ReportingLineWidget } from './ReportingLineWidget';
 import { AssignManagerModal } from './AssignManagerModal';
-import ExtendedProfileSection from './ExtendedProfileSection';
+import ExtendedProfileSection, { type ExtendedProfileData } from './ExtendedProfileSection';
 import EditExtendedProfileModal from './EditExtendedProfileModal';
 import EmployeeProfileHero from './EmployeeProfileHero';
 
 interface EmployeeProfileDetailProps {
   employeeId: Id<'users'>;
+}
+
+interface ScoreDataShape {
+  overallScore: number;
+  breakdown: {
+    performance: number;
+    attendance: number;
+    behavior: number;
+    leaveHistory: number;
+  };
+}
+
+interface MonthlyStatsShape {
+  totalDays: number;
+  totalWorkedHours: number;
+  punctualityRate: number;
+  lateDays: number;
 }
 
 export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDetailProps) {
@@ -125,10 +142,8 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           avatarUrl: employee.avatarUrl,
           createdAt: employee.createdAt,
         }}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        score={score as any}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        monthlyStats={monthlyStats as any}
+        score={score as unknown as ScoreDataShape | null | undefined}
+        monthlyStats={monthlyStats as unknown as MonthlyStatsShape | null | undefined}
         canEdit={canEdit}
         canDelete={canDelete}
         isAdminOrSupervisor={isAdminOrSupervisor}
@@ -150,8 +165,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
 
       {/* Extended Profile Section */}
       <ExtendedProfileSection
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data={profile?.profile as any}
+        data={profile?.profile as unknown as ExtendedProfileData | null | undefined}
         canEdit={canEdit}
         onEdit={() => setShowExtendedEdit(true)}
       />
@@ -247,7 +261,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
               { label: t('dashboard.initiative'), value: latestRating.initiative },
               { label: t('dashboard.communication'), value: latestRating.communication },
               { label: t('dashboard.reliability'), value: latestRating.reliability },
-            ].map(({ label, value }: any) => (
+            ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between">
                 <span className="text-sm text-(--text-muted) w-36">{label}</span>
                 <div className="flex items-center gap-2">
@@ -553,8 +567,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
 
       {/* Edit Employee Modal */}
       <EditEmployeeModal
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        employee={employee as any}
+        employee={employee as unknown as Employee}
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
       />
@@ -581,8 +594,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
         {...(employee.organizationId
           ? { organizationId: employee.organizationId as Id<'organizations'> }
           : {})}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        initialData={profile?.profile as any}
+        initialData={profile?.profile as unknown as ExtendedProfileData | null | undefined}
       />
     </div>
   );

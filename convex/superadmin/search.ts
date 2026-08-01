@@ -241,15 +241,55 @@ export const globalSearch = query({
   },
 });
 
+/** Shape returned by `quickSearch` for the Command Palette (Cmd+K). */
+interface QuickSearchResult {
+  users: Array<{
+    id: string;
+    type: 'user';
+    title: string;
+    subtitle: string;
+    organization?: string;
+    icon: string;
+  }>;
+  organizations: Array<{
+    id: string;
+    type: 'organization';
+    title: string;
+    subtitle: string;
+    icon: string;
+  }>;
+  leaveRequests: Array<{
+    id: string;
+    type: 'leave';
+    title: string;
+    subtitle: string;
+    icon: string;
+  }>;
+  tasks: Array<{
+    id: string;
+    type: 'task';
+    title: string;
+    subtitle: string;
+    icon: string;
+  }>;
+  tickets: Array<{
+    id: string;
+    type: 'ticket';
+    title: string;
+    subtitle: string;
+    icon: string;
+  }>;
+}
+
 /**
  * Quick search for Command Palette (Cmd+K)
  * Returns top 5 results for each category
  */
 export const quickSearch = query({
   args: { query: v.string() },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  handler: async (ctx, args): Promise<any> => {
+  // Explicit return type breaks the circular `api` type inference created by
+  // `ctx.runQuery(superadminApi.globalSearch, ...)` inside the handler.
+  handler: async (ctx, args): Promise<QuickSearchResult> => {
     const fullResults = await ctx.runQuery(superadminApi.globalSearch, {
       query: args.query,
       limit: 5,

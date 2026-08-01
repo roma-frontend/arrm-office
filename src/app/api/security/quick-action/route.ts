@@ -19,7 +19,12 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
     convex.setAuth(auth.token);
 
-    const { action, userId, reason, duration } = await req.json();
+    const { action, userId, reason, duration } = (await req.json()) as {
+      action?: string;
+      userId?: string;
+      reason?: string;
+      duration?: number;
+    };
 
     if (!action || !userId) {
       return NextResponse.json(

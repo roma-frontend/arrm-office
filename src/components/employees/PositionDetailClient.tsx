@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import type { Id } from '@/convex/_generated/dataModel';
+import type { Id, Doc } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { cn } from '@/lib/utils';
@@ -102,8 +102,8 @@ const POSITION_LEVELS = [
 interface PositionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingPosition: any | null;
-  departments: any[] | undefined;
+  editingPosition: Doc<'positions'> | null;
+  departments: Doc<'departments'>[] | undefined;
   onComplete: () => void;
 }
 
@@ -436,7 +436,7 @@ export default function PositionDetailClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showWizard, setShowWizard] = useState(false);
-  const [editingPosition, setEditingPosition] = useState<any | null>(null);
+  const [editingPosition, setEditingPosition] = useState<Doc<'positions'> | null>(null);
 
   const isLoading = position === undefined || employees === undefined || departments === undefined;
 

@@ -80,10 +80,9 @@ export const updateExtendedProfile = mutation({
     ] as const;
 
     for (const field of optionalFields) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-      if ((fields as any)[field] !== undefined) {
-        patch[field] = (fields as any)[field];
+      const value = (fields as Record<string, unknown>)[field];
+      if (value !== undefined) {
+        patch[field] = value;
       }
     }
 

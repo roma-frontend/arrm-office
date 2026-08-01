@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mail, Phone, Building2, Calendar, Edit2, Trash2, Star, MapPin } from 'lucide-react';
@@ -162,9 +162,12 @@ export default function EmployeeProfileHero({
             >
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-white/30 shadow-xl bg-white/10 backdrop-blur-sm">
                 {employee.avatarUrl ? (
-                  <img
+                  <Image
                     src={employee.avatarUrl}
                     alt={employee.name}
+                    width={96}
+                    height={96}
+                    unoptimized
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />

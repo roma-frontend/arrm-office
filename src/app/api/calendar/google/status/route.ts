@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (res.ok) {
-        const profile = await res.json();
+        const profile = (await res.json()) as { email?: string };
         return NextResponse.json({
           connected: true,
           email: profile.email,
@@ -45,9 +45,12 @@ export async function GET(request: NextRequest) {
         });
 
         if (tokenRes.ok) {
-          const tokens = await tokenRes.json();
+          const tokens = (await tokenRes.json()) as {
+            access_token?: string;
+            expires_in?: number;
+          };
           const response = NextResponse.json({ connected: true });
-          response.cookies.set('google_access_token', tokens.access_token, {
+          response.cookies.set('google_access_token', tokens.access_token ?? '', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',

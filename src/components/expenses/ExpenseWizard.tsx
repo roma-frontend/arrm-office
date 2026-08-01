@@ -7,7 +7,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Wizard, WizardStep, useWizardContext } from '@/components/ui/wizard';
+import { Wizard, WizardStep } from '@/components/ui/wizard';
 import {
   TextInputStep,
   TextareaStep,
@@ -64,7 +64,6 @@ interface ExpenseWizardProps {
 
 function CategoryStep() {
   const { t } = useTranslation();
-  const { stepData, updateStepData } = useWizardContext();
 
   const categoryOptions = Object.keys(CATEGORY_ICONS).map((key) => ({
     value: key,

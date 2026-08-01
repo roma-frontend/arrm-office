@@ -493,14 +493,6 @@ export const getSyncLogs = query({
 // EMPLOYEE UPSERT — the write half of a sync
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Result of an employee batch upsert. */
-interface UpsertBatchResult {
-  created: number;
-  updated: number;
-  skipped: number;
-  notes: string[];
-}
-
 const incomingEmployeeValidator = v.object({
   email: v.string(),
   name: v.string(),
@@ -880,7 +872,7 @@ export function normalizeEmployees(
   let map: Record<string, string> = {};
   if (fieldMapJson) {
     try {
-      const parsed = JSON.parse(fieldMapJson);
+      const parsed: unknown = JSON.parse(fieldMapJson);
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         map = parsed as Record<string, string>;
       }
@@ -1018,8 +1010,7 @@ async function fetchJson(
   url: string,
   init: RequestInit,
   label: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
+  config: Record<string, unknown>,
 ): Promise<unknown> {
   let response: Response;
   try {
@@ -1116,12 +1107,10 @@ type SyncOutcome = {
 };
 
 async function performSync(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: ActionCtx,
   organizationId: Id<'organizations'>,
   provider: Provider,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
+  config: Record<string, unknown>,
 ): Promise<SyncOutcome> {
   switch (provider) {
     case 'lucky_carrot':
@@ -1143,12 +1132,10 @@ async function performSync(
  * time still yields a complete import.
  */
 async function importEmployees(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: any,
+  ctx: ActionCtx,
   organizationId: Id<'organizations'>,
   provider: Provider,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any,
+  config: Record<string, unknown>,
   url: string,
   headers: Record<string, string>,
   label: string,
@@ -1164,7 +1151,7 @@ async function importEmployees(
     const payload: unknown = await fetchJson(nextUrl, { method: 'GET', headers }, label, config);
     pages++;
 
-    rows.push(...extractList(payload, config.employeesListKey));
+    rows.push(...extractList(payload, config.employeesListKey as string | undefined));
     if (rows.length > MAX_IMPORT_RECORDS) {
       throw new Error(
         `${label}: response contained ${rows.length} records, above the ${MAX_IMPORT_RECORDS} per-run limit. Narrow the query or paginate.`,
@@ -1183,7 +1170,7 @@ async function importEmployees(
     }
   }
 
-  const { employees, dropped } = normalizeEmployees(rows, config.fieldMap);
+  const { employees, dropped } = normalizeEmployees(rows, config.fieldMap as string | undefined);
   if (employees.length === 0) {
     throw new Error(
       `${label}: fetched ${rows.length} record(s) but none had a usable email — check the field mapping`,
@@ -1499,7 +1486,7 @@ export const ingestLuckyCarrotWebhook = internalAction({
       };
     }
 
-    let normalized;
+    let normalized: { employees: NormalizedEmployee[]; dropped: number };
     try {
       normalized = normalizeEmployees(records, auth.fieldMap);
     } catch (error: unknown) {

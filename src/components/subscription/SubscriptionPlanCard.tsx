@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '@/lib/date-format';
 import {
@@ -73,13 +74,14 @@ function StatusBadge({
 
 export function SubscriptionPlanCard() {
   const { t, i18n } = useTranslation();
+  const now = useNow();
   const { subscription, loading } = useSubscription();
   const isLoading = loading;
   const plan = subscription.plan;
   const isTrialing = subscription.isTrial;
   const isPastDue = subscription.isPastDue;
   const trialDaysLeft = subscription.trialEnd
-    ? Math.max(0, Math.ceil((subscription.trialEnd - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((subscription.trialEnd - now) / (1000 * 60 * 60 * 24)))
     : 0;
 
   const { user } = useAuthStore();

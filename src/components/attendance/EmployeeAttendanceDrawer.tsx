@@ -1,5 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useState } from 'react';
+import { useHydrated } from '@/hooks/useHydrated';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -42,9 +44,7 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
   const { t, i18n } = useTranslation(['modules', 'common']);
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(monthKey(now));
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   const MONTHS = [
     t('months.jan'),
@@ -117,9 +117,12 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                           }}
                         >
                           {employee.avatarUrl ? (
-                            <img
+                            <Image
                               src={employee.avatarUrl}
                               alt={employee.name}
+                              width={64}
+                              height={64}
+                              unoptimized
                               className="w-full h-full object-cover"
                               referrerPolicy="no-referrer"
                             />

@@ -84,7 +84,7 @@ export function ChatWidgetButton({
   // AI button hint system
   const [hintIndex, setHintIndex] = useState(0);
   const [showHint, setShowHint] = useState(false);
-  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
+  const [lastActivityTime, setLastActivityTime] = useState(() => Date.now());
   const [hintsShownCount, setHintsShownCount] = useState(0);
   const MAX_HINTS_PER_SESSION = 3;
   const HINT_INTERVAL_MS = 20000;

@@ -301,7 +301,7 @@ export default function EventDetailClient() {
             <div className="space-y-2">
               {attendance.attendanceStatus
                 .filter((s) => s.hasConflict)
-                .map((conflict: any, index: number) => (
+                .map((conflict, index: number) => (
                   <div
                     key={index}
                     className="flex items-center gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg"

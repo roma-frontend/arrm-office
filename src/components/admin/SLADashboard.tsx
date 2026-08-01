@@ -12,6 +12,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
+import { useNow } from '@/hooks/useNow';
 import { api } from '@/../convex/_generated/api';
 import type { Id } from '@/../convex/_generated/dataModel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,6 +54,7 @@ function SLADashboard({ organizationId }: SLADashboardProps) {
   });
   const slaMetrics = Array.isArray(slaMetricsRaw) ? slaMetricsRaw : [];
   const slaConfig = useQuery(api.sla.getSLAConfig);
+  const now = useNow();
 
   // Calculate statistics
   const totalMetrics = slaMetrics.length;
@@ -80,7 +82,6 @@ function SLADashboard({ organizationId }: SLADashboardProps) {
   const criticalCount = slaMetrics.filter((m: SLAMetric) => m.criticalTriggered).length;
 
   // Trend calculation (compare last 7 days vs previous 7 days)
-  const now = Date.now();
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
   const fourteenDaysAgo = now - 14 * 24 * 60 * 60 * 1000;
 

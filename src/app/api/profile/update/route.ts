@@ -6,7 +6,11 @@ import { withCsrfProtection } from '@/lib/csrf-middleware';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {
   try {
-    const { userId, name, email } = await request.json();
+    const { userId, name, email } = (await request.json()) as {
+      userId?: string;
+      name?: string;
+      email?: string;
+    };
 
     if (!userId || !name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

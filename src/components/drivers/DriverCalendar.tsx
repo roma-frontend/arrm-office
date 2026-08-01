@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -250,6 +251,7 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<ScheduleItem | null>(null);
   const [showTripModal, setShowTripModal] = useState(false);
+  const now = useNow();
 
   const dateFnsLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
 
@@ -632,7 +634,7 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
             >
               <TripDetailsModal
                 schedule={selectedTrip}
-                currentTime={Date.now()}
+                currentTime={now}
                 onClose={() => {
                   setShowTripModal(false);
                   setSelectedTrip(null);

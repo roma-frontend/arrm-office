@@ -1,4 +1,4 @@
-import { trace, context as otelContext, SpanStatusCode } from '@opentelemetry/api';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
 
 /**
  * Tracing utility for API routes and server actions
@@ -10,12 +10,11 @@ const tracer = trace.getTracer('strata-api');
 /**
  * Wrap API route handlers with tracing
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic utility wrapper
-export async function withTracing<T extends (...args: any[]) => Promise<any>>(
+export async function withTracing<TResult>(
   spanName: string,
-  fn: T,
+  fn: () => Promise<TResult>,
   attributes?: Record<string, unknown>,
-): Promise<ReturnType<T>> {
+): Promise<TResult> {
   return tracer.startActiveSpan(spanName, async (span) => {
     try {
       if (attributes) {
@@ -78,12 +77,12 @@ export async function tracingMiddleware(
  * Decorator for server actions
  */
 export function withServerActionTracing(spanName: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic decorator pattern
-  return function decorator<T extends (...args: any[]) => Promise<any>>(target: T): T {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- needed for variadic args
-    return (async (...args: any[]) => {
+  return function decorator<TArgs extends unknown[], TResult>(
+    target: (...args: TArgs) => Promise<TResult>,
+  ): (...args: TArgs) => Promise<TResult> {
+    return async (...args: TArgs): Promise<TResult> => {
       return withTracing(spanName, () => target(...args));
-    }) as T;
+    };
   };
 }
 

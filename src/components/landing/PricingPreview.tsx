@@ -327,14 +327,14 @@ function PricingCard({
     try {
       const csrfRes = await fetch('/api/csrf-token', { method: 'GET' });
       if (!csrfRes.ok) throw new Error('Failed to get CSRF token');
-      const csrfData = await csrfRes.json();
+      const csrfData = (await csrfRes.json()) as { token?: string; signature?: string };
 
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.token,
-          'X-CSRF-Token-Signature': csrfData.signature,
+          'X-CSRF-Token': csrfData.token ?? '',
+          'X-CSRF-Token-Signature': csrfData.signature ?? '',
         },
         body: JSON.stringify({
           plan: tier.id,
@@ -342,7 +342,7 @@ function PricingCard({
           organizationId: user?.organizationId || undefined,
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { url?: string; error?: string; message?: string };
       if (data.url) {
         window.location.href = data.url;
       } else if (data.error) {

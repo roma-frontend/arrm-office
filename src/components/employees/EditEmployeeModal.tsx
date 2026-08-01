@@ -48,7 +48,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface Employee {
+export interface Employee {
   _id: string;
   name: string;
   email: string;
@@ -237,7 +237,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         setForm((prev) => ({ ...prev, supervisorId: '' }));
       }
     }
-  }, [targetOrgId, isSuperadmin]);
+  }, [targetOrgId, isSuperadmin, form.supervisorId, supervisors]);
 
   const validateStep = (currentStep: number): boolean => {
     const errs: Record<string, string> = {};

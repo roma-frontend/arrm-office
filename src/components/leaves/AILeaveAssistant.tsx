@@ -6,17 +6,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Brain,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  CheckCircle,
-  Minus,
-  Calendar,
-  Users,
-  Briefcase,
-} from 'lucide-react';
+import { Brain, AlertCircle, CheckCircle, Minus, Briefcase } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import type { Id } from '../../../convex/_generated/dataModel';
 
@@ -27,12 +17,7 @@ interface AILeaveAssistantProps {
   onReject?: (comment?: string) => void;
 }
 
-export default function AILeaveAssistant({
-  leaveRequestId,
-  userId,
-  onApprove,
-  onReject,
-}: AILeaveAssistantProps) {
+export default function AILeaveAssistant({ leaveRequestId, userId }: AILeaveAssistantProps) {
   const { t } = useTranslation();
   const evaluation = useQuery(api.aiEvaluator.evaluateLeaveRequest, { leaveRequestId });
 
@@ -71,12 +56,13 @@ export default function AILeaveAssistant({
   const { leaveEligibilityScore, breakdown, recommendation, confidence, reasoning } = evaluation;
 
   // Фильтруем конфликты, относящиеся к этой заявке
+  const currentUserId = currentLeave?.userId;
+  const currentUserDepartment = currentLeave?.userDepartment;
   const leaveConflicts =
     conflicts?.filter(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (c: any) =>
-        c.affectedUsers?.includes(currentLeave?.userId) ||
-        c.affectedDepartments?.includes(currentLeave?.userDepartment),
+      (c) =>
+        (currentUserId ? c.affectedUsers?.includes(currentUserId) : false) ||
+        (currentUserDepartment ? c.affectedDepartments?.includes(currentUserDepartment) : false),
     ) || [];
 
   const criticalConflicts = leaveConflicts.filter((c) => c.severity === 'critical');
@@ -150,7 +136,7 @@ export default function AILeaveAssistant({
                     {t('aiLeave.criticalConflicts', { count: criticalConflicts.length })}
                   </span>
                 </div>
-                {criticalConflicts.map((conflict: any, idx: number) => (
+                {criticalConflicts.map((conflict, idx: number) => (
                   <div key={idx} className="text-sm">
                     <p className="font-medium text-red-800">{conflict.title}</p>
                     <p className="text-red-700 mt-1">{conflict.message}</p>
@@ -172,7 +158,7 @@ export default function AILeaveAssistant({
                     {t('aiLeave.warnings', { count: warningConflicts.length })}
                   </span>
                 </div>
-                {warningConflicts.map((conflict: any, idx: number) => (
+                {warningConflicts.map((conflict, idx: number) => (
                   <div key={idx} className="text-sm">
                     <p className="font-medium text-yellow-800">{conflict.title}</p>
                     <p className="text-yellow-700 mt-1">{conflict.message}</p>

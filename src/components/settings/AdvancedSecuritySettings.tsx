@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -63,8 +64,8 @@ export function AdvancedSecuritySettings() {
         if (!user?.id) return;
         const res = await fetch(`/api/auth/totp/status?userId=${user.id}`);
         if (res.ok) {
-          const data = await res.json();
-          setTwoFactorEnabled(data.totpEnabled);
+          const data = (await res.json()) as { totpEnabled?: boolean };
+          setTwoFactorEnabled(data.totpEnabled ?? false);
         }
       } catch {
       } finally {
@@ -84,17 +85,20 @@ export function AdvancedSecuritySettings() {
         body: JSON.stringify({ userId: user?.id, email: user?.email }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = (await res.json()) as { error?: string };
         throw new Error(err.error || 'Setup failed');
       }
-      const data = await res.json();
-      setQrCodeUrl(data.qrCodeUrl);
-      setTotpSecret(data.secret);
-      setBackupCodes(data.backupCodes);
+      const data = (await res.json()) as {
+        qrCodeUrl?: string;
+        secret?: string;
+        backupCodes?: string[];
+      };
+      setQrCodeUrl(data.qrCodeUrl ?? '');
+      setTotpSecret(data.secret ?? '');
+      setBackupCodes(data.backupCodes ?? []);
       setSetupStep('qr');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to start 2FA setup');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start 2FA setup');
       setSetupStep('idle');
     }
   };
@@ -110,7 +114,7 @@ export function AdvancedSecuritySettings() {
         body: JSON.stringify({ code: verifyCode, userId: user?.id }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = (await res.json()) as { error?: string };
         setVerifyError(err.error || 'Invalid code');
         setVerifyCode('');
         return;
@@ -118,9 +122,8 @@ export function AdvancedSecuritySettings() {
       setSetupStep('backup');
       setTwoFactorEnabled(true);
       toast.success(t('toasts.twoFactorEnabled'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setVerifyError(err.message || 'Verification failed');
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : 'Verification failed');
       setVerifyCode('');
     }
   };
@@ -130,6 +133,7 @@ export function AdvancedSecuritySettings() {
     if (verifyCode.length === 6 && setupStep === 'verify') {
       handleVerifySetup();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleVerifySetup is recreated each render; auto-submit should only fire on code/step changes
   }, [verifyCode, setupStep]);
 
   // Disable 2FA
@@ -144,7 +148,7 @@ export function AdvancedSecuritySettings() {
         body: JSON.stringify({ password: disablePassword, userId: user?.id }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = (await res.json()) as { error?: string };
         setDisableError(err.error || 'Failed to disable 2FA');
         return;
       }
@@ -152,9 +156,8 @@ export function AdvancedSecuritySettings() {
       setShowDisableConfirm(false);
       setDisablePassword('');
       toast.success(t('toasts.twoFactorDisabled'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setDisableError(err.message || 'Failed to disable 2FA');
+    } catch (err) {
+      setDisableError(err instanceof Error ? err.message : 'Failed to disable 2FA');
     } finally {
       setDisableLoading(false);
     }
@@ -305,7 +308,13 @@ export function AdvancedSecuritySettings() {
                 <p className="text-xs text-(--text-muted) mb-4">{t('settings.2fa.scanQrDesc')}</p>
                 <div className="flex justify-center mb-4">
                   <div className="bg-white p-3 rounded-lg">
-                    <img src={qrCodeUrl} alt="TOTP QR Code" width={200} height={200} />
+                    <Image
+                      src={qrCodeUrl}
+                      alt="TOTP QR Code"
+                      width={200}
+                      height={200}
+                      unoptimized
+                    />
                   </div>
                 </div>
                 <div className="text-center">

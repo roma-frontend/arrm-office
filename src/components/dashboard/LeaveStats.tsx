@@ -58,10 +58,7 @@ export default React.memo(
         );
       });
 
-      const totalDaysThisYear = leavesThisYear.reduce(
-        (sum: number, leave: any) => sum + (leave.days || 0),
-        0,
-      );
+      const totalDaysThisYear = leavesThisYear.reduce((sum, leave) => sum + (leave.days || 0), 0);
 
       const totalBalance = balances.paid + balances.sick + balances.family;
       const usagePercentage = ((totalDaysThisYear / 20) * 100).toFixed(0);

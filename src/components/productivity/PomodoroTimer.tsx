@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -37,13 +37,14 @@ export function PomodoroTimer() {
   useEffect(() => {
     if (activeSession && !sessionId) {
       const remaining = Math.max(0, Math.floor((activeSession.endTime - Date.now()) / 1000));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate timer from the active DB session when it loads
       setTimeLeft(remaining);
       setSessionId(activeSession._id);
       setIsRunning(remaining > 0);
     }
   }, [activeSession, sessionId]);
 
-  const handleTimerComplete = async () => {
+  const handleTimerComplete = useCallback(async () => {
     setIsRunning(false);
 
     if (sessionId) {
@@ -90,7 +91,7 @@ export function PomodoroTimer() {
     }
 
     setSessionId(null);
-  };
+  }, [completeSession, mode, sessionId, t]);
 
   // Timer countdown
   useEffect(() => {
@@ -115,7 +116,7 @@ export function PomodoroTimer() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, timeLeft]);
+  }, [isRunning, timeLeft, handleTimerComplete]);
 
   const handleStart = async () => {
     if (!user?.id) return;

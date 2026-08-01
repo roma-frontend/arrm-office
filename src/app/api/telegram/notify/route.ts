@@ -3,7 +3,19 @@ import { sendTelegramNotification } from '@/lib/telegram';
 
 export async function POST(req: Request) {
   try {
-    const { type, data } = await req.json();
+    const { type, data } = (await req.json()) as {
+      type: string;
+      data: {
+        email?: string;
+        name?: string;
+        phone?: string;
+        vacancy?: string;
+        orgName?: string;
+        department?: string;
+        position?: string;
+        role?: string;
+      };
+    };
 
     let message = '';
 

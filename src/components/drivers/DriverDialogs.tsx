@@ -44,7 +44,6 @@ export function RatingDialog({
   requestId,
   driverId,
   driverName,
-  passengerId,
   organizationId,
 }: RatingDialogProps) {
   const { t } = useTranslation();
@@ -68,9 +67,11 @@ export function RatingDialog({
       onOpenChange(false);
       setRating(5);
       setComment('');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('driver.failedToSubmitRating', 'Failed to submit rating'));
+    } catch (error) {
+      toast.error(
+        (error instanceof Error ? error.message : '') ||
+          t('driver.failedToSubmitRating', 'Failed to submit rating'),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -153,7 +154,6 @@ export function ReassignDriverDialog({
   open,
   onOpenChange,
   requestId,
-  userId,
   organizationId,
   currentDriverId,
 }: ReassignDriverDialogProps) {
@@ -178,9 +178,11 @@ export function ReassignDriverDialog({
       });
       toast.success(t('driver.reassigned', 'Request sent to new driver!'));
       onOpenChange(false);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('driver.failedToReassign', 'Failed to reassign'));
+    } catch (error) {
+      toast.error(
+        (error instanceof Error ? error.message : '') ||
+          t('driver.failedToReassign', 'Failed to reassign'),
+      );
     } finally {
       setSubmitting(false);
     }

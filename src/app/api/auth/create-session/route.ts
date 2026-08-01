@@ -29,7 +29,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = (await request.json()) as {
+      userId?: string;
+      name?: string;
+      email?: string;
+      role?: 'admin' | 'supervisor' | 'employee' | 'superadmin' | 'driver';
+      department?: string;
+      position?: string;
+      employeeType?: 'staff' | 'contractor';
+      avatar?: string;
+    };
     const { userId, name, email, role, department, position, employeeType, avatar } = body;
 
     if (!userId || !email) {
@@ -39,9 +48,9 @@ export async function POST(request: NextRequest) {
     // Create JWT token
     const jwt = await signJWT({
       userId,
-      name,
+      name: name ?? '',
       email,
-      role,
+      role: role ?? 'employee',
       department,
       position,
       employeeType,

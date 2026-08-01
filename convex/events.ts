@@ -11,6 +11,7 @@ import { mutation, query } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { logger } from '../src/lib/logger';
+import type { Doc } from './_generated/dataModel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPANY EVENTS MANAGEMENT
@@ -123,8 +124,7 @@ export const updateCompanyEvent = mutation({
       throw new Error('Only event creator or admin can update');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = { updatedAt: Date.now() };
+    const patch: Partial<Doc<'companyEvents'>> = { updatedAt: Date.now() };
     if (args.name) patch.name = args.name;
     if (args.description !== undefined) patch.description = args.description;
     if (args.startDate) patch.startDate = args.startDate;

@@ -20,7 +20,23 @@ export const POST = withCsrfProtection(async (req: Request) => {
     const requesterId = auth.payload.userId;
     const convexAuth = { token: auth.token };
 
-    const { leaveId, startDate, endDate, days, reason, type } = await req.json();
+    const { leaveId, startDate, endDate, days, reason, type } = (await req.json()) as {
+      leaveId?: string;
+      startDate?: string;
+      endDate?: string;
+      days?: number;
+      reason?: string;
+      type?:
+        | 'paid'
+        | 'unpaid'
+        | 'sick'
+        | 'family'
+        | 'doctor'
+        | 'day_off'
+        | 'maternity'
+        | 'paternity'
+        | 'study';
+    };
 
     if (!leaveId) {
       return NextResponse.json({ success: false, message: 'Missing leaveId' }, { status: 400 });

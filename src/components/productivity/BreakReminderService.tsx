@@ -28,7 +28,7 @@ export default function BreakReminderService({
   const { t } = useTranslation();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const lastReminderRef = useRef<number>(Date.now());
+  const lastReminderRef = useRef<number>(0);
 
   // Create energizing sound using Web Audio API
   const playBreakSound = () => {
@@ -86,6 +86,11 @@ export default function BreakReminderService({
   const showBreakReminder = async () => {
     if (!enabled || !isWithinWorkHours()) return;
 
+    // Initialize on first run: treat the very first check as the baseline
+    if (lastReminderRef.current === 0) {
+      lastReminderRef.current = Date.now();
+      return;
+    }
     const timeSinceLastReminder = Date.now() - lastReminderRef.current;
     const intervalMs = intervalMinutes * 60 * 1000;
 
@@ -175,6 +180,7 @@ export default function BreakReminderService({
         clearInterval(timerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- showBreakReminder is recreated each render; including it would reset the interval every render
   }, [enabled, intervalMinutes, workHoursStart, workHoursEnd]);
 
   // This component doesn't render anything

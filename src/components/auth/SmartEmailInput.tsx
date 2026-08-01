@@ -29,6 +29,7 @@ export function SmartEmailInput({
 
   useEffect(() => {
     if (!value) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset validation when the email field is cleared
       setValidation(null);
       setShowSuggestion(false);
       return;

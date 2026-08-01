@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation } from 'convex/react';
@@ -303,9 +303,12 @@ export default function CareersPage({ orgSlug }: { orgSlug: string }) {
         <div className="relative max-w-6xl mx-auto px-6 md:px-12 pt-20 pb-16 text-center">
           {/* Org branding */}
           {data.org.logoUrl && (
-            <img
+            <Image
               src={data.org.logoUrl}
               alt={data.org.name}
+              width={64}
+              height={64}
+              unoptimized
               className="w-16 h-16 mx-auto mb-6 rounded-2xl object-cover shadow-lg"
             />
           )}

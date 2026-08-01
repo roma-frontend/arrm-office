@@ -1,6 +1,11 @@
 import { action } from './_generated/server';
 import { v } from 'convex/values';
 
+/** Minimal shape of an OpenRouter chat-completion response. */
+interface AiChatResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
 // ── AI-Powered Vacancy Description Generator ───────────────────────────────
 
 export const generateVacancyDescription = action({
@@ -84,14 +89,14 @@ Keep content professional, specific, and actionable. Do NOT use placeholder text
       throw new Error(`OpenRouter API error: ${response.status} ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as AiChatResponse;
     const content = data.choices?.[0]?.message?.content || '';
 
     // Extract JSON from response (handles cases where LLM wraps in markdown)
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse AI response as JSON');
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonMatch[0]) as { description?: string; requirements?: string };
 
     return {
       description: parsed.description || '',

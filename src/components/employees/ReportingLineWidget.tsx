@@ -1,17 +1,26 @@
 'use client';
-
+import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { motion } from '@/lib/cssMotion';
-import { ChevronDown, Crown, UserCheck, User, Car, Shield, Mail, Building2 } from 'lucide-react';
+import {
+  ChevronDown,
+  Crown,
+  UserCheck,
+  User,
+  Car,
+  Shield,
+  Mail,
+  Building2,
+  type LucideIcon,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { useAuthStore } from '@/store/useAuthStore';
 
-const ROLE_ICONS: Record<string, any> = {
+const ROLE_ICONS: Record<string, LucideIcon> = {
   admin: Crown,
   supervisor: UserCheck,
   employee: User,
@@ -41,7 +50,6 @@ export function ReportingLineWidget({
   canEdit,
 }: ReportingLineWidgetProps) {
   const { t } = useTranslation();
-  const { user: currentUser } = useAuthStore();
 
   const reportingLine = useQuery(api.reporting.getReportingLine, {
     userId,
@@ -170,9 +178,12 @@ export function ReportingLineWidget({
                       }}
                     >
                       {person.avatarUrl ? (
-                        <img
+                        <Image
                           src={person.avatarUrl}
                           alt={person.name}
+                          width={64}
+                          height={64}
+                          unoptimized
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
@@ -281,9 +292,12 @@ export function ReportingLineWidget({
                           }}
                         >
                           {report.avatarUrl ? (
-                            <img
+                            <Image
                               src={report.avatarUrl}
                               alt={report.name}
+                              width={64}
+                              height={64}
+                              unoptimized
                               className="w-full h-full object-cover"
                               referrerPolicy="no-referrer"
                             />

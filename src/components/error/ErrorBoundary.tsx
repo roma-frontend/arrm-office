@@ -46,10 +46,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Log to error reporting service (Sentry)
     if (typeof window !== 'undefined') {
-      // @ts-ignore - Sentry might be available
-      if (window.Sentry) {
-        // @ts-ignore
-        window.Sentry.captureException(error, {
+      const sentry = (
+        window as Window & {
+          Sentry?: { captureException: (e: Error, opts?: { extra?: unknown }) => void };
+        }
+      ).Sentry;
+      if (sentry) {
+        sentry.captureException(error, {
           extra: {
             componentStack: errorInfo.componentStack,
           },

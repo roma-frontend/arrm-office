@@ -24,10 +24,11 @@ export function NotificationSettings() {
   // Sync local state when settings load
   useEffect(() => {
     if (settings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local toggle state when settings load
       setEmailNotifs(settings.emailNotifications);
       setPushNotifs(settings.pushNotifications);
     }
-  }, [settings?.emailNotifications, settings?.pushNotifications]);
+  }, [settings]);
 
   const persist = async (next: { email: boolean; push: boolean }) => {
     if (!userId) return;

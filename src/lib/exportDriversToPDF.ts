@@ -8,8 +8,6 @@ import pdfFonts from 'pdfmake/build/vfs_fonts';
 // pdfmake has no TypeScript types — all operations are inherently unsafe
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment,
     @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-
 const pdfMakeTyped = pdfMake as any;
 const pdfFontsTyped = pdfFonts as any;
 pdfMakeTyped.vfs = pdfFontsTyped.pdfMake?.vfs || pdfFontsTyped.vfs;

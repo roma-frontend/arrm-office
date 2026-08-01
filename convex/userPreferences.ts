@@ -126,7 +126,10 @@ export const setPreference = mutation({
     sessionToken: v.string(),
   },
   handler: async (ctx, args) => {
-    const { key, value, sessionToken } = args;
+    const { key, sessionToken } = args;
+    // The preference value is opaque JSON — the schema stores it as `v.any()`,
+    // so keep the runtime value but type it conservatively here.
+    const value = args.value as unknown;
     const userId = await getCurrentUserId(ctx, sessionToken);
 
     if (!userId) {

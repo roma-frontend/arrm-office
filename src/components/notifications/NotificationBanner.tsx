@@ -75,6 +75,7 @@ export function NotificationBanner() {
 
     // On first load, just record the count
     if (lastSeenCount === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- record baseline unread count on first load
       setLastSeenCount(currentCount);
       return;
     }
@@ -130,7 +131,10 @@ export function NotificationBanner() {
         suggestion={(() => {
           if (newNotification.metadata) {
             try {
-              const meta = JSON.parse(newNotification.metadata);
+              const meta = JSON.parse(newNotification.metadata) as {
+                messageKey?: string;
+                params?: Record<string, string | number>;
+              };
               if (meta.messageKey) return String(t(meta.messageKey, meta.params ?? {}));
             } catch {}
           }

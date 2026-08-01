@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOutlookCalendarEvent } from '@/lib/calendar-sync';
+import { createOutlookCalendarEvent, type CalendarEvent } from '@/lib/calendar-sync';
 import { validateRestrictedOrgFromRequest } from '@/lib/restricted-org';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 
@@ -20,14 +20,19 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
       );
     }
 
-    const { events } = await request.json();
+    const { events } = (await request.json()) as { events?: CalendarEvent[] };
 
     if (!Array.isArray(events)) {
       return NextResponse.json({ error: 'Invalid events data' }, { status: 400 });
     }
 
     // Create events in Outlook Calendar
-    const results = [];
+    const results: Array<{
+      success: boolean;
+      eventId: string;
+      outlookEventId?: string;
+      error?: string;
+    }> = [];
     for (const event of events) {
       try {
         const result = await createOutlookCalendarEvent(accessToken, event);

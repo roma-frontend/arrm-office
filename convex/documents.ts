@@ -1,13 +1,13 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { query, mutation } from './_generated/server';
+import { query, mutation, type QueryCtx, type MutationCtx } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import type { Doc, Id } from './_generated/dataModel';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function checkAccess(ctx: any, organizationId: any) {
+async function checkAccess(ctx: QueryCtx | MutationCtx, organizationId: Id<'organizations'>) {
   const requester = await getAuthCaller(ctx);
   if (!requester) throw new Error('Not authenticated');
   const userIsSuperadmin = isSuperadmin(requester);
@@ -156,11 +156,10 @@ export const updateDocument = mutation({
     const { isSuperadmin } = await checkAccess(ctx, doc.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can update documents');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = { updatedAt: Date.now() };
+    const patch: Partial<Doc<'documents'>> = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
-    if (args.category !== undefined) patch.category = args.category;
+    if (args.category !== undefined) patch.category = args.category as Doc<'documents'>['category'];
     if (args.fileUrl !== undefined) patch.fileUrl = args.fileUrl;
     if (args.fileName !== undefined) patch.fileName = args.fileName;
     if (args.fileSize !== undefined) patch.fileSize = args.fileSize;

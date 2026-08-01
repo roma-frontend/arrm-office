@@ -8,7 +8,7 @@ export async function GET() {
       next: { revalidate: 3600 },
     });
     if (!res.ok) throw new Error('Failed to fetch');
-    const data = await res.json();
+    const data = (await res.json()) as { rates: Record<string, number> };
     return NextResponse.json({ rates: data.rates });
   } catch {
     try {
@@ -16,7 +16,7 @@ export async function GET() {
         next: { revalidate: 3600 },
       });
       if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
+      const data = (await res.json()) as { rates: Record<string, number> };
       return NextResponse.json({ rates: data.rates });
     } catch {
       return NextResponse.json({ rates: {} });

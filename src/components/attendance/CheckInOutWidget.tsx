@@ -40,9 +40,8 @@ export function CheckInOutWidget() {
     try {
       await checkIn({ userId: user.id as Id<'users'> });
       toast.success(t('toasts.checkedInSuccess'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('attendance.failedCheckIn'));
+    } catch (error) {
+      toast.error((error instanceof Error ? error.message : '') || t('attendance.failedCheckIn'));
     }
   };
 
@@ -51,9 +50,8 @@ export function CheckInOutWidget() {
     try {
       await checkOut({ userId: user.id as Id<'users'> });
       toast.success(t('toasts.checkedOutSuccess'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      toast.error(error.message || t('attendance.failedCheckOut'));
+    } catch (error) {
+      toast.error((error instanceof Error ? error.message : '') || t('attendance.failedCheckOut'));
     }
   };
 

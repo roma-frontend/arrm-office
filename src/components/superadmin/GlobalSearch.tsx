@@ -222,9 +222,7 @@ export function GlobalSearch({ placeholder, autoFocus = false, onSelect }: Globa
 
     if (selectedType === null || selectedType === 'ticket') {
       all.push(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-        ...(results.supportTickets || []).map((t: any) => ({
+        ...(results.supportTickets || []).map((t) => ({
           id: t._id,
           type: 'ticket' as const,
           title: t.ticketNumber,

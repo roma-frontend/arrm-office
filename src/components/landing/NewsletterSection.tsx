@@ -56,7 +56,11 @@ export default function NewsletterSection() {
           language: (i18n.language || 'en').slice(0, 3),
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        alreadySubscribed?: boolean;
+      };
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Subscribe failed');
       }

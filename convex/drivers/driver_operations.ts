@@ -183,7 +183,7 @@ export const calculateRoute = mutation({
     to: v.string(),
   },
   handler: async (ctx, args) => {
-    const { from, to } = args;
+    const { from: _from, to: _to } = args;
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
