@@ -49,7 +49,12 @@ class MockImage {
   naturalWidth = 0;
   naturalHeight = 0;
   set src(_value: string) {
-    queueMicrotask(() => this.onload?.());
+    // Fire synchronously: loadImage() assigns onload BEFORE src, so this
+    // resolves the promise (and clears its timeout) on the same tick. Using
+    // queueMicrotask would queue into jest's FAKE microtask queue under
+    // jest.useFakeTimers(), whose drain order vs the loadImage 4s timer is
+    // racy — firing onload synchronously removes that race entirely.
+    this.onload?.();
   }
 }
 (globalThis as { Image?: unknown }).Image = MockImage;
@@ -231,6 +236,13 @@ describe('parseMrzLines', () => {
 });
 
 describe('scanPassportImage', () => {
+  // Safety net: if a test times out mid-flight, jest aborts the async fn BEFORE
+  // its finally block runs, leaking fake timers into the next test. Always
+  // restore real timers between tests so a timeout can't poison the suite.
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('creates a whitelisted worker and returns parsed result when OCR finds MRZ', async () => {
     mockRecognize.mockResolvedValue({
       data: {
