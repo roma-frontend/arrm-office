@@ -212,6 +212,7 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
       submitLabel={t('assets.create')}
       cancelLabel={t('common.cancel')}
       defaultStepData={{ category: 'laptop', condition: 'new' }}
+      draftKey="create-asset"
     />
   );
 }

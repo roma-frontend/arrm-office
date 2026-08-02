@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useMutation } from 'convex/react';
@@ -28,6 +28,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { Badge } from '@/components/ui/badge';
 import {
   FileText,
@@ -249,6 +251,42 @@ export default function DocumentTemplateWizard({
     }
   };
 
+  // ── Черновик: данные переживают случайное закрытие модалки ─────────────
+  const draftData = useMemo(
+    () => ({ title, description, category, content, fields }),
+    [title, description, category, content, fields],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    setTitle(d.title ?? '');
+    setDescription(d.description ?? '');
+    if (d.category) setCategory(d.category);
+    setContent(d.content ?? '');
+    setFields(Array.isArray(d.fields) ? d.fields : []);
+    setCurrentStep(Math.min(Math.max(savedStep, 0), 3));
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'document-template',
+    enabled: open,
+    data: draftData,
+    step: currentStep,
+    defaults: { category: 'custom' as TemplateCategory },
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setTitle('');
+    setDescription('');
+    setCategory('custom');
+    setContent('');
+    setFields([]);
+    setCurrentStep(0);
+  }, [clearDraft]);
+
   const handleSubmit = async () => {
     if (!user?.id || !selectedOrgId) return;
     setIsSubmitting(true);
@@ -263,6 +301,7 @@ export default function DocumentTemplateWizard({
         fields,
       });
       toast.success(t('documents.templateCreated', 'Template created successfully'));
+      clearDraft();
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
@@ -362,6 +401,12 @@ export default function DocumentTemplateWizard({
 
           {/* Step Content */}
           <div className="px-5 py-4 min-h-[300px] max-h-[50vh] overflow-y-auto">
+            <WizardDraftNotice
+              show={draft.restored}
+              step={draft.restoredStep}
+              onReset={handleStartOver}
+            />
+
             {/* Step 1: Template Info */}
             {currentStep === 0 && (
               <div className="space-y-4">

@@ -45,6 +45,29 @@ export const list = query({
   },
 });
 
+/**
+ * Lean list for pickers — id + name only, no employee counts. `list` walks every
+ * user in the org to build its counters, which is far too much work for a
+ * dropdown that renders on every form open.
+ */
+export const options = query({
+  args: { organizationId: v.optional(v.id('organizations')) },
+  handler: async (ctx, args) => {
+    const orgId = args.organizationId;
+    if (!orgId) return [];
+
+    const departments = await ctx.db
+      .query('departments')
+      .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+      .take(DEFAULT_LIST_CAP);
+
+    return departments
+      .filter((d) => d.isActive !== false)
+      .map((d) => ({ _id: d._id, name: d.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  },
+});
+
 export const getById = query({
   args: { id: v.id('departments') },
   handler: async (ctx, args) => {

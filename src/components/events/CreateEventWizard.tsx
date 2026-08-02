@@ -18,6 +18,7 @@ import { Calendar, Clock, Users, MapPin, Bell, AlertCircle } from 'lucide-react'
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { useOrgUnits } from '@/hooks/useOrgUnits';
 import { toast } from 'sonner';
 
 interface CreateEventWizardProps {
@@ -27,19 +28,6 @@ interface CreateEventWizardProps {
   onCancel?: () => void;
 }
 
-const DEPARTMENTS = [
-  { value: 'IT', label: 'IT', description: 'Information Technology' },
-  { value: 'Finance', label: 'Finance', description: 'Finance & Accounting' },
-  { value: 'HR', label: 'HR', description: 'Human Resources' },
-  { value: 'Marketing', label: 'Marketing', description: 'Marketing & PR' },
-  { value: 'Sales', label: 'Sales', description: 'Sales & Business Development' },
-  { value: 'Operations', label: 'Operations', description: 'Operations & Logistics' },
-  { value: 'Legal', label: 'Legal', description: 'Legal & Compliance' },
-  { value: 'Support', label: 'Support', description: 'Customer Support' },
-  { value: 'Management', label: 'Management', description: 'Executive Management' },
-  { value: 'Other', label: 'Other', description: 'Other departments' },
-];
-
 export function CreateEventWizard({
   organizationId,
   userId,
@@ -48,6 +36,11 @@ export function CreateEventWizard({
 }: CreateEventWizardProps) {
   const { t } = useTranslation();
   const createEvent = useMutation(api.events.createCompanyEvent);
+
+  // Отделы организации, а не фиксированный список: событие сопоставляется с
+  // сотрудниками по названию отдела, поэтому значением остаётся название.
+  const { departments } = useOrgUnits(organizationId);
+  const departmentOptions = (departments ?? []).map((d) => ({ value: d.name, label: d.name }));
 
   const steps: WizardStep[] = [
     {
@@ -185,7 +178,7 @@ export function CreateEventWizard({
           <CheckboxStep
             field="departments"
             label={t('eventWizard.steps.departments.departmentsLabel')}
-            options={DEPARTMENTS}
+            options={departmentOptions}
           />
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -256,6 +249,7 @@ export function CreateEventWizard({
       onCancel={onCancel}
       submitLabel={t('eventWizard.submit')}
       cancelLabel={t('actions.cancel')}
+      draftKey="create-event"
     />
   );
 }

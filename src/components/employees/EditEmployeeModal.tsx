@@ -21,6 +21,7 @@ import {
   CheckCircle,
   DollarSign,
   IdCard,
+  CalendarDays,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
@@ -33,6 +34,7 @@ import {
 } from './PassportFields';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useOrgUnits } from '@/hooks/useOrgUnits';
 import {
   Dialog,
   DialogContent,
@@ -55,7 +57,9 @@ export interface Employee {
   role: 'admin' | 'supervisor' | 'employee' | 'superadmin';
   employeeType: 'staff' | 'contractor';
   department?: string;
+  departmentId?: string;
   position?: string;
+  positionId?: string;
   phone?: string;
   avatarUrl?: string;
   supervisorId?: string;
@@ -65,6 +69,7 @@ export interface Employee {
   paidLeaveBalance: number;
   sickLeaveBalance: number;
   familyLeaveBalance: number;
+  createdAt?: number;
 }
 
 interface EditEmployeeModalProps {
@@ -91,20 +96,16 @@ const ALL_ROLES_CONFIG = [
   },
 ];
 
-const DEPARTMENTS_LIST = [
-  'Engineering',
-  'HR',
-  'Finance',
-  'Marketing',
-  'Operations',
-  'Sales',
-  'Design',
-  'Management',
-  'Legal',
-  'IT',
-];
-
 const TOTAL_STEPS = 5;
+
+// Local YYYY-MM-DD (not UTC) so the date input matches what the profile shows
+// and what gets written back on save — avoids a one-day shift for UTC+ timezones.
+function toLocalDateString(timestamp: number): string {
+  const d = new Date(timestamp);
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+}
 
 export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
   const { t } = useTranslation();
@@ -147,20 +148,31 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     name: employee.name,
     role: employee.role,
     employeeType: employee.employeeType,
-    department: employee.department ?? '',
-    position: employee.position ?? '',
+    departmentId: employee.departmentId ?? '',
+    positionId: employee.positionId ?? '',
     phone: employee.phone ?? '',
     supervisorId: employee.supervisorId ?? '',
     isActive: employee.isActive,
     paidLeaveBalance: employee.paidLeaveBalance,
     sickLeaveBalance: employee.sickLeaveBalance,
     familyLeaveBalance: employee.familyLeaveBalance,
+    registrationDate: employee.createdAt ? toLocalDateString(employee.createdAt) : '',
     baseSalary: 0,
     bonuses: 0,
     overtimeHours: 0,
     salaryCurrency: 'AMD',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Отделы/должности — только реальные записи организации (см. useOrgUnits).
+  const { departments, positions, allPositions } = useOrgUnits(
+    targetOrgId,
+    form.departmentId || undefined,
+  );
+  const departmentName =
+    departments?.find((d) => d._id === form.departmentId)?.name ?? employee.department ?? '';
+  const positionName =
+    positions?.find((p) => p._id === form.positionId)?.title ?? employee.position ?? '';
 
   const canEditRole = user?.role === 'admin' || user?.role === 'superadmin';
   const currentUser = useAuthStore((s) => s.user);
@@ -178,14 +190,15 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         name: employee.name,
         role: employee.role,
         employeeType: employee.employeeType,
-        department: employee.department ?? '',
-        position: employee.position ?? '',
+        departmentId: employee.departmentId ?? '',
+        positionId: employee.positionId ?? '',
         phone: employee.phone ?? '',
         supervisorId: employee.supervisorId ?? '',
         isActive: employee.isActive,
         paidLeaveBalance: employee.paidLeaveBalance,
         sickLeaveBalance: employee.sickLeaveBalance,
         familyLeaveBalance: employee.familyLeaveBalance,
+        registrationDate: employee.createdAt ? toLocalDateString(employee.createdAt) : '',
         baseSalary: 0,
         bonuses: 0,
         overtimeHours: 0,
@@ -228,6 +241,25 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     if (open) setPassportScan(null);
   }, [open]);
 
+  // Сотрудники, заведённые до перехода на справочники, хранят только название
+  // отдела/должности. Подбираем по названию, чтобы поле не открывалось пустым.
+  // Если совпадения нет — поле остаётся пустым, и админ выбирает значение сам.
+  useEffect(() => {
+    if (!open || !departments || !allPositions) return;
+    setForm((p) => {
+      const next = { ...p };
+      if (!next.departmentId && employee.department) {
+        const match = departments.find((d) => d.name === employee.department);
+        if (match) next.departmentId = match._id;
+      }
+      if (!next.positionId && employee.position) {
+        const match = allPositions.find((pos) => pos.title === employee.position);
+        if (match) next.positionId = match._id;
+      }
+      return next.departmentId === p.departmentId && next.positionId === p.positionId ? p : next;
+    });
+  }, [open, departments, allPositions, employee.department, employee.position]);
+
   // Reset supervisorId when organization changes (can't have supervisor from another org)
   useEffect(() => {
     if (isSuperadmin && supervisors && supervisors.length > 0) {
@@ -252,9 +284,9 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     }
 
     if (currentStep === (isSuperadmin ? 2 : 1)) {
-      if (!form.department)
+      if (!form.departmentId)
         errs.department = t('employees.department') + ' ' + t('errors.required').toLowerCase();
-      if (!form.position.trim())
+      if (!form.positionId)
         errs.position = t('employees.position') + ' ' + t('errors.required').toLowerCase();
     }
 
@@ -377,14 +409,17 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         name: form.name,
         role: form.role as 'admin' | 'supervisor' | 'employee' | 'driver',
         employeeType: form.employeeType as 'staff' | 'contractor',
-        department: form.department || undefined,
-        position: form.position || undefined,
+        departmentId: form.departmentId ? (form.departmentId as Id<'departments'>) : undefined,
+        positionId: form.positionId ? (form.positionId as Id<'positions'>) : undefined,
         phone: form.phone || undefined,
         supervisorId: form.supervisorId ? (form.supervisorId as Id<'users'>) : undefined,
         isActive: form.isActive,
         paidLeaveBalance: form.paidLeaveBalance,
         sickLeaveBalance: form.sickLeaveBalance,
         familyLeaveBalance: form.familyLeaveBalance,
+        createdAt: form.registrationDate
+          ? new Date(form.registrationDate + 'T00:00:00').getTime()
+          : undefined,
       });
       await updateSalary({
         userId: employee._id as Id<'users'>,
@@ -594,6 +629,32 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                     onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
                   />
                 </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5" />{' '}
+                    {t('editEmployee.registrationDate')}
+                  </label>
+                  <input
+                    type="date"
+                    value={form.registrationDate}
+                    max={toLocalDateString(Date.now())}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, registrationDate: e.target.value }))
+                    }
+                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all"
+                    style={{
+                      background: 'var(--input)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                    onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                  />
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {t('editEmployee.registrationDateHint')}
+                  </p>
+                </div>
               </motion.div>
             )}
 
@@ -695,43 +756,58 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       <Building2 className="w-3.5 h-3.5" /> {t('labels.department')} *
                     </label>
                     <CustomSelect
-                      value={form.department}
-                      onChange={(v) => setForm((p) => ({ ...p, department: v }))}
+                      value={form.departmentId}
+                      onChange={(v) =>
+                        setForm((p) => {
+                          // Должность привязана к отделу — снимаем выбор, если
+                          // она больше не относится к новому отделу.
+                          const stillValid = positions?.some(
+                            (pos) =>
+                              pos._id === p.positionId &&
+                              (!pos.departmentId || pos.departmentId === v),
+                          );
+                          return {
+                            ...p,
+                            departmentId: v,
+                            positionId: stillValid ? p.positionId : '',
+                          };
+                        })
+                      }
                       fullWidth
                       options={[
-                        { value: '', label: t('placeholders.select', 'Select...') },
-                        ...DEPARTMENTS_LIST.map((d) => ({
-                          value: d,
-                          label: t(`departments.${d.toLowerCase()}`, d),
-                        })),
+                        { value: '', label: t('placeholders.selectDepartment') },
+                        ...(departments ?? []).map((d) => ({ value: d._id, label: d.name })),
                       ]}
                       triggerClassName={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
                         errors.department ? 'border-red-500' : ''
                       }`}
                       dropdownClassName="bg-[var(--input)] border-[var(--border)] text-[var(--text-primary)]"
                     />
+                    {departments?.length === 0 && (
+                      <p className="text-xs text-(--text-muted)">{t('employees.noDepartments')}</p>
+                    )}
                     {errors.department && (
                       <p className="text-xs text-red-500">{errors.department}</p>
                     )}
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">{t('labels.position')} *</label>
-                    <input
-                      value={form.position}
-                      onChange={(e) => setForm((p) => ({ ...p, position: e.target.value }))}
-                      placeholder="e.g. Engineer"
-                      className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
+                    <CustomSelect
+                      value={form.positionId}
+                      onChange={(v) => setForm((p) => ({ ...p, positionId: v }))}
+                      fullWidth
+                      options={[
+                        { value: '', label: t('placeholders.selectPosition') },
+                        ...(positions ?? []).map((p) => ({ value: p._id, label: p.title })),
+                      ]}
+                      triggerClassName={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
                         errors.position ? 'border-red-500' : ''
                       }`}
-                      style={{
-                        background: 'var(--input)',
-                        color: 'var(--text-primary)',
-                      }}
-                      onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                      onBlur={(e) =>
-                        (e.target.style.borderColor = errors.position ? '#ef4444' : 'var(--border)')
-                      }
+                      dropdownClassName="bg-[var(--input)] border-[var(--border)] text-[var(--text-primary)]"
                     />
+                    {positions?.length === 0 && (
+                      <p className="text-xs text-(--text-muted)">{t('employees.noPositions')}</p>
+                    )}
                     {errors.position && <p className="text-xs text-red-500">{errors.position}</p>}
                   </div>
                 </div>
@@ -893,6 +969,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                   value={passport}
                   onChange={(patch) => setPassport((p) => ({ ...p, ...patch }))}
                   onScanUploaded={setPassportScan}
+                  userId={employee._id as Id<'users'>}
                 />
               </motion.div>
             )}
@@ -928,11 +1005,15 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                     { label: t('labels.email'), value: employee.email },
                     { label: t('labels.phone'), value: form.phone || '—' },
                     {
+                      label: t('editEmployee.registrationDate'),
+                      value: form.registrationDate || '—',
+                    },
+                    {
                       label: t('common.employeeType'),
                       value: t(`employeeTypes.${form.employeeType}`),
                     },
-                    { label: t('labels.department'), value: form.department || '—' },
-                    { label: t('labels.position'), value: form.position || '—' },
+                    { label: t('labels.department'), value: departmentName || '—' },
+                    { label: t('labels.position'), value: positionName || '—' },
                     { label: t('labels.role'), value: t(`roles.${form.role}`) },
                     ...(isSuperadmin
                       ? [

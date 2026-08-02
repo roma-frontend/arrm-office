@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -26,6 +26,8 @@ import {
   Settings,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 
 interface ReviewCycleWizardProps {
   onClose: () => void;
@@ -54,6 +56,72 @@ export default function ReviewCycleWizard({ onClose, onSuccess }: ReviewCycleWiz
   const [allowSelfNomination, setAllowSelfNomination] = useState(false);
   const [requireJustification, setRequireJustification] = useState(false);
   const [maxIncreasePercentage, setMaxIncreasePercentage] = useState('');
+
+  // ── Черновик: данные переживают случайное закрытие окна ────────────────
+  const currentYear = new Date().getFullYear().toString();
+
+  const draftData = useMemo(
+    () => ({
+      name,
+      description,
+      year,
+      cycleStart,
+      cycleEnd,
+      allowSelfNomination,
+      requireJustification,
+      maxIncreasePercentage,
+    }),
+    [
+      name,
+      description,
+      year,
+      cycleStart,
+      cycleEnd,
+      allowSelfNomination,
+      requireJustification,
+      maxIncreasePercentage,
+    ],
+  );
+
+  const handleRestoreDraft = useCallback(
+    (d: typeof draftData, savedStep: number) => {
+      setName(d.name ?? '');
+      setDescription(d.description ?? '');
+      setYear(d.year ?? currentYear);
+      setCycleStart(d.cycleStart ?? '');
+      setCycleEnd(d.cycleEnd ?? '');
+      setAllowSelfNomination(!!d.allowSelfNomination);
+      setRequireJustification(!!d.requireJustification);
+      setMaxIncreasePercentage(d.maxIncreasePercentage ?? '');
+      setCurrentStep(Math.min(Math.max(savedStep, 0), 3));
+    },
+    [currentYear],
+  );
+
+  const draftDefaults = useMemo(() => ({ year: currentYear }), [currentYear]);
+
+  const draft = useWizardDraft({
+    key: 'review-cycle',
+    data: draftData,
+    step: currentStep,
+    defaults: draftDefaults,
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setName('');
+    setDescription('');
+    setYear(currentYear);
+    setCycleStart('');
+    setCycleEnd('');
+    setAllowSelfNomination(false);
+    setRequireJustification(false);
+    setMaxIncreasePercentage('');
+    setCurrentStep(0);
+  }, [clearDraft, currentYear]);
 
   // Step 4: Review
   const steps = [
@@ -129,6 +197,7 @@ export default function ReviewCycleWizard({ onClose, onSuccess }: ReviewCycleWiz
       });
 
       toast.success(t('compensation.reviewCycleCreated', 'Review cycle created successfully'));
+      clearDraft();
       onSuccess();
     } catch (error) {
       console.error('Create review cycle error:', error);
@@ -433,6 +502,12 @@ export default function ReviewCycleWizard({ onClose, onSuccess }: ReviewCycleWiz
         </div>
 
         <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
+
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

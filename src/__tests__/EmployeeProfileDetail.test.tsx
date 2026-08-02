@@ -45,6 +45,7 @@ jest.mock('../../convex/_generated/api', () => ({
       getEmployeeRatings: { _name: 'getEmployeeRatings' },
     },
     timeTracking: { getMonthlyStats: { _name: 'getMonthlyStats' } },
+    settlement: { getSettlementPreview: { _name: 'getSettlementPreview' } },
   },
 }));
 
@@ -124,6 +125,11 @@ jest.mock('lucide-react', () => {
     Edit2: MockIcon,
     Trash2: MockIcon,
     IdCard: MockIcon,
+    Calculator: MockIcon,
+    Download: MockIcon,
+    Loader2: MockIcon,
+    Wallet: MockIcon,
+    CalendarDays: MockIcon,
   };
 });
 
@@ -318,6 +324,7 @@ describe('EmployeeProfileDetail', () => {
       getLatestRating: undefined,
       getMonthlyStats: undefined,
       getEmployeeRatings: undefined,
+      getSettlementPreview: undefined,
     };
   });
 

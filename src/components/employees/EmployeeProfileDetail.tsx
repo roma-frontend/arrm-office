@@ -5,7 +5,7 @@ import { api } from '../../../convex/_generated/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Star, Clock, Target, AlertTriangle, Plus, Trash2, IdCard } from 'lucide-react';
+import { Briefcase, Star, Clock, Target, AlertTriangle, Plus, Trash2, IdCard, BadgeCheck, ShieldAlert, ShieldQuestion, Calculator } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { format } from 'date-fns';
@@ -30,6 +30,7 @@ import { AssignManagerModal } from './AssignManagerModal';
 import ExtendedProfileSection, { type ExtendedProfileData } from './ExtendedProfileSection';
 import EditExtendedProfileModal from './EditExtendedProfileModal';
 import EmployeeProfileHero from './EmployeeProfileHero';
+import SettlementPreviewDialog from '@/components/settlement/SettlementPreviewDialog';
 
 interface EmployeeProfileDetailProps {
   employeeId: Id<'users'>;
@@ -59,6 +60,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAssignManager, setShowAssignManager] = useState(false);
   const [showExtendedEdit, setShowExtendedEdit] = useState(false);
+  const [showSettlement, setShowSettlement] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const { t } = useTranslation(['modules', 'common']);
   const lang = i18n.language || 'en';
@@ -116,6 +118,50 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
         className={`w-3.5 h-3.5 ${i <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
       />
     ));
+
+  // SRC (ՀՎՀՀ) taxpayer-verification badge in the Identity card.
+  const renderTaxIdBadge = () => {
+    const status = profile?.profile?.taxIdStatus;
+    if (!status) return null;
+    const map: Record<string, { color: string; label: string; Icon: typeof BadgeCheck }> = {
+      verified: {
+        color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+        label: t('employees.taxIdVerified', 'Verified by SRC'),
+        Icon: BadgeCheck,
+      },
+      not_found: {
+        color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30',
+        label: t('employees.taxIdNotFound', 'Not found in SRC'),
+        Icon: ShieldQuestion,
+      },
+      valid_local: {
+        color: 'text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30',
+        label: t('employees.taxIdValidLocal', 'Format valid (local check)'),
+        Icon: ShieldQuestion,
+      },
+      invalid_checksum: {
+        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        label: t('employees.taxIdInvalidChecksum', 'Checksum invalid'),
+        Icon: ShieldAlert,
+      },
+      invalid_format: {
+        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        label: t('employees.taxIdInvalidFormat', 'Must be 8 digits'),
+        Icon: ShieldAlert,
+      },
+    };
+    const cfg = map[status];
+    if (!cfg) return null;
+    const Icon = cfg.Icon;
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${cfg.color}`}
+      >
+        <Icon className="w-3.5 h-3.5" />
+        {cfg.label}
+      </span>
+    );
+  };
 
   if (!employee) {
     return (
@@ -384,6 +430,35 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
         </CardContent>
       </Card>
 
+      {/* Final Settlement (admins only) */}
+      {canEdit && (
+        <Card className="border-dashed">
+          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                <Calculator className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="font-medium text-(--text-primary)">
+                  {t('employees.settlement.title', 'Final Settlement')}
+                </p>
+                <p className="text-sm text-(--text-muted)">
+                  {t('employees.settlement.openDesc', 'Preview the final payout on termination and download the Excel report')}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="shrink-0 bg-linear-to-r from-blue-600 to-sky-700 text-white"
+              onClick={() => setShowSettlement(true)}
+            >
+              <Calculator className="w-4 h-4 mr-1" />
+              {t('employees.settlement.openButton', 'Final Settlement')}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Identity / Passport */}
       {profile?.profile &&
         (profile.profile.passportNumber ||
@@ -394,10 +469,13 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           profile.profile.nationality) && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <IdCard className="w-5 h-5 text-sky-500" />
-                {t('employees.identity') || 'Identity'}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <IdCard className="w-5 h-5 text-sky-500" />
+                  {t('employees.identity') || 'Identity'}
+                </CardTitle>
+                {renderTaxIdBadge()}
+              </div>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
@@ -598,6 +676,14 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           ? { organizationId: employee.organizationId as Id<'organizations'> }
           : {})}
         initialData={profile?.profile as unknown as ExtendedProfileData | null | undefined}
+      />
+
+      {/* Final Settlement Dialog */}
+      <SettlementPreviewDialog
+        employeeId={employeeId}
+        employeeName={employee.name}
+        open={showSettlement}
+        onClose={() => setShowSettlement(false)}
       />
     </div>
   );

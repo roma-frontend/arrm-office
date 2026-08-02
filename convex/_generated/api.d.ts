@@ -77,8 +77,10 @@ import type * as leaves_queries from "../leaves/queries.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_date from "../lib/date.js";
 import type * as lib_getAuthCaller from "../lib/getAuthCaller.js";
+import type * as lib_leaveMoney from "../lib/leaveMoney.js";
 import type * as lib_limits from "../lib/limits.js";
 import type * as lib_payrollCalculator from "../lib/payrollCalculator.js";
+import type * as lib_pension from "../lib/pension.js";
 import type * as lib_rbac from "../lib/rbac.js";
 import type * as lib_sanitize from "../lib/sanitize.js";
 import type * as lib_taxRules from "../lib/taxRules.js";
@@ -170,6 +172,7 @@ import type * as scripts_createTestAutomationData from "../scripts/createTestAut
 import type * as scripts_createTestTicket from "../scripts/createTestTicket.js";
 import type * as security from "../security.js";
 import type * as settings from "../settings.js";
+import type * as settlement from "../settlement.js";
 import type * as sharepointSync from "../sharepointSync.js";
 import type * as signatures from "../signatures.js";
 import type * as sla from "../sla.js";
@@ -275,8 +278,10 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/date": typeof lib_date;
   "lib/getAuthCaller": typeof lib_getAuthCaller;
+  "lib/leaveMoney": typeof lib_leaveMoney;
   "lib/limits": typeof lib_limits;
   "lib/payrollCalculator": typeof lib_payrollCalculator;
+  "lib/pension": typeof lib_pension;
   "lib/rbac": typeof lib_rbac;
   "lib/sanitize": typeof lib_sanitize;
   "lib/taxRules": typeof lib_taxRules;
@@ -368,6 +373,7 @@ declare const fullApi: ApiFromModules<{
   "scripts/createTestTicket": typeof scripts_createTestTicket;
   security: typeof security;
   settings: typeof settings;
+  settlement: typeof settlement;
   sharepointSync: typeof sharepointSync;
   signatures: typeof signatures;
   sla: typeof sla;

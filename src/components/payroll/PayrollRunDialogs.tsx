@@ -294,6 +294,7 @@ export function CreatePayrollRunDialog({
               onCancel={() => onOpenChange(false)}
               submitLabel={t('payroll.create')}
               cancelLabel={t('payroll.cancel')}
+              draftKey="create-payroll-run"
               defaultStepData={{
                 month: String(now.getMonth() + 1).padStart(2, '0'),
                 year: String(now.getFullYear()),

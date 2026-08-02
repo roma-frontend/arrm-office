@@ -72,6 +72,22 @@ export const employees = {
       ),
     ),
     dateOfBirth: v.optional(v.string()),
+    /** Birth year — used to decide Armenia funded-pension exemption (born before 1974). */
+    birthYear: v.optional(v.number()),
+    /** Manual override of the pension exemption derived from birthYear/dateOfBirth. */
+    pensionExempt: v.optional(v.boolean()),
+    /** Last SRC (ՀՎՀՀ) taxpayer-verification status. */
+    taxIdStatus: v.optional(
+      v.union(
+        v.literal('verified'),
+        v.literal('not_found'),
+        v.literal('valid_local'),
+        v.literal('invalid_checksum'),
+        v.literal('invalid_format'),
+      ),
+    ),
+    /** When the last verification was run (ms epoch). */
+    taxIdVerifiedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

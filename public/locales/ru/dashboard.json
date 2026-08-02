@@ -112,7 +112,20 @@
     "viewAllRequests": "Просмотреть все запросы",
     "daysTaken": "Дней использовано",
     "remaining": "Осталось",
-    "noRecentRequests": "Нет недавних запросов"
+    "noRecentRequests": "Нет недавних запросов",
+    "leaveMoney": {
+      "title": "Мои отпуска в деньгах",
+      "export": "Экспорт в Excel",
+      "dailyRate": "Дневная ставка",
+      "totalValue": "Общая сумма",
+      "grossShort": "брутто",
+      "netShort": "нетто",
+      "noBalances": "Нет остатков отпусков",
+      "used": "использовано",
+      "net": "Нетто",
+      "exported": "Отчёт Excel экспортирован",
+      "exportFailed": "Не удалось экспортировать отчёт"
+    }
   },
   "dashboardCards": {
     "welcome": "Добро пожаловать",

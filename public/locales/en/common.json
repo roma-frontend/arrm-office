@@ -488,7 +488,9 @@
     "youAtCompany": "you@company.com",
     "emailAddress": "you@company.com",
     "position": "Position",
-    "selectOrg": "Select organization"
+    "selectOrg": "Select organization",
+    "selectDepartment": "Select department",
+    "selectPosition": "Select position"
   },
   "ariaLabels": {
     "changeAvatar": "Change avatar",
@@ -1533,5 +1535,12 @@
     "verified": "Identity verified ✓",
     "couldNotVerify": "⚠️ Could not verify — please look at camera",
     "failed": "🚨 Identity verification failed — logging out…"
+  },
+  "wizard": {
+    "draft": {
+      "restored": "Draft restored",
+      "continueFromStep": "Continue from step {{step}}",
+      "startOver": "Start over"
+    }
   }
 }

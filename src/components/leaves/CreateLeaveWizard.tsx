@@ -318,6 +318,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
       onCancel={onCancel}
       submitLabel={t('leaveWizard.submit')}
       cancelLabel={t('actions.cancel')}
+      draftKey="create-leave"
     />
   );
 }

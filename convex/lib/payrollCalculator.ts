@@ -7,6 +7,7 @@ import {
   type TaxBracket,
   type TaxRuleOverride,
   type DeductionField,
+  type Contribution,
 } from './taxRules';
 
 export type { TaxBracket, CountryCode, TaxRuleOverride } from './taxRules';
@@ -40,6 +41,11 @@ export interface PayrollInput {
   hourlyRate?: number;
   /** Org-level override of the country's rates/brackets (from salarySettings). */
   taxOverride?: TaxRuleOverride | null;
+  /**
+   * Employee is exempt from the mandatory funded pension (Armenia: born before
+   * 1974). Skips contributions marked `pensionExemptible` in the rule.
+   */
+  pensionExempt?: boolean;
 }
 
 function round2(n: number): number {
@@ -69,27 +75,65 @@ function calculateOvertimePay(hours: number, hourlyRate: number, multiplier: num
 }
 
 /**
+ * Compute one contribution line against a gross salary.
+ *
+ * Supports the extended Contribution model:
+ *  - `fixedAmount` — flat amount (military stamp duty), ignores rate/cap;
+ *  - `offset` — subtracted after rate × base (Armenia pension high tier: 10% − 25k),
+ *    never below 0;
+ *  - `minGross`/`maxGross` — tier gates: the contribution only applies while
+ *    gross > minGross (strictly above) and gross <= maxGross (at or below).
+ */
+function computeContribution(grossSalary: number, c: Contribution): number {
+  // No pay → no deductions (e.g. a zero-days leave payout must not attract a
+  // fixed-amount stamp duty).
+  if (grossSalary <= 0) return 0;
+  if (c.minGross !== undefined && grossSalary <= c.minGross) return 0;
+  if (c.maxGross !== undefined && grossSalary > c.maxGross) return 0;
+  if (c.fixedAmount !== undefined) return round2(c.fixedAmount);
+  const base = c.cap ? Math.min(grossSalary, c.cap) : grossSalary;
+  const amount = base * (c.rate ?? 0) - (c.offset ?? 0);
+  return round2(Math.max(0, amount));
+}
+
+/**
  * Compute the employee-side deductions for a given gross salary using a country rule.
  * Income tax is rounded by calculateProgressiveTax; each named contribution is rounded
  * individually into its Deductions slot; total is the rounded sum.
  */
-function computeDeductions(grossSalary: number, rule: CountryTaxRule): Deductions {
+function computeDeductions(
+  grossSalary: number,
+  rule: CountryTaxRule,
+  pensionExempt = false,
+): Deductions {
   const taxableIncome = Math.max(0, grossSalary - (rule.taxFreeAllowance ?? 0));
   const incomeTax = calculateProgressiveTax(taxableIncome, rule.incomeTaxBrackets);
 
-  const deductions: Deductions = { incomeTax, socialSecurity: 0, total: 0 };
+  const applicable = pensionExempt
+    ? rule.employeeContributions.filter((c) => !c.pensionExemptible)
+    : rule.employeeContributions;
 
-  for (const c of rule.employeeContributions) {
-    const base = c.cap ? Math.min(grossSalary, c.cap) : grossSalary;
-    const amount = round2(base * c.rate);
+  // Optional slots are initialized to 0 so consumers can always read them
+  // (e.g. `deductions.pension` stays 0 when the funded pension is skipped).
+  const deductions: Deductions = {
+    incomeTax,
+    socialSecurity: 0,
+    healthInsurance: 0,
+    pension: 0,
+    other: 0,
+    total: 0,
+  };
+
+  for (const c of applicable) {
+    const amount = computeContribution(grossSalary, c);
     const field: DeductionField = c.field ?? 'other';
     deductions[field] = round2((deductions[field] ?? 0) + amount);
   }
 
-  const contributionsTotal = rule.employeeContributions.reduce((sum, c) => {
-    const base = c.cap ? Math.min(grossSalary, c.cap) : grossSalary;
-    return sum + round2(base * c.rate);
-  }, 0);
+  const contributionsTotal = applicable.reduce(
+    (sum, c) => sum + computeContribution(grossSalary, c),
+    0,
+  );
 
   deductions.total = round2(incomeTax + contributionsTotal);
   return deductions;
@@ -100,10 +144,10 @@ function computeDeductions(grossSalary: number, rule: CountryTaxRule): Deduction
  * rounded once (matches the previous Russia implementation exactly).
  */
 function computeEmployerContributions(grossSalary: number, rule: CountryTaxRule): number {
-  const sum = rule.employerContributions.reduce((acc, c) => {
-    const base = c.cap ? Math.min(grossSalary, c.cap) : grossSalary;
-    return acc + base * c.rate;
-  }, 0);
+  const sum = rule.employerContributions.reduce(
+    (acc, c) => acc + computeContribution(grossSalary, c),
+    0,
+  );
   return round2(sum);
 }
 
@@ -115,6 +159,7 @@ export function calculatePayroll(input: PayrollInput): PayrollCalculation {
     overtimeHours = 0,
     hourlyRate = 0,
     taxOverride = null,
+    pensionExempt = false,
   } = input;
   const rule = applyTaxRuleOverride(getTaxRule(country), taxOverride);
 
@@ -123,7 +168,7 @@ export function calculatePayroll(input: PayrollInput): PayrollCalculation {
 
   const grossSalary = baseSalary + bonuses + overtimePay;
 
-  const deductions = computeDeductions(grossSalary, rule);
+  const deductions = computeDeductions(grossSalary, rule, pensionExempt);
   const employerContributions = computeEmployerContributions(grossSalary, rule);
   const totalCost = round2(grossSalary + employerContributions);
   const netSalary = round2(grossSalary - deductions.total);
@@ -148,6 +193,7 @@ export interface GrossFromNetInput {
   overtimeHours?: number;
   hourlyRate?: number;
   taxOverride?: TaxRuleOverride | null;
+  pensionExempt?: boolean;
 }
 
 /**
@@ -165,6 +211,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
     overtimeHours = 0,
     hourlyRate = 0,
     taxOverride = null,
+    pensionExempt = false,
   } = input;
 
   const overtimePay =
@@ -173,8 +220,15 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
 
   // netForBase(base) using the same forward engine.
   const netForBase = (base: number): number =>
-    calculatePayroll({ country, baseSalary: base, bonuses, overtimeHours, hourlyRate, taxOverride })
-      .netSalary;
+    calculatePayroll({
+      country,
+      baseSalary: base,
+      bonuses,
+      overtimeHours,
+      hourlyRate,
+      taxOverride,
+      pensionExempt,
+    }).netSalary;
 
   if (net <= 0) {
     return calculatePayroll({
@@ -184,6 +238,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
       overtimeHours,
       hourlyRate,
       taxOverride,
+      pensionExempt,
     });
   }
 
@@ -208,7 +263,15 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
   }
 
   const baseSalary = round2(lo);
-  return calculatePayroll({ country, baseSalary, bonuses, overtimeHours, hourlyRate, taxOverride });
+  return calculatePayroll({
+    country,
+    baseSalary,
+    bonuses,
+    overtimeHours,
+    hourlyRate,
+    taxOverride,
+    pensionExempt,
+  });
 }
 
 export function formatCurrency(amount: number, country: CountryCode): string {

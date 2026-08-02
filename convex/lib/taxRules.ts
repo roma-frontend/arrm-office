@@ -24,11 +24,35 @@ export type DeductionField = 'socialSecurity' | 'healthInsurance' | 'pension' | 
 
 export interface Contribution {
   name: string;
-  rate: number;
+  /**
+   * Percentage rate applied to the contribution base (min(gross, cap)).
+   * Optional because a contribution may be a flat amount (fixedAmount) instead.
+   */
+  rate?: number;
   /** Optional wage cap: rate applies to min(gross, cap). */
   cap?: number;
+  /**
+   * Flat amount taken regardless of gross (e.g. Armenia's military stamp duty
+   * of 1 000 / 15 000 AMD). When set, `rate`/`cap` are ignored.
+   */
+  fixedAmount?: number;
+  /**
+   * Flat amount subtracted after rate × base (e.g. Armenia's funded pension
+   * high tier: 10% − 25 000 AMD). The result never goes below 0.
+   */
+  offset?: number;
+  /** Contribution applies only while gross > minGross (strictly above). */
+  minGross?: number;
+  /** Contribution applies only while gross <= maxGross (at or below). */
+  maxGross?: number;
   /** Employee-side only: target Deductions slot (default 'other'). */
   field?: DeductionField;
+  /**
+   * Mark a contribution as the mandatory funded pension that Armenia exempts
+   * for employees born before 1974. When the payroll call passes
+   * `pensionExempt: true`, such contributions are skipped entirely.
+   */
+  pensionExemptible?: boolean;
 }
 
 export interface CountryTaxRule {
@@ -49,17 +73,41 @@ export interface CountryTaxRule {
 }
 
 export const TAX_RULES: Record<CountryCode, CountryTaxRule> = {
-  // ── Armenia — reproduces previous hardcoded constants exactly ──────────────
+  // ── Armenia — current law (2025-2026), verified against SRC/KGD publications ──
+  // Income tax: flat 20% on gross employment income (Tax Code of RA, art. 141).
+  // Funded pension (կուտակային կենսաթոշակ, "карент") for employees born on/after
+  // 1974: 5% of gross up to 500,000 AMD; above that 10% − 25,000 AMD, with the
+  // base capped at 1,125,000 AMD → max 87,500 AMD/month. Born-before-1974 are
+  // exempt (override via org taxRuleOverride if needed).
+  // Military stamp duty (զինվորական վճար): flat 1,000 AMD/month for gross
+  // ≤ 1,000,000, otherwise 15,000 AMD/month.
+  // Employers in the private sector pay no social contributions for employees.
   armenia: {
     code: 'armenia',
     label: 'Armenia',
     currency: 'AMD',
     locale: 'hy-AM',
-    incomeTaxBrackets: [
-      { min: 0, max: 3000000, rate: 0.2 },
-      { min: 3000000, rate: 0.23 },
+    incomeTaxBrackets: [{ min: 0, rate: 0.2 }],
+    employeeContributions: [
+      {
+        name: 'Funded pension (low tier)',
+        rate: 0.05,
+        maxGross: 500000,
+        field: 'pension',
+        pensionExemptible: true,
+      },
+      {
+        name: 'Funded pension (high tier)',
+        rate: 0.1,
+        cap: 1125000,
+        offset: 25000,
+        minGross: 500000,
+        field: 'pension',
+        pensionExemptible: true,
+      },
+      { name: 'Military stamp duty (low)', fixedAmount: 1000, maxGross: 1000000, field: 'other' },
+      { name: 'Military stamp duty (high)', fixedAmount: 15000, minGross: 1000000, field: 'other' },
     ],
-    employeeContributions: [{ name: 'Social Security', rate: 0.05, field: 'socialSecurity' }],
     employerContributions: [],
   },
 

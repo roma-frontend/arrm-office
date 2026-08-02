@@ -65,6 +65,10 @@ export const users = {
     loginFailedAttempts: v.optional(v.number()),
     loginLockedUntil: v.optional(v.number()),
     dateOfBirth: v.optional(v.string()),
+    /** Birth year — used to decide Armenia funded-pension exemption (born before 1974). */
+    birthYear: v.optional(v.number()),
+    /** Manual override of the pension exemption derived from birthYear/dateOfBirth. */
+    pensionExempt: v.optional(v.boolean()),
     language: v.optional(v.string()),
     timezone: v.optional(v.string()),
     dateFormat: v.optional(v.string()),

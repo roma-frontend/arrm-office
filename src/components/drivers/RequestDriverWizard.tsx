@@ -293,6 +293,7 @@ export function RequestDriverWizard({ userId, onComplete, onCancel }: RequestDri
       onCancel={onCancel}
       submitLabel={t('driverWizard.submit')}
       cancelLabel={t('actions.cancel')}
+      draftKey="request-driver"
     />
   );
 }

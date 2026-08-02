@@ -1,8 +1,8 @@
 /**
  * Tests for passportMrz.ts — Client-side passport MRZ extraction + parsing
  *
- * Tests: parseMrzLines (TD3 format with autocorrect), scanPassportImage
- * (Tesseract OCR + MRZ extraction), null/error paths.
+ * Tests: parseMrzLines (TD3 format with autocorrect + fallback), scanPassportImage
+ * (Tesseract worker OCR + MRZ extraction), null/error paths.
  */
 
 import { parseMrzLines, scanPassportImage } from '@/lib/passportMrz';
@@ -18,18 +18,31 @@ jest.mock(
   { virtual: true },
 );
 
-// Mock tesseract.js
+// ── Mock tesseract.js (worker-based API) ────────────────────────────────────
+const mockCreateWorker = jest.fn();
+const mockSetParameters = jest.fn();
 const mockRecognize = jest.fn();
+const mockTerminate = jest.fn();
+
 jest.mock(
   'tesseract.js',
   () => ({
-    recognize: mockRecognize,
+    createWorker: mockCreateWorker,
+    OEM: { LSTM_ONLY: 1 },
+    PSM: { SINGLE_BLOCK: '6', AUTO: '3' },
   }),
   { virtual: true },
 );
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockCreateWorker.mockResolvedValue({
+    setParameters: mockSetParameters,
+    recognize: mockRecognize,
+    terminate: mockTerminate,
+  });
+  mockSetParameters.mockResolvedValue(undefined);
+  mockTerminate.mockResolvedValue(undefined);
 });
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -126,10 +139,79 @@ describe('parseMrzLines', () => {
     expect(result.firstName).toBeUndefined();
     expect(result.lastName).toBe('DOE');
   });
+
+  it('falls back to the last two lines when a stray third line breaks parsing', async () => {
+    mockParse
+      .mockImplementationOnce(() => {
+        throw new Error('Invalid MRZ length');
+      })
+      .mockReturnValueOnce(validParseResult);
+
+    const result = await parseMrzLines([
+      'GARBAGE<<<<<<<<<<<<<<<<<<<<<<<<<<',
+      TD3_LINE_1,
+      TD3_LINE_2,
+    ]);
+    expect(result?.valid).toBe(true);
+    expect(mockParse).toHaveBeenNthCalledWith(2, [TD3_LINE_1, TD3_LINE_2], { autocorrect: true });
+  });
+
+  it('returns an invalid result instead of throwing when every set fails', async () => {
+    mockParse.mockImplementation(() => {
+      throw new Error('Invalid MRZ');
+    });
+
+    const result = await parseMrzLines([TD3_LINE_1, TD3_LINE_2]);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+  });
+
+  it('repairs OCR length drift: long line 1 (filler read as K/L) + short line 2', async () => {
+    // Realistic tesseract LSTM output on a scan: '<' misread as K/L, 1 as L,
+    // and line lengths drifted to 55 / 42 instead of the fixed TD3 width 44.
+    const noisyL1 = 'P<ARMSTEVENSON<K<KPETER<<K<K<KLLLLLLLLLLLLLLLLLLLLLLL';
+    const noisyL2 = 'L898902C<3ARM6908061F9406236ZE184226B<<<14';
+
+    mockParse
+      .mockImplementationOnce(() => {
+        throw new Error('Invalid number of characters for line 2: 42. Must be 44 for TD3');
+      })
+      .mockReturnValueOnce(validParseResult);
+
+    const result = await parseMrzLines([noisyL1, noisyL2]);
+    expect(result?.valid).toBe(true);
+    expect(result?.passportNumber).toBe('L898902C');
+
+    // Second attempt must use the rebuilt 44/44 TD3 lines.
+    const repairedL1 = 'P<ARMSTEVENSON<K<KPETER<<K<K<KLLLLLLLLLLLLLL';
+    const repairedL2 = 'L898902C<3ARM6908061F9406236ZE184226B<<<<<14';
+    expect(mockParse).toHaveBeenNthCalledWith(2, [repairedL1, repairedL2], {
+      autocorrect: true,
+    });
+  });
+
+  it('does not append a repaired set when line 2 is too short to be TD3', async () => {
+    mockParse.mockImplementation(() => {
+      throw new Error('Invalid MRZ');
+    });
+
+    // Line 2 has < 28 chars — repairTd3Line2 returns null, so only the raw set
+    // is attempted.
+    await parseMrzLines(['P<ARMSTEVENSON<<PETER<<<<<<<<<<<<<<<<<<<<<<<', 'SHORT']);
+    expect(mockParse).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefers a valid raw set over the repaired fallback (no double-parse on success)', async () => {
+    mockParse.mockReturnValue(validParseResult);
+
+    await parseMrzLines([TD3_LINE_1, TD3_LINE_2]);
+    // Raw set already parses validly — the repaired fallback is never attempted.
+    expect(mockParse).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('scanPassportImage', () => {
-  it('returns parsed result when OCR finds MRZ lines', async () => {
+  it('creates a whitelisted worker and returns parsed result when OCR finds MRZ', async () => {
     mockRecognize.mockResolvedValue({
       data: {
         text: `Some garbage text\nP<UTOSTEVENSON<<PETER<<<<<<<<<<<<<<<<<<<<<<<\nL898902C<3UTO6908061F9406236ZE184226B<<<<<14`,
@@ -141,7 +223,13 @@ describe('scanPassportImage', () => {
     expect(result).not.toBeNull();
     expect(result?.valid).toBe(true);
     expect(result?.passportNumber).toBe('L898902C');
-    expect(mockRecognize).toHaveBeenCalledWith('data:image/jpeg;base64,abc123', 'eng');
+    expect(mockCreateWorker).toHaveBeenCalledWith('eng', 1);
+    expect(mockSetParameters).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<',
+      }),
+    );
+    expect(mockTerminate).toHaveBeenCalled();
   });
 
   it('returns null when no MRZ-like lines are found', async () => {
@@ -151,6 +239,7 @@ describe('scanPassportImage', () => {
 
     const result = await scanPassportImage('data:image/jpeg;base64,xyz');
     expect(result).toBeNull();
+    expect(mockTerminate).toHaveBeenCalled();
   });
 
   it('returns null when fewer than 2 MRZ lines found', async () => {
@@ -162,5 +251,68 @@ describe('scanPassportImage', () => {
 
     const result = await scanPassportImage('data:image/jpeg;base64,xyz');
     expect(result).toBeNull();
+  });
+
+  it('terminates the worker even when OCR fails', async () => {
+    mockRecognize.mockRejectedValue(new Error('OCR worker crashed'));
+
+    await expect(scanPassportImage('data:image/jpeg;base64,abc')).rejects.toThrow(
+      'OCR worker crashed',
+    );
+    expect(mockTerminate).toHaveBeenCalled();
+  });
+
+  it('terminates a worker that appears after createWorker timed out', async () => {
+    jest.useFakeTimers();
+    try {
+      // createWorker never resolves within the 45s timeout — the worker is
+      // created only AFTER the timeout already fired.
+      const lateWorker = {
+        setParameters: jest.fn().mockResolvedValue(undefined),
+        recognize: jest.fn(),
+        terminate: jest.fn().mockResolvedValue(undefined),
+      };
+      let resolveLate!: (w: unknown) => void;
+      mockCreateWorker.mockReturnValue(
+        new Promise((res) => {
+          resolveLate = res;
+        }),
+      );
+
+      const pending = scanPassportImage('data:image/jpeg;base64,abc');
+
+      // Fire the 45s OCR timeout.
+      await jest.advanceTimersByTimeAsync(46_000);
+      await expect(pending).rejects.toThrow('OCR timed out');
+
+      // The worker materialises late — it must be terminated, not left hanging.
+      resolveLate(lateWorker);
+      // Flush the promise chain deterministically before asserting.
+      await Promise.resolve();
+      await jest.advanceTimersByTimeAsync(0);
+      expect(lateWorker.terminate).toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('does not terminate twice when the worker is already terminated', async () => {
+    mockCreateWorker.mockResolvedValue({
+      setParameters: mockSetParameters,
+      recognize: mockRecognize,
+      terminate: mockTerminate,
+    });
+    mockRecognize.mockResolvedValue({
+      data: {
+        text: 'P<UTOSTEVENSON<<PETER<<<<<<<<<<<<<<<<<<<<<<<\nL898902C<3UTO6908061F9406236ZE184226B<<<<<14',
+      },
+    });
+    mockParse.mockReturnValue(validParseResult);
+
+    await scanPassportImage('data:image/jpeg;base64,abc');
+
+    // The finally block terminates the worker we got, and the promise-chain
+    // guard must not double-terminate the same worker.
+    expect(mockTerminate).toHaveBeenCalledTimes(1);
   });
 });

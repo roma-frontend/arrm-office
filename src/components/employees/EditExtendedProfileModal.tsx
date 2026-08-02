@@ -56,6 +56,8 @@ interface EducationEntry {
 interface FormData {
   address: string;
   dateOfBirth: string;
+  birthYear: string;
+  pensionExempt: boolean;
   workFormat: 'remote' | 'office' | 'hybrid' | '';
   workSchedule: WorkSchedule;
   emergencyContactName: string;
@@ -138,6 +140,8 @@ export default function EditExtendedProfileModal({
   const [form, setForm] = useState<FormData>(() => ({
     address: initialData?.address ?? '',
     dateOfBirth: initialData?.dateOfBirth ?? '',
+    birthYear: initialData?.birthYear ? String(initialData.birthYear) : '',
+    pensionExempt: initialData?.pensionExempt ?? false,
     workFormat: (initialData?.workFormat as 'remote' | 'office' | 'hybrid' | '') ?? '',
     workSchedule: initialData?.workSchedule ?? { ...DEFAULT_SCHEDULE },
     emergencyContactName: initialData?.emergencyContactName ?? '',
@@ -166,6 +170,10 @@ export default function EditExtendedProfileModal({
         ...(organizationId ? { organizationId } : {}),
         address: form.address || undefined,
         dateOfBirth: form.dateOfBirth || undefined,
+        birthYear: form.birthYear && Number.isFinite(Number(form.birthYear))
+          ? Number(form.birthYear)
+          : undefined,
+        pensionExempt: form.pensionExempt || undefined,
         workFormat: (form.workFormat as 'remote' | 'office' | 'hybrid') || undefined,
         workSchedule: form.workSchedule,
         emergencyContactName: form.emergencyContactName || undefined,
@@ -311,6 +319,14 @@ export default function EditExtendedProfileModal({
                 icon={<CalendarDays className="w-3 h-3" />}
               />
               <Input
+                label={t('extendedProfile.birthYear', 'Birth Year')}
+                value={form.birthYear}
+                onChange={(v) => updateField('birthYear', v)}
+                type="number"
+                placeholder="e.g. 1975"
+                icon={<CalendarDays className="w-3 h-3" />}
+              />
+              <Input
                 label={t('extendedProfile.address', 'Address')}
                 value={form.address}
                 onChange={(v) => updateField('address', v)}
@@ -318,6 +334,36 @@ export default function EditExtendedProfileModal({
                 icon={<MapPin className="w-3 h-3" />}
               />
             </div>
+
+            {/* Pension exemption (Armenia: born before 1974) */}
+            <label className="flex items-center gap-2 cursor-pointer pt-1">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.pensionExempt}
+                onClick={() => updateField('pensionExempt', !form.pensionExempt)}
+                className={`w-9 h-5 rounded-full transition-all relative ${
+                  form.pensionExempt ? 'bg-blue-500' : 'bg-(--border)'
+                }`}
+              >
+                <div
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                    form.pensionExempt ? 'left-[18px]' : 'left-[2px]'
+                  }`}
+                />
+              </button>
+              <div className="min-w-0">
+                <span className="text-xs text-(--text-muted) block">
+                  {t('extendedProfile.pensionExempt', 'Exempt from funded pension')}
+                </span>
+                <span className="text-[11px] text-(--text-muted)/60 block">
+                  {t(
+                    'extendedProfile.pensionExemptHint',
+                    'Armenia: employees born before 1974 are exempt from the mandatory funded pension',
+                  )}
+                </span>
+              </div>
+            </label>
           </motion.div>
         );
 

@@ -42,7 +42,27 @@ export function initSentryClient() {
       // Network errors
       'NetworkError',
       'Network request failed',
+      // Sentry rate-limits the project itself (429) — don't self-report quota
+      // rejections; they're not actionable and only add more noise.
+      'Too Many Requests',
+      'HTTP 429',
+      // Tesseract.js OCR is best-effort (passport auto-fill) — handled in the UI
+      // with an informational toast; failures are expected on flaky networks.
+      'OCR timed out',
+      'Error: tesseract',
     ],
+
+    // Filter out non-actionable events BEFORE they consume quota: expected OCR
+    // failures, Sentry's own rate-limit rejections, and benign aborts. This
+    // stops the project from burning its event budget on noise (the 429 above).
+    beforeSend(event, hint) {
+      const err = hint?.originalException;
+      const message = err instanceof Error ? err.message : String(err ?? '');
+      if (/OCR timed out|tesseract|Too Many Requests|HTTP 429|aborted|AbortError/i.test(message)) {
+        return null;
+      }
+      return event;
+    },
 
     // Capture breadcrumbs for better context
     maxBreadcrumbs: 30, // Reduced from 50
@@ -62,9 +82,10 @@ export function initSentryClient() {
     ],
 
     // Session replay configuration - OPTIMIZED
-    // Reduced sample rate to minimize blocking operations
-    replaysSessionSampleRate: 0.02, // Reduced from 0.05
-    replaysOnErrorSampleRate: 0.2, // Reduced from 0.5
+    // Reduced sample rate to minimize blocking operations AND Sentry quota usage
+    // (replays are the heaviest payloads — big factor in the project's 429s).
+    replaysSessionSampleRate: 0.01, // Reduced from 0.02
+    replaysOnErrorSampleRate: 0.05, // Reduced from 0.2
 
     // Minimize initialization overhead
     // autoSessionTracking removed - deprecated in newer Sentry versions

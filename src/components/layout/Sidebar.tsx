@@ -26,6 +26,7 @@ import {
   Car,
   Ticket,
   AlertTriangle,
+  HelpCircle,
   Cpu,
   Wallet,
   DollarSign,
@@ -282,6 +283,12 @@ const navItems: NavEntry[] = [
 
   // ── Settings & Admin ──
   { type: 'separator', labelKey: 'nav.groups.admin' },
+  {
+    href: '/help',
+    labelKey: 'nav.help',
+    icon: HelpCircle,
+    roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
+  },
   {
     href: '/settings',
     labelKey: 'nav.settings',

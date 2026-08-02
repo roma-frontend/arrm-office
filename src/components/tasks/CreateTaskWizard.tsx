@@ -307,6 +307,7 @@ export function CreateTaskWizard({
       submitLabel={t('taskWizard.submit')}
       cancelLabel={t('actions.cancel')}
       defaultStepData={{ priority: 'medium' }}
+      draftKey="create-task"
     />
   );
 }

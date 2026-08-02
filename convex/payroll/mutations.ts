@@ -4,6 +4,7 @@ import { mutation, type MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { calculatePayroll } from '../lib/payrollCalculator';
 import { toCountryCode, type TaxRuleOverride } from '../lib/taxRules';
+import { resolvePensionExemption } from '../lib/pension';
 import { requireOrgAdmin } from '../lib/rbac';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { TAX_RULE_OVERRIDE } from '../schema/payroll';
@@ -80,9 +81,29 @@ function validateTaxRuleOverride(o: TaxRuleOverride): void {
   }
   for (const c of [...(o.employeeContributions ?? []), ...(o.employerContributions ?? [])]) {
     if (!c.name.trim()) throw new Error('Contribution name is required');
-    if (!isRate(c.rate)) throw new Error('Contribution rate must be between 0 and 1');
+    // A contribution must be rate- or amount-based; both missing would silently
+    // compute a zero deduction.
+    if (c.rate === undefined && c.fixedAmount === undefined) {
+      throw new Error('Contribution must have a rate or a fixed amount');
+    }
+    // rate is optional: a fixedAmount contribution (e.g. stamp duty) has no rate.
+    if (c.rate !== undefined && !isRate(c.rate)) {
+      throw new Error('Contribution rate must be between 0 and 1');
+    }
     if (c.cap !== undefined && (!Number.isFinite(c.cap) || c.cap < 0)) {
       throw new Error('Contribution cap cannot be negative');
+    }
+    if (c.fixedAmount !== undefined && (!Number.isFinite(c.fixedAmount) || c.fixedAmount < 0)) {
+      throw new Error('Contribution fixed amount cannot be negative');
+    }
+    if (c.offset !== undefined && (!Number.isFinite(c.offset) || c.offset < 0)) {
+      throw new Error('Contribution offset cannot be negative');
+    }
+    if (c.minGross !== undefined && (!Number.isFinite(c.minGross) || c.minGross < 0)) {
+      throw new Error('Contribution minGross cannot be negative');
+    }
+    if (c.maxGross !== undefined && (!Number.isFinite(c.maxGross) || c.maxGross < 0)) {
+      throw new Error('Contribution maxGross cannot be negative');
     }
   }
 }
@@ -251,6 +272,12 @@ export const calculatePayrollRun = mutation({
         overtimeHours,
         hourlyRate,
         taxOverride: settings?.taxRuleOverride ?? null,
+        // Armenia: employees born before 1974 are exempt from the funded pension.
+        pensionExempt: resolvePensionExemption({
+          pensionExempt: emp.pensionExempt ?? user.pensionExempt,
+          birthYear: emp.birthYear ?? user.birthYear,
+          dateOfBirth: emp.dateOfBirth ?? user.dateOfBirth,
+        }),
       });
 
       await ctx.db.insert('payrollRecords', {
@@ -618,6 +645,13 @@ export const updatePayrollRecord = mutation({
       args.bonuses !== undefined ||
       args.overtimeHours !== undefined
     ) {
+      // Resolve the funded-pension exemption (Armenia: born before 1974) from the
+      // employee profile — the payroll record itself doesn't carry birth data.
+      const empProfile = await ctx.db
+        .query('employeeProfiles')
+        .withIndex('by_user', (q) => q.eq('userId', record.userId))
+        .first();
+      const empUser = await ctx.db.get(record.userId);
       const calculation = calculatePayroll({
         country: record.taxCountry,
         baseSalary: newBase,
@@ -625,6 +659,11 @@ export const updatePayrollRecord = mutation({
         overtimeHours: newOvertime,
         hourlyRate: newBase / 160,
         taxOverride: settings?.taxRuleOverride ?? null,
+        pensionExempt: resolvePensionExemption({
+          pensionExempt: empProfile?.pensionExempt ?? empUser?.pensionExempt,
+          birthYear: empProfile?.birthYear ?? empUser?.birthYear,
+          dateOfBirth: empProfile?.dateOfBirth ?? empUser?.dateOfBirth,
+        }),
       });
 
       updates.grossSalary = calculation.grossSalary;

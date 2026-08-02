@@ -156,6 +156,7 @@ export function CreateIncidentWizard({ userId, onComplete, onCancel }: CreateInc
       onCancel={onCancel}
       submitLabel={t('incidentWizard.submit')}
       cancelLabel={t('actions.cancel')}
+      draftKey="create-incident"
     />
   );
 }

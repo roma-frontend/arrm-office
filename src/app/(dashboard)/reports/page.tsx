@@ -29,7 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { LEAVE_TYPE_COLORS, DEPARTMENTS, getLeaveTypeLabel, type LeaveType } from '@/lib/types';
+import { LEAVE_TYPE_COLORS, getLeaveTypeLabel, type LeaveType } from '@/lib/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -89,17 +89,25 @@ export default function ReportsPage() {
       .filter((d) => d.value > 0);
   }, [leaves, t]);
 
-  // Department breakdown
+  // Department breakdown. Отделы берутся из самих заявок, а не из фиксированного
+  // списка: отделами управляют на /employees/departments, и захардкоженный
+  // перечень молча прятал из отчёта всё, чего в нём не было.
   const deptData = useMemo(() => {
-    return DEPARTMENTS.map((dept) => ({
-      dept: dept.slice(0, 3),
-      fullName: dept,
-      total: leaves?.filter((r) => r.userDepartment === dept).length ?? 0,
-      approved:
-        leaves?.filter((r) => r.userDepartment === dept && r.status === 'approved').length ?? 0,
-      pending:
-        leaves?.filter((r) => r.userDepartment === dept && r.status === 'pending').length ?? 0,
-    })).filter((d) => d.total > 0);
+    const names = Array.from(
+      new Set((leaves ?? []).map((r) => r.userDepartment).filter((d): d is string => !!d)),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return names
+      .map((dept) => ({
+        dept: dept.slice(0, 3),
+        fullName: dept,
+        total: leaves?.filter((r) => r.userDepartment === dept).length ?? 0,
+        approved:
+          leaves?.filter((r) => r.userDepartment === dept && r.status === 'approved').length ?? 0,
+        pending:
+          leaves?.filter((r) => r.userDepartment === dept && r.status === 'pending').length ?? 0,
+      }))
+      .filter((d) => d.total > 0);
   }, [leaves]);
 
   // Monthly trend (last 6 months)

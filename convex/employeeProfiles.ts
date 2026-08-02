@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { SMALL_LIST_CAP, DEFAULT_LIST_CAP } from './lib/limits';
 
 // ── Get Employee Profile with Extended Data ──────────────────────────────────
@@ -256,6 +257,60 @@ export const updatePassport = mutation({
       passportExpiryDate: args.passportExpiryDate,
       socialCardNumber: args.socialCardNumber,
       nationality: args.nationality,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+// ── Record SRC (ՀՎՀՀ) taxpayer verification ───────────────────────
+export const recordTaxIdVerification = mutation({
+  args: {
+    userId: v.id('users'),
+    status: v.union(
+      v.literal('verified'),
+      v.literal('not_found'),
+      v.literal('valid_local'),
+      v.literal('invalid_checksum'),
+      v.literal('invalid_format'),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    const target = await ctx.db.get(args.userId);
+    if (!target) throw new Error('User not found');
+
+    // Same-org admins/supervisors, superadmin, or the employee themself may
+    // record a verification for this employee.
+    const isOrgStaff =
+      (caller.role === 'admin' || caller.role === 'supervisor') &&
+      caller.organizationId === target.organizationId;
+    if (caller.role !== 'superadmin' && !isOrgStaff && caller._id !== args.userId) {
+      throw new Error('Not authorized to update this employee');
+    }
+
+    const now = Date.now();
+    const existing = await ctx.db
+      .query('employeeProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        taxIdStatus: args.status,
+        taxIdVerifiedAt: now,
+        updatedAt: now,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert('employeeProfiles', {
+      userId: args.userId,
+      organizationId: target.organizationId,
+      taxIdStatus: args.status,
+      taxIdVerifiedAt: now,
       createdAt: now,
       updatedAt: now,
     });

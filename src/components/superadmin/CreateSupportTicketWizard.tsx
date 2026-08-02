@@ -175,6 +175,7 @@ export function CreateSupportTicketWizard({
       onCancel={onCancel}
       submitLabel={t('supportWizard.submit')}
       cancelLabel={t('actions.cancel')}
+      draftKey="support-ticket"
     />
   );
 }

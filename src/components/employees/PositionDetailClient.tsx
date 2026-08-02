@@ -396,6 +396,7 @@ function PositionWizard({
             cancelLabel={t('actions.cancel', 'Cancel')}
             showStepper
             defaultStepData={wizardData}
+            draftKey={editingPosition ? undefined : 'create-position'}
           />
         </div>
       </DialogContent>

@@ -6,9 +6,13 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { FileText, Upload, ScanLine } from 'lucide-react';
+import { FileText, Upload, ScanLine, ShieldCheck, ShieldAlert, BadgeCheck } from 'lucide-react';
 import { scanPassportImage } from '@/lib/passportMrz';
 import { uploadDocument } from '@/actions/cloudinary';
+import { validateTaxId } from '@/lib/hvhh';
+import type { Id } from '../../../convex/_generated/dataModel';
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
 export interface PassportData {
   passportNumber: string;
@@ -34,6 +38,14 @@ export const EMPTY_PASSPORT: PassportData = {
   nationality: '',
 };
 
+export type TaxIdVerifyStatus =
+  | 'verified'
+  | 'not_found'
+  | 'valid_local'
+  | 'invalid_checksum'
+  | 'invalid_format'
+  | 'error';
+
 interface PassportFieldsProps {
   value: PassportData;
   onChange: (patch: Partial<PassportData>) => void;
@@ -41,6 +53,23 @@ interface PassportFieldsProps {
   onScanUploaded?: (file: PassportScanFile) => void;
   /** Also fill date of birth when MRZ provides it. */
   onDateOfBirth?: (isoDate: string) => void;
+  /** When provided (employee exists), persists the SRC verification result. */
+  userId?: Id<'users'>;
+  /** Called after a verification completes (for the parent to show in review). */
+  onTaxIdVerified?: (status: TaxIdVerifyStatus) => void;
+}
+
+/** Map a verify-route status to a stable UI status. */
+function normalizeVerifyStatus(raw: string): TaxIdVerifyStatus {
+  const statuses: TaxIdVerifyStatus[] = [
+    'verified',
+    'not_found',
+    'valid_local',
+    'invalid_checksum',
+    'invalid_format',
+    'error',
+  ];
+  return statuses.includes(raw as TaxIdVerifyStatus) ? (raw as TaxIdVerifyStatus) : 'error';
 }
 
 export function PassportFields({
@@ -48,11 +77,98 @@ export function PassportFields({
   onChange,
   onScanUploaded,
   onDateOfBirth,
+  userId,
+  onTaxIdVerified,
 }: PassportFieldsProps) {
   const { t } = useTranslation();
+  const recordTaxIdVerification = useMutation(api.employeeProfiles.recordTaxIdVerification);
   const fileRef = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
   const [scanName, setScanName] = useState<string | null>(null);
+  const [verifyingTaxId, setVerifyingTaxId] = useState(false);
+  const [taxIdStatus, setTaxIdStatus] = useState<TaxIdVerifyStatus | null>(null);
+
+  // Verify the social card number (ՀՎՀՀ) locally + via SRC when configured.
+  const handleVerifyTaxId = async () => {
+    const tin = value.socialCardNumber?.trim() ?? '';
+    if (!tin) {
+      toast.warning(t('employees.taxIdRequired', 'Enter a social card number first'));
+      return;
+    }
+    // Local format gate — catches typos instantly without a network round trip.
+    const local = validateTaxId(tin);
+    if (!local.formatValid) {
+      const status: TaxIdVerifyStatus = 'invalid_format';
+      setTaxIdStatus(status);
+      onTaxIdVerified?.(status);
+      toast.error(t('employees.taxIdFormatError', 'Tax ID must be 8 digits'));
+      return;
+    }
+
+    setVerifyingTaxId(true);
+    try {
+      const res = await fetch('/api/taxid/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tin }),
+      });
+      if (!res.ok) throw new Error('verify failed');
+      const data = (await res.json()) as { status?: string; ok?: boolean };
+      const status = normalizeVerifyStatus(data.status ?? (data.ok ? 'valid_local' : 'error'));
+      setTaxIdStatus(status);
+      onTaxIdVerified?.(status);
+      // Persist when the employee already exists (edit flow) — but never claim
+      // validity for a failed/unknown verification.
+      if (userId && status !== 'error') {
+        await recordTaxIdVerification({ userId, status }).catch(() => {});
+      }
+    } catch {
+      setTaxIdStatus('error');
+      onTaxIdVerified?.('error');
+    } finally {
+      setVerifyingTaxId(false);
+    }
+  };
+
+  const taxIdBadge = (() => {
+    if (!taxIdStatus) return null;
+    const map: Record<TaxIdVerifyStatus, { color: string; label: string }> = {
+      verified: {
+        color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+        label: t('employees.taxIdVerified', 'Verified by SRC'),
+      },
+      not_found: {
+        color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30',
+        label: t('employees.taxIdNotFound', 'Not found in SRC'),
+      },
+      valid_local: {
+        color: 'text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30',
+        label: t('employees.taxIdValidLocal', 'Format valid (local check)'),
+      },
+      invalid_checksum: {
+        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        label: t('employees.taxIdInvalidChecksum', 'Checksum invalid'),
+      },
+      invalid_format: {
+        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        label: t('employees.taxIdInvalidFormat', 'Must be 8 digits'),
+      },
+      error: {
+        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        label: t('employees.taxIdCheckError', 'Verification failed'),
+      },
+    };
+    const cfg = map[taxIdStatus];
+    const Icon = taxIdStatus === 'verified' ? BadgeCheck : ShieldAlert;
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${cfg.color}`}
+      >
+        <Icon className="w-3.5 h-3.5" />
+        {cfg.label}
+      </span>
+    );
+  })();
 
   const handleFile = async (file: File) => {
     const isImage = file.type.startsWith('image/');
@@ -81,19 +197,27 @@ export function PassportFields({
       onScanUploaded?.({ url: uploaded.url, name: uploaded.name, size: uploaded.size });
 
       // Attempt MRZ auto-fill (images only — OCR can't read PDFs directly here).
+      // OCR is best-effort: the scan was already uploaded to Cloudinary above, so
+      // a recognition failure must NOT abort the flow — the admin can still fill
+      // the fields manually. Only hard-upload errors are surfaced as errors.
       if (isImage) {
-        const mrz = await scanPassportImage(base64);
-        if (mrz && mrz.valid) {
-          const patch: Partial<PassportData> = {};
-          if (mrz.passportNumber) patch.passportNumber = mrz.passportNumber;
-          if (mrz.passportExpiryDate) patch.passportExpiryDate = mrz.passportExpiryDate;
-          if (mrz.nationality) patch.nationality = mrz.nationality;
-          if (Object.keys(patch).length > 0) onChange(patch);
-          if (mrz.dateOfBirth) onDateOfBirth?.(mrz.dateOfBirth);
-          toast.success(t('employees.mrzFilled'));
-        } else if (mrz && mrz.errors.length > 0) {
-          toast.warning(t('employees.mrzParseError'));
-        } else {
+        try {
+          const mrz = await scanPassportImage(base64);
+          if (mrz && mrz.valid) {
+            const patch: Partial<PassportData> = {};
+            if (mrz.passportNumber) patch.passportNumber = mrz.passportNumber;
+            if (mrz.passportExpiryDate) patch.passportExpiryDate = mrz.passportExpiryDate;
+            if (mrz.nationality) patch.nationality = mrz.nationality;
+            if (Object.keys(patch).length > 0) onChange(patch);
+            if (mrz.dateOfBirth) onDateOfBirth?.(mrz.dateOfBirth);
+            toast.success(t('employees.mrzFilled'));
+          } else if (mrz && mrz.errors.length > 0) {
+            toast.warning(t('employees.mrzParseError'));
+          } else {
+            toast.info(t('employees.mrzNotFound'));
+          }
+        } catch {
+          // OCR failed (worker/CDN/timeout) — scan is saved, fill manually.
           toast.info(t('employees.mrzNotFound'));
         }
       }
@@ -177,11 +301,44 @@ export function PassportFields({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="passport-social-card">{t('employees.socialCardNumber')}</Label>
-          <Input
-            id="passport-social-card"
-            value={value.socialCardNumber}
-            onChange={(e) => onChange({ socialCardNumber: e.target.value })}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="passport-social-card"
+              value={value.socialCardNumber}
+              inputMode="numeric"
+              maxLength={8}
+              placeholder="12345678"
+              onChange={(e) => {
+                onChange({ socialCardNumber: e.target.value });
+                setTaxIdStatus(null);
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleVerifyTaxId}
+              disabled={verifyingTaxId}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all disabled:opacity-60 bg-(--background-subtle) hover:border-blue-500/50 hover:text-(--primary)"
+            >
+              {verifyingTaxId ? (
+                <>
+                  <ShieldLoader size="xs" variant="inline" />
+                  {t('employees.taxIdVerifying', 'Checking…')}
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  {t('employees.taxIdVerify', 'Verify')}
+                </>
+              )}
+            </button>
+          </div>
+          {taxIdBadge}
+          <p className="text-[11px] text-(--text-muted)">
+            {t(
+              'employees.taxIdHint',
+              '8-digit Armenian tax ID (ՀՎՀՀ) — verified against SRC when connected',
+            )}
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="passport-issue-date">{t('employees.passportIssueDate')}</Label>

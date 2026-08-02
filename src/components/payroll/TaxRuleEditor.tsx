@@ -296,7 +296,7 @@ export function TaxRuleEditor({
                       min={0}
                       max={100}
                       step="0.01"
-                      value={pct(c.rate)}
+                      value={pct(c.rate ?? 0)}
                       onChange={(e) => setContribution(side, i, 'rate', e.target.value)}
                     />
                   </div>

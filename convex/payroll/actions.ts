@@ -2,6 +2,7 @@ import { api } from '../_generated/api';
 import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { calculatePayroll, type CountryCode } from '../lib/payrollCalculator';
+import { resolvePensionExemption } from '../lib/pension';
 
 /** Payroll-relevant fields carried by employee profile docs. */
 interface PayrollEmployee {
@@ -9,6 +10,9 @@ interface PayrollEmployee {
   baseSalary?: number;
   bonuses?: number;
   overtimeHours?: number;
+  birthYear?: number;
+  dateOfBirth?: string;
+  pensionExempt?: boolean;
 }
 
 /** Settings returned by `settings.getOrganizationSettings`. */
@@ -61,6 +65,12 @@ export const processScheduledPayroll = action({
           bonuses,
           overtimeHours,
           hourlyRate,
+          // Armenia: employees born before 1974 are exempt from the funded pension.
+          pensionExempt: resolvePensionExemption({
+            pensionExempt: emp.pensionExempt,
+            birthYear: emp.birthYear,
+            dateOfBirth: emp.dateOfBirth,
+          }),
         });
 
         totalGross += calculation.grossSalary;

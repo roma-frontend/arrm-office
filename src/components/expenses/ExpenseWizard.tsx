@@ -241,6 +241,7 @@ export default function ExpenseWizard({
               expenseDate: new Date().toISOString().split('T')[0] ?? '',
             }}
             showStepper={false}
+            draftKey="create-expense"
           />
         </div>
       </DialogContent>

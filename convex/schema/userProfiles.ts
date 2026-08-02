@@ -16,6 +16,10 @@ export const userProfiles = {
     location: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
+    /** Birth year — used to decide Armenia funded-pension exemption (born before 1974). */
+    birthYear: v.optional(v.number()),
+    /** Manual override of the pension exemption derived from birthYear/dateOfBirth. */
+    pensionExempt: v.optional(v.boolean()),
     // Status
     presenceStatus: v.optional(
       v.union(

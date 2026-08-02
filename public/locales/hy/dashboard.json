@@ -112,7 +112,20 @@
     "viewAllRequests": "Դիտել բոլոր {{count}} հայտերը",
     "viewFullAttendance": "Դիտել ամբողջական ներկայությունը",
     "widgets": "Վիջեթներ",
-    "workAnniversaries": "Աշխատանքային տարեդարձներ"
+    "workAnniversaries": "Աշխատանքային տարեդարձներ",
+    "leaveMoney": {
+      "title": "Իմ արձակուրդը դրամով",
+      "export": "Արտահանել Excel",
+      "dailyRate": "Օրական դրույք",
+      "totalValue": "Ընդհանուր գումար",
+      "grossShort": "համախառն",
+      "netShort": "զուտ",
+      "noBalances": "Արձակուրդի մնացորդներ դեռ չկան",
+      "used": "օգտագործված",
+      "net": "Զուտ",
+      "exported": "Excel հաշվետվությունը արտահանված է",
+      "exportFailed": "Արտահանումը ձախողվեց"
+    }
   },
   "dashboardCards": {
     "welcome": "Բարի գալուստ",

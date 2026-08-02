@@ -32,17 +32,6 @@ export const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
   doctor: '#06b6d4',
 };
 
-export const DEPARTMENTS = [
-  'Engineering',
-  'Marketing',
-  'Sales',
-  'HR',
-  'Finance',
-  'Operations',
-  'Design',
-  'Legal',
-];
-
 // Travel allowance logic: contractor email → 12,000 AMD, staff → 20,000 AMD
 export function getTravelAllowance(email: string): number {
   return email.toLowerCase().includes('contractor') ? 12000 : 20000;

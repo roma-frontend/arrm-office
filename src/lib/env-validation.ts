@@ -28,6 +28,11 @@ const ENV_CONFIG: EnvConfig = {
     'UPSTASH_REDIS_REST_TOKEN',
     'NEXT_PUBLIC_SENTRY_DSN',
     'CSRF_SECRET',
+    // SRC (ԿԳԴ) taxpayer-verification API — optional; the /api/taxid/verify
+    // route falls back to local checksum validation when absent.
+    'SRC_API_URL',
+    'SRC_API_USERNAME',
+    'SRC_API_PASSWORD',
     // Legacy vars (for backwards compatibility)
     'NEXTAUTH_SECRET',
     'NEXTAUTH_URL',

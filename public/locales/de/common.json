@@ -488,7 +488,9 @@
     "youAtCompany": "you@company.com",
     "emailAddress": "you@company.com",
     "position": "Position",
-    "selectOrg": "Organisation auswählen"
+    "selectOrg": "Organisation auswählen",
+    "selectDepartment": "Abteilung auswählen",
+    "selectPosition": "Position auswählen"
   },
   "ariaLabels": {
     "changeAvatar": "Avatar ändern",
@@ -1533,5 +1535,12 @@
     "verified": "Identität bestätigt ✓",
     "couldNotVerify": "⚠️ Konnte nicht bestätigt werden — bitte schauen Sie in die Kamera",
     "failed": "🚨 Identitätsprüfung fehlgeschlagen — Abmeldung…"
+  },
+  "wizard": {
+    "draft": {
+      "restored": "Entwurf wiederhergestellt",
+      "continueFromStep": "Weiter ab Schritt {{step}}",
+      "startOver": "Neu beginnen"
+    }
   }
 }

@@ -19,6 +19,10 @@ export interface UserProfile {
   location?: string;
   avatarUrl?: string;
   dateOfBirth?: string;
+  /** Birth year — used to decide Armenia funded-pension exemption (born before 1974). */
+  birthYear?: number;
+  /** Manual override of the pension exemption derived from birthYear/dateOfBirth. */
+  pensionExempt?: boolean;
   presenceStatus?: 'available' | 'in_meeting' | 'in_call' | 'out_of_office' | 'busy';
   travelAllowance?: number;
   paidLeaveBalance?: number;
@@ -41,6 +45,8 @@ export const PROFILE_FIELDS = [
   'location',
   'avatarUrl',
   'dateOfBirth',
+  'birthYear',
+  'pensionExempt',
   'presenceStatus',
   'travelAllowance',
   'paidLeaveBalance',
@@ -84,6 +90,8 @@ export function extractProfileFromUser(user: Doc<'users'>) {
     location: user.location,
     avatarUrl: user.avatarUrl,
     dateOfBirth: user.dateOfBirth,
+    birthYear: user.birthYear,
+    pensionExempt: user.pensionExempt,
     presenceStatus: user.presenceStatus,
     travelAllowance: user.travelAllowance,
     paidLeaveBalance: user.paidLeaveBalance,

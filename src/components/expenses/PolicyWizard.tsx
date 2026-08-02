@@ -185,6 +185,7 @@ export default function PolicyWizard({
             onCancel={() => onOpenChange(false)}
             submitLabel={t('expenses.createPolicy')}
             showStepper={false}
+            draftKey="expense-policy"
           />
         </div>
       </DialogContent>

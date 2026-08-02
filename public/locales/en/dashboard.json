@@ -112,7 +112,20 @@
     "viewAllRequests": "View all {{count}} requests",
     "daysTaken": "Days Taken",
     "remaining": "Remaining",
-    "noRecentRequests": "No recent requests"
+    "noRecentRequests": "No recent requests",
+    "leaveMoney": {
+      "title": "My Leave in Money",
+      "export": "Export Excel",
+      "dailyRate": "Daily rate",
+      "totalValue": "Total value",
+      "grossShort": "gross",
+      "netShort": "net",
+      "noBalances": "No leave balances yet",
+      "used": "used",
+      "net": "Net",
+      "exported": "Excel report exported",
+      "exportFailed": "Failed to export report"
+    }
   },
   "dashboardCards": {
     "welcome": "Welcome",

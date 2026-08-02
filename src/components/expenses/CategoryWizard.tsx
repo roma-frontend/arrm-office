@@ -199,6 +199,7 @@ export default function CategoryWizard({
             onCancel={() => onOpenChange(false)}
             submitLabel={t('expenses.createCategory')}
             showStepper={false}
+            draftKey="expense-category"
           />
         </div>
       </DialogContent>

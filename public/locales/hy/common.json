@@ -488,7 +488,9 @@
     "youAtCompany": "you@company.com",
     "emailAddress": "you@company.com",
     "position": "Պաշտոն",
-    "selectOrg": "Ընտրել կազմակերպություն"
+    "selectOrg": "Ընտրել կազմակերպություն",
+    "selectDepartment": "Ընտրեք բաժինը",
+    "selectPosition": "Ընտրեք պաշտոնը"
   },
   "ariaLabels": {
     "changeAvatar": "Փոխել ավատարը",
@@ -1533,5 +1535,12 @@
     "verified": "Ինքնությունը հաստատված է ✓",
     "couldNotVerify": "⚠️ Չհաջողվեց հաստատել — խնդրում ենք նայել տեսախալիկին",
     "failed": "🚨 Ինքնության հաստատումը ձախողվեց — դուրս ենք գալիս…"
+  },
+  "wizard": {
+    "draft": {
+      "restored": "Սևագիրը վերականգնվեց",
+      "continueFromStep": "Շարունակեք {{step}} քայլից",
+      "startOver": "Սկսել նորից"
+    }
   }
 }

@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 
 const WizardContext = React.createContext<{
   stepData: Record<string, string | number | boolean | null | string[]>;
@@ -48,6 +50,12 @@ interface WizardProps {
   showStepper?: boolean;
   className?: string;
   defaultStepData?: Record<string, string | number | boolean | null | string[]>;
+  /**
+   * Уникальный ключ черновика. Заполненные данные переживают случайное закрытие
+   * модалки и восстанавливаются при следующем открытии. Не задавайте для форм
+   * редактирования — там начальные данные приходят из записи.
+   */
+  draftKey?: string;
 }
 
 export function Wizard({
@@ -59,6 +67,7 @@ export function Wizard({
   showStepper = true,
   className,
   defaultStepData = {},
+  draftKey,
 }: WizardProps): React.ReactElement {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
@@ -76,6 +85,31 @@ export function Wizard({
       setStepData((prev) => ({ ...prev, ...defaultStepData }));
     }
   }, [defaultStepData]);
+
+  // ── Черновик: заполненные данные переживают закрытие модалки ───────────
+  const handleRestoreDraft = useCallback(
+    (draft: Record<string, string | number | boolean | null | string[]>, savedStep: number) => {
+      setStepData((prev) => ({ ...prev, ...draft }));
+      setCurrentStep(Math.min(Math.max(savedStep, 0), steps.length - 1));
+    },
+    [steps.length],
+  );
+
+  const draft = useWizardDraft({
+    key: draftKey,
+    data: stepData,
+    step: currentStep,
+    defaults: defaultStepData,
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setStepData(prevDefaultRef.current);
+    setCurrentStep(0);
+  }, [clearDraft]);
 
   const currentStepData = steps[currentStep];
 
@@ -102,9 +136,18 @@ export function Wizard({
     setIsSubmitting(true);
     try {
       await onComplete?.(stepData);
+      // Отправка прошла — черновик больше не нужен. При ошибке onComplete
+      // бросает или сам показывает toast, черновик остаётся.
+      clearDraft();
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Явная «Отмена» — осознанный отказ, черновик стираем.
+  const handleCancel = () => {
+    clearDraft();
+    onCancel?.();
   };
 
   const updateStepData = (key: string, value: string | number | boolean | null | string[]) => {
@@ -120,6 +163,12 @@ export function Wizard({
     <div className={cn('flex flex-col', className)}>
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto overflow-x-clip px-0 py-4 md:px-6 md:py-5 scrollbar-hide">
+        <WizardDraftNotice
+          show={draft.restored}
+          step={draft.restoredStep}
+          onReset={handleStartOver}
+        />
+
         {/* Stepper */}
         {showStepper && (
           <div className="mb-5 md:mb-6">
@@ -247,7 +296,7 @@ export function Wizard({
             {onCancel && (
               <Button
                 variant="outline"
-                onClick={onCancel}
+                onClick={handleCancel}
                 disabled={isSubmitting}
                 className="border-(--border) bg-(--background) hover:bg-(--background-subtle) text-(--foreground) w-full sm:w-auto text-sm"
               >

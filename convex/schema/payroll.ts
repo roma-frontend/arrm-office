@@ -23,8 +23,12 @@ const TAX_BRACKET = v.object({
 // One employee/employer contribution line. Mirrors Contribution in convex/lib/taxRules.ts.
 const CONTRIBUTION = v.object({
   name: v.string(),
-  rate: v.number(),
+  rate: v.optional(v.number()),
   cap: v.optional(v.number()),
+  fixedAmount: v.optional(v.number()),
+  offset: v.optional(v.number()),
+  minGross: v.optional(v.number()),
+  maxGross: v.optional(v.number()),
   field: v.optional(
     v.union(
       v.literal('socialSecurity'),

@@ -155,3 +155,7 @@ CLAUDE.md
 venv_reportnul
 venv_report
 nul
+
+# OCR/tesseract local test artifacts (downloaded at runtime from CDN)
+*.traineddata
+test-passport.svg

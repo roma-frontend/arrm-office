@@ -178,6 +178,7 @@ export function BlockTimeWizard({
       onCancel={onCancel}
       submitLabel={t('driverCalendar.blockTimeBtn')}
       cancelLabel={t('actions.cancel')}
+      draftKey="driver-block-time"
     />
   );
 }

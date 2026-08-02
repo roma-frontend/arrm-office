@@ -252,6 +252,7 @@ function DepartmentWizard({
             cancelLabel={t('actions.cancel', 'Cancel')}
             showStepper
             defaultStepData={wizardData}
+            draftKey={editingDepartment ? undefined : 'create-department'}
           />
         </div>
       </DialogContent>

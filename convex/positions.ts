@@ -53,6 +53,33 @@ export const list = query({
   },
 });
 
+/**
+ * Lean list for pickers — see the note on `departments.options`. Optionally
+ * narrowed to one department so the position picker follows the department
+ * chosen a field above.
+ */
+export const options = query({
+  args: {
+    organizationId: v.optional(v.id('organizations')),
+    departmentId: v.optional(v.id('departments')),
+  },
+  handler: async (ctx, args) => {
+    const orgId = args.organizationId;
+    if (!orgId) return [];
+
+    const positions = await ctx.db
+      .query('positions')
+      .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+      .take(DEFAULT_LIST_CAP);
+
+    return positions
+      .filter((p) => p.isActive !== false)
+      .filter((p) => !args.departmentId || p.departmentId === args.departmentId)
+      .map((p) => ({ _id: p._id, title: p.title, departmentId: p.departmentId }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  },
+});
+
 export const getById = query({
   args: { id: v.id('positions') },
   handler: async (ctx, args) => {

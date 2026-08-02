@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -32,6 +32,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 
 type Frequency = 'monthly' | 'yearly';
 
@@ -64,6 +66,59 @@ export default function CompensationBandWizard({
   const [maxSalary, setMaxSalary] = useState('');
   const [medianSalary, setMedianSalary] = useState('');
   const [frequency, setFrequency] = useState<Frequency>('monthly');
+
+  // ── Черновик: данные переживают случайное закрытие окна ────────────────
+  const draftData = useMemo(
+    () => ({
+      name,
+      description,
+      level,
+      department,
+      currency,
+      minSalary,
+      maxSalary,
+      medianSalary,
+      frequency,
+    }),
+    [name, description, level, department, currency, minSalary, maxSalary, medianSalary, frequency],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    setName(d.name ?? '');
+    setDescription(d.description ?? '');
+    setLevel(d.level ?? '');
+    setDepartment(d.department ?? '');
+    setCurrency(d.currency ?? 'AMD');
+    setMinSalary(d.minSalary ?? '');
+    setMaxSalary(d.maxSalary ?? '');
+    setMedianSalary(d.medianSalary ?? '');
+    if (d.frequency) setFrequency(d.frequency);
+    setCurrentStep(Math.min(Math.max(savedStep, 0), 2));
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'compensation-band',
+    data: draftData,
+    step: currentStep,
+    defaults: { currency: 'AMD', frequency: 'monthly' as Frequency },
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setName('');
+    setDescription('');
+    setLevel('');
+    setDepartment('');
+    setCurrency('AMD');
+    setMinSalary('');
+    setMaxSalary('');
+    setMedianSalary('');
+    setFrequency('monthly');
+    setCurrentStep(0);
+  }, [clearDraft]);
 
   // Step 3: Review
   const steps = [
@@ -135,6 +190,7 @@ export default function CompensationBandWizard({
       });
 
       toast.success(t('compensation.bandCreated', 'Compensation band created successfully'));
+      clearDraft();
       onSuccess();
     } catch (error) {
       console.error('Create compensation band error:', error);
@@ -429,6 +485,12 @@ export default function CompensationBandWizard({
         </div>
 
         <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
+
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

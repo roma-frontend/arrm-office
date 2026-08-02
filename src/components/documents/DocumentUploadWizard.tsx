@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useRef, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
@@ -205,6 +207,73 @@ export default function DocumentUploadWizard({
   const [enableExpiration, setEnableExpiration] = useState(false);
   const [expiresAt, setExpiresAt] = useState('');
 
+  // ── Черновик: данные переживают случайное закрытие окна ────────────────
+  // localFiles не сохраняем — там объект File, который не сериализуется.
+  // uploadedFile уже лежит в Cloudinary, так что переживает закрытие целиком.
+  const draftData = useMemo(
+    () => ({
+      uploadedFile,
+      title,
+      description,
+      category,
+      tagsInput,
+      isMandatory,
+      publishImmediately,
+      enableExpiration,
+      expiresAt,
+    }),
+    [
+      uploadedFile,
+      title,
+      description,
+      category,
+      tagsInput,
+      isMandatory,
+      publishImmediately,
+      enableExpiration,
+      expiresAt,
+    ],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    setUploadedFile(d.uploadedFile ?? null);
+    setTitle(d.title ?? '');
+    setDescription(d.description ?? '');
+    if (d.category) setCategory(d.category);
+    setTagsInput(d.tagsInput ?? '');
+    setIsMandatory(!!d.isMandatory);
+    setPublishImmediately(!!d.publishImmediately);
+    setEnableExpiration(!!d.enableExpiration);
+    setExpiresAt(d.expiresAt ?? '');
+    // Без загруженного файла дальше первого шага идти некуда.
+    setCurrentStep(d.uploadedFile ? Math.min(Math.max(savedStep, 0), 3) : 0);
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'document-upload',
+    data: draftData,
+    step: currentStep,
+    defaults: { category: 'other' as DocumentCategory },
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setLocalFiles([]);
+    setUploadedFile(null);
+    setTitle('');
+    setDescription('');
+    setCategory('other');
+    setTagsInput('');
+    setIsMandatory(false);
+    setPublishImmediately(false);
+    setEnableExpiration(false);
+    setExpiresAt('');
+    setCurrentStep(0);
+  }, [clearDraft]);
+
   const createDocumentMutation = useMutation(api.documents.createDocument);
   const updateDocumentMutation = useMutation(api.documents.updateDocument);
 
@@ -321,7 +390,9 @@ export default function DocumentUploadWizard({
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        return localFiles.length > 0;
+        // uploadedFile — восстановленный черновик: файл уже в Cloudinary,
+        // локальный File при этом не сохраняется.
+        return localFiles.length > 0 || !!uploadedFile;
       case 1:
         return title.trim().length > 0;
       case 2:
@@ -387,6 +458,7 @@ export default function DocumentUploadWizard({
       }
 
       toast.success(t('documents.documentCreated', 'Document created successfully'));
+      clearDraft();
       onSuccess();
     } catch (error) {
       console.error('Create document error:', error);
@@ -820,6 +892,12 @@ export default function DocumentUploadWizard({
 
         {/* Content */}
         <div className="px-6 py-4 max-h-[60vh] overflow-y-clip">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
+
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

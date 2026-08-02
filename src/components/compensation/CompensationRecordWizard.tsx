@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -33,6 +33,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 
 type CompType = 'base' | 'bonus' | 'raise' | 'adjustment' | 'allowance';
 type Frequency = 'monthly' | 'yearly' | 'one-time';
@@ -77,6 +79,60 @@ export default function CompensationRecordWizard({
         }
       : 'skip',
   );
+
+  // ── Черновик: данные переживают случайное закрытие окна ────────────────
+  const draftData = useMemo(
+    () => ({
+      userId,
+      compType,
+      amount,
+      currency,
+      frequency,
+      effectiveFrom,
+      effectiveTo,
+      notes,
+    }),
+    [userId, compType, amount, currency, frequency, effectiveFrom, effectiveTo, notes],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    setUserId(d.userId ?? '');
+    if (d.compType) setCompType(d.compType);
+    setAmount(d.amount ?? '');
+    setCurrency(d.currency ?? 'AMD');
+    if (d.frequency) setFrequency(d.frequency);
+    setEffectiveFrom(d.effectiveFrom ?? '');
+    setEffectiveTo(d.effectiveTo ?? '');
+    setNotes(d.notes ?? '');
+    setCurrentStep(Math.min(Math.max(savedStep, 0), 3));
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'compensation-record',
+    data: draftData,
+    step: currentStep,
+    defaults: {
+      compType: 'base' as CompType,
+      currency: 'AMD',
+      frequency: 'monthly' as Frequency,
+    },
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setUserId('');
+    setCompType('base');
+    setAmount('');
+    setCurrency('AMD');
+    setFrequency('monthly');
+    setEffectiveFrom('');
+    setEffectiveTo('');
+    setNotes('');
+    setCurrentStep(0);
+  }, [clearDraft]);
 
   const steps = [
     {
@@ -147,6 +203,7 @@ export default function CompensationRecordWizard({
       });
 
       toast.success(t('compensation.recordCreated', 'Compensation record created successfully'));
+      clearDraft();
       onSuccess();
     } catch (error) {
       console.error('Create compensation record error:', error);
@@ -476,6 +533,12 @@ export default function CompensationRecordWizard({
         </div>
 
         <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
+
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

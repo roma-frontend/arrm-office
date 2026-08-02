@@ -132,6 +132,7 @@ export default function ReportWizard({
             onCancel={() => onOpenChange(false)}
             submitLabel={t('expenses.createReport')}
             showStepper={false}
+            draftKey="expense-report"
           />
         </div>
       </DialogContent>

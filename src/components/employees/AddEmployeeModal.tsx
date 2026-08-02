@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { useMutation } from 'convex/react';
 import { useTranslation } from 'react-i18next';
@@ -24,13 +24,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DEPARTMENTS, getTravelAllowance } from '@/lib/types';
+import { getTravelAllowance } from '@/lib/types';
+import { useOrgUnits } from '@/hooks/useOrgUnits';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useQuery } from 'convex/react';
 import type { Id } from '../../../convex/_generated/dataModel';
 import type { FunctionReference } from 'convex/server';
 import { toCountryCode, TAX_RULES, type CountryCode } from '../../../convex/lib/taxRules';
 import { computeGrossFromNet } from '../../../convex/lib/payrollCalculator';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { SalaryCalculatorStep, type SalaryState } from './SalaryCalculatorStep';
 import {
   PassportFields,
@@ -51,6 +54,7 @@ import {
   Shield,
   DollarSign,
   IdCard,
+  CalendarDays,
 } from 'lucide-react';
 
 const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_BOOTSTRAP_SUPERADMIN_EMAIL ?? '').toLowerCase();
@@ -70,10 +74,19 @@ const bizierEasing = [0.34, 1.56, 0.64, 1];
 
 const TOTAL_STEPS = 6;
 
+// Local YYYY-MM-DD (not UTC) so the date input matches local timezone dates.
+function toLocalDateString(timestamp: number): string {
+  const d = new Date(timestamp);
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
 export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   const { t, i18n } = useTranslation();
   const createUser = useMutation(api.users.mutations.createUser as FunctionReference<'mutation'>);
   const uploadEmployeeDocument = useMutation(api.employeeProfiles.uploadDocument);
+  const recordTaxIdVerification = useMutation(api.employeeProfiles.recordTaxIdVerification);
   const currentUser = useAuthStore((s) => s.user);
   const isActualAdmin = currentUser?.email?.toLowerCase() === ADMIN_EMAIL;
   const isSuperadmin = currentUser?.role === 'superadmin';
@@ -91,18 +104,28 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [department, setDepartment] = useState('');
-  const [position, setPosition] = useState('');
+  // Отдел и должность хранятся как id записей из /employees/departments и
+  // /employees/positions — названия выводятся из них при рендере.
+  const [departmentId, setDepartmentId] = useState('');
+  const [positionId, setPositionId] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<'admin' | 'supervisor' | 'employee'>('employee');
   const [type, setType] = useState<'staff' | 'contractor'>('staff');
   const [selectedOrgId, setSelectedOrgId] = useState('');
+  const [registrationDate, setRegistrationDate] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Resolve the tax country for salary calc from the target organization.
   const targetOrg = isSuperadmin ? organizations?.find((o) => o._id === selectedOrgId) : myOrg;
   const orgCountry: CountryCode =
     toCountryCode(targetOrg?.taxCountry) ?? toCountryCode(targetOrg?.country) ?? 'armenia';
+
+  // Отделы/должности целевой организации. Для суперадмина это выбранная на
+  // нулевом шаге организация, для остальных — своя.
+  const targetOrgId = isSuperadmin ? selectedOrgId : currentUser?.organizationId;
+  const { departments, positions } = useOrgUnits(targetOrgId, departmentId || undefined);
+  const departmentName = departments?.find((d) => d._id === departmentId)?.name ?? '';
+  const positionName = positions?.find((p) => p._id === positionId)?.title ?? '';
 
   const [salary, setSalary] = useState<SalaryState>({
     mode: 'gross',
@@ -112,35 +135,137 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   });
   const [passport, setPassport] = useState<PassportData>(EMPTY_PASSPORT);
   const [passportScan, setPassportScan] = useState<PassportScanFile | null>(null);
+  const [taxIdVerifyStatus, setTaxIdVerifyStatus] = useState<
+    | 'verified'
+    | 'not_found'
+    | 'valid_local'
+    | 'invalid_checksum'
+    | 'invalid_format'
+    | 'error'
+    | null
+  >(null);
 
   const allowance = getTravelAllowance(email);
 
   // Superadmin: org selection is step 0, so adjust total
   const effectiveTotalSteps = isSuperadmin ? TOTAL_STEPS + 1 : TOTAL_STEPS;
 
+  const resetForm = useCallback(() => {
+    setStep(0);
+    setDirection(1);
+    setName('');
+    setEmail('');
+    setDepartmentId('');
+    setPositionId('');
+    setPhone('');
+    setType('staff');
+    setRole('employee');
+    setSelectedOrgId('');
+    setRegistrationDate('');
+    setSalary({
+      mode: 'gross',
+      amount: 0,
+      currency: TAX_RULES.armenia.currency,
+      country: 'armenia',
+    });
+    setPassport(EMPTY_PASSPORT);
+    setPassportScan(null);
+    setTaxIdVerifyStatus(null);
+    setErrors({});
+  }, []);
+
+  // Чистим форму только на переходе «закрыта → открыта». Зависеть от
+  // isSuperadmin нельзя: роль приходит из persisted-store асинхронно и стёрла
+  // бы восстановленный черновик.
+  const wasOpenRef = React.useRef(false);
   useEffect(() => {
-    if (open) {
-      setStep(0);
-      setDirection(1);
-      setName('');
-      setEmail('');
-      setDepartment('');
-      setPosition('');
-      setPhone('');
-      setType('staff');
-      setRole('employee');
-      setSelectedOrgId('');
-      setSalary({
-        mode: 'gross',
+    if (open && !wasOpenRef.current) resetForm();
+    wasOpenRef.current = open;
+  }, [open, resetForm]);
+
+  // ── Черновик: данные переживают случайное закрытие модалки ─────────────
+  const draftData = useMemo(
+    () => ({
+      name,
+      email,
+      departmentId,
+      positionId,
+      phone,
+      role,
+      type,
+      selectedOrgId,
+      registrationDate,
+      salary,
+      passport,
+      passportScan,
+    }),
+    [
+      name,
+      email,
+      departmentId,
+      positionId,
+      phone,
+      role,
+      type,
+      selectedOrgId,
+      registrationDate,
+      salary,
+      passport,
+      passportScan,
+    ],
+  );
+
+  const handleRestoreDraft = useCallback(
+    (d: typeof draftData, savedStep: number) => {
+      setName(d.name ?? '');
+      setEmail(d.email ?? '');
+      setDepartmentId(d.departmentId ?? '');
+      setPositionId(d.positionId ?? '');
+      setPhone(d.phone ?? '');
+      if (d.role)      setRole(d.role);
+      if (d.type) setType(d.type);
+      setSelectedOrgId(d.selectedOrgId ?? '');
+      setRegistrationDate(d.registrationDate ?? '');
+      if (d.salary) setSalary((p) => ({ ...p, ...d.salary }));
+      if (d.passport) setPassport((p) => ({ ...p, ...d.passport }));
+      setPassportScan(d.passportScan ?? null);
+      setStep(Math.min(Math.max(savedStep, 0), effectiveTotalSteps - 1));
+    },
+    [effectiveTotalSteps],
+  );
+
+  // Слепок нетронутой формы. Считается от текущей страны организации: эффект
+  // синхронизации валюты срабатывает до любого ввода, и без этого черновик
+  // писался бы для пустой формы.
+  const draftDefaults = useMemo(
+    () => ({
+      role: 'employee' as const,
+      type: 'staff' as const,
+      salary: {
+        mode: 'gross' as const,
         amount: 0,
-        currency: TAX_RULES.armenia.currency,
-        country: 'armenia',
-      });
-      setPassport(EMPTY_PASSPORT);
-      setPassportScan(null);
-      setErrors({});
-    }
-  }, [open, isSuperadmin]);
+        currency: TAX_RULES[orgCountry].currency,
+        country: orgCountry,
+      },
+    }),
+    [orgCountry],
+  );
+
+  const draft = useWizardDraft({
+    key: 'add-employee',
+    enabled: open,
+    data: draftData,
+    step,
+    defaults: draftDefaults,
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    resetForm();
+  }, [clearDraft, resetForm]);
 
   // Keep salary calc country/currency in sync with the resolved organization.
   useEffect(() => {
@@ -167,9 +292,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     }
 
     if (currentStep === (isSuperadmin ? 2 : 1)) {
-      if (!department)
+      if (!departmentId)
         errs.department = t('employees.department') + ' ' + t('errors.required').toLowerCase();
-      if (!position.trim())
+      if (!positionId)
         errs.position = t('employees.position') + ' ' + t('errors.required').toLowerCase();
     }
 
@@ -220,8 +345,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         email,
         passwordHash: 'temp-password-will-be-changed',
         role,
-        department,
-        position,
+        departmentId: departmentId as Id<'departments'>,
+        positionId: positionId as Id<'positions'>,
         employeeType: type,
         phone: phone || undefined,
         ...(isSuperadmin && selectedOrgId
@@ -240,7 +365,19 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
               nationality: passport.nationality || undefined,
             }
           : {}),
+        createdAt: registrationDate
+          ? new Date(registrationDate + 'T00:00:00').getTime()
+          : undefined,
       })) as Id<'users'>;
+
+      // Persist the SRC/HVHH verification result captured during the identity
+      // step (the user did not exist yet, so it could not be recorded earlier).
+      if (newUserId && taxIdVerifyStatus && taxIdVerifyStatus !== 'error') {
+        await recordTaxIdVerification({
+          userId: newUserId,
+          status: taxIdVerifyStatus,
+        }).catch(() => {});
+      }
 
       // Persist the uploaded passport scan now that we have the user id.
       if (passportScan && newUserId) {
@@ -260,9 +397,10 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'new_employee',
-          data: { name, email, department, position, role },
+          data: { name, email, department: departmentName, position: positionName, role },
         }),
       }).catch(() => {});
+      clearDraft();
       onClose();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t('errors.somethingWentWrong'));
@@ -337,6 +475,12 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
 
         {/* Content */}
         <div className="px-6 py-5 max-h-[50vh] overflow-y-auto">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
+
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -443,6 +587,24 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                     {errors.email && <p className="text-xs text-(--destructive)">{errors.email}</p>}
                     <p className="text-xs text-(--text-muted)">{t('employees.contractorHint')}</p>
                   </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="emp-regdate">{t('editEmployee.registrationDate')}</Label>
+                    <div className="relative">
+                      <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
+                      <Input
+                        id="emp-regdate"
+                        type="date"
+                        max={toLocalDateString(Date.now())}
+                        value={registrationDate}
+                        onChange={(e) => setRegistrationDate(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <p className="text-xs text-(--text-muted)">
+                      {t('editEmployee.registrationDateHint')}
+                    </p>
+                  </div>
                 </motion.div>
               )}
 
@@ -470,33 +632,60 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label>{t('employees.department')} *</Label>
-                      <Select value={department} onValueChange={setDepartment}>
+                      <Select
+                        value={departmentId}
+                        onValueChange={(v) => {
+                          setDepartmentId(v);
+                          // Должность привязана к отделу — снимаем выбор, если
+                          // она больше не относится к новому отделу.
+                          const stillValid = positions?.some(
+                            (p) => p._id === positionId && (!p.departmentId || p.departmentId === v),
+                          );
+                          if (!stillValid) setPositionId('');
+                        }}
+                        disabled={!departments?.length}
+                      >
                         <SelectTrigger
                           className={errors.department ? 'border-(--destructive)' : ''}
                         >
-                          <SelectValue placeholder={t('placeholders.selectEmployee')} />
+                          <SelectValue placeholder={t('placeholders.selectDepartment')} />
                         </SelectTrigger>
                         <SelectContent>
-                          {DEPARTMENTS.map((d) => (
-                            <SelectItem key={d} value={d}>
-                              {d}
+                          {departments?.map((d) => (
+                            <SelectItem key={d._id} value={d._id}>
+                              {d.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {departments?.length === 0 && (
+                        <p className="text-xs text-(--text-muted)">{t('employees.noDepartments')}</p>
+                      )}
                       {errors.department && (
                         <p className="text-xs text-(--destructive)">{errors.department}</p>
                       )}
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="emp-position">{t('employees.position')} *</Label>
-                      <Input
-                        id="emp-position"
-                        placeholder="e.g. Developer"
-                        value={position}
-                        onChange={(e) => setPosition(e.target.value)}
-                        className={errors.position ? 'border-(--destructive)' : ''}
-                      />
+                      <Label>{t('employees.position')} *</Label>
+                      <Select
+                        value={positionId}
+                        onValueChange={setPositionId}
+                        disabled={!positions?.length}
+                      >
+                        <SelectTrigger className={errors.position ? 'border-(--destructive)' : ''}>
+                          <SelectValue placeholder={t('placeholders.selectPosition')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {positions?.map((p) => (
+                            <SelectItem key={p._id} value={p._id}>
+                              {p.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {positions?.length === 0 && (
+                        <p className="text-xs text-(--text-muted)">{t('employees.noPositions')}</p>
+                      )}
                       {errors.position && (
                         <p className="text-xs text-(--destructive)">{errors.position}</p>
                       )}
@@ -638,8 +827,14 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   </div>
                   <PassportFields
                     value={passport}
-                    onChange={(patch) => setPassport((p) => ({ ...p, ...patch }))}
+                    onChange={(patch) => {
+                      setPassport((p) => ({ ...p, ...patch }));
+                      // A new social card number invalidates the previous SRC
+                      // verification — don't persist a stale result.
+                      if (patch.socialCardNumber !== undefined) setTaxIdVerifyStatus(null);
+                    }}
                     onScanUploaded={setPassportScan}
+                    onTaxIdVerified={setTaxIdVerifyStatus}
                   />
                 </motion.div>
               )}
@@ -681,11 +876,19 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                     {/* Details */}
                     <div className="p-4 space-y-2.5">
                       {[
-                        { label: t('employees.department'), value: department },
-                        { label: t('employees.position'), value: position },
+                        { label: t('employees.department'), value: departmentName },
+                        { label: t('employees.position'), value: positionName },
                         { label: t('employees.role'), value: t(`roles.${role}`) },
                         { label: t('employees.employeeType'), value: t(`employees.${type}`) },
                         ...(phone ? [{ label: t('common.phone'), value: phone }] : []),
+                        ...(registrationDate
+                          ? [
+                              {
+                                label: t('editEmployee.registrationDate'),
+                                value: registrationDate,
+                              },
+                            ]
+                          : []),
                         ...(salary.amount > 0
                           ? [
                               {

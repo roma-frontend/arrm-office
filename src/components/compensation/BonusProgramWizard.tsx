@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/select';
 import { Award, ChevronLeft, ChevronRight, CheckCircle, X, Users, FileText } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 
 type BonusType = 'performance' | 'retention' | 'signing' | 'referral' | 'holiday' | 'custom';
 
@@ -56,6 +58,73 @@ export default function BonusProgramWizard({ onClose, onSuccess }: BonusProgramW
   // Step 3: Period
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
+
+  // ── Черновик: данные переживают случайное закрытие окна ────────────────
+  const draftData = useMemo(
+    () => ({
+      name,
+      description,
+      bonusType,
+      eligibleRolesInput,
+      eligibleDeptsInput,
+      currency,
+      bonusAmount,
+      bonusPercentage,
+      periodStart,
+      periodEnd,
+    }),
+    [
+      name,
+      description,
+      bonusType,
+      eligibleRolesInput,
+      eligibleDeptsInput,
+      currency,
+      bonusAmount,
+      bonusPercentage,
+      periodStart,
+      periodEnd,
+    ],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    setName(d.name ?? '');
+    setDescription(d.description ?? '');
+    if (d.bonusType) setBonusType(d.bonusType);
+    setEligibleRolesInput(d.eligibleRolesInput ?? '');
+    setEligibleDeptsInput(d.eligibleDeptsInput ?? '');
+    setCurrency(d.currency ?? 'AMD');
+    setBonusAmount(d.bonusAmount ?? '');
+    setBonusPercentage(d.bonusPercentage ?? '');
+    setPeriodStart(d.periodStart ?? '');
+    setPeriodEnd(d.periodEnd ?? '');
+    setCurrentStep(Math.min(Math.max(savedStep, 0), 3));
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'bonus-program',
+    data: draftData,
+    step: currentStep,
+    defaults: { bonusType: 'performance' as BonusType, currency: 'AMD' },
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setName('');
+    setDescription('');
+    setBonusType('performance');
+    setEligibleRolesInput('');
+    setEligibleDeptsInput('');
+    setCurrency('AMD');
+    setBonusAmount('');
+    setBonusPercentage('');
+    setPeriodStart('');
+    setPeriodEnd('');
+    setCurrentStep(0);
+  }, [clearDraft]);
 
   // Step 4: Review
   const steps = [
@@ -149,6 +218,7 @@ export default function BonusProgramWizard({ onClose, onSuccess }: BonusProgramW
       });
 
       toast.success(t('compensation.bonusProgramCreated', 'Bonus program created successfully'));
+      clearDraft();
       onSuccess();
     } catch (error) {
       console.error('Create bonus program error:', error);
@@ -489,6 +559,12 @@ export default function BonusProgramWizard({ onClose, onSuccess }: BonusProgramW
         </div>
 
         <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
+
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

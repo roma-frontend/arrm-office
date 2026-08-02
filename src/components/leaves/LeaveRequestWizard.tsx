@@ -5,7 +5,9 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import {
@@ -111,6 +113,32 @@ export function LeaveRequestWizard({
     setStepData((prev) => ({ ...prev, [key]: value }));
   };
 
+  // ── Черновик: данные переживают случайное закрытие модалки ─────────────
+  const handleRestoreDraft = useCallback(
+    (d: StepData, savedStep: number) => {
+      setStepData((prev) => ({ ...prev, ...d }));
+      setCurrentStepIdx(Math.min(Math.max(savedStep, 0), stepIds.length - 1));
+    },
+    [stepIds.length],
+  );
+
+  const draft = useWizardDraft({
+    key: 'leave-request',
+    data: stepData,
+    step: currentStepIdx,
+    // Даты могут прийти из календаря — тогда пустой формой считается уже они.
+    defaults: { startDate: preselectedStartDate, endDate: preselectedEndDate },
+    onRestore: handleRestoreDraft,
+  });
+
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setStepData({ startDate: preselectedStartDate, endDate: preselectedEndDate });
+    setCurrentStepIdx(0);
+  }, [clearDraft, preselectedStartDate, preselectedEndDate]);
+
   const canGoNext = (): boolean => {
     switch (currentStepId) {
       case 'employee':
@@ -157,6 +185,7 @@ export function LeaveRequestWizard({
       toast.success(t('leaveWizard.toast.success', 'Leave request submitted!'), {
         description: t('leaveWizard.toast.waitingApproval', 'Waiting for manager approval'),
       });
+      clearDraft();
       onComplete?.();
       onCancel?.();
     } catch {
@@ -250,6 +279,12 @@ export function LeaveRequestWizard({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6">
+        <WizardDraftNotice
+          show={draft.restored}
+          step={draft.restoredStep}
+          onReset={handleStartOver}
+        />
+
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStepId}

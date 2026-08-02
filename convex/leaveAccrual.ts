@@ -1,9 +1,12 @@
-import { mutation, query } from './_generated/server';
+import { mutation, query, type QueryCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { patchProfile } from './lib/userProfile';
 import { DEFAULT_LIST_CAP } from './lib/limits';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
+import { WORKING_DAYS_PER_MONTH, dailyRateFromSalary, valueLeaveDays } from './lib/leaveMoney';
+import { getTaxRule, toCountryCode, type CountryCode } from './lib/taxRules';
+import { resolvePensionExemption } from './lib/pension';
 
 /** Leave-balance keys present on the users document. */
 type BalanceField =
@@ -164,6 +167,58 @@ export const accrueAnnualBalances = mutation({
 });
 
 // ── Get Balance Summary for a user ─────────────────────────────────────────
+// Used days are computed from APPROVED leave requests (current year), remaining
+// is the stored balance (already net of deductions), total = used + remaining.
+const LEAVE_TYPE_FIELDS = [
+  { type: 'paid', field: 'paidLeaveBalance', label: 'Paid Vacation' },
+  { type: 'sick', field: 'sickLeaveBalance', label: 'Sick Leave' },
+  { type: 'family', field: 'familyLeaveBalance', label: 'Family Leave' },
+  { type: 'day_off', field: 'dayOffBalance', label: 'Day Off' },
+  { type: 'maternity', field: 'maternityLeaveBalance', label: 'Maternity Leave' },
+  { type: 'study', field: 'studyLeaveBalance', label: 'Study Leave' },
+] as const;
+
+async function computeUsedDaysByType(
+  ctx: Pick<QueryCtx, 'db'>,
+  userId: Id<'users'>,
+): Promise<Record<string, number>> {
+  const approved = await ctx.db
+    .query('leaveRequests')
+    .withIndex('by_user_status', (q) => q.eq('userId', userId).eq('status', 'approved'))
+    .take(DEFAULT_LIST_CAP);
+
+  const yearStart = `${new Date().getFullYear()}-01-01`;
+  const used: Record<string, number> = {};
+  for (const l of approved) {
+    // Only count leaves that (overlap) the current year to avoid double counting
+    // across years after annual accrual resets the balance.
+    if (l.startDate >= yearStart) {
+      used[l.type] = (used[l.type] ?? 0) + l.days;
+    }
+  }
+  return used;
+}
+
+function buildBalanceSummary(used: Record<string, number>, readBal: (field: string) => number) {
+  const entries: Record<string, { used: number; remaining: number; total: number; label: string }> =
+    {};
+  for (const { type, field, label } of LEAVE_TYPE_FIELDS) {
+    const remaining = Math.max(0, readBal(field));
+    const usedDays = used[type] ?? 0;
+    entries[type] = {
+      used: usedDays,
+      remaining,
+      total: round2(usedDays + remaining),
+      label,
+    };
+  }
+  return entries;
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 export const getBalanceSummary = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
@@ -176,14 +231,119 @@ export const getBalanceSummary = query({
       .first();
 
     const getBal = (field: string) => readBalance(profile, field) || readBalance(user, field);
+    const used = await computeUsedDaysByType(ctx, userId);
+    return buildBalanceSummary(used, getBal);
+  },
+});
+
+// ── My Leave in Money (self-service valuation) ─────────────────────────────
+// Returns each leave type's used/remaining days plus the monetary value of the
+// remaining days (gross and net), valued at dailyRate = base salary / 21 days.
+export const getMyLeaveMoney = query({
+  args: { userId: v.id('users') },
+  handler: async (ctx, { userId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
+
+    // Self-service: the employee sees their own numbers; org staff may preview.
+    const isSelf = caller._id === userId;
+    const isOrgAccess =
+      caller.role === 'superadmin' ||
+      (['admin', 'supervisor'].includes(caller.role) &&
+        caller.organizationId === user.organizationId);
+    if (!isSelf && !isOrgAccess) throw new Error('Not authorized to view this employee');
+
+    const profile = await ctx.db
+      .query('userProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .first();
+    const getBal = (field: string) => readBalance(profile, field) || readBalance(user, field);
+
+    // Salary source: employeeProfiles (base salary for payroll calculations).
+    const salaryDoc = await ctx.db
+      .query('employeeProfiles')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .first();
+    const baseSalary = salaryDoc?.baseSalary ?? 0;
+    const currency = salaryDoc?.salaryCurrency;
+
+    // Tax country: org salarySettings → org taxCountry/country → Armenia.
+    const orgId = user.organizationId;
+    const settings = orgId
+      ? await ctx.db
+          .query('salarySettings')
+          .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+          .first()
+      : null;
+    let country: CountryCode = 'armenia';
+    if (settings?.taxCountry) {
+      country = settings.taxCountry;
+    } else if (user.organizationId) {
+      const org = await ctx.db.get(user.organizationId);
+      const candidate = org?.taxCountry ?? org?.country;
+      if (candidate) {
+        const code = toCountryCode(candidate);
+        if (code) country = code;
+      }
+    }
+
+    const used = await computeUsedDaysByType(ctx, userId);
+    const dailyRate = dailyRateFromSalary(baseSalary);
+
+    // Armenia: employees born before 1974 are exempt from the funded pension.
+    // The edit modal writes to employeeProfiles, so consult it first.
+    const pensionExempt = resolvePensionExemption({
+      pensionExempt: salaryDoc?.pensionExempt ?? profile?.pensionExempt ?? user.pensionExempt,
+      birthYear: salaryDoc?.birthYear ?? profile?.birthYear ?? user.birthYear,
+      dateOfBirth: salaryDoc?.dateOfBirth ?? profile?.dateOfBirth ?? user.dateOfBirth,
+    });
+
+    const types = LEAVE_TYPE_FIELDS.map(({ type, field, label }) => {
+      const remaining = Math.max(0, getBal(field));
+      const usedDays = used[type] ?? 0;
+      const value = valueLeaveDays(
+        country,
+        baseSalary,
+        remaining,
+        WORKING_DAYS_PER_MONTH,
+        pensionExempt,
+      );
+      return {
+        type,
+        label,
+        used: usedDays,
+        remaining,
+        total: round2(usedDays + remaining),
+        dailyRate,
+        grossValue: value.gross,
+        netValue: value.net,
+      };
+    });
+
+    const totals = types.reduce(
+      (acc, t) => {
+        acc.remaining += t.remaining;
+        acc.grossValue += t.grossValue;
+        acc.netValue += t.netValue;
+        return acc;
+      },
+      { remaining: 0, grossValue: 0, netValue: 0 },
+    );
 
     return {
-      paid: { used: 0, total: getBal('paidLeaveBalance'), label: 'Paid Vacation' },
-      sick: { used: 0, total: getBal('sickLeaveBalance'), label: 'Sick Leave' },
-      family: { used: 0, total: getBal('familyLeaveBalance'), label: 'Family Leave' },
-      dayOff: { used: 0, total: getBal('dayOffBalance'), label: 'Day Off' },
-      maternity: { used: 0, total: getBal('maternityLeaveBalance'), label: 'Maternity Leave' },
-      study: { used: 0, total: getBal('studyLeaveBalance'), label: 'Study Leave' },
+      currency: currency ?? (country === 'armenia' ? 'AMD' : getTaxRule(country).currency),
+      country,
+      workingDaysPerMonth: WORKING_DAYS_PER_MONTH,
+      dailyRate,
+      types,
+      totals: {
+        remaining: round2(totals.remaining),
+        grossValue: round2(totals.grossValue),
+        netValue: round2(totals.netValue),
+      },
     };
   },
 });

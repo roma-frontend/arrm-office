@@ -35,8 +35,10 @@ import {
   BarChart3,
   Package,
   ArrowDownLeft,
+  Calculator,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import SettlementPreviewDialog from '@/components/settlement/SettlementPreviewDialog';
 
 const REASONS = [
   'resignation',
@@ -337,6 +339,7 @@ function ProgramDetailDialog({
   );
 
   const [showExitForm, setShowExitForm] = useState(false);
+  const [showSettlement, setShowSettlement] = useState(false);
   const [exitForm, setExitForm] = useState({
     experience: 3,
     recommend: true,
@@ -615,6 +618,18 @@ function ProgramDetailDialog({
               </div>
             )}
 
+            {/* Final Settlement (admins) */}
+            {isAdmin && (
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => setShowSettlement(true)}
+              >
+                <Calculator className="h-4 w-4 mr-1" />
+                {t('employees.settlement.openButton', 'Final Settlement')}
+              </Button>
+            )}
+
             {/* Complete button */}
             {isAdmin && program.status === 'active' && program.progress >= 80 && (
               <Button className="w-full" variant="destructive" onClick={handleCompleteProgram}>
@@ -625,6 +640,17 @@ function ProgramDetailDialog({
           </div>
         )}
       </DialogContent>
+
+      {/* Final Settlement Dialog */}
+      {program && (
+        <SettlementPreviewDialog
+          employeeId={program.employeeId}
+          employeeName={program.employeeName}
+          open={showSettlement}
+          onClose={() => setShowSettlement(false)}
+          defaultLastDay={program.lastDay}
+        />
+      )}
     </Dialog>
   );
 }

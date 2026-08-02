@@ -22,6 +22,7 @@ import { DashboardBanners } from '@/components/dashboard/DashboardBanners';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import PayrollUpcomingBanner from '@/components/payroll/PayrollUpcomingBanner';
+import { MyLeaveMoneyCard } from '@/components/dashboard/MyLeaveMoneyCard';
 
 // Lazy load heavy dashboard components to reduce initial JS bundle
 const _AttendanceDashboard = dynamic(
@@ -187,6 +188,13 @@ export function EmployeeDashboard() {
       <motion.div variants={itemVariants}>
         <CheckInOutWidget />
       </motion.div>
+
+      {/* My Leave in Money — remaining days valued in money + Excel export */}
+      {user?.id && (
+        <motion.div variants={itemVariants}>
+          <MyLeaveMoneyCard userId={user.id as Id<'users'>} />
+        </motion.div>
+      )}
 
       {/* First-page widgets: My Tasks · Upcoming Birthdays · Out of Office */}
       <motion.div variants={itemVariants}>

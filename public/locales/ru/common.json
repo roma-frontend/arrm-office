@@ -488,7 +488,9 @@
     "youAtCompany": "you@company.com",
     "emailAddress": "you@company.com",
     "position": "Должность",
-    "selectOrg": "Выберите организацию"
+    "selectOrg": "Выберите организацию",
+    "selectDepartment": "Выберите отдел",
+    "selectPosition": "Выберите должность"
   },
   "ariaLabels": {
     "changeAvatar": "Изменить аватар",
@@ -1533,5 +1535,12 @@
     "verified": "Личность подтверждена ✓",
     "couldNotVerify": "⚠️ Не удалось подтвердить — посмотрите в камеру",
     "failed": "🚨 Проверка личности не пройдена — выход из системы…"
+  },
+  "wizard": {
+    "draft": {
+      "restored": "Восстановлен черновик",
+      "continueFromStep": "Продолжите с шага {{step}}",
+      "startOver": "Начать заново"
+    }
   }
 }

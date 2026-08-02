@@ -150,6 +150,7 @@ export function CreateManualSubscriptionWizard({
       onCancel={onCancel}
       submitLabel={t('subscriptionWizard.submit')}
       cancelLabel={t('actions.cancel')}
+      draftKey="manual-subscription"
     />
   );
 }

@@ -112,7 +112,20 @@
     "viewAllRequests": "Alle Anträge anzeigen",
     "daysTaken": "Genutzte Tage",
     "remaining": "Verbleibend",
-    "noRecentRequests": "Keine kürzlichen Anträge"
+    "noRecentRequests": "Keine kürzlichen Anträge",
+    "leaveMoney": {
+      "title": "Mein Urlaub in Geld",
+      "export": "Excel exportieren",
+      "dailyRate": "Tagessatz",
+      "totalValue": "Gesamtwert",
+      "grossShort": "brutto",
+      "netShort": "netto",
+      "noBalances": "Noch keine Urlaubsguthaben",
+      "used": "genutzt",
+      "net": "Netto",
+      "exported": "Excel-Bericht exportiert",
+      "exportFailed": "Export fehlgeschlagen"
+    }
   },
   "dashboardCards": {
     "welcome": "Willkommen",

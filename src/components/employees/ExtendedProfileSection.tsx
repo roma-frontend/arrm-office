@@ -65,6 +65,8 @@ export interface ExtendedProfileData {
   structuredWorkHistory?: WorkHistoryEntry[];
   structuredEducation?: EducationEntry[];
   dateOfBirth?: string;
+  birthYear?: number;
+  pensionExempt?: boolean;
 }
 
 interface ExtendedProfileSectionProps {
@@ -257,7 +259,7 @@ export default function ExtendedProfileSection({
       )}
 
       {/* Personal Details */}
-      {(data.dateOfBirth || data.address) && (
+      {(data.dateOfBirth || data.address || data.birthYear !== undefined || data.pensionExempt !== undefined) && (
         <SectionCard
           icon={<Heart className="w-4 h-4" />}
           title={t('extendedProfile.personalDetails', 'Personal Details')}
@@ -269,6 +271,24 @@ export default function ExtendedProfileSection({
                 label={t('extendedProfile.dateOfBirth', 'Date of Birth')}
                 value={data.dateOfBirth}
                 icon={<CalendarDays className="w-3.5 h-3.5" />}
+              />
+            )}
+            {data.birthYear !== undefined && (
+              <InfoRow
+                label={t('extendedProfile.birthYear', 'Birth Year')}
+                value={String(data.birthYear)}
+                icon={<CalendarDays className="w-3.5 h-3.5" />}
+              />
+            )}
+            {data.pensionExempt !== undefined && (
+              <InfoRow
+                label={t('extendedProfile.pensionExempt', 'Funded pension')}
+                value={
+                  data.pensionExempt
+                    ? t('extendedProfile.pensionExemptYes', 'Exempt (born before 1974)')
+                    : t('extendedProfile.pensionExemptNo', 'Mandatory')
+                }
+                icon={<Award className="w-3.5 h-3.5" />}
               />
             )}
             {data.address && (

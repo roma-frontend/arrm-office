@@ -50,6 +50,8 @@ export const updateExtendedProfile = mutation({
       ),
     ),
     dateOfBirth: v.optional(v.string()),
+    birthYear: v.optional(v.number()),
+    pensionExempt: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const requester = await getAuthCaller(ctx);
@@ -77,6 +79,8 @@ export const updateExtendedProfile = mutation({
       'structuredWorkHistory',
       'structuredEducation',
       'dateOfBirth',
+      'birthYear',
+      'pensionExempt',
     ] as const;
 
     for (const field of optionalFields) {

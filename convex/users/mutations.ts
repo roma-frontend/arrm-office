@@ -6,6 +6,52 @@ import { requireRole, requireOrgAdmin, requireUser } from '../lib/rbac';
 import { isSuperadminEmail } from '../lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { patchProfile } from '../lib/userProfile';
+import type { MutationCtx } from '../_generated/server';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Department / position resolution
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Resolves departmentId/positionId to their names, verifying both belong to
+ * `orgId`. The name is denormalized onto the user doc so existing readers
+ * (filters, exports, reports) keep working without a join.
+ *
+ * When only the legacy free-text value is supplied it is passed through
+ * unchanged — older clients and imports must keep working.
+ */
+async function resolveOrgUnits(
+  ctx: MutationCtx,
+  orgId: Id<'organizations'>,
+  input: {
+    departmentId?: Id<'departments'>;
+    positionId?: Id<'positions'>;
+    department?: string;
+    position?: string;
+  },
+): Promise<{ departmentName?: string; positionName?: string }> {
+  let departmentName = input.department;
+  let positionName = input.position;
+
+  if (input.departmentId) {
+    const dept = await ctx.db.get(input.departmentId);
+    if (!dept) throw new Error('Department not found');
+    if (dept.organizationId !== orgId) {
+      throw new Error('Department belongs to a different organization');
+    }
+    departmentName = dept.name;
+  }
+
+  if (input.positionId) {
+    const pos = await ctx.db.get(input.positionId);
+    if (!pos) throw new Error('Position not found');
+    if (pos.organizationId !== orgId) {
+      throw new Error('Position belongs to a different organization');
+    }
+    positionName = pos.title;
+  }
+
+  return { departmentName, positionName };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE USER (admin only) — auto-scoped to admin's org
@@ -23,8 +69,13 @@ export const createUser = mutation({
       v.literal('driver'),
     ),
     employeeType: v.union(v.literal('staff'), v.literal('contractor')),
+    // Departments/positions are org-scoped records. Prefer the *Id fields; the
+    // string ones stay for backward compat and are kept in sync as a
+    // denormalized label so existing readers keep working.
     department: v.optional(v.string()),
+    departmentId: v.optional(v.id('departments')),
     position: v.optional(v.string()),
+    positionId: v.optional(v.id('positions')),
     phone: v.optional(v.string()),
     supervisorId: v.optional(v.id('users')),
     organizationId: v.optional(v.id('organizations')),
@@ -41,6 +92,9 @@ export const createUser = mutation({
     passportExpiryDate: v.optional(v.string()),
     socialCardNumber: v.optional(v.string()),
     nationality: v.optional(v.string()),
+    // Registration / join date (ms epoch) — lets admins backdate employees who
+    // were already working before the account was created (project handover).
+    createdAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { adminId, organizationId } = args;
@@ -90,6 +144,16 @@ export const createUser = mutation({
 
     const travelAllowance = args.employeeType === 'contractor' ? 12000 : 20000;
 
+    // Resolve department/position records and denormalize their names. Both
+    // must belong to the target org — otherwise an admin could attach an
+    // employee to another organization's department.
+    const { departmentName, positionName } = await resolveOrgUnits(ctx, targetOrgId, {
+      departmentId: args.departmentId,
+      positionId: args.positionId,
+      department: args.department,
+      position: args.position,
+    });
+
     const userId = await ctx.db.insert('users', {
       organizationId: targetOrgId,
       name: args.name,
@@ -97,8 +161,10 @@ export const createUser = mutation({
       passwordHash: args.passwordHash,
       role: args.role,
       employeeType: args.employeeType,
-      department: args.department,
-      position: args.position,
+      department: departmentName,
+      departmentId: args.departmentId,
+      position: positionName,
+      positionId: args.positionId,
       phone: args.phone,
       supervisorId: args.supervisorId,
       isActive: true,
@@ -112,7 +178,7 @@ export const createUser = mutation({
       dayOffBalance: 6,
       maternityLeaveBalance: 0,
       studyLeaveBalance: 5,
-      createdAt: Date.now(),
+      createdAt: args.createdAt ?? Date.now(),
     });
 
     // Atomically persist salary / passport into employeeProfiles when provided.
@@ -214,7 +280,9 @@ export const updateUser = mutation({
     ),
     employeeType: v.optional(v.union(v.literal('staff'), v.literal('contractor'))),
     department: v.optional(v.string()),
+    departmentId: v.optional(v.id('departments')),
     position: v.optional(v.string()),
+    positionId: v.optional(v.id('positions')),
     phone: v.optional(v.string()),
     location: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
@@ -223,6 +291,9 @@ export const updateUser = mutation({
     paidLeaveBalance: v.optional(v.number()),
     sickLeaveBalance: v.optional(v.number()),
     familyLeaveBalance: v.optional(v.number()),
+    // Registration / join date (ms epoch) — editable so admins can backdate
+    // employees that have been working before the account was created.
+    createdAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { adminId, userId, ...updates } = args;
@@ -241,12 +312,29 @@ export const updateUser = mutation({
     const employeeType = updates.employeeType ?? user.employeeType;
     const travelAllowance = employeeType === 'contractor' ? 12000 : 20000;
 
+    // Same rule as createUser: an *Id wins over the free-text value and its
+    // name is denormalized onto the doc, scoped to the user's own org.
+    const { departmentName, positionName } = await resolveOrgUnits(
+      ctx,
+      user.organizationId as Id<'organizations'>,
+      {
+        departmentId: updates.departmentId,
+        positionId: updates.positionId,
+        department: updates.department,
+        position: updates.position,
+      },
+    );
+    if (departmentName !== undefined) updates.department = departmentName;
+    if (positionName !== undefined) updates.position = positionName;
+
     // Dual-write: patch users table (backward compat) + sync profile fields to userProfiles
     await ctx.db.patch(userId, { ...updates, travelAllowance });
     const profileFields: Record<string, unknown> = {};
     if (updates.employeeType !== undefined) profileFields.employeeType = updates.employeeType;
     if (updates.department !== undefined) profileFields.department = updates.department;
+    if (updates.departmentId !== undefined) profileFields.departmentId = updates.departmentId;
     if (updates.position !== undefined) profileFields.position = updates.position;
+    if (updates.positionId !== undefined) profileFields.positionId = updates.positionId;
     if (updates.phone !== undefined) profileFields.phone = updates.phone;
     if (updates.location !== undefined) profileFields.location = updates.location;
     if (updates.avatarUrl !== undefined) profileFields.avatarUrl = updates.avatarUrl;

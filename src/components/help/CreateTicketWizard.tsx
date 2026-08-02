@@ -161,6 +161,7 @@ export function CreateTicketWizard({ userId, onComplete, onCancel }: CreateTicke
       onCancel={onCancel}
       submitLabel={t('help.wizard.submit')}
       cancelLabel={t('actions.cancel')}
+      draftKey="help-ticket"
     />
   );
 }
