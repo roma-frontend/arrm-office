@@ -148,12 +148,29 @@ function extractMrzLines(rawText: string): string[] {
   return candidates.slice(-3);
 }
 
+/**
+ * Fallback if an image never fires `load`/`error` (jsdom with the native `canvas`
+ * binding, odd data URLs, etc.). Keep it under jest's default 5s test timeout so
+ * a stuck image degrades to the original data URL instead of hanging the scan.
+ */
+const IMAGE_LOAD_TIMEOUT_MS = 4_000;
+
 /** Load an image from a data URL, resolving with the decoded element. */
 function loadImage(imageDataUrl: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Failed to load image'));
+    const timer = setTimeout(
+      () => reject(new Error('Image load timed out')),
+      IMAGE_LOAD_TIMEOUT_MS,
+    );
+    img.onload = () => {
+      clearTimeout(timer);
+      resolve(img);
+    };
+    img.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error('Failed to load image'));
+    };
     img.src = imageDataUrl;
   });
 }

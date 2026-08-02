@@ -34,6 +34,26 @@ jest.mock(
   { virtual: true },
 );
 
+// ── Mock Image (deterministic load across environments) ─────────────────────
+// jsdom never fires `load`/`error` for data-URL images, and when the native
+// `canvas` binding is present (Linux CI), prepareImageForOcr() takes the real
+// canvas path where loadImage() awaits img.onload — which never fires. Stub the
+// Image constructor so assigning `src` fires onload on the next microtask. This
+// keeps the scanPassportImage tests environment-agnostic and fast.
+class MockImage {
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  // 0 dimensions short-circuit prepareImageForOcr() at its naturalWidth guard,
+  // before any canvas operation — tests stay deterministic with or without the
+  // native canvas binding.
+  naturalWidth = 0;
+  naturalHeight = 0;
+  set src(_value: string) {
+    queueMicrotask(() => this.onload?.());
+  }
+}
+(globalThis as { Image?: unknown }).Image = MockImage;
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockCreateWorker.mockResolvedValue({
