@@ -632,16 +632,13 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium flex items-center gap-1.5">
-                    <CalendarDays className="w-3.5 h-3.5" />{' '}
-                    {t('editEmployee.registrationDate')}
+                    <CalendarDays className="w-3.5 h-3.5" /> {t('editEmployee.registrationDate')}
                   </label>
                   <input
                     type="date"
                     value={form.registrationDate}
                     max={toLocalDateString(Date.now())}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, registrationDate: e.target.value }))
-                    }
+                    onChange={(e) => setForm((p) => ({ ...p, registrationDate: e.target.value }))}
                     className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all"
                     style={{
                       background: 'var(--input)',

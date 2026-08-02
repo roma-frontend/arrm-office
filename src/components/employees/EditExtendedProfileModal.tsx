@@ -170,9 +170,10 @@ export default function EditExtendedProfileModal({
         ...(organizationId ? { organizationId } : {}),
         address: form.address || undefined,
         dateOfBirth: form.dateOfBirth || undefined,
-        birthYear: form.birthYear && Number.isFinite(Number(form.birthYear))
-          ? Number(form.birthYear)
-          : undefined,
+        birthYear:
+          form.birthYear && Number.isFinite(Number(form.birthYear))
+            ? Number(form.birthYear)
+            : undefined,
         pensionExempt: form.pensionExempt || undefined,
         workFormat: (form.workFormat as 'remote' | 'office' | 'hybrid') || undefined,
         workSchedule: form.workSchedule,

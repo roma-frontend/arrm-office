@@ -21,10 +21,7 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
 
-  const data = useQuery(
-    api.leaveAccrual.getMyLeaveMoney,
-    userId ? { userId } : 'skip',
-  );
+  const data = useQuery(api.leaveAccrual.getMyLeaveMoney, userId ? { userId } : 'skip');
 
   const moneyRows = useMemo(
     () => (data?.types ?? []).filter((row) => row.remaining > 0 || row.used > 0),
@@ -53,7 +50,14 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'balances',
-          lang: i18n.language === 'hy' ? 'hy' : i18n.language === 'ru' ? 'ru' : i18n.language === 'de' ? 'de' : 'en',
+          lang:
+            i18n.language === 'hy'
+              ? 'hy'
+              : i18n.language === 'ru'
+                ? 'ru'
+                : i18n.language === 'de'
+                  ? 'de'
+                  : 'en',
           organizationName: '',
           rows,
         }),
@@ -105,9 +109,7 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
       <CardContent className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-(--background-subtle) p-3">
           <div>
-            <p className="text-xs text-(--text-muted)">
-              {t('dashboard.leaveMoney.dailyRate')}
-            </p>
+            <p className="text-xs text-(--text-muted)">{t('dashboard.leaveMoney.dailyRate')}</p>
             <p className="text-lg font-bold text-(--text-primary)">
               {formatCurrency(data.dailyRate, currency)}
               <span className="text-xs font-normal text-(--text-muted) ml-1">
@@ -116,9 +118,7 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-(--text-muted)">
-              {t('dashboard.leaveMoney.totalValue')}
-            </p>
+            <p className="text-xs text-(--text-muted)">{t('dashboard.leaveMoney.totalValue')}</p>
             <p className="text-lg font-bold text-emerald-600">
               {formatCurrency(data.totals.grossValue, currency)}
               <span className="text-xs font-normal text-(--text-muted) ml-1">
@@ -150,8 +150,8 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
                   {getLeaveTypeLabel(row.type as LeaveType, t)}
                 </p>
                 <p className="text-xs text-(--text-muted)">
-                  {row.remaining} {t('ui.days').toLowerCase()} ·{' '}
-                  {t('dashboard.leaveMoney.used')}: {row.used}
+                  {row.remaining} {t('ui.days').toLowerCase()} · {t('dashboard.leaveMoney.used')}:{' '}
+                  {row.used}
                 </p>
               </div>
               <div className="text-right">

@@ -5,7 +5,20 @@ import { api } from '../../../convex/_generated/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Briefcase, Star, Clock, Target, AlertTriangle, Plus, Trash2, IdCard, BadgeCheck, ShieldAlert, ShieldQuestion, Calculator } from 'lucide-react';
+import {
+  Briefcase,
+  Star,
+  Clock,
+  Target,
+  AlertTriangle,
+  Plus,
+  Trash2,
+  IdCard,
+  BadgeCheck,
+  ShieldAlert,
+  ShieldQuestion,
+  Calculator,
+} from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { format } from 'date-fns';
@@ -443,7 +456,10 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                   {t('employees.settlement.title', 'Final Settlement')}
                 </p>
                 <p className="text-sm text-(--text-muted)">
-                  {t('employees.settlement.openDesc', 'Preview the final payout on termination and download the Excel report')}
+                  {t(
+                    'employees.settlement.openDesc',
+                    'Preview the final payout on termination and download the Excel report',
+                  )}
                 </p>
               </div>
             </div>

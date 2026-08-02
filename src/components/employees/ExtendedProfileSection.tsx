@@ -259,7 +259,10 @@ export default function ExtendedProfileSection({
       )}
 
       {/* Personal Details */}
-      {(data.dateOfBirth || data.address || data.birthYear !== undefined || data.pensionExempt !== undefined) && (
+      {(data.dateOfBirth ||
+        data.address ||
+        data.birthYear !== undefined ||
+        data.pensionExempt !== undefined) && (
         <SectionCard
           icon={<Heart className="w-4 h-4" />}
           title={t('extendedProfile.personalDetails', 'Personal Details')}

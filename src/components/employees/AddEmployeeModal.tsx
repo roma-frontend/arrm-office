@@ -222,7 +222,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       setDepartmentId(d.departmentId ?? '');
       setPositionId(d.positionId ?? '');
       setPhone(d.phone ?? '');
-      if (d.role)      setRole(d.role);
+      if (d.role) setRole(d.role);
       if (d.type) setType(d.type);
       setSelectedOrgId(d.selectedOrgId ?? '');
       setRegistrationDate(d.registrationDate ?? '');
@@ -639,7 +639,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                           // Должность привязана к отделу — снимаем выбор, если
                           // она больше не относится к новому отделу.
                           const stillValid = positions?.some(
-                            (p) => p._id === positionId && (!p.departmentId || p.departmentId === v),
+                            (p) =>
+                              p._id === positionId && (!p.departmentId || p.departmentId === v),
                           );
                           if (!stillValid) setPositionId('');
                         }}
@@ -659,7 +660,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                         </SelectContent>
                       </Select>
                       {departments?.length === 0 && (
-                        <p className="text-xs text-(--text-muted)">{t('employees.noDepartments')}</p>
+                        <p className="text-xs text-(--text-muted)">
+                          {t('employees.noDepartments')}
+                        </p>
                       )}
                       {errors.department && (
                         <p className="text-xs text-(--destructive)">{errors.department}</p>

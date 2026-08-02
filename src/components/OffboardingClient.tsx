@@ -620,11 +620,7 @@ function ProgramDetailDialog({
 
             {/* Final Settlement (admins) */}
             {isAdmin && (
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={() => setShowSettlement(true)}
-              >
+              <Button className="w-full" variant="outline" onClick={() => setShowSettlement(true)}>
                 <Calculator className="h-4 w-4 mr-1" />
                 {t('employees.settlement.openButton', 'Final Settlement')}
               </Button>
