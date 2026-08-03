@@ -72,6 +72,8 @@ scripts/*
 !scripts/compare-coverage.mjs
 !scripts/generate-coverage-badge.mjs
 !scripts/ratchet-coverage.mjs
+# Security tooling: lists public Convex functions with no authorization check.
+!scripts/audit-convex-auth.mjs
 .vercel
 .env*.local
 

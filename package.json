@@ -36,6 +36,7 @@
     "type-check:scripts": "tsc --noEmit -p tsconfig.scripts.json",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "check:locales": "node scripts/check-locale-parity.mjs",
+    "audit:convex-auth": "node scripts/audit-convex-auth.mjs",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
