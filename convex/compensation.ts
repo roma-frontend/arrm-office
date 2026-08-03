@@ -1,7 +1,85 @@
+import type { Id } from './_generated/dataModel';
+import type { MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import {
+  assertOrgStaff,
+  resolveOrgScope,
+  resolveOrgStaff,
+  scopeOwnsRecord,
+  type OrgScope,
+} from './lib/orgAccess';
 import { getProfile } from './lib/userProfile';
+
+/**
+ * Compensation, server-side rules
+ * ──────────────────────────────
+ * Every export here used to run with no authorization: any authenticated user
+ * could list an entire organization's salaries and bonus records, read the
+ * proposed raises of a review cycle, or write their own compensation record and
+ * approve it — `approvedBy` / `reviewedBy` came from the client, so the sign-off
+ * could be attributed to a manager.
+ *
+ * CompensationClient already renders this module as staff-only (`isAdmin` for
+ * reads, `canManage` for every wizard). The server now enforces the same:
+ *   - reads require same-org staff; the one self-service read is your own
+ *     compensation history;
+ *   - writes require a same-org admin, since compensation is an admin-level
+ *     control in the UI;
+ *   - approvals bind the approver to ctx.auth and refuse self-approval;
+ *   - `status: 'approved' | 'active'` cannot be set through the generic update
+ *     mutations — that would bypass the approval gate entirely.
+ */
+
+/** Records that carry an owner and an org, reached by their own id. */
+type OwnedCompRecord = {
+  organizationId?: Id<'organizations'>;
+  userId?: Id<'users'>;
+};
+
+/**
+ * Admin rights over an existing row, verified against the row's own
+ * organization (an id argument carries no org of its own).
+ */
+async function assertCanManageComp(
+  ctx: MutationCtx,
+  record: { organizationId?: Id<'organizations'> },
+  what: string,
+): Promise<OrgScope> {
+  const scope = await assertOrgStaff(ctx, record.organizationId, { adminOnly: true });
+  if (!scopeOwnsRecord(scope, record)) {
+    throw new Error(`Not authorized to manage this ${what}`);
+  }
+  return scope;
+}
+
+/**
+ * Approval gate: admin of the record's org, and never your own money.
+ * Returns the scope so the decision is attributed to the verified caller.
+ */
+async function assertCanApproveComp(
+  ctx: MutationCtx,
+  record: OwnedCompRecord,
+  what: string,
+): Promise<OrgScope> {
+  const scope = await assertCanManageComp(ctx, record, what);
+  if (record.userId && record.userId === scope.caller._id) {
+    throw new Error(`Cannot approve your own ${what}`);
+  }
+  return scope;
+}
+
+/** Statuses that only the dedicated approve/reject mutations may set. */
+const GATED_STATUSES = ['approved', 'active'];
+
+function assertNotGatedStatus(status: string | undefined, what: string) {
+  if (status && GATED_STATUSES.includes(status)) {
+    throw new Error(
+      `Use the approval mutation to ${status === 'active' ? 'activate' : 'approve'} a ${what}`,
+    );
+  }
+}
 
 // ============ QUERIES ============
 
@@ -14,6 +92,11 @@ export const listCompensationRecords = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, userId, type, status } = args;
+    // Org-wide salary data is a staff view; denial returns [] so the page
+    // renders its "unauthorized" state instead of an error boundary.
+    const scope = await resolveOrgStaff(ctx, organizationId);
+    if (!scope) return [];
+
     let records = await ctx.db
       .query('compensationRecords')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
@@ -51,6 +134,12 @@ export const getCompensationHistory = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, userId } = args;
+    // The one self-service read in this module: your own pay history, mirroring
+    // employeeProfiles.getSalary. Anyone else's requires staff rights.
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
+    if (!scope.isStaff && userId !== scope.caller._id) return [];
+
     const records = await ctx.db
       .query('compensationRecords')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
@@ -68,6 +157,9 @@ export const listCompensationBands = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, level, department } = args;
+    // Salary bands expose the pay structure of every level — staff only.
+    if (!(await resolveOrgStaff(ctx, organizationId))) return [];
+
     let bands = await ctx.db
       .query('compensationBands')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
@@ -87,6 +179,8 @@ export const listBonusPrograms = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, status } = args;
+    if (!(await resolveOrgStaff(ctx, organizationId))) return [];
+
     let programs = await ctx.db
       .query('bonusPrograms')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
@@ -106,6 +200,8 @@ export const listReviewCycles = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, year, status } = args;
+    if (!(await resolveOrgStaff(ctx, organizationId))) return [];
+
     let cycles = await ctx.db
       .query('compensationReviewCycles')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
@@ -126,6 +222,11 @@ export const getReviewCycleDetails = query({
     const { reviewCycleId } = args;
     const cycle = await ctx.db.get(reviewCycleId);
     if (!cycle) return null;
+
+    // A cycle bundles every participant's current and proposed salary — the
+    // most sensitive read in the module. Staff of the cycle's own org only.
+    const scope = await resolveOrgStaff(ctx, cycle.organizationId);
+    if (!scope || !scopeOwnsRecord(scope, cycle)) return null;
 
     const entries = await ctx.db
       .query('compensationReviewEntries')
@@ -163,6 +264,8 @@ export const getCompensationSummary = query({
   },
   handler: async (ctx, args) => {
     const { organizationId } = args;
+    if (!(await resolveOrgStaff(ctx, organizationId))) return null;
+
     const records = await ctx.db
       .query('compensationRecords')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
@@ -221,16 +324,19 @@ export const createCompensationRecord = mutation({
     effectiveFrom: v.number(),
     effectiveTo: v.optional(v.number()),
     notes: v.optional(v.string()),
+    /** Ignored — attribution comes from ctx.auth. */
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { createdBy, ...recordData } = args;
+    const { createdBy: _clientCreatedBy, ...recordData } = args;
+    // Writing pay is an admin action, mirroring `canManage` in the UI.
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
     const now = Date.now();
 
     const recordId = await ctx.db.insert('compensationRecords', {
       ...recordData,
       status: 'draft',
-      createdBy,
+      createdBy: scope.caller._id,
       createdAt: now,
       updatedAt: now,
     });
@@ -261,6 +367,10 @@ export const updateCompensationRecord = mutation({
     const { recordId, ...updates } = args;
     const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
+    await assertCanManageComp(ctx, record, 'compensation record');
+    // Approving/activating pay must go through approveCompensationRecord, which
+    // refuses self-approval; otherwise this mutation is a way around it.
+    assertNotGatedStatus(updates.status, 'compensation record');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     if (updates.amount !== undefined) patch.amount = updates.amount;
@@ -276,12 +386,14 @@ export const updateCompensationRecord = mutation({
 export const approveCompensationRecord = mutation({
   args: {
     recordId: v.id('compensationRecords'),
+    /** Ignored — the approver comes from ctx.auth. */
     approvedBy: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { recordId, approvedBy } = args;
+    const { recordId } = args;
     const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
+    const scope = await assertCanApproveComp(ctx, record, 'compensation record');
     if (record.status !== 'pending_approval') {
       throw new Error('Only pending records can be approved');
     }
@@ -289,7 +401,8 @@ export const approveCompensationRecord = mutation({
     const now = Date.now();
     await ctx.db.patch(recordId, {
       status: 'approved',
-      approvedBy,
+      // Attribution from ctx.auth, not the client-supplied approvedBy.
+      approvedBy: scope.caller._id,
       approvedAt: now,
       updatedAt: now,
     });
@@ -305,6 +418,7 @@ export const rejectCompensationRecord = mutation({
     const { recordId, rejectionReason } = args;
     const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
+    await assertCanApproveComp(ctx, record, 'compensation record');
     if (record.status !== 'pending_approval') {
       throw new Error('Only pending records can be rejected');
     }
@@ -325,6 +439,7 @@ export const deleteCompensationRecord = mutation({
     const { recordId } = args;
     const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
+    await assertCanManageComp(ctx, record, 'compensation record');
     if (record.status === 'approved' || record.status === 'active') {
       throw new Error('Cannot delete approved or active records');
     }
@@ -345,15 +460,17 @@ export const createCompensationBand = mutation({
     maxSalary: v.number(),
     medianSalary: v.optional(v.number()),
     frequency: v.union(v.literal('monthly'), v.literal('yearly')),
+    /** Ignored — attribution comes from ctx.auth. */
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { createdBy, ...bandData } = args;
+    const { createdBy: _clientCreatedBy, ...bandData } = args;
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
     const now = Date.now();
 
     const bandId = await ctx.db.insert('compensationBands', {
       ...bandData,
-      createdBy,
+      createdBy: scope.caller._id,
       createdAt: now,
       updatedAt: now,
     });
@@ -377,6 +494,7 @@ export const updateCompensationBand = mutation({
     const { bandId, ...updates } = args;
     const band = await ctx.db.get(bandId);
     if (!band) throw new Error('Compensation band not found');
+    await assertCanManageComp(ctx, band, 'compensation band');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     if (updates.name !== undefined) patch.name = updates.name;
@@ -399,6 +517,7 @@ export const deleteCompensationBand = mutation({
     const { bandId } = args;
     const band = await ctx.db.get(bandId);
     if (!band) throw new Error('Compensation band not found');
+    await assertCanManageComp(ctx, band, 'compensation band');
 
     await ctx.db.delete(bandId);
   },
@@ -424,16 +543,18 @@ export const createBonusProgram = mutation({
     bonusPercentage: v.optional(v.number()),
     periodStart: v.number(),
     periodEnd: v.number(),
+    /** Ignored — attribution comes from ctx.auth. */
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { createdBy, ...programData } = args;
+    const { createdBy: _clientCreatedBy, ...programData } = args;
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
     const now = Date.now();
 
     const programId = await ctx.db.insert('bonusPrograms', {
       ...programData,
       status: 'draft',
-      createdBy,
+      createdBy: scope.caller._id,
       createdAt: now,
       updatedAt: now,
     });
@@ -464,6 +585,7 @@ export const updateBonusProgram = mutation({
     const { programId, ...updates } = args;
     const program = await ctx.db.get(programId);
     if (!program) throw new Error('Bonus program not found');
+    await assertCanManageComp(ctx, program, 'bonus program');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     if (updates.name !== undefined) patch.name = updates.name;
@@ -489,16 +611,18 @@ export const createReviewCycle = mutation({
     allowSelfNomination: v.optional(v.boolean()),
     requireJustification: v.optional(v.boolean()),
     maxIncreasePercentage: v.optional(v.number()),
+    /** Ignored — attribution comes from ctx.auth. */
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { createdBy, ...cycleData } = args;
+    const { createdBy: _clientCreatedBy, ...cycleData } = args;
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
     const now = Date.now();
 
     const cycleId = await ctx.db.insert('compensationReviewCycles', {
       ...cycleData,
       status: 'draft',
-      createdBy,
+      createdBy: scope.caller._id,
       createdAt: now,
       updatedAt: now,
     });
@@ -530,6 +654,7 @@ export const updateReviewCycle = mutation({
     const { cycleId, ...updates } = args;
     const cycle = await ctx.db.get(cycleId);
     if (!cycle) throw new Error('Review cycle not found');
+    await assertCanManageComp(ctx, cycle, 'review cycle');
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     if (updates.name !== undefined) patch.name = updates.name;
@@ -562,6 +687,17 @@ export const createReviewEntry = mutation({
     performanceRating: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // A review entry states somebody's current and proposed salary — admin only,
+    // and the cycle it joins must belong to the same organization.
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
+    const cycle = await ctx.db.get(args.reviewCycleId);
+    if (!cycle) throw new Error('Review cycle not found');
+    if (!scopeOwnsRecord(scope, cycle) || cycle.organizationId !== args.organizationId) {
+      throw new Error('Review cycle belongs to another organization');
+    }
+    if (args.userId === scope.caller._id) {
+      throw new Error('Cannot create a compensation review entry for yourself');
+    }
     const now = Date.now();
 
     const entryId = await ctx.db.insert('compensationReviewEntries', {
@@ -597,6 +733,12 @@ export const updateReviewEntry = mutation({
     const { entryId, ...updates } = args;
     const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');
+    const scope = await assertCanManageComp(ctx, entry, 'review entry');
+    // Approving is gated separately (and self-approval is refused there).
+    assertNotGatedStatus(updates.status, 'review entry');
+    if (entry.userId === scope.caller._id) {
+      throw new Error('Cannot edit your own compensation review entry');
+    }
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     if (updates.proposedSalary !== undefined) patch.proposedSalary = updates.proposedSalary;
@@ -614,12 +756,14 @@ export const updateReviewEntry = mutation({
 export const approveReviewEntry = mutation({
   args: {
     entryId: v.id('compensationReviewEntries'),
+    /** Ignored — the reviewer comes from ctx.auth. */
     reviewedBy: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { entryId, reviewedBy } = args;
+    const { entryId } = args;
     const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');
+    const scope = await assertCanApproveComp(ctx, entry, 'review entry');
     if (entry.status !== 'submitted' && entry.status !== 'under_review') {
       throw new Error('Only submitted or under review entries can be approved');
     }
@@ -627,7 +771,7 @@ export const approveReviewEntry = mutation({
     const now = Date.now();
     await ctx.db.patch(entryId, {
       status: 'approved',
-      reviewedBy,
+      reviewedBy: scope.caller._id,
       reviewedAt: now,
       updatedAt: now,
     });
@@ -642,6 +786,7 @@ export const rejectReviewEntry = mutation({
     const { entryId } = args;
     const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');
+    await assertCanApproveComp(ctx, entry, 'review entry');
 
     await ctx.db.patch(entryId, {
       status: 'rejected',
