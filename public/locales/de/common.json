@@ -450,7 +450,9 @@
   },
   "actions": {
     "clearSelection": "Auswahl löschen",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "fullscreen": "Vollbild",
+    "exitFullscreen": "Vollbild beenden"
   },
   "placeholders": {
     "selectEmployee": "Mitarbeiter auswählen",

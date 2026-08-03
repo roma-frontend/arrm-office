@@ -11,6 +11,11 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { cn } from '@/lib/utils';
+import {
+  FULLSCREEN_PANEL_CLASSES,
+  FullscreenToggle,
+  useFullscreenPanel,
+} from '@/components/ui/fullscreen-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -433,6 +438,10 @@ export default function ReviewCycleWizard({ onClose, onSuccess }: ReviewCycleWiz
     setMounted(true);
   }, []);
 
+  // Windowed <-> fullscreen; the size transition rides the inline
+  // 	ransition: all that cssMotion already puts on the panel.
+  const { fullscreen, toggle } = useFullscreenPanel();
+
   if (!mounted) return null;
 
   return ReactDOM.createPortal(
@@ -441,15 +450,22 @@ export default function ReviewCycleWizard({ onClose, onSuccess }: ReviewCycleWiz
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-(--card) rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-y-auto"
+        className={cn(
+          'bg-(--card) rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto',
+          'panel-size-anim',
+          fullscreen && FULLSCREEN_PANEL_CLASSES,
+        )}
       >
         <div className="flex items-center justify-between p-6 pb-4 border-b border-(--border)">
           <h2 className="text-xl font-bold text-(--text-primary)">
             {t('compensation.newReviewCycle', 'New Review Cycle')}
           </h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <FullscreenToggle fullscreen={fullscreen} onToggle={toggle} className="p-2" />
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="px-6 pt-4">

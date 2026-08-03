@@ -450,7 +450,9 @@
   },
   "actions": {
     "clearSelection": "Մաքրել ընտրությունը",
-    "cancel": "Չեղարկել"
+    "cancel": "Չեղարկել",
+    "fullscreen": "Լիաէկրան",
+    "exitFullscreen": "Դուրս գալ լիաէկրան ռեժիմից"
   },
   "placeholders": {
     "selectEmployee": "Ընտրել աշխատակից",

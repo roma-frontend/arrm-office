@@ -450,7 +450,9 @@
   },
   "actions": {
     "clearSelection": "Clear Selection",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen"
   },
   "placeholders": {
     "selectEmployee": "Select employee",

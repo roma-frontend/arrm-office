@@ -450,7 +450,9 @@
   },
   "actions": {
     "clearSelection": "Очистить выбор",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "fullscreen": "На весь экран",
+    "exitFullscreen": "Выйти из полноэкранного режима"
   },
   "placeholders": {
     "selectEmployee": "Выберите сотрудника",
