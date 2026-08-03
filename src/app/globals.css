@@ -1793,16 +1793,49 @@ input[type='date']:focus {
 }
 
 .modal-backdrop-in {
-  animation: modal-backdrop-in 0.18s ease-out forwards;
+  animation: modal-backdrop-in 0.22s ease-out forwards;
 }
 
 .modal-panel-in {
-  animation: modal-panel-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modal-panel-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Closing: the shell keeps the panel mounted for the length of this animation
+   so a dialog fades out instead of blinking away. */
+@keyframes modal-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-panel-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+.modal-backdrop-out {
+  animation: modal-backdrop-out 0.18s ease-in forwards;
+}
+
+.modal-panel-out {
+  animation: modal-panel-out 0.18s ease-in forwards;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .modal-backdrop-in,
-  .modal-panel-in {
+  .modal-panel-in,
+  .modal-backdrop-out,
+  .modal-panel-out {
     animation-duration: 0.01ms;
   }
 }

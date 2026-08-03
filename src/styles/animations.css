@@ -276,9 +276,13 @@
    Radix keeps the element mounted for the exit animation because it can now
    observe one.
 
-   The content is centred with `translate(-50%, -50%)`, so every keyframe has
-   to carry that transform, otherwise the dialog jumps to the corner while
-   animating. */
+   The content is centred by Tailwind's `translate-x-[-50%] translate-y-[-50%]`
+   utilities, which compile to the CSS `translate` property. Keyframes must NOT
+   repeat that translation inside `transform`: the `translate` property composes
+   with `transform`, so a keyframe `translate(-50%, -50%)` stacks on top of it
+   and flings the dialog into the corner. The `translate` property is
+   independent of `transform`, so the scale/rise below keep the dialog centred
+   while it animates. */
 @keyframes dialogOverlayIn {
   from {
     opacity: 0;
@@ -300,22 +304,22 @@
 @keyframes dialogContentIn {
   from {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 12px)) scale(0.97);
+    transform: translateY(12px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes dialogContentOut {
   from {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0) scale(1);
   }
   to {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 8px)) scale(0.98);
+    transform: translateY(8px) scale(0.98);
   }
 }
 

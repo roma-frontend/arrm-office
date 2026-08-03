@@ -224,10 +224,7 @@ export default function ExpenseWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        allowFullscreen
-        className="sm:max-w-[640px] p-0 gap-0 max-h-[90vh] flex flex-col overflow-visible"
-      >
+      <DialogContent className="sm:max-w-[640px] p-0 gap-0 max-h-[90vh] flex flex-col overflow-visible">
         <div className="px-5 py-4 border-b border-(--border) bg-gradient-to-r from-(--primary)/10 to-transparent shrink-0">
           <DialogTitle>{t('expenses.newExpense')}</DialogTitle>
           <DialogDescription>{t('expenses.subtitle')}</DialogDescription>
