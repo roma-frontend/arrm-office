@@ -118,6 +118,10 @@ jobs:
       actions: read
       pull-requests: write
     steps:
+      # Must come first: this job runs a repo script (compare-coverage.mjs), and
+      # actions/checkout cleans the workspace, which would delete the coverage
+      # artifacts if it ran after the downloads below.
+      - uses: actions/checkout@v4
       - name: Download base branch coverage from main
         uses: dawidd6/action-download-artifact@v3
         continue-on-error: true
