@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import LeaveNotFound from '@/components/leaves/LeaveNotFound';
 import { calculateDays, type LeaveType } from '@/lib/types';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -134,13 +135,17 @@ export default function LeaveEditClient() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  if (!leave) {
+  if (leave === undefined) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-96 w-full" />
       </div>
     );
+  }
+
+  if (leave === null) {
+    return <LeaveNotFound />;
   }
 
   if (leave.status !== 'pending' && user?.role !== 'admin' && user?.role !== 'superadmin') {

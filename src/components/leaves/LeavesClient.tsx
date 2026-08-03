@@ -124,7 +124,12 @@ export function LeavesClient() {
   } = usePaginatedQuery(api.leaves.listLeavesPaginated, paginatedArgs, {
     initialNumItems: 30,
   });
-  const unreadCount = useQuery(api.leaves.getUnreadCount, user?.id ? {} : 'skip');
+  // Unread pending count — only admins maintain the review queue (the sound
+  // below is admin-only too), so skip the query for everyone else.
+  const unreadCount = useQuery(
+    api.leaves.getUnreadCount,
+    user?.id && user.role === 'admin' ? {} : 'skip',
+  );
 
   const { approveOptimistic, rejectOptimistic, deleteOptimistic } = useOptimisticLeaveActions();
   const markLeaveAsRead = useMutation(api.leaves.markLeaveAsRead);

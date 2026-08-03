@@ -1767,6 +1767,46 @@ input[type='date']:focus {
   animation: fade-in 0.4s ease-out forwards;
 }
 
+/* ── Modal appearance ───────────────────────────────────────────
+   Centred dialogs must not travel vertically on open: the shared
+   `fade-in` keyframe lifts content by 10px, which reads as a jump
+   for something that is already centred. These two keyframes fade
+   (and gently scale) in place instead. */
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-backdrop-in {
+  animation: modal-backdrop-in 0.18s ease-out forwards;
+}
+
+.modal-panel-in {
+  animation: modal-panel-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop-in,
+  .modal-panel-in {
+    animation-duration: 0.01ms;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    Additional Animation Utilities
    (All keyframes defined once above)

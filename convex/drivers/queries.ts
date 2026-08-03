@@ -450,6 +450,9 @@ export const getOrgDriverSchedules = query({
         return {
           ...schedule,
           driverName: driverUser?.name ?? 'Unknown',
+          // Exposed so the calendar can tell whether the viewer is the driver
+          // of this trip (personal-calendar scope), not just its booker.
+          driverUserId: driver?.userId,
           driverVehicle: driver?.vehicleInfo,
           bookedByName: bookedByUser?.name,
         };

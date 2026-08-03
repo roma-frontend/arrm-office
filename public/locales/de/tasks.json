@@ -77,9 +77,18 @@
     "comments": "Kommentare",
     "comment": "Kommentar",
     "commentsCount": "Kommentare",
-    "viewAllComments": "Alle Kommentare anzeigen",
     "attachments": "Anh\u00e4nge",
-    "allEmployees": "Alle Mitarbeiter"
+    "allEmployees": "Alle Mitarbeiter",
+    "editTask": "Aufgabe bearbeiten",
+    "title": "Titel",
+    "taskNotFound": "Aufgabe nicht gefunden",
+    "taskSaved": "Aufgabe aktualisiert",
+    "noComments": "Noch keine Kommentare",
+    "commentPlaceholder": "Kommentar schreiben...",
+    "postComment": "Senden",
+    "unknownUser": "Unbekannter Benutzer",
+    "taskDeleting": "Löschen...",
+    "taskDeleted": "Aufgabe gelöscht"
   },
   "taskStatus": {
     "pending": "Ausstehend",

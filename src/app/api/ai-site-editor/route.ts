@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createGroq } from '@ai-sdk/groq';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { logger } from '@/lib/logger';
 
-const _google = createGoogleGenerativeAI({
+// The AI Site Editor runs on Gemini (Google AI Studio). Override the model via
+// the GEMINI_MODEL env var if needed; the default flash model is cheap and
+// fast enough for codegen/CSS-patch work.
+const google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
-
-const groq = createGroq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 /** Задержка в мс */
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -22,9 +21,15 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 5000): 
     try {
       return await fn();
     } catch (error) {
-      const errMessage = error instanceof Error ? error.message : String(error);
+      // Lowercased so provider codes like Gemini's "RESOURCE_EXHAUSTED" and
+      // "RATE_LIMIT_EXCEEDED" are matched regardless of case.
+      const errMessage = (error instanceof Error ? error.message : String(error)).toLowerCase();
       const isRateLimit =
-        errMessage.includes('quota') || errMessage.includes('rate') || errMessage.includes('429');
+        errMessage.includes('quota') ||
+        errMessage.includes('rate') ||
+        errMessage.includes('429') ||
+        errMessage.includes('resource_exhausted') ||
+        errMessage.includes('too many requests');
       if (isRateLimit && i < retries - 1) {
         const wait = delayMs * (i + 1);
         logger.log(`[AI Site Editor] Rate limit hit, retrying in ${wait}ms...`);
@@ -478,7 +483,7 @@ USER REQUEST: ${message}`;
 
   const result = await withRetry(() =>
     generateText({
-      model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
+      model: google(GEMINI_MODEL),
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.2,
       maxOutputTokens: 4000,
@@ -650,7 +655,7 @@ IMPORTANT: Only output FILE blocks for files that need to change. Do NOT rewrite
 
   const result = await withRetry(() =>
     generateText({
-      model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
+      model: google(GEMINI_MODEL),
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
       maxOutputTokens: 8000,

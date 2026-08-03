@@ -46,7 +46,10 @@
     "edit": "Antrag bearbeiten",
     "updatedSuccess": "Urlaubsantrag erfolgreich aktualisiert",
     "updateFailed": "Urlaubsantrag konnte nicht aktualisiert werden",
-    "cannotEditStatus": "Nur ausstehende Anträge können bearbeitet werden"
+    "cannotEditStatus": "Nur ausstehende Anträge können bearbeitet werden",
+    "notFound": "Antrag nicht gefunden",
+    "notFoundHint": "Dieser Antrag existiert nicht oder Sie haben keinen Zugriff darauf.",
+    "backToLeaves": "Zurück zu den Anträgen"
   },
   "leaveTypes": {
     "paid": "Bezahlter Urlaub",

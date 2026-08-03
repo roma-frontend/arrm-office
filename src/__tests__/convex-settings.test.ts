@@ -187,24 +187,26 @@ describe('settings.getUserSettings', () => {
     });
   });
 
-  it('creates settings doc from user fallback when no settings exist', async () => {
+  it('derives defaults from the user doc without creating settings (queries cannot write)', async () => {
     mockGetAuthCaller.mockResolvedValue(callerA);
-    // settings query first() returns null from chain (makeCtx(null)), then user lookup
-    mockGet
-      .mockResolvedValueOnce(sampleUser) // ctx.db.get(userId) for fallback
-      .mockResolvedValueOnce(sampleSettings); // ctx.db.get(settingsId) after insert
+    // No settings doc (makeCtx(null)) → fall back to the users table, read-only.
+    mockGet.mockResolvedValue(sampleUser);
 
     const ctx = makeCtx(null);
     const result = await settings.getUserSettings.handler(ctx, {});
 
-    expect(mockInsert).toHaveBeenCalledWith(
-      'userSettings',
-      expect.objectContaining({
-        userId: 'user-1',
-        language: 'en',
-      }),
-    );
-    expect(result).not.toBeNull();
+    expect(mockInsert).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      language: 'en',
+      timezone: 'UTC',
+      dateFormat: 'DD/MM/YYYY',
+      timeFormat: '24h',
+      firstDayOfWeek: 'monday',
+      theme: 'system',
+      notificationsEnabled: true,
+      emailNotifications: true,
+      pushNotifications: false,
+    });
   });
 
   it('throws when user not found during fallback creation', async () => {

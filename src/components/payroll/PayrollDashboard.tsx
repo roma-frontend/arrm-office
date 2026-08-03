@@ -224,15 +224,6 @@ export default function PayrollDashboard() {
         </Card>
       )}
 
-      {!isAdmin && (
-        <Card>
-          <CardContent className="py-12 text-center text-(--text-muted)">
-            <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>{t('errors.unauthorized')}</p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Upcoming Pay Periods Banner */}
       {orgId && hasAnyData && (
         <motion.div variants={itemVariants}>
@@ -383,8 +374,9 @@ export default function PayrollDashboard() {
         </div>
       )}
 
-      {/* Recent Runs */}
-      {orgId && (
+      {/* Recent Runs — admin/supervisor management view, not shown to
+          employees (they get the PayslipViewer self-service section instead) */}
+      {orgId && isAdmin && (
         <motion.div variants={itemVariants}>
           <Card>
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between">

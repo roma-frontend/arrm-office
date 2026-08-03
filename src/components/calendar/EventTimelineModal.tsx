@@ -15,7 +15,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
-import { motion, AnimatePresence } from '@/lib/cssMotion';
+import { motion } from '@/lib/cssMotion';
 import { toast } from 'sonner';
 import {
   Bell,
@@ -198,7 +198,7 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <AnimatePresence>
+    <>
       {timeline && (
         <div
           className="fixed inset-0 lg:left-60 lg:top-16 z-[60] flex items-center justify-center p-3 sm:p-6"
@@ -206,21 +206,13 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
           aria-modal="true"
           aria-label={timeline.title}
         >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/65 backdrop-blur-md"
+          <div
+            className="modal-backdrop-in absolute inset-0 bg-black/65 backdrop-blur-md"
             onClick={onClose}
           />
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 24 }}
-            transition={{ type: 'spring', damping: 30, stiffness: 380 }}
-            className="relative z-10 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl border border-(--border) bg-(--card) shadow-2xl"
+          <div
+            className="modal-panel-in relative z-10 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl border border-(--border) bg-(--card) shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <TimelineHeader
@@ -246,10 +238,10 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
               onDownload={handleDownloadIcs}
               onClose={onClose}
             />
-          </motion.div>
+          </div>
         </div>
       )}
-    </AnimatePresence>,
+    </>,
     document.body,
   );
 }

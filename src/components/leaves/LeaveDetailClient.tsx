@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import LeaveNotFound from '@/components/leaves/LeaveNotFound';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import {
@@ -123,7 +124,7 @@ export default function LeaveDetailClient() {
     }
   };
 
-  if (!leave) {
+  if (leave === undefined) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -133,6 +134,10 @@ export default function LeaveDetailClient() {
         </div>
       </div>
     );
+  }
+
+  if (leave === null) {
+    return <LeaveNotFound />;
   }
 
   const startDate = new Date(leave.startDate);

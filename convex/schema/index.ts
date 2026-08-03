@@ -47,6 +47,7 @@ import { assets } from './assets';
 import { leaveSettings } from './leaveSettings';
 import { projects } from './projects';
 import { integrations } from './integrations';
+import { meetingRooms } from './meetingRooms';
 
 export default defineSchema({
   ...organizations,
@@ -97,6 +98,7 @@ export default defineSchema({
   ...leaveSettings,
   ...projects,
   ...integrations,
+  ...meetingRooms,
 });
 
 export {
@@ -148,4 +150,5 @@ export {
   leaveSettings,
   projects,
   integrations,
+  meetingRooms,
 };

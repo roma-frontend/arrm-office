@@ -30,6 +30,8 @@ export const notifications = {
       v.literal('onboarding_buddy_assigned'),
       v.literal('onboarding_task_overdue'),
       v.literal('asset_assigned'),
+      v.literal('room_booked'),
+      v.literal('room_booking_cancelled'),
     ),
     title: v.string(),
     message: v.string(),

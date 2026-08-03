@@ -64,6 +64,7 @@ function isDashboardPage(path: string): boolean {
     '/employees',
     '/tasks',
     '/calendar',
+    '/rooms',
     '/leaves',
     '/attendance',
     '/settings',

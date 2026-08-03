@@ -70,6 +70,8 @@ export interface CalendarEvent {
   attachmentUrl?: string;
   /** Set when the event comes from the backend; absent for drafts. */
   createdAt?: number;
+  /** Organizer id — set by the backend; used by the personal calendar scope. */
+  createdBy?: string;
 }
 
 interface OrgUser {

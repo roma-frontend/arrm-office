@@ -136,6 +136,7 @@ const PROTECTED_PREFIXES = [
   '/analytics',
   '/reports',
   '/calendar',
+  '/rooms',
   '/settings',
   '/profile',
   '/chat',

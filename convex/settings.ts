@@ -10,19 +10,28 @@ import type { Doc, Id } from './_generated/dataModel';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 
-// Helper: get or create userSettings doc for a user
-async function getOrCreateSettings(ctx: QueryCtx, userId: Id<'users'>) {
+// Helper: read the existing settings doc for a user (read-only, safe in queries).
+async function getExistingSettings(ctx: QueryCtx, userId: Id<'users'>) {
   const existing = await ctx.db
     .query('userSettings')
     .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
-  if (existing) return existing as Doc<'userSettings'>;
+  return (existing ?? null) as Doc<'userSettings'> | null;
+}
+
+// Helper: get or create userSettings doc for a user.
+// Mutations only — a query context cannot insert, so getUserSettings never
+// calls this (previously the cast hid that `ctx.db.insert` doesn't exist on a
+// query ctx, crashing at runtime with "db.insert is not a function").
+async function getOrCreateSettings(ctx: MutationCtx, userId: Id<'users'>) {
+  const existing = await getExistingSettings(ctx, userId);
+  if (existing) return existing;
 
   // Fallback: read from users table (pre-migration) and create settings doc
   const user = (await ctx.db.get(userId)) as Doc<'users'> | null;
   if (!user) throw new Error('User not found');
 
-  const settingsId = await (ctx.db as unknown as MutationCtx['db']).insert('userSettings', {
+  const settingsId = await ctx.db.insert('userSettings', {
     userId,
     language: user.language,
     timezone: user.timezone,
@@ -56,17 +65,21 @@ export const getUserSettings = query({
   handler: async (ctx, _args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) return null;
-    const settings = await getOrCreateSettings(ctx, caller._id);
+    // Queries cannot write, so this never creates a settings doc — read it or
+    // fall back to the users table fields (pre-migration) with hard defaults.
+    const settings = await getExistingSettings(ctx, caller._id);
+    const user = settings ? null : ((await ctx.db.get(caller._id)) as Doc<'users'> | null);
+    if (!settings && !user) throw new Error('User not found');
     return {
-      language: settings.language ?? 'en',
-      timezone: settings.timezone ?? 'UTC',
-      dateFormat: settings.dateFormat ?? 'DD/MM/YYYY',
-      timeFormat: settings.timeFormat ?? '24h',
-      firstDayOfWeek: settings.firstDayOfWeek ?? 'monday',
-      theme: settings.theme ?? 'system',
-      notificationsEnabled: settings.notificationsEnabled ?? true,
-      emailNotifications: settings.emailNotifications ?? true,
-      pushNotifications: settings.pushNotifications ?? false,
+      language: settings?.language ?? user?.language ?? 'en',
+      timezone: settings?.timezone ?? user?.timezone ?? 'UTC',
+      dateFormat: settings?.dateFormat ?? user?.dateFormat ?? 'DD/MM/YYYY',
+      timeFormat: settings?.timeFormat ?? user?.timeFormat ?? '24h',
+      firstDayOfWeek: settings?.firstDayOfWeek ?? user?.firstDayOfWeek ?? 'monday',
+      theme: settings?.theme ?? user?.theme ?? 'system',
+      notificationsEnabled: settings?.notificationsEnabled ?? user?.notificationsEnabled ?? true,
+      emailNotifications: settings?.emailNotifications ?? user?.emailNotifications ?? true,
+      pushNotifications: settings?.pushNotifications ?? user?.pushNotifications ?? false,
     };
   },
 });

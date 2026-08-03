@@ -77,9 +77,18 @@
     "comments": "Մեկնաբանություններ",
     "comment": "Մեկնաբանություն",
     "commentsCount": "մեկնաբանություններ",
-    "viewAllComments": "Դիտել բոլոր մեկնաբանությունները",
     "attachments": "Կցորդներ",
-    "allEmployees": "Բոլոր աշխատակիցները"
+    "allEmployees": "Բոլոր աշխատակիցները",
+    "editTask": "Խմբագրել առաջադրանքը",
+    "title": "Վերնագիր",
+    "taskNotFound": "Առաջադրանքը չի գտնվել",
+    "taskSaved": "Առաջադրանքը թարմացվել է",
+    "noComments": "Դեռ մեկնաբանություններ չկան",
+    "commentPlaceholder": "Գրեք մեկնաբանություն...",
+    "postComment": "Ուղարկել",
+    "unknownUser": "Անհայտ օգտատեր",
+    "taskDeleting": "Ջնջվում է...",
+    "taskDeleted": "Առաջադրանքը ջնջվել է"
   },
   "taskStatus": {
     "pending": "Սպասման մեջ",

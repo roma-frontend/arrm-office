@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -10,10 +10,22 @@ import { useNow } from '@/hooks/useNow';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Clock,
@@ -126,8 +138,48 @@ export default function TaskDetailClient() {
     task?.objectiveId ? { objectiveId: task.objectiveId as Id<'objectives'> } : 'skip',
   );
 
+  // Comments: fetched separately (ordered asc with authors) so the detail
+  // page can list them and let anyone add to the discussion.
+  const comments = useQuery(api.tasks.getTaskComments, taskId ? { taskId } : 'skip');
+  const addComment = useMutation(api.tasks.addComment);
+  const [commentText, setCommentText] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+
+  const secureDeleteTask = useMutation(api.tasks.secureDeleteTask);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [_isUpdating, _setIsUpdating] = useState(false);
   const now = useNow();
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim() || !user?.id) return;
+    setIsPosting(true);
+    try {
+      await addComment({ taskId, authorId: user.id as Id<'users'>, content: commentText.trim() });
+      setCommentText('');
+    } catch (error) {
+      console.error('Failed to add comment', error);
+      toast.error(t('common.error', 'Something went wrong'));
+    } finally {
+      setIsPosting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await secureDeleteTask({ taskId });
+      toast.success(t('tasksClient.taskDeleted'));
+      router.push('/tasks');
+    } catch (error) {
+      console.error('Failed to delete task', error);
+      toast.error(t('common.error', 'Something went wrong'));
+      setIsDeleting(false);
+    }
+  };
 
   if (!task) {
     return (
@@ -144,6 +196,10 @@ export default function TaskDetailClient() {
   const isOverdue =
     task.deadline && new Date(task.deadline) < new Date() && task.status !== 'completed';
   const deadline = task.deadline ? new Date(task.deadline) : null;
+  // Edit/delete mutations are server-gated to staff (admin/supervisor) and
+  // superadmin — don't show the buttons to employees/drivers.
+  const canManage =
+    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
   return (
     <div className="space-y-6">
@@ -160,25 +216,25 @@ export default function TaskDetailClient() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.push(`/tasks/${taskId}/edit`)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              // Delete logic here
-              router.push('/tasks');
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.push(`/tasks/${taskId}/edit`)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              aria-label={t('tasksClient.deleteTask')}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -409,25 +465,96 @@ export default function TaskDetailClient() {
         </Card>
       )}
 
-      {task.commentCount !== undefined && task.commentCount > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              {t('tasksClient.comments')}
-            </CardTitle>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            {t('tasksClient.comments')}
+            {task.commentCount !== undefined && task.commentCount > 0 && (
+              <Badge variant="secondary">{task.commentCount}</Badge>
+            )}
+          </CardTitle>
+          {task.commentCount !== undefined && task.commentCount > 0 && (
             <CardDescription>
               {task.commentCount}{' '}
               {task.commentCount === 1 ? t('tasksClient.comment') : t('tasksClient.commentsCount')}
             </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full">
-              {t('tasksClient.viewAllComments')}
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!comments || comments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('tasksClient.noComments')}</p>
+          ) : (
+            <ul className="space-y-4">
+              {comments.map((c) => (
+                <li key={c._id} className="flex gap-3">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={c.author?.avatarUrl ?? c.author?.faceImageUrl} />
+                    <AvatarFallback>{(c.author?.name ?? '?').charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-sm font-medium">
+                        {c.author?.name ?? t('tasksClient.unknownUser')}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {format(new Date(c._creationTime), 'dd MMM yyyy HH:mm', {
+                          locale: dateLocale,
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words mt-0.5">
+                      {c.content}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form onSubmit={handleCommentSubmit} className="flex gap-2">
+            <Input
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder={t('tasksClient.commentPlaceholder')}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={isPosting || !commentText.trim()}>
+              {t('tasksClient.postComment')}
             </Button>
-          </CardContent>
-        </Card>
-      )}
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!isDeleting) setIsDeleteDialogOpen(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('tasksClient.deleteTask')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('tasksClient.deleteConfirm')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting} type="button">
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleConfirmDelete();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {isDeleting ? t('tasksClient.taskDeleting') : t('tasksClient.deleteTask')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

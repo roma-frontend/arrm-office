@@ -114,6 +114,34 @@ function getPeriodLabel(period: string, t: TFunction): string {
   return `${t(monthNames[m - 1] ?? '', fallbacks[m - 1] ?? '')} ${year}`;
 }
 
+// Map of server/derived English labels to i18n keys. Covers the admin data
+// from getUpcomingPayPeriods ('Current period', 'Next period', 'Pending
+// approval', 'Ready to pay', 'This week') and the employee path labels.
+const PERIOD_LABEL_KEYS: Record<string, string> = {
+  'Current period': 'payroll.periodEnding',
+  'Next period': 'payroll.nextPeriod',
+  'Pending approval': 'payroll.pendingApproval',
+  'Ready to pay': 'payroll.readyToPay',
+  'This week': 'payroll.thisWeek',
+};
+
+function getPeriodTitle(label: string, t: TFunction): string {
+  const key = PERIOD_LABEL_KEYS[label];
+  if (key) return t(key, label);
+  // Numbered labels ('Pay period 2', 'Week 3') carry a numeric suffix.
+  const payPeriod = label.match(/^Pay period (\d+)$/);
+  if (payPeriod) {
+    return t('payroll.payPeriodNumber', 'Pay period {{number}}', {
+      number: payPeriod[1],
+    });
+  }
+  const week = label.match(/^Week (\d+)$/);
+  if (week) {
+    return t('payroll.weekNumber', 'Week {{number}}', { number: week[1] });
+  }
+  return label;
+}
+
 // ── Props ──
 interface UpcomingPeriod {
   period: string;
@@ -229,14 +257,12 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-semibold text-(--text-primary)">
-                  {mostUrgent.label === 'Current period'
-                    ? t('payroll.periodEnding', 'Period ending')
-                    : mostUrgent.label}
+                  {getPeriodTitle(mostUrgent.label, t)}
                 </span>
                 <Badge variant={URGENCY_CONFIG[mostUrgent.urgency].badge} className="text-[10px]">
                   {mostUrgent.daysRemaining === 0
                     ? t('payroll.dueToday', 'Due today')
-                    : `${mostUrgent.daysRemaining}d`}
+                    : `${mostUrgent.daysRemaining}${t('common.daysShort', 'd')}`}
                 </Badge>
               </div>
               <p className="text-xs text-(--text-muted) mt-0.5">
@@ -347,11 +373,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-(--text-primary)">
-                        {period.label === 'Current period'
-                          ? t('payroll.periodEnding', 'Period ending')
-                          : period.label === 'Next period'
-                            ? t('payroll.nextPeriod', 'Next period')
-                            : period.label}
+                        {getPeriodTitle(period.label, t)}
                       </span>
                       <Badge
                         variant={STATUS_BADGE[period.status] ?? 'secondary'}

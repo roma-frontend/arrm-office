@@ -26,7 +26,7 @@ export const getAllLeaves = query({
     const requester = await getAuthCaller(ctx);
     const requesterId = requester?._id;
     const organizationId = args.organizationId;
-    // If organizationId is provided directly, use it
+    // If organizationId is provided directly (server-side calls), use it
     if (organizationId && !requesterId) {
       const leaves = await ctx.db
         .query('leaveRequests')
@@ -44,12 +44,20 @@ export const getAllLeaves = query({
     let leaves;
     if (isSuperadmin(requester)) {
       leaves = await ctx.db.query('leaveRequests').order('desc').take(MAX_PAGE_SIZE);
-    } else {
-      // User without organization — return empty array (needs onboarding)
+    } else if (requester.role === 'admin' || requester.role === 'supervisor') {
+      // Staff sees the org queue
       if (!requester.organizationId) return [];
       leaves = await ctx.db
         .query('leaveRequests')
         .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
+        .order('desc')
+        .take(MAX_PAGE_SIZE);
+    } else {
+      // Employees/drivers: only their own requests — a client-supplied
+      // organizationId must never widen this to the org queue.
+      leaves = await ctx.db
+        .query('leaveRequests')
+        .withIndex('by_user', (q) => q.eq('userId', requester._id))
         .order('desc')
         .take(MAX_PAGE_SIZE);
     }
@@ -71,24 +79,43 @@ export const listLeavesPaginated = query({
     if (!requester) return { page: [], isDone: true, continueCursor: '' };
 
     const userIsSuperadmin = isSuperadmin(requester);
+    const isStaff = requester.role === 'admin' || requester.role === 'supervisor';
 
     let result;
-    if (args.organizationId) {
-      result = await ctx.db
-        .query('leaveRequests')
-        .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-        .order('desc')
-        .paginate(args.paginationOpts);
-    } else if (userIsSuperadmin) {
-      result = await ctx.db.query('leaveRequests').order('desc').paginate(args.paginationOpts);
-    } else if (requester.organizationId) {
-      result = await ctx.db
-        .query('leaveRequests')
-        .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
-        .order('desc')
-        .paginate(args.paginationOpts);
+    if (userIsSuperadmin) {
+      // Superadmin: all leaves, optionally scoped to a chosen org.
+      result = args.organizationId
+        ? await ctx.db
+            .query('leaveRequests')
+            .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+            .order('desc')
+            .paginate(args.paginationOpts)
+        : await ctx.db.query('leaveRequests').order('desc').paginate(args.paginationOpts);
+    } else if (isStaff) {
+      // Admins/supervisors: org-wide (chosen org or their own).
+      if (args.organizationId) {
+        result = await ctx.db
+          .query('leaveRequests')
+          .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+          .order('desc')
+          .paginate(args.paginationOpts);
+      } else if (requester.organizationId) {
+        result = await ctx.db
+          .query('leaveRequests')
+          .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
+          .order('desc')
+          .paginate(args.paginationOpts);
+      } else {
+        return { page: [], isDone: true, continueCursor: '' };
+      }
     } else {
-      return { page: [], isDone: true, continueCursor: '' };
+      // Employees/drivers: only their own requests — a client-supplied
+      // organizationId must never widen this to the org queue.
+      result = await ctx.db
+        .query('leaveRequests')
+        .withIndex('by_user', (q) => q.eq('userId', requester._id))
+        .order('desc')
+        .paginate(args.paginationOpts);
     }
 
     const enriched = await enrichLeavesWithUserData(ctx, result.page);
@@ -103,11 +130,32 @@ export const listLeavesPaginated = query({
 export const getLeavesForOrganization = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, { organizationId }) => {
-    const leaves = await ctx.db
-      .query('leaveRequests')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .order('desc')
-      .take(MAX_PAGE_SIZE);
+    const requester = await getAuthCaller(ctx);
+    if (!requester) return [];
+
+    const userIsSuperadmin = isSuperadmin(requester);
+    const isStaff = requester.role === 'admin' || requester.role === 'supervisor';
+    const sameOrg = requester.organizationId === organizationId;
+
+    let leaves;
+    if (userIsSuperadmin || (isStaff && sameOrg)) {
+      leaves = await ctx.db
+        .query('leaveRequests')
+        .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+        .order('desc')
+        .take(MAX_PAGE_SIZE);
+    } else if (!isStaff) {
+      // Employees/drivers: only their own requests — the calendar must not
+      // expose the org queue through this query either.
+      leaves = await ctx.db
+        .query('leaveRequests')
+        .withIndex('by_user', (q) => q.eq('userId', requester._id))
+        .order('desc')
+        .take(MAX_PAGE_SIZE);
+    } else {
+      // Staff querying a foreign organization: denied.
+      return [];
+    }
 
     return enrichLeavesWithUserData(ctx, leaves);
   },
@@ -168,15 +216,25 @@ export const getLeaveStats = query({
     const requester = await getAuthCaller(ctx);
     if (!requester) return [];
 
-    // Superadmin sees stats across all organizations
+    // Superadmin sees stats across all organizations; staff sees the org
+    // queue; employees/drivers only get their own personal stats.
     let all;
     if (isSuperadmin(requester)) {
       all = await ctx.db.query('leaveRequests').order('desc').take(MAX_PAGE_SIZE);
-    } else {
+    } else if (requester.role === 'admin' || requester.role === 'supervisor') {
       if (!requester.organizationId) throw new Error('User does not belong to an organization');
       all = await ctx.db
         .query('leaveRequests')
         .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
+        .order('desc')
+        .take(MAX_PAGE_SIZE);
+    } else {
+      // Employees/drivers: personal stats only — the org-wide review queue
+      // (pending count) and onLeaveToday must not leak.
+      all = await ctx.db
+        .query('leaveRequests')
+        .withIndex('by_user', (q) => q.eq('userId', requester._id))
+        .order('desc')
         .take(MAX_PAGE_SIZE);
     }
 
@@ -201,7 +259,9 @@ export const getUnreadCount = query({
     const requester = await getAuthCaller(ctx);
     if (!requester) return 0;
 
-    // Superadmin sees all unread across all organizations
+    // The unread counter is the pending-review queue: superadmin sees all
+    // organizations, staff sees their own org. Employees/drivers have no
+    // review queue — their count is always 0 so org-wide numbers never leak.
     let unread: number;
     if (isSuperadmin(requester)) {
       const allLeaves = await ctx.db.query('leaveRequests').order('desc').take(MAX_PAGE_SIZE);
@@ -209,7 +269,7 @@ export const getUnreadCount = query({
       unread = allLeaves.filter(
         (l) => (l.isRead === false || l.isRead === undefined) && l.status === 'pending',
       ).length;
-    } else {
+    } else if (requester.role === 'admin' || requester.role === 'supervisor') {
       if (!requester.organizationId) throw new Error('User does not belong to an organization');
       const orgLeaves = await ctx.db
         .query('leaveRequests')
@@ -219,6 +279,8 @@ export const getUnreadCount = query({
       unread = orgLeaves.filter(
         (l) => (l.isRead === false || l.isRead === undefined) && l.status === 'pending',
       ).length;
+    } else {
+      return 0;
     }
 
     return unread;
@@ -292,6 +354,19 @@ export const getLeaveById = query({
   handler: async (ctx, { leaveId }) => {
     const leave = await ctx.db.get(leaveId);
     if (!leave) return null;
+
+    // RBAC: owner, same-org admin/supervisor, or superadmin may view a leave.
+    // Everything else returns null (graceful query convention) so employees
+    // cannot read other people's requests via a direct /leaves/:id URL.
+    const requester = await getAuthCaller(ctx);
+    if (!requester) return null;
+    const userIsSuperadmin = isSuperadmin(requester);
+    const sameOrgStaff =
+      (requester.role === 'admin' || requester.role === 'supervisor') &&
+      requester.organizationId === leave.organizationId;
+    if (!userIsSuperadmin && !sameOrgStaff && leave.userId !== requester._id) {
+      return null;
+    }
 
     const user = await ctx.db.get(leave.userId);
     const profile = leave.userId ? await getProfile(ctx, leave.userId) : null;

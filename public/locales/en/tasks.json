@@ -77,9 +77,18 @@
     "comments": "Comments",
     "comment": "Comment",
     "commentsCount": "comments",
-    "viewAllComments": "View All Comments",
     "attachments": "Attachments",
-    "allEmployees": "All Employees"
+    "allEmployees": "All Employees",
+    "editTask": "Edit Task",
+    "title": "Title",
+    "taskNotFound": "Task not found",
+    "taskSaved": "Task updated",
+    "noComments": "No comments yet",
+    "commentPlaceholder": "Write a comment...",
+    "postComment": "Post",
+    "unknownUser": "Unknown user",
+    "taskDeleting": "Deleting...",
+    "taskDeleted": "Task deleted"
   },
   "taskStatus": {
     "pending": "Pending",

@@ -46,7 +46,10 @@
     "edit": "Edit Leave Request",
     "updatedSuccess": "Leave request updated successfully",
     "updateFailed": "Failed to update leave request",
-    "cannotEditStatus": "Only pending leave requests can be edited"
+    "cannotEditStatus": "Only pending leave requests can be edited",
+    "notFound": "Request not found",
+    "notFoundHint": "This request does not exist or you do not have access to it.",
+    "backToLeaves": "Back to Leaves"
   },
   "leaveTypes": {
     "paid": "Paid Vacation",

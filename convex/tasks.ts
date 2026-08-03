@@ -270,21 +270,36 @@ export const updateTask = mutation({
   },
   handler: async (ctx, args) => {
     const { taskId, ...updates } = args;
+
+    // RBAC: only same-org admins/supervisors or superadmins may edit a task.
+    const task = await ctx.db.get(taskId);
+    if (!task) throw new Error('Task not found');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const userIsSuperadmin = isSuperadmin(caller);
+    const sameOrgStaff =
+      (caller.role === 'admin' || caller.role === 'supervisor') &&
+      caller.organizationId === task.organizationId;
+    if (!userIsSuperadmin && !sameOrgStaff) {
+      throw new Error('Access denied: cross-organization operation');
+    }
+
     const filtered = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     await ctx.db.patch(taskId, { ...filtered, updatedAt: Date.now() });
 
-    // Audit log: task updated
-    const taskForUpdate = await ctx.db.get(taskId);
-    if (taskForUpdate?.organizationId && taskForUpdate?.assignedBy) {
+    // Audit log: task updated — record the authenticated caller as the actor
+    // (legacy tasks without an org can only be edited by a superadmin, and the
+    // org-less audit row would be useless, so skip it).
+    if (task.organizationId) {
       await ctx.db.insert('auditLogs', {
-        organizationId: taskForUpdate.organizationId,
-        userId: taskForUpdate.assignedBy,
+        organizationId: task.organizationId,
+        userId: caller._id,
         action: 'task_updated',
         target: taskId,
         details: JSON.stringify({
           updatedFields: Object.keys(filtered),
-          title: updates.title || taskForUpdate.title,
-          status: updates.status || taskForUpdate.status,
+          title: updates.title || task.title,
+          status: updates.status || task.status,
         }),
         createdAt: Date.now(),
       });

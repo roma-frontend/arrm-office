@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   CalendarDays,
+  DoorOpen,
   Calendar,
   Users,
   Settings,
@@ -121,6 +122,12 @@ const navItems: NavEntry[] = [
     href: '/calendar',
     labelKey: 'nav.calendar',
     icon: CalendarDays,
+    roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
+  },
+  {
+    href: '/rooms',
+    labelKey: 'nav.rooms',
+    icon: DoorOpen,
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
   },
   {

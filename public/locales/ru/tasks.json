@@ -77,9 +77,18 @@
     "comments": "Комментарии",
     "comment": "Комментарий",
     "commentsCount": "комментариев",
-    "viewAllComments": "Посмотреть все комментарии",
     "attachments": "Вложения",
-    "allEmployees": "Все сотрудники"
+    "allEmployees": "Все сотрудники",
+    "editTask": "Редактировать задачу",
+    "title": "Название",
+    "taskNotFound": "Задача не найдена",
+    "taskSaved": "Задача обновлена",
+    "noComments": "Комментариев пока нет",
+    "commentPlaceholder": "Напишите комментарий...",
+    "postComment": "Отправить",
+    "unknownUser": "Неизвестный пользователь",
+    "taskDeleting": "Удаление...",
+    "taskDeleted": "Задача удалена"
   },
   "taskStatus": {
     "pending": "Ожидает",
