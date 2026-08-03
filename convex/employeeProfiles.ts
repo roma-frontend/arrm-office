@@ -1,13 +1,68 @@
+import type { QueryCtx, MutationCtx } from './_generated/server';
+import type { Id } from './_generated/dataModel';
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { isSuperadmin } from './lib/auth';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { SMALL_LIST_CAP, DEFAULT_LIST_CAP } from './lib/limits';
 
+/**
+ * Shared access rule for one employee's profile data (profile, documents,
+ * salary, passport, performance). Mirrors recordTaxIdVerification /
+ * updateExtendedProfile: same-org admins/supervisors, superadmin (role or
+ * bootstrap email), or the employee themself.
+ *
+ * `selfAllowed: false` restricts to staff only — used for records an employee
+ * must not write about themselves (salary, performance metrics).
+ *
+ * Returns null when access is denied so *queries* can degrade to empty data
+ * instead of tripping an error boundary; mutations turn null into a throw via
+ * assertCanManageEmployee below.
+ */
+async function resolveEmployeeAccess(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<'users'>,
+  opts: { selfAllowed?: boolean } = {},
+) {
+  const { selfAllowed = true } = opts;
+  const caller = await getAuthCaller(ctx);
+  if (!caller) return null;
+
+  const target = await ctx.db.get(userId);
+  if (!target) return null;
+
+  if (isSuperadmin(caller)) return caller;
+
+  const isOrgStaff =
+    (caller.role === 'admin' || caller.role === 'supervisor') &&
+    !!caller.organizationId &&
+    caller.organizationId === target.organizationId;
+  if (isOrgStaff) return caller;
+
+  if (selfAllowed && caller._id === userId) return caller;
+
+  return null;
+}
+
+/** Mutation variant: throws instead of returning null. */
+async function assertCanManageEmployee(
+  ctx: MutationCtx,
+  userId: Id<'users'>,
+  opts: { selfAllowed?: boolean } = {},
+) {
+  const caller = await resolveEmployeeAccess(ctx, userId, opts);
+  if (!caller) throw new Error('Not authorized to manage this employee');
+  return caller;
+}
+
 // ── Get Employee Profile with Extended Data ──────────────────────────────────
 export const getEmployeeProfile = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    // Profile bundles documents and performance data — restrict to same-org
+    // staff, superadmin, or the employee themself.
+    if (!(await resolveEmployeeAccess(ctx, args.userId))) return null;
+
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
 
@@ -52,6 +107,8 @@ export const updateBiography = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    await assertCanManageEmployee(ctx, args.userId);
+
     const existing = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -93,6 +150,13 @@ export const uploadDocument = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const caller = await assertCanManageEmployee(ctx, args.userId);
+    // uploaderId is client-supplied; bind it to the verified caller so an
+    // upload cannot be attributed to someone else.
+    if (args.uploaderId !== caller._id) {
+      throw new Error('uploaderId must match the authenticated caller');
+    }
+
     return await ctx.db.insert('employeeDocuments', {
       userId: args.userId,
       uploaderId: args.uploaderId,
@@ -110,6 +174,8 @@ export const uploadDocument = mutation({
 export const getDocuments = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    if (!(await resolveEmployeeAccess(ctx, args.userId))) return [];
+
     return await ctx.db
       .query('employeeDocuments')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -122,6 +188,11 @@ export const getDocuments = query({
 export const deleteDocument = mutation({
   args: { documentId: v.id('employeeDocuments') },
   handler: async (ctx, args) => {
+    // Authorize against the document's owner — the id alone carries no scope.
+    const doc = await ctx.db.get(args.documentId);
+    if (!doc) return;
+    await assertCanManageEmployee(ctx, doc.userId);
+
     await ctx.db.delete(args.documentId);
   },
 });
@@ -144,6 +215,12 @@ export const updatePerformanceMetrics = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    // Staff-only: an employee must not score themselves.
+    const caller = await assertCanManageEmployee(ctx, args.userId, { selfAllowed: false });
+    if (args.updatedBy !== caller._id) {
+      throw new Error('updatedBy must match the authenticated caller');
+    }
+
     return await ctx.db.insert('performanceMetrics', {
       userId: args.userId,
       updatedBy: args.updatedBy,
@@ -160,6 +237,8 @@ export const getPerformanceHistory = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    if (!(await resolveEmployeeAccess(ctx, args.userId))) return [];
+
     const limit = args.limit ?? 12;
     return await ctx.db
       .query('performanceMetrics')
@@ -181,6 +260,9 @@ export const updateSalary = mutation({
     salaryCurrency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Staff-only: an employee must not set their own compensation.
+    await assertCanManageEmployee(ctx, args.userId, { selfAllowed: false });
+
     const existing = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -230,6 +312,8 @@ export const updatePassport = mutation({
     nationality: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertCanManageEmployee(ctx, args.userId);
+
     const existing = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -323,6 +407,10 @@ export const recordTaxIdVerification = mutation({
 export const getSalary = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    // Compensation is sensitive: same-org staff, superadmin, or the employee
+    // reading their own salary.
+    if (!(await resolveEmployeeAccess(ctx, args.userId))) return null;
+
     const profile = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -346,6 +434,11 @@ export const getEmployeesByOrganization = query({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    // Org-scoped listing: members of that org, or superadmin.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    if (!isSuperadmin(caller) && caller.organizationId !== args.organizationId) return [];
+
     const profiles = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
