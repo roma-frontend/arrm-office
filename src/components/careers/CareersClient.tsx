@@ -8,7 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
-import { enUS, ru, hy } from 'date-fns/locale';
+import { enUS, ru, hy, de } from 'date-fns/locale';
 import { useAuthStore, type User } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useHydrated } from '@/hooks/useHydrated';
@@ -64,7 +64,7 @@ function formatSalary(salary: { min: number; max: number; currency: string }) {
 }
 
 function timeAgo(ts: number, lang = 'en'): string {
-  const locale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
+  const locale = lang === 'ru' ? ru : lang === 'hy' ? hy : lang === 'de' ? de : enUS;
   return formatDistanceToNow(new Date(ts), { addSuffix: true, locale });
 }
 
@@ -256,7 +256,7 @@ export default function CareersClient() {
           )}
 
           <span className="ml-auto text-sm" style={{ color: 'var(--landing-text-muted)' }}>
-            {filtered.length} {t('careers.positionsCount', 'positions')}
+            {t('careers.positionsCount', { count: filtered.length })}
           </span>
         </div>
 

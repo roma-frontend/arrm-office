@@ -39,6 +39,8 @@ interface HeaderDict {
   totals: string;
   workingDaysNote: string;
   generatedAt: string;
+  sheetBalances: string;
+  sheetSettlement: string;
 }
 
 const HEADERS: Record<Lang, HeaderDict> = {
@@ -72,6 +74,8 @@ const HEADERS: Record<Lang, HeaderDict> = {
     totals: 'TOTALS',
     workingDaysNote: 'Daily rate = monthly base salary ÷ 21 working days',
     generatedAt: 'Generated at',
+    sheetBalances: 'Leave Balance',
+    sheetSettlement: 'Settlement',
   },
   hy: {
     reportTitle: 'Արձակուրդի և հաշվարկի հաշվետվություն',
@@ -103,6 +107,8 @@ const HEADERS: Record<Lang, HeaderDict> = {
     totals: 'ԸՆԴԱՄԵՆԸ',
     workingDaysNote: 'Օրական դրույք = ամսական հիմնական աշխատավարձ ÷ 21 աշխատանքային օր',
     generatedAt: 'Ստեղծման ժամանակ',
+    sheetBalances: 'Արձակուրդի մնացորդներ',
+    sheetSettlement: 'Հաշվարկ',
   },
   ru: {
     reportTitle: 'Отчёт по отпускам и расчёту',
@@ -134,6 +140,8 @@ const HEADERS: Record<Lang, HeaderDict> = {
     totals: 'ИТОГО',
     workingDaysNote: 'Дневная ставка = месячный оклад ÷ 21 рабочий день',
     generatedAt: 'Сформировано',
+    sheetBalances: 'Отпускные остатки',
+    sheetSettlement: 'Расчёт',
   },
   de: {
     reportTitle: 'Urlaubs- und Abrechnungsbericht',
@@ -165,6 +173,8 @@ const HEADERS: Record<Lang, HeaderDict> = {
     totals: 'GESAMT',
     workingDaysNote: 'Tagessatz = monatliches Grundgehalt ÷ 21 Arbeitstage',
     generatedAt: 'Erstellt am',
+    sheetBalances: 'Urlaubssaldo',
+    sheetSettlement: 'Abrechnung',
   },
 };
 
@@ -335,9 +345,12 @@ export async function POST(request: Request) {
     title.getColumn(3).width = 30;
     title.getColumn(4).width = 30;
 
-    const data = workbook.addWorksheet(body.type === 'balances' ? 'Leave Balance' : 'Settlement', {
-      properties: { tabColor: { argb: '2563EB' } },
-    });
+    const data = workbook.addWorksheet(
+      body.type === 'balances' ? H.sheetBalances : H.sheetSettlement,
+      {
+        properties: { tabColor: { argb: '2563EB' } },
+      },
+    );
 
     if (body.type === 'balances') {
       const balanceRows = rows as BalanceExportRow[];

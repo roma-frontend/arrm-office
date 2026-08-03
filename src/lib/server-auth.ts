@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { verifyJWT, type JWTPayload } from '@/lib/jwt';
 import { auth } from '@/auth';
+import { resolveConvexUserIdByEmail } from '@/lib/convex-server-query';
 
 /**
  * Unified server-side auth helper for React Server Components.
@@ -22,8 +23,14 @@ export async function getServerUser(): Promise<JWTPayload | null> {
   try {
     const session = await auth();
     if (session?.user?.email) {
+      // SECURITY/CORRECTNESS: `session.user.id` is the provider subject (a
+      // UUID / Google sub), NOT a Convex document id. Every consumer treats
+      // `JWTPayload.userId` as `Id<'users'>`, so resolve the Convex `_id` from
+      // the verified email before returning. Without this, Convex queries
+      // reject the value with ArgumentValidationError (see tasks page crash).
+      const convexUserId = await resolveConvexUserIdByEmail(session.user.email);
       return {
-        userId: session.user.id ?? '',
+        userId: convexUserId ?? '',
         name: session.user.name ?? 'User',
         email: session.user.email,
         role: (session.user.role as JWTPayload['role']) ?? 'employee',

@@ -68,6 +68,8 @@ export interface CalendarEvent {
   reminder: string;
   attendees: string[];
   attachmentUrl?: string;
+  /** Set when the event comes from the backend; absent for drafts. */
+  createdAt?: number;
 }
 
 interface OrgUser {

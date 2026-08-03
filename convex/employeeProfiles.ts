@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
+import { isSuperadmin } from './lib/auth';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { SMALL_LIST_CAP, DEFAULT_LIST_CAP } from './lib/limits';
 
@@ -282,12 +283,13 @@ export const recordTaxIdVerification = mutation({
     const target = await ctx.db.get(args.userId);
     if (!target) throw new Error('User not found');
 
-    // Same-org admins/supervisors, superadmin, or the employee themself may
-    // record a verification for this employee.
+    // Same-org admins/supervisors, superadmin (role or bootstrap email), or
+    // the employee themself may record a verification for this employee —
+    // matches createRating / updateExtendedProfile / documents.ts.
     const isOrgStaff =
       (caller.role === 'admin' || caller.role === 'supervisor') &&
       caller.organizationId === target.organizationId;
-    if (caller.role !== 'superadmin' && !isOrgStaff && caller._id !== args.userId) {
+    if (!isSuperadmin(caller) && !isOrgStaff && caller._id !== args.userId) {
       throw new Error('Not authorized to update this employee');
     }
 

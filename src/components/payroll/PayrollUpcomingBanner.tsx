@@ -119,6 +119,8 @@ interface UpcomingPeriod {
   period: string;
   label: string;
   status: string;
+  /** Convex doc id of the payroll run for this period, when one exists. */
+  runId?: string | null;
   daysRemaining: number;
   isOverdue: boolean;
   urgency: 'critical' | 'warning' | 'info' | 'success';
@@ -127,6 +129,8 @@ interface UpcomingPeriod {
 interface CurrentRun {
   period: string;
   status: string;
+  /** Convex doc id of the payroll run for the current period, when one exists. */
+  runId?: string | null;
   totalGross: number;
   totalNet: number;
   employeeCount: number;
@@ -180,6 +184,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
           period: p.period,
           label: p.urgency === 'critical' ? 'Current period' : 'Next period',
           status: 'upcoming',
+          runId: null,
           daysRemaining: p.daysRemaining,
           isOverdue: false,
           urgency: p.urgency,
@@ -367,17 +372,20 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
                     </p>
                   </div>
 
-                  {/* Link */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    asChild
-                  >
-                    <Link href={`/payroll/${period.period}`}>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </Button>
+                  {/* Link — only when a payroll run exists for this period (the
+                      /payroll/[id] route expects a Convex doc id, not a period) */}
+                  {period.runId && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      asChild
+                    >
+                      <Link href={`/payroll/${period.runId}`}>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  )}
 
                   {/* Pulse ring for critical */}
                   {period.urgency === 'critical' && (

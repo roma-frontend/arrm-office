@@ -85,6 +85,7 @@ import type * as lib_rbac from "../lib/rbac.js";
 import type * as lib_sanitize from "../lib/sanitize.js";
 import type * as lib_taxRules from "../lib/taxRules.js";
 import type * as lib_userProfile from "../lib/userProfile.js";
+import type * as lib_userRedaction from "../lib/userRedaction.js";
 import type * as messenger_calls from "../messenger/calls.js";
 import type * as messenger_conversations from "../messenger/conversations.js";
 import type * as messenger_index from "../messenger/index.js";
@@ -286,6 +287,7 @@ declare const fullApi: ApiFromModules<{
   "lib/sanitize": typeof lib_sanitize;
   "lib/taxRules": typeof lib_taxRules;
   "lib/userProfile": typeof lib_userProfile;
+  "lib/userRedaction": typeof lib_userRedaction;
   "messenger/calls": typeof messenger_calls;
   "messenger/conversations": typeof messenger_conversations;
   "messenger/index": typeof messenger_index;

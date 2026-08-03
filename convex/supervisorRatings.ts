@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { mutation, query, type MutationCtx } from './_generated/server';
 import type { Id, Doc } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 
@@ -22,6 +23,37 @@ export const createRating = mutation({
     ratingPeriod: v.optional(v.string()), // e.g., "2026-02"
   },
   handler: async (ctx, args) => {
+    // RBAC: only same-org admins/supervisors, superadmin, or the employee
+    // themself may rate; the rating must be attributed to the caller (no
+    // spoofing another supervisor's id). Matches updateExtendedProfile /
+    // recordTaxIdVerification.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    const target = await ctx.db.get(args.employeeId);
+    if (!target) throw new Error('User not found');
+    const isOrgStaff =
+      (caller.role === 'admin' || caller.role === 'supervisor') &&
+      caller.organizationId === target.organizationId;
+    if (!isSuperadmin(caller) && !isOrgStaff && caller._id !== args.employeeId) {
+      throw new Error('Not authorized to rate this employee');
+    }
+    // Admins/superadmins are not rateable by non-superadmins — matches
+    // getEmployeesNeedingRating, which excludes those roles from the rating
+    // list for every viewer (admins are rated by nobody through the standard
+    // flow).
+    if (!isSuperadmin(caller) && (target.role === 'admin' || target.role === 'superadmin')) {
+      throw new Error('Admins and superadmins cannot be rated');
+    }
+    // Inactive employees are not rateable by non-superadmins — matches
+    // getEmployeesNeedingRating, which only lists active employees.
+    if (!isSuperadmin(caller) && !target.isActive) {
+      throw new Error('Cannot rate inactive employees');
+    }
+    if (args.supervisorId !== caller._id) {
+      throw new Error('supervisorId must match the authenticated user');
+    }
+
     // Validate ratings are between 1-5
     const ratings = [
       args.qualityOfWork,
@@ -316,26 +348,36 @@ async function updatePerformanceMetrics(
 
 // ── Get All Employees Needing Rating ─────────────────────────────────────
 export const getEmployeesNeedingRating = query({
-  args: {
-    supervisorId: v.id('users'),
-  },
-  handler: async (ctx, args) => {
-    const supervisor = (await ctx.db.get(args.supervisorId)) as Doc<'users'> | null;
-    if (!supervisor) throw new Error('Supervisor not found');
+  args: {},
+  handler: async (ctx) => {
+    // Auth + org scoping: the list is resolved from the authenticated caller's
+    // own organization — a client-supplied supervisorId is never trusted
+    // (previously the query scoped by an arbitrary passed id, letting anyone
+    // enumerate another org's employees). Returns [] gracefully when
+    // unauthenticated, matching the query convention (see getDocumentById).
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
 
-    const userIsSuperadmin = isSuperadmin(supervisor);
+    const userIsSuperadmin = isSuperadmin(caller);
+
+    // The "who needs rating" list is a management view — matches the
+    // attendance page's admin/supervisor-only gate, so employees/drivers get
+    // an empty list rather than their org's review pipeline.
+    if (!userIsSuperadmin && caller.role !== 'admin' && caller.role !== 'supervisor') {
+      return [];
+    }
 
     const currentPeriod = new Date().toISOString().slice(0, 7);
 
-    // Get active employees scoped to org
+    // Get active employees scoped to the caller's org
     let allUsers;
     if (!userIsSuperadmin) {
-      if (!supervisor.organizationId) {
+      if (!caller.organizationId) {
         throw new Error('User does not belong to an organization');
       }
       allUsers = await ctx.db
         .query('users')
-        .withIndex('by_org', (q) => q.eq('organizationId', supervisor.organizationId))
+        .withIndex('by_org', (q) => q.eq('organizationId', caller.organizationId))
         .take(DEFAULT_LIST_CAP);
     } else {
       allUsers = await ctx.db.query('users').take(DEFAULT_LIST_CAP);

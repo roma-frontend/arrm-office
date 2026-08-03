@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useHydrated } from '@/hooks/useHydrated';
@@ -65,6 +65,8 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { DriverRequestModal } from './DriverRequestModal';
 import { CreateEventModal, type CalendarEvent } from './CreateEventModal';
 import { DayDetailsModal } from './DayDetailsModal';
+import { EventTimelineModal } from './EventTimelineModal';
+import type { TimelineInput } from '@/lib/eventTimeline';
 import { getInitials } from '@/lib/stringUtils';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
@@ -81,6 +83,11 @@ type LeaveRequest = {
   reason: string;
   status: string;
   comment?: string;
+  // Review trail — surfaced by the timeline view.
+  createdAt?: number;
+  reviewedAt?: number;
+  reviewerName?: string;
+  reviewComment?: string;
 };
 
 type DriverScheduleEvent = {
@@ -99,8 +106,25 @@ type DriverScheduleEvent = {
   endTime: number;
   type: 'trip' | 'blocked' | 'maintenance';
   status: string;
-  tripInfo?: { from: string; to: string; purpose: string; passengerCount: number; notes?: string };
+  tripInfo?: {
+    from: string;
+    to: string;
+    purpose: string;
+    passengerCount: number;
+    notes?: string;
+    distanceKm?: number;
+    durationMinutes?: number;
+    passengerPhone?: string;
+  };
   reason?: string;
+  // Trip lifecycle — surfaced by the timeline view.
+  createdAt?: number;
+  arrivedAt?: number;
+  passengerPickedUpAt?: number;
+  waitTimeMinutes?: number;
+  driverNotes?: string;
+  mapData?: { distanceMeters: number; durationSeconds: number };
+  driverFeedback?: { rating: number; comment?: string; completedAt: number };
 };
 
 type GoogleCalendarEvent = {
@@ -146,6 +170,68 @@ function getDateRange(start: string, end: string): Date[] {
     cur.setDate(cur.getDate() + 1);
   }
   return dates;
+}
+
+/**
+ * When a calendar day holds exactly one entry, double-clicking it can skip the
+ * day list and open that entry's timeline directly. Returns `null` for empty
+ * days and for days with more than one entry.
+ */
+function singleTimelineFor(
+  leaves: LeaveRequest[],
+  googleEvents: GoogleCalendarEvent[],
+  driverEvents: DriverScheduleEvent[],
+  customEvents: CalendarEvent[],
+): TimelineInput | null {
+  if (leaves.length + googleEvents.length + driverEvents.length + customEvents.length !== 1) {
+    return null;
+  }
+  if (leaves[0]) return { source: 'leave', data: leaves[0] };
+  if (driverEvents[0]) return { source: 'driver', data: driverEvents[0] };
+  if (googleEvents[0]) return { source: 'google', data: googleEvents[0] };
+  if (customEvents[0]) return { source: 'custom', data: customEvents[0] };
+  return null;
+}
+
+/**
+ * A single and a double click on the same event row mean different things —
+ * quick preview vs. full timeline — so the single-click action waits just long
+ * enough to see whether a second click follows. Without the delay the preview
+ * modal would flash open on every double click.
+ */
+const DOUBLE_CLICK_WINDOW_MS = 220;
+
+function useDualClick() {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  return useCallback((onSingle: () => void, onDouble: () => void) => {
+    const cancel = () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
+    };
+    return {
+      onClick: () => {
+        cancel();
+        timer.current = setTimeout(() => {
+          timer.current = null;
+          onSingle();
+        }, DOUBLE_CLICK_WINDOW_MS);
+      },
+      onDoubleClick: () => {
+        cancel();
+        onDouble();
+      },
+    };
+  }, []);
 }
 
 function StatusIcon({ status }: { status: LeaveStatus }) {
@@ -356,6 +442,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [selectedDriverEvent, setSelectedDriverEvent] = useState<DriverScheduleEvent | null>(null);
   const [selectedGoogleEvent, setSelectedGoogleEvent] = useState<GoogleCalendarEvent | null>(null);
+  const [timelineInput, setTimelineInput] = useState<TimelineInput | null>(null);
   const { user } = useAuthStore();
   const selectedOrgId = useSelectedOrganization();
   const lang = i18n.language || 'en';
@@ -395,7 +482,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
 
   useEffect(() => {
     logger.log('📅 CalendarClient mounted');
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync Google calendar events when the month changes
+
     fetchGoogleEvents(currentMonth);
   }, [currentMonth, fetchGoogleEvents]);
 
@@ -408,7 +495,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
       showLeaveModal ||
       showDriverModal ||
       showCreateEvent ||
-      showDayDetails;
+      showDayDetails ||
+      timelineInput;
     const mainEl = mainRef.current;
     const scrollY = mainEl ? mainEl.scrollTop : window.scrollY;
 
@@ -436,6 +524,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
     showDriverModal,
     showCreateEvent,
     showDayDetails,
+    timelineInput,
     mainRef,
   ]);
 
@@ -506,6 +595,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
     reminder: e.reminder,
     attendees: e.attendees ?? [],
     attachmentUrl: e.attachmentUrl,
+    createdAt: e.createdAt,
   }));
 
   // Build driver schedule map
@@ -621,6 +711,16 @@ export const CalendarClient = React.memo(function CalendarClient() {
     }
     open();
   };
+
+  // Double-clicking any event row opens the full timeline; a single click keeps
+  // the existing lightweight preview.
+  const dualClick = useDualClick();
+  const scrollToTop = useCallback(() => {
+    setTimeout(() => {
+      mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  }, [mainRef]);
 
   // Monthly summary
   const monthlySummary = useMemo(() => {
@@ -780,7 +880,21 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             onClick={() => setSelectedDay(date)}
                             onDoubleClick={() => {
                               setSelectedDay(date);
-                              guardBooking(date, () => setShowCreateEvent(true));
+                              // A day holding exactly one entry goes straight to
+                              // its timeline; several entries need the day list
+                              // first (each row there opens its own timeline).
+                              // An empty day keeps the "create event" shortcut.
+                              const single = singleTimelineFor(leaves, gEvents, dEvents, cEvents);
+                              if (single) {
+                                setTimelineInput(single);
+                              } else if (
+                                leaves.length + gEvents.length + dEvents.length + cEvents.length >
+                                0
+                              ) {
+                                setShowDayDetails(true);
+                              } else {
+                                guardBooking(date, () => setShowCreateEvent(true));
+                              }
                             }}
                           />
                         </ContextMenuTrigger>
@@ -938,17 +1052,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.04 }}
+                        title={t('eventTimeline.hints.doubleClick')}
                         className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        onClick={() => {
-                          setSelectedLeave(leave);
-                          setTimeout(() => {
-                            const mainEl = mainRef.current;
-                            if (mainEl) {
-                              mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }, 100);
-                        }}
+                        {...dualClick(
+                          () => {
+                            setSelectedLeave(leave);
+                            scrollToTop();
+                          },
+                          () => setTimelineInput({ source: 'leave', data: leave }),
+                        )}
                       >
                         <Avatar className="w-8 h-8 shrink-0">
                           <AvatarFallback
@@ -997,17 +1109,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: (selectedDayLeaves.length + i) * 0.04 }}
+                        title={t('eventTimeline.hints.doubleClick')}
                         className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        onClick={() => {
-                          setSelectedGoogleEvent(evt);
-                          setTimeout(() => {
-                            const mainEl = mainRef.current;
-                            if (mainEl) {
-                              mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }, 100);
-                        }}
+                        {...dualClick(
+                          () => {
+                            setSelectedGoogleEvent(evt);
+                            scrollToTop();
+                          },
+                          () => setTimelineInput({ source: 'google', data: evt }),
+                        )}
                       >
                         <div
                           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
@@ -1071,17 +1181,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         transition={{
                           delay: (selectedDayLeaves.length + selectedDayGoogle.length + i) * 0.04,
                         }}
+                        title={t('eventTimeline.hints.doubleClick')}
                         className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        onClick={() => {
-                          setSelectedDriverEvent(evt);
-                          setTimeout(() => {
-                            const mainEl = mainRef.current;
-                            if (mainEl) {
-                              mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }, 100);
-                        }}
+                        {...dualClick(
+                          () => {
+                            setSelectedDriverEvent(evt);
+                            scrollToTop();
+                          },
+                          () => setTimelineInput({ source: 'driver', data: evt }),
+                        )}
                       >
                         <div
                           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
@@ -1134,11 +1242,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               i) *
                             0.04,
                         }}
+                        title={t('eventTimeline.hints.doubleClick')}
                         className="flex items-start gap-2.5 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-500/5 cursor-pointer hover:border-blue-400 transition-colors group"
-                        onClick={() => {
-                          setEditEvent(evt);
-                          setShowCreateEvent(true);
-                        }}
+                        {...dualClick(
+                          () => {
+                            setEditEvent(evt);
+                            setShowCreateEvent(true);
+                          },
+                          () => setTimelineInput({ source: 'custom', data: evt }),
+                        )}
                       >
                         <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500 text-white">
                           <CalendarPlus className="w-4 h-4" />
@@ -1302,8 +1414,12 @@ export const CalendarClient = React.memo(function CalendarClient() {
           driverEvents={selectedDayDriverEvents}
           customEvents={selectedDayCustomEvents}
           onClose={() => setShowDayDetails(false)}
+          onOpenTimeline={setTimelineInput}
         />
       )}
+
+      {/* Full event timeline — opened by double-clicking any event */}
+      <EventTimelineModal input={timelineInput} onClose={() => setTimelineInput(null)} />
 
       {/* Modals rendered via portal to escape overflow/contain constraints */}
       {typeof document !== 'undefined' &&

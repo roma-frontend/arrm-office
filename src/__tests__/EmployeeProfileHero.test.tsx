@@ -111,7 +111,7 @@ const defaultProps = {
   monthlyStats: null,
   canEdit: false,
   canDelete: false,
-  isAdminOrSupervisor: false,
+  canRate: false,
   showRatingForm: false,
   onEdit: jest.fn(),
   onDelete: jest.fn(),
@@ -216,19 +216,17 @@ describe('EmployeeProfileHero', () => {
     expect(screen.queryByText('common.edit')).not.toBeInTheDocument();
   });
 
-  it('renders rate button for admin/supervisor', () => {
-    render(<EmployeeProfileHero {...defaultProps} isAdminOrSupervisor={true} />);
+  it('renders rate button when canRate is true', () => {
+    render(<EmployeeProfileHero {...defaultProps} canRate={true} />);
     expect(screen.getByText('employeeProfile.ratePerformance')).toBeInTheDocument();
   });
 
   it('shows cancel text on rate button when showRatingForm is true', () => {
-    render(
-      <EmployeeProfileHero {...defaultProps} isAdminOrSupervisor={true} showRatingForm={true} />,
-    );
+    render(<EmployeeProfileHero {...defaultProps} canRate={true} showRatingForm={true} />);
     expect(screen.getByText('employeeProfile.cancelRating')).toBeInTheDocument();
   });
 
-  it('does not render rate button when not admin/supervisor', () => {
+  it('does not render rate button when canRate is false', () => {
     render(<EmployeeProfileHero {...defaultProps} />);
     expect(screen.queryByText('employeeProfile.ratePerformance')).not.toBeInTheDocument();
   });
@@ -262,7 +260,7 @@ describe('EmployeeProfileHero', () => {
 
   it('calls onRate when rate button clicked', () => {
     const onRate = jest.fn();
-    render(<EmployeeProfileHero {...defaultProps} isAdminOrSupervisor={true} onRate={onRate} />);
+    render(<EmployeeProfileHero {...defaultProps} canRate={true} onRate={onRate} />);
     fireEvent.click(screen.getByText('employeeProfile.ratePerformance'));
     expect(onRate).toHaveBeenCalledTimes(1);
   });
@@ -422,12 +420,7 @@ describe('EmployeeProfileHero', () => {
   describe('All action buttons', () => {
     it('renders all three action buttons when all permissions granted', () => {
       render(
-        <EmployeeProfileHero
-          {...defaultProps}
-          canEdit={true}
-          canDelete={true}
-          isAdminOrSupervisor={true}
-        />,
+        <EmployeeProfileHero {...defaultProps} canEdit={true} canDelete={true} canRate={true} />,
       );
 
       // Edit button

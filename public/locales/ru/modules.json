@@ -2045,6 +2045,127 @@
     "visualOverview": "Визуальный обзор отпусков команды - нажмите на любой день для подробностей",
     "away": "Отсутствует"
   },
+  "eventTimeline": {
+    "sources": {
+      "leave": "Заявка на отпуск",
+      "driver": "Бронирование водителя",
+      "google": "Google Календарь",
+      "custom": "Событие календаря"
+    },
+    "sections": {
+      "timeline": "Хронология",
+      "details": "Детали",
+      "people": "Участники"
+    },
+    "phase": {
+      "upcoming": "Предстоит",
+      "live": "Идёт сейчас",
+      "past": "Завершено"
+    },
+    "progress": {
+      "elapsed": "Прошло {{value}}%"
+    },
+    "relative": {
+      "starts": "начало {{value}}",
+      "endsIn": "завершится {{value}}",
+      "ended": "завершилось {{value}}"
+    },
+    "status": {
+      "scheduled": "Запланировано",
+      "confirmed": "Подтверждено"
+    },
+    "milestones": {
+      "created": "Создано",
+      "submitted": "Заявка отправлена",
+      "awaitingReview": "Ожидает рассмотрения",
+      "approved": "Одобрено",
+      "rejected": "Отклонено",
+      "reminder": "Напоминание",
+      "leaveStarts": "Начало отпуска",
+      "leaveEnds": "Окончание отпуска",
+      "eventStarts": "Начало события",
+      "eventEnds": "Окончание события",
+      "booked": "Забронировано",
+      "blockStarts": "Начало блокировки",
+      "blockEnds": "Окончание блокировки",
+      "pickup": "Посадка",
+      "dropoff": "Высадка",
+      "driverArrived": "Водитель прибыл",
+      "passengerOnBoard": "Пассажир в машине",
+      "tripClosed": "Поездка закрыта",
+      "now": "Сейчас",
+      "noDateYet": "Дата не назначена"
+    },
+    "facts": {
+      "employee": "Сотрудник",
+      "department": "Отдел",
+      "leaveType": "Тип отпуска",
+      "workingDays": "Рабочих дней",
+      "reviewedBy": "Рассмотрел",
+      "reason": "Причина",
+      "comment": "Комментарий",
+      "reviewComment": "Комментарий проверяющего",
+      "driver": "Водитель",
+      "bookedBy": "Забронировал",
+      "bookingType": "Тип брони",
+      "route": "Маршрут",
+      "purpose": "Цель",
+      "passengers": "Пассажиры",
+      "passengerPhone": "Телефон пассажира",
+      "notes": "Заметки",
+      "vehicle": "Автомобиль",
+      "plateNumber": "Номер",
+      "capacity": "Мест",
+      "distance": "Расстояние",
+      "waitTime": "Время ожидания",
+      "driverNotes": "Заметки водителя",
+      "rating": "Оценка",
+      "feedback": "Отзыв",
+      "calendar": "Календарь",
+      "location": "Место",
+      "description": "Описание",
+      "category": "Категория",
+      "reminder": "Напоминание",
+      "attendees": "Участники",
+      "attachment": "Вложение",
+      "openAttachment": "Открыть вложение"
+    },
+    "roles": {
+      "employee": "Сотрудник",
+      "reviewer": "Проверяющий",
+      "driver": "Водитель",
+      "bookedBy": "Забронировал",
+      "attendee": "Участник"
+    },
+    "driverType": {
+      "trip": "Поездка",
+      "blocked": "Занятое время",
+      "maintenance": "Обслуживание",
+      "time_off": "Отдых"
+    },
+    "driverStatus": {
+      "scheduled": "Запланировано",
+      "in_progress": "В процессе",
+      "completed": "Завершено",
+      "cancelled": "Отменено"
+    },
+    "units": {
+      "day": "д",
+      "hour": "ч",
+      "minute": "мин",
+      "km": "км"
+    },
+    "actions": {
+      "copyDetails": "Скопировать детали",
+      "addToCalendar": "Экспорт .ics",
+      "copied": "Детали скопированы в буфер обмена",
+      "copyFailed": "Не удалось скопировать детали",
+      "downloaded": "Файл календаря загружен"
+    },
+    "hints": {
+      "doubleClick": "Двойной клик — открыть полную хронологию"
+    }
+  },
   "conflicts": {
     "title": "Обнаружение конфликфов",
     "critical": "Критический",
@@ -2602,6 +2723,17 @@
     "educationDesc": "Академический опыт и квалификации",
     "dateOfBirth": "Дата рождения",
     "birthYear": "Год рождения",
+    "birthYearPlaceholder": "напр. 1975",
+    "addressPlaceholder": "напр. ул. Главная, 123, Ереван",
+    "contactNamePlaceholder": "напр. Иван Иванов",
+    "contactRelationPlaceholder": "напр. супруг(а), родитель",
+    "companyPlaceholder": "Название компании",
+    "positionPlaceholder": "Название должности",
+    "descriptionPlaceholder": "Опишите ваши обязанности и достижения...",
+    "institutionPlaceholder": "Университет / Школа",
+    "degreePlaceholder": "напр. бакалавр",
+    "fieldPlaceholder": "напр. информатика",
+    "gpaPlaceholder": "напр. 3.8",
     "pensionExempt": "Накопительная пенсия",
     "pensionExemptHint": "Армения: сотрудники, родившиеся до 1974 года, освобождены от обязательной накопительной пенсии",
     "pensionExemptYes": "Освобождён (родился до 1974)",

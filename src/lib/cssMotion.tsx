@@ -116,6 +116,9 @@ export function MotionDiv({
   layout,
   variants,
   onClick,
+  // Non-DOM props that must not reach the element
+  fill: _fill,
+  rx: _rx,
   ...restProps
 }: MotionProps) {
   const [exiting, _setExiting] = useState(false);
@@ -319,16 +322,26 @@ export function MotionButton({
   className = '',
   whileHover,
   whileTap,
-  // Framer-motion-specific props are left in restProps so they don't
-  // cause TS errors — React ignores unknown HTML attributes gracefully.
+  layout,
+  // Framer-motion-specific props are stripped here so React never tries to
+  // write them to the DOM (e.g. `Received \`true\` for a non-boolean attribute \`layout\``).
+  initial: _initial,
+  animate: _animate,
+  exit: _exit,
+  transition: _transition,
+  variants: _variants,
+  onAnimationComplete: _onAnimationComplete,
+  fill: _fill,
+  rx: _rx,
   ...restProps
 }: MotionProps) {
   const hoverClass = whileHover?.scale ? 'hover:scale-110 transition-transform' : '';
   const tapClass = whileTap?.scale ? 'active:scale-90 transition-transform' : '';
+  const layoutClass = layout ? 'transition-all duration-300' : '';
 
   return (
     <button
-      className={`${className} ${hoverClass} ${tapClass}`.trim()}
+      className={`${className} ${hoverClass} ${tapClass} ${layoutClass}`.trim()}
       {...(restProps as React.ButtonHTMLAttributes<HTMLButtonElement>)}
     >
       {children}
@@ -344,16 +357,28 @@ export function MotionSpan({
   className = '',
   whileHover,
   whileTap,
-  // Framer-motion-specific props are left in restProps so they don't
-  // cause TS errors — React ignores unknown HTML attributes gracefully.
+  layout,
+  // Framer-motion-specific props are stripped here so React never tries to
+  // write them to the DOM.
+  initial: _initial,
+  animate: _animate,
+  exit: _exit,
+  transition: _transition,
+  variants: _variants,
+  onAnimationComplete: _onAnimationComplete,
+  type: _type,
+  disabled: _disabled,
+  fill: _fill,
+  rx: _rx,
   ...restProps
 }: MotionProps) {
   const hoverClass = whileHover?.scale ? 'hover:scale-110 transition-transform' : '';
   const tapClass = whileTap?.scale ? 'active:scale-90 transition-transform' : '';
+  const layoutClass = layout ? 'transition-all duration-300' : '';
 
   return (
     <span
-      className={`${className} ${hoverClass} ${tapClass}`.trim()}
+      className={`${className} ${hoverClass} ${tapClass} ${layoutClass}`.trim()}
       {...(restProps as React.HTMLAttributes<HTMLSpanElement>)}
     >
       {children}

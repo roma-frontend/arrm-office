@@ -201,24 +201,36 @@ export default function ExtendedProfileSection({
 }: ExtendedProfileSectionProps) {
   const { t } = useTranslation(['modules', 'common']);
 
-  if (!data) return null;
+  // Hide the section entirely only when there is no data AND the viewer cannot
+  // edit. Admins/supervisors always see the section (empty state + Edit), even
+  // for employees without an `employeeProfiles` record yet — the first save
+  // from the edit modal creates the record.
+  if (!data && !canEdit) return null;
+
+  // A missing record behaves like an empty profile so the empty state and the
+  // Edit button still render for editors.
+  const profile = data ?? ({} as ExtendedProfileData);
 
   const hasAnyData =
-    data.address ||
-    data.emergencyContactName ||
-    data.emergencyContactPhone ||
-    data.workFormat ||
-    data.workSchedule ||
-    data.socialLinks?.linkedin ||
-    data.socialLinks?.github ||
-    data.socialLinks?.portfolio ||
-    data.structuredWorkHistory?.length ||
-    data.structuredEducation?.length ||
-    data.dateOfBirth;
+    profile.address ||
+    profile.emergencyContactName ||
+    profile.emergencyContactPhone ||
+    profile.workFormat ||
+    profile.workSchedule ||
+    profile.socialLinks?.linkedin ||
+    profile.socialLinks?.github ||
+    profile.socialLinks?.portfolio ||
+    profile.structuredWorkHistory?.length ||
+    profile.structuredEducation?.length ||
+    profile.dateOfBirth ||
+    // Kept in sync with the Personal Details card condition below — a profile
+    // with only these set must still count as "has data".
+    profile.birthYear !== undefined ||
+    profile.pensionExempt !== undefined;
 
   if (!hasAnyData && !canEdit) return null;
 
-  const workFormatInfo = data.workFormat ? WORK_FORMAT_MAP[data.workFormat] : null;
+  const workFormatInfo = profile.workFormat ? WORK_FORMAT_MAP[profile.workFormat] : null;
 
   return (
     <div className="space-y-4">
@@ -259,45 +271,45 @@ export default function ExtendedProfileSection({
       )}
 
       {/* Personal Details */}
-      {(data.dateOfBirth ||
-        data.address ||
-        data.birthYear !== undefined ||
-        data.pensionExempt !== undefined) && (
+      {(profile.dateOfBirth ||
+        profile.address ||
+        profile.birthYear !== undefined ||
+        profile.pensionExempt !== undefined) && (
         <SectionCard
           icon={<Heart className="w-4 h-4" />}
           title={t('extendedProfile.personalDetails', 'Personal Details')}
           delay={0.05}
         >
           <div className="space-y-1">
-            {data.dateOfBirth && (
+            {profile.dateOfBirth && (
               <InfoRow
                 label={t('extendedProfile.dateOfBirth', 'Date of Birth')}
-                value={data.dateOfBirth}
+                value={profile.dateOfBirth}
                 icon={<CalendarDays className="w-3.5 h-3.5" />}
               />
             )}
-            {data.birthYear !== undefined && (
+            {profile.birthYear !== undefined && (
               <InfoRow
                 label={t('extendedProfile.birthYear', 'Birth Year')}
-                value={String(data.birthYear)}
+                value={String(profile.birthYear)}
                 icon={<CalendarDays className="w-3.5 h-3.5" />}
               />
             )}
-            {data.pensionExempt !== undefined && (
+            {profile.pensionExempt !== undefined && (
               <InfoRow
                 label={t('extendedProfile.pensionExempt', 'Funded pension')}
                 value={
-                  data.pensionExempt
+                  profile.pensionExempt
                     ? t('extendedProfile.pensionExemptYes', 'Exempt (born before 1974)')
                     : t('extendedProfile.pensionExemptNo', 'Mandatory')
                 }
                 icon={<Award className="w-3.5 h-3.5" />}
               />
             )}
-            {data.address && (
+            {profile.address && (
               <InfoRow
                 label={t('extendedProfile.address', 'Address')}
-                value={data.address}
+                value={profile.address}
                 icon={<MapPin className="w-3.5 h-3.5" />}
               />
             )}
@@ -306,7 +318,7 @@ export default function ExtendedProfileSection({
       )}
 
       {/* Work Details */}
-      {(data.workFormat || data.workSchedule) && (
+      {(profile.workFormat || profile.workSchedule) && (
         <SectionCard
           icon={<Briefcase className="w-4 h-4" />}
           title={t('extendedProfile.workDetails', 'Work Details')}
@@ -323,14 +335,14 @@ export default function ExtendedProfileSection({
               </div>
             )}
 
-            {data.workSchedule && (
+            {profile.workSchedule && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-3.5 h-3.5 text-(--text-muted)" />
                   <span className="text-(--text-primary) font-medium">
-                    {data.workSchedule.startTime} – {data.workSchedule.endTime}
+                    {profile.workSchedule.startTime} – {profile.workSchedule.endTime}
                   </span>
-                  {data.workSchedule.flexHours && (
+                  {profile.workSchedule.flexHours && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                       {t('extendedProfile.flexHours', 'Flex')}
                     </Badge>
@@ -346,7 +358,7 @@ export default function ExtendedProfileSection({
                     'saturday',
                     'sunday',
                   ].map((day) => {
-                    const isActive = data.workSchedule?.workingDays.includes(day);
+                    const isActive = profile.workSchedule?.workingDays.includes(day);
                     return (
                       <span
                         key={day}
@@ -368,7 +380,7 @@ export default function ExtendedProfileSection({
       )}
 
       {/* Emergency Contact */}
-      {data.emergencyContactName && (
+      {profile.emergencyContactName && (
         <SectionCard
           icon={<Phone className="w-4 h-4" />}
           title={t('extendedProfile.emergencyContact', 'Emergency Contact')}
@@ -377,20 +389,20 @@ export default function ExtendedProfileSection({
           <div className="space-y-1">
             <InfoRow
               label={t('extendedProfile.contactName', 'Name')}
-              value={data.emergencyContactName}
+              value={profile.emergencyContactName}
               icon={<User className="w-3.5 h-3.5" />}
             />
-            {data.emergencyContactPhone && (
+            {profile.emergencyContactPhone && (
               <InfoRow
                 label={t('extendedProfile.contactPhone', 'Phone')}
-                value={data.emergencyContactPhone}
+                value={profile.emergencyContactPhone}
                 icon={<Phone className="w-3.5 h-3.5" />}
               />
             )}
-            {data.emergencyContactRelation && (
+            {profile.emergencyContactRelation && (
               <InfoRow
                 label={t('extendedProfile.contactRelation', 'Relationship')}
-                value={data.emergencyContactRelation}
+                value={profile.emergencyContactRelation}
                 icon={<Heart className="w-3.5 h-3.5" />}
               />
             )}
@@ -399,16 +411,18 @@ export default function ExtendedProfileSection({
       )}
 
       {/* Social Links */}
-      {(data.socialLinks?.linkedin || data.socialLinks?.github || data.socialLinks?.portfolio) && (
+      {(profile.socialLinks?.linkedin ||
+        profile.socialLinks?.github ||
+        profile.socialLinks?.portfolio) && (
         <SectionCard
           icon={<Globe className="w-4 h-4" />}
           title={t('extendedProfile.socialLinks', 'Social Links')}
           delay={0.2}
         >
           <div className="flex flex-wrap gap-2">
-            {data.socialLinks.linkedin && (
+            {profile.socialLinks.linkedin && (
               <a
-                href={data.socialLinks.linkedin}
+                href={profile.socialLinks.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all"
@@ -418,9 +432,9 @@ export default function ExtendedProfileSection({
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
-            {data.socialLinks.github && (
+            {profile.socialLinks.github && (
               <a
-                href={data.socialLinks.github}
+                href={profile.socialLinks.github}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gray-500/10 text-gray-700 dark:text-gray-300 hover:bg-gray-500/20 transition-all"
@@ -430,9 +444,9 @@ export default function ExtendedProfileSection({
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
-            {data.socialLinks.portfolio && (
+            {profile.socialLinks.portfolio && (
               <a
-                href={data.socialLinks.portfolio}
+                href={profile.socialLinks.portfolio}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all"
@@ -447,14 +461,14 @@ export default function ExtendedProfileSection({
       )}
 
       {/* Work History */}
-      {data.structuredWorkHistory && data.structuredWorkHistory.length > 0 && (
+      {profile.structuredWorkHistory && profile.structuredWorkHistory.length > 0 && (
         <SectionCard
           icon={<Building2 className="w-4 h-4" />}
           title={t('extendedProfile.workHistory', 'Work History')}
           delay={0.25}
         >
           <div className="space-y-0">
-            {data.structuredWorkHistory.map((entry, idx) => (
+            {profile.structuredWorkHistory.map((entry, idx) => (
               <TimelineItem
                 key={idx}
                 title={entry.position}
@@ -469,14 +483,14 @@ export default function ExtendedProfileSection({
       )}
 
       {/* Education */}
-      {data.structuredEducation && data.structuredEducation.length > 0 && (
+      {profile.structuredEducation && profile.structuredEducation.length > 0 && (
         <SectionCard
           icon={<GraduationCap className="w-4 h-4" />}
           title={t('extendedProfile.education', 'Education')}
           delay={0.3}
         >
           <div className="space-y-0">
-            {data.structuredEducation.map((entry, idx) => (
+            {profile.structuredEducation.map((entry, idx) => (
               <TimelineItem
                 key={idx}
                 title={`${entry.degree} in ${entry.field}`}

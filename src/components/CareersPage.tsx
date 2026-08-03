@@ -50,17 +50,20 @@ function formatSalary(salary: { min: number; max: number; currency: string }) {
   return `${fmt(salary.min)} – ${fmt(salary.max)} ${salary.currency}`;
 }
 
-function timeAgo(ts: number, t: TFunction): string {
-  const diff = Date.now() - ts;
-  const days = Math.floor(diff / 86400000);
-  if (days === 0) return t('careers.postedToday', 'Today');
-  if (days === 1) return t('careers.postedOneDayAgo', '1 day ago');
-  if (days < 30) return t('careers.postedDaysAgo', '{{days}} days ago', { days });
+function timeAgo(ts: number, lang: string): string {
+  // Intl.RelativeTimeFormat handles all four UI languages natively (including
+  // proper Russian/Armenian plural forms), same as src/lib/eventTimeline.ts.
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
+  const diffMs = Date.now() - ts;
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return rtf.format(0, 'minute');
+  if (minutes < 60) return rtf.format(-minutes, 'minute');
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return rtf.format(-hours, 'hour');
+  const days = Math.floor(hours / 24);
+  if (days < 30) return rtf.format(-days, 'day');
   const months = Math.floor(days / 30);
-  return t('careers.postedMonthsAgo', '{{months}} month{{plural}} ago', {
-    months,
-    plural: months > 1 ? 's' : '',
-  });
+  return rtf.format(-months, 'month');
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -68,6 +71,13 @@ const TYPE_LABELS: Record<string, string> = {
   part_time: 'Part-time',
   contract: 'Contract',
   internship: 'Internship',
+};
+
+const EMPLOYMENT_TYPE_KEYS: Record<string, string> = {
+  full_time: 'fullTime',
+  part_time: 'partTime',
+  contract: 'contract',
+  internship: 'internship',
 };
 
 // ─── Icons ───────────────────────────────────────────────────
@@ -333,7 +343,7 @@ export default function CareersPage({ orgSlug }: { orgSlug: string }) {
             className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-4"
             style={{ color: 'var(--landing-text-primary)' }}
           >
-            {t('careers.heroTitle', 'Join')}{' '}
+            {t('careers.joinTitle', 'Join')}{' '}
             <span style={{ color: 'var(--primary)' }}>{data.org.name}</span>
           </h1>
           <p
@@ -341,7 +351,7 @@ export default function CareersPage({ orgSlug }: { orgSlug: string }) {
             style={{ color: 'var(--landing-text-secondary)' }}
           >
             {t(
-              'careers.heroSubtitle',
+              'careers.joinSubtitle',
               'Explore open positions and become part of our team. Build something amazing together.',
             )}
           </p>
@@ -558,6 +568,7 @@ function VacancyCard({
   onClick: () => void;
   t: TFunction;
 }) {
+  const { i18n } = useTranslation();
   return (
     <button
       onClick={onClick}
@@ -596,7 +607,7 @@ function VacancyCard({
               className="inline-flex items-center gap-1 text-xs"
               style={{ color: 'var(--landing-text-muted)' }}
             >
-              <ClockIcon className="w-3 h-3" /> {timeAgo(vacancy.createdAt, t)}
+              <ClockIcon className="w-3 h-3" /> {timeAgo(vacancy.createdAt, i18n.language)}
             </span>
           </div>
         </div>
@@ -608,7 +619,10 @@ function VacancyCard({
             border: '1px solid var(--landing-card-border)',
           }}
         >
-          {TYPE_LABELS[vacancy.employmentType] || vacancy.employmentType}
+          {t(
+            `recruitment.type.${EMPLOYMENT_TYPE_KEYS[vacancy.employmentType] || vacancy.employmentType}`,
+            TYPE_LABELS[vacancy.employmentType] || vacancy.employmentType,
+          )}
         </span>
       </div>
 
@@ -798,6 +812,7 @@ function VacancyDetails({
   onApply: () => void;
   t: TFunction;
 }) {
+  const { i18n } = useTranslation();
   return (
     <div className="p-6 md:p-8">
       {/* Header */}
@@ -811,7 +826,10 @@ function VacancyDetails({
               border: '1px solid var(--landing-card-border)',
             }}
           >
-            {TYPE_LABELS[details.employmentType] || details.employmentType}
+            {t(
+              `recruitment.type.${EMPLOYMENT_TYPE_KEYS[details.employmentType] || details.employmentType}`,
+              TYPE_LABELS[details.employmentType] || details.employmentType,
+            )}
           </span>
           {details.department && (
             <span className="text-xs" style={{ color: 'var(--landing-text-muted)' }}>
@@ -847,7 +865,7 @@ function VacancyDetails({
             className="inline-flex items-center gap-1.5 text-sm"
             style={{ color: 'var(--landing-text-muted)' }}
           >
-            <ClockIcon /> {timeAgo(details.createdAt, t)}
+            <ClockIcon /> {timeAgo(details.createdAt, i18n.language)}
           </span>
         </div>
       </div>

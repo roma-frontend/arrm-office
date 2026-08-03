@@ -97,8 +97,26 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
   const isAdminOrSupervisor = currentUser?.role === 'admin' || currentUser?.role === 'supervisor';
   const isSuperadmin = currentUser?.role === 'superadmin';
   const isTargetSuperadmin = employee?.role === 'superadmin';
-  const canEdit = isAdminOrSupervisor || isSuperadmin;
+  // Edit rights are scoped to the employee's own organization: an
+  // admin/supervisor may only edit colleagues in their org; superadmin is
+  // global. Matches the server-side RBAC in updateExtendedProfile / updateUser
+  // / deleteUser, so the UI no longer shows Edit for cross-org employees.
+  const isSameOrg =
+    !!currentUser?.organizationId && currentUser.organizationId === employee?.organizationId;
+  const canEdit = (isAdminOrSupervisor && isSameOrg) || isSuperadmin;
   const canDelete = canEdit && !isTargetSuperadmin && employeeId !== currentUser?.id;
+  // Rating is subject to the same org scoping as editing — an admin/supervisor
+  // may only rate employees in their own org; superadmin is global. Like
+  // createRating / getEmployeesNeedingRating, admin/superadmin and inactive
+  // targets are not rateable by non-superadmins, so the button is hidden for
+  // them too.
+  const canRate =
+    (isAdminOrSupervisor &&
+      isSameOrg &&
+      !isTargetSuperadmin &&
+      employee?.role !== 'admin' &&
+      employee?.isActive) ||
+    isSuperadmin;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -208,7 +226,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
         monthlyStats={monthlyStats as unknown as MonthlyStatsShape | null | undefined}
         canEdit={canEdit}
         canDelete={canDelete}
-        isAdminOrSupervisor={isAdminOrSupervisor}
+        canRate={canRate}
         showRatingForm={showRatingForm}
         onEdit={() => setShowEditModal(true)}
         onDelete={() => setShowDeleteDialog(true)}
@@ -233,7 +251,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
       />
 
       {/* Supervisor Rating Form (inline) */}
-      {isAdminOrSupervisor && showRatingForm && (
+      {canRate && showRatingForm && (
         <SupervisorRatingForm
           employeeId={employeeId}
           employeeName={employee.name}
@@ -405,7 +423,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
       )}
 
       {/* No rating yet */}
-      {latestRating === null && isAdminOrSupervisor && (
+      {latestRating === null && canRate && (
         <Card className="border-dashed">
           <CardContent className="p-6 text-center">
             <Star className="w-10 h-10 text-(--text-muted) mx-auto mb-2 opacity-30" />

@@ -161,9 +161,7 @@ export default function AttendancePage() {
   );
   const needsRating = useQuery(
     getNeedsRatingApi,
-    user?.id && (isAdminOrSupervisor || isSuperadmin)
-      ? { supervisorId: user.id as Id<'users'> }
-      : 'skip',
+    user?.id && (isAdminOrSupervisor || isSuperadmin) ? {} : 'skip',
   );
 
   const allEmployeesOverview = useQuery(

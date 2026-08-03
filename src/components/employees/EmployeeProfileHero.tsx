@@ -46,7 +46,7 @@ interface EmployeeProfileHeroProps {
   } | null;
   canEdit: boolean;
   canDelete: boolean;
-  isAdminOrSupervisor: boolean;
+  canRate: boolean;
   showRatingForm: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -128,7 +128,7 @@ export default function EmployeeProfileHero({
   monthlyStats,
   canEdit,
   canDelete,
-  isAdminOrSupervisor,
+  canRate,
   showRatingForm,
   onEdit,
   onDelete,
@@ -253,7 +253,7 @@ export default function EmployeeProfileHero({
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             )}
-            {isAdminOrSupervisor && (
+            {canRate && (
               <Button
                 size="sm"
                 onClick={onRate}

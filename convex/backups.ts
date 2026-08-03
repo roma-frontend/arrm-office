@@ -18,6 +18,8 @@ import { getAuthCaller } from './lib/getAuthCaller';
 import { internal } from './_generated/api';
 import type { Id, Doc } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
+// Single source of truth for secrets — merged with backup-only fields below.
+import { SENSITIVE_USER_FIELDS as REDACTED_USER_FIELDS } from './lib/userRedaction';
 
 const BACKUP_RETENTION_HOURS = 48;
 
@@ -27,15 +29,12 @@ const BACKUP_RETENTION_HOURS = 48;
 
 /** User fields that must never be written into a backup. */
 const SENSITIVE_USER_FIELDS = [
-  'passwordHash',
-  'sessionToken',
-  'totpSecret',
-  'backupCodes',
-  'webauthnChallenge',
-  'faceDescriptor',
+  // Everything redacted from user queries (credentials, session secrets, 2FA
+  // material, biometrics, lockout state) — see convex/lib/userRedaction.ts.
+  ...REDACTED_USER_FIELDS,
+  // Biometric photo: kept on redacted query results (avatar fallback) but must
+  // never land in a backup.
   'faceImageUrl',
-  'resetPasswordToken',
-  'resetPasswordExpiry',
 ] as const;
 
 type SensitiveUserField = (typeof SENSITIVE_USER_FIELDS)[number];

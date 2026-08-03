@@ -73,13 +73,21 @@ function getStatusBadge(status: string, t: (key: string) => string) {
 export default function PayrollRunDetailClient({ params }: { params: Promise<{ id: string }> }) {
   const { t } = useTranslation();
   const resolvedParams = React.use(params);
-  const runId = resolvedParams.id as Id<'payrollRuns'>;
+  const rawRunId = resolvedParams.id;
+  // Defensive: stale links may carry a period like "2026-08" instead of a
+  // Convex doc id. Convex ids are alphanumeric only (no '-'), so reject anything
+  // else before querying — otherwise the validator throws ArgumentValidationError.
+  const isValidRunId = /^[A-Za-z0-9]+$/.test(rawRunId);
+  const runId = rawRunId as Id<'payrollRuns'>;
   const { user } = useAuthStore();
 
   const isAdmin =
     user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
-  const run = useQuery(api.payroll.queries.getPayrollRunById, user?.id ? { id: runId } : 'skip');
+  const run = useQuery(
+    api.payroll.queries.getPayrollRunById,
+    user?.id && isValidRunId ? { id: runId } : 'skip',
+  );
 
   const calculate = useMutation(api.payroll.mutations.calculatePayrollRun);
   const approve = useMutation(api.payroll.mutations.approvePayrollRun);

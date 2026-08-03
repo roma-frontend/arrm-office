@@ -7,6 +7,14 @@ if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = 'test-secret-for-jest-only-not-for-production-32chars';
 }
 
+// Provide a default Convex deployment URL so modules that capture it at
+// import time (e.g. src/lib/convex-server-query.ts) behave predictably under
+// test. Individual tests can still delete/override it (see
+// src/__tests__/convexServerQuery.test.ts) to exercise the missing-env path.
+if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+  process.env.NEXT_PUBLIC_CONVEX_URL = 'https://test-project.convex.cloud';
+}
+
 // Polyfill TextEncoder/TextDecoder for jose and other crypto libs
 if (typeof globalThis.TextEncoder === 'undefined') {
   const { TextEncoder, TextDecoder } = require('util');

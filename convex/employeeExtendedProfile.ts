@@ -59,6 +59,18 @@ export const updateExtendedProfile = mutation({
 
     const { userId, ...fields } = args;
 
+    // RBAC: only same-org admins/supervisors, superadmin, or the employee
+    // themself may update this employee's extended profile. (Matches
+    // recordTaxIdVerification's authorization model.)
+    const target = await ctx.db.get(userId);
+    if (!target) throw new Error('User not found');
+    const isOrgStaff =
+      (requester.role === 'admin' || requester.role === 'supervisor') &&
+      requester.organizationId === target.organizationId;
+    if (requester.role !== 'superadmin' && !isOrgStaff && requester._id !== userId) {
+      throw new Error('Not authorized to update this employee');
+    }
+
     const existing = await ctx.db
       .query('employeeProfiles')
       .withIndex('by_user', (q) => q.eq('userId', userId))

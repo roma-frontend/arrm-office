@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { getLeaveTypeLabel, type LeaveType, type LeaveStatus } from '@/lib/types';
 import { getInitials } from '@/lib/stringUtils';
 import type { CalendarEvent } from './CreateEventModal';
+import type { TimelineInput } from '@/lib/eventTimeline';
 
 type LeaveRequest = {
   _id: string;
@@ -35,6 +36,10 @@ type LeaveRequest = {
   reason: string;
   status: string;
   comment?: string;
+  createdAt?: number;
+  reviewedAt?: number;
+  reviewerName?: string;
+  reviewComment?: string;
 };
 
 type DriverScheduleEvent = {
@@ -53,8 +58,24 @@ type DriverScheduleEvent = {
   endTime: number;
   type: 'trip' | 'blocked' | 'maintenance';
   status: string;
-  tripInfo?: { from: string; to: string; purpose: string; passengerCount: number; notes?: string };
+  tripInfo?: {
+    from: string;
+    to: string;
+    purpose: string;
+    passengerCount: number;
+    notes?: string;
+    distanceKm?: number;
+    durationMinutes?: number;
+    passengerPhone?: string;
+  };
   reason?: string;
+  createdAt?: number;
+  arrivedAt?: number;
+  passengerPickedUpAt?: number;
+  waitTimeMinutes?: number;
+  driverNotes?: string;
+  mapData?: { distanceMeters: number; durationSeconds: number };
+  driverFeedback?: { rating: number; comment?: string; completedAt: number };
 };
 
 type GoogleCalendarEvent = {
@@ -86,6 +107,8 @@ interface DayDetailsModalProps {
   driverEvents: DriverScheduleEvent[];
   customEvents: CalendarEvent[];
   onClose: () => void;
+  /** Double-clicking a row hands the entry up to the timeline modal. */
+  onOpenTimeline?: (input: TimelineInput) => void;
 }
 
 export function DayDetailsModal({
@@ -96,12 +119,22 @@ export function DayDetailsModal({
   driverEvents,
   customEvents,
   onClose,
+  onOpenTimeline,
 }: DayDetailsModalProps) {
   const { t } = useTranslation();
   const lang = i18n.language || 'en';
   const locale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
   const totalEvents =
     leaves.length + googleEvents.length + driverEvents.length + customEvents.length;
+
+  // Spread onto an event row to make it open its timeline on double-click.
+  const rowProps = (input: TimelineInput) =>
+    onOpenTimeline
+      ? {
+          onDoubleClick: () => onOpenTimeline(input),
+          title: t('eventTimeline.hints.doubleClick'),
+        }
+      : {};
 
   if (typeof window === 'undefined') return null;
 
@@ -201,7 +234,8 @@ export function DayDetailsModal({
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
-                          className="flex items-start gap-3 p-3 rounded-xl border border-(--border) bg-(--background-subtle) hover:border-(--primary)/40 transition-colors"
+                          {...rowProps({ source: 'leave', data: leave })}
+                          className="flex items-start gap-3 p-3 rounded-xl border border-(--border) bg-(--background-subtle) hover:border-(--primary)/40 transition-colors cursor-pointer"
                         >
                           <div
                             className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0"
@@ -253,7 +287,8 @@ export function DayDetailsModal({
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
-                          className="flex items-start gap-3 p-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-500/5 hover:border-blue-400 transition-colors"
+                          {...rowProps({ source: 'custom', data: evt })}
+                          className="flex items-start gap-3 p-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-500/5 hover:border-blue-400 transition-colors cursor-pointer"
                         >
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-500 text-white">
                             <CalendarPlus className="w-5 h-5" />
@@ -292,7 +327,8 @@ export function DayDetailsModal({
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
-                          className="flex items-start gap-3 p-3 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-500/5 hover:border-purple-400 transition-colors"
+                          {...rowProps({ source: 'google', data: evt })}
+                          className="flex items-start gap-3 p-3 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-500/5 hover:border-purple-400 transition-colors cursor-pointer"
                         >
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-purple-500 text-white">
                             <ExternalLink className="w-5 h-5" />
@@ -339,7 +375,8 @@ export function DayDetailsModal({
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.05 }}
-                          className="flex items-start gap-3 p-3 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-500/5 hover:border-orange-400 transition-colors"
+                          {...rowProps({ source: 'driver', data: evt })}
+                          className="flex items-start gap-3 p-3 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-500/5 hover:border-orange-400 transition-colors cursor-pointer"
                         >
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-orange-500 text-white">
                             <Car className="w-5 h-5" />

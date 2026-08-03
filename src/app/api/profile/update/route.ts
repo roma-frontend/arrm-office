@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { signJWT, verifyJWT, type JWTPayload } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { resolveConvexUserIdByEmail } from '@/lib/convex-server-query';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {
   try {
@@ -26,10 +27,20 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
       }
 
+      // SECURITY/CORRECTNESS: `session.user.id` is the provider subject (a
+      // UUID / Google sub), NOT a Convex user id. Minting a JWT with it would
+      // poison the `hr-auth-token` cookie and break every Convex call that
+      // takes `Id<'users'>`. Resolve the Convex `_id` from the verified email.
+      const sessionEmail = session.user.email || email;
+      const convexUserId = await resolveConvexUserIdByEmail(sessionEmail);
+      if (!convexUserId) {
+        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      }
+
       jwt = await signJWT({
-        userId: session.user.id || userId,
+        userId: convexUserId,
         name: session.user.name || name,
-        email: session.user.email || email,
+        email: sessionEmail,
         role: (session.user.role as JWTPayload['role']) || 'employee',
         department: session.user.department,
         position: session.user.position,

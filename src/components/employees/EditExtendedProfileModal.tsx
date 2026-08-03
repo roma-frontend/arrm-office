@@ -97,14 +97,25 @@ const DEFAULT_SCHEDULE: WorkSchedule = {
 };
 
 const ALL_WEEK_DAYS = [
-  { key: 'monday', label: 'Mon' },
-  { key: 'tuesday', label: 'Tue' },
-  { key: 'wednesday', label: 'Wed' },
-  { key: 'thursday', label: 'Thu' },
-  { key: 'friday', label: 'Fri' },
-  { key: 'saturday', label: 'Sat' },
-  { key: 'sunday', label: 'Sun' },
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
 ];
+
+/** Maps full weekday ids (stored in the form data) to the short i18n keys. */
+const WEEKDAY_SHORT: Record<string, string> = {
+  monday: 'mon',
+  tuesday: 'tue',
+  wednesday: 'wed',
+  thursday: 'thu',
+  friday: 'fri',
+  saturday: 'sat',
+  sunday: 'sun',
+};
 
 interface EditExtendedProfileModalProps {
   open: boolean;
@@ -324,14 +335,14 @@ export default function EditExtendedProfileModal({
                 value={form.birthYear}
                 onChange={(v) => updateField('birthYear', v)}
                 type="number"
-                placeholder="e.g. 1975"
+                placeholder={t('extendedProfile.birthYearPlaceholder', 'e.g. 1975')}
                 icon={<CalendarDays className="w-3 h-3" />}
               />
               <Input
                 label={t('extendedProfile.address', 'Address')}
                 value={form.address}
                 onChange={(v) => updateField('address', v)}
-                placeholder="e.g. 123 Main St, Yerevan"
+                placeholder={t('extendedProfile.addressPlaceholder')}
                 icon={<MapPin className="w-3 h-3" />}
               />
             </div>
@@ -460,10 +471,10 @@ export default function EditExtendedProfileModal({
               {/* Working Days */}
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {ALL_WEEK_DAYS.map((day) => {
-                  const isSelected = form.workSchedule.workingDays.includes(day.key);
+                  const isSelected = form.workSchedule.workingDays.includes(day);
                   return (
                     <button
-                      key={day.key}
+                      key={day}
                       type="button"
                       onClick={() =>
                         setForm((p) => ({
@@ -471,8 +482,8 @@ export default function EditExtendedProfileModal({
                           workSchedule: {
                             ...p.workSchedule,
                             workingDays: isSelected
-                              ? p.workSchedule.workingDays.filter((d) => d !== day.key)
-                              : [...p.workSchedule.workingDays, day.key],
+                              ? p.workSchedule.workingDays.filter((d) => d !== day)
+                              : [...p.workSchedule.workingDays, day],
                           },
                         }))
                       }
@@ -482,7 +493,7 @@ export default function EditExtendedProfileModal({
                           : 'bg-(--background-subtle) border-(--border) text-(--text-muted)/60'
                       }`}
                     >
-                      {day.label}
+                      {t('weekdays.' + (WEEKDAY_SHORT[day] ?? day))}
                     </button>
                   );
                 })}
@@ -537,7 +548,7 @@ export default function EditExtendedProfileModal({
                 label={t('extendedProfile.contactName', 'Full Name')}
                 value={form.emergencyContactName}
                 onChange={(v) => updateField('emergencyContactName', v)}
-                placeholder="e.g. Jane Doe"
+                placeholder={t('extendedProfile.contactNamePlaceholder')}
                 icon={<User className="w-3 h-3" />}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -552,7 +563,7 @@ export default function EditExtendedProfileModal({
                   label={t('extendedProfile.contactRelation', 'Relationship')}
                   value={form.emergencyContactRelation}
                   onChange={(v) => updateField('emergencyContactRelation', v)}
-                  placeholder="e.g. Spouse, Parent"
+                  placeholder={t('extendedProfile.contactRelationPlaceholder')}
                   icon={<Heart className="w-3 h-3" />}
                 />
               </div>
@@ -661,13 +672,13 @@ export default function EditExtendedProfileModal({
                           label={t('extendedProfile.company', 'Company')}
                           value={entry.company}
                           onChange={(v) => updateWorkEntry(idx, { company: v })}
-                          placeholder="Company name"
+                          placeholder={t('extendedProfile.companyPlaceholder')}
                         />
                         <Input
                           label={t('extendedProfile.position', 'Position')}
                           value={entry.position}
                           onChange={(v) => updateWorkEntry(idx, { position: v })}
-                          placeholder="Job title"
+                          placeholder={t('extendedProfile.positionPlaceholder')}
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
@@ -682,7 +693,7 @@ export default function EditExtendedProfileModal({
                           value={entry.endDate ?? ''}
                           onChange={(v) => updateWorkEntry(idx, { endDate: v || undefined })}
                           type="month"
-                          placeholder="Present"
+                          placeholder={t('extendedProfile.present')}
                         />
                       </div>
                       <Input
@@ -690,7 +701,7 @@ export default function EditExtendedProfileModal({
                         value={entry.description ?? ''}
                         onChange={(v) => updateWorkEntry(idx, { description: v || undefined })}
                         type="textarea"
-                        placeholder="Describe your role and achievements..."
+                        placeholder={t('extendedProfile.descriptionPlaceholder')}
                       />
                     </motion.div>
                   ))}
@@ -753,13 +764,13 @@ export default function EditExtendedProfileModal({
                           label={t('extendedProfile.institution', 'Institution')}
                           value={entry.institution}
                           onChange={(v) => updateEduEntry(idx, { institution: v })}
-                          placeholder="University / School"
+                          placeholder={t('extendedProfile.institutionPlaceholder')}
                         />
                         <Input
                           label={t('extendedProfile.degree', 'Degree')}
                           value={entry.degree}
                           onChange={(v) => updateEduEntry(idx, { degree: v })}
-                          placeholder="e.g. Bachelor's"
+                          placeholder={t('extendedProfile.degreePlaceholder')}
                         />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -767,7 +778,7 @@ export default function EditExtendedProfileModal({
                           label={t('extendedProfile.field', 'Field')}
                           value={entry.field}
                           onChange={(v) => updateEduEntry(idx, { field: v })}
-                          placeholder="e.g. Computer Science"
+                          placeholder={t('extendedProfile.fieldPlaceholder')}
                         />
                         <Input
                           label={t('extendedProfile.startDate', 'Start')}
@@ -780,14 +791,14 @@ export default function EditExtendedProfileModal({
                           value={entry.endDate ?? ''}
                           onChange={(v) => updateEduEntry(idx, { endDate: v || undefined })}
                           type="month"
-                          placeholder="Present"
+                          placeholder={t('extendedProfile.present')}
                         />
                       </div>
                       <Input
                         label="GPA"
                         value={entry.gpa ?? ''}
                         onChange={(v) => updateEduEntry(idx, { gpa: v || undefined })}
-                        placeholder="e.g. 3.8"
+                        placeholder={t('extendedProfile.gpaPlaceholder')}
                       />
                     </motion.div>
                   ))}

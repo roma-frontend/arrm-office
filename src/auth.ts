@@ -30,6 +30,7 @@ type UserRole = 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
 
 /** Role fields Convex returns for a user; all optional — never trust the wire. */
 interface ConvexUserData {
+  _id?: string;
   userId?: string;
   name?: string;
   email?: string;
@@ -136,7 +137,7 @@ export const authConfig: NextAuthConfig = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              path: 'users.queries.getUserByEmail',
+              path: 'users.queries.getPublicUserByEmail',
               args: { email },
               format: 'json',
             }),
@@ -146,6 +147,13 @@ export const authConfig: NextAuthConfig = {
             const data = (await response.json()) as ConvexResponse & ConvexUserData;
             const userData: ConvexUserData = data.value ?? data;
 
+            // The provider id (Google sub / UUID) is NOT a Convex user id.
+            // Capture the Convex document `_id` so `session.user.id` is safe to
+            // use as `Id<'users'>` in every consumer (getServerUser, chat,
+            // tasks, profile/update, convex-token, ...).
+            if (userData?._id) {
+              user.id = userData._id;
+            }
             if (userData?.role) {
               user.role = userData.role;
             }
@@ -186,7 +194,7 @@ export const authConfig: NextAuthConfig = {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                path: 'users.queries.getUserByEmail',
+                path: 'users.queries.getPublicUserByEmail',
                 args: { email: token.email },
                 format: 'json',
               }),

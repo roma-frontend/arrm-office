@@ -2045,6 +2045,127 @@
     "visualOverview": "Visual overview of team leaves - click any day to see details",
     "away": "Away"
   },
+  "eventTimeline": {
+    "sources": {
+      "leave": "Leave request",
+      "driver": "Driver booking",
+      "google": "Google Calendar",
+      "custom": "Calendar event"
+    },
+    "sections": {
+      "timeline": "Timeline",
+      "details": "Details",
+      "people": "People"
+    },
+    "phase": {
+      "upcoming": "Upcoming",
+      "live": "Happening now",
+      "past": "Finished"
+    },
+    "progress": {
+      "elapsed": "{{value}}% elapsed"
+    },
+    "relative": {
+      "starts": "starts {{value}}",
+      "endsIn": "ends {{value}}",
+      "ended": "ended {{value}}"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "confirmed": "Confirmed"
+    },
+    "milestones": {
+      "created": "Created",
+      "submitted": "Request submitted",
+      "awaitingReview": "Awaiting review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "reminder": "Reminder",
+      "leaveStarts": "Leave starts",
+      "leaveEnds": "Leave ends",
+      "eventStarts": "Event starts",
+      "eventEnds": "Event ends",
+      "booked": "Booked",
+      "blockStarts": "Block starts",
+      "blockEnds": "Block ends",
+      "pickup": "Pickup",
+      "dropoff": "Drop-off",
+      "driverArrived": "Driver arrived",
+      "passengerOnBoard": "Passenger on board",
+      "tripClosed": "Trip closed",
+      "now": "Now",
+      "noDateYet": "No date yet"
+    },
+    "facts": {
+      "employee": "Employee",
+      "department": "Department",
+      "leaveType": "Leave type",
+      "workingDays": "Working days",
+      "reviewedBy": "Reviewed by",
+      "reason": "Reason",
+      "comment": "Comment",
+      "reviewComment": "Review comment",
+      "driver": "Driver",
+      "bookedBy": "Booked by",
+      "bookingType": "Booking type",
+      "route": "Route",
+      "purpose": "Purpose",
+      "passengers": "Passengers",
+      "passengerPhone": "Passenger phone",
+      "notes": "Notes",
+      "vehicle": "Vehicle",
+      "plateNumber": "Plate number",
+      "capacity": "Capacity",
+      "distance": "Distance",
+      "waitTime": "Wait time",
+      "driverNotes": "Driver notes",
+      "rating": "Rating",
+      "feedback": "Feedback",
+      "calendar": "Calendar",
+      "location": "Location",
+      "description": "Description",
+      "category": "Category",
+      "reminder": "Reminder",
+      "attendees": "Attendees",
+      "attachment": "Attachment",
+      "openAttachment": "Open attachment"
+    },
+    "roles": {
+      "employee": "Employee",
+      "reviewer": "Reviewer",
+      "driver": "Driver",
+      "bookedBy": "Booked by",
+      "attendee": "Attendee"
+    },
+    "driverType": {
+      "trip": "Trip",
+      "blocked": "Blocked time",
+      "maintenance": "Maintenance",
+      "time_off": "Time off"
+    },
+    "driverStatus": {
+      "scheduled": "Scheduled",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "units": {
+      "day": "d",
+      "hour": "h",
+      "minute": "min",
+      "km": "km"
+    },
+    "actions": {
+      "copyDetails": "Copy details",
+      "addToCalendar": "Export .ics",
+      "copied": "Details copied to clipboard",
+      "copyFailed": "Could not copy details",
+      "downloaded": "Calendar file downloaded"
+    },
+    "hints": {
+      "doubleClick": "Double-click to open the full timeline"
+    }
+  },
   "conflicts": {
     "title": "Conflict Detection",
     "critical": "Critical",
@@ -2602,6 +2723,17 @@
     "educationDesc": "Academic background and qualifications",
     "dateOfBirth": "Date of Birth",
     "birthYear": "Birth Year",
+    "birthYearPlaceholder": "e.g. 1975",
+    "addressPlaceholder": "e.g. 123 Main St, Yerevan",
+    "contactNamePlaceholder": "e.g. Jane Doe",
+    "contactRelationPlaceholder": "e.g. Spouse, Parent",
+    "companyPlaceholder": "Company name",
+    "positionPlaceholder": "Job title",
+    "descriptionPlaceholder": "Describe your role and achievements...",
+    "institutionPlaceholder": "University / School",
+    "degreePlaceholder": "e.g. Bachelor's",
+    "fieldPlaceholder": "e.g. Computer Science",
+    "gpaPlaceholder": "e.g. 3.8",
     "pensionExempt": "Funded pension",
     "pensionExemptHint": "Armenia: employees born before 1974 are exempt from the mandatory funded pension",
     "pensionExemptYes": "Exempt (born before 1974)",

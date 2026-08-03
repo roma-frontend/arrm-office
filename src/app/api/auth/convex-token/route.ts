@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyJWT, signConvexJWT, type JWTPayload } from '@/lib/jwt';
 import { auth } from '@/auth';
+import { resolveConvexUserIdByEmail } from '@/lib/convex-server-query';
 
 /**
  * Mint a fresh Convex auth token for the browser auth bridge.
@@ -29,8 +30,12 @@ export async function GET() {
     try {
       const session = await auth();
       if (session?.user?.email) {
+        // `session.user.id` is the provider subject (UUID / Google sub), NOT a
+        // Convex id. The minted Convex JWT's subject must reference the Convex
+        // user, so resolve `_id` from the verified email.
+        const convexUserId = await resolveConvexUserIdByEmail(session.user.email);
         payload = {
-          userId: session.user.id ?? '',
+          userId: convexUserId ?? '',
           name: session.user.name ?? 'User',
           email: session.user.email,
           role: (session.user.role as JWTPayload['role']) ?? 'employee',

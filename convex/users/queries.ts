@@ -6,6 +6,7 @@ import type { Id } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin } from '../lib/auth';
+import { redactUser } from '../lib/userRedaction';
 
 // ── Helper: Get user ID from email or userId ────────────────────────────────
 async function _getUserIdIdentityOrEmail(
@@ -60,7 +61,7 @@ export const getAllUsers = query({
         // cursor-based pagination not supported in this query
       }
       const users = await query.take(effectiveLimit + 1);
-      return users.filter((u) => u.role !== 'superadmin');
+      return users.filter((u) => u.role !== 'superadmin').map(redactUser);
     }
 
     // Everyone else only sees their organization
@@ -77,7 +78,7 @@ export const getAllUsers = query({
       // cursor-based pagination not supported in this query
     }
 
-    return await query.take(effectiveLimit + 1);
+    return (await query.take(effectiveLimit + 1)).map(redactUser);
   },
 });
 
@@ -95,20 +96,25 @@ export const listUsersPaginated = query({
 
     const isSuperadminUser = isSuperadmin(requester);
 
+    const redactPage = <T extends { _id: string }>(page: T[]) => page.map(redactUser);
+
     if (args.organizationId) {
-      return await ctx.db
+      const result = await ctx.db
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
         .order('desc')
         .paginate(args.paginationOpts);
+      return { ...result, page: redactPage(result.page) };
     } else if (isSuperadminUser) {
-      return await ctx.db.query('users').order('desc').paginate(args.paginationOpts);
+      const result = await ctx.db.query('users').order('desc').paginate(args.paginationOpts);
+      return { ...result, page: redactPage(result.page) };
     } else if (requester.organizationId) {
-      return await ctx.db
+      const result = await ctx.db
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
         .order('desc')
         .paginate(args.paginationOpts);
+      return { ...result, page: redactPage(result.page) };
     }
     return { page: [], isDone: true, continueCursor: '' };
   },
@@ -144,7 +150,7 @@ export const getUsersByOrganizationId = query({
       // cursor-based pagination not supported in this query
     }
 
-    return await query.take(effectiveLimit + 1);
+    return (await query.take(effectiveLimit + 1)).map(redactUser);
   },
 });
 
@@ -192,7 +198,7 @@ export const getCurrentUser = query({
     }
 
     return {
-      ...user,
+      ...redactUser(user),
       organizationSlug,
       organizationName,
     };
@@ -225,7 +231,40 @@ export const getUserByEmail = query({
       }
     }
 
-    return user;
+    // Never return credentials/session secrets — see lib/userRedaction.ts
+    return redactUser(user);
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET PUBLIC USER BY EMAIL — minimal projection for the server-side auth
+// bridge (OAuth session exchange, NextAuth sign-in, Convex id resolution).
+// Callable over the unauthenticated HTTP endpoint; returns ONLY the fields
+// needed to establish a session, never credentials, session secrets, 2FA
+// material or biometric data.
+// ─────────────────────────────────────────────────────────────────────────────
+export const getPublicUserByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_email', (q) => q.eq('email', email.toLowerCase()))
+      .unique();
+
+    if (!user) return null;
+
+    return {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      organizationId: user.organizationId,
+      isApproved: user.isApproved,
+      department: user.department,
+      position: user.position,
+      employeeType: user.employeeType,
+      avatarUrl: user.avatarUrl,
+    };
   },
 });
 
@@ -250,7 +289,8 @@ export const getUserById = query({
       }
     }
 
-    return user;
+    // Never return credentials/session secrets — see lib/userRedaction.ts
+    return redactUser(user);
   },
 });
 
@@ -545,6 +585,6 @@ export const getPendingUserById = query({
   handler: async (ctx, { userId }) => {
     const user = await ctx.db.get(userId);
     if (!user) return null;
-    return user;
+    return redactUser(user);
   },
 });

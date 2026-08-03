@@ -2045,6 +2045,127 @@
     "visualOverview": "Թիմի արձակուրդների տեսողական ակնարկ - սեղմեք ցանկացած օրվա վրա՝ մանրամասների համար",
     "away": "Բացակայում է"
   },
+  "eventTimeline": {
+    "sources": {
+      "leave": "Արձակուրդի հայտ",
+      "driver": "Վարորդի պատվեր",
+      "google": "Google Օրացույց",
+      "custom": "Օրացույցի իրադարձություն"
+    },
+    "sections": {
+      "timeline": "Ժամանակագրություն",
+      "details": "Մանրամասներ",
+      "people": "Մասնակիցներ"
+    },
+    "phase": {
+      "upcoming": "Առջևում է",
+      "live": "Ընթանում է հիմա",
+      "past": "Ավարտված"
+    },
+    "progress": {
+      "elapsed": "Անցել է {{value}}%"
+    },
+    "relative": {
+      "starts": "սկսվում է {{value}}",
+      "endsIn": "ավարտվում է {{value}}",
+      "ended": "ավարտվել է {{value}}"
+    },
+    "status": {
+      "scheduled": "Ծրագրված",
+      "confirmed": "Հաստատված"
+    },
+    "milestones": {
+      "created": "Ստեղծված",
+      "submitted": "Հայտը ուղարկված է",
+      "awaitingReview": "Սպասում է քննարկման",
+      "approved": "Հաստատված",
+      "rejected": "Մերժված",
+      "reminder": "Հիշեցում",
+      "leaveStarts": "Արձակուրդի սկիզբ",
+      "leaveEnds": "Արձակուրդի ավարտ",
+      "eventStarts": "Իրադարձության սկիզբ",
+      "eventEnds": "Իրադարձության ավարտ",
+      "booked": "Պատվիրված",
+      "blockStarts": "Արգելափակման սկիզբ",
+      "blockEnds": "Արգելափակման ավարտ",
+      "pickup": "Վերցնելու կետ",
+      "dropoff": "Իջեցնելու կետ",
+      "driverArrived": "Վարորդը հասել է",
+      "passengerOnBoard": "Ուղևորը մեքենայում է",
+      "tripClosed": "Ուղևորությունը փակված է",
+      "now": "Հիմա",
+      "noDateYet": "Ամսաթիվը դեռ չկա"
+    },
+    "facts": {
+      "employee": "Աշխատակից",
+      "department": "Բաժին",
+      "leaveType": "Արձակուրդի տեսակ",
+      "workingDays": "Աշխատանքային օրեր",
+      "reviewedBy": "Քննարկել է",
+      "reason": "Պատճառ",
+      "comment": "Մեկնաբանություն",
+      "reviewComment": "Քննարկողի մեկնաբանություն",
+      "driver": "Վարորդ",
+      "bookedBy": "Պատվիրել է",
+      "bookingType": "Պատվերի տեսակ",
+      "route": "Երթուղի",
+      "purpose": "Նպատակ",
+      "passengers": "Ուղևորներ",
+      "passengerPhone": "Ուղևորի հեռախոս",
+      "notes": "Նշումներ",
+      "vehicle": "Ավտոմեքենա",
+      "plateNumber": "Համարանիշ",
+      "capacity": "Տեղեր",
+      "distance": "Հեռավորություն",
+      "waitTime": "Սպասման ժամանակ",
+      "driverNotes": "Վարորդի նշումներ",
+      "rating": "Գնահատական",
+      "feedback": "Կարծիք",
+      "calendar": "Օրացույց",
+      "location": "Վայր",
+      "description": "Նկարագրություն",
+      "category": "Կատեգորիա",
+      "reminder": "Հիշեցում",
+      "attendees": "Մասնակիցներ",
+      "attachment": "Կցորդ",
+      "openAttachment": "Բացել կցորդը"
+    },
+    "roles": {
+      "employee": "Աշխատակից",
+      "reviewer": "Քննարկող",
+      "driver": "Վարորդ",
+      "bookedBy": "Պատվիրել է",
+      "attendee": "Մասնակից"
+    },
+    "driverType": {
+      "trip": "Ուղևորություն",
+      "blocked": "Զբաղված ժամ",
+      "maintenance": "Սպասարկում",
+      "time_off": "Հանգիստ"
+    },
+    "driverStatus": {
+      "scheduled": "Ծրագրված",
+      "in_progress": "Ընթացքի մեջ",
+      "completed": "Ավարտված",
+      "cancelled": "Չեղարկված"
+    },
+    "units": {
+      "day": "օր",
+      "hour": "ժ",
+      "minute": "ր",
+      "km": "կմ"
+    },
+    "actions": {
+      "copyDetails": "Պատճենել մանրամասները",
+      "addToCalendar": "Արտահանել .ics",
+      "copied": "Մանրամասները պատճենվել են",
+      "copyFailed": "Չհաջողվեց պատճենել մանրամասները",
+      "downloaded": "Օրացույցի ֆայլը ներբեռնվել է"
+    },
+    "hints": {
+      "doubleClick": "Կրկնակի սեղմեք՝ ամբողջ ժամանակագրությունը բացելու համար"
+    }
+  },
   "conflicts": {
     "title": "Վերնագիր",
     "critical": "Կրիտիկական",
@@ -2602,6 +2723,17 @@
     "educationDesc": "Ակադեմիական նախապատմություն և որակավորումներ",
     "dateOfBirth": "Ծննդյան ամսաթիվ",
     "birthYear": "Ծննդյան տարեթիվ",
+    "birthYearPlaceholder": "օր. 1975",
+    "addressPlaceholder": "օր. 123 Գլխավոր փողոց, Երևան",
+    "contactNamePlaceholder": "օր. Աննա Հակոբյան",
+    "contactRelationPlaceholder": "օր. ամուսին, ծնող",
+    "companyPlaceholder": "Ընկերության անվանումը",
+    "positionPlaceholder": "Պաշտոնի անվանումը",
+    "descriptionPlaceholder": "Նկարագրեք ձեր պարտականությունները և ձեռքբերումները...",
+    "institutionPlaceholder": "Համալսարան / Դպրոց",
+    "degreePlaceholder": "օր. բակալավր",
+    "fieldPlaceholder": "օր. համակարգչային գիտություն",
+    "gpaPlaceholder": "օր. 3.8",
     "pensionExempt": "Կուտակային կենսաթոշակ",
     "pensionExemptHint": "Հայաստան. մինչև 1974թ. ծնված աշխատողներն ազատված են պարտադիր կուտակային կենսաթոշակից",
     "pensionExemptYes": "Ազատված է (ծնված մինչև 1974թ.)",

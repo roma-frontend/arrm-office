@@ -10,7 +10,7 @@ interface ConvexResponse {
   errorMessage?: string;
 }
 
-/** Shape of the user doc returned by `users:getUserByEmail`. */
+/** Shape of the user doc returned by `users:getPublicUserByEmail`. */
 interface OAuthUser {
   _id: string;
   name: string;
@@ -77,9 +77,9 @@ export async function POST(req: NextRequest) {
     const emailLower = email.toLowerCase().trim();
     logger.log('[oauth-session] Starting OAuth session creation for:', emailLower);
 
-    // 1. Find user by email directly via query
+    // 1. Find user by email via the PUBLIC projection — never credentials
     logger.log('[oauth-session] Querying Convex for user...');
-    const userResult = await convexQuery<OAuthUser>('users:getUserByEmail', {
+    const userResult = await convexQuery<OAuthUser>('users:getPublicUserByEmail', {
       email: emailLower,
     });
 
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       isOAuthLogin: true, // Google already verified identity
     });
 
-    // Create JWT — getUserByEmail returns Convex doc with _id field
+    // Create JWT — getPublicUserByEmail returns the safe public projection
     const jwt = await signJWT({
       userId: userResult._id,
       name: userResult.name,

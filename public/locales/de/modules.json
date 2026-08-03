@@ -2045,6 +2045,127 @@
     "visualOverview": "Visuelle Übersicht der Teamurlaube - klicken Sie auf einen Tag für Details",
     "away": "Abwesend"
   },
+  "eventTimeline": {
+    "sources": {
+      "leave": "Urlaubsantrag",
+      "driver": "Fahrerbuchung",
+      "google": "Google Kalender",
+      "custom": "Kalendereintrag"
+    },
+    "sections": {
+      "timeline": "Zeitverlauf",
+      "details": "Details",
+      "people": "Personen"
+    },
+    "phase": {
+      "upcoming": "Bevorstehend",
+      "live": "Läuft gerade",
+      "past": "Beendet"
+    },
+    "progress": {
+      "elapsed": "{{value}} % vergangen"
+    },
+    "relative": {
+      "starts": "beginnt {{value}}",
+      "endsIn": "endet {{value}}",
+      "ended": "endete {{value}}"
+    },
+    "status": {
+      "scheduled": "Geplant",
+      "confirmed": "Bestätigt"
+    },
+    "milestones": {
+      "created": "Erstellt",
+      "submitted": "Antrag eingereicht",
+      "awaitingReview": "Warte auf Prüfung",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt",
+      "reminder": "Erinnerung",
+      "leaveStarts": "Urlaubsbeginn",
+      "leaveEnds": "Urlaubsende",
+      "eventStarts": "Beginn des Termins",
+      "eventEnds": "Ende des Termins",
+      "booked": "Gebucht",
+      "blockStarts": "Beginn der Sperrzeit",
+      "blockEnds": "Ende der Sperrzeit",
+      "pickup": "Abholung",
+      "dropoff": "Ankunft",
+      "driverArrived": "Fahrer ist eingetroffen",
+      "passengerOnBoard": "Fahrgast an Bord",
+      "tripClosed": "Fahrt abgeschlossen",
+      "now": "Jetzt",
+      "noDateYet": "Noch kein Datum"
+    },
+    "facts": {
+      "employee": "Mitarbeiter",
+      "department": "Abteilung",
+      "leaveType": "Urlaubsart",
+      "workingDays": "Arbeitstage",
+      "reviewedBy": "Geprüft von",
+      "reason": "Grund",
+      "comment": "Kommentar",
+      "reviewComment": "Kommentar der Prüfung",
+      "driver": "Fahrer",
+      "bookedBy": "Gebucht von",
+      "bookingType": "Buchungsart",
+      "route": "Route",
+      "purpose": "Zweck",
+      "passengers": "Fahrgäste",
+      "passengerPhone": "Telefon des Fahrgasts",
+      "notes": "Notizen",
+      "vehicle": "Fahrzeug",
+      "plateNumber": "Kennzeichen",
+      "capacity": "Sitzplätze",
+      "distance": "Entfernung",
+      "waitTime": "Wartezeit",
+      "driverNotes": "Notizen des Fahrers",
+      "rating": "Bewertung",
+      "feedback": "Feedback",
+      "calendar": "Kalender",
+      "location": "Ort",
+      "description": "Beschreibung",
+      "category": "Kategorie",
+      "reminder": "Erinnerung",
+      "attendees": "Teilnehmer",
+      "attachment": "Anhang",
+      "openAttachment": "Anhang öffnen"
+    },
+    "roles": {
+      "employee": "Mitarbeiter",
+      "reviewer": "Prüfer",
+      "driver": "Fahrer",
+      "bookedBy": "Gebucht von",
+      "attendee": "Teilnehmer"
+    },
+    "driverType": {
+      "trip": "Fahrt",
+      "blocked": "Gesperrte Zeit",
+      "maintenance": "Wartung",
+      "time_off": "Freizeit"
+    },
+    "driverStatus": {
+      "scheduled": "Geplant",
+      "in_progress": "Läuft",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert"
+    },
+    "units": {
+      "day": "T",
+      "hour": "Std",
+      "minute": "Min",
+      "km": "km"
+    },
+    "actions": {
+      "copyDetails": "Details kopieren",
+      "addToCalendar": ".ics exportieren",
+      "copied": "Details in die Zwischenablage kopiert",
+      "copyFailed": "Details konnten nicht kopiert werden",
+      "downloaded": "Kalenderdatei heruntergeladen"
+    },
+    "hints": {
+      "doubleClick": "Doppelklick öffnet den vollständigen Zeitverlauf"
+    }
+  },
   "conflicts": {
     "title": "Konflikterkennung",
     "critical": "Kritisch",
@@ -2602,6 +2723,17 @@
     "educationDesc": "Akademischer Hintergrund und Qualifikationen",
     "dateOfBirth": "Geburtsdatum",
     "birthYear": "Geburtsjahr",
+    "birthYearPlaceholder": "z. B. 1975",
+    "addressPlaceholder": "z. B. Hauptstraße 123, Jerewan",
+    "contactNamePlaceholder": "z. B. Max Mustermann",
+    "contactRelationPlaceholder": "z. B. Ehepartner, Elternteil",
+    "companyPlaceholder": "Firmenname",
+    "positionPlaceholder": "Berufsbezeichnung",
+    "descriptionPlaceholder": "Beschreiben Sie Ihre Aufgaben und Erfolge...",
+    "institutionPlaceholder": "Universität / Schule",
+    "degreePlaceholder": "z. B. Bachelor",
+    "fieldPlaceholder": "z. B. Informatik",
+    "gpaPlaceholder": "z. B. 3.8",
     "pensionExempt": "Rentenversicherung",
     "pensionExemptHint": "Armenien: Vor 1974 Geborene sind von der Pflichtrentenversicherung befreit",
     "pensionExemptYes": "Befreit (vor 1974 geboren)",

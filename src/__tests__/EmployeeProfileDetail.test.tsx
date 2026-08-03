@@ -50,7 +50,7 @@ jest.mock('../../convex/_generated/api', () => ({
 }));
 
 // ── Auth store mock ──────────────────────────────────────────────────────────
-let mockCurrentUser: any = { id: 'admin-1', role: 'admin', name: 'Admin' };
+let mockCurrentUser: any = { id: 'admin-1', role: 'admin', name: 'Admin', organizationId: 'org-1' };
 
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: () => ({ user: mockCurrentUser }),
@@ -164,7 +164,7 @@ jest.mock('@/components/employees/EmployeeProfileHero', () => ({
     score,
     canEdit,
     canDelete,
-    isAdminOrSupervisor,
+    canRate,
     showRatingForm,
     onEdit,
     onDelete,
@@ -191,7 +191,7 @@ jest.mock('@/components/employees/EmployeeProfileHero', () => ({
           <span>{score.overallScore}/100</span>
         </span>
       )}
-      {isAdminOrSupervisor && (
+      {canRate && (
         <button data-testid="rate-button" onClick={onRate}>
           {'employeeProfile.ratePerformance'}
         </button>
@@ -212,8 +212,8 @@ jest.mock('@/components/employees/EmployeeProfileHero', () => ({
 }));
 
 jest.mock('@/components/employees/ReportingLineWidget', () => ({
-  __esModule: true,
-  default: () => <div data-testid="reporting-line-widget" />,
+  // Named export — EmployeeProfileDetail does `import { ReportingLineWidget }`
+  ReportingLineWidget: () => <div data-testid="reporting-line-widget" />,
 }));
 
 jest.mock('@/components/employees/ExtendedProfileSection', () => ({
@@ -222,13 +222,18 @@ jest.mock('@/components/employees/ExtendedProfileSection', () => ({
 }));
 
 jest.mock('@/components/employees/AssignManagerModal', () => ({
-  __esModule: true,
-  default: ({ open }: any) => (open ? <div data-testid="assign-manager-modal" /> : null),
+  // Named export — EmployeeProfileDetail does `import { AssignManagerModal }`
+  AssignManagerModal: ({ open }: any) => (open ? <div data-testid="assign-manager-modal" /> : null),
 }));
 
 jest.mock('@/components/employees/EditExtendedProfileModal', () => ({
   __esModule: true,
   default: ({ open }: any) => (open ? <div data-testid="edit-extended-modal" /> : null),
+}));
+
+jest.mock('@/components/settlement/SettlementPreviewDialog', () => ({
+  __esModule: true,
+  default: ({ open }: any) => (open ? <div data-testid="settlement-dialog" /> : null),
 }));
 
 jest.mock('sonner', () => ({
@@ -257,6 +262,7 @@ const mockEmployeeId = 'emp-1' as Id<'users'>;
 
 const defaultEmployee = {
   _id: 'emp-1',
+  organizationId: 'org-1',
   name: 'John Doe',
   email: 'john@example.com',
   role: 'employee',
@@ -316,7 +322,7 @@ const defaultProfile = {
 describe('EmployeeProfileDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCurrentUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
+    mockCurrentUser = { id: 'admin-1', role: 'admin', name: 'Admin', organizationId: 'org-1' };
     queryResults = {
       getUserById: undefined,
       getEmployeeProfile: undefined,
@@ -566,6 +572,61 @@ describe('EmployeeProfileDetail', () => {
       fireEvent.click(editBtn);
 
       expect(screen.getByTestId('edit-modal')).toBeInTheDocument();
+    });
+  });
+
+  describe('Organization scoping', () => {
+    beforeEach(() => {
+      queryResults.getUserById = defaultEmployee;
+      queryResults.getMonthlyStats = defaultMonthlyStats;
+    });
+
+    it('hides edit/delete buttons for an admin from a different organization', () => {
+      mockCurrentUser = {
+        id: 'admin-2',
+        role: 'admin',
+        name: 'Other Org Admin',
+        organizationId: 'org-999',
+      };
+
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+
+      expect(screen.queryByTestId('edit-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('delete-button')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('rate-button')).not.toBeInTheDocument();
+    });
+
+    it('shows edit/delete/rate buttons for a superadmin regardless of organization', () => {
+      mockCurrentUser = {
+        id: 'super-1',
+        role: 'superadmin',
+        name: 'Superadmin',
+        organizationId: 'org-999',
+      };
+
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+
+      expect(screen.getByTestId('edit-button')).toBeInTheDocument();
+      expect(screen.getByTestId('delete-button')).toBeInTheDocument();
+      expect(screen.getByTestId('rate-button')).toBeInTheDocument();
+    });
+
+    it('hides the rate button when the target is an admin (non-superadmin viewer)', () => {
+      queryResults.getUserById = { ...defaultEmployee, role: 'admin' };
+
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+
+      expect(screen.getByTestId('edit-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('rate-button')).not.toBeInTheDocument();
+    });
+
+    it('hides the rate button when the target is inactive (non-superadmin viewer)', () => {
+      queryResults.getUserById = { ...defaultEmployee, isActive: false };
+
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+
+      expect(screen.getByTestId('edit-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('rate-button')).not.toBeInTheDocument();
     });
   });
 });

@@ -637,6 +637,8 @@ export const getUpcomingPayPeriods = query({
       period: string;
       label: string;
       status: string;
+      /** Convex doc id of the payroll run for this period, when one exists. */
+      runId: string | null;
       daysRemaining: number;
       isOverdue: boolean;
       urgency: 'critical' | 'warning' | 'info' | 'success';
@@ -653,6 +655,7 @@ export const getUpcomingPayPeriods = query({
           period: currentPeriod,
           label: 'Current period',
           status: 'pending',
+          runId: null,
           daysRemaining: Math.max(0, daysLeft),
           isOverdue: daysLeft < 0,
           urgency:
@@ -667,6 +670,7 @@ export const getUpcomingPayPeriods = query({
           period: currentPeriod,
           label: 'Pending approval',
           status: currentRun.status,
+          runId: currentRun._id,
           daysRemaining: Math.max(0, daysLeft),
           isOverdue: daysLeft < 0,
           urgency: daysLeft <= 3 ? 'warning' : 'info',
@@ -676,6 +680,7 @@ export const getUpcomingPayPeriods = query({
           period: currentPeriod,
           label: 'Ready to pay',
           status: 'approved',
+          runId: currentRun._id,
           daysRemaining: Math.max(0, daysLeft),
           isOverdue: false,
           urgency: 'success',
@@ -694,6 +699,7 @@ export const getUpcomingPayPeriods = query({
           period: nextPeriod,
           label: 'Next period',
           status: 'upcoming',
+          runId: null,
           daysRemaining: Math.max(0, daysUntil(nextDeadline)),
           isOverdue: false,
           urgency:
@@ -728,6 +734,7 @@ export const getUpcomingPayPeriods = query({
           period: periodStr,
           label: i === 0 ? 'Current period' : `Pay period ${i + 1}`,
           status: existingRun?.status ?? 'upcoming',
+          runId: existingRun?._id ?? null,
           daysRemaining: Math.max(0, daysLeft),
           isOverdue: daysLeft < 0,
           urgency:
@@ -758,6 +765,7 @@ export const getUpcomingPayPeriods = query({
           period: periodStr,
           label: i === 0 ? 'This week' : `Week ${i + 1}`,
           status: existingRun?.status ?? 'upcoming',
+          runId: existingRun?._id ?? null,
           daysRemaining: Math.max(0, daysLeft),
           isOverdue: daysLeft < 0,
           urgency:
@@ -781,6 +789,7 @@ export const getUpcomingPayPeriods = query({
         ? {
             period: currentRun.period,
             status: currentRun.status,
+            runId: currentRun._id,
             totalGross: currentRun.totalGross ?? 0,
             totalNet: currentRun.totalNet ?? 0,
             employeeCount: currentRun.employeeCount ?? 0,
