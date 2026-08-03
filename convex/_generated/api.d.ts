@@ -79,6 +79,7 @@ import type * as lib_date from "../lib/date.js";
 import type * as lib_getAuthCaller from "../lib/getAuthCaller.js";
 import type * as lib_leaveMoney from "../lib/leaveMoney.js";
 import type * as lib_limits from "../lib/limits.js";
+import type * as lib_orgAccess from "../lib/orgAccess.js";
 import type * as lib_payrollCalculator from "../lib/payrollCalculator.js";
 import type * as lib_pension from "../lib/pension.js";
 import type * as lib_rbac from "../lib/rbac.js";
@@ -283,6 +284,7 @@ declare const fullApi: ApiFromModules<{
   "lib/getAuthCaller": typeof lib_getAuthCaller;
   "lib/leaveMoney": typeof lib_leaveMoney;
   "lib/limits": typeof lib_limits;
+  "lib/orgAccess": typeof lib_orgAccess;
   "lib/payrollCalculator": typeof lib_payrollCalculator;
   "lib/pension": typeof lib_pension;
   "lib/rbac": typeof lib_rbac;
