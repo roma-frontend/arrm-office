@@ -107,6 +107,170 @@ async function makeNameResolver(ctx: QueryCtx | MutationCtx) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Attendee tracking + activity log
+// ---------------------------------------------------------------------------
+
+type AttendeeResponse = Doc<'roomBookingAttendees'>['response'];
+type BookingEventType = Doc<'roomBookingEvents'>['type'];
+
+/**
+ * Append one entry to a booking's activity log.
+ *
+ * Actor and target names are snapshotted here rather than joined at read time,
+ * so the log still reads correctly after somebody leaves the organization.
+ */
+async function logBookingEvent(
+  ctx: MutationCtx,
+  booking: Pick<Doc<'roomBookings'>, 'organizationId' | 'roomId'> & { _id: Id<'roomBookings'> },
+  type: BookingEventType,
+  actor: Caller | null,
+  extra: {
+    targetUserId?: Id<'users'>;
+    targetName?: string;
+    response?: AttendeeResponse;
+    previousStartTime?: number;
+    previousEndTime?: number;
+    newStartTime?: number;
+    newEndTime?: number;
+    note?: string;
+  } = {},
+): Promise<void> {
+  await ctx.db.insert('roomBookingEvents', {
+    organizationId: booking.organizationId,
+    bookingId: booking._id,
+    roomId: booking.roomId,
+    type,
+    actorId: actor?._id,
+    actorName: actor?.name ?? 'System',
+    actorRole: actor?.role,
+    createdAt: Date.now(),
+    ...extra,
+  });
+}
+
+/** Live attendee rows of a booking (uninvited people are excluded). */
+async function activeAttendeeRows(
+  ctx: QueryCtx | MutationCtx,
+  bookingId: Id<'roomBookings'>,
+): Promise<Doc<'roomBookingAttendees'>[]> {
+  const rows = await ctx.db
+    .query('roomBookingAttendees')
+    .withIndex('by_booking', (q) => q.eq('bookingId', bookingId))
+    .take(MAX_PAGE_SIZE);
+  return rows.filter((row) => !row.removedAt);
+}
+
+async function attendeeRow(
+  ctx: QueryCtx | MutationCtx,
+  bookingId: Id<'roomBookings'>,
+  userId: Id<'users'>,
+): Promise<Doc<'roomBookingAttendees'> | null> {
+  return await ctx.db
+    .query('roomBookingAttendees')
+    .withIndex('by_booking_user', (q) => q.eq('bookingId', bookingId).eq('userId', userId))
+    .unique();
+}
+
+/**
+ * Bring the tracking rows in line with a roster.
+ *
+ * Re-inviting somebody who was removed revives their row instead of inserting a
+ * duplicate, and their previous answer is cleared — a fresh invitation deserves
+ * a fresh reply. Emits one `attendee_added` / `attendee_removed` entry each so
+ * the log shows who changed the guest list and when.
+ */
+async function syncAttendeeRows(
+  ctx: MutationCtx,
+  booking: Doc<'roomBookings'>,
+  attendeeIds: Id<'users'>[],
+  actor: Caller,
+  options: { logChanges: boolean },
+): Promise<void> {
+  const resolveName = await makeNameResolver(ctx);
+  const wanted = new Set<string>(attendeeIds);
+  const existing = await ctx.db
+    .query('roomBookingAttendees')
+    .withIndex('by_booking', (q) => q.eq('bookingId', booking._id))
+    .take(MAX_PAGE_SIZE);
+  const byUser = new Map(existing.map((row) => [row.userId as string, row]));
+  const now = Date.now();
+
+  for (const userId of wanted) {
+    const row = byUser.get(userId);
+    if (row && !row.removedAt) continue;
+
+    if (row) {
+      await ctx.db.patch(row._id, {
+        response: 'needs_action',
+        respondedAt: undefined,
+        comment: undefined,
+        removedAt: undefined,
+        removedBy: undefined,
+        invitedAt: now,
+        invitedBy: actor._id,
+      });
+    } else {
+      await ctx.db.insert('roomBookingAttendees', {
+        organizationId: booking.organizationId,
+        bookingId: booking._id,
+        roomId: booking.roomId,
+        userId: userId as Id<'users'>,
+        response: 'needs_action',
+        invitedAt: now,
+        invitedBy: actor._id,
+      });
+    }
+
+    if (options.logChanges) {
+      await logBookingEvent(ctx, booking, 'attendee_added', actor, {
+        targetUserId: userId as Id<'users'>,
+        targetName: await resolveName(userId as Id<'users'>),
+      });
+    }
+  }
+
+  for (const row of existing) {
+    if (row.removedAt || wanted.has(row.userId)) continue;
+    await ctx.db.patch(row._id, { removedAt: now, removedBy: actor._id });
+    if (options.logChanges) {
+      await logBookingEvent(ctx, booking, 'attendee_removed', actor, {
+        targetUserId: row.userId,
+        targetName: await resolveName(row.userId),
+      });
+    }
+  }
+}
+
+/**
+ * A moved meeting invalidates the answers people gave for the old slot, so the
+ * responses go back to "needs action" — the same thing Outlook does when the
+ * organizer changes the time.
+ */
+async function resetResponsesAfterReschedule(
+  ctx: MutationCtx,
+  booking: Doc<'roomBookings'>,
+  actor: Caller,
+): Promise<number> {
+  const rows = await activeAttendeeRows(ctx, booking._id);
+  let reset = 0;
+  for (const row of rows) {
+    if (row.response === 'needs_action') continue;
+    await ctx.db.patch(row._id, {
+      response: 'needs_action',
+      respondedAt: undefined,
+      comment: undefined,
+    });
+    reset += 1;
+  }
+  if (reset > 0) {
+    await logBookingEvent(ctx, booking, 'responses_reset', actor, {
+      note: `${reset}`,
+    });
+  }
+  return reset;
+}
+
 export interface EnrichedBooking extends Doc<'roomBookings'> {
   roomName: string;
   roomColor?: string;
@@ -116,6 +280,55 @@ export interface EnrichedBooking extends Doc<'roomBookings'> {
   roomNumber?: string;
   organizerName?: string;
   attendeeNames: string[];
+  /** RSVP roll-up, so a list can show "3 ✓ · 1 ✗" without a second round-trip. */
+  tracking: ResponseCounts;
+}
+
+export interface ResponseCounts {
+  /** Invited internal attendees, excluding the organizer. */
+  total: number;
+  accepted: number;
+  tentative: number;
+  declined: number;
+  needsAction: number;
+  /** Attendees who confirmed they were in the room. */
+  checkedIn: number;
+}
+
+/**
+ * Roll up the RSVP state of one booking.
+ *
+ * Bookings created before tracking existed have no attendee rows, so a missing
+ * row counts as "needs action" rather than vanishing from the totals.
+ */
+async function countResponses(
+  ctx: QueryCtx | MutationCtx,
+  booking: Doc<'roomBookings'>,
+): Promise<ResponseCounts> {
+  const rows = await activeAttendeeRows(ctx, booking._id);
+  const byUser = new Map(rows.map((row) => [row.userId as string, row]));
+  const roster = booking.attendeeIds ?? [];
+  const counts: ResponseCounts = {
+    total: 0,
+    accepted: 0,
+    tentative: 0,
+    declined: 0,
+    needsAction: 0,
+    checkedIn: 0,
+  };
+
+  const ids = new Set<string>([...roster, ...rows.map((row) => row.userId as string)]);
+  for (const id of ids) {
+    counts.total += 1;
+    const row = byUser.get(id);
+    const response: AttendeeResponse = row?.response ?? 'needs_action';
+    if (response === 'accepted') counts.accepted += 1;
+    else if (response === 'tentative') counts.tentative += 1;
+    else if (response === 'declined') counts.declined += 1;
+    else counts.needsAction += 1;
+    if (row?.checkedInAt) counts.checkedIn += 1;
+  }
+  return counts;
 }
 
 async function enrichBookings(
@@ -145,6 +358,7 @@ async function enrichBookings(
       roomNumber: room?.roomNumber,
       organizerName: await resolveName(booking.organizerId),
       attendeeNames: [...attendeeNames, ...(booking.externalAttendees ?? [])],
+      tracking: await countResponses(ctx, booking),
     });
   }
   return enriched;
@@ -372,6 +586,153 @@ export const checkAvailability = query({
   },
 });
 
+/**
+ * Everything known about one booking: the roster with each answer and its
+ * timestamp, plus the append-only activity log.
+ *
+ * Who sees what:
+ *  - roster and answers: any member of the organization who can see the room,
+ *    the same visibility the booking list already has;
+ *  - activity log: the organizer and organization staff (admin / supervisor).
+ *    It records who moved a meeting, who uninvited whom and who cancelled, which
+ *    is management information rather than something every participant needs.
+ *
+ * `viewer` tells the client which actions to render, so the UI never has to
+ * re-derive the permission rules.
+ */
+export const getBookingTracking = query({
+  args: { bookingId: v.id('roomBookings') },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    const booking = await ctx.db.get(args.bookingId);
+    if (!booking) return null;
+    if (!isSuperadmin(caller) && caller.organizationId !== booking.organizationId) return null;
+
+    const room = await ctx.db.get(booking.roomId);
+    const organizer = await ctx.db.get(booking.organizerId);
+    const rows = await activeAttendeeRows(ctx, booking._id);
+    const byUser = new Map(rows.map((row) => [row.userId as string, row]));
+
+    // Union of the roster and the tracking rows: bookings made before tracking
+    // existed have no rows, and a row can outlive its roster entry for one
+    // render while a guest list is being edited.
+    const ids = new Set<string>([
+      ...(booking.attendeeIds ?? []),
+      ...rows.map((row) => row.userId as string),
+    ]);
+
+    const attendees = await Promise.all(
+      [...ids].map(async (id) => {
+        const user = await ctx.db.get(id as Id<'users'>);
+        const row = byUser.get(id);
+        return {
+          userId: id as Id<'users'>,
+          name: user?.name ?? 'Unknown',
+          email: user?.email,
+          avatarUrl: user?.avatarUrl,
+          department: user?.department,
+          position: user?.position,
+          response: (row?.response ?? 'needs_action') as AttendeeResponse,
+          respondedAt: row?.respondedAt,
+          comment: row?.comment,
+          isOptional: row?.isOptional ?? false,
+          invitedAt: row?.invitedAt ?? booking.createdAt,
+          checkedInAt: row?.checkedInAt,
+        };
+      }),
+    );
+
+    // Answered first (accepted → tentative → declined), then by name, so the
+    // list reads like Outlook's tracking tab.
+    const order: Record<AttendeeResponse, number> = {
+      accepted: 0,
+      tentative: 1,
+      declined: 2,
+      needs_action: 3,
+    };
+    attendees.sort((a, b) => order[a.response] - order[b.response] || a.name.localeCompare(b.name));
+
+    const isOrganizer = booking.organizerId === caller._id;
+    const canManage = canManageRooms(caller);
+    const isStaff = canManage || caller.role === 'supervisor';
+    const timelineVisible = isOrganizer || isStaff;
+
+    const events = timelineVisible
+      ? await ctx.db
+          .query('roomBookingEvents')
+          .withIndex('by_booking', (q) => q.eq('bookingId', booking._id))
+          .order('desc')
+          .take(MAX_PAGE_SIZE)
+      : [];
+
+    const myRow = byUser.get(caller._id);
+    const isAttendee = Boolean(myRow) || (booking.attendeeIds ?? []).includes(caller._id);
+    const now = Date.now();
+
+    return {
+      booking: {
+        _id: booking._id,
+        title: booking.title,
+        description: booking.description,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        status: booking.status,
+        createdAt: booking.createdAt,
+        updatedAt: booking.updatedAt,
+        checkedInAt: booking.checkedInAt,
+        cancelledAt: booking.cancelledAt,
+        cancelReason: booking.cancelReason,
+        externalAttendees: booking.externalAttendees ?? [],
+      },
+      room: room
+        ? { _id: room._id, name: room.name, color: room.color, capacity: room.capacity }
+        : null,
+      organizer: {
+        userId: booking.organizerId,
+        name: organizer?.name ?? 'Unknown',
+        email: organizer?.email,
+        avatarUrl: organizer?.avatarUrl,
+        checkedInAt: booking.checkedInAt,
+      },
+      attendees,
+      counts: await countResponses(ctx, booking),
+      timeline: events.map((event) => ({
+        _id: event._id,
+        type: event.type,
+        actorId: event.actorId,
+        actorName: event.actorName,
+        actorRole: event.actorRole,
+        targetName: event.targetName,
+        response: event.response,
+        previousStartTime: event.previousStartTime,
+        previousEndTime: event.previousEndTime,
+        newStartTime: event.newStartTime,
+        newEndTime: event.newEndTime,
+        note: event.note,
+        createdAt: event.createdAt,
+      })),
+      timelineVisible,
+      viewer: {
+        userId: caller._id,
+        isOrganizer,
+        isAttendee,
+        canManage,
+        isStaff,
+        myResponse: (myRow?.response ?? null) as AttendeeResponse | null,
+        myRespondedAt: myRow?.respondedAt,
+        canRespond: isAttendee && booking.status === 'confirmed' && booking.endTime > now,
+        canCheckIn:
+          (isAttendee || isOrganizer) &&
+          booking.status === 'confirmed' &&
+          !(isOrganizer ? booking.checkedInAt : myRow?.checkedInAt) &&
+          now >= booking.startTime - 15 * 60 * 1000 &&
+          now <= booking.endTime,
+      },
+    };
+  },
+});
+
 /** Bookings organized by, or including, the caller — "my bookings". */
 export const getMyBookings = query({
   args: {
@@ -538,6 +899,11 @@ export const setRoomActive = mutation({
           updatedAt: now,
         });
         cancelled += 1;
+        await logBookingEvent(ctx, booking, 'cancelled', caller, {
+          note: args.reason?.trim() || 'Room archived',
+          previousStartTime: booking.startTime,
+          previousEndTime: booking.endTime,
+        });
         await notifyBookingCancelled(ctx, booking, room.name, caller);
       }
     }
@@ -678,6 +1044,18 @@ export const bookRoom = mutation({
       updatedAt: now,
     });
 
+    const booking = await ctx.db.get(bookingId);
+    if (booking) {
+      // Invitations start at "needs action"; the log gets one 'created' entry
+      // rather than one per guest, so the timeline stays readable.
+      await syncAttendeeRows(ctx, booking, attendeeIds, caller, { logChanges: false });
+      await logBookingEvent(ctx, booking, 'created', caller, {
+        newStartTime: args.startTime,
+        newEndTime: args.endTime,
+        note: title,
+      });
+    }
+
     await notifyAttendees(
       ctx,
       { organizationId: room.organizationId, organizerId: caller._id, attendeeIds, title },
@@ -753,6 +1131,37 @@ export const updateBooking = mutation({
       updatedAt: now,
     });
 
+    const updated = (await ctx.db.get(args.bookingId)) ?? booking;
+
+    if (args.attendeeIds !== undefined) {
+      await syncAttendeeRows(ctx, updated, attendeeIds ?? [], caller, { logChanges: true });
+    }
+
+    if (timesChanged) {
+      await logBookingEvent(ctx, updated, 'rescheduled', caller, {
+        previousStartTime: booking.startTime,
+        previousEndTime: booking.endTime,
+        newStartTime: startTime,
+        newEndTime: endTime,
+      });
+      await resetResponsesAfterReschedule(ctx, updated, caller);
+    }
+
+    // Field edits that are not a reschedule still belong in the log — "who
+    // renamed the meeting" is a question admins do ask.
+    const changedFields: string[] = [];
+    if (args.title && args.title.trim() !== booking.title) changedFields.push('title');
+    if (
+      args.description !== undefined &&
+      (args.description.trim() || undefined) !== booking.description
+    ) {
+      changedFields.push('description');
+    }
+    if (args.externalAttendees !== undefined) changedFields.push('externalAttendees');
+    if (changedFields.length > 0) {
+      await logBookingEvent(ctx, updated, 'updated', caller, { note: changedFields.join(',') });
+    }
+
     return { success: true };
   },
 });
@@ -779,6 +1188,12 @@ export const cancelBooking = mutation({
       updatedAt: now,
     });
 
+    await logBookingEvent(ctx, booking, 'cancelled', caller, {
+      note: args.reason?.trim() || undefined,
+      previousStartTime: booking.startTime,
+      previousEndTime: booking.endTime,
+    });
+
     const room = await ctx.db.get(booking.roomId);
     await notifyBookingCancelled(ctx, booking, room?.name ?? 'Meeting room', caller);
 
@@ -786,7 +1201,97 @@ export const cancelBooking = mutation({
   },
 });
 
-/** Organizer confirms the meeting is actually happening (anti no-show). */
+/**
+ * Accept, decline or tentatively accept an invitation.
+ *
+ * Only invited attendees answer — the organizer is attending by definition, and
+ * nobody may answer on somebody else's behalf, which is why the target comes
+ * from `ctx.auth` and not from the arguments. Answers stay editable while the
+ * meeting has not ended: people change their minds, and the log keeps every
+ * step.
+ */
+export const respondToBooking = mutation({
+  args: {
+    bookingId: v.id('roomBookings'),
+    response: v.union(v.literal('accepted'), v.literal('tentative'), v.literal('declined')),
+    comment: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const booking = await ctx.db.get(args.bookingId);
+    if (!booking) throw new Error('Booking not found');
+    assertOrgAccess(caller, booking.organizationId);
+    if (booking.status !== 'confirmed') throw new Error('This booking is cancelled');
+    if (booking.endTime <= Date.now()) throw new Error('This meeting has already ended');
+    if (booking.organizerId === caller._id) {
+      throw new Error('The organizer does not need to respond');
+    }
+
+    const invited =
+      (booking.attendeeIds ?? []).includes(caller._id) ||
+      Boolean(await attendeeRow(ctx, args.bookingId, caller._id));
+    if (!invited) throw new Error('Only invited participants can respond');
+
+    const comment = args.comment?.trim().slice(0, MAX_TEXT_LENGTH) || undefined;
+    const now = Date.now();
+    const existing = await attendeeRow(ctx, args.bookingId, caller._id);
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        response: args.response,
+        respondedAt: now,
+        comment,
+        // Answering again after being uninvited and re-invited is fine; a stale
+        // removal flag would hide the row from the roster.
+        removedAt: undefined,
+        removedBy: undefined,
+      });
+    } else {
+      // Booking predates tracking — materialize the row on first answer.
+      await ctx.db.insert('roomBookingAttendees', {
+        organizationId: booking.organizationId,
+        bookingId: booking._id,
+        roomId: booking.roomId,
+        userId: caller._id,
+        response: args.response,
+        respondedAt: now,
+        comment,
+        invitedAt: booking.createdAt,
+        invitedBy: booking.organizerId,
+      });
+    }
+
+    await logBookingEvent(ctx, booking, 'responded', caller, {
+      targetUserId: caller._id,
+      targetName: caller.name,
+      response: args.response,
+      note: comment,
+    });
+
+    // The organizer is the one who needs to know; attendees are not spammed.
+    await ctx.db.insert('notifications', {
+      organizationId: booking.organizationId,
+      userId: booking.organizerId,
+      type: 'room_booked',
+      title: booking.title,
+      message: `${caller.name} ${args.response} the invitation`,
+      isRead: false,
+      route: '/rooms',
+      createdAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Confirms somebody is actually in the room (anti no-show).
+ *
+ * The organizer's check-in marks the meeting as happening; an attendee's
+ * check-in is recorded on their own tracking row, so "invited 8, showed up 5"
+ * is answerable afterwards.
+ */
 export const checkInBooking = mutation({
   args: { bookingId: v.id('roomBookings') },
   handler: async (ctx, args) => {
@@ -795,17 +1300,44 @@ export const checkInBooking = mutation({
     const booking = await ctx.db.get(args.bookingId);
     if (!booking) throw new Error('Booking not found');
     assertOrgAccess(caller, booking.organizationId);
-    if (booking.organizerId !== caller._id && !(booking.attendeeIds ?? []).includes(caller._id)) {
+    const isOrganizer = booking.organizerId === caller._id;
+    const row = await attendeeRow(ctx, args.bookingId, caller._id);
+    const isAttendee = (booking.attendeeIds ?? []).includes(caller._id) || Boolean(row);
+    if (!isOrganizer && !isAttendee) {
       throw new Error('Only participants can check in');
     }
     if (booking.status !== 'confirmed') throw new Error('This booking is cancelled');
-    if (booking.checkedInAt) return { success: true };
 
     const now = Date.now();
     if (now < booking.startTime - 15 * 60 * 1000 || now > booking.endTime) {
       throw new Error('Check-in is only possible around the meeting time');
     }
-    await ctx.db.patch(args.bookingId, { checkedInAt: now, updatedAt: now });
+
+    if (isOrganizer) {
+      if (booking.checkedInAt) return { success: true };
+      await ctx.db.patch(args.bookingId, { checkedInAt: now, updatedAt: now });
+    } else if (row) {
+      if (row.checkedInAt) return { success: true };
+      await ctx.db.patch(row._id, { checkedInAt: now });
+    } else {
+      // Booking predates tracking — materialize the row so the check-in sticks.
+      await ctx.db.insert('roomBookingAttendees', {
+        organizationId: booking.organizationId,
+        bookingId: booking._id,
+        roomId: booking.roomId,
+        userId: caller._id,
+        response: 'accepted',
+        respondedAt: now,
+        invitedAt: booking.createdAt,
+        invitedBy: booking.organizerId,
+        checkedInAt: now,
+      });
+    }
+
+    await logBookingEvent(ctx, booking, 'checked_in', caller, {
+      targetUserId: caller._id,
+      targetName: caller.name,
+    });
     return { success: true };
   },
 });

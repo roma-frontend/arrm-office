@@ -62,4 +62,91 @@ export const meetingRooms = {
     .index('by_room_start', ['roomId', 'startTime'])
     .index('by_org_start', ['organizationId', 'startTime'])
     .index('by_organizer', ['organizerId']),
+
+  /**
+   * Per-attendee invitation state — the Outlook "Tracking" tab.
+   *
+   * `roomBookings.attendeeIds` stays as the denormalized roster (it is what the
+   * lists and the capacity check read); this table adds the part a roster cannot
+   * express: who answered what, when, with which note, and who actually turned
+   * up. Rows are kept when somebody is uninvited (`removedAt`) so the history of
+   * a meeting stays complete.
+   */
+  roomBookingAttendees: defineTable({
+    organizationId: v.id('organizations'),
+    bookingId: v.id('roomBookings'),
+    roomId: v.id('meetingRooms'),
+    userId: v.id('users'),
+    /** 'needs_action' = invited, no answer yet. */
+    response: v.union(
+      v.literal('needs_action'),
+      v.literal('accepted'),
+      v.literal('tentative'),
+      v.literal('declined'),
+    ),
+    respondedAt: v.optional(v.number()),
+    /** Note left with the answer, e.g. "will join remotely". */
+    comment: v.optional(v.string()),
+    /** Optional attendees do not count towards the "everyone answered" state. */
+    isOptional: v.optional(v.boolean()),
+    invitedAt: v.number(),
+    invitedBy: v.id('users'),
+    /** Set when this person confirms they are in the room. */
+    checkedInAt: v.optional(v.number()),
+    removedAt: v.optional(v.number()),
+    removedBy: v.optional(v.id('users')),
+  })
+    .index('by_booking', ['bookingId'])
+    .index('by_booking_user', ['bookingId', 'userId'])
+    .index('by_user', ['userId'])
+    .index('by_org', ['organizationId']),
+
+  /**
+   * Append-only activity log of one booking: created, rescheduled, cancelled,
+   * invitations, every RSVP change and every check-in.
+   *
+   * Actor and target names are snapshotted on write. An audit trail that joins
+   * to `users` at read time turns into "Unknown → Unknown" once somebody leaves
+   * the company, which is exactly when it is needed.
+   */
+  roomBookingEvents: defineTable({
+    organizationId: v.id('organizations'),
+    bookingId: v.id('roomBookings'),
+    roomId: v.id('meetingRooms'),
+    type: v.union(
+      v.literal('created'),
+      v.literal('updated'),
+      v.literal('rescheduled'),
+      v.literal('cancelled'),
+      v.literal('attendee_added'),
+      v.literal('attendee_removed'),
+      v.literal('responded'),
+      v.literal('responses_reset'),
+      v.literal('checked_in'),
+    ),
+    /** Absent for system actions (a cron cancelling an archived room's bookings). */
+    actorId: v.optional(v.id('users')),
+    actorName: v.string(),
+    actorRole: v.optional(v.string()),
+    targetUserId: v.optional(v.id('users')),
+    targetName: v.optional(v.string()),
+    response: v.optional(
+      v.union(
+        v.literal('needs_action'),
+        v.literal('accepted'),
+        v.literal('tentative'),
+        v.literal('declined'),
+      ),
+    ),
+    previousStartTime: v.optional(v.number()),
+    previousEndTime: v.optional(v.number()),
+    newStartTime: v.optional(v.number()),
+    newEndTime: v.optional(v.number()),
+    /** Cancel reason, RSVP note, or a summary of the fields that changed. */
+    note: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_booking', ['bookingId', 'createdAt'])
+    .index('by_org_created', ['organizationId', 'createdAt'])
+    .index('by_room_created', ['roomId', 'createdAt']),
 };

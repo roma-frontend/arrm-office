@@ -10,6 +10,7 @@ import i18n from 'i18next';
 import {
   Building2,
   CalendarClock,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -35,6 +36,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useNow } from '@/hooks/useNow';
 import { RoomDayTimeline } from './RoomDayTimeline';
 import { RoomModalShell } from './RoomModalShell';
+import { BookingTrackingPanel, ResponseSummaryChips } from './BookingTrackingPanel';
 import { AmenityIcon } from './RoomCard';
 import { RoomStatusDot, useRoomStatusText } from './RoomStatusIndicator';
 import type { RoomBookingDoc, RoomDoc } from './types';
@@ -69,6 +71,8 @@ export function RoomDetailsModal({
 
   const [dayOffset, setDayOffset] = useState(0);
   const [busyBookingId, setBusyBookingId] = useState<string | null>(null);
+  /** Only one tracking panel is expanded at a time — it is a tall block. */
+  const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
 
   const lang = i18n.language || 'en';
   const locale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
@@ -289,18 +293,20 @@ export function RoomDetailsModal({
                 !booking.checkedInAt &&
                 now >= booking.startTime - 15 * 60_000 &&
                 now <= booking.endTime;
+              const isExpanded = expandedBookingId === booking._id;
+              const counts = booking.tracking;
 
               return (
                 <div
                   key={booking._id}
                   className={cn(
-                    'rounded-xl border p-3 transition-colors',
+                    'overflow-hidden rounded-xl border transition-colors',
                     isCurrent
                       ? 'border-(--primary)/40 bg-(--primary)/5'
                       : 'border-(--border) bg-(--background-subtle)',
                   )}
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start justify-between gap-3 p-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-semibold text-(--text-primary)">
@@ -332,6 +338,27 @@ export function RoomDetailsModal({
                           {booking.description}
                         </p>
                       )}
+                      {counts && counts.total > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedBookingId(isExpanded ? null : booking._id)}
+                          aria-expanded={isExpanded}
+                          className="mt-1.5 inline-flex cursor-pointer items-center gap-1.5 rounded-full text-[11px] font-medium text-(--text-secondary) transition-colors hover:text-(--text-primary)"
+                        >
+                          <ResponseSummaryChips counts={counts} />
+                          <span className="inline-flex items-center gap-0.5">
+                            {isExpanded
+                              ? t('rooms.tracking.hideDetails')
+                              : t('rooms.tracking.showDetails')}
+                            <ChevronDown
+                              className={cn(
+                                'h-3 w-3 transition-transform',
+                                isExpanded && 'rotate-180',
+                              )}
+                            />
+                          </span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="flex shrink-0 flex-col gap-1">
@@ -359,6 +386,8 @@ export function RoomDetailsModal({
                       )}
                     </div>
                   </div>
+
+                  {isExpanded && <BookingTrackingPanel bookingId={booking._id} />}
                 </div>
               );
             })

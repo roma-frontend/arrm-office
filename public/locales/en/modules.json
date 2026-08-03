@@ -2246,6 +2246,79 @@
       "generic": "Something went wrong. Please try again.",
       "conflict": "This room is already booked for that time",
       "hasBookings": "This room has bookings — archive it instead"
+    },
+    "tracking": {
+      "title": "Tracking",
+      "showDetails": "Details",
+      "hideDetails": "Hide",
+      "participants": "Participants",
+      "activity": "Activity log",
+      "organizer": "Organizer",
+      "organizerAlwaysIn": "Organizer",
+      "you": "You",
+      "optional": "Optional",
+      "present": "Present",
+      "accepted": "Accepted",
+      "tentative": "Tentative",
+      "declined": "Declined",
+      "noResponse": "No response",
+      "answeredOf": "{{answered}} of {{total}} answered",
+      "checkedInOf": "{{count}} of {{total}} checked in",
+      "respondedAt": "answered {{when}}",
+      "awaitingSince": "invited {{when}}",
+      "noAttendees": "No internal participants invited",
+      "externalGuests": "External guests",
+      "noActivity": "Nothing recorded yet",
+      "unavailable": "Tracking is not available for this booking",
+      "addNote": "Note",
+      "notePlaceholder": "Optional note for the organizer",
+      "yourAnswerPending": "You have not answered yet",
+      "yourAnswer": {
+        "accepted": "You accepted",
+        "tentative": "You answered tentatively",
+        "declined": "You declined"
+      },
+      "action": {
+        "accepted": "Accept",
+        "tentative": "Tentative",
+        "declined": "Decline"
+      },
+      "responseSaved": {
+        "accepted": "Accepted",
+        "tentative": "Marked as tentative",
+        "declined": "Declined"
+      },
+      "status": {
+        "accepted": "Accepted",
+        "tentative": "Tentative",
+        "declined": "Declined",
+        "needs_action": "No response"
+      },
+      "createdAt": "Created {{when}}",
+      "updatedAt": "Last change {{when}}",
+      "cancelledAt": "Cancelled {{when}}",
+      "field": {
+        "title": "title",
+        "description": "agenda",
+        "externalAttendees": "external guests"
+      },
+      "event": {
+        "created": "created the booking",
+        "updated": "changed the {{fields}}",
+        "rescheduled": "moved the meeting from {{from}} to {{to}}",
+        "cancelled": "cancelled the booking",
+        "cancelledWithReason": "cancelled the booking — {{reason}}",
+        "attendeeAdded": "invited {{name}}",
+        "attendeeRemoved": "uninvited {{name}}",
+        "checkedIn": "{{name}} checked in",
+        "responsesReset": "the new time reset {{count}} answers",
+        "responded": {
+          "accepted": "{{name}} accepted",
+          "tentative": "{{name}} answered tentatively",
+          "declined": "{{name}} declined",
+          "needs_action": "{{name}} cleared their answer"
+        }
+      }
     }
   },
   "eventTimeline": {

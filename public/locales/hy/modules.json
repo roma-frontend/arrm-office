@@ -2246,6 +2246,79 @@
       "generic": "Ինչ-որ բան սխալ գնաց։ Փորձեք կրկին։",
       "conflict": "Սենյակն արդեն զբաղված է այդ ժամին",
       "hasBookings": "Սենյակն ունի ամրագրումներ — արխիվացրեք այն"
+    },
+    "tracking": {
+      "title": "Հետևում",
+      "showDetails": "Մանրամասն",
+      "hideDetails": "Փակել",
+      "participants": "Մասնակիցներ",
+      "activity": "Գործողությունների մատյան",
+      "organizer": "Կազմակերպիչ",
+      "organizerAlwaysIn": "Կազմակերպիչ",
+      "you": "Դուք",
+      "optional": "Ոչ պարտադիր",
+      "present": "Ներկա է",
+      "accepted": "Ընդունել են",
+      "tentative": "Հարցականի տակ",
+      "declined": "Մերժել են",
+      "noResponse": "Առանց պատասխանի",
+      "answeredOf": "Պատասխանել է {{answered}}/{{total}}",
+      "checkedInOf": "Ներկա է նշվել {{count}}/{{total}}",
+      "respondedAt": "պատասխանել է {{when}}",
+      "awaitingSince": "հրավիրվել է {{when}}",
+      "noAttendees": "Աշխատակիցներ հրավիրված չեն",
+      "externalGuests": "Արտաքին հյուրեր",
+      "noActivity": "Դեռ գրառումներ չկան",
+      "unavailable": "Այս ամրագրման հետևումը հասանելի չէ",
+      "addNote": "Մեկնաբանություն",
+      "notePlaceholder": "Մեկնաբանություն կազմակերպչի համար",
+      "yourAnswerPending": "Դուք դեռ չեք պատասխանել",
+      "yourAnswer": {
+        "accepted": "Դուք ընդունել եք",
+        "tentative": "Դուք պատասխանել եք՝ հարցականի տակ",
+        "declined": "Դուք մերժել եք"
+      },
+      "action": {
+        "accepted": "Ընդունել",
+        "tentative": "Հարցականի տակ",
+        "declined": "Մերժել"
+      },
+      "responseSaved": {
+        "accepted": "Հրավերը ընդունված է",
+        "tentative": "Նշված է որպես հարցականի տակ",
+        "declined": "Հրավերը մերժված է"
+      },
+      "status": {
+        "accepted": "Ընդունել է",
+        "tentative": "Հարցականի տակ",
+        "declined": "Մերժել է",
+        "needs_action": "Առանց պատասխանի"
+      },
+      "createdAt": "Ստեղծված է {{when}}",
+      "updatedAt": "Փոփոխված է {{when}}",
+      "cancelledAt": "Չեղարկված է {{when}}",
+      "field": {
+        "title": "վերնագիրը",
+        "description": "օրակարգը",
+        "externalAttendees": "արտաքին հյուրերը"
+      },
+      "event": {
+        "created": "ստեղծել է ամրագրումը",
+        "updated": "փոփոխել է {{fields}}",
+        "rescheduled": "տեղափոխել է հանդիպումը {{from}}-ից {{to}}",
+        "cancelled": "չեղարկել է ամրագրումը",
+        "cancelledWithReason": "չեղարկել է ամրագրումը — {{reason}}",
+        "attendeeAdded": "հրավիրել է {{name}}",
+        "attendeeRemoved": "հեռացրել է {{name}}",
+        "checkedIn": "{{name}} նշվել է ներկա",
+        "responsesReset": "տեղափոխումից հետո զրոյացվել է {{count}} պատասխան",
+        "responded": {
+          "accepted": "{{name}} ընդունել է հրավերը",
+          "tentative": "{{name}} պատասխանել է՝ հարցականի տակ",
+          "declined": "{{name}} մերժել է հրավերը",
+          "needs_action": "{{name}} հետ է վերցրել պատասխանը"
+        }
+      }
     }
   },
   "eventTimeline": {

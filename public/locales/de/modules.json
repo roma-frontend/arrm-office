@@ -2246,6 +2246,79 @@
       "generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
       "conflict": "Dieser Raum ist zu dieser Zeit bereits belegt",
       "hasBookings": "Dieser Raum hat Buchungen — archivieren Sie ihn stattdessen"
+    },
+    "tracking": {
+      "title": "Rückmeldungen",
+      "showDetails": "Details",
+      "hideDetails": "Zuklappen",
+      "participants": "Teilnehmer",
+      "activity": "Aktivitätsprotokoll",
+      "organizer": "Organisator",
+      "organizerAlwaysIn": "Organisator",
+      "you": "Sie",
+      "optional": "Optional",
+      "present": "Anwesend",
+      "accepted": "Zugesagt",
+      "tentative": "Mit Vorbehalt",
+      "declined": "Abgelehnt",
+      "noResponse": "Keine Antwort",
+      "answeredOf": "{{answered}} von {{total}} haben geantwortet",
+      "checkedInOf": "{{count}} von {{total}} eingecheckt",
+      "respondedAt": "geantwortet {{when}}",
+      "awaitingSince": "eingeladen {{when}}",
+      "noAttendees": "Keine internen Teilnehmer eingeladen",
+      "externalGuests": "Externe Gäste",
+      "noActivity": "Noch keine Einträge",
+      "unavailable": "Für diese Buchung nicht verfügbar",
+      "addNote": "Notiz",
+      "notePlaceholder": "Optionale Notiz für den Organisator",
+      "yourAnswerPending": "Sie haben noch nicht geantwortet",
+      "yourAnswer": {
+        "accepted": "Sie haben zugesagt",
+        "tentative": "Sie haben mit Vorbehalt geantwortet",
+        "declined": "Sie haben abgelehnt"
+      },
+      "action": {
+        "accepted": "Zusagen",
+        "tentative": "Vorbehalt",
+        "declined": "Ablehnen"
+      },
+      "responseSaved": {
+        "accepted": "Zugesagt",
+        "tentative": "Als Vorbehalt gespeichert",
+        "declined": "Abgelehnt"
+      },
+      "status": {
+        "accepted": "Zugesagt",
+        "tentative": "Mit Vorbehalt",
+        "declined": "Abgelehnt",
+        "needs_action": "Keine Antwort"
+      },
+      "createdAt": "Erstellt {{when}}",
+      "updatedAt": "Letzte Änderung {{when}}",
+      "cancelledAt": "Abgesagt {{when}}",
+      "field": {
+        "title": "den Titel",
+        "description": "die Agenda",
+        "externalAttendees": "die externen Gäste"
+      },
+      "event": {
+        "created": "hat die Buchung erstellt",
+        "updated": "hat {{fields}} geändert",
+        "rescheduled": "hat den Termin von {{from}} auf {{to}} verschoben",
+        "cancelled": "hat die Buchung abgesagt",
+        "cancelledWithReason": "hat die Buchung abgesagt — {{reason}}",
+        "attendeeAdded": "hat {{name}} eingeladen",
+        "attendeeRemoved": "hat {{name}} entfernt",
+        "checkedIn": "{{name}} hat eingecheckt",
+        "responsesReset": "die neue Zeit hat {{count}} Antworten zurückgesetzt",
+        "responded": {
+          "accepted": "{{name}} hat zugesagt",
+          "tentative": "{{name}} hat mit Vorbehalt geantwortet",
+          "declined": "{{name}} hat abgelehnt",
+          "needs_action": "{{name}} hat die Antwort zurückgezogen"
+        }
+      }
     }
   },
   "eventTimeline": {

@@ -2256,6 +2256,79 @@
       "generic": "Что-то пошло не так. Попробуйте ещё раз.",
       "conflict": "Комната уже занята в это время",
       "hasBookings": "У комнаты есть брони — перенесите её в архив"
+    },
+    "tracking": {
+      "title": "Отслеживание",
+      "showDetails": "Подробно",
+      "hideDetails": "Свернуть",
+      "participants": "Участники",
+      "activity": "Журнал событий",
+      "organizer": "Организатор",
+      "organizerAlwaysIn": "Организатор",
+      "you": "Вы",
+      "optional": "Необязательный",
+      "present": "На месте",
+      "accepted": "Приняли",
+      "tentative": "Под вопросом",
+      "declined": "Отклонили",
+      "noResponse": "Без ответа",
+      "answeredOf": "Ответили {{answered}} из {{total}}",
+      "checkedInOf": "Отметились {{count}} из {{total}}",
+      "respondedAt": "ответ {{when}}",
+      "awaitingSince": "приглашён {{when}}",
+      "noAttendees": "Сотрудники не приглашены",
+      "externalGuests": "Внешние гости",
+      "noActivity": "Событий пока нет",
+      "unavailable": "Отслеживание недоступно для этой брони",
+      "addNote": "Комментарий",
+      "notePlaceholder": "Комментарий для организатора",
+      "yourAnswerPending": "Вы ещё не ответили",
+      "yourAnswer": {
+        "accepted": "Вы приняли",
+        "tentative": "Вы ответили «под вопросом»",
+        "declined": "Вы отклонили"
+      },
+      "action": {
+        "accepted": "Принять",
+        "tentative": "Под вопросом",
+        "declined": "Отклонить"
+      },
+      "responseSaved": {
+        "accepted": "Приглашение принято",
+        "tentative": "Отмечено как «под вопросом»",
+        "declined": "Приглашение отклонено"
+      },
+      "status": {
+        "accepted": "Принял",
+        "tentative": "Под вопросом",
+        "declined": "Отклонил",
+        "needs_action": "Без ответа"
+      },
+      "createdAt": "Создано {{when}}",
+      "updatedAt": "Изменено {{when}}",
+      "cancelledAt": "Отменено {{when}}",
+      "field": {
+        "title": "название",
+        "description": "повестку",
+        "externalAttendees": "внешних гостей"
+      },
+      "event": {
+        "created": "создал бронь",
+        "updated": "изменил {{fields}}",
+        "rescheduled": "перенёс встречу с {{from}} на {{to}}",
+        "cancelled": "отменил бронь",
+        "cancelledWithReason": "отменил бронь — {{reason}}",
+        "attendeeAdded": "пригласил {{name}}",
+        "attendeeRemoved": "убрал {{name}}",
+        "checkedIn": "{{name}} отметился на месте",
+        "responsesReset": "после переноса сброшено ответов: {{count}}",
+        "responded": {
+          "accepted": "{{name}} принял приглашение",
+          "tentative": "{{name}} ответил «под вопросом»",
+          "declined": "{{name}} отклонил приглашение",
+          "needs_action": "{{name}} снял свой ответ"
+        }
+      }
     }
   },
   "eventTimeline": {
