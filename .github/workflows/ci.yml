@@ -204,6 +204,13 @@ jobs:
       - name: Create PR with threshold bump
         if: steps.ratchet.outputs.ratchet_needed == 'true'
         uses: peter-evans/create-pull-request@v7
+        # Non-blocking: opening the ratchet PR also requires the repo/org setting
+        # "Allow GitHub Actions to create and approve pull requests", which a
+        # workflow `permissions:` block cannot grant. When it is off the API
+        # returns "GitHub Actions is not permitted to create or approve pull
+        # requests" — that must not fail the job, because the badge steps below
+        # (and the Pages deploy) are unrelated to the ratchet automation.
+        continue-on-error: true
         with:
           add-paths: jest.config.js
           commit-message: 'chore: ratchet coverage thresholds'
