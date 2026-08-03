@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
-import { mutation } from '../_generated/server';
+import { mutation, internalMutation } from '../_generated/server';
 import type { MutationCtx } from '../_generated/server';
 import type { Doc } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
@@ -22,7 +22,13 @@ async function requireAdmin(ctx: QueryCtx | MutationCtx) {
 // ─────────────────────────────────────────────────────────────────────────────
 // AUDIT LOG — scoped to org
 // ─────────────────────────────────────────────────────────────────────────────
-export const logAudit = mutation({
+/**
+ * Internal: an audit trail that any client could write, with any userId, is not
+ * an audit trail — a caller could forge entries and attribute them to someone
+ * else. Nothing calls this from the client (the secure* mutations below insert
+ * their own entries), so it is server-only.
+ */
+export const logAudit = internalMutation({
   args: {
     userId: v.id('users'),
     action: v.string(),
@@ -47,7 +53,14 @@ export const logAudit = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 // SEED ADMIN (bootstrap — creates first superadmin)
 // ─────────────────────────────────────────────────────────────────────────────
-export const seedAdmin = mutation({
+/**
+ * Internal: as a public mutation this was an account-creation backdoor — an
+ * anonymous caller could insert an approved, active `admin` user into any
+ * organization with a passwordHash of their choosing (or `superadmin`, if they
+ * passed the bootstrap email), i.e. take over any tenant. No client calls it;
+ * it is a bootstrap step run via `npx convex run`.
+ */
+export const seedAdmin = internalMutation({
   args: {
     name: v.string(),
     email: v.string(),
@@ -211,7 +224,7 @@ export const unsuspendUser = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTO-UNSUSPEND expired suspensions (run periodically)
 // ─────────────────────────────────────────────────────────────────────────────
-export const autoUnsuspendExpired = mutation({
+export const autoUnsuspendExpired = internalMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
@@ -252,7 +265,12 @@ export const autoUnsuspendExpired = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 // FIX SUPERADMIN ROLE - One-time utility to upgrade admin to superadmin
 // ─────────────────────────────────────────────────────────────────────────────
-export const upgradeSuperadminRole = mutation({
+/**
+ * Internal: this grants the superadmin role by env-pinned email with no caller
+ * check at all, so as a public mutation anyone on the internet could promote
+ * that account. One-time utility, run via `npx convex run`.
+ */
+export const upgradeSuperadminRole = internalMutation({
   args: {},
   handler: async (ctx) => {
     const user = await ctx.db
@@ -282,13 +300,20 @@ export const upgradeSuperadminRole = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 // MIGRATE FACE TO AVATAR (utility)
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Backfills avatarUrl from faceImageUrl. The settings page fires this on mount
+ * for admins, so it stays public — but it now requires an admin caller and only
+ * touches that admin's own organization. Previously any caller could rewrite
+ * the avatar of every user in every tenant.
+ */
 export const migrateFaceToAvatar = mutation({
   args: {},
   handler: async (ctx) => {
-    // NOTE: Using .take(DEFAULT_LIST_CAP) here because we must migrate ALL users' face images to avatars (one-time migration task)
+    const admin = await requireAdmin(ctx);
     const users = await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE);
     let count = 0;
     for (const user of users) {
+      if (!isSuperadmin(admin) && user.organizationId !== admin.organizationId) continue;
       if (!user.avatarUrl && user.faceImageUrl) {
         await ctx.db.patch(user._id, { avatarUrl: user.faceImageUrl });
         count++;
