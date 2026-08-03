@@ -1,12 +1,15 @@
 // Скрипт для обновления плана суперадмина на Enterprise
 // Запустите: npx convex run updateSuperadminPlan:updatePlan
 
-import { mutation } from './_generated/server';
+import { internalMutation } from './_generated/server';
 import { v } from 'convex/values';
 import { PLAN_EMPLOYEE_LIMITS } from './lib/limits';
 import { MAX_PAGE_SIZE } from './pagination';
 
-export const updatePlan = mutation({
+// Internal: this grants an org the Enterprise plan by email alone. As a public
+// mutation any authenticated caller could upgrade any organization, so it is
+// operator-only — run via `npx convex run`.
+export const updatePlan = internalMutation({
   args: {
     email: v.string(),
   },
@@ -56,7 +59,7 @@ export const updatePlan = mutation({
 
 // Разовый ресинк: привести employeeLimit каждой организации в соответствие с её планом.
 // Запустите: npx convex run updateSuperadminPlan:resyncEmployeeLimits
-export const resyncEmployeeLimits = mutation({
+export const resyncEmployeeLimits = internalMutation({
   args: {},
   handler: async (ctx) => {
     const orgs = await ctx.db.query('organizations').take(MAX_PAGE_SIZE);

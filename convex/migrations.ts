@@ -2,14 +2,16 @@
  * Migrations for fixing duplicate users
  */
 
-import { mutation, internalMutation } from './_generated/server';
+import { internalMutation } from './_generated/server';
 import { XLARGE_LIST_CAP } from './lib/limits';
 import { backfillAssetActContent } from '../src/lib/assetActContent';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fix duplicate users — merge users with same email
 // ─────────────────────────────────────────────────────────────────────────────
-export const fixDuplicateUsers = mutation({
+// Internal: merging user accounts is an operator-only maintenance task, run via
+// `npx convex run`. It must not be callable from a browser client.
+export const fixDuplicateUsers = internalMutation({
   args: {},
   handler: async (ctx) => {
     const allUsers = await ctx.db.query('users').take(XLARGE_LIST_CAP);
