@@ -1,16 +1,17 @@
 import { test, expect } from './fixtures';
 
 test.describe('Admin Leave Balances', () => {
-  test('page loads with title', async ({ authedPage: page }) => {
+  test('page loads with title', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-balances');
     await page.waitForLoadState('networkidle');
 
+    // Both the h1 and the subtitle contain "leave balances", so take the first match
     await expect(
-      page.locator('text=/leave balances|балансы отпусков|արձակուրդի մնացորդ/i'),
+      page.locator('text=/leave balances|балансы отпусков|արձակուրդի մնացորդ/i').first(),
     ).toBeVisible({ timeout: 10_000 });
   });
 
-  test('search input is visible', async ({ authedPage: page }) => {
+  test('search input is visible', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-balances');
     await page.waitForLoadState('networkidle');
 
@@ -22,7 +23,7 @@ test.describe('Admin Leave Balances', () => {
     await expect(searchInput).toBeVisible({ timeout: 5_000 });
   });
 
-  test('page has subtitle description', async ({ authedPage: page }) => {
+  test('page has subtitle description', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-balances');
     await page.waitForLoadState('networkidle');
 
@@ -30,7 +31,7 @@ test.describe('Admin Leave Balances', () => {
     await expect(subtitle).toBeVisible({ timeout: 5_000 });
   });
 
-  test('employee cards show balance grid', async ({ authedPage: page }) => {
+  test('employee cards show balance grid', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-balances');
     await page.waitForLoadState('networkidle');
 
@@ -52,11 +53,11 @@ test.describe('Admin Leave Balances', () => {
     }
   });
 
-  test('each employee card has edit button', async ({ authedPage: page }) => {
+  test('each employee card has edit button', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-balances');
     await page.waitForLoadState('networkidle');
 
-    const editBtn = page.locator('button:has-text(/edit|редактировать|խմբագրել/i)').first();
+    const editBtn = page.getByRole('button', { name: /edit|редактировать|խմբագրել/i }).first();
     if (await editBtn.isVisible()) {
       await editBtn.click();
       await page.waitForTimeout(500);
@@ -73,11 +74,11 @@ test.describe('Admin Leave Balances', () => {
     }
   });
 
-  test('edit dialog has reason textarea', async ({ authedPage: page }) => {
+  test('edit dialog has reason textarea', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-balances');
     await page.waitForLoadState('networkidle');
 
-    const editBtn = page.locator('button:has-text(/edit|редактировать|խմբագրել/i)').first();
+    const editBtn = page.getByRole('button', { name: /edit|редактировать|խմբագրել/i }).first();
     if (await editBtn.isVisible()) {
       await editBtn.click();
       await page.waitForTimeout(500);
@@ -91,26 +92,26 @@ test.describe('Admin Leave Balances', () => {
     }
   });
 
-  test('edit dialog has cancel and save buttons', async ({ authedPage: page }) => {
+  test('edit dialog has cancel and save buttons', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-balances');
     await page.waitForLoadState('networkidle');
 
-    const editBtn = page.locator('button:has-text(/edit|редактировать|խմբագրել/i)').first();
+    const editBtn = page.getByRole('button', { name: /edit|редактировать|խմբագրել/i }).first();
     if (await editBtn.isVisible()) {
       await editBtn.click();
       await page.waitForTimeout(500);
 
       const dialog = page.locator('dialog, [role="dialog"]').first();
       if (await dialog.isVisible()) {
-        const cancelBtn = dialog.locator('button:has-text(/cancel|отмена|չեղարկել/i)').first();
-        const saveBtn = dialog.locator('button:has-text(/save|сохранить|պահպանել/i)').first();
+        const cancelBtn = dialog.getByRole('button', { name: /cancel|отмена|չեղարկել/i }).first();
+        const saveBtn = dialog.getByRole('button', { name: /save|сохранить|պահպանել/i }).first();
         expect(await cancelBtn.isVisible()).toBeTruthy();
         expect(await saveBtn.isVisible()).toBeTruthy();
       }
     }
   });
 
-  test('search input responds to typing', async ({ authedPage: page }) => {
+  test('search input responds to typing', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-balances');
     await page.waitForLoadState('networkidle');
 

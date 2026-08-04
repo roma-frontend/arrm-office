@@ -4,6 +4,7 @@ import Google from 'next-auth/providers/google';
 import type { GoogleProfile } from '@auth/core/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import { importPKCS8, SignJWT } from 'jose';
+import { logger } from '@/lib/logger';
 
 // ═══════════════════════════════════════════════════════════════
 // VALIDATE ENVIRONMENT — fail fast, not silently
@@ -12,7 +13,7 @@ const requiredEnvVars = ['AUTH_SECRET', 'AUTH_GOOGLE_ID', 'AUTH_GOOGLE_SECRET'];
 const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
 
 if (missingVars.length > 0) {
-  console.error('[Auth.js] ❌ Missing required environment variables:', missingVars);
+  logger.error('[Auth.js] ❌ Missing required environment variables:', missingVars);
   if (process.env.NODE_ENV === 'production') {
     throw new Error(`[Auth.js] Missing required env vars: ${missingVars.join(', ')}`);
   }
@@ -165,7 +166,7 @@ export const authConfig: NextAuthConfig = {
             }
           }
         } catch (error) {
-          console.error('[Auth.js] Error fetching user role:', error);
+          logger.error('[Auth.js] Error fetching user role:', error);
         }
       }
 
@@ -210,7 +211,7 @@ export const authConfig: NextAuthConfig = {
             }
           }
         } catch (error) {
-          console.error('[Auth.js] Error refreshing user role:', error);
+          logger.error('[Auth.js] Error refreshing user role:', error);
         }
       }
 
@@ -245,7 +246,7 @@ export const authConfig: NextAuthConfig = {
             .setExpirationTime('1h')
             .sign(privateKey);
         } catch (err) {
-          console.error('[Auth.js] Failed to sign Convex token:', err);
+          logger.error('[Auth.js] Failed to sign Convex token:', err);
         }
       }
 

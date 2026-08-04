@@ -56,7 +56,7 @@ test.describe('Dashboard', () => {
     await page.waitForLoadState('networkidle');
 
     // Click leaves link in sidebar/nav
-    const leavesLink = page.locator('a[href*="/leaves"], nav a:has-text(/leave|отпуск/i)').first();
+    const leavesLink = page.locator('a[href*="/leaves"]').first();
     if (await leavesLink.isVisible()) {
       await leavesLink.click();
       await page.waitForURL(/leaves/, { timeout: 5_000 });

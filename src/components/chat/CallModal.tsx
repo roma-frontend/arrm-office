@@ -240,7 +240,7 @@ export function CallModal({
         setCallStatus('active');
         // Set user status to "in_call"
         setInCallStatusMutation({ userId: currentUserId }).catch((e) =>
-          console.error('[CallModal] Failed to set in_call status:', e),
+          logger.error('[CallModal] Failed to set in_call status:', e),
         );
         // Start duration timer
         if (!durationTimerRef.current) {
@@ -253,7 +253,7 @@ export function CallModal({
           setCallStatus('active');
           // Set user status to "in_call"
           setInCallStatusMutation({ userId: currentUserId }).catch((e) =>
-            console.error('[CallModal] Failed to set in_call status:', e),
+            logger.error('[CallModal] Failed to set in_call status:', e),
           );
         } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
           handleEnd();
@@ -272,7 +272,7 @@ export function CallModal({
         setCallStatus('connecting');
       }
     } catch (err: unknown) {
-      console.error('[CallModal] Media error:', {
+      logger.error('[CallModal] Media error:', {
         name: err instanceof Error ? err.name : 'Unknown',
         message: err instanceof Error ? err.message : 'Unknown error',
         code: (err as { code?: number })?.code,
@@ -377,7 +377,7 @@ export function CallModal({
             answer: JSON.stringify(answer),
           });
         } catch (e) {
-          console.error('[CallModal] Error processing offer:', e);
+          logger.error('[CallModal] Error processing offer:', e);
         }
       }
 
@@ -388,7 +388,7 @@ export function CallModal({
           const answerSDP = JSON.parse(p.answer) as RTCSessionDescriptionInit;
           await pc.setRemoteDescription(new RTCSessionDescription(answerSDP));
         } catch (e) {
-          console.error('[CallModal] Error processing answer:', e);
+          logger.error('[CallModal] Error processing answer:', e);
         }
       }
 
@@ -403,7 +403,7 @@ export function CallModal({
               await pc.addIceCandidate(cand);
             }
           } catch (e) {
-            console.error('[CallModal] Error adding ICE candidate:', e);
+            logger.error('[CallModal] Error adding ICE candidate:', e);
           }
         }
       }
@@ -426,7 +426,7 @@ export function CallModal({
       // Reset status from "in_call" back to "available"
       await resetCallStatusMutation({ userId: currentUserId });
     } catch (e) {
-      console.error('[CallModal] Error ending call:', e);
+      logger.error('[CallModal] Error ending call:', e);
     }
 
     // Give a moment for cleanup to complete before closing

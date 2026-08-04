@@ -3,6 +3,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 
 interface Props {
   children: ReactNode;
@@ -42,7 +43,7 @@ export class WidgetErrorBoundary extends Component<Props, State> {
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const widgetName = this.props.name || 'Unknown Widget';
-    console.error(`🛡️ [${widgetName}] ErrorBoundary caught:`, error, errorInfo.componentStack);
+    logger.error(`🛡️ [${widgetName}] ErrorBoundary caught:`, error, errorInfo.componentStack);
 
     // Log to Sentry if available
     if (typeof window !== 'undefined' && window.Sentry) {

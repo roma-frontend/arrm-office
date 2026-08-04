@@ -17,6 +17,7 @@ import { Clock, Mail, Building2, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 export default function PendingApprovalPage() {
   const { t } = useTranslation();
@@ -40,7 +41,7 @@ export default function PendingApprovalPage() {
   // Check if user was approved while on this page
   React.useEffect(() => {
     if (freshUserData?.organizationId && freshUserData?.isApproved) {
-      console.error('[PendingPage] ✅ User was approved! Redirecting to dashboard...');
+      logger.error('[PendingPage] ✅ User was approved! Redirecting to dashboard...');
       // Update auth store with fresh data
       setUser({
         id: freshUserData._id,

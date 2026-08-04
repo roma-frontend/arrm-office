@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT } from '@/lib/jwt';
+import { logger } from '@/lib/logger';
 
 // Opt out of static generation — uses cookies
 export const revalidate = 0;
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.error('TOTP status error:', error);
+    logger.error('TOTP status error:', error);
     return NextResponse.json({ error: 'Failed to get status' }, { status: 500 });
   }
 }

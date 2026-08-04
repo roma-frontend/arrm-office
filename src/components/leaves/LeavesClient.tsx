@@ -38,6 +38,7 @@ import { playNotificationSound, sendBrowserNotification } from '@/lib/notificati
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { useOptimisticLeaveActions } from '@/hooks/useOptimisticActions';
+import { logger } from '@/lib/logger';
 
 const AILeaveAssistant = dynamic(() => import('@/components/leaves/AILeaveAssistant'), {
   ssr: false,
@@ -178,7 +179,7 @@ export function LeavesClient() {
       playNotificationSound('approved');
       toast.success(t('leave.approvedSuccess'));
     } catch (err) {
-      console.error('Approve error:', err);
+      logger.error('Approve error:', err);
       toast.error(err instanceof Error ? err.message : t('leave.approveFailed'));
     }
   };
@@ -197,7 +198,7 @@ export function LeavesClient() {
       playNotificationSound('rejected');
       toast.success(t('leave.rejectedSuccess'));
     } catch (err) {
-      console.error('Reject error:', err);
+      logger.error('Reject error:', err);
       toast.error(err instanceof Error ? err.message : t('leave.rejectFailed'));
     }
   };
@@ -211,7 +212,7 @@ export function LeavesClient() {
       await deleteOptimistic(id, user.id as Id<'users'>);
       toast.success(t('leave.deletedSuccess'));
     } catch (err) {
-      console.error('Delete error:', err);
+      logger.error('Delete error:', err);
       toast.error(err instanceof Error ? err.message : t('leave.deleteFailed'));
     }
   };

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { isValidEmail } from '@/lib/stripe-config';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { verifyJWT } from '@/lib/jwt';
+import { logger } from '@/lib/logger';
 
 async function verifyAdmin(req: NextRequest): Promise<boolean> {
   try {
@@ -61,7 +62,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
 
     const priceId = PLANS[plan].priceId;
     if (!priceId || priceId.startsWith('prod_')) {
-      console.error(
+      logger.error(
         `[Stripe Checkout] Invalid price ID for plan "${plan}": "${priceId}". Must be a price_... ID, not a prod_... ID.`,
       );
       return NextResponse.json(
@@ -100,7 +101,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     return NextResponse.json({ url: session.url });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Checkout failed';
-    console.error('[Stripe Checkout]', msg);
+    logger.error('[Stripe Checkout]', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 });

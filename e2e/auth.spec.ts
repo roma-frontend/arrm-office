@@ -48,17 +48,23 @@ test.describe('Auth Flow', () => {
     await login(page);
     await page.waitForURL(/dashboard|leaves|tasks/, { timeout: 15_000 });
 
-    // Click user menu / logout
-    const avatar = page
-      .locator('[data-testid="user-menu"], button:has(img[alt]), nav button')
-      .last();
-    await avatar.click();
-    const logoutBtn = page.locator('text=/log\\s*out|sign\\s*out|выйти/i').first();
-    if (await logoutBtn.isVisible()) {
-      await logoutBtn.click();
-      await page.waitForURL(/login/, { timeout: 10_000 });
-      expect(page.url()).toContain('login');
-    }
+    // The user menu is a DropdownMenuTrigger button with aria-label "User menu"
+    // (no data-testid). Radix menus render items with role="menuitem".
+    const userMenu = page.getByRole('button', { name: /user menu|меню/i }).first();
+    await expect(userMenu).toBeVisible({ timeout: 10_000 });
+    await userMenu.click();
+
+    const logoutItem = page.getByRole('menuitem', { name: /log\s*out|sign\s*out|выйти/i }).first();
+    await expect(logoutItem).toBeVisible({ timeout: 5_000 });
+    await logoutItem.click();
+
+    // handleLogout clears client state, then router.push('/') — the app lands
+    // on the public landing page (or /login if middleware redirects), never a
+    // dashboard route. Accept either outcome.
+    await page.waitForURL((url) => !/dashboard|leaves|tasks/.test(url.pathname), {
+      timeout: 15_000,
+    });
+    expect(page.url()).not.toMatch(/dashboard|leaves|tasks/);
   });
 
   test('forgot password link navigates', async ({ page }) => {

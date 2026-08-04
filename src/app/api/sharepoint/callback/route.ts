@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeSharePointCode } from '@/lib/sharepoint-sync';
 import { validateRestrictedOrgFromRequest } from '@/lib/restricted-org';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const validation = await validateRestrictedOrgFromRequest(request);
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('SharePoint OAuth callback error:', error);
+    logger.error('SharePoint OAuth callback error:', error);
     return NextResponse.redirect(new URL('/settings?sharepoint=error', request.url));
   }
 }

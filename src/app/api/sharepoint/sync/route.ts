@@ -3,6 +3,7 @@ import { fetchSharePointListItems, refreshSharePointToken } from '@/lib/sharepoi
 import type { SharePointSyncResult } from '@/lib/sharepoint-sync';
 import { validateRestrictedOrgFromRequest } from '@/lib/restricted-org';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -151,7 +152,7 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
 
     return response;
   } catch (error) {
-    console.error('SharePoint sync error:', error);
+    logger.error('SharePoint sync error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Sync failed' },
       { status: 500 },

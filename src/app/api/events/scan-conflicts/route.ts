@@ -4,6 +4,7 @@
 
 import { NextRequest } from 'next/server';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { logger } from '@/lib/logger';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {
   try {
@@ -24,7 +25,7 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
       conflictsFound: 0,
     });
   } catch (error) {
-    console.error('Conflict scan failed:', error);
+    logger.error('Conflict scan failed:', error);
     return Response.json({ error: 'Scan failed' }, { status: 500 });
   }
 });

@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useOptimisticDriverRequest } from '@/hooks/useOptimisticActions';
+import { logger } from '@/lib/logger';
 
 interface RequestDriverWizardProps {
   userId: Id<'users'>;
@@ -275,7 +276,7 @@ export function RequestDriverWizard({ userId, onComplete, onCancel }: RequestDri
       onComplete?.();
     } catch (error) {
       toast.error(t('driverWizard.toast.error'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

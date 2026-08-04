@@ -22,11 +22,9 @@ async function convexMutation<T>(name: string, args: Record<string, unknown>): P
     log.debug('convexMutation called', { name });
 
     if (!CONVEX_URL) {
-      logger.error('❌ CONVEX_URL is undefined!');
-      logger.error(
-        'Available env vars:',
-        Object.keys(process.env).filter((k) => k.includes('CONVEX')),
-      );
+      logger.error('❌ CONVEX_URL is undefined!', {
+        availableConvexEnvVars: Object.keys(process.env).filter((k) => k.includes('CONVEX')),
+      });
       throw new Error('NEXT_PUBLIC_CONVEX_URL environment variable is not set');
     }
 

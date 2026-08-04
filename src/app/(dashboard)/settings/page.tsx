@@ -31,6 +31,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import dynamic from 'next/dynamic';
 import { SubscriptionPlanCard } from '@/components/subscription/SubscriptionPlanCard';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { logger } from '@/lib/logger';
 
 const CookiePreferences = dynamic(
   () =>
@@ -241,7 +242,7 @@ export default function SettingsPage() {
 
       toast.success(t('toasts.settingsSaved'));
     } catch (err) {
-      console.error('Failed to save settings:', err);
+      logger.error('Failed to save settings:', err);
       toast.error(err instanceof Error ? err.message : t('settings.failedToSave'));
     } finally {
       setSaving(false);

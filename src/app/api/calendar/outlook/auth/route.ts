@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateRestrictedOrgFromRequest } from '@/lib/restricted-org';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const validation = await validateRestrictedOrgFromRequest(request);
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const error = await tokenResponse.text();
-      console.error('Token exchange failed:', error);
+      logger.error('Token exchange failed:', error);
       throw new Error('Failed to exchange code for token');
     }
 
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Microsoft OAuth error:', error);
+    logger.error('Microsoft OAuth error:', error);
     return NextResponse.redirect(new URL('/dashboard?error=outlook_auth_failed', request.url));
   }
 }

@@ -46,13 +46,13 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     });
 
     if (!organizationId || !driverId || !startTime || !endTime || !tripInfo) {
-      console.error('[book-driver] Missing required fields');
+      logger.error('[book-driver] Missing required fields');
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Validate driverId is a proper Convex ID
     if (!driverId.startsWith('jn')) {
-      console.error('[book-driver] Invalid driverId:', driverId);
+      logger.error('[book-driver] Invalid driverId:', driverId);
       return NextResponse.json(
         { error: `Invalid driverId format. Must start with "jn", got: "${driverId}"` },
         { status: 400 },
@@ -115,7 +115,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       hasWarnings: conflictResult.conflicts.filter((c) => c.severity === 'warning').length > 0,
     });
   } catch (error: unknown) {
-    console.error('[book-driver] Error:', error);
+    logger.error('[book-driver] Error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to book driver' },
       { status: 500 },

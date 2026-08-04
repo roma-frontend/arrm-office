@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import { TextInputStep, TextareaStep, SelectStep } from '@/components/ui/wizard-step-components';
 import { FileText, DollarSign, Shield } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface PolicyWizardProps {
   open: boolean;
@@ -165,7 +166,7 @@ export default function PolicyWizard({
       setResetKey((k) => k + 1);
       onSuccess?.();
     } catch (error) {
-      console.error('Error creating policy:', error);
+      logger.error('Error creating policy:', error);
       toast.error(t('expenses.errorCreatingPolicy'));
     }
   };

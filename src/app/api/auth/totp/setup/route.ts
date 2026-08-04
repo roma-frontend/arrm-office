@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { verifyJWT } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
+import { logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       backupCodes, // return plaintext codes to show user once
     });
   } catch (error: unknown) {
-    console.error('TOTP setup error:', error);
+    logger.error('TOTP setup error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Setup failed' },
       { status: 500 },

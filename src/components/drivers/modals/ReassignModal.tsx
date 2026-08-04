@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 
 interface ReassignModalProps {
   currentDriverName: string;
@@ -48,7 +49,7 @@ export function ReassignModal({
       await onReassign(selectedDriverId);
       onClose();
     } catch (error) {
-      console.error('Failed to reassign:', error);
+      logger.error('Failed to reassign:', error);
     } finally {
       setIsSubmitting(false);
     }

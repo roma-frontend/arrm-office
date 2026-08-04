@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { ShieldAlert, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 export default function AuthError({
   error,
@@ -20,7 +21,7 @@ export default function AuthError({
   };
 
   useEffect(() => {
-    console.error('Auth error:', error);
+    logger.error('Auth error:', error);
 
     if (typeof window !== 'undefined' && window.Sentry) {
       window.Sentry.captureException(error, {

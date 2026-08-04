@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Session } from 'next-auth';
+import { logger } from '@/lib/logger';
 
 interface JwtSessionData {
   session: {
@@ -125,7 +126,7 @@ async function createJwtSession(userData: {
       }
     }
   } catch (error) {
-    console.error('[useAuthSync] JWT session error:', error);
+    logger.error('[useAuthSync] JWT session error:', error);
   }
   return { success: false, data: null };
 }
@@ -241,7 +242,7 @@ export function useAuthSync() {
 
           setUserEmail(userEmailValue);
         } catch (error) {
-          console.error('[useAuthSync] Error syncing OAuth user:', error);
+          logger.error('[useAuthSync] Error syncing OAuth user:', error);
         }
       }
     };

@@ -34,6 +34,7 @@ import {
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
+import { logger } from '@/lib/logger';
 
 type Frequency = 'monthly' | 'yearly';
 
@@ -193,7 +194,7 @@ export default function CompensationBandWizard({
       clearDraft();
       onSuccess();
     } catch (error) {
-      console.error('Create compensation band error:', error);
+      logger.error('Create compensation band error:', error);
       toast.error(t('compensation.createBandFailed', 'Failed to create compensation band'));
     } finally {
       setIsSubmitting(false);

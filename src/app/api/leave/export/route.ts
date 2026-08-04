@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
+import { logger } from '@/lib/logger';
 
 /**
  * Styled Excel export for leave-money and final-settlement reports.
@@ -458,7 +459,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Leave export error:', error);
+    logger.error('Leave export error:', error);
     return NextResponse.json({ error: 'Failed to export report' }, { status: 500 });
   }
 }

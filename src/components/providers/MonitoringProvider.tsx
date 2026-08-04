@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 /**
  * Monitoring Provider Component
@@ -23,7 +24,7 @@ export function MonitoringProvider({ children }: { children: React.ReactNode }) 
             initSentryClient();
           });
         } catch (error) {
-          console.error('Failed to initialize Sentry:', error);
+          logger.error('Failed to initialize Sentry:', error);
         }
       };
 

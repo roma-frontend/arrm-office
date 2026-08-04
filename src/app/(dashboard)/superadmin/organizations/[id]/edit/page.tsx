@@ -11,6 +11,7 @@ import { Building2, Save, ArrowLeft } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export default function EditOrganizationPage() {
   const { t } = useTranslation();
@@ -135,7 +136,7 @@ export default function EditOrganizationPage() {
       toast.success(t('toasts.orgUpdated'));
       router.push('/superadmin/organizations');
     } catch (error) {
-      console.error('Failed to update organization:', error);
+      logger.error('Failed to update organization:', error);
       toast.error(error instanceof Error ? error.message : t('toasts.orgUpdateFailed'));
     } finally {
       setIsLoading(false);

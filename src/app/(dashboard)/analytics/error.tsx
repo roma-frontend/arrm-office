@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export default function AnalyticsError({
   error,
@@ -14,7 +15,7 @@ export default function AnalyticsError({
   const { t } = useTranslation();
 
   useEffect(() => {
-    console.error('Analytics error:', error);
+    logger.error('Analytics error:', error);
 
     // Send to Sentry if available
     if (typeof window !== 'undefined' && window.Sentry) {

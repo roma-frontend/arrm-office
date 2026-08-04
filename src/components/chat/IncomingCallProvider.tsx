@@ -11,6 +11,7 @@ import type { ActiveCall } from './ChatClient';
 import { Phone, Video, PhoneOff } from 'lucide-react';
 import { playChatMessageSound } from '@/lib/notificationSound';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 export function IncomingCallProvider() {
   const { user } = useAuthStore();
@@ -150,7 +151,7 @@ export function IncomingCallProvider() {
                   try {
                     await answerCallMutation({ callId: incomingCall.callId, userId: uid });
                   } catch (e) {
-                    console.error('[IncomingCallProvider] Error answering call:', e);
+                    logger.error('[IncomingCallProvider] Error answering call:', e);
                   }
                   setActiveCall(incomingCall);
                   setIncomingCall(null);

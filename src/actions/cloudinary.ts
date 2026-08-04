@@ -41,8 +41,7 @@ export async function uploadAvatarToCloudinary(
   base64Image: string,
   userId: string,
 ): Promise<string> {
-  logger.log('☁️ Cloudinary signed upload starting...');
-  logger.log('👤 User ID:', userId);
+  logger.log('☁️ Cloudinary signed upload starting...', { userId });
 
   try {
     logger.log('📤 Uploading to Cloudinary with SDK...');
@@ -67,8 +66,7 @@ export async function uploadAvatarToCloudinary(
       ],
     });
 
-    logger.log('✅ Upload successful!');
-    logger.log('🔗 URL:', result.secure_url);
+    logger.log('✅ Upload successful:', result.secure_url);
 
     return result.secure_url;
   } catch (error) {
@@ -82,10 +80,11 @@ export async function uploadChatAttachment(
   fileName: string,
   mimeType: string,
 ): Promise<{ url: string; name: string; type: string }> {
-  logger.log('🎤 Voice message upload starting...');
-  logger.log('📄 File name:', fileName);
-  logger.log('📄 MIME type:', mimeType);
-  logger.log('📄 Base64 size:', base64File.length);
+  logger.log('🎤 Voice message upload starting...', {
+    fileName,
+    mimeType,
+    base64Size: base64File.length,
+  });
 
   // Validate environment variables
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -160,26 +159,13 @@ export async function uploadChatAttachment(
     return { url: result.secure_url, name: fileName, type: mimeType };
   } catch (error) {
     logger.error('❌ Voice message upload failed:', error);
-    const details = error as {
-      message?: string;
-      error?: string;
-      status?: number;
-      http_code?: number;
-    };
-    logger.error('❌ Error details:', {
-      message: details.message,
-      error: details.error,
-      status: details.status,
-      http_code: details.http_code,
-    });
     const errorMessage = error instanceof Error ? error.message : 'Upload failed';
     throw new Error(`Voice message upload error: ${errorMessage}`);
   }
 }
 
 export async function deleteAvatarFromCloudinary(userId: string): Promise<void> {
-  logger.log('🗑️ Cloudinary delete starting...');
-  logger.log('👤 User ID:', userId);
+  logger.log('🗑️ Cloudinary delete starting...', { userId });
 
   try {
     const publicId = `hr-office/avatars/${userId}`;
@@ -258,8 +244,7 @@ export async function uploadDocument(
 }
 
 export async function deleteTaskAttachmentFromCloudinary(url: string): Promise<void> {
-  logger.log('🗑️ Cloudinary task attachment delete starting...');
-  logger.log('🔗 URL:', url);
+  logger.log('🗑️ Cloudinary task attachment delete starting...', { url });
 
   try {
     // Extract public_id from URL

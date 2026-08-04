@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { formatCurrency } from '@/lib/payrollUtils';
+import { logger } from '@/lib/logger';
 
 /** Local YYYY-MM-DD (not UTC) so the date input matches local timezone dates. */
 function toLocalDateString(timestamp: number): string {
@@ -123,7 +124,7 @@ export function SettlementPreviewDialog({
       URL.revokeObjectURL(url);
       toast.success(t('employees.settlement.exported', 'Settlement report downloaded'));
     } catch (e) {
-      console.error('Export error:', e);
+      logger.error('Export error:', e);
       toast.error(t('employees.settlement.exportFailed', 'Failed to export report'));
     } finally {
       setExporting(false);

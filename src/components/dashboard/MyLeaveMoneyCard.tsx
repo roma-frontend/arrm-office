@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { getLeaveTypeLabel, type LeaveType } from '@/lib/types';
 import { formatCurrency } from '@/lib/payrollUtils';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 /**
  * "My Leave in Money" — shows the employee their remaining leave days valued in
@@ -74,7 +75,7 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
       URL.revokeObjectURL(url);
       toast.success(t('dashboard.leaveMoney.exported'));
     } catch (e) {
-      console.error('Export error:', e);
+      logger.error('Export error:', e);
       toast.error(t('dashboard.leaveMoney.exportFailed'));
     } finally {
       setExporting(false);

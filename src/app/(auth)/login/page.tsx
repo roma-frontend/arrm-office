@@ -290,7 +290,7 @@ export default function LoginPage() {
             router.push(`/login?maintenance=true&org=${orgId}`);
           }
         } catch (error) {
-          console.error('Failed to check maintenance mode:', error);
+          logger.error('Failed to check maintenance mode:', error);
         }
       }
     };
@@ -443,7 +443,7 @@ export default function LoginPage() {
         const redirectUrl = nextUrl || '/dashboard';
         router.push(redirectUrl);
       } catch (err) {
-        console.error('❌ Login failed:', err);
+        logger.error('❌ Login failed:', err);
         setError(err instanceof Error ? err.message : 'Login failed');
       }
     });
@@ -480,7 +480,7 @@ export default function LoginPage() {
       const redirectUrl = nextUrl || '/dashboard';
       router.push(redirectUrl);
     } catch (err) {
-      console.error('❌ WebAuthn login failed:', err);
+      logger.error('❌ WebAuthn login failed:', err);
       setError(err instanceof Error ? err.message : 'WebAuthn login failed');
     }
   };

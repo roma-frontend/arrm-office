@@ -229,7 +229,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
       // Обновляем список backup'ов
       fetchBackups();
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {

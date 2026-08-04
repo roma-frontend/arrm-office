@@ -533,7 +533,7 @@ function CreateTicketDialog({
       setCategory('technical');
     } catch (error) {
       toast.error(t('superadmin.support.createError'));
-      console.error(error);
+      logger.error(error);
     }
   };
 
@@ -700,7 +700,7 @@ function TicketDetailDialog({
       toast.success(t('superadmin.support.chatCreated', { chatName: result.chatName }));
       router.refresh();
     } catch (error: unknown) {
-      console.error('[handleCreateChat] Error:', error);
+      logger.error('[handleCreateChat] Error:', error);
       toast.error(t('superadmin.support.chatCreateError'));
     } finally {
       setCreatingChat(false);
@@ -709,11 +709,11 @@ function TicketDetailDialog({
 
   const handleActivateChat = async () => {
     if (!ticket) {
-      console.error('No ticket available');
+      logger.error('No ticket available');
       return;
     }
     if (!ticket.chatId) {
-      console.error('No chatId found - chat may not have been created yet');
+      logger.error('No chatId found - chat may not have been created yet');
       toast.error(t('superadmin.support.chatCreateFirst'));
       return;
     }
@@ -729,7 +729,7 @@ function TicketDetailDialog({
       });
       router.push(`/chat?conversation=${result.chatId}`);
     } catch (error: unknown) {
-      console.error('Error activating chat:', error);
+      logger.error('Error activating chat:', error);
       toast.error(
         error instanceof Error ? error.message : t('superadmin.support.chatActivateError'),
       );

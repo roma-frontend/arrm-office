@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertOctagon, RefreshCw, Home } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 export default function GlobalError({
   error,
@@ -20,7 +21,7 @@ export default function GlobalError({
   };
 
   useEffect(() => {
-    console.error('Global error:', error);
+    logger.error('Global error:', error);
 
     if (typeof window !== 'undefined' && window.Sentry) {
       window.Sentry.captureException(error, {

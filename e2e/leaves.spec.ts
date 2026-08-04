@@ -15,7 +15,9 @@ test.describe('Leave Request CRUD', () => {
     await page.waitForLoadState('networkidle');
 
     // Click create/request button
-    const createBtn = page.locator('button:has-text(/new|create|request|создать|запрос/i)').first();
+    const createBtn = page
+      .getByRole('button', { name: /new|create|request|создать|запрос/i })
+      .first();
     if (await createBtn.isVisible()) {
       await createBtn.click();
       // Should show form/dialog
@@ -29,17 +31,13 @@ test.describe('Leave Request CRUD', () => {
     await page.goto('/leaves');
     await page.waitForLoadState('networkidle');
 
-    const createBtn = page.locator('button:has-text(/new|create|request|создать/i)').first();
+    const createBtn = page.getByRole('button', { name: /new|create|request|создать/i }).first();
     if (await createBtn.isVisible()) {
       await createBtn.click();
       await page.waitForTimeout(500);
 
       // Try to submit without filling
-      const submitBtn = page
-        .locator(
-          'dialog button[type="submit"], [role="dialog"] button:has-text(/submit|send|отправить/i)',
-        )
-        .first();
+      const submitBtn = page.locator('dialog button[type="submit"]').first();
       if (await submitBtn.isVisible()) {
         await submitBtn.click();
         // Should show validation or stay in form

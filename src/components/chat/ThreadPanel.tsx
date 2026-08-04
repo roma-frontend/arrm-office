@@ -12,6 +12,7 @@ import i18n from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useOptimisticThreadReply } from '@/hooks/useOptimisticActions';
+import { logger } from '@/lib/logger';
 
 interface Props {
   parentMessageId: Id<'chatMessages'>;
@@ -80,7 +81,7 @@ export function ThreadPanel({
       await replyOptimistic(input.trim());
       setInput('');
     } catch (err) {
-      console.error('Thread reply failed:', err);
+      logger.error('Thread reply failed:', err);
     } finally {
       setSending(false);
     }

@@ -31,6 +31,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'danger'> = {
   draft: 'secondary',
@@ -418,7 +419,7 @@ function ExportButton({
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed:', error);
     } finally {
       setIsExporting(false);
     }

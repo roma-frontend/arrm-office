@@ -46,6 +46,7 @@ import '@xyflow/react/dist/style.css';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus, Search, Network, Users, Building2, Folder, Download, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 // ─── Types ────────────────────────────────────────────────────
 type OrgNodeType = 'person' | 'department' | 'group';
@@ -518,7 +519,7 @@ export default function OrgChartClient() {
       }
     } catch (e) {
       toast.error(t('orgChart.fixDepartmentsError', 'Failed to fix departments'));
-      console.error('Fix departments error:', e);
+      logger.error('Fix departments error:', e);
     }
   };
 

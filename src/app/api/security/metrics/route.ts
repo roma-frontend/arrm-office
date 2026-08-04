@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { resolveConvexUserIdByEmail } from '@/lib/convex-server-query';
+import { logger } from '@/lib/logger';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function GET(_request: NextRequest) {
       role: session.user.role,
     });
   } catch (error) {
-    console.error('[Metrics API] Error:', error);
+    logger.error('[Metrics API] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

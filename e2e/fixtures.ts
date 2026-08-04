@@ -32,10 +32,43 @@ export async function login(page: Page, email = TEST_EMAIL, password = TEST_PASS
 }
 
 /**
+ * Select the user's own organization in the org selector so admin pages
+ * (holidays / leave-settings / leave-balances) render content instead of
+ * the ShieldLoader that superadmins see until an org is picked.
+ *
+ * The org selector is a zustand persist store ('org-selector-store') keyed by
+ * the selected org id. For a superadmin, useSelectedOrganization() returns
+ * selectedOrgId ?? null, so without a selection every /admin/* page stays on
+ * its loading shield. We seed the store with the user's own organization id
+ * (read from the persisted auth store) right after login, before any admin
+ * page navigation happens.
+ */
+export async function selectOrganizationForSuperadmin(page: Page) {
+  await page.evaluate(() => {
+    try {
+      const rawAuth = window.localStorage.getItem('auth-storage');
+      if (!rawAuth) return;
+      const parsed = JSON.parse(rawAuth) as {
+        state?: { user?: { organizationId?: string } };
+      };
+      const orgId = parsed?.state?.user?.organizationId;
+      if (!orgId) return;
+      // zustand persist format: { state: ..., version: 1 }
+      window.localStorage.setItem(
+        'org-selector-store',
+        JSON.stringify({ state: { selectedOrgId: orgId }, version: 1 }),
+      );
+    } catch {
+      // Best-effort: ignore storage errors, tests will fail visibly if needed.
+    }
+  });
+}
+
+/**
  * Extended test fixture with authenticated page
  */
 
-export const test = base.extend<{ authedPage: Page }>({
+export const test = base.extend<{ authedPage: Page; adminPage: Page }>({
   // Override the built-in page so every test starts with the onboarding tour
   // pre-dismissed. On a fresh CI browser the login-tour auto-shows and its
   // full-screen z-[9999] spotlight overlay intercepts clicks on the login
@@ -57,8 +90,19 @@ export const test = base.extend<{ authedPage: Page }>({
     // real-login tests in auth.spec.ts already use.
     test.skip(!process.env.E2E_USER_EMAIL, 'No test credentials configured');
     await login(page);
-    // Wait for redirect to dashboard
-    await page.waitForURL(/dashboard|leaves|tasks/, { timeout: 15_000 });
+    // Wait for redirect to dashboard (generous timeout — slow machines / many
+    // parallel workers can make login take a while).
+    await page.waitForURL(/dashboard|leaves|tasks/, { timeout: 30_000 });
+    await run(page);
+  },
+  // Admin pages for a superadmin render content only after an organization
+  // is selected (otherwise they stay on ShieldLoader). This fixture seeds the
+  // org selector with the user's own org so /admin/* tests exercise real UI.
+  adminPage: async ({ page }, run) => {
+    test.skip(!process.env.E2E_USER_EMAIL, 'No test credentials configured');
+    await login(page);
+    await page.waitForURL(/dashboard|leaves|tasks/, { timeout: 30_000 });
+    await selectOrganizationForSuperadmin(page);
     await run(page);
   },
 });

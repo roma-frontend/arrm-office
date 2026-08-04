@@ -18,6 +18,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface CreateIncidentWizardProps {
   userId: Id<'users'>;
@@ -145,7 +146,7 @@ export function CreateIncidentWizard({ userId, onComplete, onCancel }: CreateInc
       onComplete?.();
     } catch (error) {
       toast.error(t('incidentWizard.toast.error'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

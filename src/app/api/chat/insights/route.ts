@@ -5,6 +5,7 @@ import type { Id } from '../../../../../convex/_generated/dataModel';
 import { cookies } from 'next/headers';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
 import { getServerConvexAuth } from '@/lib/server-convex-auth';
+import { logger } from '@/lib/logger';
 
 // Opt out of static generation — uses request.url
 export const revalidate = 0;
@@ -183,7 +184,7 @@ export async function GET(req: NextRequest) {
       bestDates: bestDates.length > 0 ? bestDates : null,
     });
   } catch (error) {
-    console.error('Insights error:', error);
+    logger.error('Insights error:', error);
     return NextResponse.json(null);
   }
 }

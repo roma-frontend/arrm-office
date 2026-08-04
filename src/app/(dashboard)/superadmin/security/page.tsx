@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { logger } from '@/lib/logger';
 
 // ── Feature metadata ──────────────────────────────────────────────────────────
 const FEATURES = [
@@ -272,7 +273,7 @@ export default function SecurityDashboard() {
     try {
       await toggleSetting({ key, enabled: !currentEnabled, updatedBy: user!.id as Id<'users'> });
     } catch (err) {
-      console.error('Toggle failed:', err);
+      logger.error('Toggle failed:', err);
     } finally {
       setToggling((prev) => ({ ...prev, [key]: false }));
     }

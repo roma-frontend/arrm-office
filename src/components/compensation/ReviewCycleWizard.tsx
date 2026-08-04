@@ -28,6 +28,7 @@ import {
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
+import { logger } from '@/lib/logger';
 
 interface ReviewCycleWizardProps {
   onClose: () => void;
@@ -200,7 +201,7 @@ export default function ReviewCycleWizard({ onClose, onSuccess }: ReviewCycleWiz
       clearDraft();
       onSuccess();
     } catch (error) {
-      console.error('Create review cycle error:', error);
+      logger.error('Create review cycle error:', error);
       toast.error(t('compensation.createReviewCycleFailed', 'Failed to create review cycle'));
     } finally {
       setIsSubmitting(false);

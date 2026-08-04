@@ -187,7 +187,7 @@ export function Navbar() {
       // Redirect to home
       router.push('/');
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
       // Force logout even if error
       logout();
       router.push('/');

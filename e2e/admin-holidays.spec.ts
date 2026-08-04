@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
 test.describe('Admin Holidays', () => {
-  test('page loads with title and empty states', async ({ authedPage: page }) => {
+  test('page loads with title and empty states', async ({ adminPage: page }) => {
     await page.goto('/admin/holidays');
     await page.waitForLoadState('networkidle');
 
@@ -17,35 +17,35 @@ test.describe('Admin Holidays', () => {
     await expect(noInternal).toBeVisible();
   });
 
-  test('add holiday button is visible', async ({ authedPage: page }) => {
+  test('add holiday button is visible', async ({ adminPage: page }) => {
     await page.goto('/admin/holidays');
     await page.waitForLoadState('networkidle');
 
-    const addBtn = page.locator('button:has-text(/add holiday|добавить|ավելացնել/i)').first();
+    const addBtn = page.getByRole('button', { name: /add holiday|добавить|ավելացնել/i }).first();
     await expect(addBtn).toBeVisible({ timeout: 5_000 });
   });
 
-  test('create dialog opens and has form fields', async ({ authedPage: page }) => {
+  test('create dialog opens and has form fields', async ({ adminPage: page }) => {
     await page.goto('/admin/holidays');
     await page.waitForLoadState('networkidle');
 
-    const addBtn = page.locator('button:has-text(/add holiday|добавить|ավելացնել/i)').first();
+    const addBtn = page.getByRole('button', { name: /add holiday|добавить|ավելացնել/i }).first();
     await addBtn.click();
 
     const dialog = page.locator('dialog, [role="dialog"]').first();
     await expect(dialog).toBeVisible({ timeout: 5_000 });
 
-    // Should have name input
-    await expect(dialog.locator('input:not([type="date"])')).toBeVisible();
+    // Should have name input (there may also be a description input, so scope to first)
+    await expect(dialog.locator('input:not([type="date"])').first()).toBeVisible();
     // Should have date input
     await expect(dialog.locator('input[type="date"]')).toBeVisible();
   });
 
-  test('dialog has public/internal type select', async ({ authedPage: page }) => {
+  test('dialog has public/internal type select', async ({ adminPage: page }) => {
     await page.goto('/admin/holidays');
     await page.waitForLoadState('networkidle');
 
-    const addBtn = page.locator('button:has-text(/add holiday|добавить|ավելացնել/i)').first();
+    const addBtn = page.getByRole('button', { name: /add holiday|добавить|ավելացնել/i }).first();
     await addBtn.click();
 
     const dialog = page.locator('dialog, [role="dialog"]').first();
@@ -64,11 +64,11 @@ test.describe('Admin Holidays', () => {
     }
   });
 
-  test('recurring switch is present in dialog', async ({ authedPage: page }) => {
+  test('recurring switch is present in dialog', async ({ adminPage: page }) => {
     await page.goto('/admin/holidays');
     await page.waitForLoadState('networkidle');
 
-    const addBtn = page.locator('button:has-text(/add holiday|добавить|ավելացնել/i)').first();
+    const addBtn = page.getByRole('button', { name: /add holiday|добавить|ավելացնել/i }).first();
     await addBtn.click();
 
     const dialog = page.locator('dialog, [role="dialog"]').first();
@@ -82,18 +82,20 @@ test.describe('Admin Holidays', () => {
     }
   });
 
-  test('validation prevents empty submission', async ({ authedPage: page }) => {
+  test('validation prevents empty submission', async ({ adminPage: page }) => {
     await page.goto('/admin/holidays');
     await page.waitForLoadState('networkidle');
 
-    const addBtn = page.locator('button:has-text(/add holiday|добавить|ավելացնել/i)').first();
+    const addBtn = page.getByRole('button', { name: /add holiday|добавить|ավելացնել/i }).first();
     await addBtn.click();
 
     const dialog = page.locator('dialog, [role="dialog"]').first();
     await expect(dialog).toBeVisible({ timeout: 5_000 });
 
     // Click save/create without filling
-    const submitBtn = dialog.locator('button:has-text(/create|save|создать|сохранить/i)').first();
+    const submitBtn = dialog
+      .getByRole('button', { name: /create|save|создать|сохранить/i })
+      .first();
     await submitBtn.click();
     await page.waitForTimeout(1000);
 
@@ -101,7 +103,7 @@ test.describe('Admin Holidays', () => {
     await expect(dialog).toBeVisible();
   });
 
-  test('public holidays card renders header', async ({ authedPage: page }) => {
+  test('public holidays card renders header', async ({ adminPage: page }) => {
     await page.goto('/admin/holidays');
     await page.waitForLoadState('networkidle');
 

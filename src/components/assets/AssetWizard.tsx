@@ -14,6 +14,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 
 interface AssetWizardProps {
   orgId: Id<'organizations'>;
@@ -200,7 +201,7 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
       onComplete?.();
     } catch (error) {
       toast.error(t('assets.createdError'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

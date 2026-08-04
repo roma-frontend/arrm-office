@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createOutlookCalendarEvent, type CalendarEvent } from '@/lib/calendar-sync';
 import { validateRestrictedOrgFromRequest } from '@/lib/restricted-org';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { logger } from '@/lib/logger';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {
   try {
@@ -50,7 +51,7 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
       results,
     });
   } catch (error) {
-    console.error('Outlook Calendar sync error:', error);
+    logger.error('Outlook Calendar sync error:', error);
     return NextResponse.json({ error: 'Failed to sync with Outlook Calendar' }, { status: 500 });
   }
 });

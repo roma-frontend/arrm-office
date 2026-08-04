@@ -53,6 +53,7 @@ import {
 } from '@/components/ui/dialog';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { logger } from '@/lib/logger';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -662,7 +663,7 @@ export default function WorkflowBuilderClient() {
       setSteps([]);
     } catch (error) {
       toast.error(t('automation.builder.saveError'));
-      console.error('Save workflow error:', error);
+      logger.error('Save workflow error:', error);
     } finally {
       setIsSaving(false);
     }

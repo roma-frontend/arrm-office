@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { logger } from '@/lib/logger';
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const;
 const STATUSES = ['pending', 'in_progress', 'review', 'completed', 'cancelled'] as const;
@@ -109,7 +110,7 @@ export default function TaskEditClient() {
       toast.success(t('tasksClient.taskSaved'));
       router.push(`/tasks/${taskId}`);
     } catch (error) {
-      console.error('Failed to update task', error);
+      logger.error('Failed to update task', error);
       toast.error(t('common.error', 'Something went wrong'));
       setIsSubmitting(false);
     }

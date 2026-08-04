@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyJWT, signConvexJWT, type JWTPayload } from '@/lib/jwt';
 import { auth } from '@/auth';
 import { resolveConvexUserIdByEmail } from '@/lib/convex-server-query';
+import { logger } from '@/lib/logger';
 
 /**
  * Mint a fresh Convex auth token for the browser auth bridge.
@@ -63,7 +64,7 @@ export async function GET() {
     const convexToken = await signConvexJWT(payload);
     return NextResponse.json({ token: convexToken });
   } catch (err) {
-    console.error('[convex-token] failed to sign Convex JWT:', err);
+    logger.error('[convex-token] failed to sign Convex JWT:', err);
     return NextResponse.json({ error: 'Convex auth not configured' }, { status: 503 });
   }
 }

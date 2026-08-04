@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
 import { signConvexJWT, type JWTPayload } from '@/lib/jwt';
+import { logger } from '@/lib/logger';
 
 const _CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
 
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(context);
   } catch (error) {
-    console.error('Context error:', error);
+    logger.error('Context error:', error);
     return NextResponse.json({ error: 'Failed to get context' }, { status: 500 });
   }
 }

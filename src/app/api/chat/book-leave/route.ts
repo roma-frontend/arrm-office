@@ -6,6 +6,7 @@ import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { getServerConvexAuth } from '@/lib/server-convex-auth';
 import { cookies } from 'next/headers';
 import { getServerTranslation } from '@/lib/i18n/server-translation';
+import { logger } from '@/lib/logger';
 
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
@@ -191,7 +192,7 @@ export const POST = withCsrfProtection(async (req: Request) => {
       conflicts: conflictResult.conflicts,
     });
   } catch (error) {
-    console.error('Book leave error:', error);
+    logger.error('Book leave error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create leave request' },
       { status: 500 },

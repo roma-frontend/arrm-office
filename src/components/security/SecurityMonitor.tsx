@@ -6,6 +6,7 @@ import { useConvexAuth } from 'convex/react';
 import { Shield, AlertTriangle, Lock, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 
 interface SecurityMetrics {
   blockedIPs: number;
@@ -42,7 +43,7 @@ export function SecurityMonitor() {
           setIsVisible(true);
         }
       } catch (error) {
-        console.error('Failed to fetch security metrics:', error);
+        logger.error('Failed to fetch security metrics:', error);
       }
     };
 

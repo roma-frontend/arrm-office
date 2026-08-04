@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Clear session error:', error);
+    logger.error('Clear session error:', error);
     return NextResponse.json({ error: 'Clear session failed' }, { status: 500 });
   }
 }

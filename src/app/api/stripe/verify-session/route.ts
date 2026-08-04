@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { logger } from '@/lib/logger';
 
 function getStripe(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
       paymentStatus: session.payment_status,
     });
   } catch (err: unknown) {
-    console.error(
+    logger.error(
       '[Stripe Verify] Session verification failed:',
       err instanceof Error ? err.message : String(err),
     );

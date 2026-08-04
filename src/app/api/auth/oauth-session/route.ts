@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (!userResult) {
-      console.error('[oauth-session] ❌ User not found in database:', emailLower);
+      logger.error('[oauth-session] ❌ User not found in database:', emailLower);
       return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
     }
 
@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to create OAuth session';
-    console.error('[oauth-session] ❌ OAuth session error:', message || error);
+    logger.error('[oauth-session] ❌ OAuth session error:', message || error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

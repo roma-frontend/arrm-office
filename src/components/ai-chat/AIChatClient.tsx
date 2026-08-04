@@ -298,7 +298,7 @@ export default function AIChatPage() {
         const data = (await r.json()) as CsrfPair;
         if (!cancelled) setCsrf(data);
       } catch (e) {
-        console.error('[CSRF] Failed to fetch CSRF token:', e);
+        logger.error('[CSRF] Failed to fetch CSRF token:', e);
       }
     })();
 
@@ -333,7 +333,7 @@ export default function AIChatPage() {
       toast.success(t('aiChat.newChatCreated') || 'New chat created');
       setTimeout(() => textareaRef.current?.focus(), 100);
     } catch (error) {
-      console.error('[Create conversation error]:', error);
+      logger.error('[Create conversation error]:', error);
       toast.error(t('aiChat.createError') || 'Failed to create chat');
     }
   };
@@ -356,7 +356,7 @@ export default function AIChatPage() {
 
       toast.success(t('aiChat.chatDeleted') || 'Chat deleted');
     } catch (error) {
-      console.error('[Delete conversation error]:', error);
+      logger.error('[Delete conversation error]:', error);
       toast.error(t('aiChat.deleteError') || 'Failed to delete chat');
     }
   };
@@ -386,7 +386,7 @@ export default function AIChatPage() {
       setEditingTitleId(null);
       toast.success(t('aiChat.titleUpdated') || 'Title updated');
     } catch (error) {
-      console.error('[Update title error]:', error);
+      logger.error('[Update title error]:', error);
       toast.error(t('aiChat.updateError') || 'Failed to update title');
     }
   };
@@ -430,7 +430,7 @@ export default function AIChatPage() {
           ...prev,
         ]);
       } catch (error) {
-        console.error('[Create conversation error]:', error);
+        logger.error('[Create conversation error]:', error);
         toast.error(t('toasts.conversationCreateFailed'));
         return;
       }
@@ -458,7 +458,7 @@ export default function AIChatPage() {
         content: userMessage.content,
       });
     } catch (error) {
-      console.error('[Save message error]:', error);
+      logger.error('[Save message error]:', error);
     }
 
     try {
@@ -514,7 +514,7 @@ export default function AIChatPage() {
             });
           }
         } catch (e) {
-          console.error('[CSRF refresh failed]', e);
+          logger.error('[CSRF refresh failed]', e);
         }
       }
 
@@ -574,7 +574,7 @@ export default function AIChatPage() {
           content: cleanContent.replace(/<NAVIGATE>.*?<\/NAVIGATE>/g, '').trim(),
         });
       } catch (error) {
-        console.error('[Save AI message error]:', error);
+        logger.error('[Save AI message error]:', error);
       }
 
       // Auto-rename if first message
@@ -590,7 +590,7 @@ export default function AIChatPage() {
             ),
           );
         } catch (error) {
-          console.error('[Auto-rename error]:', error);
+          logger.error('[Auto-rename error]:', error);
         }
       }
 
@@ -607,7 +607,7 @@ export default function AIChatPage() {
         ),
       );
     } catch (error) {
-      console.error('[AI Chat Page] Error:', error);
+      logger.error('[AI Chat Page] Error:', error);
       toast.error(t('aiChat.error') || 'Failed to get response');
 
       setMessages((prev) => [

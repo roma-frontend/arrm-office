@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 interface GoogleCalendarEventItem {
   id?: string;
@@ -110,7 +111,7 @@ export async function GET(request: NextRequest) {
     }
     return response;
   } catch (error) {
-    console.error('Google Calendar events fetch error:', error);
+    logger.error('Google Calendar events fetch error:', error);
     return NextResponse.json({ events: [], connected: true, error: 'fetch_failed' });
   }
 }

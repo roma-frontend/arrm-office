@@ -127,14 +127,14 @@ export async function POST(req: NextRequest) {
       });
       logger.log('Resend result:', JSON.stringify(sendResult));
       if (sendResult.error) {
-        console.error('Resend error:', sendResult.error);
+        logger.error('Resend error:', sendResult.error);
         // Don't throw — token is still saved, user can try again or admin can resend
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Forgot password error:', err);
+    logger.error('Forgot password error:', err);
     const msg = err instanceof Error ? err.message : 'Something went wrong';
     return NextResponse.json({ error: msg }, { status: 500 });
   }

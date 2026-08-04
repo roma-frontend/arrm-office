@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { motion } from '@/lib/cssMotion';
+import { logger } from '@/lib/logger';
 
 interface _Member {
   _id: string;
@@ -107,7 +108,7 @@ export default function ManageAdminsPage() {
       setSelectedMemberId(null);
       setActionType(null);
     } catch (error) {
-      console.error('Error promoting admin:', error);
+      logger.error('Error promoting admin:', error);
       toast.error((error instanceof Error ? error.message : '') || t('ui.errorAssigningAdmin'));
     } finally {
       setIsLoading(false);
@@ -129,7 +130,7 @@ export default function ManageAdminsPage() {
       setSelectedMemberId(null);
       setActionType(null);
     } catch (error) {
-      console.error('Error removing admin:', error);
+      logger.error('Error removing admin:', error);
       toast.error((error instanceof Error ? error.message : '') || t('ui.errorRemovingAdmin'));
     } finally {
       setIsLoading(false);

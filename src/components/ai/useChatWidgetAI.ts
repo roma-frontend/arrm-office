@@ -360,7 +360,7 @@ export function useChatWidgetAI() {
         );
       }
     } catch (err) {
-      console.error('[ChatWidget] Action error:', err);
+      logger.error('[ChatWidget] Action error:', err);
       const errorMsg = err instanceof Error ? err.message : 'Network error. Please try again.';
       setMessages((prev) =>
         prev.map((m) =>

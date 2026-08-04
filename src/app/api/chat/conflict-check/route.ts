@@ -84,7 +84,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to check conflicts';
-    console.error('[conflict-check] Error:', msg);
+    logger.error('[conflict-check] Error:', msg);
     return NextResponse.json(
       {
         error: msg,
@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to check conflicts';
-    console.error('[conflict-check] Error:', msg);
+    logger.error('[conflict-check] Error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

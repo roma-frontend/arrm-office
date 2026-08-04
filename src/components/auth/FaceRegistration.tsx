@@ -38,7 +38,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
   useEffect(() => {
     // Load models on mount
     loadFaceApiModels().catch((err) => {
-      console.error('Failed to load face models:', err);
+      logger.error('Failed to load face models:', err);
       toast.error(t('faceRegistration.modelLoadFailed', 'Failed to load face recognition models'));
     });
 
@@ -53,7 +53,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
           setSelectedCamera(videoDevices[0]!.deviceId);
         }
       } catch (err) {
-        console.error('Failed to enumerate devices:', err);
+        logger.error('Failed to enumerate devices:', err);
       }
     }
     getCameras();
@@ -123,7 +123,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
       const videoElementAvailable = await waitForVideoElement();
 
       if (!videoElementAvailable || !videoRef.current) {
-        console.error('❌ Video element ref is null after waiting!');
+        logger.error('❌ Video element ref is null after waiting!');
         toast.error(
           t('faceRegistration.videoNotFound', 'Video element not found. Please try again.'),
         );
@@ -142,7 +142,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
       // Ensure video plays
       const playVideo = async () => {
         if (!videoRef.current) {
-          console.error('❌ videoRef is null when trying to play');
+          logger.error('❌ videoRef is null when trying to play');
           return;
         }
 
@@ -157,7 +157,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
           logger.log('✅ Video playing successfully');
           detectFaceLoop(true); // Force start with true flag
         } catch (err) {
-          console.error('❌ Failed to play video:', err);
+          logger.error('❌ Failed to play video:', err);
           toast.error(t('faceRegistration.videoPlaybackFailed', 'Failed to start video playback'));
         }
       };
@@ -176,7 +176,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
         }
       }, 1000);
     } catch (error) {
-      console.error('❌ Error accessing webcam:', error);
+      logger.error('❌ Error accessing webcam:', error);
 
       // Reset state on error
       setIsWebcamActive(false);
@@ -265,7 +265,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
 
         setFaceDetected(faceFound);
       } catch (error) {
-        console.error('Error in face detection loop:', error);
+        logger.error('Error in face detection loop:', error);
       }
     }, 500);
 
@@ -320,7 +320,7 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
       );
       onSuccess?.();
     } catch (error) {
-      console.error('Error capturing face:', error);
+      logger.error('Error capturing face:', error);
       toast.error(
         t('faceRegistration.registrationFailed', 'Failed to register face. Please try again.'),
       );

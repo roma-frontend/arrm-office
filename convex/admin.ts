@@ -486,10 +486,6 @@ export const sendServiceBroadcast = mutation({
         isDeleted: false,
       });
 
-      console.warn(
-        `[sendServiceBroadcast] Created new System Announcements conversation: ${convId}`,
-      );
-
       // Add all active, approved users to this channel
       // NOTE: Capped at DEFAULT_LIST_CAP — sufficient for all expected org sizes.
       const users = await ctx.db
@@ -497,14 +493,8 @@ export const sendServiceBroadcast = mutation({
         .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
         .take(DEFAULT_LIST_CAP);
 
-      console.warn(`[sendServiceBroadcast] Initial creation: Found ${users.length} total users`);
-
-      let addedCount = 0;
       for (const u of users) {
         if (u.isActive && u.isApproved) {
-          console.warn(
-            `[sendServiceBroadcast] Adding initial member: ${u.name} (active:${u.isActive}, approved:${u.isApproved})`,
-          );
           await ctx.db.insert('chatMembers', {
             conversationId: convId,
             userId: u._id,
@@ -514,11 +504,6 @@ export const sendServiceBroadcast = mutation({
             isMuted: false,
             joinedAt: now,
           });
-          addedCount++;
-        } else {
-          console.warn(
-            `[sendServiceBroadcast] Skipping user ${u.name} - active:${u.isActive}, approved:${u.isApproved}`,
-          );
         }
       }
 
@@ -529,9 +514,6 @@ export const sendServiceBroadcast = mutation({
           (u) => u._id === args.userId && u.isActive && u.isApproved,
         );
         if (!superadminAlreadyAdded) {
-          console.warn(
-            `[sendServiceBroadcast] Adding superadmin to channel as owner: ${superadminUser.name}`,
-          );
           await ctx.db.insert('chatMembers', {
             conversationId: convId,
             userId: args.userId,
@@ -541,13 +523,8 @@ export const sendServiceBroadcast = mutation({
             isMuted: false,
             joinedAt: now,
           });
-          addedCount++;
         }
       }
-
-      console.warn(
-        `[sendServiceBroadcast] Added ${addedCount} members to newly created System Announcements`,
-      );
 
       // Create the conversation object to use
       announcementConv = {
@@ -570,23 +547,12 @@ export const sendServiceBroadcast = mutation({
       throw new Error('Failed to create or find system announcements channel');
     }
 
-    console.warn(
-      `[sendServiceBroadcast] Organization ${args.organizationId} - System Announcements conversation: ${announcementConv._id}`,
-    );
-
     // Ensure all active, approved users are members of System Announcements channel
     // (needed for new users who joined after the channel was created)
     const allUsers = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
-
-    console.warn(`[sendServiceBroadcast] Total users in org: ${allUsers.length}`);
-    const activeApprovedUsers = allUsers.filter((u) => u.isActive && u.isApproved);
-    console.warn(`[sendServiceBroadcast] Active & approved users: ${activeApprovedUsers.length}`);
-    activeApprovedUsers.forEach((u) =>
-      console.warn(`  - ${u.name} (${u.email}) - active:${u.isActive}, approved:${u.isApproved}`),
-    );
 
     const existingMembers = await ctx.db
       .query('chatMembers')
@@ -596,17 +562,12 @@ export const sendServiceBroadcast = mutation({
     const existingMemberIds = new Set(existingMembers.map((m) => m.userId.toString()));
     const newMemberIds: Id<'users'>[] = [];
 
-    console.warn(
-      `[sendServiceBroadcast] Existing members: ${existingMembers.length}, Active users: ${allUsers.filter((u) => u.isActive && u.isApproved).length}`,
-    );
-
     // Add active, approved users
     for (const u of allUsers) {
       if (u.isActive && u.isApproved) {
         const userIdStr = u._id.toString();
 
         if (!existingMemberIds.has(userIdStr)) {
-          console.warn(`[sendServiceBroadcast] Adding new member: ${u.name} (${u._id})`);
           await ctx.db.insert('chatMembers', {
             conversationId: announcementConv._id,
             userId: u._id,
@@ -617,8 +578,6 @@ export const sendServiceBroadcast = mutation({
             joinedAt: Date.now(),
           });
           newMemberIds.push(u._id);
-        } else {
-          console.warn(`[sendServiceBroadcast] User ${u.name} already a member`);
         }
       }
     }
@@ -628,9 +587,6 @@ export const sendServiceBroadcast = mutation({
     if (!existingMemberIds.has(superadminIdStr)) {
       const superadminUser = await ctx.db.get(args.userId);
       if (superadminUser) {
-        console.warn(
-          `[sendServiceBroadcast] Ensuring superadmin is member: ${superadminUser.name}`,
-        );
         await ctx.db.insert('chatMembers', {
           conversationId: announcementConv._id,
           userId: args.userId,
@@ -643,10 +599,6 @@ export const sendServiceBroadcast = mutation({
         newMemberIds.push(args.userId);
       }
     }
-
-    console.warn(
-      `[sendServiceBroadcast] Added ${newMemberIds.length} new members to System Announcements`,
-    );
 
     // Send the service broadcast message
     const now = Date.now();
@@ -672,10 +624,6 @@ export const sendServiceBroadcast = mutation({
 
     const msgId = await ctx.db.insert('chatMessages', broadcastMessage);
 
-    console.warn(
-      `[sendServiceBroadcast] Message created: ${msgId} in conversation ${announcementConv._id}`,
-    );
-
     // Update conversation last message
     const preview = args.content.length > 100 ? args.content.slice(0, 100) + '…' : args.content;
     await ctx.db.patch(announcementConv._id, {
@@ -699,10 +647,6 @@ export const sendServiceBroadcast = mutation({
         unreadCount: (member.unreadCount || 0) + 1,
       });
     }
-
-    console.warn(
-      `[sendServiceBroadcast] ===== BROADCAST COMPLETE FOR ORG: ${args.organizationId} =====\n`,
-    );
 
     return {
       messageId: msgId,

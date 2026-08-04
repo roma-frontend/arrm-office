@@ -4,6 +4,7 @@ import { signJWT, verifyJWT, type JWTPayload } from '@/lib/jwt';
 import { cookies } from 'next/headers';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { resolveConvexUserIdByEmail } from '@/lib/convex-server-query';
+import { logger } from '@/lib/logger';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {
   try {
@@ -82,7 +83,7 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
 
     return response;
   } catch (error) {
-    console.error('[/api/profile/update] Error:', error);
+    logger.error('[/api/profile/update] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 });

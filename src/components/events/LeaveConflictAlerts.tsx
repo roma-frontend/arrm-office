@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { logger } from '@/lib/logger';
 
 interface LeaveConflictAlertsProps {
   organizationId: Id<'organizations'>;
@@ -80,7 +81,7 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
       setSelectedAlert(null);
       setReviewNotes('');
     } catch (error) {
-      console.error('Failed to review alert:', error);
+      logger.error('Failed to review alert:', error);
       toast.error(t('events.reviewFailed', 'Failed to review alert'));
     } finally {
       setIsReviewing(false);

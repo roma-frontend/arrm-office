@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ isActive });
   } catch (error) {
-    console.error('Maintenance check error:', error);
+    logger.error('Maintenance check error:', error);
     return NextResponse.json({ isActive: false });
   }
 }

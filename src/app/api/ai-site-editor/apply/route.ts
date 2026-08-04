@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,7 +70,7 @@ export async function GET(_req: NextRequest) {
 
     return NextResponse.json({ backups });
   } catch (error) {
-    console.error('Error listing backups:', error);
+    logger.error('Error listing backups:', error);
     return NextResponse.json({ error: 'Failed to list backups' }, { status: 500 });
   }
 }
@@ -136,7 +137,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       backupCreated: true,
     });
   } catch (error) {
-    console.error('Error applying changes:', error);
+    logger.error('Error applying changes:', error);
     return NextResponse.json({ error: 'Failed to apply changes' }, { status: 500 });
   }
 });
@@ -208,7 +209,7 @@ export const DELETE = withCsrfProtection(async (req: NextRequest) => {
       restoredTimestamp: timestamp,
     });
   } catch (error) {
-    console.error('Error rolling back changes:', error);
+    logger.error('Error rolling back changes:', error);
     return NextResponse.json({ error: 'Failed to rollback changes' }, { status: 500 });
   }
 });

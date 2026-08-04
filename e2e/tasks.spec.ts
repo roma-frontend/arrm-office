@@ -22,7 +22,9 @@ test.describe('Task CRUD', () => {
     await page.goto('/tasks');
     await page.waitForLoadState('networkidle');
 
-    const createBtn = page.locator('button:has-text(/new|create|add|создать|добавить/i)').first();
+    const createBtn = page
+      .getByRole('button', { name: /new|create|add|создать|добавить/i })
+      .first();
     if (await createBtn.isVisible()) {
       await createBtn.click();
       await expect(page.locator('dialog, [role="dialog"]').first()).toBeVisible({ timeout: 5_000 });
@@ -33,7 +35,7 @@ test.describe('Task CRUD', () => {
     await page.goto('/tasks');
     await page.waitForLoadState('networkidle');
 
-    const createBtn = page.locator('button:has-text(/new|create|add|создать/i)').first();
+    const createBtn = page.getByRole('button', { name: /new|create|add|создать/i }).first();
     if (await createBtn.isVisible()) {
       await createBtn.click();
       await page.waitForTimeout(500);
@@ -48,12 +50,16 @@ test.describe('Task CRUD', () => {
     await page.goto('/tasks');
     await page.waitForLoadState('networkidle');
 
-    // Click first task if exists
-    const taskCard = page.locator('[class*="task"], [class*="card"]').first();
+    // Task cards in the kanban view are draggable (cursor-grab) and open the
+    // detail route on click. Avoid plain [class*="card"] — that also matches
+    // the stat cards at the top of the page, which are not clickable.
+    const taskCard = page
+      .locator('[class*="cursor-grab"], [class*="kanban"] [class*="card"]')
+      .first();
     if (await taskCard.isVisible()) {
       await taskCard.click();
-      await page.waitForTimeout(2000);
-      // Should navigate to detail or open panel
+      // Wait for client-side navigation to the detail route
+      await page.waitForURL(/tasks\/[^/]+/, { timeout: 10_000 }).catch(() => {});
       const hasDetail =
         page.url().includes('/tasks/') ||
         (await page

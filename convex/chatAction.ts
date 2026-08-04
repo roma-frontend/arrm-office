@@ -2,6 +2,7 @@ import { action } from './_generated/server';
 import { api } from './_generated/api';
 import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
+import { logger } from '../src/lib/logger';
 
 // Isolate API references at module level to avoid deep type instantiation in handler
 const usersApi = api.users;
@@ -195,7 +196,7 @@ ${
 }
 `;
     } catch (err) {
-      console.error('Error fetching user/team data:', err);
+      logger.error('Error fetching user/team data:', err);
       userDataContext = 'Error loading user data.';
       teamDataContext = 'Error loading team data.';
     }
@@ -296,7 +297,7 @@ RULES:
 
       return { content };
     } catch (error: unknown) {
-      console.error('GROQ API error:', error);
+      logger.error('GROQ API error:', error);
       throw new Error(
         `Failed to get AI response: ${error instanceof Error ? error.message : String(error)}`,
       );

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { logger } from '@/lib/logger';
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
   try {
@@ -54,7 +55,7 @@ Rules:
 
     return NextResponse.json({ replies: replies.slice(0, 3) });
   } catch (err) {
-    console.error('Smart reply error:', err);
+    logger.error('Smart reply error:', err);
     // Fallback replies
     return NextResponse.json({
       replies: ['👍', 'Понял, спасибо!', 'Можете уточнить?'],

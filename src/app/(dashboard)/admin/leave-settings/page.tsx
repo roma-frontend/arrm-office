@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import {
   Select,
   SelectContent,
@@ -68,7 +69,7 @@ export default function LeaveSettingsPage() {
   // Auto-initialize defaults if no configs exist
   React.useEffect(() => {
     if (configs && configs.length === 0 && organizationId) {
-      initializeDefaults({ organizationId }).catch(console.error);
+      initializeDefaults({ organizationId }).catch((err) => logger.error(err));
     }
   }, [configs, organizationId, initializeDefaults]);
 

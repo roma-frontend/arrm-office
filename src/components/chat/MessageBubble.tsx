@@ -32,6 +32,7 @@ import { SmartReply } from './SmartReply';
 import { LinkPreview, extractUrl } from './LinkPreview';
 import { createPortal } from 'react-dom';
 import { useOptimisticReaction } from '@/hooks/useOptimisticActions';
+import { logger } from '@/lib/logger';
 
 // ── i18n labels for delivered / seen ──────────────────────────────────────────
 type Lang = 'en' | 'ru' | 'hy';
@@ -535,7 +536,7 @@ export const MessageBubble = React.memo(function MessageBubble({
         (message.reactions?.[emojiToKey(sanitizedEmoji)] ?? []) as Id<'users'>[],
       );
     } catch (err) {
-      console.error('Reaction failed:', err);
+      logger.error('Reaction failed:', err);
     }
   };
 

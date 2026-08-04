@@ -35,6 +35,7 @@ import {
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
+import { logger } from '@/lib/logger';
 
 type CompType = 'base' | 'bonus' | 'raise' | 'adjustment' | 'allowance';
 type Frequency = 'monthly' | 'yearly' | 'one-time';
@@ -206,7 +207,7 @@ export default function CompensationRecordWizard({
       clearDraft();
       onSuccess();
     } catch (error) {
-      console.error('Create compensation record error:', error);
+      logger.error('Create compensation record error:', error);
       toast.error(t('compensation.createFailed', 'Failed to create compensation record'));
     } finally {
       setIsSubmitting(false);

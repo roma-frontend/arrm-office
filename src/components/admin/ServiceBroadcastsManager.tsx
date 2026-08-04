@@ -67,7 +67,7 @@ export function ServiceBroadcastsManager({
       setSelectedBroadcastId(null);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error('[ServiceBroadcastsManager] ✗ Failed to delete broadcast:', errorMsg);
+      logger.error('[ServiceBroadcastsManager] ✗ Failed to delete broadcast:', errorMsg);
       toast.error(t('broadcasts.deleteFailed', { error: errorMsg }));
     } finally {
       setIsDeleting(false);

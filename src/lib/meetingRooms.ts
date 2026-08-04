@@ -113,6 +113,60 @@ export function isRoomFreeFor(
   return findConflicts(bookings, start, end, excludeId).length === 0;
 }
 
+export interface SlotAvailability {
+  available: boolean;
+  /** Meetings blocking the requested slot, earliest first. */
+  conflicts: RoomBookingLite[];
+  /**
+   * When the room frees up again, following back-to-back meetings — this is the
+   * number a user needs to hear ("busy until 15:30"), not the end of the first
+   * blocking meeting.
+   */
+  busyUntil: number | null;
+  /** Nearest start time that fits the same duration, when one exists. */
+  suggestion: number | null;
+}
+
+/**
+ * Answers "can I have this room from A to B?" together with everything needed to
+ * explain a refusal. Computed on the client from the day's bookings so the
+ * calendar wizard can react while the user is still typing times.
+ */
+export function slotAvailability(
+  bookings: RoomBookingLite[],
+  start: number,
+  end: number,
+  excludeId?: string,
+): SlotAvailability {
+  if (end <= start) {
+    return { available: false, conflicts: [], busyUntil: null, suggestion: null };
+  }
+
+  const conflicts = findConflicts(bookings, start, end, excludeId);
+  if (conflicts.length === 0) {
+    return { available: true, conflicts: [], busyUntil: null, suggestion: null };
+  }
+
+  const ordered = bookings
+    .filter((booking) => booking._id !== excludeId)
+    .filter(isConfirmed)
+    .sort((a, b) => a.startTime - b.startTime);
+
+  let busyUntil = conflicts.reduce((latest, booking) => Math.max(latest, booking.endTime), start);
+  for (const booking of ordered) {
+    if (booking.startTime - busyUntil <= CONTIGUOUS_GAP_MS && booking.endTime > busyUntil) {
+      busyUntil = booking.endTime;
+    }
+  }
+
+  return {
+    available: false,
+    conflicts,
+    busyUntil,
+    suggestion: suggestNextFreeSlot(bookings, start, end - start, 24 * 60 * 60 * 1000, excludeId),
+  };
+}
+
 /** Live status of a room derived from its bookings at `now`. */
 export function resolveRoomStatus(
   bookings: RoomBookingLite[],

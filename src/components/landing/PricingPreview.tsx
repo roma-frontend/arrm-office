@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRouter } from 'next/navigation';
 import { useCurrency } from '@/hooks/useCurrency';
+import { logger } from '@/lib/logger';
 
 // Inline SVG icons to eliminate lucide-react import overhead
 function CheckIcon({
@@ -346,7 +347,7 @@ function PricingCard({
       if (data.url) {
         window.location.href = data.url;
       } else if (data.error) {
-        console.error('[Stripe checkout error]', data.error, data.message);
+        logger.error('[Stripe checkout error]', data.error, data.message);
         if (res.status === 401) {
           toast.error(
             t(
@@ -359,7 +360,7 @@ function PricingCard({
         }
       }
     } catch (e: unknown) {
-      console.error('[Stripe checkout error]', e);
+      logger.error('[Stripe checkout error]', e);
       toast.error(t('pricing.checkoutError', 'Failed to start checkout. Please try again.'));
     } finally {
       setLoading(false);

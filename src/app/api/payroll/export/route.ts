@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
+import { logger } from '@/lib/logger';
 
 interface PayrollExportRecord {
   user?: { name?: string; email?: string } | null;
@@ -118,7 +119,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Payroll export error:', error);
+    logger.error('Payroll export error:', error);
     return NextResponse.json({ error: 'Failed to export payroll data' }, { status: 500 });
   }
 }

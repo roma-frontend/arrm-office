@@ -5,6 +5,7 @@ import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 export default function DashboardError({
   error,
@@ -21,7 +22,7 @@ export default function DashboardError({
     return result === key ? fallback : result;
   };
   useEffect(() => {
-    console.error('Dashboard error:', error);
+    logger.error('Dashboard error:', error);
 
     const msg = error?.message ?? '';
     if (

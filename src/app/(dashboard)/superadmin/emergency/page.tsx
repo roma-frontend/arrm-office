@@ -29,6 +29,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { toast } from 'sonner';
 import { CreateIncidentWizard } from '@/components/superadmin/CreateIncidentWizard';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { logger } from '@/lib/logger';
 
 interface Ticket {
   _id: string;
@@ -140,7 +141,7 @@ export default function EmergencyDashboardPage() {
       toast.success(t('superadmin.emergency.alerts.incidentResolved'));
     } catch (error) {
       toast.error(t('superadmin.emergency.alerts.errorResolvingIncident'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

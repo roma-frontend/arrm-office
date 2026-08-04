@@ -7,6 +7,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { X, Palette } from 'lucide-react';
 import { CHAT_BACKGROUNDS, getBackgroundsByCategory } from '@/lib/chatBackgrounds';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 interface Props {
   userId: Id<'users'>;
@@ -38,7 +39,7 @@ export const BackgroundPicker = React.memo(function BackgroundPicker({
     try {
       await updateChatBackground({ userId, backgroundId: bgId });
     } catch (err) {
-      console.error('Failed to save chat background:', err);
+      logger.error('Failed to save chat background:', err);
     }
   };
 

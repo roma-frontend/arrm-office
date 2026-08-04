@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
 test.describe('Admin Leave Settings', () => {
-  test('page loads with title', async ({ authedPage: page }) => {
+  test('page loads with title', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-settings');
     await page.waitForLoadState('networkidle');
 
@@ -10,30 +10,31 @@ test.describe('Admin Leave Settings', () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 
-  test('shows leave type cards', async ({ authedPage: page }) => {
+  test('shows leave type cards', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-settings');
     await page.waitForLoadState('networkidle');
 
-    // Should have cards for leave types (paid, sick, etc.)
-    const cards = page.locator('[class*="card"]:has([class*="card-title"])');
+    // Should have cards for leave types (paid, sick, etc.). The CardTitle
+    // component does not emit a "card-title" class, so match plain card
+    // containers that contain a heading inside the leave settings layout.
+    const cards = page.locator('[class*="card"]').filter({ has: page.locator('h2, h3') });
     const cardCount = await cards.count();
     expect(cardCount).toBeGreaterThanOrEqual(1);
   });
 
-  test('each leave type has edit button', async ({ authedPage: page }) => {
+  test('each leave type has edit button', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-settings');
     await page.waitForLoadState('networkidle');
-
-    const editBtns = page.locator('button:has-text(/edit|редактировать|խմբագրել/i)');
+    const editBtns = page.getByRole('button', { name: /edit|редактировать|խմբագրել/i });
     const count = await editBtns.count();
     expect(count).toBeGreaterThanOrEqual(1);
   });
 
-  test('clicking edit opens config panel', async ({ authedPage: page }) => {
+  test('clicking edit opens config panel', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-settings');
     await page.waitForLoadState('networkidle');
 
-    const editBtn = page.locator('button:has-text(/edit|редактировать|խմբագրել/i)').first();
+    const editBtn = page.getByRole('button', { name: /edit|редактировать|խմբագրել/i }).first();
     if (await editBtn.isVisible()) {
       await editBtn.click();
       await page.waitForTimeout(500);
@@ -50,11 +51,11 @@ test.describe('Admin Leave Settings', () => {
     }
   });
 
-  test('edit panel has days-per-year input', async ({ authedPage: page }) => {
+  test('edit panel has days-per-year input', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-settings');
     await page.waitForLoadState('networkidle');
 
-    const editBtn = page.locator('button:has-text(/edit|редактировать|խմբագրել/i)').first();
+    const editBtn = page.getByRole('button', { name: /edit|редактировать|խմբագրել/i }).first();
     if (await editBtn.isVisible()) {
       await editBtn.click();
       await page.waitForTimeout(500);
@@ -68,7 +69,7 @@ test.describe('Admin Leave Settings', () => {
     }
   });
 
-  test('shows active/inactive badges', async ({ authedPage: page }) => {
+  test('shows active/inactive badges', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-settings');
     await page.waitForLoadState('networkidle');
 
@@ -77,11 +78,11 @@ test.describe('Admin Leave Settings', () => {
     expect(count).toBeGreaterThanOrEqual(1);
   });
 
-  test('approval chain UI is accessible via edit', async ({ authedPage: page }) => {
+  test('approval chain UI is accessible via edit', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-settings');
     await page.waitForLoadState('networkidle');
 
-    const editBtn = page.locator('button:has-text(/edit|редактировать|խմբագրել/i)').first();
+    const editBtn = page.getByRole('button', { name: /edit|редактировать|խմբագրել/i }).first();
     if (await editBtn.isVisible()) {
       await editBtn.click();
       await page.waitForTimeout(500);
@@ -97,18 +98,18 @@ test.describe('Admin Leave Settings', () => {
     }
   });
 
-  test('edit panel shows cancel and save buttons', async ({ authedPage: page }) => {
+  test('edit panel shows cancel and save buttons', async ({ adminPage: page }) => {
     await page.goto('/admin/leave-settings');
     await page.waitForLoadState('networkidle');
 
-    const editBtn = page.locator('button:has-text(/edit|редактировать|խմբագրել/i)').first();
+    const editBtn = page.getByRole('button', { name: /edit|редактировать|խմբագրել/i }).first();
     if (await editBtn.isVisible()) {
       await editBtn.click();
       await page.waitForTimeout(500);
 
       // Cancel and save buttons should be visible in the edit panel
-      const cancelBtn = page.locator('button:has-text(/cancel|отмена|չեղարկել/i)').first();
-      const saveBtn = page.locator('button:has-text(/save|сохранить|պահպանել/i)').first();
+      const cancelBtn = page.getByRole('button', { name: /cancel|отмена|չեղարկել/i }).first();
+      const saveBtn = page.getByRole('button', { name: /save|сохранить|պահպանել/i }).first();
       const canCancel = await cancelBtn.isVisible().catch(() => false);
       const canSave = await saveBtn.isVisible().catch(() => false);
       expect(canCancel || canSave).toBeTruthy();

@@ -556,6 +556,27 @@ export const CalendarClient = React.memo(function CalendarClient() {
     storeScope(next);
   }, []);
 
+  /**
+   * Deleting an event also frees the meeting room it held, so the confirmation
+   * says so — otherwise people re-check the board to make sure.
+   */
+  const handleDeleteEvent = useCallback(
+    async (event: CalendarEvent) => {
+      try {
+        const result = await deleteEventMutation({ id: event.id as Id<'calendarEvents'> });
+        toast.success(
+          result?.releasedRoom && event.roomName
+            ? t('createMeeting.room.releasedWithEvent', { room: event.roomName })
+            : t('createMeeting.deleted'),
+        );
+      } catch (error) {
+        logger.error('Delete calendar event failed', error);
+        toast.error(t('rooms.errors.generic'));
+      }
+    },
+    [deleteEventMutation, t],
+  );
+
   const viewer = useMemo(() => ({ id: user?.id ?? '', name: user?.name }), [user?.id, user?.name]);
   const isPersonalScope = scope === 'mine';
 
@@ -698,6 +719,10 @@ export const CalendarClient = React.memo(function CalendarClient() {
         attachmentUrl: e.attachmentUrl,
         createdAt: e.createdAt,
         createdBy: e.createdBy,
+        roomId: e.roomId,
+        roomBookingId: e.roomBookingId,
+        roomName: e.roomName,
+        roomColor: e.roomColor,
       })),
     [calendarEventsData],
   );
@@ -1554,11 +1579,17 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               {t('createMeeting.categories.' + evt.category, evt.category)}
                             </span>
                           </div>
+                          {evt.roomName && (
+                            <p className="mt-1 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-(--background) px-1.5 py-0.5 text-[10px] text-(--text-secondary)">
+                              <DoorOpen className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{evt.roomName}</span>
+                            </p>
+                          )}
                         </div>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteEventMutation({ id: evt.id as Id<'calendarEvents'> });
+                            void handleDeleteEvent(evt);
                           }}
                           className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all shrink-0"
                         >

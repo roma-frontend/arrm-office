@@ -4,6 +4,7 @@ import { api } from '../../../../../convex/_generated/api';
 import type { Id } from '../../../../../convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { getServerConvexAuth } from '@/lib/server-convex-auth';
+import { logger } from '@/lib/logger';
 
 export const POST = withCsrfProtection(async (req: Request) => {
   try {
@@ -42,7 +43,7 @@ export const POST = withCsrfProtection(async (req: Request) => {
       failed: result.failed,
     });
   } catch (error) {
-    console.error('Backup org error:', error);
+    logger.error('Backup org error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to start backup' },
       { status: 500 },

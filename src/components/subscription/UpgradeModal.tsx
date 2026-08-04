@@ -20,6 +20,7 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 // Card tiers (paid plans only). 'free' is the implicit "no paid plan" state.
 type PlanType = 'starter' | 'professional' | 'enterprise';
@@ -159,7 +160,7 @@ function PlanCard({
       const data = (await res.json()) as { url?: string };
       if (data.url) window.location.href = data.url;
     } catch (e) {
-      console.error('[Stripe checkout]', e);
+      logger.error('[Stripe checkout]', e);
     } finally {
       setLoading(false);
     }

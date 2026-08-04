@@ -136,7 +136,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           headers: { 'Accept-Language': 'en,ru' },
         });
         if (!res.ok) {
-          console.error('[geocode] HTTP error:', res.status);
+          logger.error('[geocode] HTTP error:', res.status);
           return [];
         }
         const data = (await res.json()) as Array<{
@@ -155,7 +155,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
           display_name: item.display_name,
         }));
       } catch (err) {
-        console.error('[geocode] Error:', err);
+        logger.error('[geocode] Error:', err);
         return [];
       }
     },

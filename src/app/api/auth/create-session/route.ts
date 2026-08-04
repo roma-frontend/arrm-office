@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signJWT } from '@/lib/jwt';
 import { jwtVerify } from 'jose';
+import { logger } from '@/lib/logger';
 
 /**
  * SECURITY: Verify that the requester is already authenticated before
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Error creating session:', error);
+    logger.error('Error creating session:', error);
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
   }
 }

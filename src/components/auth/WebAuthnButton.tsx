@@ -6,6 +6,7 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
+import { logger } from '@/lib/logger';
 
 interface WebAuthnButtonProps {
   mode: 'register' | 'login';
@@ -84,7 +85,7 @@ export function WebAuthnButton({ mode, userId, onSuccess, disabled }: WebAuthnBu
         toast.error(t('toasts.authCancelled'));
       } else {
         toast.error(t('toasts.biometricRegFailed'));
-        console.error(err);
+        logger.error(err);
       }
     } finally {
       setLoading(false);
@@ -131,7 +132,7 @@ export function WebAuthnButton({ mode, userId, onSuccess, disabled }: WebAuthnBu
         toast.error(t('toasts.authCancelled'));
       } else {
         toast.error(t('toasts.biometricLoginFailed'));
-        console.error(err);
+        logger.error(err);
       }
     } finally {
       setLoading(false);

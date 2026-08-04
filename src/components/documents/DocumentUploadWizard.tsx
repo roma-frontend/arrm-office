@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { ShieldLoader } from '../ui/ShieldLoader';
+import { logger } from '@/lib/logger';
 
 type DocumentCategory =
   | 'policy'
@@ -349,7 +350,7 @@ export default function DocumentUploadWizard({
       toast.success(t('documents.fileUploaded', 'File uploaded successfully'));
       return true;
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast.error(
         error instanceof Error
           ? error.message
@@ -461,7 +462,7 @@ export default function DocumentUploadWizard({
       clearDraft();
       onSuccess();
     } catch (error) {
-      console.error('Create document error:', error);
+      logger.error('Create document error:', error);
       toast.error(t('documents.createFailed', 'Failed to create document'));
     } finally {
       setIsSubmitting(false);

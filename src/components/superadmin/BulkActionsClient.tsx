@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export default function BulkActionsClient() {
   const router = useRouter();
@@ -92,7 +93,7 @@ export default function BulkActionsClient() {
       setComment('');
     } catch (error) {
       toast.error(t('superadmin.bulkActions.alerts.bulkApproveError'));
-      console.error(error);
+      logger.error(error);
     }
   };
 
@@ -121,7 +122,7 @@ export default function BulkActionsClient() {
       setComment('');
     } catch (error) {
       toast.error(t('superadmin.bulkActions.alerts.bulkRejectError'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

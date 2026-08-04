@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT, signJWT, type JWTPayload } from '@/lib/jwt';
+import { logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -157,7 +158,7 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to end impersonation';
-    console.error('Impersonation end error:', message);
+    logger.error('Impersonation end error:', message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

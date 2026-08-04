@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Mic, Square, Send, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 interface Props {
   onRecordingStart: () => void;
@@ -64,7 +65,7 @@ export function VoiceMessageRecorder({
 
       onRecordingStart();
     } catch (err) {
-      console.error('Error accessing microphone:', err);
+      logger.error('Error accessing microphone:', err);
       toast.error(
         t('chat.micAccessError', 'Could not access microphone. Please check permissions.'),
       );

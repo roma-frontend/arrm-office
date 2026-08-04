@@ -4,6 +4,7 @@ import { api } from '../../../../../convex/_generated/api';
 import { jwtVerify } from 'jose';
 import { signConvexJWT, type JWTPayload } from '@/lib/jwt';
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel';
+import { logger } from '@/lib/logger';
 
 // Opt out of static generation — uses request.url
 export const revalidate = 0;
@@ -502,7 +503,7 @@ export async function GET(req: NextRequest) {
       unreadLeaveApprovals: 0,
     });
   } catch (error) {
-    console.error('Full context error:', error);
+    logger.error('Full context error:', error);
     return NextResponse.json({
       employees: [],
       myProfile: null,

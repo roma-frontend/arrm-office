@@ -3,6 +3,7 @@ import type { AuthLoginResult } from '@/actions/auth';
 import { signJWT } from '@/lib/jwt';
 import { calculateRiskScore } from '@/lib/riskScore';
 import { withTracing, addSpanAttributes } from '@/lib/tracing';
+import { logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -349,7 +350,7 @@ export async function POST(req: NextRequest) {
       return response;
     } catch (error: unknown) {
       const err = toError(error);
-      console.error('Login error:', err);
+      logger.error('Login error:', err);
       // Log server error attempt
       try {
         await convexMutation('security:logLoginAttempt', {

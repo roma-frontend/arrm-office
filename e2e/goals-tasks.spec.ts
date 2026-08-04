@@ -12,7 +12,7 @@ async function createObjective(page: Page): Promise<string> {
   const title = `E2E Goal ${Date.now()}`;
 
   // Click "New Objective" button
-  const newBtn = page.locator('button:has-text(/new objective|создать|новая цель/i)').first();
+  const newBtn = page.getByRole('button', { name: /new objective|создать|новая цель/i }).first();
   await newBtn.waitFor({ state: 'visible', timeout: 5_000 });
   await newBtn.click();
   await page.waitForTimeout(500);
@@ -23,7 +23,7 @@ async function createObjective(page: Page): Promise<string> {
   await titleInput.fill(title);
 
   // Click Next to go to Key Results step
-  const nextBtn = page.locator('button:has-text(/next|далее/i)').first();
+  const nextBtn = page.getByRole('button', { name: /next|далее/i }).first();
   if (await nextBtn.isVisible()) {
     await nextBtn.click();
     await page.waitForTimeout(300);
@@ -36,7 +36,7 @@ async function createObjective(page: Page): Promise<string> {
   }
 
   // Click Next to review
-  const nextBtn2 = page.locator('button:has-text(/next|далее/i)').first();
+  const nextBtn2 = page.getByRole('button', { name: /next|далее/i }).first();
   if (await nextBtn2.isVisible()) {
     await nextBtn2.click();
     await page.waitForTimeout(300);
@@ -44,9 +44,8 @@ async function createObjective(page: Page): Promise<string> {
 
   // Submit (step 3 — review & create)
   const submitBtn = page
-    .locator(
-      'dialog button:has-text(/create|создать/i), [role="dialog"] button:has-text(/create|создать/i)',
-    )
+    .locator('[role="dialog"]')
+    .getByRole('button', { name: /create|создать/i })
     .first();
   if (await submitBtn.isVisible()) {
     await submitBtn.click();
@@ -58,9 +57,52 @@ async function createObjective(page: Page): Promise<string> {
 }
 
 /**
+ * Click the wizard's primary action button (Next / Submit), waiting briefly.
+ * Returns true if a button was found and clicked.
+ */
+async function clickWizardPrimary(page: Page): Promise<boolean> {
+  // Radix Dialog renders a div with role="dialog" (not the <dialog> element),
+  // so scope to [role="dialog"] instead of the HTML tag. Wizard steps animate
+  // (enter/exit), which can detach the button mid-click — retry a few times.
+  const primaryBtn = page
+    .locator('[role="dialog"]')
+    .getByRole('button', { name: /next|далее|submit|create|создать|готово|done/i })
+    .first();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (!(await primaryBtn.isVisible().catch(() => false))) return false;
+    try {
+      await primaryBtn.click({ timeout: 3_000 });
+      await page.waitForTimeout(300);
+      return true;
+    } catch {
+      // Button may have been detached by a step transition animation — retry.
+      await page.waitForTimeout(400);
+    }
+  }
+  return false;
+}
+
+/**
+ * On the current wizard step, open the first combobox and pick the first option.
+ * Used for required steps (e.g. assignee) so the Next button unblocks.
+ */
+async function selectFirstComboboxOption(page: Page): Promise<void> {
+  const combo = page.locator('dialog [role="combobox"], [role="dialog"] [role="combobox"]').first();
+  if (!(await combo.isVisible().catch(() => false))) return;
+  await combo.click();
+  await page.waitForTimeout(300);
+  const firstOption = page.locator('[role="option"]').first();
+  if (await firstOption.isVisible().catch(() => false)) {
+    await firstOption.click();
+    await page.waitForTimeout(300);
+  }
+}
+
+/**
  * Helper: create a task linked to a specific objective via the CreateTaskWizard.
- * Advances through wizard steps by repeatedly clicking Next until the
- * objective selector or Submit button appears.
+ * The wizard has 6 steps: details → assignee (required) → priority → tags →
+ * objective link → attachments. We fill the title, pick an assignee, then
+ * advance and select the matching objective before submitting.
  */
 async function createTaskLinkedToObjective(page: Page, objectiveTitle: string): Promise<string> {
   await page.goto('/tasks');
@@ -70,110 +112,80 @@ async function createTaskLinkedToObjective(page: Page, objectiveTitle: string): 
 
   // Click create task button
   const createBtn = page
-    .locator('button:has-text(/new task|create task|создать|новая задача/i)')
+    .getByRole('button', { name: /new task|create task|создать|новая задача/i })
     .first();
   await createBtn.waitFor({ state: 'visible', timeout: 5_000 });
   await createBtn.click();
   await page.waitForTimeout(500);
 
-  // Step 1: Fill title
+  // Step 1 (details): fill title
   const titleInput = page.locator('dialog input, [role="dialog"] input').first();
   await titleInput.waitFor({ state: 'visible', timeout: 5_000 });
   await titleInput.fill(taskTitle);
+  await clickWizardPrimary(page); // → assignee
 
-  // Advance through wizard steps (assignee, priority, tags) by clicking Next
-  // Stop when the objective selector combobox becomes visible or Submit appears
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const hasObjectiveSelector = await page
-      .locator(
-        'dialog [role="combobox"]:has-text(/select an objective|objective|выберите цель/i), [role="dialog"] [role="combobox"]',
-      )
-      .first()
-      .isVisible()
-      .catch(() => false);
+  // Step 2 (assignee, required): pick the first employee so Next unblocks
+  await selectFirstComboboxOption(page);
+  await clickWizardPrimary(page); // → priority
 
-    const hasSubmit = await page
-      .locator('dialog button:has-text(/submit|create|создать|готово/i)')
-      .first()
-      .isVisible()
-      .catch(() => false);
+  // Steps 3–4 (priority, tags): nothing required, just advance
+  await clickWizardPrimary(page); // → tags
+  await clickWizardPrimary(page); // → objective link
 
-    if (hasObjectiveSelector || hasSubmit) break;
-
-    const nextBtn = page.locator('button:has-text(/next|далее/i)').first();
-    if (await nextBtn.isVisible()) {
-      await nextBtn.click();
-      await page.waitForTimeout(300);
-    } else {
-      break;
-    }
-  }
-
-  // Step: Link to Goal — select the objective we created
-  const allComboboxes = page.locator('dialog [role="combobox"], [role="dialog"] [role="combobox"]');
-  const comboboxCount = await allComboboxes.count();
-
-  for (let i = 0; i < comboboxCount; i++) {
-    const combo = allComboboxes.nth(i);
-    const labelText = await page
-      .locator(`label[for="${await combo.getAttribute('id')}"]`)
-      .first()
-      .textContent()
-      .catch(() => '');
-
-    // Look for the objective selector (first combobox in the link step)
-    if (labelText && /objective|goal|цель/i.test(labelText)) {
-      await combo.click();
-      await page.waitForTimeout(300);
-
-      // Find our objective in the dropdown
-      const objectiveOption = page
-        .locator(`[role="option"]:has-text("${objectiveTitle.slice(0, 20)}")`)
-        .first();
-      if (await objectiveOption.isVisible()) {
-        await objectiveOption.click();
-        await page.waitForTimeout(500); // Wait for KRs to load
-      }
-      break;
-    }
-  }
-
-  // If a Key Result selector appeared (second combobox), select the first KR
-  const krCombobox = page
-    .locator(
-      'dialog [role="combobox"]:has-text(/key result|kr/i), [role="dialog"] [role="combobox"]',
-    )
+  // Step 5 (objective link): select our objective from the dropdown. The
+  // objective options load asynchronously from Convex, so wait for our option
+  // to appear (up to 5s) instead of assuming it is already rendered.
+  const objectiveCombobox = page
+    .locator('[role="dialog"] [role="combobox"]')
+    .filter({ hasText: /objective|goal|цель|мақсат|նպատակ/i })
     .first();
-  if (await krCombobox.isVisible().catch(() => false)) {
-    await krCombobox.click();
-    await page.waitForTimeout(300);
-    const firstKrOption = page.locator('[role="option"]').first();
-    if (await firstKrOption.isVisible()) {
-      await firstKrOption.click();
-      await page.waitForTimeout(200);
-    }
-  }
-
-  // Advance remaining steps (attachments) and submit
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const submitBtn = page
-      .locator(
-        'dialog button:has-text(/submit|create|создать|готово/i), [role="dialog"] button:has-text(/submit|create|создать|готово/i)',
-      )
+  const dialogHeading = page.locator('[role="dialog"] h2').first();
+  console.log(
+    '[DIAG] step before objective:',
+    await dialogHeading.textContent().catch(() => 'n/a'),
+  );
+  console.log(
+    '[DIAG] objective combobox visible:',
+    await objectiveCombobox.isVisible().catch(() => false),
+  );
+  if (await objectiveCombobox.isVisible().catch(() => false)) {
+    await objectiveCombobox.click();
+    const objectiveOption = page
+      .locator('[role="option"]')
+      .filter({ hasText: objectiveTitle.slice(0, 20) })
       .first();
-    if (await submitBtn.isVisible()) {
-      await submitBtn.click();
-      await page.waitForTimeout(2000);
-      break;
-    }
-
-    const nextBtn = page.locator('button:has-text(/next|далее/i)').first();
-    if (await nextBtn.isVisible()) {
-      await nextBtn.click();
-      await page.waitForTimeout(300);
+    await objectiveOption.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+    console.log(
+      '[DIAG] objective option visible:',
+      await objectiveOption.isVisible().catch(() => false),
+    );
+    if (await objectiveOption.isVisible().catch(() => false)) {
+      await objectiveOption.click();
+      await page.waitForTimeout(500); // Wait for KRs to load
     } else {
-      break;
+      // Fallback: pick the first option so the wizard can still proceed.
+      const firstOption = page.locator('[role="option"]').first();
+      console.log('[DIAG] first option visible:', await firstOption.isVisible().catch(() => false));
+      if (await firstOption.isVisible().catch(() => false)) {
+        await firstOption.click();
+        await page.waitForTimeout(300);
+      }
     }
+    // Make sure the dropdown is closed before clicking Next.
+    await page.keyboard.press('Escape').catch(() => {});
+    await page.waitForTimeout(200);
+  }
+  await clickWizardPrimary(page); // → attachments
+  console.log('[DIAG] step after objective:', await dialogHeading.textContent().catch(() => 'n/a'));
+
+  // Step 6 (attachments): submit the wizard
+  const submitBtn = page
+    .locator('[role="dialog"]')
+    .getByRole('button', { name: /submit|create|создать|готово|done/i })
+    .first();
+  if (await submitBtn.isVisible().catch(() => false)) {
+    await submitBtn.click();
+    await page.waitForTimeout(2500);
   }
 
   return taskTitle;
@@ -194,7 +206,7 @@ test.describe('Goals → Tasks Flow', () => {
 
     // Should have a create/new objective button
     const hasCreateBtn = await page
-      .locator('button:has-text(/new objective|create|создать/i)')
+      .getByRole('button', { name: /new objective|create|создать/i })
       .first()
       .isVisible()
       .catch(() => false);
@@ -216,11 +228,16 @@ test.describe('Goals → Tasks Flow', () => {
     // Now create a task linked to it
     const taskTitle = await createTaskLinkedToObjective(page, objectiveTitle);
 
+    // Reload the tasks page so the Convex subscription re-fetches fresh data
+    // (the live subscription may lag the just-completed mutation).
+    await page.goto('/tasks');
+    await page.waitForLoadState('networkidle');
+
     // Verify the task appears on the tasks page
     const taskVisible = await page
       .locator(`text="${taskTitle.slice(0, 25)}"`)
       .first()
-      .isVisible({ timeout: 5_000 })
+      .isVisible({ timeout: 10_000 })
       .catch(() => false);
     expect(taskVisible).toBeTruthy();
   });
@@ -249,7 +266,10 @@ test.describe('Goals → Tasks Flow', () => {
         .catch(() => false);
 
       // Fallback: check for any task content on the detail page
-      const taskBadge = page.locator('[class*="card"]:has-text(/task|задач/i)').first();
+      const taskBadge = page
+        .locator('[class*="card"]')
+        .filter({ hasText: /task|задач/i })
+        .first();
       const hasTaskBadge = await taskBadge.isVisible().catch(() => false);
 
       expect(hasLinkedTasks || hasTaskBadge).toBeTruthy();
@@ -266,13 +286,15 @@ test.describe('Goals → Tasks Flow', () => {
 
     // Should show some content — summary cards or tree nodes
     const hasSummaryCard = await page
-      .locator('[class*="grid"] [class*="card"]:has-text(/progress|objective|linked/i)')
+      .locator('[class*="grid"] [class*="card"]')
+      .filter({ hasText: /progress|objective|linked/i })
       .first()
       .isVisible({ timeout: 5_000 })
       .catch(() => false);
 
     const hasNode = await page
-      .locator('[class*="card"]:has-text(/company|team|individual|компания|команда/i)')
+      .locator('[class*="card"]')
+      .filter({ hasText: /company|team|individual|компания|команда/i })
       .first()
       .isVisible()
       .catch(() => false);

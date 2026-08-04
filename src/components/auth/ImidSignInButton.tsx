@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { logger } from '@/lib/logger';
 
 /**
  * "Login with imID" button for the login page.
@@ -80,7 +81,7 @@ export function ImidSignInButton() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to connect to imID';
       setError(message);
-      console.error('imID login error:', err);
+      logger.error('imID login error:', err);
       setIsLoading(false);
     }
   };

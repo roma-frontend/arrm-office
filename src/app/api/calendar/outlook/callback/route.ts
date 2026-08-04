@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/lib/calendar-sync';
 import { validateRestrictedOrgFromRequest } from '@/lib/restricted-org';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const validation = await validateRestrictedOrgFromRequest(request);
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Outlook OAuth callback error:', error);
+    logger.error('Outlook OAuth callback error:', error);
     return NextResponse.redirect(new URL(`/dashboard?error=token_exchange_failed`, request.url));
   }
 }

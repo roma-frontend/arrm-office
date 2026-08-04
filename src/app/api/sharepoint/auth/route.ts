@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSharePointAuthUrl } from '@/lib/sharepoint-sync';
 import { validateRestrictedOrgFromRequest } from '@/lib/restricted-org';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const authUrl = getSharePointAuthUrl(redirectUri);
     return NextResponse.redirect(authUrl);
   } catch (error) {
-    console.error('SharePoint auth error:', error);
+    logger.error('SharePoint auth error:', error);
     return NextResponse.redirect(
       new URL(
         `/settings?sharepoint=error`,

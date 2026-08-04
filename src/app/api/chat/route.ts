@@ -336,12 +336,12 @@ FORMAT RULES:
       } catch (openrouterError) {
         const openrouterErrorMessage =
           openrouterError instanceof Error ? openrouterError.message : 'OpenRouter failed';
-        console.error('❌ Both providers failed:', openrouterErrorMessage);
+        logger.error('❌ Both providers failed:', openrouterErrorMessage);
         throw groqError;
       }
     }
   } catch (error) {
-    console.error('❌ Chat API error:', error);
+    logger.error('❌ Chat API error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 },

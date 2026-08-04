@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { logger } from '@/lib/logger';
 
 interface RatingModalProps {
   driverName: string;
@@ -37,7 +38,7 @@ export function RatingModal({
       await onSubmit(rating, comment || undefined);
       onClose();
     } catch (error) {
-      console.error('Failed to submit rating:', error);
+      logger.error('Failed to submit rating:', error);
     } finally {
       setIsSubmitting(false);
     }

@@ -5,6 +5,7 @@ import { paginationOptsValidator } from 'convex/server';
 import type { Id } from './_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
+import { logger } from '../src/lib/logger';
 
 /**
  * Helper: requires caller to be admin or superadmin.
@@ -504,14 +505,14 @@ export const notifySuperadminSuspiciousActivity = mutation({
       .first();
 
     if (!superadmin) {
-      console.error('Superadmin not found for notification');
+      logger.error('Superadmin not found for notification');
       return null;
     }
 
     // Get the suspicious user
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      console.error('User not found for suspicious activity notification');
+      logger.error('User not found for suspicious activity notification');
       return null;
     }
 

@@ -46,7 +46,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
           // eslint-disable-next-line react-hooks/set-state-in-effect -- read persisted session token from localStorage
           setSessionToken(parsed.state?.sessionToken);
         } catch (e) {
-          console.error('Failed to parse auth storage', e);
+          logger.error('Failed to parse auth storage', e);
         }
       }
     }

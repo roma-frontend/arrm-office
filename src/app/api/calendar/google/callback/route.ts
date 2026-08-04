@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/lib/calendar-sync';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Google OAuth callback error:', error);
+    logger.error('Google OAuth callback error:', error);
     return NextResponse.redirect(new URL(`/dashboard?error=token_exchange_failed`, request.url));
   }
 }

@@ -11,6 +11,7 @@ import {
   overlaps,
   resolveRoomStatus,
   ROOM_STATUS_ACCENTS,
+  slotAvailability,
   splitMinutes,
   suggestNextFreeSlot,
   utilizationPercent,
@@ -177,6 +178,50 @@ describe('capacityFits', () => {
   it('counts the organizer', () => {
     expect(capacityFits(4, 3)).toBe(true);
     expect(capacityFits(4, 4)).toBe(false);
+  });
+});
+
+describe('slotAvailability', () => {
+  it('confirms a free slot', () => {
+    const result = slotAvailability([booking('a', 120, 60)], NOW, NOW + 60 * MIN);
+    expect(result).toEqual({
+      available: true,
+      conflicts: [],
+      busyUntil: null,
+      suggestion: null,
+    });
+  });
+
+  it('reports when the room frees up, following back-to-back meetings', () => {
+    const bookings = [booking('a', 0, 60), booking('b', 60, 30)];
+    const result = slotAvailability(bookings, NOW + 30 * MIN, NOW + 90 * MIN);
+    expect(result.available).toBe(false);
+    expect(result.conflicts.map((c) => c._id)).toEqual(['a', 'b']);
+    // Busy until the end of the chain (90 min), not the end of the first meeting.
+    expect(result.busyUntil).toBe(NOW + 90 * MIN);
+  });
+
+  it('does not chain across a real gap', () => {
+    const bookings = [booking('a', 0, 60), booking('b', 120, 60)];
+    const result = slotAvailability(bookings, NOW + 30 * MIN, NOW + 45 * MIN);
+    expect(result.busyUntil).toBe(NOW + 60 * MIN);
+  });
+
+  it('suggests the nearest slot of the same length', () => {
+    const result = slotAvailability([booking('a', 0, 60)], NOW, NOW + 30 * MIN);
+    expect(result.suggestion).toBe(NOW + 60 * MIN);
+  });
+
+  it('ignores the booking being edited', () => {
+    const own = booking('own', 0, 60);
+    expect(slotAvailability([own], NOW, NOW + 60 * MIN, 'own').available).toBe(true);
+    expect(slotAvailability([own], NOW, NOW + 60 * MIN).available).toBe(false);
+  });
+
+  it('rejects an inverted range', () => {
+    const result = slotAvailability([], NOW + 60 * MIN, NOW);
+    expect(result.available).toBe(false);
+    expect(result.busyUntil).toBeNull();
   });
 });
 

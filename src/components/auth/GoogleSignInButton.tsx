@@ -4,6 +4,7 @@ import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 interface GoogleSignInButtonProps {
   onOAuthStart?: () => void;
@@ -23,7 +24,7 @@ export function GoogleSignInButton({ onOAuthStart }: GoogleSignInButtonProps) {
         redirect: true,
       });
     } catch (error) {
-      console.error('Error signing in:', error);
+      logger.error('Error signing in:', error);
       setIsLoading(false);
     }
   };

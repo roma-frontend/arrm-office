@@ -26,6 +26,7 @@ import { Award, ChevronLeft, ChevronRight, CheckCircle, X, Users, FileText } fro
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
+import { logger } from '@/lib/logger';
 
 type BonusType = 'performance' | 'retention' | 'signing' | 'referral' | 'holiday' | 'custom';
 
@@ -221,7 +222,7 @@ export default function BonusProgramWizard({ onClose, onSuccess }: BonusProgramW
       clearDraft();
       onSuccess();
     } catch (error) {
-      console.error('Create bonus program error:', error);
+      logger.error('Create bonus program error:', error);
       toast.error(t('compensation.createBonusProgramFailed', 'Failed to create bonus program'));
     } finally {
       setIsSubmitting(false);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signJWT } from '@/lib/jwt';
+import { logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL;
 
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!CONVEX_URL) {
-      console.error('[imid-callback] CONVEX_URL is not set');
+      logger.error('[imid-callback] CONVEX_URL is not set');
       const loc = new URL('/login?error=imid_config_error', request.url);
       return NextResponse.redirect(loc);
     }
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!res.ok) {
-      console.error('[imid-callback] Convex query failed:', res.status);
+      logger.error('[imid-callback] Convex query failed:', res.status);
       const loc = new URL('/login?error=imid_verify_failed', request.url);
       return NextResponse.redirect(loc);
     }
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
       errorMessage?: string;
     };
     if (data.status === 'error' || !data.value) {
-      console.error('[imid-callback] Session verification failed:', data.errorMessage);
+      logger.error('[imid-callback] Session verification failed:', data.errorMessage);
       const loc = new URL('/login?error=imid_session_expired', request.url);
       return NextResponse.redirect(loc);
     }
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('[imid-callback] Unexpected error:', error);
+    logger.error('[imid-callback] Unexpected error:', error);
     const loc = new URL('/login?error=imid_unexpected', request.url);
     return NextResponse.redirect(loc);
   }

@@ -16,6 +16,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { logger } from '@/lib/logger';
 
 interface BlockTimeWizardProps {
   driverId: Id<'drivers'>;
@@ -167,7 +168,7 @@ export function BlockTimeWizard({
       onComplete?.();
     } catch (error) {
       toast.error(t('driverCalendar.failedToBlockTime'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

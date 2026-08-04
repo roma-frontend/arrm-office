@@ -19,6 +19,7 @@ import {
 } from '@/lib/calendar-sync';
 import { useUpgradeModal } from '@/components/subscription/PlanGate';
 import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { logger } from '@/lib/logger';
 
 interface HolidayCalendarSyncProps {
   organizationId?: string;
@@ -73,7 +74,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
       downloadICalFile(icsContent, filename);
       toast.success(t('calendarSync.icalDownloadSuccess', 'iCal file downloaded successfully'));
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       toast.error(t('calendarSync.exportFailed', 'Failed to export calendar'));
     } finally {
       setIsExporting(false);
@@ -103,7 +104,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
         const result = (await response.json()) as { message?: string };
         toast.success(result.message || 'Synced');
       } catch (error) {
-        console.error('Google sync error:', error);
+        logger.error('Google sync error:', error);
         toast.error(t('calendarSync.googleSyncFailed', 'Failed to sync with Google Calendar'));
         setGoogleConnected(false);
       } finally {
@@ -116,7 +117,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
         const authUrl = getGoogleCalendarAuthUrl(redirectUri);
         window.location.href = authUrl;
       } catch (error) {
-        console.error('Google auth error:', error);
+        logger.error('Google auth error:', error);
         toast.error(t('calendarSync.googleNotConfigured', 'Google Calendar is not configured'));
       }
     }
@@ -145,7 +146,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
         const result = (await response.json()) as { message?: string };
         toast.success(result.message || 'Synced');
       } catch (error) {
-        console.error('Outlook sync error:', error);
+        logger.error('Outlook sync error:', error);
         toast.error(t('calendarSync.outlookSyncFailed', 'Failed to sync with Outlook Calendar'));
         setOutlookConnected(false);
       } finally {
@@ -158,7 +159,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
         const authUrl = getOutlookAuthUrl(redirectUri);
         window.location.href = authUrl;
       } catch (error) {
-        console.error('Outlook auth error:', error);
+        logger.error('Outlook auth error:', error);
         toast.error(t('calendarSync.outlookNotConfigured', 'Outlook Calendar is not configured'));
       }
     }

@@ -3,6 +3,7 @@ import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { getServerConvexAuth } from '@/lib/server-convex-auth';
+import { logger } from '@/lib/logger';
 
 // Opt out of static generation — uses nextUrl.searchParams
 export const revalidate = 0;
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(drivers);
   } catch (error: unknown) {
-    console.error('Get drivers error:', error);
+    logger.error('Get drivers error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to get drivers' },
       { status: 500 },

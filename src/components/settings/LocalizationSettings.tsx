@@ -107,7 +107,7 @@ export function LocalizationSettings({ user, onSettingsChange }: LocalizationSet
         description: t('settings.localizationSaved'),
       });
     } catch (error) {
-      console.error('Failed to save localization settings:', error);
+      logger.error('Failed to save localization settings:', error);
       toast.error(t('settings.saveFailed'), {
         description: t('settings.tryAgain'),
       });

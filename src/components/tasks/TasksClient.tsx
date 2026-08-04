@@ -534,7 +534,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   }, [mainRef]);
 
   const convexId = userId && userId !== '' ? (userId as Id<'users'>) : null;
-  const canManage = userRole === 'admin' || userRole === 'supervisor';
+  // Superadmins can manage tasks like admins (they see all org tasks too).
+  const canManage = userRole === 'admin' || userRole === 'supervisor' || userRole === 'superadmin';
   const isSuperadmin = userRole === 'superadmin';
   const selectedOrgId = useSelectedOrganization();
 

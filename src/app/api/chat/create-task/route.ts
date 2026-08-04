@@ -148,7 +148,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       conflicts: conflictResult.conflicts,
     });
   } catch (error: unknown) {
-    console.error('[create-task] Error:', error);
+    logger.error('[create-task] Error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create task' },
       { status: 500 },
@@ -202,7 +202,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to check conflicts';
-    console.error('[task-conflict-check] Error:', msg);
+    logger.error('[task-conflict-check] Error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

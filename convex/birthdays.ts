@@ -23,8 +23,6 @@ export const checkBirthdaysToday = mutation({
     const currentMonth = today.getMonth() + 1; // 1-12
     const currentDay = today.getDate(); // 1-31
 
-    console.warn(`[Birthday Check] Checking for ${currentDay}.${currentMonth}`);
-
     // Получить всех сотрудников организации
     const users = (
       await ctx.db
@@ -39,8 +37,6 @@ export const checkBirthdaysToday = mutation({
       const birthDate = new Date(user.dateOfBirth);
       return birthDate.getMonth() + 1 === currentMonth && birthDate.getDate() === currentDay;
     });
-
-    console.warn(`[Birthday Check] Found ${birthdayUsers.length} birthdays today`);
 
     // Для каждого именинника отправить уведомление коллегам
     for (const birthdayUser of birthdayUsers) {

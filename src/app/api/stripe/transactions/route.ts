@@ -30,7 +30,7 @@ async function verifySuperadmin(req: NextRequest): Promise<boolean> {
 
     return payload.role === 'superadmin';
   } catch (error) {
-    console.error('[Stripe Auth] Error:', error);
+    logger.error('[Stripe Auth] Error:', error);
     return false;
   }
 }
@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch Stripe data';
-    console.error('[Stripe API] Error:', errorMessage);
+    logger.error('[Stripe API] Error:', errorMessage);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

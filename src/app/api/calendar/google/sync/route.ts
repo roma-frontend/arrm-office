@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createGoogleCalendarEvent, type CalendarEvent } from '@/lib/calendar-sync';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { logger } from '@/lib/logger';
 
 export const POST = withCsrfProtection(async (request: NextRequest) => {
   try {
@@ -43,7 +44,7 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
       results,
     });
   } catch (error) {
-    console.error('Google Calendar sync error:', error);
+    logger.error('Google Calendar sync error:', error);
     return NextResponse.json({ error: 'Failed to sync with Google Calendar' }, { status: 500 });
   }
 });

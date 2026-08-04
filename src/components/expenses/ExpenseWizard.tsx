@@ -27,6 +27,7 @@ import {
   Phone,
   FileText,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   travel: <Plane className="w-5 h-5" />,
@@ -217,7 +218,7 @@ export default function ExpenseWizard({
       setResetKey((k) => k + 1);
       onSuccess?.();
     } catch (error) {
-      console.error('Error creating expense:', error);
+      logger.error('Error creating expense:', error);
       toast.error(t('expenses.errorSubmitting'));
     }
   };

@@ -37,6 +37,7 @@ import {
   ChevronRight,
   ChevronLeft,
   CheckCircle,
+  DoorOpen,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -45,6 +46,30 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { uploadTaskAttachment } from '@/actions/cloudinary';
 import { getInitials } from '@/lib/stringUtils';
 import { playNotificationSound, sendBrowserNotification } from '@/lib/notificationSound';
+import {
+  capacityFits,
+  DEFAULT_ROOM_COLOR,
+  formatRoomLocation,
+  slotAvailability,
+  type RoomBookingLite,
+} from '@/lib/meetingRooms';
+import { AmenityIcon } from '@/components/rooms/RoomCard';
+import type { RoomWithBookings } from '@/components/rooms/types';
+
+/** All-day events hold a room for the working day rather than a full 24 hours. */
+const ALL_DAY_ROOM_START = '08:00';
+const ALL_DAY_ROOM_END = '20:00';
+
+/** Local wall-clock ("2026-08-04", "10:00") → epoch ms in the viewer's zone. */
+function toInstant(date: string, time: string): number | null {
+  if (!date || !time) return null;
+  const [year, month, day] = date.split('-').map(Number);
+  const [hour, minute] = time.split(':').map(Number);
+  if ([year, month, day, hour, minute].some((part) => part === undefined || Number.isNaN(part))) {
+    return null;
+  }
+  return new Date(year!, month! - 1, day!, hour!, minute!, 0, 0).getTime();
+}
 
 interface CreateEventModalProps {
   open: boolean;
@@ -72,6 +97,11 @@ export interface CalendarEvent {
   createdAt?: number;
   /** Organizer id — set by the backend; used by the personal calendar scope. */
   createdBy?: string;
+  /** Meeting room held by this event, when one was reserved. */
+  roomId?: string;
+  roomBookingId?: string;
+  roomName?: string;
+  roomColor?: string;
 }
 
 interface OrgUser {
@@ -97,6 +127,7 @@ export function CreateEventModal({
   const { user } = useAuthStore();
   const selectedOrgId = useSelectedOrganization();
   const createEventMutation = useMutation(api.calendarEvents.create);
+  const updateEventMutation = useMutation(api.calendarEvents.update);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>('details');
@@ -114,6 +145,7 @@ export function CreateEventModal({
   const [attendees, setAttendees] = useState<OrgUser[]>([]);
   const [attendeeSearch, setAttendeeSearch] = useState('');
   const [showPeoplePicker, setShowPeoplePicker] = useState(false);
+  const [roomId, setRoomId] = useState<string | null>(null);
 
   const organizationId = (selectedOrgId ?? user?.organizationId) as Id<'organizations'> | undefined;
   const requesterId = user?.id as Id<'users'> | undefined;
@@ -142,6 +174,106 @@ export function CreateEventModal({
     );
   };
 
+  // --- Meeting rooms ----------------------------------------------------------
+  // The reservation window follows the event: a timed event books exactly its
+  // slot, an all-day event holds the room for the working day (a full 24h block
+  // would exceed the maximum booking length and help nobody).
+  const roomStart = toInstant(date, allDay ? ALL_DAY_ROOM_START : startTime);
+  const roomEnd = toInstant(date, allDay ? ALL_DAY_ROOM_END : endTime);
+  const roomWindowValid = roomStart !== null && roomEnd !== null && roomEnd > roomStart;
+
+  const dayBounds = useMemo(() => {
+    const dayStart = toInstant(date, '00:00');
+    if (dayStart === null) return null;
+    return { from: dayStart, to: dayStart + 24 * 60 * 60 * 1000 };
+  }, [date]);
+
+  const rooms = useQuery(
+    api.meetingRooms.getRoomsWithBookings,
+    organizationId && dayBounds
+      ? { organizationId, from: dayBounds.from, to: dayBounds.to }
+      : 'skip',
+  ) as RoomWithBookings[] | undefined;
+
+  /**
+   * Availability per room for the chosen slot, recomputed locally as the user
+   * edits times — no round trip, so the list never lags behind the form. The
+   * event's own reservation is excluded so that editing a meeting does not make
+   * it clash with itself.
+   */
+  const roomAvailability = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof slotAvailability>>();
+    if (!rooms || !roomWindowValid) return map;
+    for (const room of rooms) {
+      map.set(
+        room._id,
+        slotAvailability(
+          room.bookings as RoomBookingLite[],
+          roomStart!,
+          roomEnd!,
+          editEvent?.roomBookingId,
+        ),
+      );
+    }
+    return map;
+  }, [rooms, roomWindowValid, roomStart, roomEnd, editEvent?.roomBookingId]);
+
+  const selectedRoom = useMemo(
+    () => rooms?.find((room) => room._id === roomId) ?? null,
+    [rooms, roomId],
+  );
+  const selectedRoomAvailability = roomId ? roomAvailability.get(roomId) : undefined;
+  /**
+   * The slot can turn busy after a room was picked — the user goes back a step
+   * and shifts the time onto somebody else's meeting. Surfacing it here beats
+   * letting the save fail.
+   */
+  const selectedRoomBlocked = Boolean(
+    selectedRoom && selectedRoomAvailability && !selectedRoomAvailability.available,
+  );
+  const headcount = attendees.length + 1;
+  const formatTime = (ms: number) => format(new Date(ms), 'HH:mm');
+
+  const handlePickRoom = (room: RoomWithBookings) => {
+    if (room._id === roomId) {
+      setRoomId(null);
+      if (location === room.name) setLocation('');
+      return;
+    }
+    if (!roomWindowValid) {
+      toast.error(t('createMeeting.room.setTimeFirst'));
+      setStep('details');
+      return;
+    }
+    if (!capacityFits(room.capacity, attendees.length)) {
+      toast.error(t('createMeeting.room.tooSmall', { room: room.name, max: room.capacity }));
+      return;
+    }
+    const availability = roomAvailability.get(room._id);
+    if (availability && !availability.available) {
+      // The user asked for a busy room: say until when it is taken, and offer
+      // the nearest slot that would fit instead of a dead end.
+      toast.error(
+        t('createMeeting.room.busyUntil', {
+          room: room.name,
+          time: formatTime(availability.busyUntil ?? roomEnd!),
+        }),
+        {
+          description: availability.suggestion
+            ? t('createMeeting.room.nextFreeSlot', {
+                time: formatTime(availability.suggestion),
+              })
+            : availability.conflicts[0]?.title,
+          duration: 6000,
+        },
+      );
+      return;
+    }
+    setRoomId(room._id);
+    // A room is a location: fill the field unless the user typed their own.
+    if (!location.trim()) setLocation(room.name);
+  };
+
   const stepIndex = STEPS.indexOf(step);
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
@@ -158,6 +290,7 @@ export function CreateEventModal({
       setDescription(editEvent.description);
       setCategory(editEvent.category);
       setReminder(editEvent.reminder);
+      setRoomId(editEvent.roomId ?? null);
     } else if (selectedDate) {
       setDate(format(selectedDate, 'yyyy-MM-dd'));
     }
@@ -179,6 +312,7 @@ export function CreateEventModal({
     setAttendees([]);
     setAttendeeSearch('');
     setShowPeoplePicker(false);
+    setRoomId(null);
     setUploading(false);
   };
 
@@ -203,6 +337,28 @@ export function CreateEventModal({
       setStep('details');
       return;
     }
+    if (roomId && !roomWindowValid) {
+      toast.error(t('createMeeting.room.setTimeFirst'));
+      setStep('details');
+      return;
+    }
+    if (selectedRoom && selectedRoomBlocked) {
+      toast.error(
+        t('createMeeting.room.busyUntil', {
+          room: selectedRoom.name,
+          time: formatTime(selectedRoomAvailability?.busyUntil ?? roomEnd ?? Date.now()),
+        }),
+        {
+          description: selectedRoomAvailability?.suggestion
+            ? t('createMeeting.room.nextFreeSlot', {
+                time: formatTime(selectedRoomAvailability.suggestion),
+              })
+            : undefined,
+        },
+      );
+      setStep('people');
+      return;
+    }
     setUploading(true);
     try {
       let attachmentUrl: string | undefined;
@@ -210,32 +366,46 @@ export function CreateEventModal({
         const base64 = await fileToBase64(attachment);
         attachmentUrl = await uploadTaskAttachment(base64, attachment.name);
       }
-      toast.success(t('createMeeting.title'));
+
+      const payload = {
+        title,
+        date,
+        startTime: allDay ? '00:00' : startTime,
+        endTime: allDay ? '23:59' : endTime,
+        allDay,
+        location: location || undefined,
+        description: description || undefined,
+        category,
+        reminder,
+        attendees: attendees.map((a) => a.name),
+        attachmentUrl,
+        // The room is reserved by the same mutation, so an event never claims a
+        // room it did not get.
+        roomId: (roomId as Id<'meetingRooms'> | null) ?? undefined,
+        roomStartTime: roomId && roomWindowValid ? roomStart! : undefined,
+        roomEndTime: roomId && roomWindowValid ? roomEnd! : undefined,
+        attendeeIds: attendees.map((a) => a._id),
+      };
+
+      if (editEvent?.id && organizationId) {
+        await updateEventMutation({ id: editEvent.id as Id<'calendarEvents'>, ...payload });
+      } else if (organizationId) {
+        await createEventMutation({ organizationId, ...payload });
+      }
+
+      toast.success(
+        selectedRoom
+          ? t('createMeeting.room.reserved', { room: selectedRoom.name })
+          : t('createMeeting.saved'),
+      );
       // Schedule reminder notification
       if (date && reminder !== 'none') {
         scheduleReminder(title, date, allDay ? '09:00' : startTime, reminder, t);
       }
-      // Save event to database
-      if (organizationId && requesterId) {
-        await createEventMutation({
-          organizationId,
-          userId: requesterId,
-          title,
-          date,
-          startTime: allDay ? '00:00' : startTime,
-          endTime: allDay ? '23:59' : endTime,
-          allDay,
-          location: location || undefined,
-          description: description || undefined,
-          category,
-          reminder,
-          attendees: attendees.map((a) => a.name),
-          attachmentUrl,
-        });
-      }
+
       // Save event
       const event: CalendarEvent = {
-        id: `evt_${Date.now()}`,
+        id: editEvent?.id ?? `evt_${Date.now()}`,
         title,
         date,
         startTime: allDay ? '00:00' : startTime,
@@ -247,11 +417,36 @@ export function CreateEventModal({
         reminder,
         attendees: attendees.map((a) => a.name),
         attachmentUrl,
+        roomId: roomId ?? undefined,
+        roomName: selectedRoom?.name,
+        roomColor: selectedRoom?.color,
       };
       onSave?.(event);
       handleClose(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error');
+      const message = err instanceof Error ? err.message : '';
+      const busy = parseRoomBusyError(message);
+      if (busy) {
+        // Somebody grabbed the room between the preview and the submit.
+        toast.error(
+          t('createMeeting.room.takenJustNow', {
+            room: selectedRoom?.name ?? '',
+            time: format(new Date(busy.endTime), 'HH:mm'),
+          }),
+          { description: busy.title, duration: 7000 },
+        );
+        setStep('people');
+      } else if (message.includes('capacity')) {
+        toast.error(
+          t('createMeeting.room.tooSmall', {
+            room: selectedRoom?.name ?? '',
+            max: selectedRoom?.capacity ?? 0,
+          }),
+        );
+        setStep('people');
+      } else {
+        toast.error(message || 'Error');
+      }
     } finally {
       setUploading(false);
     }
@@ -268,7 +463,7 @@ export function CreateEventModal({
 
   const stepLabels = [
     t('createMeeting.date'),
-    t('createMeeting.attendees'),
+    t('createMeeting.peopleAndRoom'),
     t('createMeeting.attachment'),
   ];
 
@@ -597,6 +792,171 @@ export function CreateEventModal({
                       <p className="text-sm">{t('createMeeting.addAttendees')}</p>
                     </div>
                   )}
+
+                  {/* Meeting rooms — reserved together with the event */}
+                  <div className="pt-2 border-t border-(--border) space-y-3">
+                    <div className="flex items-center gap-2 text-blue-500">
+                      <DoorOpen className="w-5 h-5" />
+                      <span className="text-base font-semibold">
+                        {t('createMeeting.room.title')}
+                      </span>
+                      {selectedRoom && (
+                        <span className="ml-auto inline-flex items-center gap-1 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+                          <CheckCircle className="w-3 h-3" />
+                          {selectedRoom.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {!roomWindowValid ? (
+                      <p className="text-xs text-(--text-muted)">
+                        {t('createMeeting.room.setTimeFirst')}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-(--text-muted)">
+                        {t('createMeeting.room.slotHint', {
+                          from: formatTime(roomStart!),
+                          to: formatTime(roomEnd!),
+                        })}
+                      </p>
+                    )}
+
+                    {selectedRoomBlocked && selectedRoom && (
+                      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-500/10 border border-red-400/30">
+                        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                            {t('createMeeting.room.busyUntil', {
+                              room: selectedRoom.name,
+                              time: formatTime(
+                                selectedRoomAvailability?.busyUntil ?? roomEnd ?? Date.now(),
+                              ),
+                            })}
+                          </p>
+                          {selectedRoomAvailability?.suggestion && (
+                            <p className="text-xs text-(--text-muted) mt-0.5">
+                              {t('createMeeting.room.nextFreeSlot', {
+                                time: formatTime(selectedRoomAvailability.suggestion),
+                              })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {rooms === undefined ? (
+                      <div className="space-y-2">
+                        {[0, 1].map((i) => (
+                          <div
+                            key={i}
+                            className="h-16 rounded-xl bg-(--background-subtle) animate-pulse"
+                          />
+                        ))}
+                      </div>
+                    ) : rooms.length === 0 ? (
+                      <p className="text-xs text-(--text-muted)">
+                        {t('createMeeting.room.noRooms')}
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {rooms.map((room) => {
+                          const availability = roomAvailability.get(room._id);
+                          const fits = capacityFits(room.capacity, attendees.length);
+                          const free = !roomWindowValid || availability?.available !== false;
+                          const isSelected = room._id === roomId;
+                          const roomLocation = formatRoomLocation(room, (key, options) =>
+                            t(key, options),
+                          );
+                          return (
+                            <button
+                              key={room._id}
+                              type="button"
+                              onClick={() => handlePickRoom(room)}
+                              aria-pressed={isSelected}
+                              className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-colors ${
+                                isSelected
+                                  ? 'border-blue-500 bg-blue-500/5'
+                                  : free && fits
+                                    ? 'border-(--border) bg-(--background-subtle)/50 hover:border-blue-300'
+                                    : 'border-(--border) bg-(--background-subtle)/30 opacity-80 hover:border-red-300'
+                              }`}
+                            >
+                              <span
+                                className="w-1 self-stretch rounded-full shrink-0"
+                                style={{ background: room.color ?? DEFAULT_ROOM_COLOR }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-semibold text-(--text-primary) truncate">
+                                    {room.name}
+                                  </p>
+                                  <span className="text-[10px] text-(--text-muted) shrink-0 inline-flex items-center gap-1">
+                                    <Users className="w-3 h-3" />
+                                    {room.capacity}
+                                  </span>
+                                </div>
+                                {roomLocation && (
+                                  <p className="text-xs text-(--text-muted) truncate mt-0.5">
+                                    {roomLocation}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                  {!fits ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                                      <AlertTriangle className="w-3 h-3" />
+                                      {t('createMeeting.room.tooSmallShort', {
+                                        people: headcount,
+                                        max: room.capacity,
+                                      })}
+                                    </span>
+                                  ) : free ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                      <CheckCircle className="w-3 h-3" />
+                                      {t('createMeeting.room.free')}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                                      <Clock className="w-3 h-3" />
+                                      {t('createMeeting.room.busyUntilShort', {
+                                        time: formatTime(
+                                          availability?.busyUntil ?? roomEnd ?? Date.now(),
+                                        ),
+                                      })}
+                                    </span>
+                                  )}
+                                  {room.amenities.slice(0, 4).map((amenity) => (
+                                    <span
+                                      key={amenity}
+                                      title={t(`rooms.amenity.${amenity}`)}
+                                      className="text-(--text-muted)"
+                                    >
+                                      <AmenityIcon amenity={amenity} className="w-3.5 h-3.5" />
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <CheckCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })}
+                        {roomId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const previous = selectedRoom?.name;
+                              setRoomId(null);
+                              if (previous && location === previous) setLocation('');
+                            }}
+                            className="w-full text-xs text-(--text-muted) hover:text-(--text-primary) py-2 rounded-lg hover:bg-(--background-subtle) transition-colors"
+                          >
+                            {t('createMeeting.room.clear')}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -740,6 +1100,22 @@ function fileToBase64(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * Decodes the `ROOM_BUSY|start|end|title` marker thrown by the backend when a
+ * reservation lost a race, so the toast can name the time the room frees up.
+ */
+function parseRoomBusyError(
+  message: string,
+): { startTime: number; endTime: number; title: string } | null {
+  const marker = message.indexOf('ROOM_BUSY|');
+  if (marker === -1) return null;
+  const [, start, end, ...rest] = message.slice(marker).split('|');
+  const startTime = Number(start);
+  const endTime = Number(end);
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime)) return null;
+  return { startTime, endTime, title: rest.join('|').trim() };
 }
 
 const REMINDER_OFFSETS: Record<string, number> = {

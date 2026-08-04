@@ -46,9 +46,15 @@ export const events = {
     reminder: v.string(),
     attendees: v.optional(v.array(v.string())),
     attachmentUrl: v.optional(v.string()),
+    /** Meeting room reserved for this event, when one was picked. */
+    roomId: v.optional(v.id('meetingRooms')),
+    /** The reservation that backs `roomId`; cancelled when the event is removed. */
+    roomBookingId: v.optional(v.id('roomBookings')),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   })
     .index('by_org', ['organizationId'])
     .index('by_org_date', ['organizationId', 'date'])
-    .index('by_user', ['createdBy']),
+    .index('by_user', ['createdBy'])
+    .index('by_room_booking', ['roomBookingId']),
 };

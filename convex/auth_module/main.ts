@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { checkTempAccessStillValid } from '../superadmin/accessTokens';
+import { logger } from '../../src/lib/logger';
 
 // ── Password Hashing Helpers ─────────────────────────────────────────────────
 const BCRYPT_ROUNDS = 12;
@@ -65,7 +66,7 @@ function wrapConvexError<T>(fn: () => T, operation: string): T {
     return fn();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[Convex Auth] ${operation} error:`, errorMessage);
+    logger.error(`[Convex Auth] ${operation} error:`, errorMessage);
 
     // Don't expose internal errors to client
     if (

@@ -4,6 +4,7 @@ import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
 import { getServerConvexAuth } from '@/lib/server-convex-auth';
+import { logger } from '@/lib/logger';
 
 /**
  * Quick Security Action API
@@ -73,7 +74,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     }
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Failed to perform action';
-    console.error('[Quick Action API Error]:', msg);
+    logger.error('[Quick Action API Error]:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 });

@@ -32,6 +32,7 @@ import { ru, hy, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { logger } from '@/lib/logger';
 
 interface Conversation {
   _id: Id<'chatConversations'>;
@@ -246,7 +247,7 @@ export const ConversationList = React.memo(function ConversationList({
       setLoadingOpId(convId);
       await operation();
     } catch (error) {
-      console.error('Operation failed:', error);
+      logger.error('Operation failed:', error);
     } finally {
       setLoadingOpId(null);
     }

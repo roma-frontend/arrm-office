@@ -34,6 +34,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 interface SearchUser {
   id: Id<'users'>;
@@ -169,7 +170,7 @@ export default function ImpersonationClient() {
       router.push('/dashboard');
     } catch (error) {
       toast.error(t('superadmin.impersonate.alerts.impersonationError'));
-      console.error(error);
+      logger.error(error);
     }
   };
 
@@ -205,7 +206,7 @@ export default function ImpersonationClient() {
       router.push('/superadmin/impersonate');
     } catch (error) {
       toast.error(t('superadmin.impersonate.alerts.endImpersonationError'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

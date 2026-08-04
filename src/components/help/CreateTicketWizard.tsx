@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { logger } from '@/lib/logger';
 
 interface CreateTicketWizardProps {
   userId: Id<'users'>;
@@ -150,7 +151,7 @@ export function CreateTicketWizard({ userId, onComplete, onCancel }: CreateTicke
       onCancel?.();
     } catch (error) {
       toast.error(t('help.alerts.errorCreatingTicket'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

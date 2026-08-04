@@ -195,7 +195,7 @@ export function NewConversationModal({
         onCreated(convId);
       }
     } catch (err) {
-      console.error('Error creating conversation:', err);
+      logger.error('Error creating conversation:', err);
     } finally {
       setLoading(false);
     }

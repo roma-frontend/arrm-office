@@ -22,6 +22,7 @@ import {
   Phone,
   Receipt,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 const _CATEGORY_ICONS: Record<string, React.ReactNode> = {
   travel: <Plane className="w-5 h-5" />,
@@ -179,7 +180,7 @@ export default function CategoryWizard({
       setResetKey((k) => k + 1);
       onSuccess?.();
     } catch (error) {
-      console.error('Error creating category:', error);
+      logger.error('Error creating category:', error);
       toast.error(t('expenses.errorCreatingCategory'));
     }
   };

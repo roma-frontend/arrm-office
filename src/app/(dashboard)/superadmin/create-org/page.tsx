@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { logger } from '@/lib/logger';
 
 type Plan = 'starter' | 'professional' | 'enterprise';
 
@@ -214,7 +215,7 @@ export default function SuperadminCreateOrgPage() {
       // router.push('/superadmin/organizations');
     } catch (error) {
       const message = error instanceof Error ? error.message : t('superadmin.orgCreateFailed');
-      console.error('Full error:', error);
+      logger.error('Full error:', error);
       toast.error(message);
     } finally {
       setLoading(false);

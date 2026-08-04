@@ -11,6 +11,7 @@ import { v } from 'convex/values';
 import { Resend } from 'resend';
 import { WeeklyDigestEmail } from '../src/emails/WeeklyDigestEmail';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import { logger } from '../src/lib/logger';
 
 /** Shape of the JSON the AI is asked to return for the weekly digest. */
 export interface NewsletterContent {
@@ -296,7 +297,7 @@ export const sendWeeklyDigest = internalAction({
           try {
             await resend.batch.send(emails);
           } catch (e) {
-            console.error('Email batch error:', e);
+            logger.error('Email batch error:', e);
           }
         }
       }

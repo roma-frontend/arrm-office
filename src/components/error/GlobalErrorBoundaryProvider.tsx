@@ -2,6 +2,7 @@
 
 import { ErrorBoundary } from './ErrorBoundary';
 import { ReactNode } from 'react';
+import { logger } from '@/lib/logger';
 
 interface GlobalErrorBoundaryProviderProps {
   children: ReactNode;
@@ -16,7 +17,7 @@ export function GlobalErrorBoundaryProvider({ children }: GlobalErrorBoundaryPro
     <ErrorBoundary
       onError={(error, errorInfo) => {
         // Global error logging
-        console.error('Global error caught:', error, errorInfo);
+        logger.error('Global error caught:', error, errorInfo);
       }}
     >
       {children}

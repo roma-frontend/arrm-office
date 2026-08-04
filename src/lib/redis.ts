@@ -13,6 +13,7 @@
  */
 
 import { Redis } from '@upstash/redis';
+import { logger } from '@/lib/logger';
 
 // Initialize Redis client (lazy loading)
 let redisClient: Redis | null = null;
@@ -33,7 +34,7 @@ function getRedis(): Redis | null {
     redisClient = new Redis({ url, token });
     return redisClient;
   } catch (error) {
-    console.error('❌ Failed to initialize Redis:', error);
+    logger.error('❌ Failed to initialize Redis:', error);
     return null;
   }
 }
@@ -79,7 +80,7 @@ export async function checkRateLimit(
 
     return { allowed, remaining, resetAt };
   } catch (error) {
-    console.error('Redis rate limit error:', error);
+    logger.error('Redis rate limit error:', error);
     // SECURITY: Fail closed in production — deny request if Redis fails
     // In development, allow the request to avoid blocking local work
     if (process.env.NODE_ENV === 'production') {
@@ -125,7 +126,7 @@ export async function blockKey(key: string, durationMs: number, reason?: string)
 
     await multi.exec();
   } catch (error) {
-    console.error('Redis block error:', error);
+    logger.error('Redis block error:', error);
   }
 }
 
@@ -141,7 +142,7 @@ export async function unblockKey(key: string): Promise<void> {
     await redis.del(`block:${key}`);
     await redis.del(`block:${key}:reason`);
   } catch (error) {
-    console.error('Redis unblock error:', error);
+    logger.error('Redis unblock error:', error);
   }
 }
 
@@ -209,7 +210,7 @@ export async function logLoginAttempt(
       await redis.del(`${key}:attempts`);
     }
   } catch (error) {
-    console.error('Redis login log error:', error);
+    logger.error('Redis login log error:', error);
   }
 }
 
@@ -259,7 +260,7 @@ export async function logSecurityEvent(
     await redis.ltrim(key, 0, 99); // Keep last 100 events
     await redis.expire(key, 24 * 60 * 60); // 24 hours
   } catch (error) {
-    console.error('Redis security log error:', error);
+    logger.error('Redis security log error:', error);
   }
 }
 
@@ -362,7 +363,7 @@ export async function setCache<T>(
     await redis.set(`cache:${key}`, data);
     await redis.expire(`cache:${key}`, ttlSeconds);
   } catch (error) {
-    console.error('Redis cache set error:', error);
+    logger.error('Redis cache set error:', error);
   }
 }
 
@@ -377,7 +378,7 @@ export async function deleteCache(key: string): Promise<void> {
   try {
     await redis.del(`cache:${key}`);
   } catch (error) {
-    console.error('Redis cache delete error:', error);
+    logger.error('Redis cache delete error:', error);
   }
 }
 
@@ -395,7 +396,7 @@ export async function invalidateCachePattern(pattern: string): Promise<void> {
       await redis.del(...(keys as string[]));
     }
   } catch (error) {
-    console.error('Redis cache invalidate error:', error);
+    logger.error('Redis cache invalidate error:', error);
   }
 }
 

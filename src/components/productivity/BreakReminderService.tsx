@@ -73,7 +73,7 @@ export default function BreakReminderService({
       createTone(659.25, now + 0.45, 0.1); // E5
       createTone(783.99, now + 0.5, 0.2); // G5
     } catch (error) {
-      console.error('Failed to play break sound:', error);
+      logger.error('Failed to play break sound:', error);
     }
   };
 
@@ -141,7 +141,7 @@ export default function BreakReminderService({
           silent: false, // Play sound
         });
       } catch (error) {
-        console.error('Failed to send push notification:', error);
+        logger.error('Failed to send push notification:', error);
       }
     }
   };

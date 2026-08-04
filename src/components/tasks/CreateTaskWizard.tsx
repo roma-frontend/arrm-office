@@ -28,10 +28,11 @@ interface AttachmentData {
 }
 import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface CreateTaskWizardProps {
   currentUserId: Id<'users'>;
-  userRole: 'admin' | 'supervisor' | 'employee';
+  userRole: 'admin' | 'supervisor' | 'employee' | 'superadmin';
   assigneeId?: Id<'users'>;
   onComplete?: () => void;
   onCancel?: () => void;
@@ -98,7 +99,10 @@ export function CreateTaskWizard({
     userRole === 'supervisor' && safeUserId ? { supervisorId: safeUserId } : 'skip',
   );
 
-  const availableEmployees = userRole === 'admin' ? employees : myEmployees;
+  // Superadmins manage tasks like admins, so they also get the full employee
+  // list for assignment (myEmployees is supervisor-scoped only).
+  const availableEmployees =
+    userRole === 'admin' || userRole === 'superadmin' ? employees : myEmployees;
 
   // Goals linkage: fetch active objectives for task linking
   const userForQuery = useQuery(
@@ -295,7 +299,7 @@ export function CreateTaskWizard({
       onComplete?.();
     } catch (error) {
       toast.error(t('taskWizard.toast.error'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

@@ -71,6 +71,7 @@ import {
 import type { AccentColor } from '@/lib/documentCatalog';
 import { getLocaleString } from '@/lib/date-format';
 import { uploadDocument } from '@/actions/cloudinary';
+import { logger } from '@/lib/logger';
 
 /** Localized static labels for the themed PDF footer / signature block. */
 function useDocumentLabels(): DocumentLabels {
@@ -973,7 +974,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
             toast.success(t('signatures.archived', 'Signed document archived'));
           }
         } catch (archiveErr) {
-          console.error('Failed to archive signed PDF:', archiveErr);
+          logger.error('Failed to archive signed PDF:', archiveErr);
           toast.error(t('signatures.errors.archiveFailed', 'Failed to archive signed PDF'));
         }
       }
@@ -1158,7 +1159,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
     } catch (err) {
       // Surface the real cause (Cloudinary upload / PDF render / Convex mutation)
       // instead of swallowing it behind a generic message.
-      console.error('Failed to archive signed PDF:', err);
+      logger.error('Failed to archive signed PDF:', err);
       const detail = err instanceof Error ? err.message : '';
       toast.error(
         detail

@@ -20,6 +20,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useOrgUnits } from '@/hooks/useOrgUnits';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface CreateEventWizardProps {
   organizationId: Id<'organizations'>;
@@ -238,7 +239,7 @@ export function CreateEventWizard({
       onCancel?.();
     } catch (error) {
       toast.error(t('eventWizard.toast.error'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

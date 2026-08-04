@@ -28,6 +28,7 @@ import { uploadTaskAttachment } from '@/actions/cloudinary';
 import { toast } from 'sonner';
 import { Upload, FileText, Image as ImageIcon, Video, Music, File } from 'lucide-react';
 import { AnimatePresence, motion } from '@/lib/cssMotion';
+import { logger } from '@/lib/logger';
 
 // ═══════════════════════════════════════════════════════════════
 // Text Input Step
@@ -606,7 +607,7 @@ export function FileUploadStep({
 
       toast.success(`Uploaded ${newAttachments.length} file(s)`);
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast.error('Failed to upload files');
     } finally {
       setUploading(false);

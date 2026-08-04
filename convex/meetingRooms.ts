@@ -996,77 +996,115 @@ export const bookRoom = mutation({
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
-    const room = await ctx.db.get(args.roomId);
-    if (!room) throw new Error('Room not found');
-    assertOrgAccess(caller, room.organizationId);
-    if (!room.isActive) throw new Error('This room is archived and cannot be booked');
-
-    const now = Date.now();
-    const title = trimmedOrThrow(args.title, 'Title', MAX_TITLE_LENGTH);
-    if (args.description && args.description.length > MAX_TEXT_LENGTH) {
-      throw new Error('Description is too long');
-    }
-    validateRange(args.startTime, args.endTime, now);
-
-    // Deduplicate and drop the organizer — they are counted separately.
-    const attendeeIds = [...new Set(args.attendeeIds ?? [])].filter((id) => id !== caller._id);
-    const externalAttendees = (args.externalAttendees ?? [])
-      .map((a) => a.trim())
-      .filter(Boolean)
-      .slice(0, 50);
-    const headcount = 1 + attendeeIds.length + externalAttendees.length;
-    if (headcount > room.capacity) {
-      throw new Error(`Too many participants for this room (capacity ${room.capacity})`);
-    }
-
-    const conflicts = await bookingsInRange(ctx, args.roomId, args.startTime, args.endTime);
-    if (conflicts.length > 0) {
-      const first = conflicts[0]!;
-      throw new Error(
-        `Room is already booked from ${new Date(first.startTime).toISOString()} to ${new Date(
-          first.endTime,
-        ).toISOString()}`,
-      );
-    }
-
-    const bookingId = await ctx.db.insert('roomBookings', {
-      organizationId: room.organizationId,
-      roomId: args.roomId,
-      title,
-      description: args.description?.trim() || undefined,
-      startTime: args.startTime,
-      endTime: args.endTime,
-      organizerId: caller._id,
-      attendeeIds: attendeeIds.length ? attendeeIds : undefined,
-      externalAttendees: externalAttendees.length ? externalAttendees : undefined,
-      status: 'confirmed',
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    const booking = await ctx.db.get(bookingId);
-    if (booking) {
-      // Invitations start at "needs action"; the log gets one 'created' entry
-      // rather than one per guest, so the timeline stays readable.
-      await syncAttendeeRows(ctx, booking, attendeeIds, caller, { logChanges: false });
-      await logBookingEvent(ctx, booking, 'created', caller, {
-        newStartTime: args.startTime,
-        newEndTime: args.endTime,
-        note: title,
-      });
-    }
-
-    await notifyAttendees(
-      ctx,
-      { organizationId: room.organizationId, organizerId: caller._id, attendeeIds, title },
-      room.name,
-      `${caller.name} invited you to a meeting`,
-      'room_booked',
-    );
-
-    return bookingId;
+    return await reserveRoom(ctx, caller, args);
   },
 });
+
+/**
+ * Marker prefix for "the room is already taken" failures.
+ *
+ * Callers check availability before submitting, so this normally only fires on a
+ * genuine race (somebody booked the same slot a second earlier). Encoding the
+ * blocking interval lets the UI say "busy until 15:30" instead of showing a
+ * generic error.
+ */
+export const ROOM_BUSY_ERROR = 'ROOM_BUSY';
+
+function roomBusyError(conflict: Doc<'roomBookings'>): Error {
+  return new Error(
+    `${ROOM_BUSY_ERROR}|${conflict.startTime}|${conflict.endTime}|${conflict.title.replace(/\|/g, '/')}`,
+  );
+}
+
+/**
+ * Creates a reservation after checking everything that protects a room:
+ * organization access, the room being bookable, a sane duration, capacity and —
+ * most importantly — no overlap with an existing meeting.
+ *
+ * Shared by the booking dialog and by calendar events that reserve a room in the
+ * same transaction, so both paths enforce identical rules and write the same
+ * attendee rows and audit entries.
+ */
+export async function reserveRoom(
+  ctx: MutationCtx,
+  caller: Caller,
+  args: {
+    roomId: Id<'meetingRooms'>;
+    title: string;
+    description?: string;
+    startTime: number;
+    endTime: number;
+    attendeeIds?: Id<'users'>[];
+    externalAttendees?: string[];
+    /** Set when re-booking an event so its own reservation does not block it. */
+    excludeBookingId?: Id<'roomBookings'>;
+  },
+): Promise<Id<'roomBookings'>> {
+  const room = await ctx.db.get(args.roomId);
+  if (!room) throw new Error('Room not found');
+  assertOrgAccess(caller, room.organizationId);
+  if (!room.isActive) throw new Error('This room is archived and cannot be booked');
+
+  const now = Date.now();
+  const title = trimmedOrThrow(args.title, 'Title', MAX_TITLE_LENGTH);
+  if (args.description && args.description.length > MAX_TEXT_LENGTH) {
+    throw new Error('Description is too long');
+  }
+  validateRange(args.startTime, args.endTime, now);
+
+  // Deduplicate and drop the organizer — they are counted separately.
+  const attendeeIds = [...new Set(args.attendeeIds ?? [])].filter((id) => id !== caller._id);
+  const externalAttendees = (args.externalAttendees ?? [])
+    .map((a) => a.trim())
+    .filter(Boolean)
+    .slice(0, 50);
+  const headcount = 1 + attendeeIds.length + externalAttendees.length;
+  if (headcount > room.capacity) {
+    throw new Error(`Too many participants for this room (capacity ${room.capacity})`);
+  }
+
+  const conflicts = (await bookingsInRange(ctx, args.roomId, args.startTime, args.endTime)).filter(
+    (candidate) => candidate._id !== args.excludeBookingId,
+  );
+  if (conflicts.length > 0) throw roomBusyError(conflicts[0]!);
+
+  const bookingId = await ctx.db.insert('roomBookings', {
+    organizationId: room.organizationId,
+    roomId: args.roomId,
+    title,
+    description: args.description?.trim() || undefined,
+    startTime: args.startTime,
+    endTime: args.endTime,
+    organizerId: caller._id,
+    attendeeIds: attendeeIds.length ? attendeeIds : undefined,
+    externalAttendees: externalAttendees.length ? externalAttendees : undefined,
+    status: 'confirmed',
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  const booking = await ctx.db.get(bookingId);
+  if (booking) {
+    // Invitations start at "needs action"; the log gets one 'created' entry
+    // rather than one per guest, so the timeline stays readable.
+    await syncAttendeeRows(ctx, booking, attendeeIds, caller, { logChanges: false });
+    await logBookingEvent(ctx, booking, 'created', caller, {
+      newStartTime: args.startTime,
+      newEndTime: args.endTime,
+      note: title,
+    });
+  }
+
+  await notifyAttendees(
+    ctx,
+    { organizationId: room.organizationId, organizerId: caller._id, attendeeIds, title },
+    room.name,
+    `${caller.name} invited you to a meeting`,
+    'room_booked',
+  );
+
+  return bookingId;
+}
 
 export const updateBooking = mutation({
   args: {
@@ -1171,35 +1209,65 @@ export const cancelBooking = mutation({
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
-    const booking = await ctx.db.get(args.bookingId);
-    if (!booking) return { success: true };
-    assertOrgAccess(caller, booking.organizationId);
-    if (booking.organizerId !== caller._id && !canManageRooms(caller)) {
-      throw new Error('Only the organizer or an admin can cancel this booking');
-    }
-    if (booking.status === 'cancelled') return { success: true };
-
-    const now = Date.now();
-    await ctx.db.patch(args.bookingId, {
-      status: 'cancelled',
-      cancelledAt: now,
-      cancelledBy: caller._id,
-      cancelReason: args.reason?.trim() || undefined,
-      updatedAt: now,
-    });
-
-    await logBookingEvent(ctx, booking, 'cancelled', caller, {
-      note: args.reason?.trim() || undefined,
-      previousStartTime: booking.startTime,
-      previousEndTime: booking.endTime,
-    });
-
-    const room = await ctx.db.get(booking.roomId);
-    await notifyBookingCancelled(ctx, booking, room?.name ?? 'Meeting room', caller);
-
+    await cancelRoomBooking(ctx, caller, args.bookingId, args.reason);
     return { success: true };
   },
 });
+
+/**
+ * Cancels a reservation on behalf of `caller`. Shared with calendar events so
+ * that deleting or re-scheduling an event releases the room it held.
+ *
+ * @returns whether a confirmed booking was actually released
+ */
+export async function cancelRoomBooking(
+  ctx: MutationCtx,
+  caller: Caller,
+  bookingId: Id<'roomBookings'>,
+  reason?: string,
+): Promise<boolean> {
+  const booking = await ctx.db.get(bookingId);
+  if (!booking) return false;
+  assertOrgAccess(caller, booking.organizationId);
+  if (booking.organizerId !== caller._id && !canManageRooms(caller)) {
+    throw new Error('Only the organizer or an admin can cancel this booking');
+  }
+  if (booking.status === 'cancelled') return false;
+
+  const now = Date.now();
+  await ctx.db.patch(bookingId, {
+    status: 'cancelled',
+    cancelledAt: now,
+    cancelledBy: caller._id,
+    cancelReason: reason?.trim() || undefined,
+    updatedAt: now,
+  });
+
+  await logBookingEvent(ctx, booking, 'cancelled', caller, {
+    note: reason?.trim() || undefined,
+    previousStartTime: booking.startTime,
+    previousEndTime: booking.endTime,
+  });
+
+  // A calendar event may be holding this reservation. Clearing the link keeps the
+  // event from advertising a room it no longer has — the reverse of the rule that
+  // deleting an event releases its room.
+  const linkedEvents = await ctx.db
+    .query('calendarEvents')
+    .withIndex('by_room_booking', (q) => q.eq('roomBookingId', bookingId))
+    .take(10);
+  for (const event of linkedEvents) {
+    await ctx.db.patch(event._id, {
+      roomId: undefined,
+      roomBookingId: undefined,
+      updatedAt: now,
+    });
+  }
+
+  const room = await ctx.db.get(booking.roomId);
+  await notifyBookingCancelled(ctx, booking, room?.name ?? 'Meeting room', caller);
+  return true;
+}
 
 /**
  * Accept, decline or tentatively accept an invitation.

@@ -93,7 +93,7 @@ export function FaceLogin() {
   // ===== Init once: models + camera list =====
   useEffect(() => {
     loadFaceApiModels().catch((err) => {
-      console.error('Failed to load face models:', err);
+      logger.error('Failed to load face models:', err);
       toast.error(t('faceLogin.modelsFailed', 'Failed to load face recognition models'));
     });
 
@@ -104,7 +104,7 @@ export function FaceLogin() {
         setCameras(videoDevices);
         if (videoDevices.length > 0) setSelectedCamera(videoDevices[0]!.deviceId);
       } catch (err) {
-        console.error('Failed to enumerate devices:', err);
+        logger.error('Failed to enumerate devices:', err);
       }
     })();
 
@@ -241,7 +241,7 @@ export function FaceLogin() {
           await videoRef.current.play();
           startDetectionLoop();
         } catch (err) {
-          console.error('❌ Failed to play video:', err);
+          logger.error('❌ Failed to play video:', err);
           toast.error(t('faceLogin.videoPlaybackFailed', 'Failed to start video playback'));
           playStartedRef.current = false;
         }
@@ -256,7 +256,7 @@ export function FaceLogin() {
         if (videoRef.current && streamRef.current && isWebcamActive) playVideoOnce();
       }, 1000);
     } catch (error) {
-      console.error('❌ Error accessing webcam:', error);
+      logger.error('❌ Error accessing webcam:', error);
       stopWebcam();
 
       const errName = getErrorName(error);
@@ -399,7 +399,7 @@ export function FaceLogin() {
           attemptFaceLogin();
         }
       } catch (e) {
-        console.error('❌ Error in face detection loop:', e);
+        logger.error('❌ Error in face detection loop:', e);
         detectionInProgressRef.current = false;
       }
     }, 300);
@@ -537,7 +537,7 @@ export function FaceLogin() {
       const nextUrl = params.get('next');
       router.push(nextUrl || '/dashboard');
     } catch (error) {
-      console.error('❌ Error during face login:', error);
+      logger.error('❌ Error during face login:', error);
 
       const errMessage = error instanceof Error ? error.message : '';
       const msg = errMessage.includes('Failed to fetch')

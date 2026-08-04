@@ -3,6 +3,7 @@ import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { calculatePayroll, type CountryCode } from '../lib/payrollCalculator';
 import { resolvePensionExemption } from '../lib/pension';
+import { logger } from '../../src/lib/logger';
 
 /** Payroll-relevant fields carried by employee profile docs. */
 interface PayrollEmployee {
@@ -77,7 +78,7 @@ export const processScheduledPayroll = action({
         totalNet += calculation.netSalary;
         processedCount++;
       } catch (error) {
-        console.error(`Error processing payroll for employee ${emp._id}:`, error);
+        logger.error(`Error processing payroll for employee ${emp._id}:`, error);
       }
     }
 

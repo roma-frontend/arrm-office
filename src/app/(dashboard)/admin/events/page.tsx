@@ -57,6 +57,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { logger } from '@/lib/logger';
 
 type Priority = 'high' | 'medium' | 'low';
 
@@ -211,7 +212,7 @@ export default function CompanyEventsPage() {
         });
         totalConflicts += result.conflictsFound;
       } catch (e) {
-        console.error('Conflict check failed:', e);
+        logger.error('Conflict check failed:', e);
       }
     }
     if (totalConflicts > 0) {
@@ -568,7 +569,7 @@ export default function CompanyEventsPage() {
                                       await deleteEvent({ eventId: event._id, userId: userId! });
                                       toast.success(t('events.eventDeleted', 'Event deleted'));
                                     } catch (error) {
-                                      console.error(
+                                      logger.error(
                                         'Delete failed:',
                                         error instanceof Error ? error.message : 'Unknown error',
                                       );
@@ -756,7 +757,7 @@ export default function CompanyEventsPage() {
                       setShowEditModal(false);
                       toast.success(t('events.eventUpdated', 'Event updated successfully'));
                     } catch (error) {
-                      console.error(
+                      logger.error(
                         'Update failed:',
                         error instanceof Error ? error.message : 'Unknown error',
                       );

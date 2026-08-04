@@ -75,7 +75,7 @@ const CSS_PATCH_ONLY_FILES = [
 
 // ─── Security helpers ─────────────────────────────────────────────────────────
 
-function isPathAllowed(filePath: string): boolean {
+export function isPathAllowed(filePath: string): boolean {
   const normalizedPath = filePath.replace(/\\/g, '/');
 
   for (const forbidden of FORBIDDEN_PATHS) {
@@ -104,7 +104,7 @@ function readFileSecure(filePath: string): string | null {
 
     return fs.readFileSync(fullPath, 'utf-8');
   } catch (error) {
-    console.error(`[readFileSecure] Ошибка чтения ${filePath}:`, error);
+    logger.error(`[readFileSecure] Ошибка чтения ${filePath}:`, error);
     return null;
   }
 }
@@ -167,7 +167,7 @@ function writeFileSecure(
     return { success: true, timestamp };
   } catch (error) {
     const msg = `[writeFileSecure] Ошибка записи ${filePath}: ${error}`;
-    console.error(msg);
+    logger.error(msg);
     return { success: false, error: msg };
   }
 }
@@ -195,14 +195,14 @@ function getAvailableComponents(): string[] {
 
     if (fs.existsSync(componentsDir)) scanDir(componentsDir);
   } catch (error) {
-    console.error('Ошибка сканирования компонентов:', error);
+    logger.error('Ошибка сканирования компонентов:', error);
   }
 
   return components;
 }
 
 /** Определяет релевантные файлы по ключевым словам в запросе */
-function findRelevantFiles(message: string): string[] {
+export function findRelevantFiles(message: string): string[] {
   const lower = message.toLowerCase();
 
   const keywordMap: Record<string, string[]> = {
@@ -286,7 +286,7 @@ function findRelevantFiles(message: string): string[] {
 }
 
 /** Парсит ответ AI для извлечения изменений файлов */
-function parseAIResponseForFileChanges(
+export function parseAIResponseForFileChanges(
   response: string,
   fallbackFiles: string[] = [],
 ): Array<{
@@ -375,7 +375,7 @@ RULES:
 - After PATCH blocks, explain changes in Russian in 1-2 sentences`;
 
 /** Парсит CSS-патчи из ответа AI */
-function parseCSSPatches(response: string): Array<{
+export function parseCSSPatches(response: string): Array<{
   filePath: string;
   oldClass: string;
   newClass: string;
@@ -663,8 +663,10 @@ IMPORTANT: Only output FILE blocks for files that need to change. Do NOT rewrite
   );
 
   const aiText = result.text;
-  logger.log('[AI Site Editor] Raw AI response length:', aiText.length);
-  logger.log('[AI Site Editor] Response preview:', aiText.substring(0, 300));
+  logger.log('[AI Site Editor] Raw AI response:', {
+    length: aiText.length,
+    preview: aiText.substring(0, 300),
+  });
 
   // Parse FILE blocks from response (pass filesToRead as fallback for bare code blocks)
   const changes = parseAIResponseForFileChanges(aiText, filesToRead);
@@ -694,7 +696,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     const { message, userId, organizationId, plan = '' } = body;
 
     if (!message || !userId || !organizationId) {
-      console.error('[AI Site Editor] Missing fields:', {
+      logger.error('[AI Site Editor] Missing fields:', {
         message: !!message,
         userId: !!userId,
         organizationId: !!organizationId,
@@ -825,10 +827,10 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     });
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-    console.error('=== AI Site Editor Error ===');
-    console.error('Message:', err.message);
-    console.error('Stack:', err.stack);
-    console.error('Full error:', error);
+    logger.error('=== AI Site Editor Error ===');
+    logger.error('Message:', err.message);
+    logger.error('Stack:', err.stack);
+    logger.error('Full error:', error);
 
     // Возвращаем детальную ошибку для отладки
     return NextResponse.json(

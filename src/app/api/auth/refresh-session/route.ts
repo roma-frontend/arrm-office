@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 /**
  * Refresh Session API Route - Extend session by another 7 days
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Session refresh error:', error);
+    logger.error('Session refresh error:', error);
     return NextResponse.json({ error: 'Failed to refresh session' }, { status: 500 });
   }
 }

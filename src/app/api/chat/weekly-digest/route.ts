@@ -5,6 +5,7 @@ import type { Id } from '../../../../../convex/_generated/dataModel';
 import { groq } from '@ai-sdk/groq';
 import { generateText } from 'ai';
 import { getServerConvexAuth } from '@/lib/server-convex-auth';
+import { logger } from '@/lib/logger';
 
 // Opt out of static generation — uses request.url
 export const revalidate = 0;
@@ -123,7 +124,7 @@ ${context}`,
       },
     });
   } catch (error) {
-    console.error('Weekly digest error:', error);
+    logger.error('Weekly digest error:', error);
     return NextResponse.json({ error: 'Failed to generate digest' }, { status: 500 });
   }
 }

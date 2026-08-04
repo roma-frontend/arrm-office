@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       idpConfigured: !!SAML_IDP_METADATA_URL,
     });
   } catch (error) {
-    console.error('[SAML] Failed to decode assertion:', error);
+    logger.error('[SAML] Failed to decode assertion:', error);
     return NextResponse.json({ error: 'Invalid SAML assertion format' }, { status: 400 });
   }
 }

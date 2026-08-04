@@ -382,7 +382,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         inputRef.current.style.height = 'auto';
       }
     } catch (err) {
-      console.error('Send failed:', err);
+      logger.error('Send failed:', err);
     } finally {
       setSending(false);
     }
@@ -511,10 +511,10 @@ export const ChatWindow = React.memo(function ChatWindow({
         setShowVoiceRecorder(false);
         setIsRecording(false);
       } catch (err) {
-        console.error('Error sending voice message:', err);
+        logger.error('Error sending voice message:', err);
         const errorMessage =
           err instanceof Error ? err.message : t('common.unknownError', 'Unknown error');
-        console.error('Error details:', errorMessage);
+        logger.error('Error details:', errorMessage);
         toast.error(`${t('chat.voiceMessageFailed')}: ${errorMessage}`);
         setShowVoiceRecorder(false);
         setIsRecording(false);

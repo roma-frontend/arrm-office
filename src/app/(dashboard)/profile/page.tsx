@@ -78,7 +78,7 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     if (!user?.id) {
-      console.error('[Profile] No user ID');
+      logger.error('[Profile] No user ID');
       return;
     }
 
@@ -128,7 +128,7 @@ export default function ProfilePage() {
 
       if (!res.ok) {
         const error = (await res.json()) as { error?: string };
-        console.error('[Profile] API error:', error);
+        logger.error('[Profile] API error:', error);
         throw new Error(error.error || 'Failed to update session');
       }
 
@@ -146,7 +146,7 @@ export default function ProfilePage() {
 
       // Don't reload - let Convex revalidate automatically
     } catch (err) {
-      console.error('[Profile] Save error:', err);
+      logger.error('[Profile] Save error:', err);
       toast.error(err instanceof Error ? err.message : t('profile.failedToSave'));
     } finally {
       setSaving(false);
@@ -171,7 +171,7 @@ export default function ProfilePage() {
       toast.success(t('toasts.profilePictureDeleted'));
       setShowDeleteDialog(false);
     } catch (err) {
-      console.error('Delete avatar error:', err);
+      logger.error('Delete avatar error:', err);
       toast.error(err instanceof Error ? err.message : t('profile.failedToDeleteAvatar'));
     } finally {
       setDeleting(false);

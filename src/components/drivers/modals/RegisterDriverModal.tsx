@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 
 interface RegisterDriverModalProps {
   userName: string;
@@ -134,7 +135,7 @@ export function RegisterDriverModal({
       await onSubmit(formData);
       onClose();
     } catch (error) {
-      console.error('Failed to register:', error);
+      logger.error('Failed to register:', error);
     } finally {
       setIsSubmitting(false);
     }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Google OAuth error:', error);
+    logger.error('Google OAuth error:', error);
     return NextResponse.redirect(new URL('/dashboard?error=google_auth_failed', request.url));
   }
 }

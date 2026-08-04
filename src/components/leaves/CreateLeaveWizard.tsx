@@ -29,6 +29,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import type { LeaveType } from '@/lib/types';
+import { logger } from '@/lib/logger';
 
 interface CreateLeaveWizardProps {
   userId: Id<'users'>;
@@ -291,7 +292,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
       onComplete?.();
     } catch (error) {
       toast.error(t('leaveWizard.toast.error'));
-      console.error(error);
+      logger.error(error);
     }
   };
 

@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
@@ -160,7 +161,7 @@ export default function TaskDetailClient() {
       await addComment({ taskId, authorId: user.id as Id<'users'>, content: commentText.trim() });
       setCommentText('');
     } catch (error) {
-      console.error('Failed to add comment', error);
+      logger.error('Failed to add comment', error);
       toast.error(t('common.error', 'Something went wrong'));
     } finally {
       setIsPosting(false);
@@ -175,7 +176,7 @@ export default function TaskDetailClient() {
       toast.success(t('tasksClient.taskDeleted'));
       router.push('/tasks');
     } catch (error) {
-      console.error('Failed to delete task', error);
+      logger.error('Failed to delete task', error);
       toast.error(t('common.error', 'Something went wrong'));
       setIsDeleting(false);
     }

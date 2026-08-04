@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 /**
  * Logout API Route - Complete session termination
@@ -25,7 +26,7 @@ async function handleLogout(req: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Logout error:', error);
+    logger.error('Logout error:', error);
     return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
   }
 }

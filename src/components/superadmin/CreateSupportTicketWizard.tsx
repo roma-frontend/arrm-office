@@ -19,6 +19,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface CreateSupportTicketWizardProps {
   userId: Id<'users'>;
@@ -164,7 +165,7 @@ export function CreateSupportTicketWizard({
       onComplete?.();
     } catch (error) {
       toast.error(t('supportWizard.toast.error'));
-      console.error(error);
+      logger.error(error);
     }
   };
 
