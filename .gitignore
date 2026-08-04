@@ -68,6 +68,8 @@ build-errors.log
 # (Use scripts/* not scripts/ so negation patterns can take effect.)
 scripts/*
 !scripts/check-locale-parity.mjs
+# Reports t() keys that resolve to an object or are missing everywhere.
+!scripts/check-i18n-keys.mjs
 # Coverage tooling invoked by .github/workflows/ci.yml — must be committed.
 !scripts/compare-coverage.mjs
 !scripts/generate-coverage-badge.mjs
