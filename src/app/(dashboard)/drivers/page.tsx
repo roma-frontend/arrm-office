@@ -556,13 +556,17 @@ export default function DriversPage() {
         />
       )}
 
-      {showCalendarDialog && effectiveOrgId && (
+      {showCalendarDialog && (effectiveOrgId ?? orgId) && (
         <div className="fixed inset-0 z-[9999]">
           <DriverCalendarDialog
             open={showCalendarDialog}
             onClose={() => setShowCalendarDialog(false)}
             driverId={selectedDriverId}
-            organizationId={effectiveOrgId}
+            // Fall back to the caller's own org: for a superadmin without an
+            // org selected in the switcher `effectiveOrgId` is undefined, but
+            // the drivers list still renders (all orgs) — without this the
+            // calendar dialog would never open. Mirrors RequestDriverWizard.
+            organizationId={(effectiveOrgId ?? orgId) as Id<'organizations'>}
             role={user?.role as 'admin' | 'driver'}
           />
         </div>

@@ -108,7 +108,15 @@ export const DriverCard = memo(function DriverCard({
             {t('driver.book', 'Book')}
           </Button>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => onCalendar(driver._id)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onCalendar(driver._id)}
+              // Icon-only button: it needs an accessible name, and the testid
+              // gives the e2e suite a selector that survives translation.
+              aria-label={t('driver.viewCalendar', 'View Calendar')}
+              data-testid="driver-calendar-button"
+            >
               <Calendar className="w-4 h-4 text-blue-400" />
             </Button>
             <Button
