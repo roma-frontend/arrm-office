@@ -88,7 +88,12 @@
     "postComment": "Post",
     "unknownUser": "Unknown user",
     "taskDeleting": "Deleting...",
-    "taskDeleted": "Task deleted"
+    "taskDeleted": "Task deleted",
+    "linkedKeyResult": "Linked key result",
+    "week": "Week",
+    "month": "Month",
+    "quarter": "Quarter",
+    "today": "Today"
   },
   "taskStatus": {
     "pending": "Pending",
@@ -197,6 +202,10 @@
     "filesSelected": "files selected",
     "removeFile": "Remove",
     "addFiles": "Add Files",
-    "uploading": "Uploading..."
+    "uploading": "Uploading...",
+    "notFound": "Task not found",
+    "notFoundHint": "It may have been deleted, or the link is incorrect.",
+    "backToTasks": "Back to tasks",
+    "noPermission": "You do not have permission to create tasks"
   }
 }

@@ -452,7 +452,8 @@
     "clearSelection": "Очистить выбор",
     "cancel": "Отмена",
     "fullscreen": "На весь экран",
-    "exitFullscreen": "Выйти из полноэкранного режима"
+    "exitFullscreen": "Выйти из полноэкранного режима",
+    "back": "Назад"
   },
   "placeholders": {
     "selectEmployee": "Выберите сотрудника",

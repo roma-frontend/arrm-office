@@ -77,7 +77,7 @@
     "comments": "Kommentare",
     "comment": "Kommentar",
     "commentsCount": "Kommentare",
-    "attachments": "Anh\u00e4nge",
+    "attachments": "Anhänge",
     "allEmployees": "Alle Mitarbeiter",
     "editTask": "Aufgabe bearbeiten",
     "title": "Titel",
@@ -88,7 +88,12 @@
     "postComment": "Senden",
     "unknownUser": "Unbekannter Benutzer",
     "taskDeleting": "Löschen...",
-    "taskDeleted": "Aufgabe gelöscht"
+    "taskDeleted": "Aufgabe gelöscht",
+    "linkedKeyResult": "Verknüpftes Key Result",
+    "week": "Woche",
+    "month": "Monat",
+    "quarter": "Quartal",
+    "today": "Heute"
   },
   "taskStatus": {
     "pending": "Ausstehend",
@@ -197,6 +202,10 @@
     "filesSelected": "Dateien ausgewählt",
     "removeFile": "Datei entfernen",
     "addFiles": "Dateien hinzufügen",
-    "uploading": "Hochladen..."
+    "uploading": "Hochladen...",
+    "notFound": "Aufgabe nicht gefunden",
+    "notFoundHint": "Sie wurde möglicherweise gelöscht, oder der Link ist falsch.",
+    "backToTasks": "Zurück zu den Aufgaben",
+    "noPermission": "Sie haben keine Berechtigung, Aufgaben zu erstellen"
   }
 }

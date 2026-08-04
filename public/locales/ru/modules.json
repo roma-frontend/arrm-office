@@ -440,7 +440,8 @@
     "context": "Контекст",
     "visibility": "Видимость",
     "date": "Дата",
-    "time": "Время"
+    "time": "Время",
+    "categoryLabel": "Категория"
   },
   "recognitionCategories": {
     "teamwork": "Командная работа",
@@ -892,7 +893,17 @@
     "errors": {
       "completeFailed": "Не удалось выполнить цель",
       "deleteFailed": "Не удалось удалить цель"
-    }
+    },
+    "statusLabel": "Статус",
+    "levelLabel": "Уровень",
+    "addTask": "Добавить задачу",
+    "noLinkedTasksHint": "Создавайте задачи, связанные с этой целью, чтобы отслеживать прогресс",
+    "taskProgress": "Прогресс по задачам",
+    "done": "выполнено",
+    "linkedObjective": "Связанная цель",
+    "editTitle": "Редактирование цели",
+    "notFound": "Цель не найдена",
+    "saved": "Цель сохранена"
   },
   "goalStatus": {
     "active": "Активная",

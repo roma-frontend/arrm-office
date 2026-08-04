@@ -452,7 +452,8 @@
     "clearSelection": "Auswahl löschen",
     "cancel": "Abbrechen",
     "fullscreen": "Vollbild",
-    "exitFullscreen": "Vollbild beenden"
+    "exitFullscreen": "Vollbild beenden",
+    "back": "Zurück"
   },
   "placeholders": {
     "selectEmployee": "Mitarbeiter auswählen",

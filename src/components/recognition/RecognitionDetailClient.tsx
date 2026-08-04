@@ -172,7 +172,7 @@ export default function RecognitionDetailClient() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">{t('recognition.category')}</p>
+              <p className="text-sm text-muted-foreground">{t('recognition.categoryLabel')}</p>
               <p className="font-medium capitalize">
                 {/* i18n type */}
                 {t(`recognitionCategories.${kudo.category}`, kudo.category.replace('_', ' '))}

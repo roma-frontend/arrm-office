@@ -440,7 +440,8 @@
     "context": "Kontext",
     "visibility": "Sichtbarkeit",
     "date": "Datum",
-    "time": "Uhrzeit"
+    "time": "Uhrzeit",
+    "categoryLabel": "Kategorie"
   },
   "recognitionCategories": {
     "teamwork": "Teamarbeit",
@@ -892,7 +893,17 @@
     "errors": {
       "completeFailed": "Failed to complete objective",
       "deleteFailed": "Failed to delete objective"
-    }
+    },
+    "statusLabel": "Status",
+    "levelLabel": "Ebene",
+    "addTask": "Aufgabe hinzufügen",
+    "noLinkedTasksHint": "Erstellen Sie Aufgaben, die zu diesem Ziel passen, um den Fortschritt zu verfolgen",
+    "taskProgress": "Aufgabenfortschritt",
+    "done": "erledigt",
+    "linkedObjective": "Verknüpftes Ziel",
+    "editTitle": "Ziel bearbeiten",
+    "notFound": "Ziel nicht gefunden",
+    "saved": "Ziel gespeichert"
   },
   "goalStatus": {
     "active": "Aktiv",

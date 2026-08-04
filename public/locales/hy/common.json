@@ -452,7 +452,8 @@
     "clearSelection": "Մաքրել ընտրությունը",
     "cancel": "Չեղարկել",
     "fullscreen": "Լիաէկրան",
-    "exitFullscreen": "Դուրս գալ լիաէկրան ռեժիմից"
+    "exitFullscreen": "Դուրս գալ լիաէկրան ռեժիմից",
+    "back": "Հետ"
   },
   "placeholders": {
     "selectEmployee": "Ընտրել աշխատակից",

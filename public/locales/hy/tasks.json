@@ -88,7 +88,12 @@
     "postComment": "Ուղարկել",
     "unknownUser": "Անհայտ օգտատեր",
     "taskDeleting": "Ջնջվում է...",
-    "taskDeleted": "Առաջադրանքը ջնջվել է"
+    "taskDeleted": "Առաջադրանքը ջնջվել է",
+    "linkedKeyResult": "Կապված հիմնական արդյունք",
+    "week": "Շաբաթ",
+    "month": "Ամիս",
+    "quarter": "Եռամսյակ",
+    "today": "Այսօր"
   },
   "taskStatus": {
     "pending": "Սպասման մեջ",
@@ -197,6 +202,10 @@
     "filesSelected": "ֆայլ ընտրված",
     "removeFile": "Հեռացնել",
     "addFiles": "Ավելացնել ֆայլեր",
-    "uploading": "Վերբեռնում..."
+    "uploading": "Վերբեռնում...",
+    "notFound": "Առաջադրանքը չի գտնվել",
+    "notFoundHint": "Հնարավոր է՝ ջնջվել է, կամ հղումը սխալ է։",
+    "backToTasks": "Վերադառնալ առաջադրանքներին",
+    "noPermission": "Դուք չունեք առաջադրանք ստեղծելու իրավունք"
   }
 }

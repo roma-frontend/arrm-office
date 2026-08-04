@@ -440,7 +440,8 @@
     "context": "Համատեքստ",
     "visibility": "Տեսանելիություն",
     "date": "Ամսաթիվ",
-    "time": "Ժամանակ"
+    "time": "Ժամանակ",
+    "categoryLabel": "Կատեգորիա"
   },
   "recognitionCategories": {
     "teamwork": "Թիմային աշխատանք",
@@ -892,7 +893,17 @@
     "errors": {
       "completeFailed": "Չհաջողվեց ավարտել նպատակը",
       "deleteFailed": "Չհաջողվեց ջնջել նպատակը"
-    }
+    },
+    "statusLabel": "Կարգավիճակ",
+    "levelLabel": "Մակարդակ",
+    "addTask": "Ավելացնել առաջադրանք",
+    "noLinkedTasksHint": "Ստեղծեք այս նպատակին համապատասխան առաջադրանքներ՝ առաջընթացը հետևելու համար",
+    "taskProgress": "Առաջադրանքների առաջընթաց",
+    "done": "կատարված",
+    "linkedObjective": "Կապված նպատակ",
+    "editTitle": "Խմբագրել նպատակը",
+    "notFound": "Նպատակը չի գտնվել",
+    "saved": "Նպատակը պահպանվեց"
   },
   "goalStatus": {
     "active": "Ակտիվ",

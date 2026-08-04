@@ -88,7 +88,12 @@
     "postComment": "Отправить",
     "unknownUser": "Неизвестный пользователь",
     "taskDeleting": "Удаление...",
-    "taskDeleted": "Задача удалена"
+    "taskDeleted": "Задача удалена",
+    "linkedKeyResult": "Связанный ключевой результат",
+    "week": "Неделя",
+    "month": "Месяц",
+    "quarter": "Квартал",
+    "today": "Сегодня"
   },
   "taskStatus": {
     "pending": "Ожидает",
@@ -197,6 +202,10 @@
     "filesSelected": "файлов выбрано",
     "removeFile": "Удалить",
     "addFiles": "Добавить файлы",
-    "uploading": "Загрузка..."
+    "uploading": "Загрузка...",
+    "notFound": "Задача не найдена",
+    "notFoundHint": "Возможно, она удалена или ссылка неверна.",
+    "backToTasks": "К списку задач",
+    "noPermission": "У вас нет прав на создание задач"
   }
 }

@@ -440,7 +440,8 @@
     "context": "Context",
     "visibility": "Visibility",
     "date": "Date",
-    "time": "Time"
+    "time": "Time",
+    "categoryLabel": "Category"
   },
   "recognitionCategories": {
     "teamwork": "Teamwork",
@@ -892,7 +893,17 @@
     "start": "Start",
     "startDate": "Start Date",
     "target": "Target",
-    "timeline": "Timeline"
+    "timeline": "Timeline",
+    "statusLabel": "Status",
+    "levelLabel": "Level",
+    "addTask": "Add task",
+    "noLinkedTasksHint": "Create tasks that align with this objective to track progress",
+    "taskProgress": "Task progress",
+    "done": "done",
+    "linkedObjective": "Linked objective",
+    "editTitle": "Edit objective",
+    "notFound": "Objective not found",
+    "saved": "Objective saved"
   },
   "goalStatus": {
     "active": "Active",
