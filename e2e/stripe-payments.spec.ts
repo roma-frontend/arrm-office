@@ -8,14 +8,16 @@
  * - Subscription plan features on the dashboard
  * - Plan upgrade/downgrade links in settings
  */
-import { test, expect, login } from './fixtures';
+import { test, expect, gotoAndSettle } from './fixtures';
 
 test.describe('Stripe / Payments / Subscriptions', () => {
   test.describe('Checkout Flow', () => {
     test('checkout success page loads with plan info', async ({ page }) => {
-      await page.goto('/checkout/success?plan=professional&session_id=test_session_123');
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(2000);
+      await gotoAndSettle(
+        page,
+        '/checkout/success?plan=professional&session_id=test_session_123',
+        2000,
+      );
 
       // Should show success page content
       const hasSuccessContent = await page
@@ -40,9 +42,11 @@ test.describe('Stripe / Payments / Subscriptions', () => {
     });
 
     test('checkout success page shows error for invalid session', async ({ page }) => {
-      await page.goto('/checkout/success?plan=starter&session_id=invalid_session_xxx');
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(3000);
+      await gotoAndSettle(
+        page,
+        '/checkout/success?plan=starter&session_id=invalid_session_xxx',
+        3000,
+      );
 
       // Should show either error or verifying state
       const isVerifying = await page
@@ -76,9 +80,7 @@ test.describe('Stripe / Payments / Subscriptions', () => {
       const plans = ['starter', 'professional', 'enterprise'];
 
       for (const plan of plans) {
-        await page.goto(`/checkout/success?plan=${plan}&session_id=test_${plan}`);
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1000);
+        await gotoAndSettle(page, `/checkout/success?plan=${plan}&session_id=test_${plan}`, 1000);
 
         // Page should load without 404
         const has404 = await page
@@ -101,9 +103,7 @@ test.describe('Stripe / Payments / Subscriptions', () => {
 
   test.describe('Plan & Billing UI', () => {
     test('pricing section is visible on landing page', async ({ page }) => {
-      await page.goto('/');
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(2000);
+      await gotoAndSettle(page, '/', 2000);
 
       // Check for pricing section on the landing page
       const hasPricingSection = await page
@@ -134,9 +134,7 @@ test.describe('Stripe / Payments / Subscriptions', () => {
     test('subscription plan badge visible on dashboard for authed user', async ({
       authedPage: page,
     }) => {
-      await page.goto('/dashboard');
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(3000);
+      await gotoAndSettle(page, '/dashboard', 3000);
 
       // Look for plan-related UI elements
       const hasPlanBadge = await page
@@ -181,9 +179,7 @@ test.describe('Stripe / Payments / Subscriptions', () => {
       test(`superadmin ${route.name} loads without crash for regular user`, async ({
         authedPage: page,
       }) => {
-        await page.goto(route.path);
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(3000);
+        await gotoAndSettle(page, route.path, 3000);
 
         // Page should not crash or show 404
         const has404 = await page
@@ -230,9 +226,7 @@ test.describe('Stripe / Payments / Subscriptions', () => {
 
   test.describe('Subscription status display', () => {
     test('dashboard loads with subscription context', async ({ authedPage: page }) => {
-      await page.goto('/dashboard');
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(3000);
+      await gotoAndSettle(page, '/dashboard', 3000);
 
       // Dashboard should always load
       const hasDashboardContent = await page

@@ -32,6 +32,35 @@ export async function login(page: Page, email = TEST_EMAIL, password = TEST_PASS
 }
 
 /**
+ * Navigate and wait for the page to be usable.
+ *
+ * Deliberately avoids `waitForLoadState('networkidle')`: the app holds a live
+ * Convex subscription, so the network never goes fully idle. In CI it is worse —
+ * `NEXT_PUBLIC_CONVEX_URL` points at a placeholder deployment, so the client
+ * retries the connection forever and `networkidle` can never resolve. Waiting
+ * for it burns the whole 30s test budget and times out.
+ *
+ * `domcontentloaded` plus a short settle window is the honest signal for these
+ * smoke checks: the document is parsed, then the client shell gets a moment to
+ * hydrate before assertions read the DOM.
+ */
+export async function gotoAndSettle(page: Page, url: string, settleMs = 1_500) {
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  // Wait for the client shell to paint something interactive instead of sleeping
+  // blindly — on a cold route (first hit after a deploy, Turbopack/CI warm-up)
+  // the first paint can land after a fixed sleep would have expired.
+  await page
+    .locator('main, h1, h2, button, [class*="card"], [role="alert"]')
+    .first()
+    .waitFor({ state: 'visible', timeout: 20_000 })
+    .catch(() => {
+      // Some routes render plain text only (error/redirect states). The
+      // assertions in the test decide; getting here is not itself a failure.
+    });
+  await page.waitForTimeout(settleMs);
+}
+
+/**
  * Select the user's own organization in the org selector so admin pages
  * (holidays / leave-settings / leave-balances) render content instead of
  * the ShieldLoader that superadmins see until an org is picked.
