@@ -139,15 +139,6 @@ async function createTaskLinkedToObjective(page: Page, objectiveTitle: string): 
     .locator('[role="dialog"] [role="combobox"]')
     .filter({ hasText: /objective|goal|цель|мақсат|նպատակ/i })
     .first();
-  const dialogHeading = page.locator('[role="dialog"] h2').first();
-  console.log(
-    '[DIAG] step before objective:',
-    await dialogHeading.textContent().catch(() => 'n/a'),
-  );
-  console.log(
-    '[DIAG] objective combobox visible:',
-    await objectiveCombobox.isVisible().catch(() => false),
-  );
   if (await objectiveCombobox.isVisible().catch(() => false)) {
     await objectiveCombobox.click();
     const objectiveOption = page
@@ -155,17 +146,12 @@ async function createTaskLinkedToObjective(page: Page, objectiveTitle: string): 
       .filter({ hasText: objectiveTitle.slice(0, 20) })
       .first();
     await objectiveOption.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
-    console.log(
-      '[DIAG] objective option visible:',
-      await objectiveOption.isVisible().catch(() => false),
-    );
     if (await objectiveOption.isVisible().catch(() => false)) {
       await objectiveOption.click();
       await page.waitForTimeout(500); // Wait for KRs to load
     } else {
       // Fallback: pick the first option so the wizard can still proceed.
       const firstOption = page.locator('[role="option"]').first();
-      console.log('[DIAG] first option visible:', await firstOption.isVisible().catch(() => false));
       if (await firstOption.isVisible().catch(() => false)) {
         await firstOption.click();
         await page.waitForTimeout(300);
@@ -176,7 +162,6 @@ async function createTaskLinkedToObjective(page: Page, objectiveTitle: string): 
     await page.waitForTimeout(200);
   }
   await clickWizardPrimary(page); // → attachments
-  console.log('[DIAG] step after objective:', await dialogHeading.textContent().catch(() => 'n/a'));
 
   // Step 6 (attachments): submit the wizard
   const submitBtn = page

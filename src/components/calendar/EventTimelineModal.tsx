@@ -11,7 +11,7 @@
  * the model and it renders for free.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
@@ -44,6 +44,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useNow } from '@/hooks/useNow';
 import { getInitials } from '@/lib/stringUtils';
 import { formatDate, formatTime } from '@/lib/date-format';
 import {
@@ -128,19 +129,11 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
   const { t } = useTranslation();
   const lang = i18n.language || 'en';
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [now, setNow] = useState(() => Date.now());
-
-  // A live event's progress bar would otherwise freeze at its mount value.
-  useEffect(() => {
-    if (!input) return;
-    const id = setInterval(() => setNow(Date.now()), TICK_MS);
-    return () => clearInterval(id);
-  }, [input]);
-
-  // Reset the clock on open so a modal reopened hours later is not stale.
-  useEffect(() => {
-    if (input) setNow(Date.now());
-  }, [input]);
+  // Live clock for the progress bar and the "now" marker. The shared hook keeps
+  // ticking while the modal is closed, which is what removes the old "reset on
+  // open" effect: the value is never more than one tick stale, so a modal
+  // reopened hours later is already current.
+  const now = useNow(TICK_MS);
 
   useEffect(() => {
     if (!input) return;

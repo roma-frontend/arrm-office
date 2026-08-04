@@ -268,27 +268,39 @@ function useDualClick() {
     [],
   );
 
-  return useCallback((onSingle: () => void, onDouble: () => void) => {
-    const cancel = () => {
-      if (timer.current) {
-        clearTimeout(timer.current);
+  // The ref is touched only inside these callbacks, never while the factory
+  // below runs. Reading `timer.current` during render would be flagged by the
+  // React compiler (and is genuinely unsafe under concurrent rendering).
+  const cancel = useCallback(() => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+  }, []);
+
+  const scheduleSingle = useCallback(
+    (onSingle: () => void) => {
+      cancel();
+      timer.current = setTimeout(() => {
         timer.current = null;
-      }
-    };
-    return {
-      onClick: () => {
-        cancel();
-        timer.current = setTimeout(() => {
-          timer.current = null;
-          onSingle();
-        }, DOUBLE_CLICK_WINDOW_MS);
-      },
-      onDoubleClick: () => {
+        onSingle();
+      }, DOUBLE_CLICK_WINDOW_MS);
+    },
+    [cancel],
+  );
+
+  return useMemo(
+    () => ({
+      /** Fires `onSingle` unless a second click arrives within the window. */
+      single: (onSingle: () => void) => scheduleSingle(onSingle),
+      /** Cancels a pending single click, then runs `onDouble`. */
+      double: (onDouble: () => void) => {
         cancel();
         onDouble();
       },
-    };
-  }, []);
+    }),
+    [cancel, scheduleSingle],
+  );
 }
 
 function StatusIcon({ status }: { status: LeaveStatus }) {
@@ -548,6 +560,10 @@ export const CalendarClient = React.memo(function CalendarClient() {
   useEffect(() => {
     if (scopeInitialized.current || !user) return;
     scopeInitialized.current = true;
+    // One-time initialization from localStorage. It cannot move into the
+    // useState initializer: this component is server-rendered, and reading
+    // localStorage during render would produce a hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate one-shot client-side init
     setScope(readStoredScope() ?? defaultScopeForRole(user.role));
   }, [user]);
 
@@ -615,7 +631,10 @@ export const CalendarClient = React.memo(function CalendarClient() {
   useEffect(() => {
     logger.log('📅 CalendarClient mounted');
 
-    fetchGoogleEvents(currentMonth);
+    // Async fetch: the state updates land after the awaited response, not during
+    // this effect. The lint rule cannot see across the async boundary.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- state is set after the fetch resolves
+    void fetchGoogleEvents(currentMonth);
   }, [currentMonth, fetchGoogleEvents]);
 
   // Freeze the page behind any open dialog. The shared hook also compensates
@@ -1358,13 +1377,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         transition={{ delay: i * 0.04 }}
                         title={t('eventTimeline.hints.doubleClick')}
                         className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        {...dualClick(
-                          () => {
+                        onClick={() =>
+                          dualClick.single(() => {
                             setSelectedLeave(leave);
                             scrollToTop();
-                          },
-                          () => setTimelineInput({ source: 'leave', data: leave }),
-                        )}
+                          })
+                        }
+                        onDoubleClick={() =>
+                          dualClick.double(() => setTimelineInput({ source: 'leave', data: leave }))
+                        }
                       >
                         <Avatar className="w-8 h-8 shrink-0">
                           <AvatarFallback
@@ -1415,13 +1436,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         transition={{ delay: (selectedDayLeaves.length + i) * 0.04 }}
                         title={t('eventTimeline.hints.doubleClick')}
                         className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        {...dualClick(
-                          () => {
+                        onClick={() =>
+                          dualClick.single(() => {
                             setSelectedGoogleEvent(evt);
                             scrollToTop();
-                          },
-                          () => setTimelineInput({ source: 'google', data: evt }),
-                        )}
+                          })
+                        }
+                        onDoubleClick={() =>
+                          dualClick.double(() => setTimelineInput({ source: 'google', data: evt }))
+                        }
                       >
                         <div
                           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
@@ -1487,13 +1510,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         }}
                         title={t('eventTimeline.hints.doubleClick')}
                         className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        {...dualClick(
-                          () => {
+                        onClick={() =>
+                          dualClick.single(() => {
                             setSelectedDriverEvent(evt);
                             scrollToTop();
-                          },
-                          () => setTimelineInput({ source: 'driver', data: evt }),
-                        )}
+                          })
+                        }
+                        onDoubleClick={() =>
+                          dualClick.double(() => setTimelineInput({ source: 'driver', data: evt }))
+                        }
                       >
                         <div
                           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
@@ -1548,13 +1573,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         }}
                         title={t('eventTimeline.hints.doubleClick')}
                         className="flex items-start gap-2.5 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-500/5 cursor-pointer hover:border-blue-400 transition-colors group"
-                        {...dualClick(
-                          () => {
+                        onClick={() =>
+                          dualClick.single(() => {
                             setEditEvent(evt);
                             setShowCreateEvent(true);
-                          },
-                          () => setTimelineInput({ source: 'custom', data: evt }),
-                        )}
+                          })
+                        }
+                        onDoubleClick={() =>
+                          dualClick.double(() => setTimelineInput({ source: 'custom', data: evt }))
+                        }
                       >
                         <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500 text-white">
                           <CalendarPlus className="w-4 h-4" />
