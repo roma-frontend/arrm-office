@@ -165,11 +165,23 @@ export function RoomCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onSelect={() => onEdit(room)} className="gap-2">
+                {/* The card is clickable (opens details); stop the click from
+                    bubbling up through the React tree, or picking an action
+                    here would also pop the details modal on top of whatever
+                    this action opens. */}
+                <DropdownMenuItem
+                  onSelect={() => onEdit(room)}
+                  onClick={(event) => event.stopPropagation()}
+                  className="gap-2"
+                >
                   <Pencil className="h-4 w-4" />
                   {t('rooms.editRoom')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onToggleActive(room)} className="gap-2">
+                <DropdownMenuItem
+                  onSelect={() => onToggleActive(room)}
+                  onClick={(event) => event.stopPropagation()}
+                  className="gap-2"
+                >
                   {room.isActive ? (
                     <>
                       <Archive className="h-4 w-4" />
@@ -185,6 +197,7 @@ export function RoomCard({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={() => onDelete(room)}
+                  onClick={(event) => event.stopPropagation()}
                   className="gap-2 text-red-600 focus:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />

@@ -104,7 +104,7 @@ export function RoomModalShell({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'relative z-[10000] flex max-h-[92vh] min-h-0 w-full flex-col overflow-hidden rounded-3xl bg-(--card) shadow-2xl',
+          'relative z-[10000] flex max-h-[85vh] min-h-0 w-full flex-col overflow-hidden rounded-3xl bg-(--card) shadow-2xl',
           'panel-size-anim',
           closing ? 'modal-panel-out' : 'modal-panel-in',
           size === 'lg' ? 'max-w-3xl' : 'max-w-xl',
