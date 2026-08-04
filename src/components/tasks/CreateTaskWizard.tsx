@@ -34,6 +34,10 @@ interface CreateTaskWizardProps {
   currentUserId: Id<'users'>;
   userRole: 'admin' | 'supervisor' | 'employee' | 'superadmin';
   assigneeId?: Id<'users'>;
+  /** Pre-links the task to an objective (used by /tasks/new?objectiveId=…). */
+  objectiveId?: Id<'objectives'>;
+  /** Overridable so a goal-scoped draft cannot clash with the board's draft. */
+  draftKey?: string;
   onComplete?: () => void;
   onCancel?: () => void;
 }
@@ -42,6 +46,8 @@ export function CreateTaskWizard({
   currentUserId,
   userRole,
   assigneeId,
+  objectiveId,
+  draftKey = 'create-task',
   onComplete,
   onCancel,
 }: CreateTaskWizardProps) {
@@ -303,6 +309,11 @@ export function CreateTaskWizard({
     }
   };
 
+  const stepDefaults = React.useMemo(
+    () => ({ priority: 'medium', ...(objectiveId ? { objectiveId } : {}) }),
+    [objectiveId],
+  );
+
   return (
     <Wizard
       steps={steps}
@@ -310,8 +321,8 @@ export function CreateTaskWizard({
       onCancel={onCancel}
       submitLabel={t('taskWizard.submit')}
       cancelLabel={t('actions.cancel')}
-      defaultStepData={{ priority: 'medium' }}
-      draftKey="create-task"
+      defaultStepData={stepDefaults}
+      draftKey={draftKey}
     />
   );
 }

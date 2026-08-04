@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { logger } from '@/lib/logger';
+import { convexIdFromParam } from '@/lib/convexIds';
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const;
 const STATUSES = ['pending', 'in_progress', 'review', 'completed', 'cancelled'] as const;
@@ -43,9 +44,9 @@ export default function TaskEditClient() {
   const params = useParams();
   const router = useRouter();
   const { t } = useTranslation();
-  const taskId = params.id as Id<'tasks'>;
+  const taskId = convexIdFromParam<Id<'tasks'>>(params?.id);
 
-  const task = useQuery(api.tasks.getTask, { taskId });
+  const task = useQuery(api.tasks.getTask, taskId ? { taskId } : 'skip');
   const updateTask = useMutation(api.tasks.updateTask);
 
   const [title, setTitle] = useState('');
@@ -68,16 +69,9 @@ export default function TaskEditClient() {
     setTags((task.tags ?? []).join(', '));
   }, [task]);
 
-  if (task === undefined) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
-
-  if (task === null) {
+  // An unusable id (e.g. /tasks/new/edit) never resolves to a task, so treat it
+  // like a missing one instead of leaving the skeleton up forever.
+  if (taskId === null || task === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
         <Pencil className="w-12 h-12 text-(--text-muted) mb-3 opacity-40" />
@@ -86,6 +80,15 @@ export default function TaskEditClient() {
           <ArrowLeft className="w-4 h-4" />
           {t('common.back')}
         </Button>
+      </div>
+    );
+  }
+
+  if (task === undefined) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }

@@ -45,6 +45,7 @@ import {
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import { logger } from '@/lib/logger';
+import { convexIdFromParam } from '@/lib/convexIds';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
@@ -123,11 +124,11 @@ export default function TaskDetailClient() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation();
-  const taskId = params.id as Id<'tasks'>;
+  const taskId = convexIdFromParam<Id<'tasks'>>(params?.id);
 
   const dateLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
 
-  const task = useQuery(api.tasks.getTask, { taskId });
+  const task = useQuery(api.tasks.getTask, taskId ? { taskId } : 'skip');
   const _currentUser = useQuery(
     api.users.queries.getUserById,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
@@ -155,7 +156,7 @@ export default function TaskDetailClient() {
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim() || !user?.id) return;
+    if (!commentText.trim() || !user?.id || !taskId) return;
     setIsPosting(true);
     try {
       await addComment({ taskId, authorId: user.id as Id<'users'>, content: commentText.trim() });
@@ -169,7 +170,7 @@ export default function TaskDetailClient() {
   };
 
   const handleConfirmDelete = async () => {
-    if (isDeleting) return;
+    if (isDeleting || !taskId) return;
     setIsDeleting(true);
     try {
       await secureDeleteTask({ taskId });
@@ -181,6 +182,25 @@ export default function TaskDetailClient() {
       setIsDeleting(false);
     }
   };
+
+  // A missing task is not a loading state: an unusable id (a literal segment
+  // like /tasks/new) or a deleted task would otherwise sit on the skeleton
+  // forever. Only `undefined` means "still fetching".
+  if (taskId === null || task === null) {
+    return (
+      <div className="mx-auto max-w-lg py-12 text-center">
+        <AlertCircle className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+        <h1 className="text-lg font-semibold">{t('task.notFound', 'Task not found')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t('task.notFoundHint', 'It may have been deleted, or the link is incorrect.')}
+        </p>
+        <Button variant="outline" className="mt-6 gap-2" onClick={() => router.push('/tasks')}>
+          <ArrowLeft className="h-4 w-4" />
+          {t('task.backToTasks', 'Back to tasks')}
+        </Button>
+      </div>
+    );
+  }
 
   if (!task) {
     return (

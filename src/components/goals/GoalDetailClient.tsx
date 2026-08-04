@@ -233,11 +233,11 @@ export default function GoalDetailClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{t('goals.status')}</span>
+              <span className="text-sm text-muted-foreground">{t('goals.statusLabel')}</span>
               <StatusBadge status={goal.status} />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{t('goals.level')}</span>
+              <span className="text-sm text-muted-foreground">{t('goals.levelLabel')}</span>
               <LevelBadge level={goal.level} />
             </div>
             {goal.department && (
