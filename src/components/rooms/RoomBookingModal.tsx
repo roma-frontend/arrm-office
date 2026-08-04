@@ -111,7 +111,26 @@ export function RoomBookingModal({
     if (!open) return;
     const base = initialDate ? new Date(initialDate) : new Date();
     const isToday = new Date().toDateString() === base.toDateString();
-    const start = isToday ? nextQuarterHour(new Date()) : new Date(base.setHours(10, 0, 0, 0));
+    const suggestedStart = isToday
+      ? nextQuarterHour(new Date())
+      : new Date(base.setHours(10, 0, 0, 0));
+    const suggestedEnd = new Date(suggestedStart.getTime() + 60 * MS_PER_MINUTE);
+    // A slot that ends after midnight cannot be expressed with a single date
+    // field — rolling the date alone would still produce end < start. Instead
+    // move the default to 10:00 the next day (same as the non-today branch).
+    // Built from local date parts so DST transitions cannot shift the day.
+    const rollsPastMidnight = suggestedEnd.getDate() !== suggestedStart.getDate();
+    const start = rollsPastMidnight
+      ? new Date(
+          suggestedStart.getFullYear(),
+          suggestedStart.getMonth(),
+          suggestedStart.getDate() + 1,
+          10,
+          0,
+          0,
+          0,
+        )
+      : suggestedStart;
     const end = new Date(start.getTime() + 60 * MS_PER_MINUTE);
 
     setRoomId(initialRoomId ?? bookableRooms[0]?._id ?? null);
