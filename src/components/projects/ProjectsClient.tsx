@@ -104,10 +104,17 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
         memberIds: [],
         ownerId: user?.id as Id<'users'> | undefined,
       });
-      toast.success(t('projects.created', 'Project created'));
+      toast.success(t('projects.created', 'Project created'), {
+        action: {
+          label: t('projects.openProject', 'Open project'),
+          onClick: () => router.push(`/projects/${projectId}`),
+        },
+      });
       setShowCreate(false);
       setCreateForm({ name: '', description: '', priority: 'medium', deadline: '' });
-      router.push(`/projects/${projectId}`);
+      // Straight into the task wizard pre-linked to the fresh project; the
+      // wizard's back button lands on the project page.
+      router.push(`/tasks/new?projectId=${projectId}`);
     } catch (e) {
       toast.error(String(e));
     } finally {

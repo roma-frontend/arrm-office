@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useNow } from '@/hooks/useNow';
 import { useTranslation } from 'react-i18next';
 import { Calendar, AlertTriangle, CheckCircle2, Clock, Circle } from 'lucide-react';
@@ -19,6 +20,8 @@ interface Task {
   createdAt: number;
   assignedToUser?: { name: string; avatarUrl?: string | null } | null;
   tags?: string[];
+  projectId?: string;
+  projectName?: string | null;
 }
 
 interface TimelineViewProps {
@@ -105,6 +108,7 @@ function daysBetween(a: Date, b: Date): number {
 // ── Timeline View ──
 export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const locale = i18n.language || 'en';
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<TimelineScale>('month');
@@ -487,6 +491,18 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                               </>
                             )}
                           </div>
+                          {task.projectId && task.projectName && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/projects/${task.projectId}`);
+                              }}
+                              className="text-[11px] text-(--text-muted) hover:text-blue-500 cursor-pointer pointer-events-auto mt-1"
+                            >
+                              📁 {task.projectName}
+                            </button>
+                          )}
                           {task.tags && task.tags.length > 0 && (
                             <div className="flex gap-1 mt-1.5">
                               {task.tags.slice(0, 3).map((tag) => (

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
-import { ArrowLeft, Target } from 'lucide-react';
+import { ArrowLeft, Target, FolderKanban } from 'lucide-react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ interface NewTaskClientProps {
   userRole: 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
   /** Present when the page was opened from an objective ("Add task" on a goal). */
   objectiveId?: Id<'objectives'>;
+  /** Present when the page was opened from a project ("Add task" on a project). */
+  projectId?: Id<'projects'>;
 }
 
 /**
@@ -22,20 +24,26 @@ interface NewTaskClientProps {
  * to /tasks/new?objectiveId=… — without this route the request fell through to
  * /tasks/[id] and Convex rejected "new" as a task id.
  */
-export function NewTaskClient({ userId, userRole, objectiveId }: NewTaskClientProps) {
+export function NewTaskClient({ userId, userRole, objectiveId, projectId }: NewTaskClientProps) {
   const router = useRouter();
   const { t } = useTranslation();
 
   const objective = useQuery(api.goals.getObjective, objectiveId ? { objectiveId } : 'skip');
+  const project = useQuery(api.projects.getProject, projectId ? { projectId } : 'skip');
 
   // Drivers have no task-creation surface anywhere in the app; keep it that way
   // rather than rendering a wizard whose mutation would be rejected.
   const canCreate = userRole !== 'driver';
   const wizardRole = userRole as 'admin' | 'supervisor' | 'employee' | 'superadmin';
 
-  // Back to where the user came from: the goal that requested the task, or the
-  // task board otherwise.
-  const goBack = () => router.push(objectiveId ? `/goals/${objectiveId}` : '/tasks');
+  // Back to where the user came from: the goal or project that requested the
+  // task, or the task board otherwise. When both links are present (crafted
+  // URL), the goal wins since it is the more specific context.
+  const goBack = () => {
+    if (objectiveId) return router.push(`/goals/${objectiveId}`);
+    if (projectId) return router.push(`/projects/${projectId}`);
+    return router.push('/tasks');
+  };
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
@@ -53,6 +61,14 @@ export function NewTaskClient({ userId, userRole, objectiveId }: NewTaskClientPr
               </span>
             </p>
           )}
+          {projectId && (
+            <p className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+              <FolderKanban className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">
+                {project?.name ?? t('projects.linkedProject', 'Linked project')}
+              </span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -67,6 +83,7 @@ export function NewTaskClient({ userId, userRole, objectiveId }: NewTaskClientPr
               currentUserId={userId as Id<'users'>}
               userRole={wizardRole}
               objectiveId={objectiveId}
+              projectId={projectId}
               // A goal-scoped draft: sharing "create-task" with the board wizard
               // would let a stale draft overwrite the objective link.
               draftKey={objectiveId ? `create-task:objective:${objectiveId}` : 'create-task'}

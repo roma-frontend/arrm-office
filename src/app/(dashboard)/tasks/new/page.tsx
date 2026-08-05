@@ -18,12 +18,12 @@ const NewTaskClient = nextDynamic(() => import('@/components/tasks/NewTaskClient
 export default async function NewTaskPage({
   searchParams,
 }: {
-  searchParams: Promise<{ objectiveId?: string }>;
+  searchParams: Promise<{ objectiveId?: string; projectId?: string }>;
 }) {
   const user = await getServerUser();
   if (!user) redirect('/login');
 
-  const { objectiveId } = await searchParams;
+  const { objectiveId, projectId } = await searchParams;
 
   return (
     <WidgetErrorBoundary name="NewTaskPage">
@@ -31,6 +31,7 @@ export default async function NewTaskPage({
         userId={user.userId}
         userRole={user.role}
         objectiveId={objectiveId ? (objectiveId as Id<'objectives'>) : undefined}
+        projectId={projectId ? (projectId as Id<'projects'>) : undefined}
       />
     </WidgetErrorBoundary>
   );

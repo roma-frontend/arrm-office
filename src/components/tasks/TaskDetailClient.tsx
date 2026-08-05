@@ -41,6 +41,7 @@ import {
   Target,
   ChevronRight,
   BarChart3,
+  FolderKanban,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -395,6 +396,40 @@ export default function TaskDetailClient() {
                   </Button>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Linked Project Card — clickable → project page */}
+      {task.projectId && task.projectName && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FolderKanban className="h-5 w-5 text-blue-500" />
+              {t('tasksClient.linkedProject', 'Linked Project')}
+            </CardTitle>
+            <CardDescription>
+              {t('tasksClient.linkedProjectDesc', 'This task belongs to the following project')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="flex items-center justify-between p-3 rounded-lg border border-blue-500/20 bg-blue-500/5
+                hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-200 cursor-pointer group"
+              onClick={() => router.push(`/projects/${task.projectId}`)}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-sky-500 shadow-sm">
+                  <FolderKanban className="w-4 h-4 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                    {task.projectName}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </div>
           </CardContent>
         </Card>

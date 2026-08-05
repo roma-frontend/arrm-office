@@ -7,6 +7,7 @@ import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
+import { notify } from './lib/notify';
 import { sanitizeTitle, sanitizeText } from './lib/sanitize';
 
 /**
@@ -54,6 +55,15 @@ async function enrichTasksWithUserData(ctx: QueryCtx, tasks: Doc<'tasks'>[]) {
     profiles.filter((p): p is NonNullable<typeof p> => p !== null).map((p) => [p.userId, p]),
   );
 
+  // Batch load projects referenced by tasks (for project badges)
+  const projectIds = [
+    ...new Set(
+      tasks.map((t: Doc<'tasks'>) => t.projectId).filter((id): id is Id<'projects'> => !!id),
+    ),
+  ];
+  const projects = await Promise.all(projectIds.map((id: Id<'projects'>) => ctx.db.get(id)));
+  const projectMap = new Map(projects.map((p: Doc<'projects'> | null) => [p?._id, p]));
+
   // Enrich tasks
   return tasks.map((task) => {
     const assignedTo = userMap.get(task.assignedTo);
@@ -87,6 +97,7 @@ async function enrichTasksWithUserData(ctx: QueryCtx, tasks: Doc<'tasks'>[]) {
         author: commentAuthorMap.get(c.authorId),
       })),
       commentCount: taskComments.length,
+      projectName: task.projectId ? (projectMap.get(task.projectId)?.name ?? null) : null,
     };
   });
 }
@@ -130,6 +141,17 @@ export const createTask = mutation({
       }
     }
 
+    // Validate project link if provided: it must exist and belong to the same
+    // organization as the assigner, so a crafted ?projectId= cannot attach the
+    // task to a foreign project.
+    if (args.projectId) {
+      const project = await ctx.db.get(args.projectId);
+      if (!project) throw new Error('Linked project not found');
+      if (organizationId && project.organizationId !== organizationId) {
+        throw new Error('Project does not belong to your organization');
+      }
+    }
+
     const now = Date.now();
     const taskId = await ctx.db.insert('tasks', {
       title: sanitizeTitle(args.title),
@@ -150,12 +172,15 @@ export const createTask = mutation({
 
     // Notify the person who assigned the task (skip superadmin)
     if (assigner?.role !== 'superadmin') {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
+        organizationId,
         userId: args.assignedBy,
         type: 'system',
-        title: 'Task Assigned',
-        message: `You assigned a task: "${args.title}"`,
-        isRead: false,
+        titleKey: 'notifications.titles.taskAssigned',
+        messageKey: 'notifications.messages.taskAssignedByYou',
+        params: { taskTitle: args.title },
+        fallbackTitle: '📋 Task Assigned',
+        fallbackMessage: `You assigned a task: "${args.title}"`,
         relatedId: taskId,
         route: '/tasks',
         createdAt: now,
@@ -210,22 +235,23 @@ export const updateTaskStatus = mutation({
       const employee = await ctx.db.get(args.userId);
       const supervisor = await ctx.db.get(task.assignedBy);
       if (supervisor?.role !== 'superadmin') {
-        await ctx.db.insert('notifications', {
+        const isCompleted = args.status === 'completed';
+        await notify(ctx, {
+          organizationId: task.organizationId,
           userId: task.assignedBy,
           type: 'system',
-          title: args.status === 'completed' ? 'Task Completed' : 'Task Ready for Review',
-          message: `"${task.title}" has been ${args.status === 'completed' ? 'completed' : 'submitted for review'} by ${employee?.name ?? 'employee'}`,
-          isRead: false,
+          titleKey: isCompleted
+            ? 'notifications.titles.taskCompleted'
+            : 'notifications.titles.taskReadyForReview',
+          messageKey: isCompleted
+            ? 'notifications.messages.taskCompleted'
+            : 'notifications.messages.taskSubmittedForReview',
+          params: { taskTitle: task.title, userName: employee?.name ?? 'employee' },
+          fallbackTitle: isCompleted ? 'Task Completed' : 'Task Ready for Review',
+          fallbackMessage: `"${task.title}" has been ${isCompleted ? 'completed' : 'submitted for review'} by ${employee?.name ?? 'employee'}`,
           relatedId: args.taskId,
           route: '/tasks',
           createdAt: now,
-          metadata: JSON.stringify({
-            messageKey:
-              args.status === 'completed'
-                ? 'notifications.messages.taskCompleted'
-                : 'notifications.messages.taskSubmittedForReview',
-            params: { taskTitle: task.title, userName: employee?.name ?? 'employee' },
-          }),
         });
       }
     }
@@ -779,6 +805,9 @@ export const getTask = query({
     const assignedToProfile = assignedTo ? await getProfile(ctx, assignedTo._id) : null;
     const assignedByProfile = assignedBy ? await getProfile(ctx, assignedBy._id) : null;
 
+    // Load linked project (for the project card on the task detail page)
+    const project = task.projectId ? await ctx.db.get(task.projectId) : null;
+
     // Load comments
     const comments = await ctx.db
       .query('taskComments')
@@ -816,6 +845,7 @@ export const getTask = query({
         author: commentAuthorMap.get(c.authorId),
       })),
       commentCount: comments.length,
+      projectName: project?.name ?? null,
     };
   },
 });
@@ -871,13 +901,15 @@ export const secureReassignTask = mutation({
 
     await ctx.db.patch(taskId, { assignedTo: newAssigneeId, updatedAt: Date.now() });
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: task.organizationId,
       userId: newAssigneeId,
       type: 'system',
-      title: '📋 Task Assigned',
-      message: `${caller.name} assigned you: "${task.title}"`,
-      isRead: false,
+      titleKey: 'notifications.titles.taskAssigned',
+      messageKey: 'notifications.messages.taskAssignedBy',
+      params: { assignerName: caller.name, taskTitle: task.title },
+      fallbackTitle: '📋 Task Assigned',
+      fallbackMessage: `${caller.name} assigned you: "${task.title}"`,
       relatedId: taskId,
       route: '/tasks',
       createdAt: Date.now(),

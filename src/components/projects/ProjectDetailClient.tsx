@@ -12,7 +12,16 @@ import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { ArrowLeft, Calendar, Users, CheckCircle2, Clock, Trash2, Pencil } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
+  CheckCircle2,
+  Clock,
+  Trash2,
+  Pencil,
+  Plus,
+} from 'lucide-react';
 
 type LabelStyle = { label: string; color: string };
 
@@ -182,7 +191,12 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
 
       {/* Tasks Section */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">{t('projects.tasks', 'Tasks')}</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">{t('projects.tasks', 'Tasks')}</h2>
+          <Button size="sm" onClick={() => router.push(`/tasks/new?projectId=${project._id}`)}>
+            <Plus className="w-4 h-4 mr-1" /> {t('projects.addTask', 'Add Task')}
+          </Button>
+        </div>
         {project.tasks && project.tasks.length > 0 ? (
           <div className="space-y-2">
             {project.tasks.map((task) => (
@@ -223,7 +237,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
             <Button
               size="sm"
               className="mt-3"
-              onClick={() => router.push(`/tasks?project=${project._id}`)}
+              onClick={() => router.push(`/tasks/new?projectId=${project._id}`)}
             >
               {t('projects.addTask', 'Add Task')}
             </Button>

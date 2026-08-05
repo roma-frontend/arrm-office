@@ -303,6 +303,9 @@ interface OptimisticTask {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   deadline?: number;
   tags?: string[];
+  objectiveId?: Id<'objectives'>;
+  keyResultId?: Id<'keyResults'>;
+  projectId?: Id<'projects'>;
   createdAt: number;
   updatedAt: number;
   pending: boolean;
@@ -328,6 +331,7 @@ export function useOptimisticCreateTask() {
       tags?: string[];
       objectiveId?: Id<'objectives'>;
       keyResultId?: Id<'keyResults'>;
+      projectId?: Id<'projects'>;
     }) => {
       const now = Date.now();
       const optimisticTask: OptimisticTask = {

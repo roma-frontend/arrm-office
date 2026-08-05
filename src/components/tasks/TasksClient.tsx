@@ -10,6 +10,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { CreateTaskWizard } from './CreateTaskWizard';
+import { ProjectBadge } from './ProjectBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AssignSupervisorModal } from './AssignSupervisorModal';
@@ -60,6 +61,10 @@ interface TaskItem {
   attachments?: TaskAttachment[];
   assignedToUser?: TaskAssignee | null;
   commentCount: number;
+  /** Project link for the badge; set server-side from the task's projectId. */
+  projectId?: string;
+  /** Project name for the badge; set server-side from the task's projectId. */
+  projectName?: string | null;
 }
 
 const STATUS_CONFIG: Record<
@@ -215,12 +220,19 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
           : 'border-(--border) hover:shadow-md hover:border-blue-400/50'
       }`}
     >
-      <div className="flex items-center justify-between">
-        <span
-          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
-        >
-          {priorityCfg.icon} {t(priorityCfg.labelKey)}
-        </span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          <ProjectBadge
+            projectId={task.projectId}
+            projectName={task.projectName}
+            className="text-xs max-w-[160px]"
+          />
+          <span
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
+          >
+            {priorityCfg.icon} {t(priorityCfg.labelKey)}
+          </span>
+        </div>
         <span
           className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusCfg.bg} ${statusCfg.color}`}
         >
@@ -404,9 +416,16 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
-            <span className="font-medium text-(--text-primary) text-sm group-hover:text-blue-400 transition-colors line-clamp-1">
-              {task.title}
-            </span>
+            <div className="min-w-0">
+              <span className="block font-medium text-(--text-primary) text-sm group-hover:text-blue-400 transition-colors truncate">
+                {task.title}
+              </span>
+              <ProjectBadge
+                projectId={task.projectId}
+                projectName={task.projectName}
+                className="block text-[11px] mt-0.5 max-w-[240px]"
+              />
+            </div>
           </div>
         </td>
         <td className="px-4 py-3">
@@ -471,6 +490,11 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <ProjectBadge
+                projectId={task.projectId}
+                projectName={task.projectName}
+                className="text-xs max-w-[180px]"
+              />
               <span
                 className={`text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
               >
@@ -510,6 +534,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
   const [filterEmployee, setFilterEmployee] = useState<string>('all');
+  const [filterProject, setFilterProject] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [_activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [_isPending, startTransition] = useTransition();
@@ -624,6 +649,51 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
   }, [rawTasksWithOptimistic, canManage]);
 
+  // Project options for the filter — built from the loaded tasks themselves,
+  // so it works for every role without an extra query. Tasks without a project
+  // are grouped under "Without project".
+  const projectFilterOptions = useMemo(() => {
+    if (!rawTasksWithOptimistic) return [];
+    const counts = new Map<string, { name: string; count: number }>();
+    let unassignedCount = 0;
+    rawTasksWithOptimistic.forEach((t) => {
+      if (!t.projectId) {
+        unassignedCount++;
+        return;
+      }
+      const existing = counts.get(t.projectId);
+      if (existing) {
+        existing.count++;
+      } else {
+        counts.set(t.projectId, { name: t.projectName || t.projectId, count: 1 });
+      }
+    });
+    const options: { value: string; label: string }[] = [];
+    if (unassignedCount > 0) {
+      options.push({
+        value: 'none',
+        label: `${t('tasksClient.noProject', 'Without project')} (${unassignedCount})`,
+      });
+    }
+    [...counts.entries()]
+      .sort((a, b) => a[1].name.localeCompare(b[1].name))
+      .forEach(([id, v]) => options.push({ value: id, label: `${v.name} (${v.count})` }));
+    return options;
+  }, [rawTasksWithOptimistic, t]);
+
+  // Guard: if the selected project disappears from the available options (its
+  // tasks were unlinked or deleted, or "without project" ran out of tasks),
+  // reset to "all projects" instead of leaving a stale, dead selection.
+  const projectFilterValues = useMemo(
+    () => new Set<string>(['all', ...projectFilterOptions.map((o) => o.value)]),
+    [projectFilterOptions],
+  );
+  useEffect(() => {
+    if (!projectFilterValues.has(filterProject)) {
+      setFilterProject('all');
+    }
+  }, [projectFilterValues, filterProject]);
+
   // Filter
   const tasks = useMemo(() => {
     if (!rawTasksWithOptimistic) return [];
@@ -632,9 +702,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       const matchStatus = filterStatus === 'all' || t.status === filterStatus;
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
       const matchEmployee = filterEmployee === 'all' || t.assignedToUser?._id === filterEmployee;
-      return matchPriority && matchStatus && matchSearch && matchEmployee;
+      const matchProject =
+        filterProject === 'all' ||
+        (filterProject === 'none' ? !t.projectId : t.projectId === filterProject);
+      return matchPriority && matchStatus && matchSearch && matchEmployee && matchProject;
     });
-  }, [rawTasksWithOptimistic, filterPriority, filterStatus, search, filterEmployee]);
+  }, [rawTasksWithOptimistic, filterPriority, filterStatus, search, filterEmployee, filterProject]);
 
   // Stats
   const stats = useMemo(() => {
@@ -648,7 +721,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       overdue: all.filter(
         (t) =>
           t.deadline &&
-          // eslint-disable-next-line react-hooks/purity -- intentional: overdue stat compares against current time
           t.deadline < Date.now() &&
           t.status !== 'completed' &&
           t.status !== 'cancelled',
@@ -826,6 +898,20 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shrink-0"
           dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
         />
+
+        {/* Project filter (every role; options derived from loaded tasks) */}
+        {projectFilterOptions.length > 0 && (
+          <CustomSelect
+            value={filterProject}
+            onChange={(v) => setFilterProject(v)}
+            options={[
+              { value: 'all', label: t('tasksClient.allProjects', 'All Projects') },
+              ...projectFilterOptions,
+            ]}
+            triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shrink-0"
+            dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
+          />
+        )}
 
         {/* Employee filter (admin/supervisor only) */}
         {canManage && employees.length > 1 && (

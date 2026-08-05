@@ -36,6 +36,8 @@ interface CreateTaskWizardProps {
   assigneeId?: Id<'users'>;
   /** Pre-links the task to an objective (used by /tasks/new?objectiveId=…). */
   objectiveId?: Id<'objectives'>;
+  /** Pre-links the task to a project (used by /tasks/new?projectId=…). */
+  projectId?: Id<'projects'>;
   /** Overridable so a goal-scoped draft cannot clash with the board's draft. */
   draftKey?: string;
   onComplete?: () => void;
@@ -47,6 +49,7 @@ export function CreateTaskWizard({
   userRole,
   assigneeId,
   objectiveId,
+  projectId,
   draftKey = 'create-task',
   onComplete,
   onCancel,
@@ -284,6 +287,7 @@ export function CreateTaskWizard({
         tags: tags.length > 0 ? tags : undefined,
         objectiveId,
         keyResultId,
+        projectId,
       });
 
       const attachmentsJson = data.attachments as string | undefined;
