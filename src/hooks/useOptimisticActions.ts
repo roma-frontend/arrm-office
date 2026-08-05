@@ -72,7 +72,16 @@ export function useOptimisticSendMessage(
         audioDuration?: number;
       },
     ) => {
-      if (!content.trim() && !options?.attachmentUrl && !options?.poll) return;
+      // A message needs *something* in it. Voice notes carry only
+      // `audioDuration`, and multi-file messages only `attachments`, so checking
+      // text/single attachment/poll alone silently dropped both.
+      const hasPayload =
+        content.trim().length > 0 ||
+        !!options?.attachmentUrl ||
+        !!options?.poll ||
+        !!options?.audioDuration ||
+        (options?.attachments?.length ?? 0) > 0;
+      if (!hasPayload) return;
 
       const msgType = options?.poll
         ? 'text'
