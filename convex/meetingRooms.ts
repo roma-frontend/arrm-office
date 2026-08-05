@@ -18,6 +18,7 @@ import type { Doc, Id } from './_generated/dataModel';
 import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 import { MAX_PAGE_SIZE } from './pagination';
+import { notify } from './lib/notify';
 
 /** Equipment keys — kept in sync with `AMENITY_KEYS` in src/lib/meetingRooms.ts. */
 const ALLOWED_AMENITIES = [
@@ -949,21 +950,27 @@ async function notifyAttendees(
     title: string;
   },
   roomName: string,
-  message: string,
+  message: { key: string; fallback: string },
+  actorName: string,
   type: 'room_booked' | 'room_booking_cancelled',
 ): Promise<void> {
   const recipients = new Set<string>(booking.attendeeIds ?? []);
   recipients.delete(booking.organizerId);
   for (const userId of recipients) {
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: booking.organizationId,
       userId: userId as Id<'users'>,
       type,
-      title: `${booking.title} · ${roomName}`,
-      message,
-      isRead: false,
+      titleKey: 'notifications.titles.roomBooking',
+      messageKey: message.key,
+      params: {
+        bookingTitle: booking.title,
+        roomName,
+        actorName,
+      },
+      fallbackTitle: `${booking.title} · ${roomName}`,
+      fallbackMessage: message.fallback,
       route: '/rooms',
-      createdAt: Date.now(),
     });
   }
 }
@@ -978,7 +985,11 @@ async function notifyBookingCancelled(
     ctx,
     booking,
     roomName,
-    `Meeting cancelled by ${actor.name}`,
+    {
+      key: 'notifications.messages.roomCancelled',
+      fallback: `Meeting cancelled by ${actor.name}`,
+    },
+    actor.name,
     'room_booking_cancelled',
   );
 }
@@ -1099,7 +1110,11 @@ export async function reserveRoom(
     ctx,
     { organizationId: room.organizationId, organizerId: caller._id, attendeeIds, title },
     room.name,
-    `${caller.name} invited you to a meeting`,
+    {
+      key: 'notifications.messages.roomInvited',
+      fallback: `${caller.name} invited you to a meeting`,
+    },
+    caller.name,
     'room_booked',
   );
 
@@ -1338,13 +1353,19 @@ export const respondToBooking = mutation({
     });
 
     // The organizer is the one who needs to know; attendees are not spammed.
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: booking.organizationId,
       userId: booking.organizerId,
       type: 'room_booked',
-      title: booking.title,
-      message: `${caller.name} ${args.response} the invitation`,
-      isRead: false,
+      titleKey: 'notifications.titles.roomBookingResponse',
+      messageKey: 'notifications.messages.attendeeResponded',
+      params: {
+        bookingTitle: booking.title,
+        name: caller.name,
+        response: args.response,
+      },
+      fallbackTitle: booking.title,
+      fallbackMessage: `${caller.name} ${args.response} the invitation`,
       route: '/rooms',
       createdAt: now,
     });

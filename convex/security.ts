@@ -5,6 +5,7 @@ import { paginationOptsValidator } from 'convex/server';
 import type { Id } from './_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
+import { notify } from './lib/notify';
 import { logger } from '../src/lib/logger';
 
 /**
@@ -196,15 +197,20 @@ export const logLoginAttempt = mutation({
               )
               .take(SMALL_LIST_CAP);
             for (const admin of admins) {
-              await ctx.db.insert('notifications', {
+              await notify(ctx, {
                 organizationId: user.organizationId,
                 userId: admin._id,
                 type: 'system',
-                title: '🚨 Account Locked',
-                message: `${user.name} (${user.email}) was auto-locked after 5 failed login attempts.`,
-                isRead: false,
+                titleKey: 'notifications.titles.accountLocked',
+                messageKey: 'notifications.messages.accountLocked',
+                params: {
+                  userName: user.name,
+                  email: user.email,
+                  count: 5,
+                },
+                fallbackTitle: '🚨 Account Locked',
+                fallbackMessage: `${user.name} (${user.email}) was auto-locked after 5 failed login attempts.`,
                 route: '/security',
-                createdAt: Date.now(),
               });
             }
           }
@@ -542,15 +548,19 @@ export const notifySuperadminSuspiciousActivity = mutation({
       });
 
       // Notify the blocked user
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: user.organizationId,
         userId: args.userId,
         type: 'system',
-        title: '🚫 Account Automatically Suspended',
-        message: `Your account has been automatically suspended due to suspicious login activity (risk score: ${args.riskScore}). If this was you, please contact your administrator. Suspension will expire in ${AUTO_BLOCK_DURATION} hours.`,
-        isRead: false,
+        titleKey: 'notifications.titles.accountAutoSuspended',
+        messageKey: 'notifications.messages.accountAutoSuspended',
+        params: {
+          riskScore: args.riskScore,
+          hours: AUTO_BLOCK_DURATION,
+        },
+        fallbackTitle: '🚫 Account Automatically Suspended',
+        fallbackMessage: `Your account has been automatically suspended due to suspicious login activity (risk score: ${args.riskScore}). If this was you, please contact your administrator. Suspension will expire in ${AUTO_BLOCK_DURATION} hours.`,
         route: '/security',
-        createdAt: Date.now(),
       });
     }
 
@@ -563,16 +573,28 @@ export const notifySuperadminSuspiciousActivity = mutation({
       ? `User: ${args.email}\nRisk Score: ${args.riskScore}\nStatus: AUTOMATICALLY BLOCKED for ${AUTO_BLOCK_DURATION}h\nReasons: ${args.riskFactors.join(', ')}\nIP: ${args.ip || 'Unknown'}\n\nUser was automatically suspended. Review and unsuspend if needed.`
       : `User: ${args.email}\nRisk Score: ${args.riskScore}\nReasons: ${args.riskFactors.join(', ')}\nIP: ${args.ip || 'Unknown'}\n\nReview this activity immediately.`;
 
-    const notificationId = await ctx.db.insert('notifications', {
+    const notificationId = await notify(ctx, {
       organizationId: superadmin.organizationId,
       userId: superadmin._id,
       type: 'security_alert',
-      title: notificationTitle,
-      message: notificationMessage,
-      isRead: false,
+      titleKey: wasAutoBlocked
+        ? 'notifications.titles.userAutoBlocked'
+        : 'notifications.titles.suspiciousLogin',
+      messageKey: wasAutoBlocked
+        ? 'notifications.messages.suspiciousLoginBlocked'
+        : 'notifications.messages.suspiciousLoginDetected',
+      params: {
+        email: args.email,
+        riskScore: args.riskScore,
+        riskFactors: args.riskFactors.join(', '),
+        ip: args.ip || 'Unknown',
+        hours: AUTO_BLOCK_DURATION,
+      },
+      fallbackTitle: notificationTitle,
+      fallbackMessage: notificationMessage,
       relatedId: args.userId,
       route: '/security',
-      metadata: JSON.stringify({
+      extra: {
         suspiciousUserId: args.userId,
         email: args.email,
         userName: user.name,
@@ -584,8 +606,7 @@ export const notifySuperadminSuspiciousActivity = mutation({
         actionType: 'suspicious_login',
         autoBlocked: wasAutoBlocked,
         blockDuration: wasAutoBlocked ? AUTO_BLOCK_DURATION : undefined,
-      }),
-      createdAt: Date.now(),
+      },
     });
 
     // Log the security event

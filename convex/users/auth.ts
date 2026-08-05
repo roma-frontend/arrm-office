@@ -3,6 +3,7 @@ import { mutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from '../lib/auth';
 import { SMALL_LIST_CAP } from '../lib/limits';
+import { notify } from '../lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE OAUTH USER — for Google OAuth sign in
@@ -247,16 +248,16 @@ export const recordFaceIdAttempt = mutation({
 
       if (isBlocked) {
         // Send notification about blocked Face ID
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: user.organizationId,
           userId: user._id,
           type: 'system',
-          title: '🚫 Face ID Blocked',
-          message:
+          titleKey: 'notifications.titles.faceIdBlocked',
+          messageKey: 'notifications.messages.faceIdBlocked',
+          fallbackTitle: '🚫 Face ID Blocked',
+          fallbackMessage:
             'Your Face ID has been blocked due to too many failed attempts. Please use email/password login.',
-          isRead: false,
-          route: '/security',
-          createdAt: Date.now(),
+          route: '/dashboard',
         });
       }
 
@@ -307,15 +308,16 @@ export const unblockFaceId = mutation({
     });
 
     // Notify user
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: user.organizationId,
       userId,
       type: 'system',
-      title: '✅ Face ID Unlocked',
-      message: `Your Face ID has been unlocked by ${admin.name}. You can try again.`,
-      isRead: false,
-      route: '/security',
-      createdAt: Date.now(),
+      titleKey: 'notifications.titles.faceIdUnlocked',
+      messageKey: 'notifications.messages.faceIdUnlockedBy',
+      params: { adminName: admin.name },
+      fallbackTitle: '✅ Face ID Unlocked',
+      fallbackMessage: `Your Face ID has been unlocked by ${admin.name}. You can try again.`,
+      route: '/dashboard',
     });
 
     return userId;
@@ -344,15 +346,16 @@ export const autoUnblockFaceId = mutation({
       });
 
       // Notify user
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: user.organizationId,
         userId,
         type: 'system',
-        title: '✅ Face ID Automatically Unlocked',
-        message: 'Your Face ID has been automatically unlocked after successful password login.',
-        isRead: false,
-        route: '/security',
-        createdAt: Date.now(),
+        titleKey: 'notifications.titles.faceIdAutoUnlocked',
+        messageKey: 'notifications.messages.faceIdAutoUnlocked',
+        fallbackTitle: '✅ Face ID Automatically Unlocked',
+        fallbackMessage:
+          'Your Face ID has been automatically unlocked after a successful password login.',
+        route: '/dashboard',
       });
     }
 

@@ -7,6 +7,7 @@ import { api } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { notify } from './lib/notify';
 
 // ... остальной код
 
@@ -46,37 +47,39 @@ export const checkBirthdaysToday = mutation({
       for (const user of users) {
         if (user._id === birthdayUser._id) continue;
 
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId,
           userId: user._id,
           type: 'system',
-          title: `🎉 День рождения!`,
-          message: `Сегодня день рождения у ${birthdayUser.name}! ${getAgeEmoji(age)}\n\n🎁 Поздравьте коллегу и подарите хорошее настроение!`,
-          isRead: false,
+          titleKey: 'notifications.titles.birthdayToday',
+          messageKey: 'notifications.messages.birthdayToday',
+          params: { name: birthdayUser.name },
+          fallbackTitle: '🎉 Birthday today!',
+          fallbackMessage: `Today is ${birthdayUser.name}'s birthday! 🎁 Send your congratulations and brighten their day!`,
           route: '/employees',
-          createdAt: Date.now(),
-          metadata: JSON.stringify({
+          extra: {
             birthdayUserId: birthdayUser._id,
             birthdayUserName: birthdayUser.name,
             age,
-          }),
+          },
         });
       }
 
       // Персональное поздравление имениннику
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId,
         userId: birthdayUser._id,
         type: 'system',
-        title: `🎂 С Днём Рождения!`,
-        message: `${birthdayUser.name}, поздравляем Вас с Днём Рождения! 🎉\n\nЖелаем успехов, здоровья и отличного настроения! 🎁\n\nВаш возраст: ${age} ${getAgeWord(age)}`,
-        isRead: false,
+        titleKey: 'notifications.titles.birthdayYours',
+        messageKey: 'notifications.messages.birthdayYours',
+        params: { name: birthdayUser.name },
+        fallbackTitle: '🎂 Happy Birthday!',
+        fallbackMessage: `${birthdayUser.name}, happy birthday! 🎉 We wish you success, good health and a wonderful year ahead! 🎁`,
         route: '/employees',
-        createdAt: Date.now(),
-        metadata: JSON.stringify({
+        extra: {
           isBirthdayPerson: true,
           age,
-        }),
+        },
       });
     }
 
@@ -156,19 +159,20 @@ export const checkUpcomingBirthdays = mutation({
         // Напоминание за 3 дня
         if (i === 3) {
           for (const user of users) {
-            await ctx.db.insert('notifications', {
+            await notify(ctx, {
               organizationId,
               userId: user._id,
               type: 'system',
-              title: `🎁 Скоро день рождения!`,
-              message: `Через 3 дня день рождения у ${birthdayUser.name}! Подумайте о поздравлении. 🎂`,
-              isRead: false,
+              titleKey: 'notifications.titles.birthdaySoon',
+              messageKey: 'notifications.messages.birthdaySoon',
+              params: { name: birthdayUser.name, count: 3 },
+              fallbackTitle: '🎁 Birthday coming up!',
+              fallbackMessage: `${birthdayUser.name}'s birthday is in 3 days! Start thinking about your greeting. 🎂`,
               route: '/employees',
-              createdAt: Date.now(),
-              metadata: JSON.stringify({
+              extra: {
                 birthdayUserId: birthdayUser._id,
                 daysUntil: 3,
-              }),
+              },
             });
           }
         }
@@ -255,34 +259,6 @@ export const getBirthdaysForMonth = query({
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER FUNCTIONS
 // ─────────────────────────────────────────────────────────────────────────────
-
-function getAgeEmoji(age: number): string {
-  if (age < 18) return '🧒';
-  if (age < 30) return '🎓';
-  if (age < 40) return '👨‍💼';
-  if (age < 50) return '👨‍💼';
-  if (age < 60) return '👴';
-  return '👴';
-}
-
-function getAgeWord(age: number): string {
-  const lastDigit = age % 10;
-  const lastTwoDigits = age % 100;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
-    return 'лет';
-  }
-
-  if (lastDigit === 1) {
-    return 'год';
-  }
-
-  if (lastDigit >= 2 && lastDigit <= 4) {
-    return 'года';
-  }
-
-  return 'лет';
-}
 
 function getMonthName(month: number): string {
   const months = [

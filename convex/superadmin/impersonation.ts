@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { requireAuthUserOrThrow } from '../lib/auth';
+import { notify } from '../lib/notify';
 
 // ─── IMPERSONATION ───────────────────────────────────────────────────────────
 /**
@@ -86,17 +87,15 @@ export const startImpersonation = mutation({
     });
 
     // Notify target user
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: targetUser.organizationId,
       userId: args.targetUserId,
       type: 'security_alert',
-      title: '👤 Superadmin impersonation',
-      message: `${superadmin.name} has started an impersonation session on your account. Reason: ${args.reason}`,
-      metadata: JSON.stringify({
-        messageKey: 'notifications.messages.impersonation',
-        params: { name: superadmin.name, reason: args.reason },
-      }),
-      isRead: false,
+      titleKey: 'notifications.titles.impersonation',
+      messageKey: 'notifications.messages.impersonation',
+      params: { name: superadmin.name, reason: args.reason },
+      fallbackTitle: '👤 Superadmin impersonation',
+      fallbackMessage: `${superadmin.name} has started an impersonation session on your account. Reason: ${args.reason}`,
       relatedId: `impersonation:${sessionId}`,
       route: '/security',
       createdAt: now,

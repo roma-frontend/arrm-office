@@ -3,6 +3,7 @@ import { query, mutation, internalMutation } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { notify } from './lib/notify';
 
 // Helper: compute KR completion percentage respecting direction
 function computeKRProgress(
@@ -888,13 +889,15 @@ export const sendWeeklyCheckinReminders = internalMutation({
               .first();
 
             if (!existingReminder) {
-              await ctx.db.insert('notifications', {
+              await notify(ctx, {
                 organizationId: org._id,
                 userId: kr.ownerId,
                 type: 'okr_checkin_reminder',
-                title: '📊 Weekly OKR Check-in Reminder',
-                message: `Don't forget to update "${kr.title}" for objective "${objective.title}"`,
-                isRead: false,
+                titleKey: 'notifications.titles.okrCheckinReminder',
+                messageKey: 'notifications.messages.okrCheckinReminder',
+                params: { krTitle: kr.title, objectiveTitle: objective.title },
+                fallbackTitle: '📊 Weekly OKR Check-in Reminder',
+                fallbackMessage: `Don't forget to update "${kr.title}" for objective "${objective.title}"`,
                 relatedId: kr._id,
                 route: '/goals',
                 createdAt: now,

@@ -5,6 +5,7 @@ import type { Id } from '../_generated/dataModel';
 import { requireRole, requireOrgAdmin, requireUser } from '../lib/rbac';
 import { isSuperadminEmail } from '../lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
+import { notify } from '../lib/notify';
 import { patchProfile } from '../lib/userProfile';
 import type { MutationCtx } from '../_generated/server';
 
@@ -225,16 +226,21 @@ export const createUser = mutation({
       .take(SMALL_LIST_CAP);
 
     for (const a of admins) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: targetOrgId,
         userId: a._id,
         type: 'employee_added',
-        title: '👤 New Employee Added',
-        message: `${args.name} (${args.role}) has been added to ${org.name}.`,
-        isRead: false,
+        titleKey: 'notifications.titles.employeeAdded',
+        messageKey: 'notifications.messages.employeeAdded',
+        params: {
+          name: args.name,
+          role: args.role,
+          orgName: org.name,
+        },
+        fallbackTitle: '👤 New Employee Added',
+        fallbackMessage: `${args.name} (${args.role}) has been added to ${org.name}.`,
         relatedId: userId,
         route: '/employees',
-        createdAt: Date.now(),
       });
     }
 
@@ -494,15 +500,19 @@ export const approveUser = mutation({
       approvedAt: Date.now(),
     });
 
-    await ctx.db.insert('notifications', {
+    const approverName = callerUser?.name ?? 'admin';
+    const orgName = org?.name ?? 'the team';
+
+    await notify(ctx, {
       organizationId: user.organizationId,
       userId,
       type: 'join_approved',
-      title: '✅ Account Approved',
-      message: `Your account has been approved by ${callerUser?.name ?? 'admin'}. Welcome to ${org?.name ?? 'the team'}!`,
-      isRead: false,
-      route: '/organization',
-      createdAt: Date.now(),
+      titleKey: 'notifications.titles.accountApproved',
+      messageKey: 'notifications.messages.accountApproved',
+      params: { approverName, orgName },
+      fallbackTitle: '✅ Account Approved',
+      fallbackMessage: `Your account has been approved by ${approverName}. Welcome to ${orgName}!`,
+      route: '/dashboard',
     });
 
     // Audit log: user approved

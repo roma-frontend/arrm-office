@@ -6,6 +6,7 @@ import { isSuperadmin, isSuperadminEmail } from '../lib/auth';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { patchProfile } from '../lib/userProfile';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
+import { notify } from '../lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE LEAVE REQUEST
@@ -64,47 +65,52 @@ export const createLeave = mutation({
       )
       .take(DEFAULT_LIST_CAP);
 
-    // ═══════════════════════════════════════════════════════════════
-    // АВТО-ОТВЕТ СОТРУДНИКУ — Заявка получена
-    // ═══════════════════════════════════════════════════════════════
+    // Auto-reply to the employee: the request landed and when to expect an answer.
     const expectedResponseDate = new Date();
-    expectedResponseDate.setDate(expectedResponseDate.getDate() + 1); // 24 часа
+    expectedResponseDate.setDate(expectedResponseDate.getDate() + 1); // 24h SLA
+    // Kept locale-neutral: params are interpolated in the reader's language, so a
+    // date pre-formatted for one locale here would be wrong for the other three.
+    const respondBy = expectedResponseDate.toISOString().slice(0, 16).replace('T', ' ');
 
-    const autoReplyMessage = `Ваша заявка на ${args.type} отпуск (${args.startDate} → ${args.endDate}) получена! ✅
-
-📋 Детали:
-• Тип: ${args.type === 'paid' ? 'Оплачиваемый' : args.type === 'sick' ? 'Больничный' : args.type === 'family' ? 'Семейный' : args.type}
-• Даты: ${args.startDate} — ${args.endDate} (${args.days} дн.)
-• Причина: ${args.reason}
-
-⏰ Ожидайте ответа до: ${expectedResponseDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
-
-Если заявка не будет рассмотрена в течение 24 часов, вам придёт напоминание.`;
-
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: user.organizationId,
       userId: args.userId,
       type: 'system',
-      title: '📋 Заявка получена',
-      message: autoReplyMessage,
-      isRead: false,
+      titleKey: 'notifications.titles.leaveRequestReceived',
+      messageKey: 'notifications.messages.leaveRequestReceived',
+      params: {
+        type: args.type,
+        start: args.startDate,
+        end: args.endDate,
+        days: args.days,
+        reason: args.reason,
+        respondBy,
+      },
+      fallbackTitle: '📋 Request Received',
+      fallbackMessage: `Your request for ${args.type} leave (${args.startDate} → ${args.endDate}, ${args.days} day(s)) has been received. Reason: ${args.reason}. Expect a response by ${respondBy}.`,
       relatedId: leaveId,
       route: '/leaves',
-      createdAt: Date.now(),
     });
 
     for (const recipient of admins) {
       if (recipient._id === args.userId) continue;
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: user.organizationId,
         userId: recipient._id,
         type: 'leave_request',
-        title: '🏖 New Leave Request',
-        message: `${user.name} requested ${args.days} day(s) of ${args.type} leave (${args.startDate} → ${args.endDate})`,
-        isRead: false,
+        titleKey: 'notifications.titles.leaveRequestNew',
+        messageKey: 'notifications.messages.leaveRequestNewDetailed',
+        params: {
+          userName: user.name,
+          days: args.days,
+          type: args.type,
+          start: args.startDate,
+          end: args.endDate,
+        },
+        fallbackTitle: '🏖 New Leave Request',
+        fallbackMessage: `${user.name} requested ${args.days} day(s) of ${args.type} leave (${args.startDate} → ${args.endDate})`,
         relatedId: leaveId,
         route: '/leaves',
-        createdAt: Date.now(),
       });
     }
 
@@ -182,13 +188,23 @@ export const approveLeave = mutation({
     });
 
     // Notify employee
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: leave.organizationId,
       userId: leave.userId,
       type: 'leave_approved',
-      title: '✅ Leave Approved!',
-      message: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) has been approved by ${reviewer.name}.${comment ? ` Note: ${comment}` : ''}`,
-      isRead: false,
+      titleKey: 'notifications.titles.leaveApproved',
+      messageKey: comment
+        ? 'notifications.messages.leaveApprovedByWithNote'
+        : 'notifications.messages.leaveApprovedBy',
+      params: {
+        type: leave.type,
+        start: leave.startDate,
+        end: leave.endDate,
+        reviewerName: reviewer.name,
+        ...(comment ? { comment } : {}),
+      },
+      fallbackTitle: '✅ Leave Approved!',
+      fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) has been approved by ${reviewer.name}.${comment ? ` Note: ${comment}` : ''}`,
       relatedId: leaveId,
       route: '/leaves',
       createdAt: now,
@@ -313,13 +329,23 @@ export const rejectLeave = mutation({
       updatedAt: now,
     });
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: leave.organizationId,
       userId: leave.userId,
       type: 'leave_rejected',
-      title: '❌ Leave Rejected',
-      message: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was rejected by ${reviewer.name}.${comment ? ` Reason: ${comment}` : ''}`,
-      isRead: false,
+      titleKey: 'notifications.titles.leaveRejected',
+      messageKey: comment
+        ? 'notifications.messages.leaveRejectedByWithReason'
+        : 'notifications.messages.leaveRejectedBy',
+      params: {
+        type: leave.type,
+        start: leave.startDate,
+        end: leave.endDate,
+        reviewerName: reviewer.name,
+        ...(comment ? { comment } : {}),
+      },
+      fallbackTitle: '❌ Leave Rejected',
+      fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was rejected by ${reviewer.name}.${comment ? ` Reason: ${comment}` : ''}`,
       relatedId: leaveId,
       route: '/leaves',
       createdAt: now,
@@ -418,16 +444,21 @@ export const updateLeave = mutation({
     await ctx.db.patch(args.leaveId, { ...args, updatedAt: Date.now() });
 
     if (isAdmin && !isOwner) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: leave.organizationId,
         userId: leave.userId,
         type: 'leave_request',
-        title: '✏️ Leave Updated',
-        message: `Your leave request (${leave.startDate} → ${leave.endDate}) was updated by ${requester.name}.`,
-        isRead: false,
+        titleKey: 'notifications.titles.leaveUpdated',
+        messageKey: 'notifications.messages.leaveUpdated',
+        params: {
+          start: leave.startDate,
+          end: leave.endDate,
+          requesterName: requester.name,
+        },
+        fallbackTitle: '✏️ Leave Updated',
+        fallbackMessage: `Your leave request (${leave.startDate} → ${leave.endDate}) was updated by ${requester.name}.`,
         relatedId: args.leaveId,
         route: '/leaves',
-        createdAt: Date.now(),
       });
     }
 
@@ -512,16 +543,22 @@ export const deleteLeave = mutation({
     }
 
     if (isAdmin && !isOwner) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: leave.organizationId,
         userId: leave.userId,
         type: 'leave_request',
-        title: '🗑️ Leave Deleted',
-        message: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was deleted by ${requester.name}.`,
-        isRead: false,
+        titleKey: 'notifications.titles.leaveDeleted',
+        messageKey: 'notifications.messages.leaveDeleted',
+        params: {
+          type: leave.type,
+          start: leave.startDate,
+          end: leave.endDate,
+          requesterName: requester.name,
+        },
+        fallbackTitle: '🗑️ Leave Deleted',
+        fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was deleted by ${requester.name}.`,
         relatedId: args.leaveId,
         route: '/leaves',
-        createdAt: Date.now(),
       });
     }
 
@@ -731,13 +768,22 @@ export const bulkApproveLeaves = mutation({
         });
 
         // Notify employee
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: leave.organizationId,
           userId: leave.userId,
           type: 'leave_approved',
-          title: '✅ Leave Approved!',
-          message: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) has been approved.${comment ? ` Note: ${comment}` : ''}`,
-          isRead: false,
+          titleKey: 'notifications.titles.leaveApproved',
+          messageKey: comment
+            ? 'notifications.messages.leaveApprovedPlainWithNote'
+            : 'notifications.messages.leaveApprovedPlain',
+          params: {
+            type: leave.type,
+            start: leave.startDate,
+            end: leave.endDate,
+            ...(comment ? { comment } : {}),
+          },
+          fallbackTitle: '✅ Leave Approved!',
+          fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) has been approved.${comment ? ` Note: ${comment}` : ''}`,
           relatedId: leaveId,
           route: '/leaves',
           createdAt: now,
@@ -878,13 +924,22 @@ export const bulkRejectLeaves = mutation({
         });
 
         // Notify employee
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: leave.organizationId,
           userId: leave.userId,
           type: 'leave_rejected',
-          title: '❌ Leave Rejected',
-          message: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was rejected.${comment ? ` Reason: ${comment}` : ''}`,
-          isRead: false,
+          titleKey: 'notifications.titles.leaveRejected',
+          messageKey: comment
+            ? 'notifications.messages.leaveRejectedPlainWithReason'
+            : 'notifications.messages.leaveRejectedPlain',
+          params: {
+            type: leave.type,
+            start: leave.startDate,
+            end: leave.endDate,
+            ...(comment ? { comment } : {}),
+          },
+          fallbackTitle: '❌ Leave Rejected',
+          fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was rejected.${comment ? ` Reason: ${comment}` : ''}`,
           relatedId: leaveId,
           route: '/leaves',
           createdAt: now,
@@ -963,13 +1018,20 @@ export const secureApproveLeave = mutation({
       updatedAt: now,
     });
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: leave.organizationId,
       userId: leave.userId,
       type: 'leave_approved',
-      title: '✅ Leave Approved!',
-      message: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) has been approved by ${caller.name}.`,
-      isRead: false,
+      titleKey: 'notifications.titles.leaveApproved',
+      messageKey: 'notifications.messages.leaveApprovedBy',
+      params: {
+        type: leave.type,
+        start: leave.startDate,
+        end: leave.endDate,
+        reviewerName: caller.name,
+      },
+      fallbackTitle: '✅ Leave Approved!',
+      fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) has been approved by ${caller.name}.`,
       relatedId: leaveId,
       route: '/leaves',
       createdAt: now,
@@ -1013,13 +1075,23 @@ export const secureRejectLeave = mutation({
       updatedAt: now,
     });
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: leave.organizationId,
       userId: leave.userId,
       type: 'leave_rejected',
-      title: '❌ Leave Rejected',
-      message: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was rejected by ${caller.name}.${comment ? ` Reason: ${comment}` : ''}`,
-      isRead: false,
+      titleKey: 'notifications.titles.leaveRejected',
+      messageKey: comment
+        ? 'notifications.messages.leaveRejectedByWithReason'
+        : 'notifications.messages.leaveRejectedBy',
+      params: {
+        type: leave.type,
+        start: leave.startDate,
+        end: leave.endDate,
+        reviewerName: caller.name,
+        ...(comment ? { comment } : {}),
+      },
+      fallbackTitle: '❌ Leave Rejected',
+      fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was rejected by ${caller.name}.${comment ? ` Reason: ${comment}` : ''}`,
       relatedId: leaveId,
       route: '/leaves',
       createdAt: now,

@@ -4,6 +4,7 @@ import type { Id } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { notify } from './lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -383,16 +384,20 @@ export const sendKudos = mutation({
     });
 
     // Create notification for receiver
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: sender.organizationId!,
       userId: args.receiverId,
       type: 'system',
-      title: 'New Kudos!',
-      message: `${sender.name} sent you kudos for ${args.category.replace('_', ' ')}!`,
-      isRead: false,
+      titleKey: 'notifications.titles.kudosNew',
+      messageKey: 'notifications.messages.kudosReceived',
+      params: {
+        senderName: sender.name,
+        category: args.category,
+      },
+      fallbackTitle: 'New Kudos!',
+      fallbackMessage: `${sender.name} sent you kudos for ${args.category.replace('_', ' ')}!`,
       relatedId: kudoId,
       route: '/recognition',
-      createdAt: Date.now(),
     });
 
     return kudoId;
@@ -539,16 +544,20 @@ export const awardBadge = mutation({
     });
 
     // Notify recipient
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: awarder.organizationId,
       userId: args.userId,
       type: 'system',
-      title: 'Badge Awarded!',
-      message: `${awarder.name} awarded you the "${badge.name}" badge!`,
-      isRead: false,
+      titleKey: 'notifications.titles.badgeAwarded',
+      messageKey: 'notifications.messages.badgeAwarded',
+      params: {
+        awarderName: awarder.name,
+        badgeName: badge.name,
+      },
+      fallbackTitle: 'Badge Awarded!',
+      fallbackMessage: `${awarder.name} awarded you the "${badge.name}" badge!`,
       relatedId: awardId,
       route: '/recognition',
-      createdAt: Date.now(),
     });
 
     return awardId;

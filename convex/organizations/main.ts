@@ -4,6 +4,7 @@ import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 import { PLAN_EMPLOYEE_LIMITS } from '../lib/limits';
+import { notify } from '../lib/notify';
 import { logger } from '../../src/lib/logger';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -512,16 +513,21 @@ export const requestToJoinOrganization = mutation({
       .take(MAX_PAGE_SIZE);
 
     for (const admin of admins) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: args.organizationId,
         userId: admin._id,
         type: 'join_request',
-        title: '🙋 New Join Request',
-        message: `${args.requestedByName} (${args.requestedByEmail}) wants to join ${org.name}.`,
-        isRead: false,
+        titleKey: 'notifications.titles.joinRequestNew',
+        messageKey: 'notifications.messages.joinRequestNew',
+        params: {
+          name: args.requestedByName,
+          email: args.requestedByEmail,
+          orgName: org.name,
+        },
+        fallbackTitle: '🙋 New Join Request',
+        fallbackMessage: `${args.requestedByName} (${args.requestedByEmail}) wants to join ${org.name}.`,
         relatedId: inviteId,
         route: '/organization',
-        createdAt: Date.now(),
       });
     }
 
@@ -717,16 +723,17 @@ export const approveJoinRequest = mutation({
     // Notify the requester (they need to log in now)
     // We can't notify by userId yet since account was just created —
     // notify via the newly created userId
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: invite.organizationId,
       userId,
       type: 'join_approved',
-      title: '✅ Welcome to ' + org.name + '!',
-      message: `Your request to join ${org.name} has been approved by ${admin.name}. You can now log in.`,
-      isRead: false,
+      titleKey: 'notifications.titles.welcomeToOrg',
+      messageKey: 'notifications.messages.joinApprovedCanLogIn',
+      params: { orgName: org.name, reviewerName: admin.name },
+      fallbackTitle: '✅ Welcome to ' + org.name + '!',
+      fallbackMessage: `Your request to join ${org.name} has been approved by ${admin.name}. You can now log in.`,
       relatedId: userId,
       route: '/organization',
-      createdAt: Date.now(),
     });
 
     // Audit log: join request approved

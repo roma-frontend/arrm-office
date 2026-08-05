@@ -9,6 +9,7 @@ import { mutation } from '../_generated/server';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { isSuperadmin } from '../lib/auth';
+import { notify } from '../lib/notify';
 
 /** Block time slot (for driver) */
 export const blockTimeSlot = mutation({
@@ -320,15 +321,15 @@ export const markDriverArrived = mutation({
       updatedAt: Date.now(),
     });
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: schedule.organizationId,
       userId: schedule.userId,
       type: 'status_change',
-      title: 'Driver Has Arrived',
-      message: 'Your driver has arrived at the pickup location',
-      isRead: false,
+      titleKey: 'notifications.titles.driverArrived',
+      messageKey: 'notifications.messages.driverArrived',
+      fallbackTitle: 'Driver Has Arrived',
+      fallbackMessage: 'Your driver has arrived at the pickup location',
       route: '/drivers',
-      createdAt: Date.now(),
     });
 
     return { success: true, arrivedAt: Date.now() };
@@ -385,15 +386,16 @@ export const updateETA = mutation({
       updatedAt: Date.now(),
     });
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: schedule.organizationId,
       userId: schedule.userId,
       type: 'status_change',
-      title: 'Driver ETA Updated',
-      message: `Your driver will arrive in approximately ${etaMinutes} minutes`,
-      isRead: false,
+      titleKey: 'notifications.titles.driverEtaUpdated',
+      messageKey: 'notifications.messages.driverEtaUpdated',
+      params: { count: etaMinutes },
+      fallbackTitle: 'Driver ETA Updated',
+      fallbackMessage: `Your driver will arrive in approximately ${etaMinutes} minutes`,
       route: '/drivers',
-      createdAt: Date.now(),
     });
 
     return { success: true };

@@ -4,6 +4,7 @@ import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 
 import { internal } from './_generated/api';
+import { notify } from './lib/notify';
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -1557,14 +1558,16 @@ export const createAssetMovementForm = internalMutation({
     });
 
     // Send notification to employee
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: args.organizationId,
       userId: args.assignedTo,
       type: 'system',
-      title: '📄 Movement Form Ready for Signing',
-      message:
+      titleKey: 'notifications.titles.movementFormReady',
+      messageKey: 'notifications.messages.signMovementForm',
+      params: { assetName: args.assetName },
+      fallbackTitle: '📄 Movement Form Ready for Signing',
+      fallbackMessage:
         'Please sign the movement form for "' + args.assetName + '" in the E-Signatures section.',
-      isRead: false,
       relatedId: documentId,
       route: '/signatures',
       createdAt: now,
@@ -1715,14 +1718,16 @@ export const createReturnMovementForm = internalMutation({
     });
 
     // Send notification to employee
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: args.organizationId,
       userId: args.assignedTo,
       type: 'system',
-      title: '📄 Return Form Ready for Signing',
-      message:
+      titleKey: 'notifications.titles.returnFormReady',
+      messageKey: 'notifications.messages.signReturnForm',
+      params: { assetName: args.assetName },
+      fallbackTitle: '📄 Return Form Ready for Signing',
+      fallbackMessage:
         'Please sign the return form for "' + args.assetName + '" in the E-Signatures section.',
-      isRead: false,
       relatedId: documentId,
       route: '/signatures',
       createdAt: now,
@@ -1754,19 +1759,20 @@ export const sendMovementForm = mutation({
       // Already has a document — just resend notification (reminder)
       const assignee = await ctx.db.get(args.assignedTo);
       if (assignee) {
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: args.organizationId,
           userId: args.assignedTo,
           type: 'system',
-          title: '📄 Movement Form Reminder',
-          message:
+          titleKey: 'notifications.titles.movementFormReminder',
+          messageKey: 'notifications.messages.signMovementForm',
+          params: { assetName: args.assetName },
+          fallbackTitle: '📄 Movement Form Reminder',
+          fallbackMessage:
             'Please sign the movement form for "' +
             args.assetName +
             '" in the E-Signatures section.',
-          isRead: false,
           relatedId: assignment.movementFormDocId,
           route: '/signatures',
-          createdAt: Date.now(),
         });
       }
       return; // Don't create a duplicate
@@ -1791,13 +1797,15 @@ export const sendAssignmentNotification = internalMutation({
     const now = Date.now();
 
     // Notify the assignee
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: args.organizationId,
       userId: args.assignedTo,
       type: 'system',
-      title: '📦 Equipment Assigned',
-      message: `You have been assigned "${args.assetName}" by ${assigner?.name ?? 'admin'}.`,
-      isRead: false,
+      titleKey: 'notifications.titles.equipmentAssigned',
+      messageKey: 'notifications.messages.equipmentAssigned',
+      params: { assetName: args.assetName, assignerName: assigner?.name ?? 'admin' },
+      fallbackTitle: '📦 Equipment Assigned',
+      fallbackMessage: `You have been assigned "${args.assetName}" by ${assigner?.name ?? 'admin'}.`,
       relatedId: args.assetId,
       route: '/assets',
       createdAt: now,
@@ -1939,13 +1947,15 @@ export const checkWarrantyReminders = internalMutation({
         if (!asset.warrantyExpiry) continue;
         if (asset.warrantyExpiry >= now && asset.warrantyExpiry <= in30) {
           const daysLeft = Math.ceil((asset.warrantyExpiry - now) / (24 * 60 * 60 * 1000));
-          await ctx.db.insert('notifications', {
+          await notify(ctx, {
             organizationId: org._id,
             userId: asset.createdBy,
             type: 'system',
-            title: '🔔 Warranty Expiring Soon',
-            message: `Warranty for "${asset.name}" expires in ${daysLeft} day(s).`,
-            isRead: false,
+            titleKey: 'notifications.titles.warrantyExpiring',
+            messageKey: 'notifications.messages.warrantyExpiring',
+            params: { assetName: asset.name, count: daysLeft },
+            fallbackTitle: '🔔 Warranty Expiring Soon',
+            fallbackMessage: `Warranty for "${asset.name}" expires in ${daysLeft} day(s).`,
             relatedId: asset._id,
             route: '/assets',
             createdAt: now,
@@ -1981,13 +1991,15 @@ export const checkMaintenanceReminders = internalMutation({
         const asset = await ctx.db.get(record.assetId);
         const assetName = asset?.name ?? 'Unknown Asset';
 
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: org._id,
           userId: record.createdBy,
           type: 'system',
-          title: '🔧 Maintenance Due',
-          message: `Scheduled maintenance "${record.description}" for ${assetName} is due.`,
-          isRead: false,
+          titleKey: 'notifications.titles.maintenanceDue',
+          messageKey: 'notifications.messages.maintenanceDue',
+          params: { description: record.description, assetName },
+          fallbackTitle: '🔧 Maintenance Due',
+          fallbackMessage: `Scheduled maintenance "${record.description}" for ${assetName} is due.`,
           relatedId: record._id,
           route: '/assets',
           createdAt: now,

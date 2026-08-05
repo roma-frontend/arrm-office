@@ -9,6 +9,7 @@ import { SmartBanner } from '@/components/ui/SmartBanner';
 import { useRouter } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { playNotificationSound } from '@/lib/notificationSound';
+import { notificationMessage, notificationTitle } from '@/lib/notificationText';
 import { useTranslation } from 'react-i18next';
 
 const getRouteForType = (type: string): string => {
@@ -25,7 +26,7 @@ const getRouteForType = (type: string): string => {
     join_rejected: '/organization',
     security_alert: '/security',
     status_change: '/drivers',
-    message_mention: '/messages',
+    message_mention: '/chat',
     system: '/dashboard',
     ticket: '/help',
     task: '/tasks',
@@ -125,21 +126,8 @@ export function NotificationBanner() {
     <div className="w-full">
       <SmartBanner
         type={bannerType}
-        message={t(`notifications.types.${newNotification.type}`, {
-          defaultValue: newNotification.title,
-        })}
-        suggestion={(() => {
-          if (newNotification.metadata) {
-            try {
-              const meta = JSON.parse(newNotification.metadata) as {
-                messageKey?: string;
-                params?: Record<string, string | number>;
-              };
-              if (meta.messageKey) return String(t(meta.messageKey, meta.params ?? {}));
-            } catch {}
-          }
-          return newNotification.message;
-        })()}
+        message={notificationTitle(t, newNotification)}
+        suggestion={notificationMessage(t, newNotification)}
         icon={<MessageSquare className="w-5 h-5" />}
         onDismiss={handleDismiss}
         className="rounded-none border-x-0 border-t-0"

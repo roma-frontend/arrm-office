@@ -458,9 +458,11 @@ export function Sidebar() {
       : 'skip',
   );
 
+  // Task notifications are typed `system`, so they're identified by their route
+  // rather than by their title — titles are localized and matching English words
+  // in them silently zeroed this badge in every other language.
   const taskUnreadCount = (notifications ?? []).filter(
-    (n) =>
-      !n.isRead && n.type === 'system' && (n.title?.includes('Task') || n.title?.includes('task')),
+    (n) => !n.isRead && n.route === '/tasks',
   ).length;
 
   const signatureBadgeCount = (pendingSignaturesCount ?? []).length;

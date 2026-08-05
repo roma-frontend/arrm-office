@@ -40,7 +40,62 @@ interface NotificationItem {
   type: string;
   relatedId?: string;
   metadata?: string;
+  route?: string;
   _creationTime: number;
+}
+
+/**
+ * Where clicking a notification lands, by type. Only covers types whose
+ * destination isn't already stored on the row — `notify()` writes an explicit
+ * `route`, which always wins.
+ */
+const NOTIFICATION_ROUTES: Record<string, string> = {
+  join_request: '/join-requests',
+  join_approved: '/dashboard',
+  join_rejected: '/dashboard',
+  leave_request: '/leaves',
+  leave_approved: '/leaves',
+  leave_rejected: '/leaves',
+  driver_request: '/drivers',
+  driver_request_approved: '/drivers',
+  driver_request_rejected: '/drivers',
+  status_change: '/drivers',
+  employee_added: '/employees',
+  message_mention: '/chat',
+  review_deadline: '/performance',
+  okr_checkin_reminder: '/goals',
+  survey_auto_activated: '/surveys',
+  survey_auto_closed: '/surveys',
+  onboarding_task_due: '/onboarding',
+  onboarding_started: '/onboarding',
+  onboarding_manager_assigned: '/onboarding',
+  onboarding_buddy_assigned: '/onboarding',
+  onboarding_task_overdue: '/onboarding',
+  asset_assigned: '/assets',
+  room_booked: '/rooms',
+  room_booking_cancelled: '/rooms',
+};
+
+/**
+ * Resolves the click destination for a notification.
+ *
+ * Prefers cases that need more than the type alone (a specific alert page, or a
+ * support ticket whose destination depends on the reader's role), then the
+ * row's own `route`, then the per-type map. Deliberately never inspects `title`
+ * or `message`: those are localized, so matching English words in them broke as
+ * soon as the reader switched language.
+ */
+function notificationTarget(n: NotificationItem, role?: string): string | null {
+  if (n.type === 'security_alert' && n.relatedId?.startsWith('impersonation:')) {
+    return '/security';
+  }
+  if (n.type === 'security_alert' && n.relatedId && !n.relatedId.includes(':')) {
+    return `/superadmin/security/alert/${n.relatedId}`;
+  }
+  if (n.relatedId?.startsWith('support_ticket:')) {
+    return role === 'superadmin' ? '/superadmin/support' : '/help';
+  }
+  return n.route ?? NOTIFICATION_ROUTES[n.type] ?? null;
 }
 
 // Accessibility: emoji icon component with aria-hidden
@@ -77,6 +132,7 @@ import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useStatusUpdate } from '@/context/StatusUpdateContext';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { logger } from '@/lib/logger';
+import { notificationMessage, notificationTitle } from '@/lib/notificationText';
 import Link from 'next/link';
 
 function getInitials(name: string) {
@@ -272,87 +328,26 @@ export function Navbar() {
                 <p className="text-sm text-(--text-muted)">{t('notifications.noNotifications')}</p>
               </div>
             ) : (
-              notifications.map(
-                (n: {
-                  _id: Id<'notifications'>;
-                  title: string;
-                  message: string;
-                  isRead: boolean;
-                  type: string;
-                  relatedId?: string;
-                  metadata?: string;
-                  _creationTime: number;
-                }) => (
-                  <div
-                    key={n._id}
-                    onClick={async () => {
-                      await handleMarkRead(n._id);
-                      // Navigate based on notification type
-                      if (n.type === 'security_alert' && n.relatedId) {
-                        router.push(`/superadmin/security/alert/${n.relatedId}`);
-                      } else if (n.type === 'join_request') {
-                        router.push('/join-requests');
-                      } else if (n.type === 'join_approved') {
-                        router.push('/dashboard');
-                      } else if (n.type === 'leave_request' && n.relatedId) {
-                        router.push('/leaves');
-                      } else if (n.type === 'driver_request') {
-                        router.push('/drivers');
-                      } else if (
-                        n.type === 'driver_request_approved' ||
-                        n.type === 'driver_request_rejected'
-                      ) {
-                        router.push('/drivers');
-                      } else if (n.type === 'employee_added') {
-                        router.push('/employees');
-                      } else if (
-                        n.type === 'system' &&
-                        (n.title?.includes('Task') || n.title?.includes('task'))
-                      ) {
-                        router.push('/tasks');
-                      } else if (
-                        n.type === 'ticket_created' ||
-                        n.type === 'ticket_updated' ||
-                        n.type === 'ticket' ||
-                        (n.type === 'system' && n.relatedId?.startsWith('support_ticket:')) ||
-                        n.message?.toLowerCase().includes('ticket') ||
-                        n.title?.toLowerCase().includes('ticket') ||
-                        n.title?.includes('🎫')
-                      ) {
-                        if (user?.role === 'superadmin') {
-                          router.push('/superadmin/support');
-                        } else {
-                          router.push('/help');
-                        }
-                      }
-                      setShowNotifications(false);
-                    }}
-                    className={`px-4 py-3 hover:bg-(--background-subtle) cursor-pointer transition-colors ${
-                      !n.isRead ? 'bg-[#2563eb]/5 border-l-2 border-[#2563eb]' : ''
-                    }`}
-                  >
-                    <p className="text-sm font-semibold text-(--text-primary) leading-snug">
-                      {t(`notifications.types.${n.type}`, { defaultValue: n.title })}
-                    </p>
-                    <p className="text-xs text-(--text-muted) mt-1">
-                      {(() => {
-                        if (n.metadata) {
-                          try {
-                            const meta = JSON.parse(n.metadata) as {
-                              messageKey?: string;
-                              params?: Record<string, string | number>;
-                            };
-                            if (meta.messageKey)
-                              return String(t(meta.messageKey, meta.params ?? {}));
-                          } catch {}
-                        }
-                        return n.message;
-                      })()}
-                    </p>
-                    <p className="text-xs text-(--text-muted) mt-1">{timeAgo(n._creationTime)}</p>
-                  </div>
-                ),
-              )
+              notifications.map((n: NotificationItem) => (
+                <div
+                  key={n._id}
+                  onClick={async () => {
+                    await handleMarkRead(n._id);
+                    const target = notificationTarget(n, user?.role);
+                    if (target) router.push(target);
+                    setShowNotifications(false);
+                  }}
+                  className={`px-4 py-3 hover:bg-(--background-subtle) cursor-pointer transition-colors ${
+                    !n.isRead ? 'bg-[#2563eb]/5 border-l-2 border-[#2563eb]' : ''
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-(--text-primary) leading-snug">
+                    {notificationTitle(t, n)}
+                  </p>
+                  <p className="text-xs text-(--text-muted) mt-1">{notificationMessage(t, n)}</p>
+                  <p className="text-xs text-(--text-muted) mt-1">{timeAgo(n._creationTime)}</p>
+                </div>
+              ))
             )}
           </div>
           {notifStatus === 'CanLoadMore' && (

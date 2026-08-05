@@ -9,6 +9,7 @@ import { Id, type Doc } from './_generated/dataModel';
 import { getTranslation, getUserLocale } from './translations';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { notify } from './lib/notify';
 import { logger } from '../src/lib/logger';
 
 // ─── CREATE TICKET ───────────────────────────────────────────────────────────
@@ -99,13 +100,19 @@ export const createTicket = mutation({
       .take(SMALL_LIST_CAP);
 
     for (const admin of superadmins) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: args.organizationId,
         userId: admin._id,
         type: 'system',
-        title: `🎫 Новый тикет: ${ticketNumber}`,
-        message: `${args.title} (Приоритет: ${args.priority})`,
-        isRead: false,
+        titleKey: 'notifications.titles.ticketNew',
+        messageKey: 'notifications.messages.ticketNew',
+        params: {
+          ticketNumber,
+          title: args.title,
+          priority: args.priority,
+        },
+        fallbackTitle: `🎫 New ticket: ${ticketNumber}`,
+        fallbackMessage: `${args.title} (Priority: ${args.priority})`,
         relatedId: `support_ticket:${ticketId}`,
         route: '/tickets',
         createdAt: now,
@@ -357,13 +364,18 @@ export const updateTicketStatus = mutation({
     await ctx.db.patch(args.ticketId, updates);
 
     // Notify creator
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: ticket.organizationId,
       userId: ticket.createdBy,
       type: 'system',
-      title: `🎫 Статус тикета обновлен: ${ticket.ticketNumber}`,
-      message: `Новый статус: ${args.status}`,
-      isRead: false,
+      titleKey: 'notifications.titles.ticketStatusUpdated',
+      messageKey: 'notifications.messages.ticketStatus',
+      params: {
+        ticketNumber: ticket.ticketNumber,
+        status: args.status,
+      },
+      fallbackTitle: `🎫 Ticket status updated: ${ticket.ticketNumber}`,
+      fallbackMessage: `New status: ${args.status}`,
       relatedId: `support_ticket:${args.ticketId}`,
       route: '/tickets',
       createdAt: now,
@@ -405,16 +417,17 @@ export const assignTicket = mutation({
 
     // Notify assignee
     if (args.assignedTo) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: ticket.organizationId,
         userId: args.assignedTo,
         type: 'system',
-        title: `🎫 Вам назначен тикет: ${ticket.ticketNumber}`,
-        message: ticket.title,
-        isRead: false,
+        titleKey: 'notifications.titles.ticketAssigned',
+        params: { ticketNumber: ticket.ticketNumber },
+        fallbackTitle: `🎫 Ticket assigned to you: ${ticket.ticketNumber}`,
+        // The body is the user-authored ticket title — not translatable.
+        fallbackMessage: ticket.title,
         relatedId: `support_ticket:${args.ticketId}`,
         route: '/tickets',
-        createdAt: Date.now(),
       });
     }
 
@@ -462,13 +475,15 @@ export const addTicketComment = mutation({
 
     // Notify ticket creator if comment is not internal
     if (!args.isInternal && args.authorId !== ticket.createdBy) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: ticket.organizationId,
         userId: ticket.createdBy,
         type: 'system',
-        title: `💬 Новый комментарий в тикете: ${ticket.ticketNumber}`,
-        message: args.message.slice(0, 100),
-        isRead: false,
+        titleKey: 'notifications.titles.ticketComment',
+        params: { ticketNumber: ticket.ticketNumber },
+        fallbackTitle: `💬 New comment on ticket: ${ticket.ticketNumber}`,
+        // The body is the user-authored comment — not translatable.
+        fallbackMessage: args.message.slice(0, 100),
         relatedId: `support_ticket:${args.ticketId}`,
         route: '/tickets',
         createdAt: now,
@@ -515,13 +530,15 @@ export const resolveTicket = mutation({
     });
 
     // Notify creator
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: ticket.organizationId,
       userId: ticket.createdBy,
       type: 'system',
-      title: `✅ Тикет решен: ${ticket.ticketNumber}`,
-      message: args.resolution,
-      isRead: false,
+      titleKey: 'notifications.titles.ticketResolved',
+      params: { ticketNumber: ticket.ticketNumber },
+      fallbackTitle: `✅ Ticket resolved: ${ticket.ticketNumber}`,
+      // The body is the agent-authored resolution text — not translatable.
+      fallbackMessage: args.resolution,
       relatedId: `support_ticket:${args.ticketId}`,
       route: '/tickets',
       createdAt: now,
@@ -916,13 +933,15 @@ export const activateTicketChat = mutation({
     }
 
     // Notify ticket creator
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: ticket.organizationId,
       userId: ticket.createdBy,
       type: 'system',
-      title: `💬 Новый ответ в чате тикета: ${ticket.ticketNumber}`,
-      message: args.message.slice(0, 100),
-      isRead: false,
+      titleKey: 'notifications.titles.ticketChatReply',
+      params: { ticketNumber: ticket.ticketNumber },
+      fallbackTitle: `💬 New reply in ticket chat: ${ticket.ticketNumber}`,
+      // The body is the superadmin-authored chat message — not translatable.
+      fallbackMessage: args.message.slice(0, 100),
       relatedId: `support_ticket:${args.ticketId}`,
       route: '/tickets',
       createdAt: now,

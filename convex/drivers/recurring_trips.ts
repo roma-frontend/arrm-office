@@ -10,6 +10,7 @@ import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { isSuperadmin } from '../lib/auth';
+import { notify } from '../lib/notify';
 
 /** Create a recurring trip template */
 export const createRecurringTrip = mutation({
@@ -165,15 +166,20 @@ export const generateRecurringRequests = mutation({
 
       const driver = await ctx.db.get(trip.driverId);
       if (driver) {
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId,
           userId: driver.userId,
           type: 'driver_request',
-          title: 'Recurring Trip Request',
-          message: `${trip.tripInfo.purpose}: ${trip.tripInfo.from} → ${trip.tripInfo.to}`,
-          isRead: false,
+          titleKey: 'notifications.titles.recurringTripRequest',
+          messageKey: 'notifications.messages.tripRoute',
+          params: {
+            purpose: trip.tripInfo.purpose,
+            from: trip.tripInfo.from,
+            to: trip.tripInfo.to,
+          },
+          fallbackTitle: 'Recurring Trip Request',
+          fallbackMessage: `${trip.tripInfo.purpose}: ${trip.tripInfo.from} → ${trip.tripInfo.to}`,
           route: '/drivers',
-          createdAt: Date.now(),
         });
       }
 

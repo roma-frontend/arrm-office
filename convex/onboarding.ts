@@ -3,6 +3,7 @@ import { internal } from './_generated/api';
 import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { notify } from './lib/notify';
 
 // ─── Helpers ─────────────────────────────────────────────────
 function computeProgress(tasks: { status: string }[]): number {
@@ -589,13 +590,20 @@ export const activateOnboardingTasks = internalMutation({
             const assignee = task.assigneeId ? await ctx.db.get(task.assigneeId) : null;
             const _employee = await ctx.db.get(program.employeeId);
 
-            await ctx.db.insert('notifications', {
+            await notify(ctx, {
               organizationId: org._id,
               userId: task.assigneeId ?? program.employeeId,
               type: 'onboarding_task_due',
-              title: '📋 Onboarding Task Due',
-              message: `"${task.title}" is now due. ${assignee ? `Assigned to ${assignee.name}.` : ''}`,
-              isRead: false,
+              titleKey: 'notifications.titles.onboardingTaskDue',
+              messageKey: assignee
+                ? 'notifications.messages.onboardingTaskDueAssigned'
+                : 'notifications.messages.onboardingTaskDue',
+              params: {
+                taskTitle: task.title,
+                ...(assignee ? { assigneeName: assignee.name } : {}),
+              },
+              fallbackTitle: '📋 Onboarding Task Due',
+              fallbackMessage: `"${task.title}" is now due.${assignee ? ` Assigned to ${assignee.name}.` : ''}`,
               relatedId: task._id,
               route: '/onboarding',
               createdAt: now,
@@ -629,16 +637,21 @@ export const sendOnboardingStartNotifications = internalMutation({
 
     const orgName = org?.name ?? 'your organization';
     const _creatorName = creator?.name ?? 'HR';
+    // No name to interpolate: i18next cannot nest a key through a param value, so
+    // the English literal travels as the param and only the sentence is translated.
+    const employeeName = employee?.name ?? 'A new employee';
 
     // Notify employee
     if (employee) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: args.organizationId,
         userId: args.employeeId,
         type: 'onboarding_started',
-        title: '🎉 Welcome to Onboarding!',
-        message: `Your onboarding program at ${orgName} has started. Check your tasks and get to know your team!`,
-        isRead: false,
+        titleKey: 'notifications.titles.onboardingWelcome',
+        messageKey: 'notifications.messages.onboardingWelcome',
+        params: { orgName },
+        fallbackTitle: '🎉 Welcome to Onboarding!',
+        fallbackMessage: `Your onboarding program at ${orgName} has started. Check your tasks and get to know your team!`,
         relatedId: args.programId,
         route: '/onboarding',
         createdAt: now,
@@ -647,13 +660,15 @@ export const sendOnboardingStartNotifications = internalMutation({
 
     // Notify manager
     if (manager) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: args.organizationId,
         userId: args.managerId,
         type: 'onboarding_manager_assigned',
-        title: '👤 New Hire Onboarding Assigned',
-        message: `${employee?.name ?? 'A new employee'} has started onboarding. You are assigned as their manager.`,
-        isRead: false,
+        titleKey: 'notifications.titles.onboardingManagerAssigned',
+        messageKey: 'notifications.messages.onboardingManagerAssigned',
+        params: { employeeName },
+        fallbackTitle: '👤 New Hire Onboarding Assigned',
+        fallbackMessage: `${employeeName} has started onboarding. You are assigned as their manager.`,
         relatedId: args.programId,
         route: '/onboarding',
         createdAt: now,
@@ -662,13 +677,15 @@ export const sendOnboardingStartNotifications = internalMutation({
 
     // Notify buddy
     if (buddy && args.buddyId) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: args.organizationId,
         userId: args.buddyId,
         type: 'onboarding_buddy_assigned',
-        title: '🤝 You are assigned as a Buddy',
-        message: `${employee?.name ?? 'A new employee'} needs your guidance during onboarding. Help them get settled!`,
-        isRead: false,
+        titleKey: 'notifications.titles.onboardingBuddyAssigned',
+        messageKey: 'notifications.messages.onboardingBuddyAssigned',
+        params: { employeeName },
+        fallbackTitle: '🤝 You are assigned as a Buddy',
+        fallbackMessage: `${employeeName} needs your guidance during onboarding. Help them get settled!`,
         relatedId: args.programId,
         route: '/onboarding',
         createdAt: now,
@@ -723,13 +740,15 @@ export const sendOnboardingOverdueReminders = internalMutation({
 
           if (!recentReminder) {
             const daysOverdue = Math.floor((now - task.dueDate) / 86400000);
-            await ctx.db.insert('notifications', {
+            await notify(ctx, {
               organizationId: org._id,
               userId: assigneeId,
               type: 'onboarding_task_overdue',
-              title: '⚠️ Onboarding Task Overdue',
-              message: `"${task.title}" is ${daysOverdue} day(s) overdue. Please complete it as soon as possible.`,
-              isRead: false,
+              titleKey: 'notifications.titles.onboardingTaskOverdue',
+              messageKey: 'notifications.messages.onboardingTaskOverdue',
+              params: { taskTitle: task.title, count: daysOverdue },
+              fallbackTitle: '⚠️ Onboarding Task Overdue',
+              fallbackMessage: `"${task.title}" is ${daysOverdue} day(s) overdue. Please complete it as soon as possible.`,
               relatedId: task._id,
               route: '/onboarding',
               createdAt: now,

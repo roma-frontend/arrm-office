@@ -4,6 +4,7 @@ import type { Id } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { notify } from './lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -699,13 +700,15 @@ export const activateScheduledSurveys = internalMutation({
         });
 
         // Notify creators
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: org._id,
           userId: survey.createdBy,
           type: 'survey_auto_activated',
-          title: '📢 Survey Auto-Activated',
-          message: `"${survey.title}" has been automatically activated as scheduled.`,
-          isRead: false,
+          titleKey: 'notifications.titles.surveyAutoActivated',
+          messageKey: 'notifications.messages.surveyAutoActivated',
+          params: { surveyTitle: survey.title },
+          fallbackTitle: '📢 Survey Auto-Activated',
+          fallbackMessage: `"${survey.title}" has been automatically activated as scheduled.`,
           relatedId: survey._id,
           route: '/surveys',
           createdAt: now,
@@ -737,13 +740,15 @@ export const closeExpiredSurveys = internalMutation({
           updatedAt: now,
         });
 
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: org._id,
           userId: survey.createdBy,
           type: 'survey_auto_closed',
-          title: '🔒 Survey Auto-Closed',
-          message: `"${survey.title}" has been automatically closed as the end date has passed.`,
-          isRead: false,
+          titleKey: 'notifications.titles.surveyAutoClosed',
+          messageKey: 'notifications.messages.surveyAutoClosed',
+          params: { surveyTitle: survey.title },
+          fallbackTitle: '🔒 Survey Auto-Closed',
+          fallbackMessage: `"${survey.title}" has been automatically closed as the end date has passed.`,
           relatedId: survey._id,
           route: '/surveys',
           createdAt: now,

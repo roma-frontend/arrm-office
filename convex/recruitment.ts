@@ -6,6 +6,7 @@ import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { notify } from './lib/notify';
 
 // ============ QUERIES ============
 
@@ -515,13 +516,19 @@ export const addCandidate = mutation({
     const vacancy = await ctx.db.get(vacancyId);
     for (const admin of orgAdmins) {
       if (admin._id === createdBy) continue; // don't notify self
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId,
         userId: admin._id,
         type: 'system',
-        title: '📩 New Candidate Added',
-        message: `${name} was added to "${vacancy?.title || 'vacancy'}" (${source})`,
-        isRead: false,
+        titleKey: 'notifications.titles.candidateAdded',
+        messageKey: 'notifications.messages.candidateAdded',
+        params: {
+          name,
+          vacancyTitle: vacancy?.title || 'vacancy',
+          source,
+        },
+        fallbackTitle: '📩 New Candidate Added',
+        fallbackMessage: `${name} was added to "${vacancy?.title || 'vacancy'}" (${source})`,
         relatedId: applicationId,
         route: '/recruitment',
         createdAt: now,
@@ -849,13 +856,18 @@ export const hireCandidate = mutation({
 
     for (const admin of orgAdmins) {
       if (admin._id === userId) continue;
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: app.organizationId,
         userId: admin._id,
         type: 'system',
-        title: '🎉 New Hire',
-        message: `${candidate?.name || 'Candidate'} was hired for "${vacancy?.title || 'position'}"`,
-        isRead: false,
+        titleKey: 'notifications.titles.newHire',
+        messageKey: 'notifications.messages.newHire',
+        params: {
+          candidateName: candidate?.name || 'Candidate',
+          vacancyTitle: vacancy?.title || 'position',
+        },
+        fallbackTitle: '🎉 New Hire',
+        fallbackMessage: `${candidate?.name || 'Candidate'} was hired for "${vacancy?.title || 'position'}"`,
         relatedId: applicationId,
         route: '/onboarding',
         createdAt: now,

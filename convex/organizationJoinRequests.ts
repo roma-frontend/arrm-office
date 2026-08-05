@@ -9,6 +9,7 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { notify } from './lib/notify';
 import { getProfile } from './lib/userProfile';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,16 +163,24 @@ export const requestJoinOrganization = mutation({
       .take(SMALL_LIST_CAP);
 
     for (const admin of admins) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId,
         userId: admin._id,
         type: 'join_request',
-        title: '🙋 New Join Request',
-        message: `${user.name} (${user.email}) wants to join ${org.name}.${message ? ` Message: ${message}` : ''}`,
-        isRead: false,
+        titleKey: 'notifications.titles.joinRequestNew',
+        messageKey: message
+          ? 'notifications.messages.joinRequestNewWithMessage'
+          : 'notifications.messages.joinRequestNew',
+        params: {
+          name: user.name,
+          email: user.email,
+          orgName: org.name,
+          ...(message ? { message } : {}),
+        },
+        fallbackTitle: '🙋 New Join Request',
+        fallbackMessage: `${user.name} (${user.email}) wants to join ${org.name}.${message ? ` Message: ${message}` : ''}`,
         relatedId: requestId,
         route: '/organization',
-        createdAt: Date.now(),
       });
     }
 
@@ -224,16 +233,20 @@ export const approveJoinRequest = mutation({
 
     // Notify user
     const org = await ctx.db.get(invite.organizationId);
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: invite.organizationId,
       userId,
       type: 'join_approved',
-      title: '✅ Welcome to the Team!',
-      message: `Your request to join ${org?.name} has been approved by ${reviewer.name}.`,
-      isRead: false,
+      titleKey: 'notifications.titles.joinApproved',
+      messageKey: 'notifications.messages.joinApprovedBy',
+      params: {
+        orgName: org?.name ?? '',
+        reviewerName: reviewer.name,
+      },
+      fallbackTitle: '✅ Welcome to the Team!',
+      fallbackMessage: `Your request to join ${org?.name} has been approved by ${reviewer.name}.`,
       relatedId: userId,
       route: '/organization',
-      createdAt: Date.now(),
     });
 
     return { success: true, userId, organizationId: invite.organizationId };
@@ -276,16 +289,22 @@ export const rejectJoinRequest = mutation({
       const user = await ctx.db.get(userId);
       if (user) {
         const org = await ctx.db.get(invite.organizationId);
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: invite.organizationId,
           userId,
           type: 'join_rejected',
-          title: '❌ Join Request Rejected',
-          message: `Your request to join ${org?.name} was rejected.${reason ? ` Reason: ${reason}` : ''}`,
-          isRead: false,
+          titleKey: 'notifications.titles.joinRejected',
+          messageKey: reason
+            ? 'notifications.messages.joinRejectedWithReason'
+            : 'notifications.messages.joinRejected',
+          params: {
+            orgName: org?.name ?? '',
+            ...(reason ? { reason } : {}),
+          },
+          fallbackTitle: '❌ Join Request Rejected',
+          fallbackMessage: `Your request to join ${org?.name} was rejected.${reason ? ` Reason: ${reason}` : ''}`,
           relatedId: userId,
           route: '/organization',
-          createdAt: Date.now(),
         });
       }
     }

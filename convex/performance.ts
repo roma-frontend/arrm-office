@@ -4,6 +4,7 @@ import { mutation, query, internalMutation } from './_generated/server';
 import { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { notify } from './lib/notify';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -773,13 +774,18 @@ export const checkDeadlineNotifications = internalMutation({
 
             if (!existingNotifications) {
               const daysLeft = Math.ceil(timeUntilDeadline / oneDayMs);
-              await ctx.db.insert('notifications', {
+              // Kept locale-neutral: the date is interpolated in the reader's
+              // language, so a server-side toLocaleDateString() would be wrong.
+              const dueDate = new Date(cycle.endDate).toISOString().slice(0, 10);
+              await notify(ctx, {
                 organizationId: org._id,
                 userId: assignment.reviewerId,
                 type: 'review_deadline',
-                title: `⏰ Review deadline in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
-                message: `Your review for "${cycle.title}" is due soon. Please complete it before ${new Date(cycle.endDate).toLocaleDateString()}.`,
-                isRead: false,
+                titleKey: 'notifications.titles.reviewDeadline',
+                messageKey: 'notifications.messages.reviewDeadline',
+                params: { count: daysLeft, cycleTitle: cycle.title, dueDate },
+                fallbackTitle: `⏰ Review deadline in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
+                fallbackMessage: `Your review for "${cycle.title}" is due soon. Please complete it before ${dueDate}.`,
                 relatedId: assignment._id,
                 route: '/performance',
                 createdAt: now,

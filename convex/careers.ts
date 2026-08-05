@@ -1,6 +1,7 @@
 import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { notify } from './lib/notify';
 
 // Public query: list ALL open vacancies across all organizations (for global /careers page)
 export const listAllOpenVacancies = query({
@@ -212,13 +213,18 @@ export const applyToVacancy = mutation({
 
     const now = Date.now();
     for (const admin of orgAdmins) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: orgId,
         userId: admin._id,
         type: 'system',
-        title: '📩 New Application Received',
-        message: `${args.name} applied for "${vacancy.title}" via career page`,
-        isRead: false,
+        titleKey: 'notifications.titles.applicationReceived',
+        messageKey: 'notifications.messages.applicationReceived',
+        params: {
+          name: args.name,
+          vacancyTitle: vacancy.title,
+        },
+        fallbackTitle: '📩 New Application Received',
+        fallbackMessage: `${args.name} applied for "${vacancy.title}" via the career page`,
         relatedId: applicationId,
         route: '/recruitment',
         createdAt: now,

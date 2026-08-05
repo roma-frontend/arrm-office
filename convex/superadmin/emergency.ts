@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
+import { notify } from '../lib/notify';
 import type { Doc } from '../_generated/dataModel';
 
 // ─── EMERGENCY DASHBOARD ─────────────────────────────────────────────────────
@@ -217,13 +218,18 @@ export const createIncident = mutation({
       .take(DEFAULT_LIST_CAP);
 
     for (const admin of superadmins) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: undefined,
         userId: admin._id,
         type: 'security_alert',
-        title: `🚨 Чрезвычайная ситуация: ${args.severity}`,
-        message: args.title,
-        isRead: false,
+        titleKey: 'notifications.titles.emergencyIncident',
+        messageKey: 'notifications.messages.emergencyIncident',
+        params: {
+          severity: args.severity,
+          incidentTitle: args.title,
+        },
+        fallbackTitle: `🚨 Emergency: ${args.severity}`,
+        fallbackMessage: args.title,
         relatedId: `incident:${incidentId}`,
         route: '/security',
         createdAt: now,

@@ -5,6 +5,7 @@
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { notify } from '../lib/notify';
 
 /** Grant calendar access to another user */
 export const grantCalendarAccess = mutation({
@@ -43,15 +44,15 @@ export const grantCalendarAccess = mutation({
       grantedAt: Date.now(),
     });
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId,
       userId: viewerId,
       type: 'status_change',
-      title: 'Calendar Access Granted',
-      message: 'You now have access to view my calendar',
-      isRead: false,
+      titleKey: 'notifications.titles.calendarAccessGranted',
+      messageKey: 'notifications.messages.calendarAccessGranted',
+      fallbackTitle: 'Calendar Access Granted',
+      fallbackMessage: 'You now have access to view my calendar',
       route: '/drivers',
-      createdAt: Date.now(),
     });
 
     return accessId;
@@ -90,19 +91,19 @@ export const requestCalendarAccess = mutation({
     if (!caller) throw new Error('Not authenticated');
     const { organizationId, driverUserId } = args;
     const requesterId = caller._id;
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId,
       userId: driverUserId,
       type: 'status_change',
-      title: 'Calendar Access Request',
-      message: 'An employee wants to view your calendar availability',
-      isRead: false,
+      titleKey: 'notifications.titles.calendarAccessRequest',
+      messageKey: 'notifications.messages.calendarAccessRequest',
+      fallbackTitle: 'Calendar Access Request',
+      fallbackMessage: 'An employee wants to view your calendar availability',
       route: '/drivers',
-      metadata: JSON.stringify({
+      extra: {
         type: 'calendar_access_request',
         requesterId,
-      }),
-      createdAt: Date.now(),
+      },
     });
 
     return { success: true };

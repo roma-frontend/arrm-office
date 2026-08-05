@@ -3,6 +3,7 @@ import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query } from './_generated/server';
 import { SUPERADMIN_EMAIL, isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { notify } from './lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC: Create a self-service Starter organization (instant)
@@ -82,15 +83,16 @@ export const createStarterOrganization = mutation({
     });
 
     // Create welcome notification
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: orgId,
       userId,
       type: 'system',
-      title: '🎉 Welcome to Strata!',
-      message: `Your organization "${args.name}" has been created successfully. You're on the Starter plan (10 employees max).`,
-      isRead: false,
+      titleKey: 'notifications.titles.orgWelcome',
+      messageKey: 'notifications.messages.orgCreated',
+      params: { orgName: args.name, limit: 10 },
+      fallbackTitle: '🎉 Welcome to Strata!',
+      fallbackMessage: `Your organization "${args.name}" has been created successfully. You're on the Starter plan (10 employees max).`,
       route: '/organization',
-      createdAt: Date.now(),
     });
 
     return { organizationId: orgId, userId };
@@ -170,16 +172,17 @@ export const requestOrganization = mutation({
       .unique();
 
     if (superadmin) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: superadmin.organizationId,
         userId: superadmin._id,
         type: 'system',
-        title: '🏢 New Organization Request',
-        message: `${args.userName} requested to create "${args.name}" (${args.plan} plan)`,
-        isRead: false,
+        titleKey: 'notifications.titles.orgRequestNew',
+        messageKey: 'notifications.messages.orgRequestNew',
+        params: { userName: args.userName, orgName: args.name, plan: args.plan },
+        fallbackTitle: '🏢 New Organization Request',
+        fallbackMessage: `${args.userName} requested to create "${args.name}" (${args.plan} plan)`,
         relatedId: requestId,
         route: '/organization',
-        createdAt: Date.now(),
       });
     }
 
@@ -296,16 +299,17 @@ export const approveOrganizationRequest = mutation({
     });
 
     // Notify the requester
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: orgId,
       userId,
       type: 'system',
-      title: '✅ Organization Approved!',
-      message: `Your organization "${request.requestedName}" has been approved! You can now log in and start managing your team.`,
-      isRead: false,
+      titleKey: 'notifications.titles.orgApproved',
+      messageKey: 'notifications.messages.orgApproved',
+      params: { orgName: request.requestedName },
+      fallbackTitle: '✅ Organization Approved!',
+      fallbackMessage: `Your organization "${request.requestedName}" has been approved! You can now log in and start managing your team.`,
       relatedId: requestId,
       route: '/organization',
-      createdAt: Date.now(),
     });
 
     return { organizationId: orgId, userId };

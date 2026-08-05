@@ -3,6 +3,7 @@ import { mutation, query } from '../_generated/server';
 import bcrypt from 'bcryptjs';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
+import { notify } from '../lib/notify';
 import { checkTempAccessStillValid } from '../superadmin/accessTokens';
 import { logger } from '../../src/lib/logger';
 
@@ -315,16 +316,21 @@ export const register = mutation({
           .take(SMALL_LIST_CAP);
 
         for (const admin of admins) {
-          await ctx.db.insert('notifications', {
+          await notify(ctx, {
             organizationId,
             userId: admin._id,
             type: 'join_request',
-            title: '🙋 New Join Request',
-            message: `${args.name} (${email}) wants to join ${org?.name ?? 'your organization'}.`,
-            isRead: false,
+            titleKey: 'notifications.titles.joinRequestNew',
+            messageKey: 'notifications.messages.joinRequestNew',
+            params: {
+              name: args.name,
+              email,
+              orgName: org?.name ?? 'your organization',
+            },
+            fallbackTitle: '🙋 New Join Request',
+            fallbackMessage: `${args.name} (${email}) wants to join ${org?.name ?? 'your organization'}.`,
             relatedId: userId,
             route: '/organization',
-            createdAt: Date.now(),
           });
         }
       }
@@ -918,16 +924,21 @@ export const googleOAuthLogin = mutation({
         .take(SMALL_LIST_CAP);
 
       for (const admin of admins) {
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId,
           userId: admin._id,
           type: 'join_request',
-          title: '🙋 New Google Sign-Up',
-          message: `${args.name} (${email}) signed up with Google and wants to join ${org.name || 'organization'}.`,
-          isRead: false,
+          titleKey: 'notifications.titles.googleSignUp',
+          messageKey: 'notifications.messages.googleSignUp',
+          params: {
+            name: args.name,
+            email,
+            orgName: org.name || 'organization',
+          },
+          fallbackTitle: '🙋 New Google Sign-Up',
+          fallbackMessage: `${args.name} (${email}) signed up with Google and wants to join ${org.name || 'organization'}.`,
           relatedId: userId,
           route: '/organization',
-          createdAt: Date.now(),
         });
       }
 

@@ -10,6 +10,7 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { notify } from './lib/notify';
 import { logger } from '../src/lib/logger';
 import type { Doc } from './_generated/dataModel';
 
@@ -78,16 +79,22 @@ export const createCompanyEvent = mutation({
       )
       .take(SMALL_LIST_CAP);
 
+    const startDateLabel = new Date(args.startDate).toLocaleDateString();
+
     for (const admin of admins) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: args.organizationId,
         userId: admin._id,
         type: 'system',
-        title: '📅 New Company Event Created',
-        message: `${args.name} (${new Date(args.startDate).toLocaleDateString()})`,
-        isRead: false,
+        titleKey: 'notifications.titles.eventCreated',
+        messageKey: 'notifications.messages.eventCreated',
+        params: {
+          name: args.name,
+          date: startDateLabel,
+        },
+        fallbackTitle: '📅 New Company Event Created',
+        fallbackMessage: `${args.name} (${startDateLabel})`,
         route: '/events',
-        createdAt: Date.now(),
       });
     }
 
@@ -385,17 +392,25 @@ export const checkLeaveConflicts = mutation({
             )
             .take(SMALL_LIST_CAP);
 
+          const eventDateLabel = new Date(event.startDate).toLocaleDateString();
+
           for (const admin of admins) {
-            await ctx.db.insert('notifications', {
+            await notify(ctx, {
               organizationId: user.organizationId!,
               userId: admin._id,
               type: 'system',
-              title: '⚠️ Leave Request Conflict Detected',
-              message: `${user.name} requested leave during "${event.name}" (${new Date(event.startDate).toLocaleDateString()}). ${userDepartment} attendance required.`,
-              isRead: false,
+              titleKey: 'notifications.titles.leaveConflict',
+              messageKey: 'notifications.messages.leaveConflict',
+              params: {
+                userName: user.name,
+                eventName: event.name,
+                date: eventDateLabel,
+                department: userDepartment,
+              },
+              fallbackTitle: '⚠️ Leave Request Conflict Detected',
+              fallbackMessage: `${user.name} requested leave during "${event.name}" (${eventDateLabel}). ${userDepartment} attendance required.`,
               relatedId: `leave_request:${leaveRequestId}`,
               route: '/leaves',
-              createdAt: Date.now(),
             });
           }
         }
@@ -482,16 +497,20 @@ export const reviewConflictAlert = mutation({
       ? 'Your leave request has been approved despite the event conflict.'
       : 'Your leave request conflicts with a company event and has been noted for review.';
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: alert.organizationId,
       userId: alert.userId,
       type: 'system',
-      title: isApproved ? '✅ Leave Approved' : '📋 Leave Under Review',
-      message: decisionMessage,
-      isRead: false,
+      titleKey: isApproved
+        ? 'notifications.titles.leaveApproved'
+        : 'notifications.titles.leaveUnderReview',
+      messageKey: isApproved
+        ? 'notifications.messages.conflictApproved'
+        : 'notifications.messages.conflictUnderReview',
+      fallbackTitle: isApproved ? '✅ Leave Approved' : '📋 Leave Under Review',
+      fallbackMessage: decisionMessage,
       relatedId: `leave_request:${alert.leaveRequestId}`,
       route: '/leaves',
-      createdAt: Date.now(),
     });
 
     return { success: true };

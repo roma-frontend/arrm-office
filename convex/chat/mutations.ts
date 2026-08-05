@@ -4,6 +4,7 @@ import type { Id } from '../_generated/dataModel';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { sanitizeText } from '../lib/sanitize';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { notify } from '../lib/notify';
 
 /**
  * Convert emoji to ASCII-safe key format using Unicode code points
@@ -458,15 +459,20 @@ export const sendMessage = mutation({
       const sender = await ctx.db.get(args.senderId);
       for (const mentionedId of args.mentionedUserIds) {
         if (mentionedId === args.senderId) continue;
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: args.organizationId,
           userId: mentionedId,
           type: 'system',
-          title: `${sender?.name ?? 'Someone'} mentioned you`,
-          message: args.content.slice(0, 100),
-          isRead: false,
+          titleKey: 'notifications.titles.mentioned',
+          messageKey: 'notifications.messages.mentionedBy',
+          params: {
+            senderName: sender?.name ?? 'Someone',
+            excerpt: args.content.slice(0, 100),
+          },
+          fallbackTitle: '💬 You were mentioned',
+          fallbackMessage: `${sender?.name ?? 'Someone'} mentioned you: "${args.content.slice(0, 100)}"`,
           relatedId: args.conversationId,
-          route: '/messages',
+          route: '/chat',
           createdAt: now,
         });
       }

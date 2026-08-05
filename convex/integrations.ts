@@ -13,6 +13,7 @@ import { isSuperadmin } from './lib/auth';
 import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import { notify } from './lib/notify';
 
 const providerValidator = v.union(
   v.literal('lucky_carrot'),
@@ -2091,16 +2092,21 @@ export const imidUpsertUser = internalMutation({
         .take(20);
 
       for (const admin of admins) {
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId,
           userId: admin._id,
           type: 'join_request',
-          title: '🙋 New imID Sign-Up',
-          message: `${name} (${normalizedEmail}) signed up with imID and wants to join ${org.name || 'organization'}.`,
-          isRead: false,
+          titleKey: 'notifications.titles.imidSignUp',
+          messageKey: 'notifications.messages.imidSignUp',
+          params: {
+            name,
+            email: normalizedEmail,
+            orgName: org.name || 'organization',
+          },
+          fallbackTitle: '🙋 New imID Sign-Up',
+          fallbackMessage: `${name} (${normalizedEmail}) signed up with imID and wants to join ${org.name || 'organization'}.`,
           relatedId: userId,
           route: '/organization',
-          createdAt: Date.now(),
         });
       }
     }

@@ -4,6 +4,7 @@ import type { Id } from '../_generated/dataModel';
 import { markConversationRead } from './conversations';
 import { getProfile } from '../lib/userProfile';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
+import { notify } from '../lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET CONVERSATION MESSAGES — uses chatMessages
@@ -169,15 +170,20 @@ export const sendMessage = mutation({
       const sender = await ctx.db.get(args.senderId);
       for (const mentionedId of args.mentions) {
         if (mentionedId === args.senderId) continue;
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: conv.organizationId,
           userId: mentionedId,
           type: 'message_mention',
-          title: '💬 You were mentioned',
-          message: `${sender?.name ?? 'Someone'} mentioned you: "${args.content.slice(0, 80)}"`,
-          isRead: false,
+          titleKey: 'notifications.titles.mentioned',
+          messageKey: 'notifications.messages.mentionedBy',
+          params: {
+            senderName: sender?.name ?? 'Someone',
+            excerpt: args.content.slice(0, 80),
+          },
+          fallbackTitle: '💬 You were mentioned',
+          fallbackMessage: `${sender?.name ?? 'Someone'} mentioned you: "${args.content.slice(0, 80)}"`,
           relatedId: args.conversationId,
-          route: '/messages',
+          route: '/chat',
           createdAt: now,
         });
       }

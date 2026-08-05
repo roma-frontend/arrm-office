@@ -13,6 +13,7 @@ import { mutation, query } from './_generated/server';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { notify } from './lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MANAGER APPROVAL WORKFLOW
@@ -58,16 +59,17 @@ export const approveRequest = mutation({
     });
 
     // Notify requester
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: request.organizationId,
       userId: request.requesterId,
       type: 'system',
-      title: '✅ Trip Request Approved',
-      message: `Your trip request has been approved by ${manager.name}. Driver will be assigned soon.`,
-      isRead: false,
+      titleKey: 'notifications.titles.tripApproved',
+      messageKey: 'notifications.messages.tripApprovedByManager',
+      params: { managerName: manager.name },
+      fallbackTitle: '✅ Trip Request Approved',
+      fallbackMessage: `Your trip request has been approved by ${manager.name}. Driver will be assigned soon.`,
       relatedId: `driver_request:${requestId}`,
       route: '/drivers',
-      createdAt: Date.now(),
     });
 
     // Notify drivers (priority-based)
@@ -91,16 +93,22 @@ export const approveRequest = mutation({
 
     // Notify top 3 available drivers
     for (const driver of availableDrivers.slice(0, 3)) {
-      await ctx.db.insert('notifications', {
+      await notify(ctx, {
         organizationId: request.organizationId,
         userId: driver.userId,
         type: 'driver_request',
-        title: `🚗 New ${request.priority || 'Standard'} Trip Request`,
-        message: `${request.tripInfo.purpose}: ${request.tripInfo.from} → ${request.tripInfo.to}`,
-        isRead: false,
+        titleKey: 'notifications.titles.tripRequestNew',
+        messageKey: 'notifications.messages.tripRoute',
+        params: {
+          priority: request.priority ?? 'Standard',
+          purpose: request.tripInfo.purpose,
+          from: request.tripInfo.from,
+          to: request.tripInfo.to,
+        },
+        fallbackTitle: `🚗 New ${request.priority || 'Standard'} Trip Request`,
+        fallbackMessage: `${request.tripInfo.purpose}: ${request.tripInfo.from} → ${request.tripInfo.to}`,
         relatedId: `driver_request:${requestId}`,
         route: '/drivers',
-        createdAt: Date.now(),
       });
     }
 
@@ -142,16 +150,17 @@ export const rejectRequest = mutation({
     });
 
     // Notify requester
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: request.organizationId,
       userId: request.requesterId,
       type: 'system',
-      title: '❌ Trip Request Declined',
-      message: `Your trip request has been declined: ${reason}`,
-      isRead: false,
+      titleKey: 'notifications.titles.tripDeclined',
+      messageKey: 'notifications.messages.tripDeclinedReason',
+      params: { reason },
+      fallbackTitle: '❌ Trip Request Declined',
+      fallbackMessage: `Your trip request has been declined: ${reason}`,
       relatedId: `driver_request:${requestId}`,
       route: '/drivers',
-      createdAt: Date.now(),
     });
 
     return { success: true };
@@ -422,16 +431,20 @@ export const autoAssignDriver = mutation({
     const _requester = await ctx.db.get(request.requesterId);
     const driverUser = await ctx.db.get(assignedDriver.userId);
 
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: request.organizationId,
       userId: request.requesterId,
       type: 'system',
-      title: '✅ Driver Assigned',
-      message: `${driverUser?.name} will pick you up at ${request.tripInfo.from}`,
-      isRead: false,
+      titleKey: 'notifications.titles.driverAssigned',
+      messageKey: 'notifications.messages.driverWillPickYouUp',
+      params: {
+        driverName: driverUser?.name ?? '',
+        from: request.tripInfo.from,
+      },
+      fallbackTitle: '✅ Driver Assigned',
+      fallbackMessage: `${driverUser?.name} will pick you up at ${request.tripInfo.from}`,
       relatedId: `driver_request:${requestId}`,
       route: '/drivers',
-      createdAt: Date.now(),
     });
 
     return { success: true, driverId: assignedDriver._id };

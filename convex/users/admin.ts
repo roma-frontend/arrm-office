@@ -6,6 +6,7 @@ import type { Doc } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
+import { notify } from '../lib/notify';
 // ── Security helpers ──────────────────────────────────────────────────────────
 /** Verify caller has admin/superadmin role and return their organizationId */
 async function requireAdmin(ctx: QueryCtx | MutationCtx) {
@@ -147,15 +148,20 @@ export const suspendUser = mutation({
     });
 
     // Notify user
-    await ctx.db.insert('notifications', {
+    // Kept locale-neutral: params are interpolated in the reader's language, so a
+    // date pre-formatted for one locale here would be wrong for the other three.
+    const until = new Date(suspendedUntil).toISOString().slice(0, 16).replace('T', ' ');
+
+    await notify(ctx, {
       organizationId: user.organizationId,
       userId,
       type: 'system',
-      title: '⚠️ Account Temporarily Suspended',
-      message: `Your account has been suspended until ${new Date(suspendedUntil).toLocaleString()}. Reason: ${reason}. Contact your administrator for more information.`,
-      isRead: false,
+      titleKey: 'notifications.titles.accountSuspended',
+      messageKey: 'notifications.messages.accountSuspended',
+      params: { until, reason },
+      fallbackTitle: '⚠️ Account Temporarily Suspended',
+      fallbackMessage: `Your account has been suspended until ${until}. Reason: ${reason}. Contact your administrator for more information.`,
       route: '/security',
-      createdAt: Date.now(),
     });
 
     return { userId, suspendedUntil };
@@ -206,15 +212,16 @@ export const unsuspendUser = mutation({
     });
 
     // Notify user
-    await ctx.db.insert('notifications', {
+    await notify(ctx, {
       organizationId: user.organizationId,
       userId,
       type: 'system',
-      title: '✅ Account Unsuspended',
-      message: `Your account has been reactivated by ${(admin as Doc<'users'>).name}. You can now log in again.`,
-      isRead: false,
+      titleKey: 'notifications.titles.accountUnsuspended',
+      messageKey: 'notifications.messages.accountUnsuspended',
+      params: { adminName: (admin as Doc<'users'>).name },
+      fallbackTitle: '✅ Account Unsuspended',
+      fallbackMessage: `Your account has been reactivated by ${(admin as Doc<'users'>).name}. You can now log in again.`,
       route: '/security',
-      createdAt: Date.now(),
     });
 
     return userId;
@@ -243,15 +250,15 @@ export const autoUnsuspendExpired = internalMutation({
         });
 
         // Notify user
-        await ctx.db.insert('notifications', {
+        await notify(ctx, {
           organizationId: user.organizationId,
           userId: user._id,
           type: 'system',
-          title: '✅ Suspension Expired',
-          message: 'Your temporary suspension has ended. You can now log in again.',
-          isRead: false,
-          route: '/security',
-          createdAt: Date.now(),
+          titleKey: 'notifications.titles.suspensionExpired',
+          messageKey: 'notifications.messages.suspensionExpired',
+          fallbackTitle: '✅ Suspension Expired',
+          fallbackMessage: 'Your temporary suspension has ended. You can now log in again.',
+          route: '/dashboard',
         });
 
         count++;
