@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
+import { getStartingLeaveBalances } from '../lib/leaveBalances';
+import { resolveOrgUnitsByName } from '../lib/orgUnits';
 import { checkTempAccessStillValid } from '../superadmin/accessTokens';
 import { logger } from '../../src/lib/logger';
 
@@ -282,6 +284,18 @@ export const register = mutation({
       // SECURITY: Hash password server-side with bcrypt instead of storing client-side hash
       const hashedPassword = await hashPassword(args.password);
 
+      // "Management" is a synthetic department for the first admin — resolve it
+      // to a real record so the person is counted like everyone else.
+      const adminUnits =
+        role === 'admin' || userIsSuperadmin
+          ? await resolveOrgUnitsByName(
+              ctx,
+              organizationId,
+              { department: 'Management', position: 'Administrator' },
+              { create: true },
+            )
+          : {};
+
       const userId = await ctx.db.insert('users', {
         organizationId,
         name: args.name,
@@ -290,18 +304,12 @@ export const register = mutation({
         phone: args.phone,
         role,
         employeeType: 'staff',
-        department: role === 'admin' || userIsSuperadmin ? 'Management' : undefined,
-        position: role === 'admin' || userIsSuperadmin ? 'Administrator' : undefined,
+        ...adminUnits,
         isActive: true,
         isApproved,
         approvedAt: isApproved ? Date.now() : undefined,
         travelAllowance: 20000,
-        paidLeaveBalance: 24,
-        sickLeaveBalance: 10,
-        familyLeaveBalance: 5,
-        dayOffBalance: 6,
-        maternityLeaveBalance: 0,
-        studyLeaveBalance: 5,
+        ...(await getStartingLeaveBalances(ctx, organizationId)),
         createdAt: Date.now(),
       });
 
@@ -904,12 +912,7 @@ export const googleOAuthLogin = mutation({
       isApproved,
       approvedAt: isApproved ? Date.now() : undefined,
       travelAllowance: 20000,
-      paidLeaveBalance: 24,
-      sickLeaveBalance: 10,
-      familyLeaveBalance: 5,
-      dayOffBalance: 6,
-      maternityLeaveBalance: 0,
-      studyLeaveBalance: 5,
+      ...(await getStartingLeaveBalances(ctx, organizationId)),
       sessionToken: isApproved ? args.sessionToken : undefined,
       sessionExpiry: isApproved ? args.sessionExpiry : undefined,
       lastLoginAt: Date.now(),

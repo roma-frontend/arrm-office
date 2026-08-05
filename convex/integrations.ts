@@ -14,6 +14,8 @@ import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
+import { getStartingLeaveBalances } from './lib/leaveBalances';
+import { resolveOrgUnitsByName } from './lib/orgUnits';
 
 const providerValidator = v.union(
   v.literal('lucky_carrot'),
@@ -599,8 +601,17 @@ export const upsertEmployeeBatch = internalMutation({
           patch.email = email;
         }
         // Only overwrite what the provider actually sent.
-        if (incoming.department !== undefined) patch.department = incoming.department;
-        if (incoming.position !== undefined) patch.position = incoming.position;
+        if (incoming.department !== undefined || incoming.position !== undefined) {
+          // Keep the id link in step with the denormalized name, otherwise the
+          // employee drops out of department head-counts.
+          const units = await resolveOrgUnitsByName(
+            ctx,
+            organizationId,
+            { department: incoming.department, position: incoming.position },
+            { create: true },
+          );
+          Object.assign(patch, units);
+        }
         if (incoming.phone !== undefined) patch.phone = incoming.phone;
         if (incoming.location !== undefined) patch.location = incoming.location;
         if (incoming.employeeType !== undefined) patch.employeeType = incoming.employeeType;
@@ -640,6 +651,13 @@ export const upsertEmployeeBatch = internalMutation({
       const employeeType = incoming.employeeType ?? 'staff';
       const isStaff = employeeType === 'staff';
       const now = Date.now();
+      const units = await resolveOrgUnitsByName(
+        ctx,
+        organizationId,
+        { department: incoming.department, position: incoming.position },
+        { create: true },
+      );
+      const balances = await getStartingLeaveBalances(ctx, organizationId);
 
       await ctx.db.insert('users', {
         organizationId,
@@ -649,8 +667,7 @@ export const upsertEmployeeBatch = internalMutation({
         passwordHash: '',
         role: 'employee',
         employeeType,
-        department: incoming.department,
-        position: incoming.position,
+        ...units,
         phone: incoming.phone,
         location: incoming.location,
         // Recorded on creation so a later email change at the provider is a
@@ -660,12 +677,7 @@ export const upsertEmployeeBatch = internalMutation({
         isActive: incoming.isActive ?? true,
         isApproved: true,
         travelAllowance: isStaff ? 20000 : 12000,
-        paidLeaveBalance: 20,
-        sickLeaveBalance: 10,
-        familyLeaveBalance: 5,
-        dayOffBalance: 6,
-        maternityLeaveBalance: 0,
-        studyLeaveBalance: 5,
+        ...balances,
         createdAt: now,
       });
       if (incoming.isActive ?? true) seatsUsed++;
@@ -2075,12 +2087,7 @@ export const imidUpsertUser = internalMutation({
       sessionExpiry: isApproved ? sessionExpiry : undefined,
       lastLoginAt: isApproved ? Date.now() : undefined,
       travelAllowance: 20000,
-      paidLeaveBalance: 24,
-      sickLeaveBalance: 10,
-      familyLeaveBalance: 5,
-      dayOffBalance: 6,
-      maternityLeaveBalance: 0,
-      studyLeaveBalance: 5,
+      ...(await getStartingLeaveBalances(ctx, organizationId)),
       createdAt: Date.now(),
     });
 

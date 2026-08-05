@@ -7,6 +7,8 @@ import { isSuperadminEmail } from '../lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
 import { patchProfile } from '../lib/userProfile';
+import { getStartingLeaveBalances } from '../lib/leaveBalances';
+import { resolveDepartmentByName, resolvePositionByTitle } from '../lib/orgUnits';
 import type { MutationCtx } from '../_generated/server';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -29,9 +31,16 @@ async function resolveOrgUnits(
     department?: string;
     position?: string;
   },
-): Promise<{ departmentName?: string; positionName?: string }> {
+): Promise<{
+  departmentName?: string;
+  positionName?: string;
+  departmentId?: Id<'departments'>;
+  positionId?: Id<'positions'>;
+}> {
   let departmentName = input.department;
   let positionName = input.position;
+  let departmentId = input.departmentId;
+  let positionId = input.positionId;
 
   if (input.departmentId) {
     const dept = await ctx.db.get(input.departmentId);
@@ -40,6 +49,12 @@ async function resolveOrgUnits(
       throw new Error('Department belongs to a different organization');
     }
     departmentName = dept.name;
+  } else if (departmentName) {
+    // Legacy string-only input: link it to the real record when one exists, so
+    // the employee still counts towards that department.
+    const link = await resolveDepartmentByName(ctx, orgId, departmentName);
+    departmentName = link.name ?? departmentName;
+    departmentId = link.departmentId;
   }
 
   if (input.positionId) {
@@ -49,9 +64,13 @@ async function resolveOrgUnits(
       throw new Error('Position belongs to a different organization');
     }
     positionName = pos.title;
+  } else if (positionName) {
+    const link = await resolvePositionByTitle(ctx, orgId, positionName);
+    positionName = link.title ?? positionName;
+    positionId = link.positionId;
   }
 
-  return { departmentName, positionName };
+  return { departmentName, positionName, departmentId, positionId };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -161,12 +180,17 @@ export const createUser = mutation({
     // Resolve department/position records and denormalize their names. Both
     // must belong to the target org — otherwise an admin could attach an
     // employee to another organization's department.
-    const { departmentName, positionName } = await resolveOrgUnits(ctx, targetOrgId, {
-      departmentId: args.departmentId,
-      positionId: args.positionId,
-      department: args.department,
-      position: args.position,
-    });
+    const { departmentName, positionName, departmentId, positionId } = await resolveOrgUnits(
+      ctx,
+      targetOrgId,
+      {
+        departmentId: args.departmentId,
+        positionId: args.positionId,
+        department: args.department,
+        position: args.position,
+      },
+    );
+    const balances = await getStartingLeaveBalances(ctx, targetOrgId);
 
     const userId = await ctx.db.insert('users', {
       organizationId: targetOrgId,
@@ -176,9 +200,9 @@ export const createUser = mutation({
       role: args.role,
       employeeType: args.employeeType,
       department: departmentName,
-      departmentId: args.departmentId,
+      departmentId,
       position: positionName,
-      positionId: args.positionId,
+      positionId,
       phone: args.phone,
       supervisorId: args.supervisorId,
       dateOfBirth: args.dateOfBirth,
@@ -188,12 +212,7 @@ export const createUser = mutation({
       approvedBy: adminId,
       approvedAt: Date.now(),
       travelAllowance,
-      paidLeaveBalance: 24,
-      sickLeaveBalance: 10,
-      familyLeaveBalance: 5,
-      dayOffBalance: 6,
-      maternityLeaveBalance: 0,
-      studyLeaveBalance: 5,
+      ...balances,
       createdAt: args.createdAt ?? Date.now(),
     });
 
