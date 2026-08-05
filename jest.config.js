@@ -7,6 +7,13 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
   transform: {
+    // `convex-test` ships a Vite-only `import.meta.glob` call that CommonJS Jest
+    // cannot parse — this transformer strips it (we always pass the module map
+    // explicitly). Must come before the generic .jsx? rule.
+    'node_modules[\\\\/]convex-test[\\\\/].*\\.js$': path.join(
+      __dirname,
+      'jest.convexTestTransform.js',
+    ),
     '^.+\\.tsx?$': ['ts-jest', { useESM: false }],
     // The Babel config is deliberately NOT named `babel.config.js`: Next.js
     // auto-detects that filename and silently disables SWC for the whole app

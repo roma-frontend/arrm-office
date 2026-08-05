@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
     '*.config.js',
     '*.config.mjs',
     '*.config.ts',
+    // Jest transformer for convex-test (plain CommonJS tooling file)
+    'jest.convexTestTransform.js',
     // Ignore scripts
     'scripts/**',
     'remove-console-logs.js',
