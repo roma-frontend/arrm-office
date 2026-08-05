@@ -239,6 +239,13 @@
     "news": "Новости",
     "assets": "Активы"
   },
+  "userPicker": {
+    "search": "Поиск по имени, email, отделу…",
+    "loading": "Загрузка…",
+    "empty": "Сотрудники не найдены",
+    "clear": "Сбросить выбор",
+    "noOrganization": "Организация не выбрана"
+  },
   "docLibrary": {
     "title": "Библиотека документов",
     "subtitle": "Выберите шаблон и сотрудника — документ заполнится сам. Экспортируйте или отправьте на подпись.",
@@ -1107,7 +1114,10 @@
       "onboarding_started": "Онбординг начат",
       "onboarding_manager_assigned": "Назначен менеджер онбординга",
       "onboarding_buddy_assigned": "Назначен наставник",
-      "onboarding_task_overdue": "Задача онбординга просрочена"
+      "onboarding_task_overdue": "Задача онбординга просрочена",
+      "offboarding_started": "Начато увольнение",
+      "offboarding_last_day_soon": "Приближается последний рабочий день",
+      "offboarding_completed": "Увольнение завершено"
     },
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" завершена пользователем {{userName}}",
@@ -1185,6 +1195,10 @@
       "onboardingBuddyAssigned": "{{employeeName}} нуждается в вашей поддержке в период адаптации. Помогите освоиться!",
       "onboardingNewEmployee": "Новый сотрудник",
       "onboardingTaskOverdue": "«{{taskTitle}}» просрочена на {{count}} дн. Пожалуйста, выполните её как можно скорее.",
+      "offboardingStartedSelf": "Начат процесс вашего увольнения. Последний рабочий день — {{lastDay}}. Проверьте чек-лист, передайте задачи и оборудование.",
+      "offboardingStartedManager": "{{employeeName}} увольняется {{lastDay}}. Вы отвечаете за чек-лист увольнения.",
+      "offboardingLastDaySoon": "Последний рабочий день {{employeeName}} через {{count}} дн., при этом не закрыто пунктов чек-листа: {{openTasks}}.",
+      "offboardingCompleted": "Увольнение {{employeeName}} завершено. Аккаунт деактивирован, выданное оборудование помечено как возвращённое.",
       "roomInvited": "{{actorName}} пригласил вас на встречу",
       "roomCancelled": "{{actorName}} отменил встречу",
       "attendeeResponded": "{{name}} $t(attendeeResponses.{{response}}) приглашение",
@@ -1267,6 +1281,9 @@
       "onboardingManagerAssigned": "👤 Вам назначена адаптация нового сотрудника",
       "onboardingBuddyAssigned": "🤝 Вы назначены наставником",
       "onboardingTaskOverdue": "⚠️ Задача адаптации просрочена",
+      "offboardingStarted": "📤 Начато увольнение",
+      "offboardingLastDaySoon": "⏳ Приближается последний рабочий день",
+      "offboardingCompleted": "✅ Увольнение завершено",
       "roomBooking": "{{bookingTitle}} · {{roomName}}",
       "roomBookingResponse": "{{bookingTitle}}",
       "taskAssigned": "📋 Назначена задача",

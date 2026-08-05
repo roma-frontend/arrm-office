@@ -1175,14 +1175,12 @@
       "autoTasks": "Standardaufgaben werden automatisch erstellt."
     },
     "fields": {
-      "employeeId": "Mitarbeiter-ID",
-      "managerId": "Manager-ID",
+      "employee": "Ausscheidender Mitarbeiter",
+      "manager": "Manager",
       "lastDay": "Letzter Arbeitstag",
       "reason": "Grund",
       "note": "Notiz (optional)",
-      "notePlaceholder": "Zusätzlicher Kontext...",
-      "employeeIdPlaceholder": "ID des kündigenden Mitarbeiters",
-      "managerIdPlaceholder": "ID des Managers"
+      "notePlaceholder": "Zusätzlicher Kontext..."
     },
     "exitForm": {
       "title": "Exit-Interview-Formular",
@@ -1261,13 +1259,13 @@
       "success": "Template erstellt!"
     },
     "fields": {
-      "employeeId": "Mitarbeiter-ID",
+      "employee": "Neuer Mitarbeiter",
       "employeeHint": "Der Benutzer muss bereits im System existieren",
       "template": "Template",
       "selectTemplate": "Template auswählen (optional)",
       "startDate": "Startdatum",
-      "managerId": "ID des Managers",
-      "buddyId": "ID des Mentors (optional)",
+      "manager": "Manager",
+      "buddy": "Mentor (optional)",
       "templateName": "Name des Templates",
       "templateNamePlaceholder": "z.B. Onboarding für Ingenieure",
       "description": "Beschreibung",
@@ -1275,9 +1273,6 @@
       "department": "Abteilung",
       "deptPlaceholder": "z.B. Entwicklung",
       "taskTitle": "Aufgabentitel",
-      "employeeIdPlaceholder": "ID des neuen Mitarbeiters eingeben",
-      "managerIdPlaceholder": "ID des Managers eingeben",
-      "buddyIdPlaceholder": "ID des Mentors eingeben",
       "dayPlaceholder": "Tag {{day}}"
     }
   },

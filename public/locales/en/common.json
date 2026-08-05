@@ -239,6 +239,13 @@
     "news": "News",
     "assets": "Assets"
   },
+  "userPicker": {
+    "search": "Search by name, email, department…",
+    "loading": "Loading…",
+    "empty": "No employees found",
+    "clear": "Clear selection",
+    "noOrganization": "No organization selected"
+  },
   "docLibrary": {
     "title": "Document Library",
     "subtitle": "Pick a template, choose an employee, and the document fills itself in — export or send for signature.",
@@ -1107,7 +1114,10 @@
       "onboarding_started": "Onboarding Started",
       "onboarding_manager_assigned": "Onboarding Manager Assigned",
       "onboarding_buddy_assigned": "Buddy Assigned",
-      "onboarding_task_overdue": "Onboarding Task Overdue"
+      "onboarding_task_overdue": "Onboarding Task Overdue",
+      "offboarding_started": "Offboarding Started",
+      "offboarding_last_day_soon": "Last Working Day Approaching",
+      "offboarding_completed": "Offboarding Completed"
     },
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" has been completed by {{userName}}",
@@ -1185,6 +1195,10 @@
       "onboardingBuddyAssigned": "{{employeeName}} needs your guidance during onboarding. Help them get settled!",
       "onboardingNewEmployee": "A new employee",
       "onboardingTaskOverdue": "\"{{taskTitle}}\" is {{count}} day(s) overdue. Please complete it as soon as possible.",
+      "offboardingStartedSelf": "Your offboarding has started. Your last working day is {{lastDay}} — check the departure checklist and hand over your work and equipment.",
+      "offboardingStartedManager": "{{employeeName}} is leaving on {{lastDay}}. You are responsible for their departure checklist.",
+      "offboardingLastDaySoon": "{{employeeName}}'s last working day is in {{count}} day(s) and {{openTasks}} checklist item(s) are still open.",
+      "offboardingCompleted": "{{employeeName}}'s offboarding is complete. Their account has been deactivated and assigned equipment marked as returned.",
       "roomInvited": "{{actorName}} invited you to a meeting",
       "roomCancelled": "Meeting cancelled by {{actorName}}",
       "attendeeResponded": "{{name}} $t(attendeeResponses.{{response}}) the invitation",
@@ -1267,6 +1281,9 @@
       "onboardingManagerAssigned": "👤 New Hire Onboarding Assigned",
       "onboardingBuddyAssigned": "🤝 You are assigned as a Buddy",
       "onboardingTaskOverdue": "⚠️ Onboarding Task Overdue",
+      "offboardingStarted": "📤 Offboarding started",
+      "offboardingLastDaySoon": "⏳ Last working day approaching",
+      "offboardingCompleted": "✅ Offboarding completed",
       "roomBooking": "{{bookingTitle}} · {{roomName}}",
       "roomBookingResponse": "{{bookingTitle}}",
       "taskAssigned": "📋 Task Assigned",
