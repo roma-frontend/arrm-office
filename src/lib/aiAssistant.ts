@@ -300,8 +300,13 @@ export const AI_CAPABILITIES: AICapability[] = [
     keywords: [
       'employees',
       'сотрудники',
+      // Singular phrasings matter: "add a new employee" contains neither
+      // "employees" nor "add employee", so the intent used to go unmatched.
       'add employee',
+      'add a new employee',
+      'new employee',
       'добавить сотрудника',
+      'нового сотрудника',
       'manage team',
       'управление персоналом',
     ],
