@@ -1,9 +1,102 @@
 import { query, mutation, internalMutation } from './_generated/server';
 import { internal } from './_generated/api';
 import { v } from 'convex/values';
+import type { Doc, Id } from './_generated/dataModel';
+import type { MutationCtx } from './_generated/server';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
+import {
+  assertOrgScope,
+  assertOrgStaff,
+  resolveOrgScope,
+  resolveOrgStaff,
+  scopeOwnsRecord,
+  type OrgScope,
+} from './lib/orgAccess';
+
+/**
+ * Fallback checklist used when a programme is started without a template.
+ *
+ * Without this, `startOnboarding` created a programme with zero tasks: progress
+ * stayed at 0%, and since the UI only offers "Complete onboarding" from 80%, the
+ * programme could never be finished or closed. Mirrors the shape of
+ * `onboardingTemplates.tasks` so both paths share one spawn routine.
+ */
+const DEFAULT_ONBOARDING_TASKS = [
+  {
+    key: 'default_paperwork',
+    title: 'Sign employment paperwork',
+    assigneeType: 'new_hire' as const,
+    category: 'documentation' as const,
+    dayOffset: 0,
+  },
+  {
+    key: 'default_accounts',
+    title: 'Create accounts and grant system access',
+    assigneeType: 'it' as const,
+    category: 'access' as const,
+    dayOffset: 0,
+  },
+  {
+    key: 'default_equipment',
+    title: 'Hand over laptop and equipment',
+    assigneeType: 'it' as const,
+    category: 'equipment' as const,
+    dayOffset: 0,
+  },
+  {
+    key: 'default_workplace',
+    title: 'Prepare workplace and access badge',
+    assigneeType: 'hr' as const,
+    category: 'equipment' as const,
+    dayOffset: 0,
+  },
+  {
+    key: 'default_team_intro',
+    title: 'Introduce to the team',
+    assigneeType: 'manager' as const,
+    category: 'intro' as const,
+    dayOffset: 1,
+  },
+  {
+    key: 'default_buddy_meeting',
+    title: 'First meeting with the buddy',
+    assigneeType: 'buddy' as const,
+    category: 'intro' as const,
+    dayOffset: 1,
+  },
+  {
+    key: 'default_policies',
+    title: 'Read internal policies and safety rules',
+    assigneeType: 'new_hire' as const,
+    category: 'training' as const,
+    dayOffset: 3,
+  },
+  {
+    key: 'default_goals',
+    title: 'Agree on goals for the probation period',
+    assigneeType: 'manager' as const,
+    category: 'other' as const,
+    dayOffset: 7,
+  },
+  {
+    key: 'default_checkin_30',
+    title: '30-day check-in',
+    assigneeType: 'manager' as const,
+    category: 'other' as const,
+    dayOffset: 30,
+  },
+];
+
+type TaskBlueprint = {
+  key: string;
+  title: string;
+  description?: string;
+  assigneeType: 'new_hire' | 'buddy' | 'manager' | 'hr' | 'it';
+  category: 'documentation' | 'access' | 'training' | 'equipment' | 'intro' | 'other';
+  dayOffset: number;
+};
 
 // ─── Helpers ─────────────────────────────────────────────────
 function computeProgress(tasks: { status: string }[]): number {
@@ -12,11 +105,78 @@ function computeProgress(tasks: { status: string }[]): number {
   return Math.round((done / tasks.length) * 100);
 }
 
+/** Staff see every programme; everyone else only the ones they take part in. */
+function canSeeProgram(scope: OrgScope, program: Doc<'onboardingPrograms'>): boolean {
+  if (!scopeOwnsRecord(scope, program)) return false;
+  if (scope.isStaff) return true;
+  return (
+    program.employeeId === scope.caller._id ||
+    program.managerId === scope.caller._id ||
+    program.buddyId === scope.caller._id
+  );
+}
+
+async function loadProgramForWrite(
+  ctx: MutationCtx,
+  programId: Id<'onboardingPrograms'>,
+  opts: { staffOnly?: boolean; mustBeActive?: boolean } = {},
+): Promise<{ program: Doc<'onboardingPrograms'>; scope: OrgScope }> {
+  const program = await ctx.db.get(programId);
+  if (!program) throw new Error('Program not found');
+
+  const scope = opts.staffOnly
+    ? await assertOrgStaff(ctx, program.organizationId)
+    : await assertOrgScope(ctx, program.organizationId);
+  if (!scopeOwnsRecord(scope, program)) throw new Error('Access denied');
+
+  if (opts.mustBeActive && program.status !== 'active') {
+    throw new Error(`This onboarding program is already ${program.status}`);
+  }
+  return { program, scope };
+}
+
+/**
+ * Close the mirrored `tasks` rows of a programme so cancelling or completing it
+ * does not leave onboarding work sitting in people's task boards forever.
+ */
+async function closeMirroredTasks(
+  ctx: MutationCtx,
+  programId: Id<'onboardingPrograms'>,
+  callerId: Id<'users'>,
+  mode: 'cancel' | 'complete',
+): Promise<number> {
+  const tasks = await ctx.db
+    .query('onboardingTasks')
+    .withIndex('by_program', (q) => q.eq('programId', programId))
+    .take(SMALL_LIST_CAP);
+  const now = Date.now();
+  let closed = 0;
+
+  for (const task of tasks) {
+    if (task.status === 'pending' && mode === 'cancel') {
+      await ctx.db.patch(task._id, {
+        status: 'skipped',
+        completedBy: callerId,
+        completedAt: now,
+      });
+    }
+    if (!task.taskId) continue;
+    const mirror = await ctx.db.get(task.taskId);
+    if (!mirror || mirror.status === 'completed' || mirror.status === 'cancelled') continue;
+    await ctx.db.patch(task.taskId, { status: 'cancelled', updatedAt: now });
+    closed += 1;
+  }
+  return closed;
+}
+
 // ─── Queries ─────────────────────────────────────────────────
 
 export const listTemplates = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
+    // Templates drive what gets created for new hires — staff-only data.
+    const scope = await resolveOrgStaff(ctx, args.organizationId);
+    if (!scope) return [];
     const { organizationId } = args;
     return await ctx.db
       .query('onboardingTemplates')
@@ -28,6 +188,8 @@ export const listTemplates = query({
 export const listPrograms = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
+    const scope = await resolveOrgScope(ctx, args.organizationId);
+    if (!scope) return [];
     const { organizationId } = args;
     const programs = await ctx.db
       .query('onboardingPrograms')
@@ -36,23 +198,25 @@ export const listPrograms = query({
       .take(DEFAULT_LIST_CAP);
 
     const result = await Promise.all(
-      programs.map(async (prog) => {
-        const tasks = await ctx.db
-          .query('onboardingTasks')
-          .withIndex('by_program', (q) => q.eq('programId', prog._id))
-          .take(DEFAULT_LIST_CAP);
-        const employee = (await ctx.db.get(prog.employeeId)) as { name?: string } | null;
-        const buddy = prog.buddyId ? await ctx.db.get(prog.buddyId) : null;
-        return {
-          ...prog,
-          progress: computeProgress(tasks),
-          totalTasks: tasks.length,
-          completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
-            .length,
-          employeeName: employee?.name ?? 'Unknown',
-          buddyName: buddy?.name,
-        };
-      }),
+      programs
+        .filter((prog) => canSeeProgram(scope, prog))
+        .map(async (prog) => {
+          const tasks = await ctx.db
+            .query('onboardingTasks')
+            .withIndex('by_program', (q) => q.eq('programId', prog._id))
+            .take(DEFAULT_LIST_CAP);
+          const employee = (await ctx.db.get(prog.employeeId)) as { name?: string } | null;
+          const buddy = prog.buddyId ? await ctx.db.get(prog.buddyId) : null;
+          return {
+            ...prog,
+            progress: computeProgress(tasks),
+            totalTasks: tasks.length,
+            completedTasks: tasks.filter((t) => t.status === 'completed' || t.status === 'skipped')
+              .length,
+            employeeName: employee?.name ?? 'Unknown',
+            buddyName: buddy?.name,
+          };
+        }),
     );
     return result;
   },
@@ -64,6 +228,10 @@ export const getProgram = query({
     const { programId } = args;
     const program = await ctx.db.get(programId);
     if (!program) return null;
+
+    // Reached by id, so the org/visibility check happens after the read.
+    const scope = await resolveOrgScope(ctx, program.organizationId);
+    if (!scope || !canSeeProgram(scope, program)) return null;
 
     const tasks = await ctx.db
       .query('onboardingTasks')
@@ -106,7 +274,17 @@ export const getProgram = query({
 export const getMyOnboarding = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    // `userId` used to be taken on trust, which let anyone read another
+    // employee's programme (IDOR). It now has to be the caller themselves,
+    // unless staff are looking someone up.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
     const { userId } = args;
+    if (userId !== caller._id) {
+      const scope = await resolveOrgScope(ctx);
+      const target = await ctx.db.get(userId);
+      if (!scope || !scope.isStaff || !target || !scopeOwnsRecord(scope, target)) return null;
+    }
     const program = await ctx.db
       .query('onboardingPrograms')
       .withIndex('by_employee', (q) => q.eq('employeeId', userId))
@@ -139,7 +317,14 @@ export const getMyOnboarding = query({
 export const getMyMenteePrograms = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
     const { userId } = args;
+    if (userId !== caller._id) {
+      const scope = await resolveOrgScope(ctx);
+      const target = await ctx.db.get(userId);
+      if (!scope || !scope.isStaff || !target || !scopeOwnsRecord(scope, target)) return [];
+    }
     const asBuddy = await ctx.db
       .query('onboardingPrograms')
       .withIndex('by_buddy', (q) => q.eq('buddyId', userId))
@@ -207,18 +392,21 @@ export const createTemplate = mutation({
         dayOffset: v.number(),
       }),
     ),
-    createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    const scope = await assertOrgStaff(ctx, args.organizationId);
+    if (args.tasks.length === 0) {
+      throw new Error('A template needs at least one task');
+    }
     return await ctx.db.insert('onboardingTemplates', {
-      organizationId: args.organizationId,
+      organizationId: scope.organizationId ?? args.organizationId,
       name: args.name,
       description: args.description,
       department: args.department,
       role: args.role,
       isActive: true,
       tasks: args.tasks,
-      createdBy: args.createdBy,
+      createdBy: scope.caller._id,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -261,6 +449,11 @@ export const updateTemplate = mutation({
   },
   handler: async (ctx, args) => {
     const { templateId, ...fields } = args;
+    const template = await ctx.db.get(templateId);
+    if (!template) throw new Error('Template not found');
+    const scope = await assertOrgStaff(ctx, template.organizationId);
+    if (!scopeOwnsRecord(scope, template)) throw new Error('Access denied');
+
     const update: Record<string, unknown> = { updatedAt: Date.now() };
     if (fields.name !== undefined) update.name = fields.name;
     if (fields.description !== undefined) update.description = fields.description;
@@ -272,11 +465,21 @@ export const updateTemplate = mutation({
   },
 });
 
+/**
+ * Delete a template.
+ *
+ * This used to be an unauthenticated `ctx.db.delete` sitting next to a guarded
+ * `secureDeleteTemplate` — leaving the unsafe entry point exported defeated the
+ * guarded one, so both now run the same check.
+ */
 export const deleteTemplate = mutation({
   args: { templateId: v.id('onboardingTemplates') },
   handler: async (ctx, args) => {
-    const { templateId } = args;
-    await ctx.db.delete(templateId);
+    const template = await ctx.db.get(args.templateId);
+    if (!template) throw new Error('Template not found');
+    const scope = await assertOrgStaff(ctx, template.organizationId);
+    if (!scopeOwnsRecord(scope, template)) throw new Error('Access denied');
+    await ctx.db.delete(args.templateId);
   },
 });
 
@@ -288,9 +491,29 @@ export const startOnboarding = mutation({
     startDate: v.number(),
     buddyId: v.optional(v.id('users')),
     managerId: v.id('users'),
-    createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    const scope = await assertOrgStaff(ctx, args.organizationId);
+    const orgId = scope.organizationId ?? args.organizationId;
+    const createdBy = scope.caller._id;
+
+    // Everyone referenced must live in the organization being acted on.
+    const employee = await ctx.db.get(args.employeeId);
+    if (!employee) throw new Error('Employee not found');
+    if (employee.organizationId !== orgId) {
+      throw new Error('Employee belongs to a different organization');
+    }
+    const manager = await ctx.db.get(args.managerId);
+    if (!manager || manager.organizationId !== orgId) {
+      throw new Error('Manager not found in this organization');
+    }
+    if (args.buddyId) {
+      const buddy = await ctx.db.get(args.buddyId);
+      if (!buddy || buddy.organizationId !== orgId) {
+        throw new Error('Buddy not found in this organization');
+      }
+    }
+
     // Guard against duplicate active programs
     const existing = await ctx.db
       .query('onboardingPrograms')
@@ -301,96 +524,132 @@ export const startOnboarding = mutation({
       throw new Error('This employee already has an active onboarding program');
     }
 
+    // Adapting someone who is on their way out is always a mistake — unlike the
+    // reverse direction (quitting during probation), which offboarding handles by
+    // cancelling the onboarding programme.
+    const activeOffboarding = await ctx.db
+      .query('offboardingPrograms')
+      .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
+      .filter((q) => q.eq(q.field('status'), 'active'))
+      .first();
+    if (activeOffboarding) {
+      throw new Error(
+        'This employee has an active offboarding program — cancel it before starting onboarding',
+      );
+    }
+
     const programId = await ctx.db.insert('onboardingPrograms', {
-      organizationId: args.organizationId,
+      organizationId: orgId,
       employeeId: args.employeeId,
       templateId: args.templateId,
       startDate: args.startDate,
       buddyId: args.buddyId,
       managerId: args.managerId,
       status: 'active',
-      createdBy: args.createdBy,
+      createdBy,
       createdAt: Date.now(),
     });
 
-    // Spawn tasks from template
+    // Tasks come from the template when one was picked, otherwise from the
+    // built-in checklist — a programme must never start empty.
+    let blueprints: TaskBlueprint[] = DEFAULT_ONBOARDING_TASKS;
+    let usedTemplate = false;
     if (args.templateId) {
       const template = await ctx.db.get(args.templateId);
-      if (template) {
-        for (let i = 0; i < template.tasks.length; i++) {
-          const t = template.tasks[i]!;
-          // Resolve assigneeId based on type
-          let assigneeId: typeof args.employeeId | undefined;
-          if (t.assigneeType === 'new_hire') assigneeId = args.employeeId;
-          else if (t.assigneeType === 'buddy' && args.buddyId) assigneeId = args.buddyId;
-          else if (t.assigneeType === 'manager') assigneeId = args.managerId;
-
-          const dueDate = args.startDate + t.dayOffset * 86400000;
-
-          // Create task in main tasks table
-          const mainTaskId = await ctx.db.insert('tasks', {
-            organizationId: args.organizationId,
-            title: `[Onboarding] ${t.title}`,
-            description: t.description || undefined,
-            assignedTo: assigneeId || args.employeeId,
-            assignedBy: args.createdBy,
-            status: 'pending',
-            priority:
-              t.category === 'documentation' || t.category === 'equipment' ? 'high' : 'medium',
-            deadline: dueDate,
-            tags: [`onboarding`, t.category, t.assigneeType],
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          });
-
-          // Auto-create asset request for equipment tasks
-          if (t.category === 'equipment') {
-            const assetCategory = t.title.toLowerCase().includes('laptop')
-              ? 'laptop'
-              : t.title.toLowerCase().includes('monitor')
-                ? 'monitor'
-                : t.title.toLowerCase().includes('phone')
-                  ? 'phone'
-                  : t.title.toLowerCase().includes('software')
-                    ? 'software'
-                    : t.title.toLowerCase().includes('peripheral')
-                      ? 'peripheral'
-                      : 'other';
-            await ctx.scheduler.runAfter(0, internal.assets.autoCreateRequestFromOnboarding, {
-              organizationId: args.organizationId,
-              employeeId: args.employeeId,
-              reason: `${t.title} (onboarding task)`,
-              category: assetCategory,
-            });
-          }
-
-          await ctx.db.insert('onboardingTasks', {
-            organizationId: args.organizationId,
-            programId,
-            templateTaskKey: t.key,
-            taskId: mainTaskId,
-            title: t.title,
-            description: t.description,
-            assigneeType: t.assigneeType,
-            assigneeId,
-            category: t.category,
-            dayOffset: t.dayOffset,
-            dueDate,
-            status: 'pending',
-            order: i,
-          });
-        }
+      if (template && template.organizationId !== orgId) {
+        throw new Error('Template belongs to a different organization');
       }
+      if (template && template.tasks.length > 0) {
+        blueprints = template.tasks as TaskBlueprint[];
+        usedTemplate = true;
+      }
+    }
+
+    for (let i = 0; i < blueprints.length; i++) {
+      const t = blueprints[i]!;
+      // Resolve assigneeId based on type
+      let assigneeId: Id<'users'> | undefined;
+      if (t.assigneeType === 'new_hire') assigneeId = args.employeeId;
+      else if (t.assigneeType === 'buddy' && args.buddyId) assigneeId = args.buddyId;
+      else if (t.assigneeType === 'manager') assigneeId = args.managerId;
+
+      const dueDate = args.startDate + t.dayOffset * 86400000;
+
+      // Create task in main tasks table
+      const mainTaskId = await ctx.db.insert('tasks', {
+        organizationId: orgId,
+        title: `[Onboarding] ${t.title}`,
+        description: t.description || undefined,
+        assignedTo: assigneeId || args.employeeId,
+        assignedBy: createdBy,
+        status: 'pending',
+        priority: t.category === 'documentation' || t.category === 'equipment' ? 'high' : 'medium',
+        deadline: dueDate,
+        tags: [`onboarding`, t.category, t.assigneeType],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      // Auto-create asset request for equipment tasks
+      if (t.category === 'equipment') {
+        const assetCategory = t.title.toLowerCase().includes('laptop')
+          ? 'laptop'
+          : t.title.toLowerCase().includes('monitor')
+            ? 'monitor'
+            : t.title.toLowerCase().includes('phone')
+              ? 'phone'
+              : t.title.toLowerCase().includes('software')
+                ? 'software'
+                : t.title.toLowerCase().includes('peripheral')
+                  ? 'peripheral'
+                  : 'other';
+        await ctx.scheduler.runAfter(0, internal.assets.autoCreateRequestFromOnboarding, {
+          organizationId: orgId,
+          employeeId: args.employeeId,
+          reason: `${t.title} (onboarding task)`,
+          category: assetCategory,
+        });
+      }
+
+      await ctx.db.insert('onboardingTasks', {
+        organizationId: orgId,
+        programId,
+        templateTaskKey: t.key,
+        taskId: mainTaskId,
+        title: t.title,
+        description: t.description,
+        assigneeType: t.assigneeType,
+        assigneeId,
+        category: t.category,
+        dayOffset: t.dayOffset,
+        dueDate,
+        status: 'pending',
+        order: i,
+      });
     }
 
     // Send notifications to employee, buddy, and manager
     await ctx.scheduler.runAfter(0, internal.onboarding.sendOnboardingStartNotifications, {
       programId,
-      organizationId: args.organizationId,
+      organizationId: orgId,
       employeeId: args.employeeId,
       buddyId: args.buddyId,
       managerId: args.managerId,
-      createdBy: args.createdBy,
+      createdBy,
+    });
+
+    await ctx.db.insert('auditLogs', {
+      organizationId: orgId,
+      userId: createdBy,
+      action: 'onboarding_started',
+      target: args.employeeId,
+      details: JSON.stringify({
+        programId,
+        employeeName: employee.name,
+        usedTemplate,
+        taskCount: blueprints.length,
+      }),
+      createdAt: Date.now(),
     });
 
     return programId;
@@ -400,7 +659,6 @@ export const startOnboarding = mutation({
 export const addTask = mutation({
   args: {
     programId: v.id('onboardingPrograms'),
-    organizationId: v.id('organizations'),
     title: v.string(),
     description: v.optional(v.string()),
     assigneeType: v.union(
@@ -423,13 +681,25 @@ export const addTask = mutation({
     dueDate: v.number(),
   },
   handler: async (ctx, args) => {
+    const { program } = await loadProgramForWrite(ctx, args.programId, {
+      staffOnly: true,
+      mustBeActive: true,
+    });
+
+    if (args.assigneeId) {
+      const assignee = await ctx.db.get(args.assigneeId);
+      if (!assignee || assignee.organizationId !== program.organizationId) {
+        throw new Error('Assignee not found in this organization');
+      }
+    }
+
     const tasks = await ctx.db
       .query('onboardingTasks')
       .withIndex('by_program', (q) => q.eq('programId', args.programId))
       .take(SMALL_LIST_CAP);
 
     await ctx.db.insert('onboardingTasks', {
-      organizationId: args.organizationId,
+      organizationId: program.organizationId,
       programId: args.programId,
       title: args.title,
       description: args.description,
@@ -445,16 +715,32 @@ export const addTask = mutation({
 });
 
 export const completeTask = mutation({
-  args: { taskId: v.id('onboardingTasks'), completedBy: v.id('users') },
+  args: { taskId: v.id('onboardingTasks') },
   handler: async (ctx, args) => {
-    const { taskId, completedBy } = args;
+    const { taskId } = args;
     const task = await ctx.db.get(taskId);
     if (!task) throw new Error('Task not found');
+
+    const scope = await assertOrgScope(ctx, task.organizationId);
+    if (!scopeOwnsRecord(scope, task)) throw new Error('Access denied');
+
+    const program = await ctx.db.get(task.programId);
+    if (!program || program.status !== 'active') {
+      throw new Error('This onboarding program is not active');
+    }
+    // The new hire, the assignee, the manager/buddy and staff may tick items off.
+    const mayComplete =
+      scope.isStaff ||
+      task.assigneeId === scope.caller._id ||
+      program.employeeId === scope.caller._id ||
+      program.managerId === scope.caller._id ||
+      program.buddyId === scope.caller._id;
+    if (!mayComplete) throw new Error('Not authorized to update this task');
     if (task.status === 'completed') return;
 
     await ctx.db.patch(taskId, {
       status: 'completed',
-      completedBy,
+      completedBy: scope.caller._id,
       completedAt: Date.now(),
     });
 
@@ -473,15 +759,24 @@ export const completeTask = mutation({
 });
 
 export const skipTask = mutation({
-  args: { taskId: v.id('onboardingTasks'), completedBy: v.id('users') },
+  args: { taskId: v.id('onboardingTasks') },
   handler: async (ctx, args) => {
-    const { taskId, completedBy } = args;
+    const { taskId } = args;
     const task = await ctx.db.get(taskId);
     if (!task) throw new Error('Task not found');
 
+    // Skipping an onboarding step is a management decision — staff only.
+    const scope = await assertOrgStaff(ctx, task.organizationId);
+    if (!scopeOwnsRecord(scope, task)) throw new Error('Access denied');
+
+    const program = await ctx.db.get(task.programId);
+    if (!program || program.status !== 'active') {
+      throw new Error('This onboarding program is not active');
+    }
+
     await ctx.db.patch(taskId, {
       status: 'skipped',
-      completedBy,
+      completedBy: scope.caller._id,
       completedAt: Date.now(),
     });
 
@@ -502,6 +797,19 @@ export const assignBuddy = mutation({
   args: { programId: v.id('onboardingPrograms'), buddyId: v.id('users') },
   handler: async (ctx, args) => {
     const { programId, buddyId } = args;
+    const { program } = await loadProgramForWrite(ctx, programId, {
+      staffOnly: true,
+      mustBeActive: true,
+    });
+
+    const buddy = await ctx.db.get(buddyId);
+    if (!buddy || buddy.organizationId !== program.organizationId) {
+      throw new Error('Buddy not found in this organization');
+    }
+    if (buddyId === program.employeeId) {
+      throw new Error('An employee cannot be their own buddy');
+    }
+
     await ctx.db.patch(programId, { buddyId });
     // Update buddy-assigned tasks
     const tasks = await ctx.db
@@ -511,6 +819,12 @@ export const assignBuddy = mutation({
       .take(SMALL_LIST_CAP);
     for (const task of tasks) {
       await ctx.db.patch(task._id, { assigneeId: buddyId });
+      if (task.taskId) {
+        const mirror = await ctx.db.get(task.taskId);
+        if (mirror && mirror.status !== 'completed' && mirror.status !== 'cancelled') {
+          await ctx.db.patch(task.taskId, { assignedTo: buddyId, updatedAt: Date.now() });
+        }
+      }
     }
   },
 });
@@ -519,9 +833,27 @@ export const completeProgram = mutation({
   args: { programId: v.id('onboardingPrograms') },
   handler: async (ctx, args) => {
     const { programId } = args;
+    const { program, scope } = await loadProgramForWrite(ctx, programId, {
+      staffOnly: true,
+      mustBeActive: true,
+    });
+    const now = Date.now();
+
     await ctx.db.patch(programId, {
       status: 'completed',
-      completedAt: Date.now(),
+      completedAt: now,
+    });
+
+    // Leftover onboarding items must not keep haunting people's task boards.
+    const closedMirrors = await closeMirroredTasks(ctx, programId, scope.caller._id, 'complete');
+
+    await ctx.db.insert('auditLogs', {
+      organizationId: program.organizationId,
+      userId: scope.caller._id,
+      action: 'onboarding_completed',
+      target: program.employeeId,
+      details: JSON.stringify({ programId, closedMirrors }),
+      createdAt: now,
     });
   },
 });
@@ -530,7 +862,23 @@ export const cancelProgram = mutation({
   args: { programId: v.id('onboardingPrograms') },
   handler: async (ctx, args) => {
     const { programId } = args;
+    const { program, scope } = await loadProgramForWrite(ctx, programId, {
+      staffOnly: true,
+      mustBeActive: true,
+    });
+    const now = Date.now();
+
     await ctx.db.patch(programId, { status: 'cancelled' });
+    const closedMirrors = await closeMirroredTasks(ctx, programId, scope.caller._id, 'cancel');
+
+    await ctx.db.insert('auditLogs', {
+      organizationId: program.organizationId,
+      userId: scope.caller._id,
+      action: 'onboarding_cancelled',
+      target: program.employeeId,
+      details: JSON.stringify({ programId, closedMirrors }),
+      createdAt: now,
+    });
   },
 });
 
