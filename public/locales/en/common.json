@@ -1083,6 +1083,7 @@
     }
   },
   "notifications": {
+    "loadMore": "Load more",
     "types": {
       "leave_request": "New Leave Request",
       "leave_approved": "Leave Approved",

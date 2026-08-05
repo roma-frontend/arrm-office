@@ -1083,6 +1083,7 @@
     }
   },
   "notifications": {
+    "loadMore": "Mehr laden",
     "types": {
       "leave_request": "Neuer Urlaubsantrag",
       "leave_approved": "Urlaub genehmigt",

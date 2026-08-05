@@ -1083,6 +1083,7 @@
     }
   },
   "notifications": {
+    "loadMore": "Загрузить ещё",
     "types": {
       "leave_request": "Новая заявка на отпуск",
       "leave_approved": "Отпуск одобрен",
