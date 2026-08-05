@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { UserPicker } from '@/components/ui/UserPicker';
 import {
   Select,
   SelectContent,
@@ -374,7 +375,7 @@ function MyOnboardingView({
 
   const handleComplete = async (taskId: Id<'onboardingTasks'>) => {
     if (!user?.id) return;
-    await complete({ taskId, completedBy: user.id as Id<'users'> });
+    await complete({ taskId });
     toast.success(t('onboarding.taskCompleted', 'Task completed!'));
   };
 
@@ -465,13 +466,13 @@ function ProgramDetailDialog({
 
   const handleComplete = async (taskId: Id<'onboardingTasks'>) => {
     if (!user?.id) return;
-    await complete({ taskId, completedBy: user.id as Id<'users'> });
+    await complete({ taskId });
     toast.success(t('onboarding.taskCompleted', 'Task completed!'));
   };
 
   const handleSkip = async (taskId: Id<'onboardingTasks'>) => {
     if (!user?.id) return;
-    await skip({ taskId, completedBy: user.id as Id<'users'> });
+    await skip({ taskId });
   };
 
   const handleCompleteProgram = async () => {
@@ -631,7 +632,6 @@ function StartOnboardingWizard({
         startDate: new Date(startDate || Date.now()).getTime(),
         buddyId: buddyId ? (buddyId as Id<'users'>) : undefined,
         managerId: managerId as Id<'users'>,
-        createdBy: user.id as Id<'users'>,
       });
       toast.success(t('onboarding.wizard.success', 'Onboarding started!'));
       onClose();
@@ -668,26 +668,19 @@ function StartOnboardingWizard({
         </div>
 
         {/* Step content */}
-        <div className="px-5 py-4 min-h-[200px]">
+        <div className="px-5 py-4 min-h-[200px] max-h-[55vh] overflow-y-auto">
           {step === 0 && (
             <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">
-                  {t('onboarding.fields.employeeId', 'Employee ID (User ID)')}
-                </label>
-                <Input
-                  value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  placeholder={t(
-                    'onboarding.fields.employeeIdPlaceholder',
-                    'Paste user ID of the new hire',
-                  )}
-                  className="mt-1"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t('onboarding.fields.employeeHint', 'The user must already exist in the system')}
-                </p>
-              </div>
+              <UserPicker
+                organizationId={user?.organizationId as Id<'organizations'> | undefined}
+                value={employeeId}
+                onChange={setEmployeeId}
+                label={t('onboarding.fields.employee', 'New hire')}
+                hint={t(
+                  'onboarding.fields.employeeHint',
+                  'The user must already exist in the system',
+                )}
+              />
             </div>
           )}
           {step === 1 && (
@@ -730,35 +723,23 @@ function StartOnboardingWizard({
             </div>
           )}
           {step === 2 && (
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">
-                  {t('onboarding.fields.managerId', 'Manager ID')}
-                </label>
-                <Input
-                  value={managerId}
-                  onChange={(e) => setManagerId(e.target.value)}
-                  placeholder={t(
-                    'onboarding.fields.managerIdPlaceholder',
-                    'User ID of the manager',
-                  )}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">
-                  {t('onboarding.fields.buddyId', 'Buddy ID (optional)')}
-                </label>
-                <Input
-                  value={buddyId}
-                  onChange={(e) => setBuddyId(e.target.value)}
-                  placeholder={t(
-                    'onboarding.fields.buddyIdPlaceholder',
-                    'User ID of the buddy/mentor',
-                  )}
-                  className="mt-1"
-                />
-              </div>
+            <div className="space-y-5">
+              <UserPicker
+                organizationId={user?.organizationId as Id<'organizations'> | undefined}
+                value={managerId}
+                onChange={setManagerId}
+                label={t('onboarding.fields.manager', 'Manager')}
+                excludeUserId={employeeId ? (employeeId as Id<'users'>) : undefined}
+                listHeight={200}
+              />
+              <UserPicker
+                organizationId={user?.organizationId as Id<'organizations'> | undefined}
+                value={buddyId}
+                onChange={setBuddyId}
+                label={t('onboarding.fields.buddy', 'Buddy / mentor (optional)')}
+                excludeUserId={employeeId ? (employeeId as Id<'users'>) : undefined}
+                listHeight={200}
+              />
             </div>
           )}
         </div>
@@ -844,7 +825,6 @@ function CreateTemplateWizard({
         description: description || undefined,
         department: department || undefined,
         tasks,
-        createdBy: user.id as Id<'users'>,
       });
       toast.success(t('onboarding.templateWizard.success', 'Template created!'));
       onClose();

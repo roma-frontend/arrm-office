@@ -8,15 +8,17 @@
  *
  * Resolution order, most to least specific:
  *   1. `metadata.titleKey` / `metadata.messageKey` — set by `notify()`.
- *   2. `notifications.types.<type>` — the generic per-type label, which only
- *      helps rows predating `notify()`. Skipped for the catch-all types, where
- *      it says nothing: most old call-sites wrote type `system`, so the label
- *      reads "System Notification" for everything from a birthday greeting to a
- *      locked account. There the stored English title is the better of two
- *      imperfect options.
- *   3. The stored `title` / `message` — English, but better than a raw key.
+ *   2. The stored `title` / `message`, for any type this system writes itself.
+ *      `notify()` documents those columns as the deliberate fallback, and they
+ *      say something concrete ("Your leave was approved"), unlike the generic
+ *      per-type label ("New Leave Request") that would replace them.
+ *   3. `notifications.types.<type>` — the generic per-type label. Only reached
+ *      for rows whose type this system no longer writes (legacy or imported
+ *      data), where a translated category name is all we can offer and the
+ *      stored English text may be missing entirely.
  */
 import type { TFunction } from 'i18next';
+import { NOTIFICATION_TYPES } from '../../convex/lib/notify';
 
 /** The subset of a notification row needed to render its text. */
 export interface NotificationTextSource {
@@ -32,8 +34,11 @@ interface NotificationMeta {
   params?: Record<string, string | number>;
 }
 
-/** Types too broad for `notifications.types.<type>` to describe a single row. */
-const VAGUE_TYPES = new Set(['system', 'status_change']);
+/**
+ * Types written by `convex/lib/notify.ts` today. For these the stored English
+ * title beats `notifications.types.<type>`; see the resolution order above.
+ */
+const SELF_WRITTEN_TYPES: ReadonlySet<string> = new Set(NOTIFICATION_TYPES);
 
 function parseMeta(metadata?: string): NotificationMeta {
   if (!metadata) return {};
@@ -63,7 +68,8 @@ function translate(
 
 export function notificationTitle(t: TFunction, n: NotificationTextSource): string {
   const { titleKey, params } = parseMeta(n.metadata);
-  const typeKey = VAGUE_TYPES.has(n.type) ? undefined : `notifications.types.${n.type}`;
+  // Legacy/imported rows only: for our own types the stored title is preferred.
+  const typeKey = SELF_WRITTEN_TYPES.has(n.type) ? undefined : `notifications.types.${n.type}`;
   return translate(t, titleKey, params ?? {}) ?? translate(t, typeKey, params ?? {}) ?? n.title;
 }
 

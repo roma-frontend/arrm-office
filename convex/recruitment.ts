@@ -7,6 +7,8 @@ import type { Id } from './_generated/dataModel';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
+import { getStartingLeaveBalances } from './lib/leaveBalances';
+import { resolveOrgUnitsByName } from './lib/orgUnits';
 
 // ============ QUERIES ============
 
@@ -891,7 +893,22 @@ export const hireCandidate = mutation({
         if (existingUser) {
           employeeId = existingUser._id;
         } else {
-          // Create user account for the new hire
+          // Create user account for the new hire. Department/position come from
+          // the vacancy as free text, so they are resolved to real org units —
+          // otherwise the hire never shows up in department head-counts.
+          const units = await resolveOrgUnitsByName(
+            ctx,
+            app.organizationId,
+            {
+              department: department || vacancy?.department,
+              position: position || vacancy?.title,
+            },
+            { create: true },
+          );
+          // A new hire starts with the organization's configured entitlement;
+          // this path used to grant zero of everything.
+          const balances = await getStartingLeaveBalances(ctx, app.organizationId);
+
           employeeId = await ctx.db.insert('users', {
             organizationId: app.organizationId,
             name: candidate.name,
@@ -899,20 +916,14 @@ export const hireCandidate = mutation({
             passwordHash: '', // Will be set via password reset flow
             role: 'employee',
             employeeType: 'staff',
-            department: department || vacancy?.department,
-            position: position || vacancy?.title,
+            ...units,
             phone: candidate.phone,
             isActive: true,
             isApproved: true,
             approvedBy: userId,
             approvedAt: now,
             travelAllowance: 0,
-            paidLeaveBalance: 0,
-            sickLeaveBalance: 0,
-            familyLeaveBalance: 0,
-            dayOffBalance: 0,
-            maternityLeaveBalance: 0,
-            studyLeaveBalance: 0,
+            ...balances,
             createdAt: now,
           });
         }
@@ -962,7 +973,6 @@ export const hireCandidate = mutation({
           startDate: hireDate,
           buddyId,
           managerId,
-          createdBy: userId,
         });
       }
     } catch (e: unknown) {

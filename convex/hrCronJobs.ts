@@ -3,7 +3,12 @@
  * - Performance review deadline notifications
  * - OKR weekly check-in reminders
  * - Survey auto-activation/closure
- * - Onboarding task activation & overdue reminders
+ *
+ * ⚠️ Nothing in this file runs: Convex only registers the `cronJobs()` object
+ * exported from `convex/crons.ts`. Treat these as a staging area — to switch one
+ * on, move it into `crons.ts`. The two onboarding jobs that used to live here
+ * are now registered there, so they were removed to avoid a duplicate
+ * definition drifting out of sync.
  */
 
 import { cronJobs } from 'convex/server';
@@ -30,20 +35,6 @@ crons.interval('survey-auto-activation', { hours: 1 }, internal.surveys.activate
 
 // Survey auto-closure (every hour)
 crons.interval('survey-auto-closure', { hours: 1 }, internal.surveys.closeExpiredSurveys);
-
-// Onboarding task activation (every hour)
-crons.interval(
-  'onboarding-task-activation',
-  { hours: 1 },
-  internal.onboarding.activateOnboardingTasks,
-);
-
-// Onboarding overdue task reminders (daily at 9 AM)
-crons.daily(
-  'onboarding-overdue-reminders',
-  { hourUTC: 9, minuteUTC: 0 },
-  internal.onboarding.sendOnboardingOverdueReminders,
-);
 
 // Weekly newsletter (Monday at 9 AM UTC)
 crons.weekly(

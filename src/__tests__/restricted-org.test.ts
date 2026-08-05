@@ -1,4 +1,13 @@
-import { isRestrictedOrganization, validateRestrictedAccess } from '@/lib/restricted-org';
+import {
+  isRestrictedOrganization,
+  validateRestrictedAccess,
+  validateRestrictedOrgFromRequest,
+} from '@/lib/restricted-org';
+import type { NextRequest } from 'next/server';
+
+jest.mock('@/lib/jwt', () => ({
+  verifyJWT: jest.fn(),
+}));
 
 describe('isRestrictedOrganization', () => {
   it('returns true for exact match "ADB-ARRM"', () => {
@@ -51,5 +60,56 @@ describe('validateRestrictedAccess', () => {
   it('handles empty inputs', () => {
     const result = validateRestrictedAccess('', '');
     expect(result.allowed).toBe(false);
+  });
+});
+
+describe('validateRestrictedOrgFromRequest', () => {
+  function makeRequest(token?: string): NextRequest {
+    return {
+      cookies: {
+        get: jest.fn((name: string) =>
+          name === 'hr-auth-token' && token ? { value: token } : undefined,
+        ),
+      },
+    } as unknown as NextRequest;
+  }
+
+  it('rejects a request without a token', async () => {
+    const result = await validateRestrictedOrgFromRequest(makeRequest(undefined));
+    expect(result).toEqual({
+      allowed: false,
+      status: 401,
+      body: { error: 'Authentication required' },
+    });
+  });
+
+  it('rejects an invalid/expired token', async () => {
+    const { verifyJWT } = jest.requireMock('@/lib/jwt');
+    verifyJWT.mockResolvedValue(null);
+    const result = await validateRestrictedOrgFromRequest(makeRequest('bad-token'));
+    expect(result).toEqual({
+      allowed: false,
+      status: 401,
+      body: { error: 'Invalid or expired token' },
+    });
+  });
+
+  it('rejects a valid token for a non-restricted organization', async () => {
+    const { verifyJWT } = jest.requireMock('@/lib/jwt');
+    verifyJWT.mockResolvedValue({ userId: 'u1', organizationId: 'acme' });
+    const result = await validateRestrictedOrgFromRequest(makeRequest('good-token'));
+    expect(result).toEqual({
+      allowed: false,
+      status: 403,
+      body: { error: expect.stringContaining('Access restricted to ADB-ARRM') as string },
+    });
+  });
+
+  it('allows a valid token for the restricted organization', async () => {
+    const { verifyJWT } = jest.requireMock('@/lib/jwt');
+    const payload = { userId: 'u1', organizationId: 'adb-arrm' };
+    verifyJWT.mockResolvedValue(payload);
+    const result = await validateRestrictedOrgFromRequest(makeRequest('good-token'));
+    expect(result).toEqual({ allowed: true, payload });
   });
 });

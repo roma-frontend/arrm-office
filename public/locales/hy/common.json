@@ -239,6 +239,13 @@
     "news": "Նորություններ",
     "assets": "Ակտիվներ"
   },
+  "userPicker": {
+    "search": "Փնտրել ըստ անվան, էլ. փոստի, բաժնի…",
+    "loading": "Բեռնվում է…",
+    "empty": "Աշխատակիցներ չեն գտնվել",
+    "clear": "Մաքրել ընտրությունը",
+    "noOrganization": "Կազմակերպությունը ընտրված չէ"
+  },
   "docLibrary": {
     "title": "Փաստաթղթերի գրադարան",
     "subtitle": "Ընտրեք ձևանմուշ և աշխատակից — փաստաթուղթը կլրացվի ինքնաբերաբար։ Արտահանեք կամ ուղարկեք ստորագրման։",
@@ -1107,7 +1114,10 @@
       "onboarding_started": "Օնբորդինգը սկսվել է",
       "onboarding_manager_assigned": "Նշանակված է օնբորդինգի մենեջեր",
       "onboarding_buddy_assigned": "Նշանակված է наставник",
-      "onboarding_task_overdue": "Օնբորդինգի առաջադրանք ուշացել է"
+      "onboarding_task_overdue": "Օնբորդինգի առաջադրանք ուշացել է",
+      "offboarding_started": "Աշխատանքից ազատումը մեկնարկել է",
+      "offboarding_last_day_soon": "Մոտենում է վերջին աշխատանքային օրը",
+      "offboarding_completed": "Աշխատանքից ազատումն ավարտված է"
     },
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" առաջադրանքը ավարտվել է {{userName}}-ի կողմից",
@@ -1185,6 +1195,10 @@
       "onboardingBuddyAssigned": "{{employeeName}}-ը ձեր աջակցության կարիք ունի ադապտացիայի ընթացքում։ Օգնեք հարմարվել։",
       "onboardingNewEmployee": "Նոր աշխատակից",
       "onboardingTaskOverdue": "«{{taskTitle}}»-ը ուշացած է {{count}} օրով։ Խնդրում ենք ավարտել հնարավորինս շուտ։",
+      "offboardingStartedSelf": "Ձեր աշխատանքից ազատման գործընթացը մեկնարկել է։ Վերջին աշխատանքային օրը՝ {{lastDay}}։ Ստուգեք ցուցակը, փոխանցեք առաջադրանքները և գույքը։",
+      "offboardingStartedManager": "{{employeeName}}-ը հեռանում է {{lastDay}}-ին։ Դուք պատասխանատու եք ազատման ցուցակի համար։",
+      "offboardingLastDaySoon": "{{employeeName}}-ի վերջին աշխատանքային օրը {{count}} օրից է, իսկ չփակված կետերը՝ {{openTasks}}։",
+      "offboardingCompleted": "{{employeeName}}-ի աշխատանքից ազատումն ավարտված է։ Հաշիվը ապաակտիվացված է, տրամադրված գույքը նշված է որպես վերադարձված։",
       "roomInvited": "{{actorName}}-ը ձեզ հրավիրեց հանդիպման",
       "roomCancelled": "{{actorName}}-ը չեղարկեց հանդիպումը",
       "attendeeResponded": "{{name}}-ը $t(attendeeResponses.{{response}}) հրավերը",
@@ -1267,6 +1281,9 @@
       "onboardingManagerAssigned": "👤 Ձեզ նշանակվեց նոր աշխատակցի ադապտացիա",
       "onboardingBuddyAssigned": "🤝 Դուք նշանակված եք որպես մենթոր",
       "onboardingTaskOverdue": "⚠️ Ադապտացիայի առաջադրանքը ուշացած է",
+      "offboardingStarted": "📤 Աշխատանքից ազատումը մեկնարկել է",
+      "offboardingLastDaySoon": "⏳ Մոտենում է վերջին աշխատանքային օրը",
+      "offboardingCompleted": "✅ Աշխատանքից ազատումն ավարտված է",
       "roomBooking": "{{bookingTitle}} · {{roomName}}",
       "roomBookingResponse": "{{bookingTitle}}",
       "taskAssigned": "📋 Առաջադրանք նշանակվեց",

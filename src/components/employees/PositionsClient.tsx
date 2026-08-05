@@ -112,19 +112,34 @@ function PositionWizard({
   const selectedOrgId = useSelectedOrganization();
   const createPosition = useMutation(api.positions.create);
   const updatePosition = useMutation(api.positions.update);
+  const buildInitialData = React.useCallback(
+    (position: Doc<'positions'> | null): Record<string, string | number | boolean | null> =>
+      position
+        ? {
+            title: position.title,
+            description: position.description || '',
+            departmentId: position.departmentId || '',
+            level: position.level || '',
+            salaryMin: position.salaryMin?.toString() || '',
+            salaryMax: position.salaryMax?.toString() || '',
+          }
+        : { title: '', description: '', departmentId: '', level: '', salaryMin: '', salaryMax: '' },
+    [],
+  );
+
   const [wizardData, setWizardData] = useState<Record<string, string | number | boolean | null>>(
-    editingPosition
-      ? {
-          title: editingPosition.title,
-          description: editingPosition.description || '',
-          departmentId: editingPosition.departmentId || '',
-          level: editingPosition.level || '',
-          salaryMin: editingPosition.salaryMin?.toString() || '',
-          salaryMax: editingPosition.salaryMax?.toString() || '',
-        }
-      : { title: '', description: '', departmentId: '', level: '', salaryMin: '', salaryMax: '' },
+    () => buildInitialData(editingPosition),
   );
   const [_isSubmitting, setIsSubmitting] = useState(false);
+
+  // Диалог не размонтируется между открытиями — пересобираем начальные данные
+  // при каждом открытии, иначе форма редактирования пустая.
+  const editingId = editingPosition?._id ?? null;
+  React.useEffect(() => {
+    if (!open) return;
+    setWizardData(buildInitialData(editingPosition));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editingId, buildInitialData]);
 
   const updateStepData = (key: string, value: string | number | boolean | null) => {
     setWizardData((prev) => ({ ...prev, [key]: value }));
@@ -379,6 +394,7 @@ function PositionWizard({
         </DialogHeader>
         <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
           <Wizard
+            key={editingId ?? 'new'}
             steps={steps}
             onComplete={handleSubmit}
             onCancel={() => onOpenChange(false)}

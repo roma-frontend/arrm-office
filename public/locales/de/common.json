@@ -239,6 +239,13 @@
     "news": "Neuigkeiten",
     "assets": "Anlagen"
   },
+  "userPicker": {
+    "search": "Nach Name, E-Mail oder Abteilung suchen…",
+    "loading": "Wird geladen…",
+    "empty": "Keine Mitarbeiter gefunden",
+    "clear": "Auswahl aufheben",
+    "noOrganization": "Keine Organisation ausgewählt"
+  },
   "docLibrary": {
     "title": "Dokumentbibliothek",
     "subtitle": "Vorlage und Mitarbeiter wählen — das Dokument füllt sich selbst aus. Exportieren oder zur Unterschrift senden.",
@@ -1107,7 +1114,10 @@
       "onboarding_started": "Onboarding gestartet",
       "onboarding_manager_assigned": "Onboarding-Manager zugewiesen",
       "onboarding_buddy_assigned": "Buddy zugewiesen",
-      "onboarding_task_overdue": "Onboarding-Aufgabe überfällig"
+      "onboarding_task_overdue": "Onboarding-Aufgabe überfällig",
+      "offboarding_started": "Offboarding gestartet",
+      "offboarding_last_day_soon": "Letzter Arbeitstag steht bevor",
+      "offboarding_completed": "Offboarding abgeschlossen"
     },
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" wurde von {{userName}} abgeschlossen",
@@ -1185,6 +1195,10 @@
       "onboardingBuddyAssigned": "{{employeeName}} braucht Ihre Unterstützung beim Onboarding. Helfen Sie beim Einstieg!",
       "onboardingNewEmployee": "Ein neuer Mitarbeiter",
       "onboardingTaskOverdue": "„{{taskTitle}}\" ist {{count}} Tag(e) überfällig. Bitte erledigen Sie sie so schnell wie möglich.",
+      "offboardingStartedSelf": "Ihr Offboarding wurde gestartet. Ihr letzter Arbeitstag ist {{lastDay}} — prüfen Sie die Checkliste und übergeben Sie Aufgaben und Ausstattung.",
+      "offboardingStartedManager": "{{employeeName}} verlässt das Unternehmen am {{lastDay}}. Sie sind für die Offboarding-Checkliste verantwortlich.",
+      "offboardingLastDaySoon": "Der letzte Arbeitstag von {{employeeName}} ist in {{count}} Tag(en), und {{openTasks}} Checklistenpunkt(e) sind noch offen.",
+      "offboardingCompleted": "Das Offboarding von {{employeeName}} ist abgeschlossen. Das Konto wurde deaktiviert und die zugewiesene Ausstattung als zurückgegeben markiert.",
       "roomInvited": "{{actorName}} hat Sie zu einem Meeting eingeladen",
       "roomCancelled": "Meeting von {{actorName}} abgesagt",
       "attendeeResponded": "{{name}} hat die Einladung $t(attendeeResponses.{{response}})",
@@ -1267,6 +1281,9 @@
       "onboardingManagerAssigned": "👤 Onboarding eines neuen Mitarbeiters zugewiesen",
       "onboardingBuddyAssigned": "🤝 Sie sind als Buddy zugewiesen",
       "onboardingTaskOverdue": "⚠️ Onboarding-Aufgabe überfällig",
+      "offboardingStarted": "📤 Offboarding gestartet",
+      "offboardingLastDaySoon": "⏳ Letzter Arbeitstag steht bevor",
+      "offboardingCompleted": "✅ Offboarding abgeschlossen",
       "roomBooking": "{{bookingTitle}} · {{roomName}}",
       "roomBookingResponse": "{{bookingTitle}}",
       "taskAssigned": "📋 Aufgabe zugewiesen",

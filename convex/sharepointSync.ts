@@ -2,6 +2,8 @@ import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import { getStartingLeaveBalances } from './lib/leaveBalances';
+import { resolveOrgUnitsByName } from './lib/orgUnits';
 import type { Id } from './_generated/dataModel';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,6 +54,15 @@ export const upsertSharePointUser = mutation({
 
     const emailLower = args.email.toLowerCase().trim();
 
+    // SharePoint is the source of truth for this org's structure, so unknown
+    // departments/positions are created rather than left as an unlinked string.
+    const orgUnits = await resolveOrgUnitsByName(
+      ctx,
+      args.organizationId,
+      { department: args.department, position: args.position },
+      { create: true },
+    );
+
     // Check if user already exists in this org
     const existing = await ctx.db
       .query('users')
@@ -62,8 +73,7 @@ export const upsertSharePointUser = mutation({
       // Update existing user — only patch fields that come from SharePoint
       await ctx.db.patch(existing._id, {
         name: args.name,
-        department: args.department,
-        position: args.position,
+        ...orgUnits,
         phone: args.phone,
         location: args.location,
         employeeType: args.employeeType,
@@ -72,9 +82,10 @@ export const upsertSharePointUser = mutation({
       return { action: 'updated' as const, userId: existing._id };
     }
 
-    // Create new user with default balances
+    // Create new user with the organization's configured starting balances
     const isStaff = args.employeeType === 'staff';
     const now = Date.now();
+    const balances = await getStartingLeaveBalances(ctx, args.organizationId);
 
     // Generate a random placeholder password hash (user will need to set real password)
     const randomHash = `sharepoint_sync_${now}_${Math.random().toString(36).slice(2)}`;
@@ -86,19 +97,13 @@ export const upsertSharePointUser = mutation({
       passwordHash: randomHash,
       role: 'employee',
       employeeType: args.employeeType,
-      department: args.department,
-      position: args.position,
+      ...orgUnits,
       phone: args.phone,
       location: args.location,
       isActive: true,
       isApproved: true,
       travelAllowance: isStaff ? 20000 : 12000,
-      paidLeaveBalance: 20,
-      sickLeaveBalance: 10,
-      familyLeaveBalance: 5,
-      dayOffBalance: 6,
-      maternityLeaveBalance: 0,
-      studyLeaveBalance: 5,
+      ...balances,
       createdAt: now,
     });
 
@@ -225,6 +230,12 @@ export const secureUpsertSharePointUser = mutation({
     }
 
     const emailLower = args.email.toLowerCase().trim();
+    const orgUnits = await resolveOrgUnitsByName(
+      ctx,
+      args.organizationId,
+      { department: args.department, position: args.position },
+      { create: true },
+    );
     const existing = await ctx.db
       .query('users')
       .withIndex('by_email', (q) => q.eq('email', emailLower))
@@ -233,8 +244,7 @@ export const secureUpsertSharePointUser = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         name: args.name,
-        department: args.department,
-        position: args.position,
+        ...orgUnits,
         phone: args.phone,
         location: args.location,
         employeeType: args.employeeType,
@@ -243,6 +253,7 @@ export const secureUpsertSharePointUser = mutation({
       return { action: 'updated' as const, userId: existing._id };
     }
 
+    const balances = await getStartingLeaveBalances(ctx, args.organizationId);
     const userId = await ctx.db.insert('users', {
       organizationId: args.organizationId,
       name: args.name,
@@ -250,19 +261,13 @@ export const secureUpsertSharePointUser = mutation({
       passwordHash: `sharepoint_sync_${Date.now()}`,
       role: 'employee',
       employeeType: args.employeeType,
-      department: args.department,
-      position: args.position,
+      ...orgUnits,
       phone: args.phone,
       location: args.location,
       isActive: true,
       isApproved: true,
       travelAllowance: args.employeeType === 'staff' ? 20000 : 12000,
-      paidLeaveBalance: 20,
-      sickLeaveBalance: 10,
-      familyLeaveBalance: 5,
-      dayOffBalance: 6,
-      maternityLeaveBalance: 0,
-      studyLeaveBalance: 5,
+      ...balances,
       createdAt: Date.now(),
     });
 

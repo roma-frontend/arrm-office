@@ -1175,14 +1175,12 @@
       "autoTasks": "Стандартные задачи будут созданы автоматически."
     },
     "fields": {
-      "employeeId": "ID сотрудника",
-      "managerId": "ID руководителя",
+      "employee": "Увольняющийся сотрудник",
+      "manager": "Руководитель",
       "lastDay": "Последний рабочий день",
       "reason": "Причина",
       "note": "Заметка (необязательно)",
-      "notePlaceholder": "Дополнительный контекст...",
-      "employeeIdPlaceholder": "ID пользователя увольняющегося сотрудника",
-      "managerIdPlaceholder": "ID пользователя их руководителя"
+      "notePlaceholder": "Дополнительный контекст..."
     },
     "exitForm": {
       "title": "Форма Exit-интервью",
@@ -1261,13 +1259,13 @@
       "success": "Шаблон создан!"
     },
     "fields": {
-      "employeeId": "ID сотрудника",
+      "employee": "Новый сотрудник",
       "employeeHint": "Пользователь должен уже существовать в системе",
       "template": "Шаблон",
       "selectTemplate": "Выберите шаблон (необязательно)",
       "startDate": "Дата начала",
-      "managerId": "ID руководителя",
-      "buddyId": "ID наставника (необязательно)",
+      "manager": "Руководитель",
+      "buddy": "Наставник (необязательно)",
       "templateName": "Название шаблона",
       "templateNamePlaceholder": "напр. Онбординг инженера",
       "description": "Описание",
@@ -1275,9 +1273,6 @@
       "department": "Отдел",
       "deptPlaceholder": "напр. Разработка",
       "taskTitle": "Название задачи",
-      "employeeIdPlaceholder": "Вставьте ID пользователя нового сотрудника",
-      "managerIdPlaceholder": "ID пользователя руководителя",
-      "buddyIdPlaceholder": "ID пользователя наставника",
       "dayPlaceholder": "День"
     }
   },

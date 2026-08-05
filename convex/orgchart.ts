@@ -170,10 +170,25 @@ export const generateOrgChartFromUsers = mutation({
       await ctx.db.delete(node._id);
     }
 
-    // Group users by department
+    // Group users by department.
+    //
+    // `departmentId` is the real link; the free-text `department` is only a
+    // denormalized label. Grouping by the string alone split one department into
+    // several nodes whenever spelling drifted ("IT" vs "it ") and produced nodes
+    // for departments that no longer exist — so the id wins whenever it is set,
+    // and the canonical department name is used for the label.
+    const departmentRecords = await ctx.db
+      .query('departments')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .take(MAX_PAGE_SIZE);
+    const nameById = new Map(departmentRecords.map((d) => [d._id as string, d.name]));
+
     const departments = new Map<string, Doc<'users'>[]>();
     users.forEach((user) => {
-      const dept = user.department || 'Unassigned';
+      const dept =
+        (user.departmentId ? nameById.get(user.departmentId) : undefined) ??
+        user.department?.trim() ??
+        'Unassigned';
       if (!departments.has(dept)) departments.set(dept, []);
       departments.get(dept)!.push(user);
     });

@@ -23,34 +23,47 @@ import type { MutationCtx } from '../_generated/server';
 /** Values safe to interpolate into a translated string. */
 export type NotifyParams = Record<string, string | number>;
 
-/** Notification kinds accepted by the `notifications` table. */
-export type NotificationType =
-  | 'leave_request'
-  | 'leave_approved'
-  | 'leave_rejected'
-  | 'driver_request'
-  | 'driver_request_approved'
-  | 'driver_request_rejected'
-  | 'employee_added'
-  | 'join_request'
-  | 'join_approved'
-  | 'join_rejected'
-  | 'security_alert'
-  | 'status_change'
-  | 'message_mention'
-  | 'system'
-  | 'review_deadline'
-  | 'okr_checkin_reminder'
-  | 'survey_auto_activated'
-  | 'survey_auto_closed'
-  | 'onboarding_task_due'
-  | 'onboarding_started'
-  | 'onboarding_manager_assigned'
-  | 'onboarding_buddy_assigned'
-  | 'onboarding_task_overdue'
-  | 'asset_assigned'
-  | 'room_booked'
-  | 'room_booking_cancelled';
+/**
+ * Notification kinds accepted by the `notifications` table.
+ *
+ * Runtime array first, type derived from it: the client needs the list at
+ * runtime (see `src/lib/notificationText.ts`, which decides whether a row was
+ * written by this helper) and a second hand-maintained copy would drift.
+ * Keep in sync with the union in `convex/schema/notifications.ts`.
+ */
+export const NOTIFICATION_TYPES = [
+  'leave_request',
+  'leave_approved',
+  'leave_rejected',
+  'driver_request',
+  'driver_request_approved',
+  'driver_request_rejected',
+  'employee_added',
+  'join_request',
+  'join_approved',
+  'join_rejected',
+  'security_alert',
+  'status_change',
+  'message_mention',
+  'system',
+  'review_deadline',
+  'okr_checkin_reminder',
+  'survey_auto_activated',
+  'survey_auto_closed',
+  'onboarding_task_due',
+  'onboarding_started',
+  'onboarding_manager_assigned',
+  'onboarding_buddy_assigned',
+  'onboarding_task_overdue',
+  'offboarding_started',
+  'offboarding_last_day_soon',
+  'offboarding_completed',
+  'asset_assigned',
+  'room_booked',
+  'room_booking_cancelled',
+] as const;
+
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 export interface NotifyArgs {
   organizationId?: Id<'organizations'>;

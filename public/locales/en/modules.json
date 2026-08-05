@@ -1175,10 +1175,8 @@
       "autoTasks": "Default checklist tasks will be created automatically."
     },
     "fields": {
-      "employeeId": "Employee ID",
-      "employeeIdPlaceholder": "User ID of departing employee",
-      "managerId": "Manager ID",
-      "managerIdPlaceholder": "User ID of their manager",
+      "employee": "Departing employee",
+      "manager": "Manager",
       "lastDay": "Last Working Day",
       "reason": "Reason",
       "note": "Note (optional)",
@@ -1261,16 +1259,13 @@
       "success": "Template created!"
     },
     "fields": {
-      "employeeId": "Employee ID",
-      "employeeIdPlaceholder": "Paste user ID of the new hire",
+      "employee": "New hire",
       "employeeHint": "The user must already exist in the system",
       "template": "Template",
       "selectTemplate": "Select a template (optional)",
       "startDate": "Start Date",
-      "managerId": "Manager ID",
-      "managerIdPlaceholder": "User ID of the manager",
-      "buddyId": "Buddy ID (optional)",
-      "buddyIdPlaceholder": "User ID of the buddy/mentor",
+      "manager": "Manager",
+      "buddy": "Buddy / mentor (optional)",
       "templateName": "Template Name",
       "templateNamePlaceholder": "e.g. Engineering Onboarding",
       "description": "Description",

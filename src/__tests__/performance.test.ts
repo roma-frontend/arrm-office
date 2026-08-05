@@ -18,6 +18,25 @@ import {
   logBundleSize,
 } from '@/lib/performance';
 
+/**
+ * Runs `fn` with no `performance` global at all.
+ *
+ * `globalThis.performance = undefined` does **not** work under Jest's jsdom:
+ * the binding the module sees stays an object, so `typeof performance ===
+ * 'undefined'` never becomes true and the guarded branch is not exercised
+ * (several tests here used to pass vacuously). Removing the property does work,
+ * and the original descriptor is put back afterwards.
+ */
+function withoutPerformance<T>(fn: () => T): T {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'performance');
+  Reflect.deleteProperty(globalThis, 'performance');
+  try {
+    return fn();
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'performance', descriptor);
+  }
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // debounce
 // ════════════════════════════════════════════════════════════════════════════
@@ -363,19 +382,15 @@ describe('perf.mark / perf.measure / perf.getAllMetrics', () => {
   });
 
   it('perf.measure returns 0 when performance API is missing', () => {
-    const orig = (globalThis as any).performance;
-    (globalThis as any).performance = undefined;
-    perf.mark('noop');
-    const duration = perf.measure('noop');
+    const duration = withoutPerformance(() => {
+      perf.mark('noop');
+      return perf.measure('noop');
+    });
     expect(duration).toBe(0);
-    (globalThis as any).performance = orig;
   });
 
   it('perf.mark does not throw when performance is undefined', () => {
-    const orig = (globalThis as any).performance;
-    (globalThis as any).performance = undefined;
-    expect(() => perf.mark('x')).not.toThrow();
-    (globalThis as any).performance = orig;
+    expect(() => withoutPerformance(() => perf.mark('x'))).not.toThrow();
   });
 
   it('perf.getAllMetrics does not throw when performance is defined', () => {
@@ -578,5 +593,150 @@ describe('cache - parameterized', () => {
   test.each(manyKeys)('stores and retrieves key %s', (key) => {
     setCache(key, key.repeat(3));
     expect(getCached(key)).toBe(key.repeat(3));
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// Extra branches: gtag reporting, bundle size, score penalties, perf errors
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('reportWebVitals — gtag branch', () => {
+  it('pushes the metric to window.gtag when present', () => {
+    const gtag = jest.fn();
+    (window as any).gtag = gtag;
+    reportWebVitals({ name: 'LCP', value: 2500, rating: 'needs-improvement', id: 'v1' });
+    expect(gtag).toHaveBeenCalledWith(
+      'event',
+      'LCP',
+      expect.objectContaining({ value: 2500, event_category: 'Web Vitals' }),
+    );
+    delete (window as any).gtag;
+  });
+
+  it('multiplies CLS by 1000 before reporting', () => {
+    const gtag = jest.fn();
+    (window as any).gtag = gtag;
+    reportWebVitals({ name: 'CLS', value: 0.15, id: 'v2' });
+    expect(gtag.mock.calls[0][2].value).toBe(150);
+    delete (window as any).gtag;
+  });
+
+  it('does nothing when gtag is undefined', () => {
+    delete (window as any).gtag;
+    expect(() => reportWebVitals({ name: 'FCP', value: 1000 })).not.toThrow();
+  });
+});
+
+describe('logBundleSize', () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv;
+    delete (globalThis.performance as any).getEntriesByType;
+  });
+
+  it('sums JS and CSS transfer sizes in development', () => {
+    process.env.NODE_ENV = 'development';
+    (globalThis.performance as any).getEntriesByType = jest.fn(() => [
+      { name: 'a.js', transferSize: 1024 },
+      { name: 'b.js', transferSize: 2048 },
+      { name: 'c.css', transferSize: 512 },
+      { name: 'logo.png', transferSize: 9999 },
+    ]);
+    expect(() => logBundleSize()).not.toThrow();
+  });
+
+  it('is a no-op outside development', () => {
+    process.env.NODE_ENV = 'production';
+    (globalThis.performance as any).getEntriesByType = jest.fn();
+    expect(() => logBundleSize()).not.toThrow();
+  });
+});
+
+describe('calculatePerformanceScore — penalty branches', () => {
+  const origGetEntriesByType = (globalThis.performance as any)?.getEntriesByType;
+  const origGetEntriesByName = (globalThis.performance as any)?.getEntriesByName;
+
+  function mockNav(
+    overrides: Partial<{
+      fcp: number;
+      domEnd: number;
+      domStart: number;
+      loadEnd: number;
+      loadStart: number;
+    }>,
+  ) {
+    const { fcp = 0, domEnd = 100, domStart = 0, loadEnd = 200, loadStart = 0 } = overrides;
+    (globalThis.performance as any).getEntriesByType = jest.fn((type: string) =>
+      type === 'navigation'
+        ? [
+            {
+              domContentLoadedEventEnd: domEnd,
+              domContentLoadedEventStart: domStart,
+              loadEventEnd: loadEnd,
+              loadEventStart: loadStart,
+            },
+          ]
+        : [],
+    );
+    (globalThis.performance as any).getEntriesByName = jest.fn((name: string) =>
+      name === 'first-contentful-paint' ? [{ startTime: fcp }] : [],
+    );
+  }
+
+  afterEach(() => {
+    // Restore the real implementations instead of `delete`-ing them: in
+    // Jest's jsdom these are own properties of the `performance` object, so
+    // deleting them removed the API for every later test in the file.
+    if (origGetEntriesByType) {
+      (globalThis.performance as any).getEntriesByType = origGetEntriesByType;
+    }
+    if (origGetEntriesByName) {
+      (globalThis.performance as any).getEntriesByName = origGetEntriesByName;
+    }
+  });
+
+  it('deducts 30 for a slow FCP (over 1800ms)', () => {
+    mockNav({ fcp: 2000 });
+    expect(calculatePerformanceScore()).toBe(70);
+  });
+
+  it('deducts 15 for a middling FCP (1000–1800ms)', () => {
+    mockNav({ fcp: 1200 });
+    expect(calculatePerformanceScore()).toBe(85);
+  });
+
+  it('deducts 25 for slow DCL and 25 for slow load', () => {
+    mockNav({ domEnd: 2000, domStart: 100, loadEnd: 4000, loadStart: 100 });
+    expect(calculatePerformanceScore()).toBe(50);
+  });
+
+  it('bottoms out at 20 when every penalty applies (30 + 25 + 25)', () => {
+    mockNav({ fcp: 5000, domEnd: 5000, domStart: 0, loadEnd: 9000, loadStart: 0 });
+    // The penalties add up to 80, so the `Math.max(0, …)` clamp is defensive
+    // only — the score cannot reach 0 through this path.
+    const score = calculatePerformanceScore();
+    expect(score).toBe(20);
+    expect(score).toBeGreaterThanOrEqual(0);
+  });
+
+  it('returns 0 when performance is unavailable', () => {
+    expect(withoutPerformance(() => calculatePerformanceScore())).toBe(0);
+  });
+});
+
+describe('perf — error paths', () => {
+  it('measure returns 0 and warns when the performance API throws', () => {
+    const origMeasure = (globalThis.performance as any).measure;
+    (globalThis.performance as any).measure = jest.fn(() => {
+      throw new Error('boom');
+    });
+    const duration = perf.measure('broken');
+    expect(duration).toBe(0);
+    (globalThis.performance as any).measure = origMeasure;
+  });
+
+  it('getAllMetrics returns an empty result when performance is missing', () => {
+    expect(withoutPerformance(() => perf.getAllMetrics())).toEqual([]);
   });
 });

@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { UserPicker } from '@/components/ui/UserPicker';
 import {
   Select,
   SelectContent,
@@ -350,19 +351,51 @@ function ProgramDetailDialog({
 
   const handleComplete = async (taskId: Id<'offboardingTasks'>) => {
     if (!user?.id) return;
-    await complete({ taskId, completedBy: user.id as Id<'users'> });
+    await complete({ taskId });
     toast.success(t('offboarding.taskCompleted', 'Task completed'));
   };
 
   const handleSkip = async (taskId: Id<'offboardingTasks'>) => {
     if (!user?.id) return;
-    await skip({ taskId, completedBy: user.id as Id<'users'> });
+    await skip({ taskId });
   };
 
   const handleCompleteProgram = async () => {
-    await completeProgram({ programId });
-    toast.success(t('offboarding.programCompleted', 'Offboarding completed'));
-    onClose();
+    try {
+      const result = await completeProgram({ programId });
+      toast.success(
+        t('offboarding.programCompleted', 'Offboarding completed') +
+          (result?.deactivated
+            ? ` — ${t('offboarding.accountDeactivated', 'account deactivated')}`
+            : ''),
+      );
+      if (result?.approvedFutureLeaves) {
+        toast.warning(
+          t(
+            'offboarding.approvedLeavesRemain',
+            '{{count}} approved leave request(s) start after the last working day — review them in the final settlement.',
+            { count: result.approvedFutureLeaves },
+          ),
+        );
+      }
+      onClose();
+    } catch (e: unknown) {
+      // Equipment still assigned → offer to finish anyway.
+      const message = e instanceof Error ? e.message : t('common.error', 'Error');
+      if (message.includes('Equipment is still assigned')) {
+        if (
+          confirm(
+            `${message}\n\n${t('offboarding.forceCompleteConfirm', 'Complete the offboarding anyway?')}`,
+          )
+        ) {
+          await completeProgram({ programId, force: true });
+          toast.success(t('offboarding.programCompleted', 'Offboarding completed'));
+          onClose();
+        }
+        return;
+      }
+      toast.error(message);
+    }
   };
 
   const handleSubmitExit = async () => {
@@ -665,7 +698,9 @@ function StartOffboardingWizard({
 }) {
   const [step, setStep] = useState(0);
   const [employeeId, setEmployeeId] = useState('');
+  const [employeeName, setEmployeeName] = useState('');
   const [managerId, setManagerId] = useState('');
+  const [managerName, setManagerName] = useState('');
   const [lastDay, setLastDay] = useState('');
   const [reason, setReason] = useState<(typeof REASONS)[number]>('resignation');
   const [reasonNote, setReasonNote] = useState('');
@@ -688,7 +723,6 @@ function StartOffboardingWizard({
         lastDay: new Date(lastDay).getTime(),
         reason,
         reasonNote: reasonNote || undefined,
-        createdBy: user.id as Id<'users'>,
       });
       toast.success(t('offboarding.wizard.success', 'Offboarding started'));
       onClose();
@@ -725,37 +759,26 @@ function StartOffboardingWizard({
         </div>
 
         {/* Step content */}
-        <div className="px-5 py-4 min-h-[200px]">
+        <div className="px-5 py-4 min-h-[200px] max-h-[55vh] overflow-y-auto">
           {step === 0 && (
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">
-                  {t('offboarding.fields.employeeId', 'Employee ID')}
-                </label>
-                <Input
-                  value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  placeholder={t(
-                    'offboarding.fields.employeeIdPlaceholder',
-                    'User ID of departing employee',
-                  )}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">
-                  {t('offboarding.fields.managerId', 'Manager ID')}
-                </label>
-                <Input
-                  value={managerId}
-                  onChange={(e) => setManagerId(e.target.value)}
-                  placeholder={t(
-                    'offboarding.fields.managerIdPlaceholder',
-                    'User ID of their manager',
-                  )}
-                  className="mt-1"
-                />
-              </div>
+            <div className="space-y-5">
+              <UserPicker
+                organizationId={user?.organizationId as Id<'organizations'> | undefined}
+                value={employeeId}
+                onChange={setEmployeeId}
+                onSelectUser={(u) => setEmployeeName(u?.name ?? '')}
+                label={t('offboarding.fields.employee', 'Departing employee')}
+                listHeight={200}
+              />
+              <UserPicker
+                organizationId={user?.organizationId as Id<'organizations'> | undefined}
+                value={managerId}
+                onChange={setManagerId}
+                onSelectUser={(u) => setManagerName(u?.name ?? '')}
+                label={t('offboarding.fields.manager', 'Manager')}
+                excludeUserId={employeeId ? (employeeId as Id<'users'>) : undefined}
+                listHeight={200}
+              />
             </div>
           )}
           {step === 1 && (
@@ -810,9 +833,13 @@ function StartOffboardingWizard({
               <div className="p-4 rounded-lg bg-muted/50 space-y-2 text-sm">
                 <p>
                   <span className="font-medium">
-                    {t('offboarding.fields.employeeId', 'Employee')}:
+                    {t('offboarding.fields.employee', 'Employee')}:
                   </span>{' '}
-                  {employeeId.slice(0, 12)}...
+                  {employeeName || '—'}
+                </p>
+                <p>
+                  <span className="font-medium">{t('offboarding.fields.manager', 'Manager')}:</span>{' '}
+                  {managerName || '—'}
                 </p>
                 <p>
                   <span className="font-medium">

@@ -5,6 +5,8 @@ import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 import { PLAN_EMPLOYEE_LIMITS } from '../lib/limits';
 import { notify } from '../lib/notify';
+import { getStartingLeaveBalances } from '../lib/leaveBalances';
+import { resolveOrgUnitsByName } from '../lib/orgUnits';
 import { logger } from '../../src/lib/logger';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -661,6 +663,16 @@ export const approveJoinRequest = mutation({
 
     let userId;
 
+    // Free-text department/position from the join form — resolve to real org
+    // units so the new member shows up in department statistics.
+    const joinUnits = await resolveOrgUnitsByName(
+      ctx,
+      invite.organizationId,
+      { department: args.department, position: args.position },
+      { create: true },
+    );
+    const joinBalances = await getStartingLeaveBalances(ctx, invite.organizationId);
+
     if (existingUser) {
       // User already exists (e.g., from OAuth) — update instead of creating new
       logger.log(
@@ -673,16 +685,13 @@ export const approveJoinRequest = mutation({
         organizationId: invite.organizationId,
         role: args.role,
         employeeType: 'staff',
-        department: args.department,
-        position: args.position,
+        ...joinUnits,
         isActive: true,
         isApproved: true,
         approvedBy: args.adminId,
         approvedAt: Date.now(),
         travelAllowance: 20000,
-        paidLeaveBalance: 24,
-        sickLeaveBalance: 10,
-        familyLeaveBalance: 5,
+        ...joinBalances,
       });
     } else {
       // No existing user — create new (for invite link flow)
@@ -695,19 +704,13 @@ export const approveJoinRequest = mutation({
         passwordHash: args.passwordHash,
         role: args.role,
         employeeType: 'staff',
-        department: args.department,
-        position: args.position,
+        ...joinUnits,
         isActive: true,
         isApproved: true,
         approvedBy: args.adminId,
         approvedAt: Date.now(),
         travelAllowance: 20000,
-        paidLeaveBalance: 24,
-        sickLeaveBalance: 10,
-        familyLeaveBalance: 5,
-        dayOffBalance: 6,
-        maternityLeaveBalance: 0,
-        studyLeaveBalance: 5,
+        ...joinBalances,
         createdAt: Date.now(),
       });
     }

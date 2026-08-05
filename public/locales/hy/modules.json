@@ -1175,14 +1175,12 @@
       "autoTasks": "Նախնական ստուգաթերթի առաջադրանքները ավտոմատ կերպով կստեղծվեն։"
     },
     "fields": {
-      "employeeId": "Աշխատակցի ID",
-      "managerId": "Մենեջերի ID",
+      "employee": "Հեռացվող աշխատակից",
+      "manager": "Ղեկավար",
       "lastDay": "Վերջին աշխատանքային օրը",
       "reason": "Պատճառ",
       "note": "Նշում (ըստ ցանկության)",
-      "notePlaceholder": "Լրացուցիչ տեղեկություններ...",
-      "employeeIdPlaceholder": "Հեռացվող աշխատակցի օգտատերի ID",
-      "managerIdPlaceholder": "Նրա ղեկավարի օգտատերի ID"
+      "notePlaceholder": "Լրացուցիչ տեղեկություններ..."
     },
     "exitForm": {
       "title": "Ելքի հարցազրույցի ձև",
@@ -1261,13 +1259,13 @@
       "success": "Տիպարը ստեղծվեց!"
     },
     "fields": {
-      "employeeId": "Աշխատակցի ID",
+      "employee": "Նոր աշխատակից",
       "employeeHint": "Օգտատերը պետք է արդեն գոյություն ունենա համակարգում",
       "template": "Տիպար",
       "selectTemplate": "Ընտրել տիպար (ըստ ցանկության)",
       "startDate": "Սկսման ամսաթիվ",
-      "managerId": "Մենեջերի ID",
-      "buddyId": "Ընկեր ID (ըստ ցանկության)",
+      "manager": "Ղեկավար",
+      "buddy": "Ուղեկցորդ / մենթոր (ըստ ցանկության)",
       "templateName": "Տիպարի անուն",
       "templateNamePlaceholder": "օրինակ՝ Ինժեներական ինտեգրում",
       "description": "Նկարագրություն",
@@ -1275,9 +1273,6 @@
       "department": "Բաժին",
       "deptPlaceholder": "օրինակ՝ Ինժեներական",
       "taskTitle": "Առաջադրանքի վերնագիր",
-      "employeeIdPlaceholder": "Տեղադրեք նոր աշխատակցի օգտատերի ID",
-      "managerIdPlaceholder": "Ղեկավարի օգտատերի ID",
-      "buddyIdPlaceholder": "Ուղեկցորդի/մենթորի օգտատերի ID",
       "dayPlaceholder": "Օր"
     }
   },
