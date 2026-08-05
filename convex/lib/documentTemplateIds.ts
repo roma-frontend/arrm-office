@@ -67,3 +67,27 @@ const CATALOG_ID_SET: ReadonlySet<string> = new Set(CATALOG_TEMPLATE_IDS);
 export function isCatalogTemplateId(id: string): id is CatalogTemplateId {
   return CATALOG_ID_SET.has(id);
 }
+
+/**
+ * Where a signed template belongs in the employee's personal file.
+ *
+ * `employeeDocuments.category` is a small closed set, so anything that is not a
+ * contract, a certificate or an identity paper lands in `other` — the point is
+ * that the signed PDF is filed at all, which it previously never was.
+ */
+export function personalFileCategory(
+  templateId: string,
+): 'resume' | 'contract' | 'certificate' | 'performance_review' | 'id_document' | 'other' {
+  switch (templateId) {
+    case 'employment-contract':
+    case 'nda':
+    case 'material-responsibility':
+    case 'offer-letter':
+      return 'contract';
+    case 'employment-verification':
+    case 'salary-certificate':
+      return 'certificate';
+    default:
+      return 'other';
+  }
+}

@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation, internalMutation } from './_generated/server';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { personalFileCategory } from './lib/documentTemplateIds';
 import { isSuperadmin } from './lib/auth';
 import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { notify } from './lib/notify';
@@ -610,6 +611,35 @@ export const attachSignedPdf = mutation({
       metadata: JSON.stringify({ archivedPdf: name }),
       timestamp: now,
     });
+
+    // ── File the signed copy in the employee's personal file ─────
+    // A signed contract used to exist only inside the signatures module: the
+    // employee profile showed "signed" but held no document. The archived PDF is
+    // the definitive copy, so this is the moment to file it.
+    const packetRow = await ctx.db
+      .query('hiringPacketDocuments')
+      .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', documentId))
+      .first();
+    if (packetRow) {
+      const alreadyFiled = await ctx.db
+        .query('employeeDocuments')
+        .withIndex('by_user', (q) => q.eq('userId', packetRow.userId))
+        .filter((q) => q.eq(q.field('fileUrl'), url))
+        .first();
+      if (!alreadyFiled) {
+        await ctx.db.insert('employeeDocuments', {
+          organizationId: packetRow.organizationId,
+          userId: packetRow.userId,
+          uploaderId: caller._id,
+          category: personalFileCategory(packetRow.templateId),
+          fileName: name,
+          fileUrl: url,
+          fileSize: size,
+          description: `Signed ${doc.title}`,
+          uploadedAt: now,
+        });
+      }
+    }
 
     return { alreadyArchived: false, url };
   },
