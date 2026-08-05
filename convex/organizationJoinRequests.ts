@@ -180,7 +180,7 @@ export const requestJoinOrganization = mutation({
         fallbackTitle: '🙋 New Join Request',
         fallbackMessage: `${user.name} (${user.email}) wants to join ${org.name}.${message ? ` Message: ${message}` : ''}`,
         relatedId: requestId,
-        route: '/organization',
+        route: '/join-requests',
       });
     }
 
@@ -246,7 +246,7 @@ export const approveJoinRequest = mutation({
       fallbackTitle: '✅ Welcome to the Team!',
       fallbackMessage: `Your request to join ${org?.name} has been approved by ${reviewer.name}.`,
       relatedId: userId,
-      route: '/organization',
+      route: '/dashboard',
     });
 
     return { success: true, userId, organizationId: invite.organizationId };
@@ -304,7 +304,7 @@ export const rejectJoinRequest = mutation({
           fallbackTitle: '❌ Join Request Rejected',
           fallbackMessage: `Your request to join ${org?.name} was rejected.${reason ? ` Reason: ${reason}` : ''}`,
           relatedId: userId,
-          route: '/organization',
+          route: '/dashboard',
         });
       }
     }

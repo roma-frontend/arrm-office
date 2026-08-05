@@ -527,7 +527,7 @@ export const requestToJoinOrganization = mutation({
         fallbackTitle: '🙋 New Join Request',
         fallbackMessage: `${args.requestedByName} (${args.requestedByEmail}) wants to join ${org.name}.`,
         relatedId: inviteId,
-        route: '/organization',
+        route: '/join-requests',
       });
     }
 
@@ -733,7 +733,7 @@ export const approveJoinRequest = mutation({
       fallbackTitle: '✅ Welcome to ' + org.name + '!',
       fallbackMessage: `Your request to join ${org.name} has been approved by ${admin.name}. You can now log in.`,
       relatedId: userId,
-      route: '/organization',
+      route: '/dashboard',
     });
 
     // Audit log: join request approved

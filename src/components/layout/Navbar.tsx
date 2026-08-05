@@ -86,9 +86,6 @@ const NOTIFICATION_ROUTES: Record<string, string> = {
  * soon as the reader switched language.
  */
 function notificationTarget(n: NotificationItem, role?: string): string | null {
-  if (n.type === 'security_alert' && n.relatedId?.startsWith('impersonation:')) {
-    return '/security';
-  }
   if (n.type === 'security_alert' && n.relatedId && !n.relatedId.includes(':')) {
     return `/superadmin/security/alert/${n.relatedId}`;
   }
