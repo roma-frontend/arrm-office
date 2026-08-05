@@ -851,7 +851,7 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <Select
               value={pendingLocale}
               onValueChange={(value) => setPendingLocale(value as SupportedLocale)}
@@ -956,7 +956,7 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
           </div>
 
           {canManage && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
               {editableCount > 0 && (
                 <Select
                   value={currentLocale}
@@ -1009,7 +1009,7 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
                   row.status === 'skipped' ? 'opacity-60' : ''
                 }`}
               >
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm text-(--text-primary) truncate">
