@@ -231,7 +231,7 @@ export const createIncident = mutation({
         fallbackTitle: `🚨 Emergency: ${args.severity}`,
         fallbackMessage: args.title,
         relatedId: `incident:${incidentId}`,
-        route: '/security',
+        route: '/superadmin/security',
         createdAt: now,
       });
     }

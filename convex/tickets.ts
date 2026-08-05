@@ -114,7 +114,7 @@ export const createTicket = mutation({
         fallbackTitle: `🎫 New ticket: ${ticketNumber}`,
         fallbackMessage: `${args.title} (Priority: ${args.priority})`,
         relatedId: `support_ticket:${ticketId}`,
-        route: '/tickets',
+        route: '/superadmin/support',
         createdAt: now,
       });
     }
@@ -377,7 +377,7 @@ export const updateTicketStatus = mutation({
       fallbackTitle: `🎫 Ticket status updated: ${ticket.ticketNumber}`,
       fallbackMessage: `New status: ${args.status}`,
       relatedId: `support_ticket:${args.ticketId}`,
-      route: '/tickets',
+      route: '/superadmin/support',
       createdAt: now,
     });
 
@@ -427,7 +427,7 @@ export const assignTicket = mutation({
         // The body is the user-authored ticket title — not translatable.
         fallbackMessage: ticket.title,
         relatedId: `support_ticket:${args.ticketId}`,
-        route: '/tickets',
+        route: '/superadmin/support',
       });
     }
 
@@ -485,7 +485,7 @@ export const addTicketComment = mutation({
         // The body is the user-authored comment — not translatable.
         fallbackMessage: args.message.slice(0, 100),
         relatedId: `support_ticket:${args.ticketId}`,
-        route: '/tickets',
+        route: '/superadmin/support',
         createdAt: now,
       });
     }
@@ -540,7 +540,7 @@ export const resolveTicket = mutation({
       // The body is the agent-authored resolution text — not translatable.
       fallbackMessage: args.resolution,
       relatedId: `support_ticket:${args.ticketId}`,
-      route: '/tickets',
+      route: '/superadmin/support',
       createdAt: now,
     });
 
@@ -943,7 +943,7 @@ export const activateTicketChat = mutation({
       // The body is the superadmin-authored chat message — not translatable.
       fallbackMessage: args.message.slice(0, 100),
       relatedId: `support_ticket:${args.ticketId}`,
-      route: '/tickets',
+      route: '/superadmin/support',
       createdAt: now,
     });
 

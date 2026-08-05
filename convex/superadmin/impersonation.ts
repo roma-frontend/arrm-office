@@ -97,7 +97,7 @@ export const startImpersonation = mutation({
       fallbackTitle: '👤 Superadmin impersonation',
       fallbackMessage: `${superadmin.name} has started an impersonation session on your account. Reason: ${args.reason}`,
       relatedId: `impersonation:${sessionId}`,
-      route: '/security',
+      route: '/settings',
       createdAt: now,
     });
 

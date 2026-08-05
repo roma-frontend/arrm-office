@@ -161,7 +161,7 @@ export const suspendUser = mutation({
       params: { until, reason },
       fallbackTitle: '⚠️ Account Temporarily Suspended',
       fallbackMessage: `Your account has been suspended until ${until}. Reason: ${reason}. Contact your administrator for more information.`,
-      route: '/security',
+      route: '/settings',
     });
 
     return { userId, suspendedUntil };
@@ -221,7 +221,7 @@ export const unsuspendUser = mutation({
       params: { adminName: (admin as Doc<'users'>).name },
       fallbackTitle: '✅ Account Unsuspended',
       fallbackMessage: `Your account has been reactivated by ${(admin as Doc<'users'>).name}. You can now log in again.`,
-      route: '/security',
+      route: '/settings',
     });
 
     return userId;

@@ -210,7 +210,7 @@ export const logLoginAttempt = mutation({
                 },
                 fallbackTitle: '🚨 Account Locked',
                 fallbackMessage: `${user.name} (${user.email}) was auto-locked after 5 failed login attempts.`,
-                route: '/security',
+                route: '/superadmin/security',
               });
             }
           }
@@ -560,7 +560,7 @@ export const notifySuperadminSuspiciousActivity = mutation({
         },
         fallbackTitle: '🚫 Account Automatically Suspended',
         fallbackMessage: `Your account has been automatically suspended due to suspicious login activity (risk score: ${args.riskScore}). If this was you, please contact your administrator. Suspension will expire in ${AUTO_BLOCK_DURATION} hours.`,
-        route: '/security',
+        route: '/superadmin/security',
       });
     }
 
@@ -593,7 +593,7 @@ export const notifySuperadminSuspiciousActivity = mutation({
       fallbackTitle: notificationTitle,
       fallbackMessage: notificationMessage,
       relatedId: args.userId,
-      route: '/security',
+      route: '/superadmin/security',
       extra: {
         suspiciousUserId: args.userId,
         email: args.email,
