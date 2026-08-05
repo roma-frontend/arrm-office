@@ -157,7 +157,12 @@ export const uploadDocument = mutation({
       throw new Error('uploaderId must match the authenticated caller');
     }
 
+    const target = await ctx.db.get(args.userId);
+
     return await ctx.db.insert('employeeDocuments', {
+      // Without this the `by_org` index silently misses every document uploaded
+      // through the wizard, so org-wide document queries returned nothing.
+      ...(target?.organizationId ? { organizationId: target.organizationId } : {}),
       userId: args.userId,
       uploaderId: args.uploaderId,
       category: args.category,

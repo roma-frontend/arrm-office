@@ -1,6 +1,7 @@
 'use server';
 
 import { logger } from '@/lib/logger';
+import { validateUploadPayload, type UploadKind } from '@/lib/security';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary
@@ -10,20 +11,95 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Server-action guards
+//
+// Every export in this file is a `'use server'` function, i.e. a publicly
+// reachable HTTP endpoint. Without these guards an unauthenticated caller could
+// upload arbitrary files of arbitrary type into the project's Cloudinary
+// account (and delete other users' avatars). Both checks are mandatory:
+//   1. `requireUser()`      — the caller must have a valid session.
+//   2. `assertUploadAllowed` — the payload must match the allowlist for its kind.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface UploadActor {
+  userId: string;
+  role: string;
+  organizationId?: string;
+}
+
+/** Reject anonymous callers. Returns the authenticated actor. */
+async function requireUser(): Promise<UploadActor> {
+  // Imported lazily on purpose: `server-auth` pulls in `jose`, which ships as
+  // ESM only. A static import would drag it into the module graph of every
+  // component that merely imports an upload action, which Jest cannot parse.
+  const { getServerUser } = await import('@/lib/server-auth');
+  const user = await getServerUser();
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+  return {
+    userId: user.userId,
+    role: user.role ?? 'employee',
+    organizationId: user.organizationId,
+  };
+}
+
+/**
+ * Decoded byte size of a base64 payload, tolerating a `data:` URL prefix and
+ * accounting for `=` padding. The naive `length * 3 / 4` used previously
+ * over-counted by the length of the prefix.
+ */
+function decodedByteSize(base64: string): number {
+  const commaIndex = base64.startsWith('data:') ? base64.indexOf(',') : -1;
+  const payload = commaIndex >= 0 ? base64.slice(commaIndex + 1) : base64;
+  const padding = payload.endsWith('==') ? 2 : payload.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
+}
+
+/** Infer a MIME type from a `data:` URL prefix when the caller omitted one. */
+function mimeFromDataUrl(base64: string): string | undefined {
+  const match = /^data:([^;,]+)[;,]/.exec(base64);
+  return match?.[1];
+}
+
+/**
+ * Enforce the allowlist for an upload kind. Throws with the validator's message
+ * so the client surfaces an actionable error.
+ */
+function assertUploadAllowed(args: {
+  base64: string;
+  fileName: string;
+  mimeType?: string;
+  kind: UploadKind;
+}): { sizeBytes: number; mimeType: string } {
+  const sizeBytes = decodedByteSize(args.base64);
+  const mimeType = args.mimeType ?? mimeFromDataUrl(args.base64);
+  const result = validateUploadPayload({
+    fileName: args.fileName,
+    mimeType,
+    sizeBytes,
+    kind: args.kind,
+  });
+  if (!result.valid) {
+    throw new Error(result.error ?? 'Upload rejected');
+  }
+  // `validateUploadPayload` guarantees a non-empty mimeType when valid.
+  return { sizeBytes, mimeType: mimeType as string };
+}
+
 // Upload any file (PDF, image, doc, etc.) for task attachments
-export async function uploadTaskAttachment(base64File: string, fileName: string): Promise<string> {
+export async function uploadTaskAttachment(
+  base64File: string,
+  fileName: string,
+  mimeType?: string,
+): Promise<string> {
+  await requireUser();
+  assertUploadAllowed({ base64: base64File, fileName, mimeType, kind: 'attachment' });
+
   try {
     const publicId = `task_${Date.now()}_${fileName.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)}`;
 
-    // Validate file size (1MB limit for free tier)
-    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB in bytes
-    const decodedSize = Math.round((base64File.length * 3) / 4);
-    if (decodedSize > MAX_FILE_SIZE) {
-      const sizeMB = (decodedSize / (1024 * 1024)).toFixed(2);
-      throw new Error(
-        `File size (${sizeMB}MB) exceeds the 1MB limit. Please upload a smaller file.`,
-      );
-    }
     const result = await cloudinary.uploader.upload(base64File, {
       folder: 'hr-office/task-attachments',
       public_id: publicId,
@@ -41,20 +117,27 @@ export async function uploadAvatarToCloudinary(
   base64Image: string,
   userId: string,
 ): Promise<string> {
+  const actor = await requireUser();
+  // An avatar is keyed by `userId` and uploaded with `overwrite: true`, so
+  // allowing an arbitrary id would let any user replace anyone's avatar.
+  // Face registration reuses this action with a `face-<userId>` public id.
+  const targetUserId = userId.startsWith('face-') ? userId.slice('face-'.length) : userId;
+  const isPrivileged = actor.role === 'admin' || actor.role === 'superadmin';
+  if (actor.userId !== targetUserId && !isPrivileged) {
+    throw new Error('Not authorized to change this avatar');
+  }
+  assertUploadAllowed({
+    base64: base64Image,
+    // Avatars are sent as raw data URLs with no filename; derive one from the
+    // declared MIME type so the extension check has something to validate.
+    fileName: `avatar.${(mimeFromDataUrl(base64Image) ?? 'image/png').split('/')[1]}`,
+    kind: 'avatar',
+  });
+
   logger.log('☁️ Cloudinary signed upload starting...', { userId });
 
   try {
     logger.log('📤 Uploading to Cloudinary with SDK...');
-
-    // Validate file size (1MB limit for free tier)
-    const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB in bytes
-    const decodedSize = Math.round((base64Image.length * 3) / 4);
-    if (decodedSize > MAX_FILE_SIZE) {
-      const sizeMB = (decodedSize / (1024 * 1024)).toFixed(2);
-      throw new Error(
-        `Avatar size (${sizeMB}MB) exceeds the 1MB limit. Please upload a smaller image.`,
-      );
-    }
 
     const result = await cloudinary.uploader.upload(base64Image, {
       folder: 'hr-office/avatars',
@@ -80,6 +163,9 @@ export async function uploadChatAttachment(
   fileName: string,
   mimeType: string,
 ): Promise<{ url: string; name: string; type: string }> {
+  await requireUser();
+  assertUploadAllowed({ base64: base64File, fileName, mimeType, kind: 'chat' });
+
   logger.log('🎤 Voice message upload starting...', {
     fileName,
     mimeType,
@@ -102,14 +188,6 @@ export async function uploadChatAttachment(
 
   const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
   const publicId = `chat_${Date.now()}_${safeFileName}`;
-
-  // Validate file size (1MB limit for free tier)
-  const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB in bytes
-  const decodedSize = Math.round((base64File.length * 3) / 4);
-  if (decodedSize > MAX_FILE_SIZE) {
-    const sizeMB = (decodedSize / (1024 * 1024)).toFixed(2);
-    throw new Error(`File size (${sizeMB}MB) exceeds the 1MB limit. Please upload a smaller file.`);
-  }
 
   // Determine resource type based on mime type
   let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'auto';
@@ -165,6 +243,13 @@ export async function uploadChatAttachment(
 }
 
 export async function deleteAvatarFromCloudinary(userId: string): Promise<void> {
+  const actor = await requireUser();
+  const targetUserId = userId.startsWith('face-') ? userId.slice('face-'.length) : userId;
+  const isPrivileged = actor.role === 'admin' || actor.role === 'superadmin';
+  if (actor.userId !== targetUserId && !isPrivileged) {
+    throw new Error('Not authorized to delete this avatar');
+  }
+
   logger.log('🗑️ Cloudinary delete starting...', { userId });
 
   try {
@@ -191,17 +276,18 @@ export async function uploadDocument(
   fileName: string,
   mimeType?: string,
 ): Promise<{ url: string; name: string; size: number; type: string }> {
+  await requireUser();
+  const { sizeBytes, mimeType: resolvedMime } = assertUploadAllowed({
+    base64: base64File,
+    fileName,
+    mimeType,
+    kind: 'document',
+  });
+
   logger.log('📄 Document upload starting...');
 
   const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
   const publicId = `doc_${Date.now()}_${safeFileName}`;
-
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit for documents
-  const decodedSize = Math.round((base64File.length * 3) / 4);
-  if (decodedSize > MAX_FILE_SIZE) {
-    const sizeMB = (decodedSize / (1024 * 1024)).toFixed(2);
-    throw new Error(`File size (${sizeMB}MB) exceeds the 10MB limit.`);
-  }
 
   // Pick the Cloudinary resource type from the MIME type. Documents (PDF, doc,
   // etc.) MUST be uploaded as `raw` — not `image`/`auto`. Cloudinary's `auto`
@@ -210,15 +296,13 @@ export async function uploadDocument(
   // plus the image pipeline appends a second `.pdf` extension. `raw` serves the
   // file verbatim via /raw/upload/ with no restriction and no double extension.
   let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'raw';
-  if (mimeType) {
-    if (mimeType.startsWith('image/')) resourceType = 'image';
-    else if (mimeType.startsWith('video/')) resourceType = 'video';
-    else if (mimeType.startsWith('audio/')) resourceType = 'video';
-  }
+  if (resolvedMime.startsWith('image/')) resourceType = 'image';
+  else if (resolvedMime.startsWith('video/')) resourceType = 'video';
+  else if (resolvedMime.startsWith('audio/')) resourceType = 'video';
 
   let uploadData = base64File;
-  if (mimeType && !base64File.startsWith('data:')) {
-    uploadData = `data:${mimeType};base64,${base64File}`;
+  if (!base64File.startsWith('data:')) {
+    uploadData = `data:${resolvedMime};base64,${base64File}`;
   }
 
   try {
@@ -234,8 +318,8 @@ export async function uploadDocument(
     return {
       url: result.secure_url,
       name: fileName,
-      size: decodedSize,
-      type: mimeType || result.resource_type,
+      size: sizeBytes,
+      type: resolvedMime,
     };
   } catch (error) {
     logger.error('❌ Document upload failed:', error);
@@ -244,6 +328,8 @@ export async function uploadDocument(
 }
 
 export async function deleteTaskAttachmentFromCloudinary(url: string): Promise<void> {
+  await requireUser();
+
   logger.log('🗑️ Cloudinary task attachment delete starting...', { url });
 
   try {

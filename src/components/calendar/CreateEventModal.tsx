@@ -364,7 +364,7 @@ export function CreateEventModal({
       let attachmentUrl: string | undefined;
       if (attachment) {
         const base64 = await fileToBase64(attachment);
-        attachmentUrl = await uploadTaskAttachment(base64, attachment.name);
+        attachmentUrl = await uploadTaskAttachment(base64, attachment.name, attachment.type);
       }
 
       const payload = {

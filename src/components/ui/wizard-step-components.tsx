@@ -591,7 +591,7 @@ export function FileUploadStep({
 
       for (const file of filesToUpload) {
         if (file.base64) {
-          const url = await uploadTaskAttachment(file.base64, file.name);
+          const url = await uploadTaskAttachment(file.base64, file.name, file.type);
           newAttachments.push({
             url,
             name: file.name,

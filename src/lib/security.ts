@@ -292,6 +292,163 @@ const ALLOWED_DOCUMENT_TYPES = [
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Upload allowlists per upload kind.
+//
+// These back the server-side guards in `src/actions/cloudinary.ts`. Server
+// actions are publicly callable endpoints, so every upload path must declare
+// exactly which MIME types and extensions it accepts — never `*/*`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ALLOWED_SPREADSHEET_TYPES = [
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
+];
+
+const ALLOWED_MEDIA_TYPES = [
+  'audio/webm',
+  'audio/ogg',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/wav',
+  'audio/x-wav',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+];
+
+/** Upload categories recognised by {@link validateUploadPayload}. */
+export type UploadKind = 'avatar' | 'signature' | 'document' | 'attachment' | 'chat';
+
+interface UploadPolicy {
+  mimeTypes: readonly string[];
+  extensions: readonly string[];
+  maxBytes: number;
+}
+
+/**
+ * Per-kind upload policy. `maxBytes` mirrors the limits already enforced by the
+ * Cloudinary actions (1MB for the free-tier paths, 10MB for documents) so the
+ * guard cannot silently widen them.
+ */
+export const UPLOAD_POLICIES: Record<UploadKind, UploadPolicy> = {
+  avatar: {
+    mimeTypes: ALLOWED_IMAGE_TYPES,
+    extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    maxBytes: 1 * 1024 * 1024,
+  },
+  signature: {
+    mimeTypes: ['image/png', 'image/jpeg', 'image/webp'],
+    extensions: ['png', 'jpg', 'jpeg', 'webp'],
+    maxBytes: 2 * 1024 * 1024,
+  },
+  // Employee documents: generated PDFs, round-tripped DOCX, passport scans.
+  document: {
+    mimeTypes: [...ALLOWED_DOCUMENT_TYPES, ...ALLOWED_IMAGE_TYPES],
+    extensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'webp'],
+    maxBytes: MAX_FILE_SIZE,
+  },
+  attachment: {
+    mimeTypes: [
+      ...ALLOWED_DOCUMENT_TYPES,
+      ...ALLOWED_IMAGE_TYPES,
+      ...ALLOWED_SPREADSHEET_TYPES,
+      'text/plain',
+    ],
+    extensions: [
+      'pdf',
+      'doc',
+      'docx',
+      'xls',
+      'xlsx',
+      'csv',
+      'txt',
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+    ],
+    maxBytes: 1 * 1024 * 1024,
+  },
+  chat: {
+    mimeTypes: [
+      ...ALLOWED_DOCUMENT_TYPES,
+      ...ALLOWED_IMAGE_TYPES,
+      ...ALLOWED_SPREADSHEET_TYPES,
+      ...ALLOWED_MEDIA_TYPES,
+      'text/plain',
+    ],
+    extensions: [
+      'pdf',
+      'doc',
+      'docx',
+      'xls',
+      'xlsx',
+      'csv',
+      'txt',
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+      'webm',
+      'ogg',
+      'mp3',
+      'm4a',
+      'wav',
+      'mp4',
+      'mov',
+    ],
+    maxBytes: 1 * 1024 * 1024,
+  },
+};
+
+/**
+ * Validate an upload described by its metadata rather than a `File` instance.
+ *
+ * Server actions receive a base64 string plus a filename/MIME type, so
+ * {@link validateFile} (which needs a DOM `File`) cannot be used there. Both
+ * the MIME type AND the extension must be on the allowlist: a caller can lie
+ * about either one independently.
+ */
+export function validateUploadPayload(payload: {
+  fileName: string;
+  mimeType?: string;
+  sizeBytes: number;
+  kind: UploadKind;
+}): { valid: boolean; error?: string } {
+  const policy = UPLOAD_POLICIES[payload.kind];
+
+  if (payload.sizeBytes > policy.maxBytes) {
+    const limitMb = (policy.maxBytes / (1024 * 1024)).toFixed(0);
+    const actualMb = (payload.sizeBytes / (1024 * 1024)).toFixed(2);
+    return { valid: false, error: `File size (${actualMb}MB) exceeds the ${limitMb}MB limit.` };
+  }
+
+  const mimeType = payload.mimeType?.split(';')[0]?.trim().toLowerCase();
+  if (!mimeType) {
+    return { valid: false, error: 'A file type must be provided.' };
+  }
+  if (!policy.mimeTypes.includes(mimeType)) {
+    return { valid: false, error: `File type "${mimeType}" is not allowed for this upload.` };
+  }
+
+  // Reject path separators and traversal before looking at the extension so a
+  // crafted name cannot escape the Cloudinary folder via the public_id.
+  if (/[\\/]|\.\./.test(payload.fileName)) {
+    return { valid: false, error: 'File name contains invalid characters.' };
+  }
+
+  const extension = payload.fileName.split('.').pop()?.toLowerCase();
+  if (!extension || !policy.extensions.includes(extension)) {
+    return { valid: false, error: `File extension ".${extension ?? ''}" is not allowed.` };
+  }
+
+  return { valid: true };
+}
+
 /**
  * Валидация загружаемого файла
  */
