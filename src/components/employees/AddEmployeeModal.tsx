@@ -41,6 +41,14 @@ import {
   type PassportData,
   type PassportScanFile,
 } from './PassportFields';
+import type { SupportedLocale } from '@/lib/date-format';
+import {
+  DEFAULT_HIRING_PACKET,
+  HIRING_PACKET_MANDATORY,
+  getCatalogTemplate,
+  localizedContent,
+} from '@/lib/documentCatalog';
+import { LOCALE_CAPTIONS, PRIMARY_LOCALE } from '@/lib/hiringPacketDocument';
 import {
   UserPlus,
   User,
@@ -55,6 +63,8 @@ import {
   DollarSign,
   IdCard,
   CalendarDays,
+  FileText,
+  Languages,
 } from 'lucide-react';
 
 const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_BOOTSTRAP_SUPERADMIN_EMAIL ?? '').toLowerCase();
@@ -87,6 +97,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   const createUser = useMutation(api.users.mutations.createUser as FunctionReference<'mutation'>);
   const uploadEmployeeDocument = useMutation(api.employeeProfiles.uploadDocument);
   const recordTaxIdVerification = useMutation(api.employeeProfiles.recordTaxIdVerification);
+  const generateHiringPacket = useMutation(api.hiringPackets.generate);
   const currentUser = useAuthStore((s) => s.user);
   const isActualAdmin = currentUser?.email?.toLowerCase() === ADMIN_EMAIL;
   const isSuperadmin = currentUser?.role === 'superadmin';
@@ -135,6 +146,19 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   });
   const [passport, setPassport] = useState<PassportData>(EMPTY_PASSPORT);
   const [passportScan, setPassportScan] = useState<PassportScanFile | null>(null);
+  /**
+   * Date of birth (`YYYY-MM-DD`). Auto-filled from the passport MRZ scan when
+   * available; required by the personal-data and biometric consent documents.
+   */
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  /**
+   * Second language of the employee's hiring documents. Armenian is always the
+   * first column (it is the legally binding text), so this picks what goes in
+   * the right-hand column. Defaults to the admin's current UI language.
+   */
+  const [documentLanguage, setDocumentLanguage] = useState<SupportedLocale>('ru');
+  /** Generate the bilingual hiring packet right after the employee is created. */
+  const [generatePacket, setGeneratePacket] = useState(true);
   const [taxIdVerifyStatus, setTaxIdVerifyStatus] = useState<
     | 'verified'
     | 'not_found'
@@ -146,6 +170,30 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   >(null);
 
   const allowance = getTravelAllowance(email);
+
+  /**
+   * Sensible default for the second document language: the admin's own UI
+   * language. Armenian is excluded because it already occupies the primary
+   * column — a document with Armenian on both sides is pointless.
+   */
+  const defaultDocumentLanguage = useMemo<SupportedLocale>(() => {
+    const lang = (i18n.language?.slice(0, 2) ?? '') as SupportedLocale;
+    return lang === 'ru' || lang === 'en' || lang === 'de' ? lang : 'ru';
+  }, [i18n.language]);
+
+  /** Templates that make up the packet, with their localized primary titles. */
+  const packetPreview = useMemo(
+    () =>
+      DEFAULT_HIRING_PACKET.map((id) => {
+        const template = getCatalogTemplate(id);
+        return {
+          id,
+          title: template ? localizedContent(template, documentLanguage).title : id,
+          mandatory: HIRING_PACKET_MANDATORY.includes(id),
+        };
+      }),
+    [documentLanguage],
+  );
 
   // Superadmin: org selection is step 0, so adjust total
   const effectiveTotalSteps = isSuperadmin ? TOTAL_STEPS + 1 : TOTAL_STEPS;
@@ -170,9 +218,12 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     });
     setPassport(EMPTY_PASSPORT);
     setPassportScan(null);
+    setDateOfBirth('');
+    setDocumentLanguage(defaultDocumentLanguage);
+    setGeneratePacket(true);
     setTaxIdVerifyStatus(null);
     setErrors({});
-  }, []);
+  }, [defaultDocumentLanguage]);
 
   // Чистим форму только на переходе «закрыта → открыта». Зависеть от
   // isSuperadmin нельзя: роль приходит из persisted-store асинхронно и стёрла
@@ -198,6 +249,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       salary,
       passport,
       passportScan,
+      dateOfBirth,
+      documentLanguage,
+      generatePacket,
     }),
     [
       name,
@@ -212,6 +266,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       salary,
       passport,
       passportScan,
+      dateOfBirth,
+      documentLanguage,
+      generatePacket,
     ],
   );
 
@@ -229,6 +286,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       if (d.salary) setSalary((p) => ({ ...p, ...d.salary }));
       if (d.passport) setPassport((p) => ({ ...p, ...d.passport }));
       setPassportScan(d.passportScan ?? null);
+      setDateOfBirth(d.dateOfBirth ?? '');
+      if (d.documentLanguage) setDocumentLanguage(d.documentLanguage);
+      if (typeof d.generatePacket === 'boolean') setGeneratePacket(d.generatePacket);
       setStep(Math.min(Math.max(savedStep, 0), effectiveTotalSteps - 1));
     },
     [effectiveTotalSteps],
@@ -241,6 +301,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     () => ({
       role: 'employee' as const,
       type: 'staff' as const,
+      documentLanguage: defaultDocumentLanguage,
+      generatePacket: true,
       salary: {
         mode: 'gross' as const,
         amount: 0,
@@ -248,7 +310,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         country: orgCountry,
       },
     }),
-    [orgCountry],
+    [orgCountry, defaultDocumentLanguage],
   );
 
   const draft = useWizardDraft({
@@ -365,6 +427,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
               nationality: passport.nationality || undefined,
             }
           : {}),
+        ...(dateOfBirth ? { dateOfBirth } : {}),
+        language: documentLanguage,
         createdAt: registrationDate
           ? new Date(registrationDate + 'T00:00:00').getTime()
           : undefined,
@@ -391,7 +455,40 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         }).catch(() => {});
       }
 
-      toast.success(t('success.created'));
+      // Generate the bilingual hiring packet (Armenian + the chosen language).
+      // Non-fatal: the employee already exists, and the packet can be generated
+      // later from their profile, so a failure here must not look like the whole
+      // creation failed.
+      let packetGenerated = false;
+      if (generatePacket && newUserId) {
+        try {
+          await generateHiringPacket({
+            userId: newUserId,
+            secondaryLocale: documentLanguage,
+            templateIds: [...DEFAULT_HIRING_PACKET],
+            mandatoryTemplateIds: [...HIRING_PACKET_MANDATORY],
+          });
+          packetGenerated = true;
+        } catch (packetError) {
+          toast.warning(
+            packetError instanceof Error
+              ? packetError.message
+              : t(
+                  'hiringPacket.generateFailed',
+                  'The employee was created, but the document packet could not be generated. You can generate it from their profile.',
+                ),
+          );
+        }
+      }
+
+      toast.success(
+        packetGenerated
+          ? t('hiringPacket.createdWithPacket', {
+              count: DEFAULT_HIRING_PACKET.length,
+              defaultValue: `Employee created — ${DEFAULT_HIRING_PACKET.length} documents prepared for signature`,
+            })
+          : t('success.created'),
+      );
       fetch('/api/telegram/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -838,7 +935,110 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                     }}
                     onScanUploaded={setPassportScan}
                     onTaxIdVerified={setTaxIdVerifyStatus}
+                    onDateOfBirth={setDateOfBirth}
                   />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-dob" className="flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4 text-(--text-muted)" />
+                      {t('employees.dateOfBirth', 'Date of birth')}
+                    </Label>
+                    <Input
+                      id="employee-dob"
+                      type="date"
+                      value={dateOfBirth}
+                      max={toLocalDateString(Date.now())}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                    />
+                    <p className="text-xs text-(--text-muted)">
+                      {t(
+                        'employees.dateOfBirthHint',
+                        'Auto-filled from the passport scan. Required by the personal data and biometric consent forms.',
+                      )}
+                    </p>
+                  </div>
+
+                  {/* ── Hiring document packet ──────────────────────────── */}
+                  <div className="rounded-xl border border-(--border) bg-(--background-subtle) p-4 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-(--text-primary) text-sm">
+                          {t('hiringPacket.title', 'Hiring document packet')}
+                        </p>
+                        <p className="text-xs text-(--text-muted)">
+                          {t(
+                            'hiringPacket.subtitle',
+                            'Generated in two columns on one A4 page: Armenian is mandatory, the second language is chosen below.',
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="document-language" className="flex items-center gap-2">
+                        <Languages className="w-4 h-4 text-(--text-muted)" />
+                        {t('hiringPacket.secondLanguage', 'Second document language')}
+                      </Label>
+                      <Select
+                        value={documentLanguage}
+                        onValueChange={(value) => setDocumentLanguage(value as SupportedLocale)}
+                      >
+                        <SelectTrigger id="document-language">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(['ru', 'en', 'de'] as const).map((locale) => (
+                            <SelectItem key={locale} value={locale}>
+                              {LOCALE_CAPTIONS[PRIMARY_LOCALE]} + {LOCALE_CAPTIONS[locale]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 rounded border-(--border) accent-[var(--primary)]"
+                        checked={generatePacket}
+                        onChange={(e) => setGeneratePacket(e.target.checked)}
+                      />
+                      <span className="text-sm text-(--text-primary)">
+                        {t('hiringPacket.generateNow', {
+                          count: DEFAULT_HIRING_PACKET.length,
+                          defaultValue: `Prepare ${DEFAULT_HIRING_PACKET.length} documents now`,
+                        })}
+                        <span className="block text-xs text-(--text-muted)">
+                          {t(
+                            'hiringPacket.generateNowHint',
+                            'You can review, edit in Word and send them for signature from the employee profile.',
+                          )}
+                        </span>
+                      </span>
+                    </label>
+
+                    {generatePacket && (
+                      <ul className="space-y-1 pt-1">
+                        {packetPreview.map((doc) => (
+                          <li
+                            key={doc.id}
+                            className="flex items-center gap-2 text-xs text-(--text-muted)"
+                          >
+                            <CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" />
+                            <span className="truncate">{doc.title}</span>
+                            {doc.mandatory && (
+                              <span className="ml-auto shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+                                {t('hiringPacket.mandatory', 'required')}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </motion.div>
               )}
 

@@ -2281,18 +2281,56 @@ export const markImidSignComplete = internalMutation({
     const doc = await ctx.db.get(documentId);
     if (!doc || doc.status === 'completed') return;
 
+    const now = Date.now();
+
+    // Close the outstanding signature requests too. Previously only the document
+    // was flipped to `completed`, so every UI surface kept showing "awaiting
+    // signature", and the bookkeeping that hangs off a signed request (hiring
+    // packet progress, PDF archiving) never ran.
+    //
+    // No `signatureData` is written on purpose: imID produces a qualified
+    // cryptographic signature, not a drawn image. The rendered document shows the
+    // signer's name and date over the signature line, and the imID provenance is
+    // recorded in `consentText` plus the audit log.
+    const requests = await ctx.db
+      .query('signatureRequests')
+      .withIndex('by_document', (q) => q.eq('documentId', documentId))
+      .take(100);
+
+    for (const request of requests) {
+      if (request.status !== 'pending') continue;
+      await ctx.db.patch(request._id, {
+        status: 'signed',
+        signedAt: now,
+        consentText: `${request.signerName} signed this document electronically via imID.`,
+      });
+    }
+
     await ctx.db.patch(documentId, {
       status: 'completed',
-      completedAt: Date.now(),
+      completedAt: now,
     });
+
+    // Keep hiring packet progress in step — the same sync in-app signing does.
+    const packetDoc = await ctx.db
+      .query('hiringPacketDocuments')
+      .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', documentId))
+      .first();
+    if (packetDoc && packetDoc.status !== 'signed') {
+      await ctx.db.patch(packetDoc._id, {
+        status: 'signed',
+        signedAt: now,
+        updatedAt: now,
+      });
+    }
 
     await ctx.db.insert('signatureAuditLog', {
       documentId,
       organizationId: doc.organizationId,
       userId: doc.createdBy,
       action: 'signed',
-      metadata: JSON.stringify({ source: 'imid_sign', timestamp: Date.now() }),
-      timestamp: Date.now(),
+      metadata: JSON.stringify({ source: 'imid_sign', timestamp: now }),
+      timestamp: now,
     });
   },
 });

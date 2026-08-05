@@ -93,6 +93,19 @@ export const createUser = mutation({
     passportExpiryDate: v.optional(v.string()),
     socialCardNumber: v.optional(v.string()),
     nationality: v.optional(v.string()),
+    /**
+     * Date of birth (`YYYY-MM-DD`). Needed by the personal-data and biometric
+     * consent documents, which otherwise print a blank placeholder.
+     */
+    dateOfBirth: v.optional(v.string()),
+    /**
+     * Working language of the employee (`en` | `ru` | `de` | `hy`). Drives the
+     * second column of their bilingual hiring documents — Armenian is always the
+     * first — and their UI locale.
+     */
+    language: v.optional(
+      v.union(v.literal('en'), v.literal('ru'), v.literal('de'), v.literal('hy')),
+    ),
     // Registration / join date (ms epoch) — lets admins backdate employees who
     // were already working before the account was created (project handover).
     createdAt: v.optional(v.number()),
@@ -168,6 +181,8 @@ export const createUser = mutation({
       positionId: args.positionId,
       phone: args.phone,
       supervisorId: args.supervisorId,
+      dateOfBirth: args.dateOfBirth,
+      language: args.language,
       isActive: true,
       isApproved: true,
       approvedBy: adminId,
@@ -195,7 +210,8 @@ export const createUser = mutation({
       args.passportIssueDate !== undefined ||
       args.passportExpiryDate !== undefined ||
       args.socialCardNumber !== undefined ||
-      args.nationality !== undefined;
+      args.nationality !== undefined ||
+      args.dateOfBirth !== undefined;
 
     if (hasSalary || hasPassport) {
       const now = Date.now();
@@ -214,6 +230,9 @@ export const createUser = mutation({
         passportExpiryDate: args.passportExpiryDate,
         socialCardNumber: args.socialCardNumber,
         nationality: args.nationality,
+        // Mirrored onto the profile as well: the extended-profile editor reads
+        // it from here, while document merge tokens read it from `users`.
+        dateOfBirth: args.dateOfBirth,
         createdAt: now,
         updatedAt: now,
       });

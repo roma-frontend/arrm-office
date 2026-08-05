@@ -1119,6 +1119,8 @@
       "impersonation": "{{name}} начал сессию имперсонации на вашем аккаунте. Причина: {{reason}}",
       "signMovementForm": "Подпишите акт перемещения для «{{assetName}}» в разделе «Электронные подписи».",
       "signReturnForm": "Подпишите акт возврата для «{{assetName}}» в разделе «Электронные подписи».",
+      "signedDocumentNotArchived": "«{{title}}» полностью подписан, но архивная копия PDF ещё не сохранена. Откройте документ в разделе «Электронные подписи» и нажмите «Архивировать PDF».",
+      "documentAwaitingSignature": "«{{title}}» ожидает вашей подписи. Откройте раздел «Электронные подписи», чтобы просмотреть и подписать документ.",
       "equipmentAssigned": "{{assignerName}} выдал вам «{{assetName}}».",
       "warrantyExpiring": "Гарантия на «{{assetName}}» истекает через {{count}} дн.",
       "maintenanceDue": "Подошёл срок планового обслуживания «{{description}}» для {{assetName}}.",
@@ -1255,6 +1257,8 @@
       "okrCheckinReminder": "📊 Напоминание о еженедельной сверке OKR",
       "reviewDeadline": "⏰ Дедлайн оценки через {{count}} дн.",
       "surveyAutoActivated": "📢 Опрос активирован автоматически",
+      "signedDocumentNotArchived": "📄 Подписанный документ не заархивирован",
+      "documentAwaitingSignature": "✍️ Документ ожидает вашей подписи",
       "surveyAutoClosed": "🔒 Опрос закрыт автоматически",
       "kudosNew": "Новая благодарность!",
       "badgeAwarded": "Вручён значок!",
@@ -1837,5 +1841,9 @@
     "declined": "отклонил",
     "tentative": "принял под вопросом",
     "needs_action": "ещё не ответил на"
+  },
+  "ticket": {
+    "chatCreated": "Чат создан для тикета {{ticketNumber}}. Вы увидите этот чат после первого сообщения от суперадмина.",
+    "chatCreatedShort": "Чат создан для тикета {{ticketNumber}}"
   }
 }

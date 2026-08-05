@@ -1119,6 +1119,8 @@
       "impersonation": "{{name}} has started an impersonation session on your account. Reason: {{reason}}",
       "signMovementForm": "Please sign the movement form for \"{{assetName}}\" in the E-Signatures section.",
       "signReturnForm": "Please sign the return form for \"{{assetName}}\" in the E-Signatures section.",
+      "signedDocumentNotArchived": "\"{{title}}\" is fully signed but has no archived PDF yet. Open it in E-Signatures and press \"Archive PDF\" to store the permanent copy.",
+      "documentAwaitingSignature": "\"{{title}}\" is waiting for your signature. Open the E-Signatures section to review and sign it.",
       "equipmentAssigned": "You have been assigned \"{{assetName}}\" by {{assignerName}}.",
       "warrantyExpiring": "Warranty for \"{{assetName}}\" expires in {{count}} day(s).",
       "maintenanceDue": "Scheduled maintenance \"{{description}}\" for {{assetName}} is due.",
@@ -1255,6 +1257,8 @@
       "okrCheckinReminder": "📊 Weekly OKR Check-in Reminder",
       "reviewDeadline": "⏰ Review deadline in {{count}} day(s)",
       "surveyAutoActivated": "📢 Survey Auto-Activated",
+      "signedDocumentNotArchived": "📄 Signed document not archived",
+      "documentAwaitingSignature": "✍️ Document awaiting your signature",
       "surveyAutoClosed": "🔒 Survey Auto-Closed",
       "kudosNew": "New Kudos!",
       "badgeAwarded": "Badge Awarded!",
@@ -1835,5 +1839,9 @@
     "declined": "declined",
     "tentative": "tentatively accepted",
     "needs_action": "has not yet responded to"
+  },
+  "ticket": {
+    "chatCreated": "Chat created for ticket {{ticketNumber}}. You will see this chat after the first message from superadmin.",
+    "chatCreatedShort": "Chat created for ticket {{ticketNumber}}"
   }
 }

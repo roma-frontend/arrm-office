@@ -1119,6 +1119,8 @@
       "impersonation": "{{name}} hat eine Impersonation-Sitzung auf Ihrem Konto gestartet. Grund: {{reason}}",
       "signMovementForm": "Bitte unterschreiben Sie das Übergabeprotokoll für „{{assetName}}\" im Bereich E-Signaturen.",
       "signReturnForm": "Bitte unterschreiben Sie das Rückgabeprotokoll für „{{assetName}}\" im Bereich E-Signaturen.",
+      "signedDocumentNotArchived": "„{{title}}\" ist vollständig unterschrieben, aber es ist noch keine archivierte PDF vorhanden. Öffnen Sie das Dokument unter E-Signaturen und klicken Sie auf „PDF archivieren\".",
+      "documentAwaitingSignature": "„{{title}}\" wartet auf Ihre Unterschrift. Öffnen Sie den Bereich E-Signaturen, um das Dokument zu prüfen und zu unterschreiben.",
       "equipmentAssigned": "{{assignerName}} hat Ihnen „{{assetName}}\" zugewiesen.",
       "warrantyExpiring": "Die Garantie für „{{assetName}}\" läuft in {{count}} Tag(en) ab.",
       "maintenanceDue": "Die geplante Wartung „{{description}}\" für {{assetName}} ist fällig.",
@@ -1255,6 +1257,8 @@
       "okrCheckinReminder": "📊 Wöchentliche OKR-Check-in-Erinnerung",
       "reviewDeadline": "⏰ Bewertungsfrist in {{count}} Tag(en)",
       "surveyAutoActivated": "📢 Umfrage automatisch aktiviert",
+      "signedDocumentNotArchived": "📄 Unterschriebenes Dokument nicht archiviert",
+      "documentAwaitingSignature": "✍️ Dokument wartet auf Ihre Unterschrift",
       "surveyAutoClosed": "🔒 Umfrage automatisch geschlossen",
       "kudosNew": "Neues Lob!",
       "badgeAwarded": "Abzeichen verliehen!",
@@ -1835,5 +1839,9 @@
     "declined": "abgelehnt",
     "tentative": "vorläufig angenommen",
     "needs_action": "noch nicht reagiert auf"
+  },
+  "ticket": {
+    "chatCreated": "Chat für Ticket {{ticketNumber}} erstellt. Sie sehen diesen Chat nach der ersten Nachricht des Superadmins.",
+    "chatCreatedShort": "Chat für Ticket {{ticketNumber}} erstellt"
   }
 }

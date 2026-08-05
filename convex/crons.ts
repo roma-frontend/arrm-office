@@ -24,4 +24,14 @@ crons.interval(
   internal.integrations.runScheduledSyncs,
 );
 
+// Signed documents are archived to permanent storage by the client (PDF
+// rendering is browser-only). If a signer closes the tab straight after signing,
+// the document ends up legally complete with no archived copy — this nightly
+// sweep notifies the creator so the gap is closed instead of going unnoticed.
+crons.daily(
+  'signature-archive-sweep',
+  { hourUTC: 2, minuteUTC: 30 },
+  internal.signatures.sweepUnarchivedDocuments,
+);
+
 export default crons;

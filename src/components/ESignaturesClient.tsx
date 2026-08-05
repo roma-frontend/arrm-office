@@ -54,11 +54,18 @@ import { motion, AnimatePresence } from '@/lib/cssMotion';
 import {
   exportDocumentToPDF,
   renderDocumentPdfBase64,
+  renderDocumentDocxBlob,
   documentBodyToPlainText,
   type RenderableDocument,
   type DocumentLabels,
   type DocumentBlock,
 } from '@/lib/exportDocument';
+import {
+  applySignaturesToBlocks,
+  hiringPacketFileName,
+  parseHiringPacketContent,
+  type CollectedSignature,
+} from '@/lib/hiringPacketDocument';
 import {
   assetFormDocumentNumber,
   assetFormFileName,
@@ -69,7 +76,7 @@ import {
   type AssetFormInput,
 } from '@/lib/assetFormDocument';
 import type { AccentColor } from '@/lib/documentCatalog';
-import { getLocaleString } from '@/lib/date-format';
+import { getLocaleString, formatDate as formatLocalizedDate } from '@/lib/date-format';
 import { uploadDocument } from '@/actions/cloudinary';
 import { logger } from '@/lib/logger';
 
@@ -98,9 +105,28 @@ function localizedDocTitle(
   t: TFunction,
 ): string {
   if (!doc) return '';
+  const packet = doc.content ? parseHiringPacketContent(doc.content) : null;
+  if (packet) return packet.title;
   const parsed = doc.content ? parseAssetFormContent(doc.content) : null;
   if (!parsed) return doc.title;
   return assetFormTitle(parsed.type === 'return', t);
+}
+
+/**
+ * Plain-text body for the in-app previews.
+ *
+ * Structured documents (asset acts, hiring-packet bodies) store JSON in
+ * `content`; without this the employee about to sign would be shown the raw
+ * `__HP__{...}` payload.
+ */
+function documentDisplayBody(
+  doc: { content?: string } | null | undefined,
+  act: { blocks: DocumentBlock[] } | null,
+): string {
+  if (act) return documentBodyToPlainText(act.blocks);
+  const packet = doc?.content ? parseHiringPacketContent(doc.content) : null;
+  if (packet) return documentBodyToPlainText(packet.blocks);
+  return doc?.content || '';
 }
 
 /**
@@ -164,6 +190,43 @@ function toRenderableDocument(
   const signedReq = (doc.requests || [])
     .filter((r) => r.status === 'signed' && r.signatureData)
     .sort((a, b) => a.order - b.order)[0];
+
+  // ── Hiring packet document ───────────────────────────────────────────────
+  // Bilingual body frozen at send time. Everything needed to reproduce the
+  // original is in the payload (including the static labels), so an archived
+  // copy regenerated later still matches what was signed.
+  const packet = parseHiringPacketContent(doc.content);
+  if (packet) {
+    const collected: CollectedSignature[] = (doc.requests || [])
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .filter((r) => r.status === 'signed')
+      .map((r) => ({
+        signerName: r.signerName,
+        signatureData: r.signatureData,
+        signedAt: r.signedAt,
+      }));
+
+    return {
+      title: packet.title,
+      documentNumber: packet.documentNumber,
+      body: applySignaturesToBlocks(packet.blocks, collected, (ts) =>
+        formatLocalizedDate(ts, packet.primaryLocale, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      ),
+      accent: packet.accent,
+      // The frozen body carries its own two-party grid.
+      signature: false,
+      orgName: packet.orgName,
+      contentHash: doc.contentHash || undefined,
+      now: doc.completedAt || doc.createdAt || 0,
+      lang: packet.primaryLocale,
+      labels: packet.labels,
+    };
+  }
 
   // Structured asset act → typed blocks (definition tables + signature grid).
   const act = t
@@ -938,7 +1001,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
   // Asset acts render as a structured, localized document; generic documents
   // show their raw content.
   const act = buildActBody(doc, t, i18n.language);
-  const displayBody = act ? documentBodyToPlainText(act.blocks) : doc?.content || '';
+  const displayBody = documentDisplayBody(doc, act);
   const displayTitle = localizedDocTitle(doc, t);
 
   const signMutation = useMutation(api.signatures.signDocument);
@@ -1135,7 +1198,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
   // Asset acts render as a structured, localized document; generic documents
   // show their raw content.
   const act = buildActBody(doc, t, i18n.language);
-  const displayBody = act ? documentBodyToPlainText(act.blocks) : doc?.content || '';
+  const displayBody = documentDisplayBody(doc, act);
   const displayTitle = localizedDocTitle(doc, t);
 
   const handleArchive = async () => {
@@ -1203,6 +1266,43 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
       toast.success(t('signatures.pdfExported', 'PDF exported successfully'));
     } catch {
       toast.error(t('signatures.errors.exportFailed', 'Failed to export PDF'));
+    }
+  };
+
+  /**
+   * Export the same document as an editable Word file, signature image included.
+   *
+   * The archived PDF stays the authoritative copy; this exists because HR is
+   * routinely asked for a .docx of a signed contract (tax office, banks), and
+   * previously the only way out of the signature module was PDF.
+   */
+  const handleExportDOCX = async () => {
+    if (!doc) return;
+    try {
+      const renderable = toRenderableDocument(doc, labels, t, i18n.language);
+      const packet = parseHiringPacketContent(doc.content);
+      const fileName = packet
+        ? hiringPacketFileName(
+            packet.templateId,
+            doc.requests?.find((r) => r.order === 1)?.signerName ?? '',
+            'docx',
+          )
+        : act
+          ? assetFormFileName(act.input).replace(/\.pdf$/, '_signed.docx')
+          : `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_signed.docx`;
+
+      const blob = await renderDocumentDocxBlob(renderable);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(t('signatures.docxExported', 'Word file exported'));
+    } catch {
+      toast.error(t('signatures.errors.exportFailed', 'Failed to export'));
     }
   };
 
@@ -1329,6 +1429,12 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
               <Button variant="outline" size="sm" onClick={handleExportPDF}>
                 <Download className="w-4 h-4 mr-1" />
                 {t('signatures.exportPdf', 'Export PDF')}
+              </Button>
+            )}
+            {doc && doc.status === 'completed' && (
+              <Button variant="outline" size="sm" onClick={handleExportDOCX}>
+                <Download className="w-4 h-4 mr-1" />
+                {t('signatures.exportDocx', 'Export Word')}
               </Button>
             )}
             {doc && doc.status === 'completed' && doc.signedPdfUrl && (

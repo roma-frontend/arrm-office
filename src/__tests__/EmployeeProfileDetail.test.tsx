@@ -29,6 +29,9 @@ const mockMutation = jest.fn();
 jest.mock('convex/react', () => ({
   useQuery: (ref: { _name?: string }) => queryResults[ref?._name ?? ''],
   useMutation: () => mockMutation,
+  // The hiring packet panel reaches for the client directly to fetch a
+  // signature image on demand when exporting a signed document.
+  useConvex: () => ({ query: jest.fn().mockResolvedValue(null) }),
 }));
 
 // ── API mock (relative path matching EmployeeProfileDetail's import) ─────────
@@ -39,6 +42,19 @@ jest.mock('../../convex/_generated/api', () => ({
       mutations: { deleteUser: { _name: 'deleteUser' } },
     },
     employeeProfiles: { getEmployeeProfile: { _name: 'getEmployeeProfile' } },
+    // Hiring packet panel (rendered inside the profile). Left unstubbed in
+    // `queryResults`, so `useQuery` returns undefined and the panel shows its
+    // loading state instead of interfering with these assertions.
+    hiringPackets: {
+      listForEmployee: { _name: 'listForEmployee' },
+      applyDocxOverride: { _name: 'applyDocxOverride' },
+      revertToTemplate: { _name: 'revertToTemplate' },
+      setSkipped: { _name: 'setSkipped' },
+      sendForSignature: { _name: 'sendForSignature' },
+      ensureDocumentNumber: { _name: 'ensureDocumentNumber' },
+    },
+    documentLibrary: { getEmployeeMergeData: { _name: 'getEmployeeMergeData' } },
+    signatures: { getDocument: { _name: 'getSignatureDocument' } },
     aiEvaluator: { calculateEmployeeScore: { _name: 'calculateEmployeeScore' } },
     supervisorRatings: {
       getLatestRating: { _name: 'getLatestRating' },

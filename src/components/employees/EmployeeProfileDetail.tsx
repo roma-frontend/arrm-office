@@ -41,6 +41,7 @@ import { EditEmployeeModal, type Employee } from './EditEmployeeModal';
 import { ReportingLineWidget } from './ReportingLineWidget';
 import { AssignManagerModal } from './AssignManagerModal';
 import ExtendedProfileSection, { type ExtendedProfileData } from './ExtendedProfileSection';
+import HiringPacketPanel from './HiringPacketPanel';
 import EditExtendedProfileModal from './EditExtendedProfileModal';
 import EmployeeProfileHero from './EmployeeProfileHero';
 import SettlementPreviewDialog from '@/components/settlement/SettlementPreviewDialog';
@@ -605,6 +606,16 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           </CardContent>
         </Card>
       )}
+
+      {/* Hiring document packet — generated at creation, signed during onboarding */}
+      <HiringPacketPanel
+        userId={employeeId as Id<'users'>}
+        canManage={
+          currentUser?.role === 'admin' ||
+          currentUser?.role === 'superadmin' ||
+          currentUser?.role === 'supervisor'
+        }
+      />
 
       {/* Documents */}
       {profile?.documents && profile.documents.length > 0 && (

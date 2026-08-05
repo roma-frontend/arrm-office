@@ -1,20 +1,86 @@
 import { v } from 'convex/values';
-import { query, mutation } from './_generated/server';
+import { query, mutation, internalMutation } from './_generated/server';
+import type { MutationCtx, QueryCtx } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
-import type { Doc } from './_generated/dataModel';
+import { isSuperadmin } from './lib/auth';
+import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
+import { notify } from './lib/notify';
+import { sha256Hex } from './lib/sha256';
+import type { Doc, Id } from './_generated/dataModel';
 
 /**
- * Deterministic, Unicode-safe content hash for integrity display. Uses a DJB2
- * hash over the full string's code points, so it works for any language
- * (Cyrillic, emoji, etc.) — unlike `btoa`, which throws on non-Latin1 input.
+ * Content hash stored alongside the immutable document snapshot and printed in
+ * the exported PDF/DOCX footer, so an archived copy can be checked against the
+ * record.
+ *
+ * SHA-256, computed here in the mutation rather than supplied by the client: a
+ * hash the server never computed proves nothing about the content it stores.
+ * (Previously a 32-bit DJB2 hash — fine for a cache key, meaningless as
+ * tamper-evidence for an employment contract.)
  */
 function hashContent(content: string): string {
-  let hash = 5381;
-  for (let i = 0; i < content.length; i++) {
-    hash = (hash * 33) ^ content.charCodeAt(i);
-  }
-  // >>> 0 coerces to an unsigned 32-bit int; base36 keeps it short.
-  return (hash >>> 0).toString(36) + '-' + content.length.toString(36);
+  return sha256Hex(content);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Authorization
+//
+// Signature documents hold frozen employment contracts and the signature images
+// of the people who signed them, so every entry point has to establish who is
+// asking. The client-supplied `userId` arguments predate this and are kept for
+// call-site compatibility, but they are now *bound* to the authenticated caller
+// rather than trusted: passing someone else's id is rejected.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Is the caller an org-level manager of this organization? */
+function managesOrg(caller: AuthenticatedCaller, organizationId: Id<'organizations'>): boolean {
+  if (isSuperadmin(caller)) return true;
+  return (
+    (caller.role === 'admin' || caller.role === 'supervisor') &&
+    caller.organizationId === organizationId
+  );
+}
+
+/**
+ * Bind a client-supplied `userId` to the authenticated caller.
+ *
+ * Returns `null` when unauthenticated or when the argument names someone else —
+ * queries turn that into empty data, mutations into a throw.
+ */
+async function callerAs(
+  ctx: QueryCtx | MutationCtx,
+  userId: Id<'users'>,
+): Promise<AuthenticatedCaller | null> {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) return null;
+  if (caller._id !== userId) return null;
+  return caller;
+}
+
+/** Mutation variant of {@link callerAs}. */
+async function assertCallerIs(ctx: MutationCtx, userId: Id<'users'>): Promise<AuthenticatedCaller> {
+  const caller = await callerAs(ctx, userId);
+  if (!caller) throw new Error('Not authorized');
+  return caller;
+}
+
+/**
+ * May this caller see this document? Creator, any of its signers, or a manager
+ * of the owning organization.
+ */
+async function canReadDocument(
+  ctx: QueryCtx | MutationCtx,
+  caller: AuthenticatedCaller,
+  doc: Doc<'signatureDocuments'>,
+): Promise<boolean> {
+  if (doc.createdBy === caller._id) return true;
+  if (managesOrg(caller, doc.organizationId)) return true;
+
+  const requests = await ctx.db
+    .query('signatureRequests')
+    .withIndex('by_document', (q) => q.eq('documentId', doc._id))
+    .take(SMALL_LIST_CAP);
+  return requests.some((r) => r.signerId === caller._id);
 }
 
 // ============ QUERIES ============
@@ -23,6 +89,8 @@ export const listTemplates = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
     const { organizationId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller || !managesOrg(caller, organizationId)) return [];
     return await ctx.db
       .query('documentTemplates')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
@@ -48,7 +116,8 @@ export const listDocuments = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, userId, status } = args;
-
+    // The list is "documents I created or must sign", so the id must be mine.
+    if (!(await callerAs(ctx, userId))) return [];
     // Documents where user is the creator
     const createdDocs = await ctx.db
       .query('signatureDocuments')
@@ -100,6 +169,11 @@ export const getDocument = query({
     const doc = await ctx.db.get(documentId);
     if (!doc) return null;
 
+    // The frozen content is an employment contract and the requests carry the
+    // signers' signature images — restrict to the parties and org managers.
+    const caller = await getAuthCaller(ctx);
+    if (!caller || !(await canReadDocument(ctx, caller, doc))) return null;
+
     const requests = await ctx.db
       .query('signatureRequests')
       .withIndex('by_document_order', (q) => q.eq('documentId', documentId))
@@ -112,7 +186,11 @@ export const getDocument = query({
 export const getTemplate = query({
   args: { templateId: v.id('documentTemplates') },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.templateId);
+    const template = await ctx.db.get(args.templateId);
+    if (!template) return null;
+    const caller = await getAuthCaller(ctx);
+    if (!caller || !managesOrg(caller, template.organizationId)) return null;
+    return template;
   },
 });
 
@@ -123,6 +201,8 @@ export const getMyPendingSignatures = query({
   },
   handler: async (ctx, args) => {
     const { userId } = args;
+    // "My" pending signatures — only the owner may read them.
+    if (!(await callerAs(ctx, userId))) return [];
     const requests = await ctx.db
       .query('signatureRequests')
       .withIndex('by_signer_status', (q) => q.eq('signerId', userId).eq('status', 'pending'))
@@ -144,6 +224,10 @@ export const getAuditLog = query({
   args: { documentId: v.id('signatureDocuments') },
   handler: async (ctx, args) => {
     const { documentId } = args;
+    const doc = await ctx.db.get(documentId);
+    if (!doc) return [];
+    const caller = await getAuthCaller(ctx);
+    if (!caller || !(await canReadDocument(ctx, caller, doc))) return [];
     return await ctx.db
       .query('signatureAuditLog')
       .withIndex('by_document_time', (q) => q.eq('documentId', documentId))
@@ -159,15 +243,22 @@ export const getStats = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, userId } = args;
+    const caller = await callerAs(ctx, userId);
+    if (!caller) return { pendingMySignature: 0, completed: 0, awaitingOthers: 0 };
+    // The org-wide counters are management information.
+    const orgVisible = managesOrg(caller, organizationId);
+
     const pending = await ctx.db
       .query('signatureRequests')
       .withIndex('by_signer_status', (q) => q.eq('signerId', userId).eq('status', 'pending'))
       .take(DEFAULT_LIST_CAP);
 
-    const allDocs = await ctx.db
-      .query('signatureDocuments')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .take(DEFAULT_LIST_CAP);
+    const allDocs = orgVisible
+      ? await ctx.db
+          .query('signatureDocuments')
+          .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+          .take(DEFAULT_LIST_CAP)
+      : [];
 
     const completed = allDocs.filter((d) => d.status === 'completed').length;
     const awaitingOthers = allDocs.filter(
@@ -209,6 +300,10 @@ export const createTemplate = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    const caller = await assertCallerIs(ctx, args.createdBy);
+    if (!managesOrg(caller, args.organizationId)) {
+      throw new Error('Only organization managers can create document templates');
+    }
     return await ctx.db.insert('documentTemplates', {
       ...args,
       createdAt: Date.now(),
@@ -220,9 +315,90 @@ export const deleteTemplate = mutation({
   args: { templateId: v.id('documentTemplates') },
   handler: async (ctx, args) => {
     const { templateId } = args;
+    const template = await ctx.db.get(templateId);
+    if (!template) throw new Error('Template not found');
+    const caller = await getAuthCaller(ctx);
+    if (!caller || !managesOrg(caller, template.organizationId)) {
+      throw new Error('Not authorized to delete this template');
+    }
     await ctx.db.patch(templateId, { isArchived: true });
   },
 });
+
+/**
+ * Shared implementation behind `createDocument` and
+ * `hiringPackets.sendForSignature`.
+ *
+ * Extracted as a plain function (not a mutation) so a caller can create the
+ * document, its signature requests AND its own bookkeeping inside a single
+ * Convex transaction. Doing it as two client calls left orphaned signature
+ * documents whenever the second call failed.
+ */
+export async function insertSignatureDocument(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<'organizations'>;
+    templateId?: Id<'documentTemplates'>;
+    title: string;
+    content: string;
+    accent?: 'blue' | 'slate' | 'emerald' | 'burgundy';
+    orgName?: string;
+    signatureBlock?: boolean;
+    fieldDefinitions: Array<{
+      id: string;
+      label: string;
+      type: 'text' | 'date' | 'signature';
+      required: boolean;
+      placeholder?: string;
+    }>;
+    fieldValues?: Array<{ fieldId: string; value: string }>;
+    signers: Array<{ userId: Id<'users'>; name: string; email: string; order: number }>;
+    expiresAt?: number;
+    createdBy: Id<'users'>;
+  },
+): Promise<Id<'signatureDocuments'>> {
+  const { signers, ...docArgs } = args;
+  const now = Date.now();
+
+  const documentId = await ctx.db.insert('signatureDocuments', {
+    ...docArgs,
+    status: 'pending',
+    contentHash: hashContent(args.content),
+    createdAt: now,
+  });
+
+  for (const signer of signers) {
+    await ctx.db.insert('signatureRequests', {
+      documentId,
+      organizationId: args.organizationId,
+      signerId: signer.userId,
+      signerName: signer.name,
+      signerEmail: signer.email,
+      order: signer.order,
+      status: 'pending',
+      createdAt: now,
+    });
+  }
+
+  await ctx.db.insert('signatureAuditLog', {
+    documentId,
+    organizationId: args.organizationId,
+    userId: args.createdBy,
+    action: 'created',
+    timestamp: now,
+  });
+
+  await ctx.db.insert('signatureAuditLog', {
+    documentId,
+    organizationId: args.organizationId,
+    userId: args.createdBy,
+    action: 'sent',
+    metadata: JSON.stringify({ signerCount: signers.length }),
+    timestamp: now + 1,
+  });
+
+  return documentId;
+}
 
 export const createDocument = mutation({
   args: {
@@ -265,56 +441,11 @@ export const createDocument = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { signers, ...docArgs } = args;
-    const now = Date.now();
-
-    // Simple hash for content integrity. Must be Unicode-safe: `btoa` throws on
-    // any character outside Latin1 (e.g. Cyrillic / emoji), which previously
-    // made createDocument fail for non-English documents. Use a deterministic
-    // DJB2 hash over the code points instead.
-    const contentHash = hashContent(args.content);
-
-    // Create the document (immutable snapshot)
-    const documentId = await ctx.db.insert('signatureDocuments', {
-      ...docArgs,
-      status: 'pending',
-      contentHash,
-      createdAt: now,
-    });
-
-    // Create signature requests for each signer
-    for (const signer of signers) {
-      await ctx.db.insert('signatureRequests', {
-        documentId,
-        organizationId: args.organizationId,
-        signerId: signer.userId,
-        signerName: signer.name,
-        signerEmail: signer.email,
-        order: signer.order,
-        status: 'pending',
-        createdAt: now,
-      });
+    const caller = await assertCallerIs(ctx, args.createdBy);
+    if (!managesOrg(caller, args.organizationId)) {
+      throw new Error('Only organization managers can send documents for signature');
     }
-
-    // Audit log
-    await ctx.db.insert('signatureAuditLog', {
-      documentId,
-      organizationId: args.organizationId,
-      userId: args.createdBy,
-      action: 'created',
-      timestamp: now,
-    });
-
-    await ctx.db.insert('signatureAuditLog', {
-      documentId,
-      organizationId: args.organizationId,
-      userId: args.createdBy,
-      action: 'sent',
-      metadata: JSON.stringify({ signerCount: signers.length }),
-      timestamp: now + 1,
-    });
-
-    return documentId;
+    return await insertSignatureDocument(ctx, args);
   },
 });
 
@@ -326,6 +457,9 @@ export const signDocument = mutation({
   },
   handler: async (ctx, args) => {
     const { requestId, signatureData, userId } = args;
+    // Without this the client-supplied `userId` was the only thing standing
+    // between an attacker and signing an employment contract as someone else.
+    await assertCallerIs(ctx, userId);
     const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Signature request not found');
     if (request.signerId !== userId) throw new Error('Not authorized to sign');
@@ -392,6 +526,21 @@ export const signDocument = mutation({
       if (returnAssignment) {
         await ctx.db.patch(returnAssignment._id, { returnFormStatus: 'signed' });
       }
+
+      // ── Sync hiring packet status ────────────────────────────────
+      // Keeps the "6 of 9 signed" progress in the employee profile truthful
+      // without the client having to report back after signing.
+      const packetDoc = await ctx.db
+        .query('hiringPacketDocuments')
+        .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', request.documentId))
+        .first();
+      if (packetDoc && packetDoc.status !== 'signed') {
+        await ctx.db.patch(packetDoc._id, {
+          status: 'signed',
+          signedAt: now,
+          updatedAt: now,
+        });
+      }
     } else {
       // Partially signed
       await ctx.db.patch(request.documentId, {
@@ -431,8 +580,14 @@ export const attachSignedPdf = mutation({
   },
   handler: async (ctx, args) => {
     const { documentId, url, name, size, userId } = args;
+    const caller = await assertCallerIs(ctx, userId);
     const doc = await ctx.db.get(documentId);
     if (!doc) throw new Error('Document not found');
+    // The URL becomes the permanent archived original, so only a party to the
+    // document may supply it.
+    if (!(await canReadDocument(ctx, caller, doc))) {
+      throw new Error('Not authorized to archive this document');
+    }
     if (doc.status !== 'completed') {
       throw new Error('Only completed documents can be archived');
     }
@@ -460,6 +615,102 @@ export const attachSignedPdf = mutation({
   },
 });
 
+/**
+ * Nightly sweep for completed documents that never got an archived PDF.
+ *
+ * Archiving runs on the client (pdfmake is browser-only), so a signer who closes
+ * the tab right after signing leaves a legally complete document with no
+ * permanent copy. Nothing on the server can render the PDF, so this surfaces the
+ * gap instead of hiding it: the creator gets a notification with a link to the
+ * signatures page, where "Archive PDF" finishes the job.
+ *
+ * Idempotent per document: an `archive_reminder` marker in the audit log stops it
+ * from notifying about the same document twice.
+ */
+export const sweepUnarchivedDocuments = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Give the client a generous window to do its own archiving first.
+    const cutoff = Date.now() - 6 * 60 * 60 * 1000;
+
+    // Newest first: a document that just failed to archive is the interesting
+    // case, and it keeps already-notified old rows from crowding out the cap.
+    const completed = await ctx.db
+      .query('signatureDocuments')
+      .order('desc')
+      .filter((q) => q.eq(q.field('status'), 'completed'))
+      .take(DEFAULT_LIST_CAP);
+
+    let notified = 0;
+    for (const doc of completed) {
+      if (doc.signedPdfUrl) continue;
+      if ((doc.completedAt ?? doc.createdAt) > cutoff) continue;
+
+      const existingReminder = await ctx.db
+        .query('signatureAuditLog')
+        .withIndex('by_document', (q) => q.eq('documentId', doc._id))
+        .filter((q) => q.eq(q.field('action'), 'reminder_sent'))
+        .filter((q) => q.eq(q.field('userId'), doc.createdBy))
+        .first();
+      if (existingReminder) continue;
+
+      const now = Date.now();
+      await notify(ctx, {
+        organizationId: doc.organizationId,
+        userId: doc.createdBy,
+        type: 'system',
+        titleKey: 'notifications.titles.signedDocumentNotArchived',
+        messageKey: 'notifications.messages.signedDocumentNotArchived',
+        params: { title: doc.title },
+        fallbackTitle: '📄 Signed document not archived',
+        fallbackMessage: `"${doc.title}" is fully signed but has no archived PDF. Open it in E-Signatures and press "Archive PDF".`,
+        relatedId: doc._id,
+        route: '/signatures',
+        createdAt: now,
+      });
+
+      await ctx.db.insert('signatureAuditLog', {
+        documentId: doc._id,
+        organizationId: doc.organizationId,
+        userId: doc.createdBy,
+        action: 'reminder_sent',
+        metadata: JSON.stringify({ reason: 'missing_archived_pdf' }),
+        timestamp: now,
+      });
+
+      notified++;
+    }
+
+    return { scanned: completed.length, notified };
+  },
+});
+
+/**
+ * Release the hiring-packet row behind a cancelled/declined signature document.
+ *
+ * Without this the row stays `sent` forever: every packet mutation refuses to
+ * touch a sent document, so HR could neither fix the text nor re-send it after a
+ * refusal. Reverting to `edited`/`draft` reopens exactly those actions while
+ * keeping the hand-edited body.
+ */
+async function releasePacketRow(
+  ctx: MutationCtx,
+  documentId: Id<'signatureDocuments'>,
+): Promise<void> {
+  const packetDoc = await ctx.db
+    .query('hiringPacketDocuments')
+    .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', documentId))
+    .first();
+  if (!packetDoc || packetDoc.status === 'signed') return;
+
+  await ctx.db.patch(packetDoc._id, {
+    status: packetDoc.bodyOverride ? 'edited' : 'draft',
+    signatureDocumentId: undefined,
+    sentAt: undefined,
+    updatedAt: Date.now(),
+  });
+}
+
 export const declineDocument = mutation({
   args: {
     requestId: v.id('signatureRequests'),
@@ -468,6 +719,7 @@ export const declineDocument = mutation({
   },
   handler: async (ctx, args) => {
     const { requestId, reason, userId } = args;
+    await assertCallerIs(ctx, userId);
     const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Signature request not found');
     if (request.signerId !== userId) throw new Error('Not authorized');
@@ -480,6 +732,14 @@ export const declineDocument = mutation({
       declinedAt: now,
       declinedReason: reason,
     });
+
+    // Cancel the document too: a declined signature means this version is dead,
+    // and leaving it `pending` would keep the linked hiring packet row frozen.
+    const doc = await ctx.db.get(request.documentId);
+    if (doc && doc.status !== 'completed' && doc.status !== 'cancelled') {
+      await ctx.db.patch(request.documentId, { status: 'cancelled' });
+    }
+    await releasePacketRow(ctx, request.documentId);
 
     // Audit log
     await ctx.db.insert('signatureAuditLog', {
@@ -500,9 +760,14 @@ export const cancelDocument = mutation({
   },
   handler: async (ctx, args) => {
     const { documentId, userId } = args;
+    const caller = await assertCallerIs(ctx, userId);
     const doc = await ctx.db.get(documentId);
     if (!doc) throw new Error('Document not found');
-    if (doc.createdBy !== userId) throw new Error('Only creator can cancel');
+    // Creator, or a manager of the owning organization (so a departed creator
+    // does not leave documents nobody can cancel).
+    if (doc.createdBy !== userId && !managesOrg(caller, doc.organizationId)) {
+      throw new Error('Only the creator or an organization manager can cancel');
+    }
     if (doc.status === 'completed') throw new Error('Cannot cancel completed document');
 
     const now = Date.now();
@@ -520,6 +785,9 @@ export const cancelDocument = mutation({
         await ctx.db.patch(req._id, { status: 'expired' });
       }
     }
+
+    // Let the hiring packet row become editable / re-sendable again.
+    await releasePacketRow(ctx, documentId);
 
     // Audit log
     await ctx.db.insert('signatureAuditLog', {
@@ -539,9 +807,31 @@ export const sendReminder = mutation({
   },
   handler: async (ctx, args) => {
     const { requestId, userId } = args;
+    const caller = await assertCallerIs(ctx, userId);
     const request = await ctx.db.get(requestId);
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('Cannot remind non-pending request');
+
+    const doc = await ctx.db.get(request.documentId);
+    if (!doc) throw new Error('Document not found');
+    if (doc.createdBy !== userId && !managesOrg(caller, doc.organizationId)) {
+      throw new Error('Not authorized to send reminders for this document');
+    }
+
+    // Actually remind the signer. Previously this only wrote an audit entry, so
+    // the "Reminder sent" toast was the whole feature.
+    await notify(ctx, {
+      organizationId: request.organizationId,
+      userId: request.signerId,
+      type: 'system',
+      titleKey: 'notifications.titles.documentAwaitingSignature',
+      messageKey: 'notifications.messages.documentAwaitingSignature',
+      params: { title: doc.title },
+      fallbackTitle: '✍️ Document awaiting your signature',
+      fallbackMessage: `"${doc.title}" is waiting for your signature in the E-Signatures section.`,
+      relatedId: request.documentId,
+      route: '/signatures',
+    });
 
     // Audit log the reminder
     await ctx.db.insert('signatureAuditLog', {
