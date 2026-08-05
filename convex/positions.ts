@@ -1,7 +1,15 @@
+/**
+ * Positions — job titles inside a department, referenced by employee records.
+ *
+ * Authorization mirrors `departments.ts`: reads scoped to the caller's
+ * organization, writes require staff rights there. The previous version accepted
+ * `organizationId` from the client and performed no checks.
+ */
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { assertOrgStaff, resolveOrgScope, scopeOwnsRecord } from './lib/orgAccess';
 
 export const list = query({
   args: {
@@ -9,7 +17,9 @@ export const list = query({
     departmentId: v.optional(v.id('departments')),
   },
   handler: async (ctx, args) => {
-    const orgId = args.organizationId;
+    const scope = await resolveOrgScope(ctx, args.organizationId);
+    if (!scope) return [];
+    const orgId = scope.isSuper ? args.organizationId : scope.organizationId;
 
     let positions;
     if (args.departmentId) {
@@ -17,6 +27,8 @@ export const list = query({
         .query('positions')
         .withIndex('by_department', (q) => q.eq('departmentId', args.departmentId))
         .take(DEFAULT_LIST_CAP);
+      // Reached by department id — keep other tenants' rows out.
+      if (orgId) positions = positions.filter((p) => p.organizationId === orgId);
     } else if (orgId) {
       positions = await ctx.db
         .query('positions')
@@ -64,7 +76,9 @@ export const options = query({
     departmentId: v.optional(v.id('departments')),
   },
   handler: async (ctx, args) => {
-    const orgId = args.organizationId;
+    const scope = await resolveOrgScope(ctx, args.organizationId);
+    if (!scope) return [];
+    const orgId = scope.isSuper ? args.organizationId : scope.organizationId;
     if (!orgId) return [];
 
     const positions = await ctx.db
@@ -83,7 +97,11 @@ export const options = query({
 export const getById = query({
   args: { id: v.id('positions') },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const position = await ctx.db.get(args.id);
+    if (!position) return null;
+    const scope = await resolveOrgScope(ctx, position.organizationId);
+    if (!scope || !scopeOwnsRecord(scope, position)) return null;
+    return position;
   },
 });
 
@@ -98,11 +116,26 @@ export const create = mutation({
     salaryMax: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const scope = await assertOrgStaff(ctx, args.organizationId);
+    const orgId = scope.organizationId ?? args.organizationId;
+    const title = args.title.trim();
+    if (!title) throw new Error('Position title is required');
+    if (args.salaryMin != null && args.salaryMax != null && args.salaryMin > args.salaryMax) {
+      throw new Error('Minimum salary cannot exceed the maximum');
+    }
+
+    if (args.departmentId) {
+      const department = await ctx.db.get(args.departmentId);
+      if (!department || department.organizationId !== orgId) {
+        throw new Error('Department not found in this organization');
+      }
+    }
+
     const now = Date.now();
     return await ctx.db.insert('positions', {
-      organizationId: args.organizationId,
+      organizationId: orgId,
       departmentId: args.departmentId,
-      title: args.title,
+      title,
       description: args.description,
       level: args.level,
       salaryMin: args.salaryMin,
@@ -127,8 +160,29 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
+    const position = await ctx.db.get(id);
+    if (!position) throw new Error('Position not found');
+    const scope = await assertOrgStaff(ctx, position.organizationId);
+    if (!scopeOwnsRecord(scope, position)) throw new Error('Access denied');
+
+    if (updates.title !== undefined && !updates.title.trim()) {
+      throw new Error('Position title is required');
+    }
+    if (updates.departmentId) {
+      const department = await ctx.db.get(updates.departmentId);
+      if (!department || department.organizationId !== position.organizationId) {
+        throw new Error('Department not found in this organization');
+      }
+    }
+    const min = updates.salaryMin ?? position.salaryMin;
+    const max = updates.salaryMax ?? position.salaryMax;
+    if (min != null && max != null && min > max) {
+      throw new Error('Minimum salary cannot exceed the maximum');
+    }
+
     await ctx.db.patch(id, {
       ...updates,
+      ...(updates.title !== undefined ? { title: updates.title.trim() } : {}),
       updatedAt: Date.now(),
     });
   },
@@ -137,6 +191,21 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id('positions') },
   handler: async (ctx, args) => {
+    const position = await ctx.db.get(args.id);
+    if (!position) throw new Error('Position not found');
+    const scope = await assertOrgStaff(ctx, position.organizationId);
+    if (!scopeOwnsRecord(scope, position)) throw new Error('Access denied');
+
+    // Same reasoning as `departments.remove`: never leave employee records
+    // pointing at a deleted position.
+    const users = await ctx.db
+      .query('users')
+      .withIndex('by_position', (q) => q.eq('positionId', args.id))
+      .take(DEFAULT_LIST_CAP);
+    if (users.length > 0) {
+      throw new Error(`${users.length} employee(s) still hold this position — move them first`);
+    }
+
     await ctx.db.delete(args.id);
   },
 });
