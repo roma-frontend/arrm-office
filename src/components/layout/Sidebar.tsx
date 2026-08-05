@@ -1121,9 +1121,9 @@ export function MobileSidebar() {
       : 'skip',
   );
 
+  // Same route-based match as `taskUnreadCount` above, for the same reason.
   const mobileTaskBadge = (mobileNotifications ?? []).filter(
-    (n) =>
-      !n.isRead && n.type === 'system' && (n.title?.includes('Task') || n.title?.includes('task')),
+    (n) => !n.isRead && n.route === '/tasks',
   ).length;
 
   const mobileSignatureCount = (mobilePendingSignaturesCount ?? []).length;
