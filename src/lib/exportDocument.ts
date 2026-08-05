@@ -79,11 +79,10 @@ export interface DocumentSpacerBlock {
 }
 
 /**
- * Typed content block. Structured bodies replace the old "one big string that
- * the renderer tries to reverse-engineer" approach, which collapsed formal
- * acts into a single justified paragraph.
+ * Blocks that can appear inside a bilingual column. Excludes `bilingual` itself
+ * so a column can never nest another two-column split.
  */
-export type DocumentBlock =
+export type DocumentLeafBlock =
   | DocumentSectionBlock
   | DocumentParagraphBlock
   | DocumentFieldsBlock
@@ -92,11 +91,57 @@ export type DocumentBlock =
   | DocumentSignaturesBlock
   | DocumentSpacerBlock;
 
+/**
+ * Two parallel language columns on one A4 page — the layout Armenian labour law
+ * expects for contracts issued to a non-Armenian speaker: the mandatory
+ * Armenian text on the left, its translation on the right.
+ *
+ * Rendered as a borderless 2-column table (NOT pdfmake `columns`) so the two
+ * languages stay aligned paragraph-by-paragraph: each pair of corresponding
+ * blocks shares a table row, and a longer Armenian paragraph pushes its
+ * translation down with it. `columns` would let the two sides drift apart after
+ * the first length mismatch.
+ */
+export interface DocumentBilingualBlock {
+  type: 'bilingual';
+  /** Left column — the legally binding Armenian text. */
+  left: DocumentLeafBlock[];
+  /** Right column — the translation in the employee's language. */
+  right: DocumentLeafBlock[];
+  /** Optional column captions, e.g. "ՀԱՅԵՐԵՆ" / "РУССКИЙ". */
+  leftLabel?: string;
+  rightLabel?: string;
+}
+
+/**
+ * Typed content block. Structured bodies replace the old "one big string that
+ * the renderer tries to reverse-engineer" approach, which collapsed formal
+ * acts into a single justified paragraph.
+ */
+export type DocumentBlock = DocumentLeafBlock | DocumentBilingualBlock;
+
 /** Either legacy plain text (heuristically laid out) or typed blocks. */
 export type DocumentBody = string | DocumentBlock[];
 
 export function isBlockBody(body: DocumentBody): body is DocumentBlock[] {
   return Array.isArray(body);
+}
+
+/**
+ * Does this body already render its own signature grid (at top level or inside
+ * a bilingual column)? If so, the generic signature block must not be appended.
+ */
+export function containsSignatures(blocks: DocumentBlock[]): boolean {
+  return blocks.some((block) => {
+    if (block.type === 'signatures') return true;
+    if (block.type === 'bilingual') {
+      return (
+        block.left.some((b) => b.type === 'signatures') ||
+        block.right.some((b) => b.type === 'signatures')
+      );
+    }
+    return false;
+  });
 }
 
 export interface RenderableDocument {
@@ -199,6 +244,17 @@ export function documentBodyToPlainText(body: DocumentBody): string {
           out.push('');
         }
         break;
+      case 'bilingual': {
+        // Plain text cannot hold two columns; emit the two languages
+        // sequentially with their captions so the preview stays readable.
+        if (block.leftLabel) out.push(`[${block.leftLabel}]`);
+        out.push(documentBodyToPlainText(block.left));
+        out.push('');
+        if (block.rightLabel) out.push(`[${block.rightLabel}]`);
+        out.push(documentBodyToPlainText(block.right));
+        out.push('');
+        break;
+      }
       case 'spacer':
         out.push('');
         break;
@@ -382,16 +438,25 @@ function buildBodyContent(body: string) {
 /** A4 content width at our page margins (60pt each side). */
 const PAGE_WIDTH = 495;
 
+/** Horizontal gutter between the two language columns of a bilingual block. */
+const BILINGUAL_GUTTER = 18;
+
 /** Stack for a single signing party inside a `signatures` block. */
-function signaturePartyStack(party: DocumentSignatureParty, accent: string): any[] {
+function signaturePartyStack(
+  party: DocumentSignatureParty,
+  accent: string,
+  lineWidth = 190,
+): any[] {
   const stack: any[] = [{ text: party.role, style: 'sigRole', color: accent }];
   stack.push(
     party.signatureImage
-      ? { image: party.signatureImage, fit: [150, 38], margin: [0, 2, 0, 2] }
+      ? { image: party.signatureImage, fit: [Math.min(150, lineWidth), 38], margin: [0, 2, 0, 2] }
       : { text: ' ', margin: [0, 16, 0, 0] },
   );
   stack.push({
-    canvas: [{ type: 'line', x1: 0, y1: 0, x2: 190, y2: 0, lineWidth: 0.7, lineColor: '#94a3b8' }],
+    canvas: [
+      { type: 'line', x1: 0, y1: 0, x2: lineWidth, y2: 0, lineWidth: 0.7, lineColor: '#94a3b8' },
+    ],
     margin: [0, 0, 0, 5],
   });
   stack.push({
@@ -423,9 +488,17 @@ function signaturePartyStack(party: DocumentSignatureParty, accent: string): any
  * Render typed blocks into pdfmake content. Definition tables, ruled section
  * headings and a signature grid give the output the look of a formal act
  * instead of one long justified paragraph.
+ *
+ * `width` is the available content width in pt. It shrinks when rendering inside
+ * a bilingual column so section rules and signature lines don't overflow.
  */
-function buildStructuredContent(blocks: DocumentBlock[], accent: string): any[] {
+function buildStructuredContent(
+  blocks: DocumentBlock[],
+  accent: string,
+  width = PAGE_WIDTH,
+): any[] {
   const content: any[] = [];
+  const narrow = width < PAGE_WIDTH * 0.75;
 
   for (const block of blocks) {
     switch (block.type) {
@@ -438,7 +511,7 @@ function buildStructuredContent(blocks: DocumentBlock[], accent: string): any[] 
               type: 'line',
               x1: 0,
               y1: 0,
-              x2: PAGE_WIDTH,
+              x2: width,
               y2: 0,
               lineWidth: 0.75,
               lineColor: accent,
@@ -455,7 +528,7 @@ function buildStructuredContent(blocks: DocumentBlock[], accent: string): any[] 
         if (!rows.length) break;
         content.push({
           table: {
-            widths: [155, '*'],
+            widths: [narrow ? Math.round(width * 0.44) : 155, '*'],
             body: rows.map((row) => [
               { text: row.label, style: 'fieldLabel' },
               { text: row.value || '—', style: 'fieldValue' },
@@ -511,13 +584,65 @@ function buildStructuredContent(blocks: DocumentBlock[], accent: string): any[] 
       case 'signatures': {
         const parties = block.parties.slice(0, 2);
         if (!parties.length) break;
+        const lineWidth = Math.max(90, Math.floor((width - 28) / parties.length) - 10);
         content.push({
           columns: parties.map((party) => ({
             width: '*',
-            stack: signaturePartyStack(party, accent),
+            stack: signaturePartyStack(party, accent, lineWidth),
           })),
-          columnGap: 28,
+          columnGap: narrow ? 14 : 28,
           margin: [0, 4, 0, 0],
+        });
+        break;
+      }
+
+      case 'bilingual': {
+        const colWidth = Math.floor((width - BILINGUAL_GUTTER) / 2);
+        const rowCount = Math.max(block.left.length, block.right.length);
+        if (!rowCount) break;
+
+        const body: any[][] = [];
+
+        if (block.leftLabel || block.rightLabel) {
+          body.push([
+            { text: block.leftLabel ?? '', style: 'langCaption', color: accent },
+            { text: block.rightLabel ?? '', style: 'langCaption', color: accent },
+          ]);
+        }
+
+        // One table row per block pair keeps the two languages aligned: a longer
+        // Armenian paragraph grows its row and pushes the translation down with
+        // it, instead of the columns drifting out of sync.
+        for (let i = 0; i < rowCount; i++) {
+          const leftBlock = block.left[i];
+          const rightBlock = block.right[i];
+          body.push([
+            {
+              stack: leftBlock
+                ? buildStructuredContent([leftBlock], accent, colWidth)
+                : [{ text: '' }],
+            },
+            {
+              stack: rightBlock
+                ? buildStructuredContent([rightBlock], accent, colWidth)
+                : [{ text: '' }],
+            },
+          ]);
+        }
+
+        content.push({
+          table: { widths: [colWidth, '*'], body, dontBreakRows: true },
+          layout: {
+            hLineWidth: () => 0,
+            // Hairline gutter rule between the two languages.
+            vLineWidth: (i: number) => (i === 1 ? 0.5 : 0),
+            vLineColor: () => '#e2e8f0',
+            paddingLeft: (i: number) => (i === 0 ? 0 : BILINGUAL_GUTTER / 2),
+            paddingRight: (i: number) => (i === 0 ? BILINGUAL_GUTTER / 2 : 0),
+            paddingTop: () => 0,
+            paddingBottom: () => 0,
+          },
+          margin: [0, 0, 0, 10],
         });
         break;
       }
@@ -536,9 +661,9 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
   const accent = ACCENT_HEX[doc.accent];
   const structured = isBlockBody(doc.body);
   // A structured body renders its own signature grid — don't append the generic
-  // one on top of it.
-  const hasOwnSignatures =
-    structured && (doc.body as DocumentBlock[]).some((b) => b.type === 'signatures');
+  // one on top of it. Bilingual columns count too: a two-language contract puts
+  // the signature grid inside its columns.
+  const hasOwnSignatures = structured && containsSignatures(doc.body as DocumentBlock[]);
 
   // ── Header Section ────────────────────────────────────────────────────────
   const metaParts = [`${doc.labels.generatedOn} ${formatDate(doc.now, doc.lang)}`];
@@ -707,6 +832,12 @@ function buildDocDefinition(doc: RenderableDocument, font = 'Roboto'): any {
       meta: { fontSize: 8, color: '#94a3b8', italics: true },
       sectionHeader: { fontSize: 12, bold: true, color: '#1e293b', margin: [0, 20, 0, 6] },
       blockSection: { fontSize: 10, bold: true, letterSpacing: 0.8, margin: [0, 8, 0, 0] },
+      langCaption: {
+        fontSize: 7.5,
+        bold: true,
+        letterSpacing: 1.2,
+        margin: [0, 0, 0, 8],
+      },
       blockMuted: { fontSize: 8.5, color: '#64748b', italics: true, lineHeight: 1.5 },
       fieldLabel: { fontSize: 9, color: '#64748b' },
       fieldValue: { fontSize: 10, bold: true, color: '#0f172a' },
@@ -776,105 +907,563 @@ export async function renderDocumentPdfBase64(doc: RenderableDocument): Promise<
 // DOCX (docx)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function exportDocumentToDOCX(
-  doc: RenderableDocument,
-  filename = 'document.docx',
-): Promise<{ success: boolean }> {
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle }: any =
-    await loadDocx();
+/**
+ * Font used for every run in the DOCX output.
+ *
+ * Word's default (Calibri/Aptos) has no Armenian glyphs, so an `hy` document
+ * silently rendered as boxes. Sylfaen ships with Windows and Office and covers
+ * Latin + Cyrillic + Armenian in one face — the same requirement that forces
+ * DejaVu Sans on the PDF side. Unlike the PDF path we cannot embed the font, so
+ * this relies on the reader having Sylfaen installed; Word substitutes a
+ * Unicode-capable face if not.
+ */
+const DOCX_FONT = 'Sylfaen';
 
-  const accentHex = ACCENT_HEX[doc.accent].replace('#', '');
-  const sectionTitles = new Set(
-    isBlockBody(doc.body)
-      ? doc.body
-          .filter((b): b is DocumentSectionBlock => b.type === 'section')
-          .map((b) => ((b.index != null ? `${b.index}. ` : '') + b.title).toUpperCase())
-      : [],
+/** Half-point sizes used by the `docx` library (22 = 11pt). */
+const DOCX_SIZE = {
+  orgName: 22,
+  title: 36,
+  subtitle: 24,
+  meta: 16,
+  section: 22,
+  body: 22,
+  fieldLabel: 18,
+  fieldValue: 20,
+  sigLabel: 16,
+  sigValue: 20,
+  footer: 14,
+} as const;
+
+/** Decode a base64 (optionally `data:`-prefixed) payload into bytes. */
+function dataUrlToUint8Array(dataUrl: string): Uint8Array | null {
+  try {
+    const commaIndex = dataUrl.indexOf(',');
+    const payload =
+      dataUrl.startsWith('data:') && commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+    const binary = atob(payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+interface DocxKit {
+  Paragraph: any;
+  TextRun: any;
+  ImageRun: any;
+  Table: any;
+  TableRow: any;
+  TableCell: any;
+  WidthType: any;
+  BorderStyle: any;
+  AlignmentType: any;
+  HeadingLevel: any;
+  accentHex: string;
+}
+
+/**
+ * Options controlling how much chrome the DOCX carries.
+ *
+ * `editable: true` produces the round-trip file handed to HR: only the title
+ * (as a single `Heading 1`) and the body, with sections as real Word headings.
+ * The letterhead, meta line, signature grid and integrity footer are omitted on
+ * purpose — they are always re-rendered by the platform, so an edited file can
+ * never carry a forged signature block or a stale hash, and the importer can
+ * treat every element it sees as body content.
+ */
+interface DocxRenderOptions {
+  editable?: boolean;
+}
+
+/** A run with the document font applied — every run must go through this. */
+function run(kit: DocxKit, text: string, opts: Record<string, unknown> = {}): any {
+  return new kit.TextRun({ text, font: DOCX_FONT, size: DOCX_SIZE.body, ...opts });
+}
+
+function noBorders(kit: DocxKit) {
+  const none = { style: kit.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  return { top: none, bottom: none, left: none, right: none };
+}
+
+/** Signature lines (and the drawn signature image, when signed) for one party. */
+function docxSignatureParty(kit: DocxKit, party: DocumentSignatureParty): any[] {
+  const out: any[] = [
+    new kit.Paragraph({
+      children: [
+        run(kit, party.role, { bold: true, size: DOCX_SIZE.sigLabel, color: kit.accentHex }),
+      ],
+      spacing: { before: 160, after: 40 },
+    }),
+  ];
+
+  const imageBytes = party.signatureImage ? dataUrlToUint8Array(party.signatureImage) : null;
+  if (imageBytes) {
+    out.push(
+      new kit.Paragraph({
+        children: [
+          new kit.ImageRun({
+            data: imageBytes,
+            transformation: { width: 150, height: 50 },
+            type: 'png',
+          }),
+        ],
+        spacing: { after: 40 },
+      }),
+    );
+  }
+
+  out.push(
+    new kit.Paragraph({
+      children: [run(kit, '__________________________________', { color: '94A3B8' })],
+      spacing: { after: 40 },
+    }),
+    new kit.Paragraph({
+      children: [
+        run(kit, `${party.nameLabel}: `, { size: DOCX_SIZE.sigLabel, color: '94A3B8' }),
+        run(kit, party.name || '—', { size: DOCX_SIZE.sigValue, bold: true }),
+      ],
+      spacing: { after: 20 },
+    }),
   );
+
+  if (party.positionLabel) {
+    out.push(
+      new kit.Paragraph({
+        children: [
+          run(kit, `${party.positionLabel}: `, { size: DOCX_SIZE.sigLabel, color: '94A3B8' }),
+          run(kit, party.position || '—', { size: DOCX_SIZE.sigValue }),
+        ],
+        spacing: { after: 20 },
+      }),
+    );
+  }
+
+  out.push(
+    new kit.Paragraph({
+      children: [
+        run(kit, `${party.dateLabel}: `, { size: DOCX_SIZE.sigLabel, color: '94A3B8' }),
+        run(kit, party.date || '____________', { size: DOCX_SIZE.sigValue }),
+      ],
+      spacing: { after: 120 },
+    }),
+  );
+
+  return out;
+}
+
+/**
+ * Render typed blocks into `docx` elements, mirroring the PDF layout: ruled
+ * section headings, borderless definition tables, and a two-column table for
+ * bilingual content. Replaces the previous approach of flattening everything to
+ * plain text, which lost tables, columns and signature images.
+ */
+function buildDocxBlocks(
+  kit: DocxKit,
+  blocks: DocumentBlock[],
+  opts: DocxRenderOptions = {},
+): any[] {
+  const out: any[] = [];
+
+  for (const block of blocks) {
+    switch (block.type) {
+      case 'section': {
+        const title = ((block.index != null ? `${block.index}. ` : '') + block.title).toUpperCase();
+        out.push(
+          new kit.Paragraph({
+            // A real Word heading (not just bold text) so Word's navigation pane
+            // works AND so `mammoth` emits <h2> on re-import, letting the
+            // round-trip importer recover this block as a section.
+            heading: kit.HeadingLevel.HEADING_2,
+            children: [
+              run(kit, title, { bold: true, size: DOCX_SIZE.section, color: kit.accentHex }),
+            ],
+            border: {
+              bottom: { style: kit.BorderStyle.SINGLE, size: 6, color: kit.accentHex, space: 2 },
+            },
+            spacing: { before: 280, after: 160 },
+          }),
+        );
+        break;
+      }
+
+      case 'fields': {
+        const rows = block.rows.filter((row) => row.label);
+        if (!rows.length) break;
+        out.push(
+          new kit.Table({
+            width: { size: 100, type: kit.WidthType.PERCENTAGE },
+            borders: noBorders(kit),
+            rows: rows.map(
+              (row) =>
+                new kit.TableRow({
+                  children: [
+                    new kit.TableCell({
+                      width: { size: 40, type: kit.WidthType.PERCENTAGE },
+                      borders: noBorders(kit),
+                      children: [
+                        new kit.Paragraph({
+                          children: [
+                            run(kit, row.label, { size: DOCX_SIZE.fieldLabel, color: '64748B' }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    new kit.TableCell({
+                      width: { size: 60, type: kit.WidthType.PERCENTAGE },
+                      borders: noBorders(kit),
+                      children: [
+                        new kit.Paragraph({
+                          children: [
+                            run(kit, row.value || '—', { size: DOCX_SIZE.fieldValue, bold: true }),
+                          ],
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+            ),
+          }),
+          new kit.Paragraph({ children: [run(kit, '')], spacing: { after: 120 } }),
+        );
+        break;
+      }
+
+      case 'bullets': {
+        const items = block.items.filter(Boolean);
+        if (!items.length) break;
+        for (const item of items) {
+          out.push(
+            new kit.Paragraph({
+              children: [run(kit, item)],
+              bullet: { level: 0 },
+              spacing: { after: 60 },
+            }),
+          );
+        }
+        break;
+      }
+
+      case 'paragraph':
+        out.push(
+          new kit.Paragraph({
+            children: [
+              run(kit, block.text, block.muted ? { size: 18, italics: true, color: '64748B' } : {}),
+            ],
+            alignment: block.muted ? undefined : kit.AlignmentType.JUSTIFIED,
+            spacing: { after: 140 },
+          }),
+        );
+        break;
+
+      case 'callout':
+        out.push(
+          new kit.Paragraph({
+            children: [run(kit, block.text, { size: 19 })],
+            shading: { fill: 'F8FAFC' },
+            border: {
+              left: { style: kit.BorderStyle.SINGLE, size: 18, color: kit.accentHex, space: 8 },
+            },
+            spacing: { before: 120, after: 160 },
+          }),
+        );
+        break;
+
+      case 'signatures': {
+        // The editable round-trip file never carries signature lines: they are
+        // re-rendered from the actual signing record, so an edited document
+        // cannot smuggle in a pre-filled or forged signature block.
+        if (opts.editable) break;
+        const parties = block.parties.slice(0, 2);
+        if (!parties.length) break;
+        if (parties.length === 1) {
+          out.push(...docxSignatureParty(kit, parties[0]!));
+          break;
+        }
+        out.push(
+          new kit.Table({
+            width: { size: 100, type: kit.WidthType.PERCENTAGE },
+            borders: noBorders(kit),
+            rows: [
+              new kit.TableRow({
+                children: parties.map(
+                  (party) =>
+                    new kit.TableCell({
+                      width: { size: 50, type: kit.WidthType.PERCENTAGE },
+                      borders: noBorders(kit),
+                      children: docxSignatureParty(kit, party),
+                    }),
+                ),
+              }),
+            ],
+          }),
+        );
+        break;
+      }
+
+      case 'bilingual': {
+        const rowCount = Math.max(block.left.length, block.right.length);
+        if (!rowCount) break;
+
+        const rows: any[] = [];
+
+        // Captions are chrome, not content: emitting them in the editable file
+        // would make the importer read them back as a content pair.
+        if (!opts.editable && (block.leftLabel || block.rightLabel)) {
+          rows.push(
+            new kit.TableRow({
+              children: [block.leftLabel ?? '', block.rightLabel ?? ''].map(
+                (caption) =>
+                  new kit.TableCell({
+                    width: { size: 50, type: kit.WidthType.PERCENTAGE },
+                    borders: noBorders(kit),
+                    children: [
+                      new kit.Paragraph({
+                        children: [
+                          run(kit, caption, { bold: true, size: 15, color: kit.accentHex }),
+                        ],
+                        spacing: { after: 120 },
+                      }),
+                    ],
+                  }),
+              ),
+            }),
+          );
+        }
+
+        // One row per block pair — the same alignment guarantee as the PDF, and
+        // it survives a round trip through Word because the table structure is
+        // what the importer looks for.
+        for (let i = 0; i < rowCount; i++) {
+          const leftBlock = block.left[i];
+          const rightBlock = block.right[i];
+          rows.push(
+            new kit.TableRow({
+              children: [leftBlock, rightBlock].map(
+                (sub) =>
+                  new kit.TableCell({
+                    width: { size: 50, type: kit.WidthType.PERCENTAGE },
+                    borders: noBorders(kit),
+                    children: sub
+                      ? buildDocxBlocks(kit, [sub], opts)
+                      : [new kit.Paragraph({ children: [run(kit, '')] })],
+                  }),
+              ),
+            }),
+          );
+        }
+
+        out.push(
+          new kit.Table({
+            width: { size: 100, type: kit.WidthType.PERCENTAGE },
+            borders: noBorders(kit),
+            rows,
+          }),
+        );
+        break;
+      }
+
+      case 'spacer':
+        out.push(
+          new kit.Paragraph({
+            children: [run(kit, '')],
+            spacing: { after: (block.size ?? 8) * 20 },
+          }),
+        );
+        break;
+    }
+  }
+
+  return out;
+}
+
+/** Assemble the full `docx` child list for a renderable document. */
+async function buildDocxChildren(
+  doc: RenderableDocument,
+  opts: DocxRenderOptions = {},
+): Promise<{ children: any[]; Document: any; Packer: any }> {
+  const mod: any = await loadDocx();
+  const {
+    Document,
+    Packer,
+    Paragraph,
+    TextRun,
+    ImageRun,
+    Table,
+    TableRow,
+    TableCell,
+    WidthType,
+    HeadingLevel,
+    AlignmentType,
+    BorderStyle,
+  } = mod;
+
+  const accentHex = ACCENT_HEX[doc.accent].replace('#', '').toUpperCase();
+  const kit: DocxKit = {
+    Paragraph,
+    TextRun,
+    ImageRun,
+    Table,
+    TableRow,
+    TableCell,
+    WidthType,
+    BorderStyle,
+    AlignmentType,
+    HeadingLevel,
+    accentHex,
+  };
+
+  // ── Editable round-trip file: exactly one H1 (the title) + the body ───────
+  if (opts.editable) {
+    const children: any[] = [
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        children: [run(kit, doc.title, { bold: true, size: DOCX_SIZE.title, color: accentHex })],
+        spacing: { after: 240 },
+      }),
+      ...(isBlockBody(doc.body)
+        ? buildDocxBlocks(kit, doc.body, opts)
+        : paragraphs(documentBodyToPlainText(doc.body)).map(
+            (line) => new Paragraph({ children: [run(kit, line)], spacing: { after: 120 } }),
+          )),
+    ];
+    return { children, Document, Packer };
+  }
 
   const children: any[] = [
     new Paragraph({
-      children: [new TextRun({ text: doc.orgName, bold: true, size: 32, color: accentHex })],
-      border: {
-        bottom: { style: BorderStyle.SINGLE, size: 12, color: accentHex, space: 4 },
-      },
+      children: [
+        run(kit, doc.orgName.toUpperCase(), {
+          bold: true,
+          size: DOCX_SIZE.orgName,
+          color: accentHex,
+        }),
+      ],
+      border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: accentHex, space: 4 } },
       spacing: { after: 240 },
     }),
     new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: doc.title, bold: true, size: 40, color: accentHex })],
-      spacing: { after: doc.subtitle ? 80 : 240 },
+      heading: HeadingLevel.TITLE,
+      children: [run(kit, doc.title, { bold: true, size: DOCX_SIZE.title, color: accentHex })],
+      spacing: { after: doc.subtitle ? 80 : 200 },
     }),
   ];
 
   if (doc.subtitle) {
     children.push(
       new Paragraph({
-        children: [new TextRun({ text: doc.subtitle, size: 26, color: '475569' })],
+        children: [run(kit, doc.subtitle, { size: DOCX_SIZE.subtitle, color: '475569' })],
         spacing: { after: 160 },
       }),
     );
   }
-  if (doc.documentNumber) {
-    children.push(
-      new Paragraph({
-        children: [new TextRun({ text: doc.documentNumber, size: 18, color: '94a3b8' })],
-        spacing: { after: 240 },
-      }),
-    );
-  }
 
+  const metaParts = [`${doc.labels.generatedOn} ${formatDate(doc.now, doc.lang)}`];
+  if (doc.documentNumber) metaParts.unshift(doc.documentNumber);
   children.push(
-    ...paragraphs(documentBodyToPlainText(doc.body)).map((line) => {
-      const isSection = sectionTitles.has(line.trim());
-      return new Paragraph({
-        children: [
-          new TextRun({
-            text: line,
-            size: 22,
-            bold: isSection,
-            color: isSection ? accentHex : undefined,
-          }),
-        ],
-        spacing: { before: isSection ? 240 : 0, after: 120 },
-      });
+    new Paragraph({
+      children: [
+        run(kit, metaParts.join('   ·   '), {
+          size: DOCX_SIZE.meta,
+          color: '94A3B8',
+          italics: true,
+        }),
+      ],
+      spacing: { after: 280 },
     }),
   );
 
-  if (doc.signature) {
+  // Body: structured blocks render richly; a legacy string body keeps the old
+  // line-by-line behaviour.
+  if (isBlockBody(doc.body)) {
+    children.push(...buildDocxBlocks(kit, doc.body, opts));
+  } else {
     children.push(
-      new Paragraph({ children: [new TextRun({ text: '', size: 22 })], spacing: { before: 480 } }),
-      new Paragraph({
-        children: [
-          new TextRun({ text: '______________________________     ', size: 22 }),
-          new TextRun({ text: '______________________', size: 22 }),
-        ],
-        spacing: { after: 60 },
-      }),
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `${doc.labels.name} / ${doc.labels.position}                    ${doc.labels.date}`,
-            size: 18,
-            color: '64748b',
+      ...paragraphs(documentBodyToPlainText(doc.body)).map(
+        (line) =>
+          new Paragraph({
+            children: [run(kit, line)],
+            spacing: { after: 120 },
           }),
-        ],
+      ),
+    );
+  }
+
+  const hasOwnSignatures = isBlockBody(doc.body) && containsSignatures(doc.body);
+  if (doc.signature && !hasOwnSignatures) {
+    const signed = doc.signed;
+    children.push(
+      ...docxSignatureParty(kit, {
+        role: doc.labels.signature,
+        nameLabel: doc.labels.name,
+        name: signed?.signerName ?? '',
+        dateLabel: doc.labels.date,
+        date: signed?.signedAt ? formatDate(signed.signedAt, doc.lang) : undefined,
+        positionLabel: doc.labels.position,
+        signatureImage: signed?.signatureData,
       }),
     );
   }
 
   const footerParts = [`${doc.labels.generatedOn} ${formatDate(doc.now, doc.lang)}`];
+  if (doc.documentNumber) footerParts.unshift(doc.documentNumber);
   if (doc.contentHash) footerParts.push(`${doc.labels.integrity}: ${doc.contentHash}`);
   children.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: footerParts.join('   ·   '), size: 14, color: '94a3b8' })],
+      children: [
+        run(kit, footerParts.join('   ·   '), { size: DOCX_SIZE.footer, color: '94A3B8' }),
+      ],
       spacing: { before: 480 },
     }),
   );
 
-  const document = new Document({ sections: [{ children }] });
-  const blob: Blob = await Packer.toBlob(document);
+  return { children, Document, Packer };
+}
+
+/** Render a renderable document to a DOCX Blob (no download). */
+export async function renderDocumentDocxBlob(doc: RenderableDocument): Promise<Blob> {
+  const { children, Document, Packer } = await buildDocxChildren(doc);
+  const document = new Document({
+    sections: [{ children }],
+    styles: { default: { document: { run: { font: DOCX_FONT } } } },
+  });
+  return (await Packer.toBlob(document)) as Blob;
+}
+
+/**
+ * Render the round-trip ("edit in Word") copy: title + body only.
+ *
+ * Pair with `parseEditableDocx` in `docxRoundTrip.ts` — the two must stay in
+ * sync, since the importer recovers block types from the structure this writes
+ * (single H1 = title, H2 = section, top-level 2-column table = bilingual pair,
+ * nested table = definition fields, list = bullets).
+ */
+export async function renderEditableDocxBlob(doc: RenderableDocument): Promise<Blob> {
+  const { children, Document, Packer } = await buildDocxChildren(doc, { editable: true });
+  const document = new Document({
+    sections: [{ children }],
+    styles: { default: { document: { run: { font: DOCX_FONT } } } },
+  });
+  return (await Packer.toBlob(document)) as Blob;
+}
+
+export async function exportDocumentToDOCX(
+  doc: RenderableDocument,
+  filename = 'document.docx',
+): Promise<{ success: boolean }> {
+  const blob = await renderDocumentDocxBlob(doc);
+  triggerDownload(blob, filename);
+  return { success: true };
+}
+
+/** Download the editable round-trip DOCX. */
+export async function exportEditableDocx(
+  doc: RenderableDocument,
+  filename = 'document.docx',
+): Promise<{ success: boolean }> {
+  const blob = await renderEditableDocxBlob(doc);
   triggerDownload(blob, filename);
   return { success: true };
 }

@@ -60,7 +60,9 @@
     "test:all": "npm run lint && npm run type-check && npm run test:coverage && npm run test:e2e",
     "changelog": "node scripts/generate-changelog.mjs",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "build:convex-locales": "node scripts/build-convex-locales.mjs",
+    "check:convex-locales": "node scripts/build-convex-locales.mjs --check"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.34",
@@ -121,6 +123,7 @@
     "jose": "^6.1.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.575.0",
+    "mammoth": "1.11.0",
     "mrz": "^5.0.2",
     "next": "^16.2.11",
     "next-auth": "5.0.0-beta.32",

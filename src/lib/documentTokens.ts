@@ -34,6 +34,12 @@ export interface MergeSourceData {
     socialCardNumber?: string | null;
     baseSalary?: number | null;
     salaryCurrency?: string | null;
+    /**
+     * Employment start date as an absolute timestamp. Sourced from
+     * `users.createdAt` (the wizard writes the chosen registration date there —
+     * there is no separate `hireDate` column).
+     */
+    hireDate?: number | null;
   };
   organization: {
     name?: string | null;
@@ -98,6 +104,10 @@ export const TOKEN_RESOLVERS: Record<string, TokenResolver> = {
       ? formatCurrency(d.employee.baseSalary, d.employee.salaryCurrency ?? 'AMD')
       : MISSING,
   'employee.salaryCurrency': (d) => text(d.employee.salaryCurrency),
+  'employee.hireDate': (d, lang) =>
+    typeof d.employee.hireDate === 'number'
+      ? formatDate(d.employee.hireDate, lang, { year: 'numeric', month: 'long', day: 'numeric' })
+      : MISSING,
 
   'org.name': (d) => text(d.organization.name),
   'org.country': (d) => text(d.organization.country),

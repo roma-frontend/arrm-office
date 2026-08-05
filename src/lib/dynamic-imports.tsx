@@ -94,6 +94,12 @@ export const loadExcelJS = () => import('exceljs').then((mod) => mod);
 export const loadDocx = () => import('docx').then((mod) => mod);
 
 // ══════════════════════════════════════════════════════════════
+// MAMMOTH — dynamic import for reading uploaded .docx files back in.
+// Resolves to mammoth's browser build via its package `browser` field.
+// ══════════════════════════════════════════════════════════════
+export const loadMammoth = () => import('mammoth').then((mod) => mod.default || mod);
+
+// ══════════════════════════════════════════════════════════════
 // LEAFLET — dynamic import for maps
 // ══════════════════════════════════════════════════════════════
 export const loadLeaflet = () => import('leaflet').then((mod) => mod.default || mod);

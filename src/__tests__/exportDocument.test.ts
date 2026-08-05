@@ -69,20 +69,25 @@ function createMockPdfMake(vfs = true) {
 }
 
 function createMockDocx() {
+  const ctor = () =>
+    jest.fn().mockImplementation(function (this: any, opts: any) {
+      this.opts = opts;
+    });
   return {
-    Document: jest.fn().mockImplementation(function (this: any, opts: any) {
-      this.opts = opts;
-    }),
+    Document: ctor(),
     Packer: { toBlob: jest.fn().mockResolvedValue(new Blob(['docx'])) },
-    Paragraph: jest.fn().mockImplementation(function (this: any, opts: any) {
-      this.opts = opts;
-    }),
-    TextRun: jest.fn().mockImplementation(function (this: any, opts: any) {
-      this.opts = opts;
-    }),
-    HeadingLevel: { HEADING_1: 'Heading1' },
-    AlignmentType: { CENTER: 'center' },
-    BorderStyle: { SINGLE: 'single' },
+    Paragraph: ctor(),
+    TextRun: ctor(),
+    // Structured DOCX output uses tables (definition lists, signature grids and
+    // the bilingual two-column layout) and embeds signature images.
+    ImageRun: ctor(),
+    Table: ctor(),
+    TableRow: ctor(),
+    TableCell: ctor(),
+    WidthType: { PERCENTAGE: 'pct', DXA: 'dxa' },
+    HeadingLevel: { HEADING_1: 'Heading1', TITLE: 'Title' },
+    AlignmentType: { CENTER: 'center', JUSTIFIED: 'both' },
+    BorderStyle: { SINGLE: 'single', NONE: 'none' },
   };
 }
 

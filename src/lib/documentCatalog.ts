@@ -11,6 +11,10 @@
  */
 
 import type { SupportedLocale } from './date-format';
+import {
+  HIRING_PACKET_MANDATORY_IDS,
+  HIRING_PACKET_TEMPLATE_IDS,
+} from '../../convex/lib/documentTemplateIds';
 
 /** Categories shown as groups in the Document Library. */
 export type DocumentCategory = 'certificate' | 'hiring' | 'consent' | 'order';
@@ -256,6 +260,183 @@ export const CATALOG: CatalogTemplate[] = [
     },
   },
 
+  {
+    id: 'job-description',
+    category: 'hiring',
+    accent: 'slate',
+    signature: true,
+    locales: {
+      en: {
+        title: 'Job Description',
+        body:
+          'Employee: {{employee.fullName}}\nPosition: {{employee.position}}\nDepartment: {{employee.department}}\nReports to: {{signatory.name}}, {{signatory.position}}\n\n' +
+          '1. PURPOSE OF THE ROLE\n' +
+          'The Employee performs the duties of {{employee.position}} within the {{employee.department}} department of {{org.name}}.\n\n' +
+          '2. DUTIES\n' +
+          '- Carry out the tasks assigned by the immediate supervisor within the scope of the position.\n' +
+          '- Comply with the internal regulations, labour discipline and occupational safety rules of {{org.name}}.\n' +
+          "- Treat the company's property and confidential information with due care.\n" +
+          '- Report to the immediate supervisor on the results of the work performed.\n\n' +
+          '3. RIGHTS\n' +
+          '- Receive the information, materials and equipment required to perform the duties.\n' +
+          '- Submit proposals for improving work processes within the scope of the position.\n\n' +
+          '4. RESPONSIBILITY\n' +
+          'The Employee is liable for non-performance or improper performance of the duties set out in this job description in accordance with the applicable labour law.\n\n' +
+          'Date: {{today}}',
+      },
+      ru: {
+        title: 'Должностная инструкция',
+        body:
+          'Работник: {{employee.fullName}}\nДолжность: {{employee.position}}\nОтдел: {{employee.department}}\nНепосредственный руководитель: {{signatory.name}}, {{signatory.position}}\n\n' +
+          '1. НАЗНАЧЕНИЕ ДОЛЖНОСТИ\n' +
+          'Работник выполняет обязанности {{employee.position}} в отделе {{employee.department}} компании {{org.name}}.\n\n' +
+          '2. ОБЯЗАННОСТИ\n' +
+          '- Выполнять задачи, поставленные непосредственным руководителем в рамках должности.\n' +
+          '- Соблюдать внутренние правила, трудовую дисциплину и требования охраны труда {{org.name}}.\n' +
+          '- Бережно относиться к имуществу компании и конфиденциальной информации.\n' +
+          '- Отчитываться перед непосредственным руководителем о результатах работы.\n\n' +
+          '3. ПРАВА\n' +
+          '- Получать информацию, материалы и оборудование, необходимые для выполнения обязанностей.\n' +
+          '- Вносить предложения по улучшению рабочих процессов в рамках должности.\n\n' +
+          '4. ОТВЕТСТВЕННОСТЬ\n' +
+          'Работник несёт ответственность за неисполнение или ненадлежащее исполнение обязанностей, предусмотренных настоящей инструкцией, в соответствии с действующим трудовым законодательством.\n\n' +
+          'Дата: {{today}}',
+      },
+      de: {
+        title: 'Stellenbeschreibung',
+        body:
+          'Arbeitnehmer: {{employee.fullName}}\nPosition: {{employee.position}}\nAbteilung: {{employee.department}}\nVorgesetzter: {{signatory.name}}, {{signatory.position}}\n\n' +
+          '1. ZWECK DER STELLE\n' +
+          'Der Arbeitnehmer nimmt die Aufgaben als {{employee.position}} in der Abteilung {{employee.department}} von {{org.name}} wahr.\n\n' +
+          '2. AUFGABEN\n' +
+          '- Erledigung der vom direkten Vorgesetzten im Rahmen der Position zugewiesenen Aufgaben.\n' +
+          '- Einhaltung der internen Regelungen, der Arbeitsdisziplin und der Arbeitsschutzvorschriften von {{org.name}}.\n' +
+          '- Sorgfältiger Umgang mit dem Eigentum und den vertraulichen Informationen des Unternehmens.\n' +
+          '- Berichterstattung an den direkten Vorgesetzten über die Arbeitsergebnisse.\n\n' +
+          '3. RECHTE\n' +
+          '- Erhalt der zur Aufgabenerfüllung erforderlichen Informationen, Materialien und Arbeitsmittel.\n' +
+          '- Einbringen von Vorschlägen zur Verbesserung der Arbeitsprozesse im Rahmen der Position.\n\n' +
+          '4. VERANTWORTUNG\n' +
+          'Der Arbeitnehmer haftet für die Nichterfüllung oder unsachgemäße Erfüllung der in dieser Stellenbeschreibung festgelegten Aufgaben gemäß dem geltenden Arbeitsrecht.\n\n' +
+          'Datum: {{today}}',
+      },
+      hy: {
+        title: 'Աշխատանքի նկարագրություն',
+        body:
+          'Աշխատող՝ {{employee.fullName}}\nՊաշտոն՝ {{employee.position}}\nԲաժին՝ {{employee.department}}\nԱնմիջական ղեկավար՝ {{signatory.name}}, {{signatory.position}}\n\n' +
+          '1. ՊԱՇՏՈՆԻ ՆՊԱՏԱԿԸ\n' +
+          'Աշխատողը կատարում է {{employee.position}}-ի պարտականությունները {{org.name}}-ի {{employee.department}} բաժնում։\n\n' +
+          '2. ՊԱՐՏԱԿԱՆՈՒԹՅՈՒՆՆԵՐԸ\n' +
+          '- Կատարել անմիջական ղեկավարի կողմից պաշտոնի շրջանակում հանձնարարված աշխատանքները։\n' +
+          '- Պահպանել {{org.name}}-ի ներքին կարգապահական կանոնները, աշխատանքային կարգապահությունը և աշխատանքի անվտանգության պահանջները։\n' +
+          '- Հոգատար վերաբերմունք դրսևորել ընկերության գույքի և գաղտնի տեղեկատվության նկատմամբ։\n' +
+          '- Հաշվետվություն ներկայացնել անմիջական ղեկավարին կատարված աշխատանքի արդյունքների մասին։\n\n' +
+          '3. ԻՐԱՎՈՒՆՔՆԵՐԸ\n' +
+          '- Ստանալ պարտականությունների կատարման համար անհրաժեշտ տեղեկատվությունը, նյութերը և սարքավորումները։\n' +
+          '- Ներկայացնել առաջարկություններ պաշտոնի շրջանակում աշխատանքային գործընթացների բարելավման վերաբերյալ։\n\n' +
+          '4. ՊԱՏԱՍԽԱՆԱՏՎՈՒԹՅՈՒՆԸ\n' +
+          'Աշխատողը սույն նկարագրությամբ սահմանված պարտականությունները չկատարելու կամ ոչ պատշաճ կատարելու համար պատասխանատվություն է կրում գործող աշխատանքային օրենսդրությանը համապատասխան։\n\n' +
+          'Ամսաթիվ՝ {{today}}',
+      },
+    },
+  },
+  {
+    id: 'material-responsibility',
+    category: 'hiring',
+    accent: 'burgundy',
+    signature: true,
+    locales: {
+      en: {
+        title: 'Agreement on Material Responsibility',
+        body:
+          'This Agreement is concluded between {{org.name}} (the "Employer") and {{employee.fullName}}, {{employee.position}} of the {{employee.department}} department (the "Employee").\n\n' +
+          '1. The Employee assumes responsibility for the safekeeping of the property handed over to them by the Employer — equipment, tools, materials and other assets.\n\n' +
+          "2. The Employee undertakes to: use the property for its intended purpose only; notify the Employer without delay of any loss, damage or malfunction; return the property upon termination of employment or at the Employer's request.\n\n" +
+          '3. The Employer undertakes to provide the conditions required for the safekeeping of the property and to document every handover and return in a movement form signed by both parties.\n\n' +
+          '4. The Employee is not liable for damage caused by normal wear and tear or by circumstances beyond their control.\n\n' +
+          '5. Liability for damage is determined in accordance with the applicable labour law.\n\n' +
+          'Date: {{today}}',
+      },
+      ru: {
+        title: 'Договор о материальной ответственности',
+        body:
+          'Настоящий договор заключён между {{org.name}} («Работодатель») и {{employee.fullName}}, {{employee.position}} отдела {{employee.department}} («Работник»).\n\n' +
+          '1. Работник принимает на себя ответственность за сохранность переданного ему Работодателем имущества — оборудования, инструментов, материалов и иных ценностей.\n\n' +
+          '2. Работник обязуется: использовать имущество только по назначению; незамедлительно сообщать Работодателю об утрате, повреждении или неисправности; вернуть имущество при прекращении трудовых отношений или по требованию Работодателя.\n\n' +
+          '3. Работодатель обязуется создать условия, необходимые для сохранности имущества, и оформлять каждую передачу и возврат актом, подписанным обеими сторонами.\n\n' +
+          '4. Работник не несёт ответственности за ущерб, вызванный нормальным износом или обстоятельствами, не зависящими от него.\n\n' +
+          '5. Ответственность за ущерб определяется в соответствии с действующим трудовым законодательством.\n\n' +
+          'Дата: {{today}}',
+      },
+      de: {
+        title: 'Vereinbarung über die materielle Verantwortung',
+        body:
+          'Diese Vereinbarung wird zwischen {{org.name}} (der „Arbeitgeber") und {{employee.fullName}}, {{employee.position}} der Abteilung {{employee.department}} (der „Arbeitnehmer"), geschlossen.\n\n' +
+          '1. Der Arbeitnehmer übernimmt die Verantwortung für die sichere Aufbewahrung des ihm vom Arbeitgeber überlassenen Eigentums — Geräte, Werkzeuge, Materialien und sonstige Vermögenswerte.\n\n' +
+          '2. Der Arbeitnehmer verpflichtet sich: das Eigentum ausschließlich zweckentsprechend zu verwenden; den Arbeitgeber unverzüglich über Verlust, Beschädigung oder Störung zu informieren; das Eigentum bei Beendigung des Arbeitsverhältnisses oder auf Verlangen des Arbeitgebers zurückzugeben.\n\n' +
+          '3. Der Arbeitgeber verpflichtet sich, die für die Aufbewahrung erforderlichen Bedingungen zu schaffen und jede Übergabe und Rückgabe in einem von beiden Parteien unterzeichneten Protokoll zu dokumentieren.\n\n' +
+          '4. Der Arbeitnehmer haftet nicht für Schäden durch normale Abnutzung oder durch Umstände außerhalb seines Einflussbereichs.\n\n' +
+          '5. Die Haftung für Schäden richtet sich nach dem geltenden Arbeitsrecht.\n\n' +
+          'Datum: {{today}}',
+      },
+      hy: {
+        title: 'Նյութական պատասխանատվության պայմանագիր',
+        body:
+          'Սույն պայմանագիրը կնքվում է {{org.name}}-ի («Գործատու») և {{employee.department}} բաժնի {{employee.position}} {{employee.fullName}}-ի («Աշխատող») միջև։\n\n' +
+          '1. Աշխատողը պատասխանատվություն է ստանձնում Գործատուի կողմից իրեն հանձնված գույքի՝ սարքավորումների, գործիքների, նյութերի և այլ արժեքների պահպանության համար։\n\n' +
+          '2. Աշխատողը պարտավորվում է՝ գույքն օգտագործել բացառապես նպատակային նշանակությամբ, անհապաղ տեղեկացնել Գործատուին կորստի, վնասման կամ անսարքության մասին, վերադարձնել գույքը աշխատանքային հարաբերությունների դադարման կամ Գործատուի պահանջի դեպքում։\n\n' +
+          '3. Գործատուն պարտավորվում է ապահովել գույքի պահպանության համար անհրաժեշտ պայմանները և յուրաքանչյուր հանձնում ու վերադարձ ձևակերպել երկու կողմերի ստորագրած ակտով։\n\n' +
+          '4. Աշխատողը պատասխանատվություն չի կրում սովորական մաշվածությամբ կամ իրենից անկախ հանգամանքներով պայմանավորված վնասի համար։\n\n' +
+          '5. Վնասի համար պատասխանատվությունը սահմանվում է գործող աշխատանքային օրենսդրությանը համապատասխան։\n\n' +
+          'Ամսաթիվ՝ {{today}}',
+      },
+    },
+  },
+  {
+    id: 'salary-payment-form',
+    category: 'hiring',
+    accent: 'emerald',
+    signature: true,
+    locales: {
+      en: {
+        title: 'Salary Payment Instruction',
+        body:
+          'To: {{org.name}}\nFrom: {{employee.fullName}}, {{employee.position}}, {{employee.department}} department\n\n' +
+          'I request that my salary and any other payments due to me under my employment be transferred to my bank account with the following details:\n\n' +
+          'Bank name: ____________________\nAccount number (IBAN): ____________________\nAccount holder: {{employee.fullName}}\nSocial card number: {{employee.socialCardNumber}}\n\n' +
+          'I undertake to notify the Employer in writing, without delay, of any change to these details. I accept that the Employer is not liable for payments made to the details provided above before such notice is received.\n\n' +
+          'Date: {{today}}',
+      },
+      ru: {
+        title: 'Заявление о перечислении заработной платы',
+        body:
+          'Кому: {{org.name}}\nОт: {{employee.fullName}}, {{employee.position}}, отдел {{employee.department}}\n\n' +
+          'Прошу перечислять мою заработную плату и иные причитающиеся мне выплаты на мой банковский счёт по следующим реквизитам:\n\n' +
+          'Наименование банка: ____________________\nНомер счёта (IBAN): ____________________\nВладелец счёта: {{employee.fullName}}\nНомер социальной карты: {{employee.socialCardNumber}}\n\n' +
+          'Обязуюсь незамедлительно уведомить Работодателя в письменной форме об изменении указанных реквизитов. Соглашаюсь, что Работодатель не несёт ответственности за выплаты, произведённые по указанным выше реквизитам до получения такого уведомления.\n\n' +
+          'Дата: {{today}}',
+      },
+      de: {
+        title: 'Antrag auf Gehaltsüberweisung',
+        body:
+          'An: {{org.name}}\nVon: {{employee.fullName}}, {{employee.position}}, Abteilung {{employee.department}}\n\n' +
+          'Ich beantrage, mein Gehalt und alle weiteren mir aus dem Arbeitsverhältnis zustehenden Zahlungen auf mein Bankkonto mit den folgenden Angaben zu überweisen:\n\n' +
+          'Name der Bank: ____________________\nKontonummer (IBAN): ____________________\nKontoinhaber: {{employee.fullName}}\nSozialkarten-Nr.: {{employee.socialCardNumber}}\n\n' +
+          'Ich verpflichte mich, dem Arbeitgeber jede Änderung dieser Angaben unverzüglich schriftlich mitzuteilen. Ich akzeptiere, dass der Arbeitgeber für Zahlungen an die oben genannten Angaben vor Eingang einer solchen Mitteilung nicht haftet.\n\n' +
+          'Datum: {{today}}',
+      },
+      hy: {
+        title: 'Աշխատավարձի փոխանցման դիմում',
+        body:
+          'Ում՝ {{org.name}}\nՈւմից՝ {{employee.fullName}}, {{employee.position}}, {{employee.department}} բաժին\n\n' +
+          'Խնդրում եմ իմ աշխատավարձը և աշխատանքային հարաբերություններից բխող այլ վճարումները փոխանցել իմ բանկային հաշվին՝ ըստ հետևյալ վավերապայմանների՝\n\n' +
+          'Բանկի անվանումը՝ ____________________\nՀաշվեհամարը (IBAN)՝ ____________________\nՀաշվի տիրոջ անունը՝ {{employee.fullName}}\nՍոցիալական քարտի համարը՝ {{employee.socialCardNumber}}\n\n' +
+          'Պարտավորվում եմ անհապաղ գրավոր տեղեկացնել Գործատուին նշված վավերապայմանների փոփոխության մասին։ Համաձայն եմ, որ Գործատուն պատասխանատվություն չի կրում մինչև այդ ծանուցումը ստանալը վերոնշյալ վավերապայմաններով կատարված վճարումների համար։\n\n' +
+          'Ամսաթիվ՝ {{today}}',
+      },
+    },
+  },
+
   // ── Consent ───────────────────────────────────────────────────────────────
   {
     id: 'pdpa-consent',
@@ -294,7 +475,176 @@ export const CATALOG: CatalogTemplate[] = [
     },
   },
 
+  {
+    id: 'biometric-consent',
+    category: 'consent',
+    accent: 'burgundy',
+    signature: true,
+    locales: {
+      en: {
+        title: 'Consent to Biometric Data Processing',
+        body:
+          'I, {{employee.fullName}}, born {{employee.dateOfBirth}}, give my explicit consent to {{org.name}} processing my biometric personal data — a facial image and the mathematical template derived from it — for the sole purpose of recording my working time through the automated attendance system.\n\n' +
+          'I have been informed that:\n' +
+          '- the biometric template is stored in encrypted form and is not transferred to third parties, except where required by law;\n' +
+          '- the data is retained for the duration of my employment and is deleted within 30 days of its termination;\n' +
+          '- providing biometric data is voluntary and I may withdraw this consent in writing at any time;\n' +
+          '- if I refuse or withdraw consent, my working time will be recorded by an alternative method with no adverse consequences for me.\n\n' +
+          'Date: {{today}}',
+      },
+      ru: {
+        title: 'Согласие на обработку биометрических данных',
+        body:
+          'Я, {{employee.fullName}}, дата рождения {{employee.dateOfBirth}}, даю явное согласие {{org.name}} на обработку моих биометрических персональных данных — изображения лица и производного от него математического шаблона — исключительно в целях учёта моего рабочего времени с помощью автоматизированной системы учёта посещаемости.\n\n' +
+          'Мне разъяснено, что:\n' +
+          '- биометрический шаблон хранится в зашифрованном виде и не передаётся третьим лицам, за исключением случаев, предусмотренных законом;\n' +
+          '- данные хранятся в течение срока моей работы и удаляются в течение 30 дней после её прекращения;\n' +
+          '- предоставление биометрических данных является добровольным, и я вправе отозвать данное согласие в письменной форме в любое время;\n' +
+          '- в случае отказа или отзыва согласия учёт моего рабочего времени будет вестись альтернативным способом без каких-либо негативных последствий для меня.\n\n' +
+          'Дата: {{today}}',
+      },
+      de: {
+        title: 'Einwilligung zur Verarbeitung biometrischer Daten',
+        body:
+          'Ich, {{employee.fullName}}, geboren am {{employee.dateOfBirth}}, erteile {{org.name}} meine ausdrückliche Einwilligung zur Verarbeitung meiner biometrischen Daten — eines Gesichtsbildes und der daraus abgeleiteten mathematischen Vorlage — ausschließlich zum Zweck der Arbeitszeiterfassung über das automatisierte Anwesenheitssystem.\n\n' +
+          'Ich wurde darüber informiert, dass:\n' +
+          '- die biometrische Vorlage verschlüsselt gespeichert und nicht an Dritte weitergegeben wird, sofern nicht gesetzlich vorgeschrieben;\n' +
+          '- die Daten für die Dauer meines Arbeitsverhältnisses gespeichert und innerhalb von 30 Tagen nach dessen Beendigung gelöscht werden;\n' +
+          '- die Bereitstellung biometrischer Daten freiwillig ist und ich diese Einwilligung jederzeit schriftlich widerrufen kann;\n' +
+          '- bei Verweigerung oder Widerruf meine Arbeitszeit auf alternative Weise ohne Nachteile für mich erfasst wird.\n\n' +
+          'Datum: {{today}}',
+      },
+      hy: {
+        title: 'Կենսաչափական տվյալների մշակման համաձայնություն',
+        body:
+          'Ես՝ {{employee.fullName}}-ս, ծնված {{employee.dateOfBirth}}, տալիս եմ իմ բացահայտ համաձայնությունը {{org.name}}-ին՝ մշակելու իմ կենսաչափական անձնական տվյալները՝ դեմքի պատկերը և դրանից բխող մաթեմատիկական կաղապարը, բացառապես ավտոմատացված ներկայության համակարգի միջոցով իմ աշխատաժամանակի հաշվառման նպատակով։\n\n' +
+          'Ինձ բացատրվել է, որ՝\n' +
+          '- կենսաչափական կաղապարը պահվում է գաղտնագրված ձևով և չի փոխանցվում երրորդ անձանց, բացառությամբ օրենքով նախատեսված դեպքերի,\n' +
+          '- տվյալները պահվում են իմ աշխատանքի ողջ ընթացքում և ջնջվում են դրա դադարումից հետո 30 օրվա ընթացքում,\n' +
+          '- կենսաչափական տվյալների տրամադրումը կամավոր է, և ես կարող եմ ցանկացած պահի գրավոր հետ կանչել այս համաձայնությունը,\n' +
+          '- մերժման կամ համաձայնությունը հետ կանչելու դեպքում իմ աշխատաժամանակը կհաշվառվի այլընտրանքային եղանակով՝ առանց ինձ համար բացասական հետևանքների։\n\n' +
+          'Ամսաթիվ՝ {{today}}',
+      },
+    },
+  },
+  {
+    id: 'policies-acknowledgement',
+    category: 'consent',
+    accent: 'blue',
+    signature: true,
+    locales: {
+      en: {
+        title: 'Acknowledgement of Internal Regulations',
+        body:
+          'I, {{employee.fullName}}, holding the position of {{employee.position}} in the {{employee.department}} department of {{org.name}}, confirm that I have been familiarised with and have understood the following internal documents:\n\n' +
+          '- Internal labour regulations\n' +
+          '- Occupational health and safety rules\n' +
+          '- Personal data protection policy\n' +
+          '- Information security and confidentiality policy\n' +
+          '- Equal treatment and anti-harassment policy\n\n' +
+          "I undertake to comply with the requirements set out in these documents. I am aware that their current versions are available from the HR unit and in the company's internal system.\n\n" +
+          'Date: {{today}}',
+      },
+      ru: {
+        title: 'Лист ознакомления с локальными нормативными актами',
+        body:
+          'Я, {{employee.fullName}}, занимающий должность {{employee.position}} в отделе {{employee.department}} компании {{org.name}}, подтверждаю, что ознакомлен и мне понятны следующие внутренние документы:\n\n' +
+          '- Правила внутреннего трудового распорядка\n' +
+          '- Правила охраны труда и техники безопасности\n' +
+          '- Политика защиты персональных данных\n' +
+          '- Политика информационной безопасности и конфиденциальности\n' +
+          '- Политика равного обращения и недопущения притеснений\n\n' +
+          'Обязуюсь соблюдать требования, установленные указанными документами. Мне известно, что их действующие версии доступны в кадровой службе и во внутренней системе компании.\n\n' +
+          'Дата: {{today}}',
+      },
+      de: {
+        title: 'Kenntnisnahme der internen Regelungen',
+        body:
+          'Ich, {{employee.fullName}}, in der Position {{employee.position}} in der Abteilung {{employee.department}} von {{org.name}}, bestätige, dass ich die folgenden internen Dokumente zur Kenntnis genommen und verstanden habe:\n\n' +
+          '- Interne Arbeitsordnung\n' +
+          '- Arbeitsschutz- und Sicherheitsvorschriften\n' +
+          '- Datenschutzrichtlinie\n' +
+          '- Richtlinie zur Informationssicherheit und Vertraulichkeit\n' +
+          '- Richtlinie zur Gleichbehandlung und gegen Belästigung\n\n' +
+          'Ich verpflichte mich, die in diesen Dokumenten festgelegten Anforderungen einzuhalten. Mir ist bekannt, dass die jeweils aktuellen Fassungen bei der Personalabteilung und im internen System des Unternehmens verfügbar sind.\n\n' +
+          'Datum: {{today}}',
+      },
+      hy: {
+        title: 'Ներքին իրավական ակտերին ծանոթացման թերթիկ',
+        body:
+          'Ես՝ {{employee.fullName}}-ս, զբաղեցնելով {{org.name}}-ի {{employee.department}} բաժնի {{employee.position}} պաշտոնը, հաստատում եմ, որ ծանոթացել եմ և ինձ համար հասկանալի են հետևյալ ներքին փաստաթղթերը՝\n\n' +
+          '- Ներքին աշխատանքային կարգապահական կանոնները\n' +
+          '- Աշխատանքի պահպանության և անվտանգության կանոնները\n' +
+          '- Անձնական տվյալների պաշտպանության քաղաքականությունը\n' +
+          '- Տեղեկատվական անվտանգության և գաղտնիության քաղաքականությունը\n' +
+          '- Հավասար վերաբերմունքի և ոտնձգությունների անթույլատրելիության քաղաքականությունը\n\n' +
+          'Պարտավորվում եմ պահպանել նշված փաստաթղթերով սահմանված պահանջները։ Տեղյակ եմ, որ դրանց գործող տարբերակները հասանելի են կադրերի ստորաբաժանումում և ընկերության ներքին համակարգում։\n\n' +
+          'Ամսաթիվ՝ {{today}}',
+      },
+    },
+  },
+
   // ── Orders ──────────────────────────────────────────────────────────────
+  {
+    id: 'employment-order',
+    category: 'order',
+    accent: 'blue',
+    signature: true,
+    locales: {
+      en: {
+        title: 'Employment Order',
+        body:
+          'ORDER\n\n' +
+          'On hiring an employee\n\n' +
+          'On the basis of the employment contract concluded between {{org.name}} and {{employee.fullName}}, I hereby order:\n\n' +
+          '1. To hire {{employee.fullName}} for the position of {{employee.position}} in the {{employee.department}} department, effective {{employee.hireDate}}.\n' +
+          '2. To set a monthly base salary of {{employee.salary}}.\n' +
+          '3. The HR unit shall familiarise the employee with the job description and the internal regulations of {{org.name}}.\n\n' +
+          "Grounds: employment contract, employee's application.\n\n" +
+          'Issued by: {{signatory.name}}, {{signatory.position}}\n' +
+          'Date: {{today}}',
+      },
+      ru: {
+        title: 'Приказ о приёме на работу',
+        body:
+          'ПРИКАЗ\n\n' +
+          'О приёме на работу\n\n' +
+          'На основании трудового договора, заключённого между {{org.name}} и {{employee.fullName}}, приказываю:\n\n' +
+          '1. Принять {{employee.fullName}} на должность {{employee.position}} в отдел {{employee.department}} с {{employee.hireDate}}.\n' +
+          '2. Установить ежемесячный оклад в размере {{employee.salary}}.\n' +
+          '3. Кадровой службе ознакомить работника с должностной инструкцией и внутренними правилами {{org.name}}.\n\n' +
+          'Основание: трудовой договор, заявление работника.\n\n' +
+          'Издал: {{signatory.name}}, {{signatory.position}}\n' +
+          'Дата: {{today}}',
+      },
+      de: {
+        title: 'Einstellungsanordnung',
+        body:
+          'ANORDNUNG\n\n' +
+          'Über die Einstellung eines Arbeitnehmers\n\n' +
+          'Auf der Grundlage des zwischen {{org.name}} und {{employee.fullName}} geschlossenen Arbeitsvertrags ordne ich an:\n\n' +
+          '1. {{employee.fullName}} mit Wirkung zum {{employee.hireDate}} als {{employee.position}} in der Abteilung {{employee.department}} einzustellen.\n' +
+          '2. Ein monatliches Grundgehalt von {{employee.salary}} festzusetzen.\n' +
+          '3. Die Personalabteilung hat den Arbeitnehmer mit der Stellenbeschreibung und den internen Regelungen von {{org.name}} vertraut zu machen.\n\n' +
+          'Grundlage: Arbeitsvertrag, Antrag des Arbeitnehmers.\n\n' +
+          'Ausgestellt von: {{signatory.name}}, {{signatory.position}}\n' +
+          'Datum: {{today}}',
+      },
+      hy: {
+        title: 'Աշխատանքի ընդունման հրաման',
+        body:
+          'ՀՐԱՄԱՆ\n\n' +
+          'Աշխատողին աշխատանքի ընդունելու մասին\n\n' +
+          '{{org.name}}-ի և {{employee.fullName}}-ի միջև կնքված աշխատանքային պայմանագրի հիման վրա՝ հրամայում եմ՝\n\n' +
+          '1. {{employee.fullName}}-ին {{employee.hireDate}}-ից ընդունել աշխատանքի {{employee.department}} բաժնի {{employee.position}} պաշտոնում։\n' +
+          '2. Սահմանել ամսական հիմնական աշխատավարձ՝ {{employee.salary}}։\n' +
+          '3. Կադրերի ստորաբաժանմանը՝ աշխատողին ծանոթացնել աշխատանքի նկարագրությանը և {{org.name}}-ի ներքին կարգապահական կանոններին։\n\n' +
+          'Հիմք՝ աշխատանքային պայմանագիր, աշխատողի դիմում։\n\n' +
+          'Տրված է՝ {{signatory.name}}, {{signatory.position}}\n' +
+          'Ամսաթիվ՝ {{today}}',
+      },
+    },
+  },
   {
     id: 'leave-order',
     category: 'order',
@@ -384,6 +734,33 @@ export const CATALOG: CatalogTemplate[] = [
 /** Look up a template by id. */
 export function getCatalogTemplate(id: string): CatalogTemplate | undefined {
   return CATALOG.find((t) => t.id === id);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hiring packet
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Documents generated automatically when an employee is created, in the order
+ * they are presented and signed.
+ *
+ * Every entry is issued bilingually: Armenian (legally binding) alongside the
+ * employee's chosen language. The list itself lives in `convex/lib` because the
+ * backend validates against it too — a packet must never reference a template
+ * this catalog cannot render.
+ */
+export const DEFAULT_HIRING_PACKET: readonly string[] = HIRING_PACKET_TEMPLATE_IDS;
+
+/**
+ * Packet entries that cannot be skipped — onboarding is not complete until these
+ * are signed. The rest are situational (e.g. material responsibility only
+ * matters once equipment is issued).
+ */
+export const HIRING_PACKET_MANDATORY: readonly string[] = HIRING_PACKET_MANDATORY_IDS;
+
+/** Is this template part of the automatic hiring packet? */
+export function isHiringPacketTemplate(id: string): boolean {
+  return DEFAULT_HIRING_PACKET.includes(id);
 }
 
 /** Resolve a template's localized content, falling back to English. */
