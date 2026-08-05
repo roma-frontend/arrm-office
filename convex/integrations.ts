@@ -2106,7 +2106,7 @@ export const imidUpsertUser = internalMutation({
           fallbackTitle: '🙋 New imID Sign-Up',
           fallbackMessage: `${name} (${normalizedEmail}) signed up with imID and wants to join ${org.name || 'organization'}.`,
           relatedId: userId,
-          route: '/organization',
+          route: '/join-requests',
         });
       }
     }

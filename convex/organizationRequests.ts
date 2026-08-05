@@ -92,7 +92,7 @@ export const createStarterOrganization = mutation({
       params: { orgName: args.name, limit: 10 },
       fallbackTitle: '🎉 Welcome to Strata!',
       fallbackMessage: `Your organization "${args.name}" has been created successfully. You're on the Starter plan (10 employees max).`,
-      route: '/organization',
+      route: '/dashboard',
     });
 
     return { organizationId: orgId, userId };
@@ -182,7 +182,7 @@ export const requestOrganization = mutation({
         fallbackTitle: '🏢 New Organization Request',
         fallbackMessage: `${args.userName} requested to create "${args.name}" (${args.plan} plan)`,
         relatedId: requestId,
-        route: '/organization',
+        route: '/superadmin/organizations',
       });
     }
 
@@ -309,7 +309,7 @@ export const approveOrganizationRequest = mutation({
       fallbackTitle: '✅ Organization Approved!',
       fallbackMessage: `Your organization "${request.requestedName}" has been approved! You can now log in and start managing your team.`,
       relatedId: requestId,
-      route: '/organization',
+      route: '/dashboard',
     });
 
     return { organizationId: orgId, userId };

@@ -330,7 +330,7 @@ export const register = mutation({
             fallbackTitle: '🙋 New Join Request',
             fallbackMessage: `${args.name} (${email}) wants to join ${org?.name ?? 'your organization'}.`,
             relatedId: userId,
-            route: '/organization',
+            route: '/join-requests',
           });
         }
       }
@@ -938,7 +938,7 @@ export const googleOAuthLogin = mutation({
           fallbackTitle: '🙋 New Google Sign-Up',
           fallbackMessage: `${args.name} (${email}) signed up with Google and wants to join ${org.name || 'organization'}.`,
           relatedId: userId,
-          route: '/organization',
+          route: '/join-requests',
         });
       }
 
