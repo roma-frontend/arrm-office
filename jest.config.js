@@ -32,10 +32,12 @@ module.exports = {
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
+    'convex/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/__tests__/**',
     '!src/**/_generated/**',
     '!src/**/*.stories.tsx',
+    '!convex/_generated/**',
   ],
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['text', 'text-summary', 'lcov', 'html', 'json-summary'],
@@ -43,10 +45,10 @@ module.exports = {
     // Coverage floor — ratchet up as coverage improves.
     // Auto-ratchet via: node scripts/ratchet-coverage.mjs
     global: {
-      branches: 8,
-      functions: 10,
-      lines: 12,
-      statements: 12,
+      branches: 13,
+      functions: 13,
+      lines: 18,
+      statements: 18,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
