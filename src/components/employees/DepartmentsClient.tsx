@@ -70,16 +70,32 @@ function DepartmentWizard({
   const selectedOrgId = useSelectedOrganization();
   const createDepartment = useMutation(api.departments.create);
   const updateDepartment = useMutation(api.departments.update);
+  const buildInitialData = React.useCallback(
+    (dept: Doc<'departments'> | null): Record<string, string | number | boolean | null> =>
+      dept
+        ? {
+            name: dept.name,
+            description: dept.description || '',
+            color: dept.color || '#3B82F6',
+          }
+        : { name: '', description: '', color: '#3B82F6' },
+    [],
+  );
+
   const [wizardData, setWizardData] = useState<Record<string, string | number | boolean | null>>(
-    editingDepartment
-      ? {
-          name: editingDepartment.name,
-          description: editingDepartment.description || '',
-          color: editingDepartment.color || '#3B82F6',
-        }
-      : { name: '', description: '', color: '#3B82F6' },
+    () => buildInitialData(editingDepartment),
   );
   const [_isSubmitting, setIsSubmitting] = useState(false);
+
+  // Диалог остаётся смонтированным между открытиями, поэтому начальные данные
+  // нужно пересобирать при каждом открытии / смене редактируемого отдела —
+  // иначе форма редактирования открывается пустой.
+  const editingId = editingDepartment?._id ?? null;
+  React.useEffect(() => {
+    if (!open) return;
+    setWizardData(buildInitialData(editingDepartment));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editingId, buildInitialData]);
 
   const updateStepData = (key: string, value: string | number | boolean | null) => {
     setWizardData((prev) => ({ ...prev, [key]: value }));
@@ -232,6 +248,7 @@ function DepartmentWizard({
         </DialogHeader>
         <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
           <Wizard
+            key={editingId ?? 'new'}
             steps={steps}
             onComplete={handleSubmit}
             onCancel={() => onOpenChange(false)}
