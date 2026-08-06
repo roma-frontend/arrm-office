@@ -8,6 +8,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
 import { patchProfile } from '../lib/userProfile';
 import { getStartingLeaveBalances } from '../lib/leaveBalances';
+import { resolveTravelAllowanceForOrg } from '../lib/travelAllowance';
 import { resolveDepartmentByName, resolvePositionByTitle } from '../lib/orgUnits';
 import type { MutationCtx } from '../_generated/server';
 
@@ -175,7 +176,7 @@ export const createUser = mutation({
       );
     }
 
-    const travelAllowance = args.employeeType === 'contractor' ? 12000 : 20000;
+    const travelAllowance = await resolveTravelAllowanceForOrg(ctx, targetOrgId, args.employeeType);
 
     // Resolve department/position records and denormalize their names. Both
     // must belong to the target org — otherwise an admin could attach an
@@ -354,7 +355,11 @@ export const updateUser = mutation({
     }
 
     const employeeType = updates.employeeType ?? user.employeeType;
-    const travelAllowance = employeeType === 'contractor' ? 12000 : 20000;
+    const travelAllowance = await resolveTravelAllowanceForOrg(
+      ctx,
+      user.organizationId as Id<'organizations'>,
+      employeeType,
+    );
 
     // Same rule as createUser: an *Id wins over the free-text value and its
     // name is denormalized onto the doc, scoped to the user's own org.

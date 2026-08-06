@@ -72,7 +72,9 @@ export const createStarterOrganization = mutation({
       isActive: true,
       isApproved: true,
       approvedAt: Date.now(),
-      travelAllowance: 20000,
+      // No travel allowance on org bootstrap: the organization has no
+      // salarySettings yet, so there is no policy to resolve. An admin sets it
+      // in Payroll → Settings, after which new employees inherit it.
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
@@ -279,7 +281,9 @@ export const approveOrganizationRequest = mutation({
       isApproved: true,
       approvedBy: superadminUserId,
       approvedAt: Date.now(),
-      travelAllowance: 20000,
+      // No travel allowance on org bootstrap: the organization has no
+      // salarySettings yet, so there is no policy to resolve. An admin sets it
+      // in Payroll → Settings, after which new employees inherit it.
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,
@@ -416,7 +420,9 @@ export const secureApproveOrgRequest = mutation({
       isApproved: true,
       approvedBy: caller._id,
       approvedAt: Date.now(),
-      travelAllowance: 20000,
+      // No travel allowance on org bootstrap: the organization has no
+      // salarySettings yet, so there is no policy to resolve. An admin sets it
+      // in Payroll → Settings, after which new employees inherit it.
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,

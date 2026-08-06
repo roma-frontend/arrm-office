@@ -610,19 +610,19 @@
       "close": "Փակել",
       "approve": {
         "title": "Հաստատել հայտեր",
-        "description": "Դուք պատրաստվում եք հաստատել {count} հայտ",
+        "description": "Դուք պատրաստվում եք հաստատել {{count}} հայտ",
         "commentLabel": "Մեկնաբանություն (ոչ պարտադիր)",
         "commentPlaceholder": "Ավելացնել մեկնաբանություն...",
         "cancel": "Չեղարկել",
-        "submit": "Հաստատել {count} հայտ"
+        "submit": "Հաստատել {{count}} հայտ"
       },
       "reject": {
         "title": "Մերժել հայտեր",
-        "description": "Դուք պատրաստվում եք մերժել {count} հայտ",
+        "description": "Դուք պատրաստվում եք մերժել {{count}} հայտ",
         "reasonLabel": "Մերժման պատճառ",
         "reasonPlaceholder": "Նշեք մերժման պատճառը...",
         "cancel": "Չեղարկել",
-        "submit": "Մերժել {count} հայտ"
+        "submit": "Մերժել {{count}} հայտ"
       },
       "alerts": {
         "selectAtLeastOne": "Ընտրեք առնվազն մեկ հայտ",

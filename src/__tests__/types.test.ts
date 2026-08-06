@@ -1,20 +1,46 @@
-import { getTravelAllowance, getInitials, calculateDays, formatCurrency } from '@/lib/types';
+import { getInitials, calculateDays, formatCurrency } from '@/lib/types';
+import {
+  resolveTravelAllowance,
+  DEFAULT_TRAVEL_ALLOWANCE_POLICY,
+  type TravelAllowancePolicy,
+} from '@/lib/travelAllowance';
 
-describe('getTravelAllowance', () => {
-  it('returns 12000 for contractor email', () => {
-    expect(getTravelAllowance('john@contractor.com')).toBe(12000);
+describe('resolveTravelAllowance', () => {
+  const policy: TravelAllowancePolicy = {
+    enabled: true,
+    staffAmount: 20000,
+    contractorAmount: 12000,
+  };
+
+  it('returns the contractor amount for contractors', () => {
+    expect(resolveTravelAllowance(policy, 'contractor')).toBe(12000);
   });
 
-  it('returns 20000 for staff email', () => {
-    expect(getTravelAllowance('john@company.com')).toBe(20000);
+  it('returns the staff amount for staff', () => {
+    expect(resolveTravelAllowance(policy, 'staff')).toBe(20000);
   });
 
-  it('is case-insensitive for contractor check', () => {
-    expect(getTravelAllowance('john@CONTRACTOR.com')).toBe(12000);
+  it('treats an unknown employee type as staff', () => {
+    expect(resolveTravelAllowance(policy, undefined)).toBe(20000);
   });
 
-  it('handles email without contractor keyword', () => {
-    expect(getTravelAllowance('john@example.com')).toBe(20000);
+  it('returns 0 when the organization has the policy disabled', () => {
+    expect(resolveTravelAllowance({ ...policy, enabled: false }, 'staff')).toBe(0);
+  });
+
+  it('returns 0 when the organization has no policy at all', () => {
+    expect(resolveTravelAllowance(undefined, 'staff')).toBe(0);
+    expect(resolveTravelAllowance(DEFAULT_TRAVEL_ALLOWANCE_POLICY, 'contractor')).toBe(0);
+  });
+
+  it('honours per-organization amounts rather than global constants', () => {
+    const otherTenant: TravelAllowancePolicy = {
+      enabled: true,
+      staffAmount: 500,
+      contractorAmount: 250,
+    };
+    expect(resolveTravelAllowance(otherTenant, 'staff')).toBe(500);
+    expect(resolveTravelAllowance(otherTenant, 'contractor')).toBe(250);
   });
 });
 

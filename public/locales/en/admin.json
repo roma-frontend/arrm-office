@@ -610,19 +610,19 @@
       "close": "Close",
       "approve": {
         "title": "Approve Requests",
-        "description": "You are about to approve {count} requests",
+        "description": "You are about to approve {{count}} requests",
         "commentLabel": "Comment (optional)",
         "commentPlaceholder": "Add a comment...",
         "cancel": "Cancel",
-        "submit": "Approve {count} Requests"
+        "submit": "Approve {{count}} Requests"
       },
       "reject": {
         "title": "Reject Requests",
-        "description": "You are about to reject {count} requests",
+        "description": "You are about to reject {{count}} requests",
         "reasonLabel": "Rejection Reason",
         "reasonPlaceholder": "Specify rejection reason...",
         "cancel": "Cancel",
-        "submit": "Reject {count} Requests"
+        "submit": "Reject {{count}} Requests"
       },
       "alerts": {
         "selectAtLeastOne": "Select at least one request",

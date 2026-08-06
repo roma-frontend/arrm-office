@@ -48,6 +48,15 @@ export const TAX_RULE_OVERRIDE = v.object({
   employerContributions: v.optional(v.array(CONTRIBUTION)),
 });
 
+// Per-org travel/transport allowance policy. `enabled: false` means the tenant
+// pays no travel allowance — the amounts are still kept so toggling the feature
+// back on does not lose the configured values. Exported for reuse in mutation args.
+export const TRAVEL_ALLOWANCE_POLICY = v.object({
+  enabled: v.boolean(),
+  staffAmount: v.number(),
+  contractorAmount: v.number(),
+});
+
 export const payroll = {
   payrollRecords: defineTable({
     organizationId: v.optional(v.id('organizations')),
@@ -149,6 +158,12 @@ export const payroll = {
     // Org-editable override of the country's tax rates/brackets. Absent → country
     // defaults apply. Merged onto the base rule by applyTaxRuleOverride (taxRules.ts).
     taxRuleOverride: v.optional(TAX_RULE_OVERRIDE),
+    // Per-org travel/transport allowance policy. Absent → the organization does
+    // not pay a travel allowance. Amounts were previously hardcoded as
+    // 20000/12000 AMD across ~10 backend write sites, which is wrong for a
+    // multi-tenant product: every tenant has its own policy (or none at all).
+    // Resolution lives in convex/lib/travelAllowance.ts.
+    travelAllowance: v.optional(TRAVEL_ALLOWANCE_POLICY),
     emailNotifications: v.optional(v.boolean()),
     notifyOnCreate: v.optional(v.boolean()),
     notifyOnApprove: v.optional(v.boolean()),

@@ -17,6 +17,14 @@ import { useTranslation } from 'react-i18next';
 import { playChatMessageSound } from '@/lib/notificationSound';
 import { logger } from '@/lib/logger';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useScrollLock } from '@/hooks/useScrollLock';
+
+/**
+ * Height of the dashboard navbar (`h-16`). The mobile conversation-list sheet is
+ * `fixed` and starts right below it, so the offset has to match the navbar
+ * exactly — see `mobileSheetInset` below.
+ */
+const NAVBAR_OFFSET = 'top-16';
 
 interface Props {
   userId: string;
@@ -54,6 +62,16 @@ export default function ChatClient({
   >([]);
   const [listCollapsed, setListCollapsed] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
+
+  /**
+   * The expanded conversation list is a full-screen `fixed` sheet on mobile.
+   * Freeze the document behind it: the navbar hides itself on scroll-down
+   * (`max-lg:-translate-y-full` in Navbar), and once it slides up it no longer
+   * fills the strip above the sheet — which exposed the dimming overlay
+   * underneath as a grey band across the screen.
+   */
+  const mobileSheetOpen = !listCollapsed && !isDesktop;
+  useScrollLock(mobileSheetOpen);
 
   const uid = userId as Id<'users'>;
   const orgId = organizationId as Id<'organizations'>;
@@ -246,8 +264,14 @@ export default function ChatClient({
         style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
       >
         {/* ── Overlay when expanded on mobile only ────────────────────────── */}
-        {!listCollapsed && !isDesktop && (
-          <div className="fixed inset-0 z-20 bg-black/50" onClick={() => setListCollapsed(true)} />
+        {/* Starts below the navbar, like the sheet it dims. Spanning the full
+            viewport instead made the overlay show through as a grey band
+            whenever the navbar slid out of the way on scroll. */}
+        {mobileSheetOpen && (
+          <div
+            className={cn('fixed inset-x-0 bottom-0 z-20 bg-black/50', NAVBAR_OFFSET)}
+            onClick={() => setListCollapsed(true)}
+          />
         )}
 
         {/* ── Sidebar: Conversation List ───────────────────────────────── */}
@@ -256,7 +280,11 @@ export default function ChatClient({
             'flex flex-col border-r shrink-0',
             listCollapsed
               ? 'relative z-10 hidden md:flex'
-              : 'fixed top-16 left-0 right-0 bottom-0 z-[100] w-full md:relative md:top-auto md:left-auto md:right-auto md:bottom-auto md:z-auto md:w-80',
+              : cn(
+                  'fixed inset-x-0 bottom-0 z-[100] w-full overscroll-contain',
+                  NAVBAR_OFFSET,
+                  'md:relative md:top-auto md:left-auto md:right-auto md:bottom-auto md:z-auto md:w-80',
+                ),
             // Hide sidebar on mobile only when expanded AND chat is shown
             !listCollapsed && mobileShowChat ? 'hidden md:flex' : '',
           )}

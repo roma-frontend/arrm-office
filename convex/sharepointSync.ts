@@ -4,6 +4,7 @@ import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/s
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getStartingLeaveBalances } from './lib/leaveBalances';
 import { resolveOrgUnitsByName } from './lib/orgUnits';
+import { resolveTravelAllowanceForOrg } from './lib/travelAllowance';
 import type { Id } from './_generated/dataModel';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,9 +84,13 @@ export const upsertSharePointUser = mutation({
     }
 
     // Create new user with the organization's configured starting balances
-    const isStaff = args.employeeType === 'staff';
     const now = Date.now();
     const balances = await getStartingLeaveBalances(ctx, args.organizationId);
+    const travelAllowance = await resolveTravelAllowanceForOrg(
+      ctx,
+      args.organizationId,
+      args.employeeType,
+    );
 
     // Generate a random placeholder password hash (user will need to set real password)
     const randomHash = `sharepoint_sync_${now}_${Math.random().toString(36).slice(2)}`;
@@ -102,7 +107,7 @@ export const upsertSharePointUser = mutation({
       location: args.location,
       isActive: true,
       isApproved: true,
-      travelAllowance: isStaff ? 20000 : 12000,
+      travelAllowance,
       ...balances,
       createdAt: now,
     });
@@ -254,6 +259,11 @@ export const secureUpsertSharePointUser = mutation({
     }
 
     const balances = await getStartingLeaveBalances(ctx, args.organizationId);
+    const travelAllowance = await resolveTravelAllowanceForOrg(
+      ctx,
+      args.organizationId,
+      args.employeeType,
+    );
     const userId = await ctx.db.insert('users', {
       organizationId: args.organizationId,
       name: args.name,
@@ -266,7 +276,7 @@ export const secureUpsertSharePointUser = mutation({
       location: args.location,
       isActive: true,
       isApproved: true,
-      travelAllowance: args.employeeType === 'staff' ? 20000 : 12000,
+      travelAllowance,
       ...balances,
       createdAt: Date.now(),
     });

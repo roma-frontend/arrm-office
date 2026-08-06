@@ -7,7 +7,8 @@ import { toCountryCode, type TaxRuleOverride } from '../lib/taxRules';
 import { resolvePensionExemption } from '../lib/pension';
 import { requireOrgAdmin } from '../lib/rbac';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
-import { TAX_RULE_OVERRIDE } from '../schema/payroll';
+import { TAX_RULE_OVERRIDE, TRAVEL_ALLOWANCE_POLICY } from '../schema/payroll';
+import { validateTravelAllowancePolicy } from '../lib/travelAllowance';
 
 type RunTotals = {
   totalGross: number;
@@ -804,6 +805,7 @@ export const saveSalarySettings = mutation({
     paymentMethod: v.optional(v.string()),
     bankName: v.optional(v.string()),
     taxRuleOverride: v.optional(TAX_RULE_OVERRIDE),
+    travelAllowance: v.optional(TRAVEL_ALLOWANCE_POLICY),
   },
   handler: async (ctx, args) => {
     const requesterId = await callerId(ctx);
@@ -817,6 +819,9 @@ export const saveSalarySettings = mutation({
     }
     if (args.taxRuleOverride) {
       validateTaxRuleOverride(args.taxRuleOverride);
+    }
+    if (args.travelAllowance) {
+      validateTravelAllowancePolicy(args.travelAllowance);
     }
 
     const settingsArgs = args;

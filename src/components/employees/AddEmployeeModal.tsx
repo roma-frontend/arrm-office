@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getTravelAllowance } from '@/lib/types';
+import { resolveTravelAllowance } from '@/lib/travelAllowance';
 import { useOrgUnits } from '@/hooks/useOrgUnits';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useQuery } from 'convex/react';
@@ -169,7 +169,15 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     | null
   >(null);
 
-  const allowance = getTravelAllowance(email);
+  // Travel allowance is a per-organization policy (Payroll → Settings), not a
+  // constant and not something derivable from the email address. When the target
+  // org has no policy, or has it disabled, the preview below is hidden entirely.
+  const salarySettings = useQuery(
+    api.payroll.queries.getSalarySettings,
+    targetOrgId ? { organizationId: targetOrgId as Id<'organizations'> } : 'skip',
+  );
+  const travelAllowancePolicy = salarySettings?.travelAllowance;
+  const allowance = resolveTravelAllowance(travelAllowancePolicy, type);
 
   /**
    * Sensible default for the second document language: the admin's own UI
@@ -1122,28 +1130,30 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                     </div>
                   </div>
 
-                  {/* Travel allowance preview */}
-                  <motion.div
-                    key={allowance}
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="rounded-lg bg-(--background-subtle) border border-(--border) p-4 flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-(--text-primary)">
-                        {t('employees.travelAllowance')}
+                  {/* Travel allowance preview — only when the org actually pays one */}
+                  {travelAllowancePolicy?.enabled && (
+                    <motion.div
+                      key={allowance}
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="rounded-lg bg-(--background-subtle) border border-(--border) p-4 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-(--text-primary)">
+                          {t('employees.travelAllowance')}
+                        </p>
+                        <p className="text-xs text-(--text-muted) mt-0.5">
+                          {type === 'contractor'
+                            ? t('employeeTypes.contractor')
+                            : t('employeeTypes.staff')}{' '}
+                          type
+                        </p>
+                      </div>
+                      <p className="text-xl font-bold text-(--text-primary)">
+                        {formatCurrency(allowance, i18n.language)}
                       </p>
-                      <p className="text-xs text-(--text-muted) mt-0.5">
-                        {type === 'contractor'
-                          ? t('employeeTypes.contractor')
-                          : t('employeeTypes.staff')}{' '}
-                        type
-                      </p>
-                    </div>
-                    <p className="text-xl font-bold text-(--text-primary)">
-                      {formatCurrency(allowance, i18n.language)}
-                    </p>
-                  </motion.div>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
             </motion.div>

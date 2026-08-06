@@ -3,7 +3,7 @@
  * Use this in queries/mutations that need profile fields (department, position, phone, etc.)
  */
 
-import type { Id, Doc } from '../_generated/dataModel';
+import type { Id } from '../_generated/dataModel';
 import type { QueryCtx, MutationCtx } from '../_generated/server';
 
 export interface UserProfile {
@@ -33,30 +33,6 @@ export interface UserProfile {
   studyLeaveBalance?: number;
 }
 
-/** Profile field names for filtering */
-export const PROFILE_FIELDS = [
-  'employeeType',
-  'department',
-  'departmentId',
-  'position',
-  'positionId',
-  'supervisorId',
-  'phone',
-  'location',
-  'avatarUrl',
-  'dateOfBirth',
-  'birthYear',
-  'pensionExempt',
-  'presenceStatus',
-  'travelAllowance',
-  'paidLeaveBalance',
-  'sickLeaveBalance',
-  'familyLeaveBalance',
-  'dayOffBalance',
-  'maternityLeaveBalance',
-  'studyLeaveBalance',
-] as const;
-
 /**
  * Get user profile from userProfiles table.
  * Returns null if profile doesn't exist (run migration first).
@@ -72,35 +48,6 @@ export async function getProfile(
     .query('userProfiles')
     .withIndex('by_user', (q) => q.eq('userId', userId))
     .first();
-}
-
-/**
- * Get profile fields directly from user doc (backward compat, no migration).
- * Use this when you already have the user doc loaded and just need profile fields.
- */
-export function extractProfileFromUser(user: Doc<'users'>) {
-  return {
-    employeeType: user.employeeType,
-    department: user.department,
-    departmentId: user.departmentId,
-    position: user.position,
-    positionId: user.positionId,
-    supervisorId: user.supervisorId,
-    phone: user.phone,
-    location: user.location,
-    avatarUrl: user.avatarUrl,
-    dateOfBirth: user.dateOfBirth,
-    birthYear: user.birthYear,
-    pensionExempt: user.pensionExempt,
-    presenceStatus: user.presenceStatus,
-    travelAllowance: user.travelAllowance,
-    paidLeaveBalance: user.paidLeaveBalance,
-    sickLeaveBalance: user.sickLeaveBalance,
-    familyLeaveBalance: user.familyLeaveBalance,
-    dayOffBalance: user.dayOffBalance,
-    maternityLeaveBalance: user.maternityLeaveBalance,
-    studyLeaveBalance: user.studyLeaveBalance,
-  };
 }
 
 /**

@@ -3,6 +3,7 @@ import { mutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from '../lib/auth';
 import { SMALL_LIST_CAP } from '../lib/limits';
+import { resolveTravelAllowanceForOrg } from '../lib/travelAllowance';
 import { notify } from '../lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -95,7 +96,7 @@ export const createOAuthUser = mutation({
       isActive: true,
       isApproved,
       approvedAt: isSuperAdmin ? Date.now() : undefined,
-      travelAllowance: 20000,
+      travelAllowance: await resolveTravelAllowanceForOrg(ctx, organizationId, 'staff'),
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,

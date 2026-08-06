@@ -47,7 +47,11 @@ export const users = {
     isApproved: v.boolean(),
     approvedBy: v.optional(v.id('users')),
     approvedAt: v.optional(v.number()),
-    travelAllowance: v.number(),
+    // Denormalized copy of the org's travel allowance policy applied to this
+    // employee. Optional: organizations without a travel allowance policy leave
+    // it unset. Never write a literal here — resolve it from salarySettings via
+    // convex/lib/travelAllowance.ts.
+    travelAllowance: v.optional(v.number()),
     paidLeaveBalance: v.number(),
     sickLeaveBalance: v.number(),
     familyLeaveBalance: v.number(),

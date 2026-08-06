@@ -337,6 +337,54 @@ describe('ChatClient', () => {
     });
   });
 
+  /**
+   * Regression: on mobile the expanded conversation list is a `fixed` sheet that
+   * starts below the navbar. The dimming overlay used to span the whole viewport
+   * (`inset-0`), so as soon as the navbar hid itself on scroll-down the strip it
+   * vacated showed the overlay as a grey band across the top of the screen.
+   */
+  describe('Mobile sheet layout', () => {
+    const overlayOf = (container: HTMLElement) =>
+      container.querySelector<HTMLElement>('.bg-black\\/50');
+
+    const sheetOf = () => screen.getByTestId('conversation-list').parentElement;
+
+    beforeEach(() => {
+      queryResults.getMyConversations = mockConversations;
+    });
+
+    it('does not stretch the dimming overlay behind the navbar', () => {
+      const { container } = render(<ChatClient {...defaultProps} />);
+      const overlay = overlayOf(container);
+
+      expect(overlay).not.toBeNull();
+      expect(overlay?.className).toContain('top-16');
+      expect(overlay?.className).not.toContain('inset-0');
+    });
+
+    it('anchors the overlay and the sheet to the same offset', () => {
+      const { container } = render(<ChatClient {...defaultProps} />);
+
+      expect(sheetOf()?.className).toContain('top-16');
+      expect(overlayOf(container)?.className).toContain('top-16');
+    });
+
+    it('keeps the sheet scroll from chaining to the document', () => {
+      render(<ChatClient {...defaultProps} />);
+      expect(sheetOf()?.className).toContain('overscroll-contain');
+    });
+
+    it('freezes the page while the sheet is open and restores it on collapse', () => {
+      render(<ChatClient {...defaultProps} />);
+      expect(document.body.style.overflow).toBe('hidden');
+
+      fireEvent.click(screen.getByTestId('toggle-collapse'));
+
+      expect(document.body.style.overflow).toBe('');
+      expect(overlayOf(document.body)).toBeNull();
+    });
+  });
+
   // Offline indicator: internal `isOnline` state initialised to true and
   // managed by event listeners — not testable from outside the component
   // without refactoring to accept a prop.

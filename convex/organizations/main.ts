@@ -7,6 +7,7 @@ import { PLAN_EMPLOYEE_LIMITS } from '../lib/limits';
 import { notify } from '../lib/notify';
 import { getStartingLeaveBalances } from '../lib/leaveBalances';
 import { resolveOrgUnitsByName } from '../lib/orgUnits';
+import { resolveTravelAllowanceForOrg } from '../lib/travelAllowance';
 import { logger } from '../../src/lib/logger';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -672,6 +673,11 @@ export const approveJoinRequest = mutation({
       { create: true },
     );
     const joinBalances = await getStartingLeaveBalances(ctx, invite.organizationId);
+    const joinTravelAllowance = await resolveTravelAllowanceForOrg(
+      ctx,
+      invite.organizationId,
+      'staff',
+    );
 
     if (existingUser) {
       // User already exists (e.g., from OAuth) — update instead of creating new
@@ -690,7 +696,7 @@ export const approveJoinRequest = mutation({
         isApproved: true,
         approvedBy: args.adminId,
         approvedAt: Date.now(),
-        travelAllowance: 20000,
+        travelAllowance: joinTravelAllowance,
         ...joinBalances,
       });
     } else {
@@ -709,7 +715,7 @@ export const approveJoinRequest = mutation({
         isApproved: true,
         approvedBy: args.adminId,
         approvedAt: Date.now(),
-        travelAllowance: 20000,
+        travelAllowance: joinTravelAllowance,
         ...joinBalances,
         createdAt: Date.now(),
       });

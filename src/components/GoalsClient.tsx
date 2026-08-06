@@ -191,7 +191,8 @@ function CreateObjectiveWizard({
         periodYear,
         periodStart: start,
         periodEnd: end,
-        parentObjectiveId: parentId ? (parentId as Id<'objectives'>) : undefined,
+        parentObjectiveId:
+          parentId && parentId !== 'none' ? (parentId as Id<'objectives'>) : undefined,
         createdBy: userId,
         keyResults: keyResults.map((kr) => ({
           title: kr.title.trim(),
@@ -382,7 +383,12 @@ function CreateObjectiveWizard({
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">
+                      {/* Radix Select forbids an empty string value on SelectItem
+                          (it is reserved for "no selection") — using one here made
+                          the whole /goals page throw inside the error boundary once
+                          any company/team objective existed. "none" is the sentinel
+                          for "no parent", translated back to undefined on submit. */}
+                      <SelectItem value="none">
                         {t('goals.wizard.noAlignment', 'None (top-level)')}
                       </SelectItem>
                       {parentOptions.map((p) => (

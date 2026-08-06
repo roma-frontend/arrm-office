@@ -6,6 +6,7 @@ import type { Doc } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { SUPERADMIN_EMAIL, isSuperadmin } from '../lib/auth';
+import { resolveTravelAllowanceForOrg } from '../lib/travelAllowance';
 import { notify } from '../lib/notify';
 // ── Security helpers ──────────────────────────────────────────────────────────
 /** Verify caller has admin/superadmin role and return their organizationId */
@@ -88,7 +89,7 @@ export const seedAdmin = internalMutation({
       isActive: true,
       isApproved: true,
       approvedAt: Date.now(),
-      travelAllowance: 20000,
+      travelAllowance: await resolveTravelAllowanceForOrg(ctx, organizationId, 'staff'),
       paidLeaveBalance: 24,
       sickLeaveBalance: 10,
       familyLeaveBalance: 5,

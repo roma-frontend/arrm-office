@@ -5,6 +5,7 @@
 import { internalMutation } from './_generated/server';
 import { XLARGE_LIST_CAP } from './lib/limits';
 import { backfillAssetActContent } from '../src/lib/assetActContent';
+import { LEGACY_TRAVEL_ALLOWANCE_POLICY } from './lib/travelAllowance';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fix duplicate users — merge users with same email
@@ -264,5 +265,81 @@ export const backfillAssetActMetadata = internalMutation({
     }
 
     return { updated, totalDocuments: documents.length };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Backfill: travel allowance policy onto salarySettings
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * The travel allowance used to be hardcoded as 20000/12000 AMD for every
+ * organization. It is now a per-org policy on `salarySettings.travelAllowance`,
+ * and organizations without a policy pay nothing.
+ *
+ * This backfill preserves the previous behaviour for organizations that were
+ * already paying it — detected by an existing employee with a non-zero
+ * `travelAllowance` — so no tenant silently loses the allowance on deploy.
+ * Organizations with no such employee are left untouched and stay opted out.
+ *
+ * Idempotent: organizations that already have a policy are skipped.
+ * Internal: operator-only, run via `npx convex run migrations:backfillTravelAllowancePolicy`.
+ */
+export const backfillTravelAllowancePolicy = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const organizations = await ctx.db.query('organizations').take(XLARGE_LIST_CAP);
+    let updated = 0;
+    let created = 0;
+    let skipped = 0;
+
+    for (const org of organizations) {
+      const settings = await ctx.db
+        .query('salarySettings')
+        .withIndex('by_org', (q) => q.eq('organizationId', org._id))
+        .first();
+
+      // Never overwrite a policy an admin has already configured.
+      if (settings?.travelAllowance !== undefined) {
+        skipped++;
+        continue;
+      }
+
+      // Did this organization actually pay an allowance before? One employee
+      // with a non-zero amount is enough — the old value was a constant.
+      const members = await ctx.db
+        .query('users')
+        .withIndex('by_org', (q) => q.eq('organizationId', org._id))
+        .take(XLARGE_LIST_CAP);
+      const wasPaying = members.some((m) => (m.travelAllowance ?? 0) > 0);
+
+      if (!wasPaying) {
+        skipped++;
+        continue;
+      }
+
+      if (settings) {
+        await ctx.db.patch(settings._id, {
+          travelAllowance: LEGACY_TRAVEL_ALLOWANCE_POLICY,
+          updatedAt: Date.now(),
+        });
+        updated++;
+      } else {
+        // No salarySettings row yet — create a minimal one carrying the policy.
+        // Tax country/pay frequency fall back to the same defaults the settings
+        // page shows for an unconfigured organization.
+        const now = Date.now();
+        await ctx.db.insert('salarySettings', {
+          organizationId: org._id,
+          taxCountry: 'armenia',
+          payFrequency: 'monthly',
+          travelAllowance: LEGACY_TRAVEL_ALLOWANCE_POLICY,
+          createdAt: now,
+          updatedAt: now,
+        });
+        created++;
+      }
+    }
+
+    return { updated, created, skipped, totalOrganizations: organizations.length };
   },
 });

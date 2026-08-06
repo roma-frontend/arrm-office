@@ -27,6 +27,7 @@ import {
   type CountryCode,
   type TaxRuleOverride,
 } from '../../../../../convex/lib/taxRules';
+import { DEFAULT_TRAVEL_ALLOWANCE_POLICY, type TravelAllowancePolicy } from '@/lib/travelAllowance';
 import { TaxRuleEditor } from '@/components/payroll/TaxRuleEditor';
 
 type TaxCountry = CountryCode;
@@ -66,6 +67,9 @@ export default function PayrollSettingsPage() {
     bankName: '',
   });
   const [taxRuleOverride, setTaxRuleOverride] = useState<TaxRuleOverride | null>(null);
+  const [travelAllowance, setTravelAllowance] = useState<TravelAllowancePolicy>(
+    DEFAULT_TRAVEL_ALLOWANCE_POLICY,
+  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -87,6 +91,7 @@ export default function PayrollSettingsPage() {
         bankName: settings.bankName ?? '',
       });
       setTaxRuleOverride(settings.taxRuleOverride ?? null);
+      setTravelAllowance(settings.travelAllowance ?? DEFAULT_TRAVEL_ALLOWANCE_POLICY);
     }
   }, [settings]);
 
@@ -111,6 +116,7 @@ export default function PayrollSettingsPage() {
         paymentMethod: form.paymentMethod || undefined,
         bankName: form.bankName || undefined,
         taxRuleOverride: taxRuleOverride ?? undefined,
+        travelAllowance,
       });
       toast.success(t('payroll.settingsSaved') || 'Settings saved');
     } catch (e) {
@@ -268,6 +274,68 @@ export default function PayrollSettingsPage() {
         value={taxRuleOverride}
         onChange={setTaxRuleOverride}
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('payroll.travelAllowance') || 'Travel allowance'}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-(--text-muted)">
+            {t('payroll.travelAllowanceHint') ||
+              'A monthly transport allowance applied to new employees of this organization. Leave it off if your organization does not pay one.'}
+          </p>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="travel-allowance-enabled">
+              {t('payroll.travelAllowanceEnabled') || 'Pay a travel allowance'}
+            </Label>
+            <Switch
+              id="travel-allowance-enabled"
+              checked={travelAllowance.enabled}
+              onCheckedChange={(v) => setTravelAllowance((p) => ({ ...p, enabled: v }))}
+            />
+          </div>
+
+          {travelAllowance.enabled && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="travel-allowance-staff">
+                  {t('employeeTypes.staff') || 'Staff'} ({form.currency})
+                </Label>
+                <Input
+                  id="travel-allowance-staff"
+                  type="number"
+                  min={0}
+                  value={travelAllowance.staffAmount || ''}
+                  onChange={(e) =>
+                    setTravelAllowance((p) => ({
+                      ...p,
+                      staffAmount: Math.max(0, parseFloat(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="travel-allowance-contractor">
+                  {t('employeeTypes.contractor') || 'Contractor'} ({form.currency})
+                </Label>
+                <Input
+                  id="travel-allowance-contractor"
+                  type="number"
+                  min={0}
+                  value={travelAllowance.contractorAmount || ''}
+                  onChange={(e) =>
+                    setTravelAllowance((p) => ({
+                      ...p,
+                      contractorAmount: Math.max(0, parseFloat(e.target.value) || 0),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="opacity-70">
         <CardHeader>

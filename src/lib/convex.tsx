@@ -3,6 +3,7 @@
 import { ConvexProviderWithAuth, ConvexReactClient } from 'convex/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStoreHydrated } from '@/hooks/useAuthStoreHydrated';
 
 let convexInstance: ConvexReactClient | null = null;
 
@@ -18,6 +19,12 @@ function getConvexClient() {
 function useAuthForConvex() {
   const tokenRef = useRef<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // The persisted auth store hydrates asynchronously from localStorage. Until
+  // it has, `isAuthenticated` reads false even for a logged-in user, so the
+  // first queries would fire unauthenticated and log "Not authenticated".
+  // Gate on hydration: while `isLoading` is true, Convex does not execute
+  // queries, so they only start once the real auth state is known.
+  const storeHydrated = useAuthStoreHydrated();
 
   // Track the app-level auth state (set by email/Google/face login). When the
   // user logs in via SPA navigation (router.push, no full reload), this flips
@@ -74,11 +81,14 @@ function useAuthForConvex() {
 
   return useMemo(
     () => ({
-      isLoading: false,
+      // Keep Convex queries paused until the persisted auth store has hydrated
+      // (see comment above). Otherwise fast production loads fire queries with
+      // no token and log "Not authenticated" for every protected page.
+      isLoading: !storeHydrated,
       isAuthenticated,
       fetchAccessToken,
     }),
-    [isAuthenticated, fetchAccessToken],
+    [storeHydrated, isAuthenticated, fetchAccessToken],
   );
 }
 
@@ -92,5 +102,7 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
 }
 
 export function useConvexAuthReady(): boolean {
-  return true;
+  // True once the auth store has hydrated — the earliest point at which
+  // Convex queries can safely run with the correct auth state.
+  return useAuthStoreHydrated();
 }

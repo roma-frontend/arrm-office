@@ -16,6 +16,11 @@ import { DEFAULT_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 import { getStartingLeaveBalances } from './lib/leaveBalances';
 import { resolveOrgUnitsByName } from './lib/orgUnits';
+import {
+  getTravelAllowancePolicy,
+  resolveTravelAllowance,
+  resolveTravelAllowanceForOrg,
+} from './lib/travelAllowance';
 
 const providerValidator = v.union(
   v.literal('lucky_carrot'),
@@ -541,6 +546,11 @@ export const upsertEmployeeBatch = internalMutation({
       .take(DEFAULT_LIST_CAP);
     let seatsUsed = activeUsers.length;
 
+    // Read the org's travel allowance policy once — it is the same for every
+    // employee in this batch, so resolving it inside the loop would cost one
+    // extra database read per row.
+    const travelPolicy = await getTravelAllowancePolicy(ctx, organizationId);
+
     for (const incoming of employees) {
       const email = incoming.email.toLowerCase().trim();
       if (!email || !email.includes('@')) {
@@ -649,7 +659,6 @@ export const upsertEmployeeBatch = internalMutation({
       }
 
       const employeeType = incoming.employeeType ?? 'staff';
-      const isStaff = employeeType === 'staff';
       const now = Date.now();
       const units = await resolveOrgUnitsByName(
         ctx,
@@ -676,7 +685,7 @@ export const upsertEmployeeBatch = internalMutation({
         externalSource: incoming.externalId ? provider : undefined,
         isActive: incoming.isActive ?? true,
         isApproved: true,
-        travelAllowance: isStaff ? 20000 : 12000,
+        travelAllowance: resolveTravelAllowance(travelPolicy, employeeType),
         ...balances,
         createdAt: now,
       });
@@ -2086,7 +2095,7 @@ export const imidUpsertUser = internalMutation({
       sessionToken: isApproved ? sessionToken : undefined,
       sessionExpiry: isApproved ? sessionExpiry : undefined,
       lastLoginAt: isApproved ? Date.now() : undefined,
-      travelAllowance: 20000,
+      travelAllowance: await resolveTravelAllowanceForOrg(ctx, organizationId, 'staff'),
       ...(await getStartingLeaveBalances(ctx, organizationId)),
       createdAt: Date.now(),
     });

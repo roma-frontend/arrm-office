@@ -609,19 +609,19 @@
       "noPending": "Нет заявок ожидающих рассмотрения",
       "approve": {
         "title": "Одобрить заявки",
-        "description": "Вы собираетесь одобрить {count} заявок",
+        "description": "Вы собираетесь одобрить {{count}} заявок",
         "commentLabel": "Комментарий (необязательно)",
         "commentPlaceholder": "Добавить комментарий...",
         "cancel": "Отмена",
-        "submit": "Одобрить {count} заявок"
+        "submit": "Одобрить {{count}} заявок"
       },
       "reject": {
         "title": "Отклонить заявки",
-        "description": "Вы собираетесь отклонить {count} заявок",
+        "description": "Вы собираетесь отклонить {{count}} заявок",
         "reasonLabel": "Причина отклонения",
         "reasonPlaceholder": "Укажите причину отклонения...",
         "cancel": "Отмена",
-        "submit": "Отклонить {count} заявок"
+        "submit": "Отклонить {{count}} заявок"
       },
       "close": "Закрыть",
       "alerts": {

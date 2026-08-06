@@ -6,6 +6,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
 import { getStartingLeaveBalances } from '../lib/leaveBalances';
 import { resolveOrgUnitsByName } from '../lib/orgUnits';
+import { resolveTravelAllowanceForOrg } from '../lib/travelAllowance';
 import { checkTempAccessStillValid } from '../superadmin/accessTokens';
 import { logger } from '../../src/lib/logger';
 
@@ -308,7 +309,7 @@ export const register = mutation({
         isActive: true,
         isApproved,
         approvedAt: isApproved ? Date.now() : undefined,
-        travelAllowance: 20000,
+        travelAllowance: await resolveTravelAllowanceForOrg(ctx, organizationId, 'staff'),
         ...(await getStartingLeaveBalances(ctx, organizationId)),
         createdAt: Date.now(),
       });
@@ -899,6 +900,7 @@ export const googleOAuthLogin = mutation({
     const isFirstMember = orgMembers.length === 0;
     const role = isFirstMember ? 'admin' : 'employee';
     const isApproved = isFirstMember;
+    const travelAllowance = await resolveTravelAllowanceForOrg(ctx, organizationId, 'staff');
 
     const userId = await ctx.db.insert('users', {
       organizationId,
@@ -911,7 +913,7 @@ export const googleOAuthLogin = mutation({
       isActive: true,
       isApproved,
       approvedAt: isApproved ? Date.now() : undefined,
-      travelAllowance: 20000,
+      travelAllowance,
       ...(await getStartingLeaveBalances(ctx, organizationId)),
       sessionToken: isApproved ? args.sessionToken : undefined,
       sessionExpiry: isApproved ? args.sessionExpiry : undefined,
@@ -965,7 +967,7 @@ export const googleOAuthLogin = mutation({
       position: undefined,
       employeeType: 'staff',
       avatarUrl: args.avatarUrl,
-      travelAllowance: 20000,
+      travelAllowance,
       isApproved: true,
       phone: undefined,
       paidLeaveBalance: 24,

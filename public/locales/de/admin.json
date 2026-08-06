@@ -609,19 +609,19 @@
       "noPending": "Keine ausstehenden Anträge",
       "approve": {
         "title": "Anträge genehmigen",
-        "description": "Sie sind dabei, {count} Anträge zu genehmigen",
+        "description": "Sie sind dabei, {{count}} Anträge zu genehmigen",
         "commentLabel": "Kommentar (optional)",
         "commentPlaceholder": "Kommentar hinzufügen...",
         "cancel": "Abbrechen",
-        "submit": "Genehmigen {count} Anträge"
+        "submit": "Genehmigen {{count}} Anträge"
       },
       "reject": {
         "title": "Anträge ablehnen",
-        "description": "Sie sind dabei, {count} Anträge abzulehnen",
+        "description": "Sie sind dabei, {{count}} Anträge abzulehnen",
         "reasonLabel": "Ablehnungsgrund",
         "reasonPlaceholder": "Geben Sie den Ablehnungsgrund an...",
         "cancel": "Abbrechen",
-        "submit": "Ablehnen {count} Anträge"
+        "submit": "Ablehnen {{count}} Anträge"
       },
       "close": "Schließen",
       "alerts": {
