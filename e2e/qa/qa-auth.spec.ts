@@ -1,6 +1,11 @@
 import { test, expect, login } from '../fixtures';
 
 test.describe('QA: Auth & Dashboard', () => {
+  // Real-login tests: they can only run against a backend with a seeded test
+  // user. CI has no credentials (placeholder Convex deployment), so skip the
+  // whole describe there — same guard as e2e/auth.spec.ts.
+  test.skip(!process.env.E2E_USER_EMAIL, 'No test credentials configured');
+
   test('login with provided credentials redirects to dashboard', async ({ page }) => {
     await login(page);
     await page.waitForURL(/dashboard|leaves|tasks/, { timeout: 30_000 });
