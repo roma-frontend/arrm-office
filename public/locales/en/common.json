@@ -1037,6 +1037,7 @@
     "team": "Team",
     "individual": "Individual",
     "alignedObjectives": "{{count}} aligned",
+    "doneTasks": "tasks done",
     "viewDetails": "View details",
     "empty": "No objectives found",
     "emptyHint": "Create company-level objectives to build your strategy map",

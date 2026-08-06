@@ -1037,6 +1037,7 @@
     "team": "Team",
     "individual": "Einzeln",
     "alignedObjectives": "{{count}} ausgerichtet",
+    "doneTasks": "Aufgaben erledigt",
     "viewDetails": "Details anzeigen",
     "empty": "Keine Ziele gefunden",
     "emptyHint": "Erstellen Sie Ziele auf Unternehmensebene, um Ihre Strategiekarte aufzubauen",

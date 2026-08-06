@@ -97,6 +97,7 @@ const _PERSPECTIVE_LABELS: Record<BscPerspective, string> = {
 // ── Score Badge ──────────────────────────────────────────────────────────────
 
 function ScoreBadge({ score, grade }: { score: number; grade: BscScore }) {
+  const { t } = useTranslation(['common', 'modules']);
   const gradeConfig = {
     excellent: {
       color: 'text-emerald-600',
@@ -139,7 +140,7 @@ function ScoreBadge({ score, grade }: { score: number; grade: BscScore }) {
         </span>
       </div>
       <Badge variant="outline" className={`text-[10px] ${cfg.color} ${cfg.bg} border-0`}>
-        {cfg.label}
+        {t(`bsc.grade.${grade}`, cfg.label)}
       </Badge>
     </div>
   );
@@ -156,7 +157,7 @@ function DirectionIcon({ direction }: { direction: 'up' | 'down' | 'neutral' }) 
 // ── North Star ───────────────────────────────────────────────────────────────
 
 function NorthStarSection({ data }: { data: BalancedScorecardData }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
   const { northStar, overallScore, overallGrade } = data;
 
   const gradeConfig = {
@@ -309,7 +310,7 @@ function PerspectiveCard({
   perspective: BscPerspectiveData;
   compact: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
   const config = PERSPECTIVE_CONFIG[perspective.id];
   const Icon = config.icon;
 
@@ -470,7 +471,7 @@ function PerspectiveCard({
 // ── Strategy Heat Map ────────────────────────────────────────────────────────
 
 function StrategyHeatMap({ data }: { data: BalancedScorecardData }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
 
   const heatData = data.perspectives.map((p) => ({
     name: t(`bsc.perspective.${p.id}`, p.name),
@@ -548,7 +549,7 @@ function StrategyHeatMap({ data }: { data: BalancedScorecardData }) {
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function BalancedScorecardDashboard() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
   const user = useAuthUser();
   const selectedOrgId = useSelectedOrganization();
   const organizationId = (selectedOrgId ?? user?.organizationId ?? undefined) as

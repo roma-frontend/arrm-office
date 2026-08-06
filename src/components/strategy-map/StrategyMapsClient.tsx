@@ -154,7 +154,7 @@ function TreeNodeCard({
   depth: number;
   defaultExpanded: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
   const router = useRouter();
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const levelCfg = LEVEL_CONFIG[node.level];
@@ -376,7 +376,7 @@ function StrategyStats({
   compact: boolean;
   onToggleCompact: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
 
   if (!summary) return null;
 
@@ -478,7 +478,7 @@ function StrategyStats({
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function StrategyMapsClient() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
   const router = useRouter();
   const user = useAuthUser();
   const selectedOrgId = useSelectedOrganization();

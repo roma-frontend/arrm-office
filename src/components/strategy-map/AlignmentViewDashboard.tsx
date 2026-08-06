@@ -47,10 +47,12 @@ interface AlignmentNode {
   depth: number;
 }
 
+// Level names are translated at render time via `goals.level.*` — no label here,
+// so an untranslated English string cannot leak into the UI.
 const LEVEL_CONFIG = {
-  company: { icon: Building2, color: '#8b5cf6', label: 'Company' },
-  team: { icon: Users, color: '#3b82f6', label: 'Team' },
-  individual: { icon: User, color: '#10b981', label: 'Individual' },
+  company: { icon: Building2, color: '#8b5cf6' },
+  team: { icon: Users, color: '#3b82f6' },
+  individual: { icon: User, color: '#10b981' },
 };
 
 function getHealthBg(health: HealthStatus): string {
@@ -89,7 +91,7 @@ function AlignmentNodeCard({
   depth: number;
   defaultExpanded: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
   const router = useRouter();
   const [expanded, setExpanded] = useState(defaultExpanded || depth < 2);
   const levelCfg = LEVEL_CONFIG[node.level];
@@ -289,7 +291,7 @@ function AlignmentNodeCard({
 }
 
 export default function AlignmentViewDashboard() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'modules']);
   const router = useRouter();
   const user = useAuthUser();
   const selectedOrgId = useSelectedOrganization();
