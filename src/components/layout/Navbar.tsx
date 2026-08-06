@@ -361,8 +361,15 @@ export function Navbar() {
           )}
         </div>
       )}
+      {/* Hide-on-scroll (mobile): the header is a flex row in the column, and the
+          content below scrolls in its own box — so `sticky` never engages and a
+          bare `-translate-y-full` slid the bar away while *keeping* its 64px slot
+          in the flow. That empty slot rendered as a solid band of the wrapper
+          background between the vanished header and the unmoved content.
+          `-mb-16` collapses the slot in step with the transform, so `main`
+          (flex-1) grows into the freed space and there is no gap to reveal. */}
       <header
-        className={`h-16 border-b border-(--border) bg-(--navbar-bg) flex items-center px-4 gap-4 sticky top-0 z-50 transition-[transform,colors] duration-300 ${scrollDirection === 'down' ? 'max-lg:-translate-y-full' : 'translate-y-0'}`}
+        className={`h-16 border-b border-(--border) bg-(--navbar-bg) flex items-center px-4 gap-4 sticky top-0 z-50 transition-[transform,margin,colors] duration-300 ${scrollDirection === 'down' ? 'max-lg:-translate-y-full max-lg:-mb-16' : 'translate-y-0'}`}
       >
         {/* Mobile hamburger */}
         <Button

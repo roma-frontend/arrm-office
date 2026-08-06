@@ -338,10 +338,11 @@ describe('ChatClient', () => {
   });
 
   /**
-   * Regression: on mobile the expanded conversation list is a `fixed` sheet that
-   * starts below the navbar. The dimming overlay used to span the whole viewport
-   * (`inset-0`), so as soon as the navbar hid itself on scroll-down the strip it
-   * vacated showed the overlay as a grey band across the top of the screen.
+   * Regression: on mobile the expanded conversation list used to be a `fixed`
+   * sheet offset by a hardcoded `top-16` (the navbar height). Any change to where
+   * the navbar actually sat — it hides itself on scroll, and the safe-area inset
+   * pushes it down — left a band of background between the navbar and the sheet.
+   * Keeping the sheet `absolute` inside the chat area removes that coupling.
    */
   describe('Mobile sheet layout', () => {
     const overlayOf = (container: HTMLElement) =>
@@ -353,20 +354,24 @@ describe('ChatClient', () => {
       queryResults.getMyConversations = mockConversations;
     });
 
-    it('does not stretch the dimming overlay behind the navbar', () => {
-      const { container } = render(<ChatClient {...defaultProps} />);
-      const overlay = overlayOf(container);
+    it('does not anchor the sheet to the viewport', () => {
+      render(<ChatClient {...defaultProps} />);
+      const className = sheetOf()?.className ?? '';
 
-      expect(overlay).not.toBeNull();
-      expect(overlay?.className).toContain('top-16');
-      expect(overlay?.className).not.toContain('inset-0');
+      expect(className).toContain('absolute');
+      expect(className).toContain('inset-0');
+      expect(className).not.toContain('fixed');
+      expect(className).not.toContain('top-16');
     });
 
-    it('anchors the overlay and the sheet to the same offset', () => {
+    it('bounds the dimming overlay to the chat area', () => {
       const { container } = render(<ChatClient {...defaultProps} />);
+      const className = overlayOf(container)?.className ?? '';
 
-      expect(sheetOf()?.className).toContain('top-16');
-      expect(overlayOf(container)?.className).toContain('top-16');
+      expect(className).toContain('absolute');
+      expect(className).toContain('inset-0');
+      expect(className).not.toContain('fixed');
+      expect(className).not.toContain('top-16');
     });
 
     it('keeps the sheet scroll from chaining to the document', () => {
@@ -374,14 +379,20 @@ describe('ChatClient', () => {
       expect(sheetOf()?.className).toContain('overscroll-contain');
     });
 
-    it('freezes the page while the sheet is open and restores it on collapse', () => {
+    it('removes the overlay when the list collapses', () => {
       render(<ChatClient {...defaultProps} />);
-      expect(document.body.style.overflow).toBe('hidden');
+      expect(overlayOf(document.body)).not.toBeNull();
 
       fireEvent.click(screen.getByTestId('toggle-collapse'));
 
-      expect(document.body.style.overflow).toBe('');
       expect(overlayOf(document.body)).toBeNull();
+    });
+
+    it('leaves document scrolling untouched', () => {
+      render(<ChatClient {...defaultProps} />);
+      // The sheet no longer escapes its container, so there is nothing behind it
+      // to freeze — the component must not reach out and mutate body styles.
+      expect(document.body.style.overflow).toBe('');
     });
   });
 
