@@ -136,8 +136,8 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
   // ===== Floating button animation =====
 
   const floatingTop = isMobile
-    ? `calc(env(safe-area-inset-top) + 6rem)`
-    : `calc(env(safe-area-inset-top) + 10rem)`;
+    ? `calc(env(safe-area-inset-top, 0px) + 6rem)`
+    : `calc(env(safe-area-inset-top, 0px) + 10rem)`;
 
   const collapsedYOffset = 64;
 
@@ -590,7 +590,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
             style={{
               background: 'var(--input)',
               height: '100%',
-              paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
               WebkitOverflowScrolling: 'touch',
             }}
           >

@@ -189,7 +189,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <ReactQueryProvider>
-        <div className="flex app-shell bg-(--background) overflow-hidden">
+        {/* `app-shell` (see globals.css) is the real height: 100dvh minus the
+            safe-area insets. `h-dvh` is only a safety net — Tailwind utilities
+            live in `@layer utilities`, so the unlayered `.app-shell` rule always
+            wins over it. If that rule ever fails to reach the browser (stale CSS
+            chunk after an HMR update, blocked stylesheet), the shell still gets a
+            definite height instead of collapsing to `auto`, which turns the
+            document into the scroller and drags the sidebar out of the viewport. */}
+        <div className="flex app-shell h-dvh bg-(--background) overflow-hidden">
           {/* Desktop Sidebar — ssr:false prevents localStorage persist mismatch */}
           <Sidebar />
 
