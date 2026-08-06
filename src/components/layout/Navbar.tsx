@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNow } from '@/hooks/useNow';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 // framer-motion removed — replaced with CSS transitions to reduce main-thread work,
 // eliminate forced reflow from JS-driven animations, and defer the framer-motion bundle
@@ -155,7 +155,11 @@ export function Navbar() {
   const prevUnreadCount = useRef<number>(-1);
   const prevNotifIds = useRef<Set<string>>(new Set());
   const isFirstLoad = useRef(true);
-  const scrollDirection = useScrollDirection();
+  // Pathname resets the hide-on-scroll state: a new route starts at the top, and
+  // routes without a scroll container (e.g. /chat) can never scroll the header
+  // back into view on their own.
+  const pathname = usePathname();
+  const scrollDirection = useScrollDirection(64, pathname);
 
   React.useEffect(() => {
     setMounted(true);

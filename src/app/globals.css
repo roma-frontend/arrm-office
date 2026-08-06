@@ -735,6 +735,20 @@ html {
     env(safe-area-inset-left);
 }
 
+/* Full-viewport app shell (dashboard).
+   `html` above carries the safe-area insets as *padding* and has `height: auto`,
+   so a shell of exactly `100dvh` makes the document taller than the viewport by
+   the inset total (~81px on an iPhone with Dynamic Island). On iOS that surplus
+   is scrollable: a swipe anywhere on a page that has no scroller of its own
+   (e.g. /chat) drags the whole document instead, and the navbar — `sticky` inside
+   an `overflow-hidden` wrapper, so effectively static — slides away with it and
+   does not come back.
+   Subtracting the insets makes the document land on exactly 100dvh, so there is
+   nothing left to scroll. Do not replace this with `h-dvh`. */
+.app-shell {
+  height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
 body {
   background: var(--landing-bg);
   color: var(--text-primary);
