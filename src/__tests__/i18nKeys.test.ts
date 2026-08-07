@@ -44,6 +44,20 @@ const GUARDED: Record<string, string[]> = {
     'src/components/tasks/ProjectBadge.tsx',
   ],
   '/goals': ['src/components/GoalsClient.tsx', 'src/components/goals/GoalDetailClient.tsx'],
+  // The whole hiringPacket group was absent from every locale file, so the
+  // packet panel rendered its English defaults — button tooltips, the "required"
+  // marker and the status badges — next to fully translated document titles.
+  '/employees (hiring packet)': [
+    'src/components/employees/HiringPacketPanel.tsx',
+    'src/components/employees/AddEmployeeModal.tsx',
+  ],
+  // The bilingual document builder and the issued-document registry: both are
+  // built entirely out of new keys, so a missing one is easy to overlook.
+  '/documents (builder)': [
+    'src/components/documents/BlueprintEditor.tsx',
+    'src/components/documents/DocumentBuilderTab.tsx',
+    'src/components/documents/IssuedDocumentsTab.tsx',
+  ],
 };
 
 const FILES = Object.values(GUARDED).flat();
@@ -71,6 +85,9 @@ function namespacesOf(locale: string): string[] {
     .map((f) => f.replace(/\.json$/, ''));
 }
 
+/** i18next JSON v4 plural suffixes — a pluralized key never exists as a plain string. */
+const PLURAL_SUFFIXES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const;
+
 function lookup(bundle: Bundle | null, key: string): unknown {
   let cur: unknown = bundle;
   for (const part of key.split('.')) {
@@ -78,6 +95,20 @@ function lookup(bundle: Bundle | null, key: string): unknown {
     cur = (cur as Record<string, unknown>)[part];
   }
   return cur;
+}
+
+/**
+ * A key written as `t('x.y', { count })` is stored as `x.y_one` / `x.y_other`,
+ * so the plain key is absent by design. Any plural form counts as translated.
+ */
+function lookupString(bundle: Bundle | null, key: string): string | undefined {
+  const direct = lookup(bundle, key);
+  if (typeof direct === 'string') return direct;
+  for (const suffix of PLURAL_SUFFIXES) {
+    const plural = lookup(bundle, `${key}_${suffix}`);
+    if (typeof plural === 'string') return plural;
+  }
+  return undefined;
 }
 
 /** Static keys, i.e. a literal single-quoted first argument to t(). Template
@@ -89,15 +120,15 @@ function staticKeys(source: string): string[] {
 /** Resolves like i18next does here: any preloaded namespace may own the key. */
 function isTranslated(locale: string, key: string): boolean {
   return namespacesOf(locale).some(
-    (ns) => typeof lookup(readNamespace(locale, ns), key) === 'string',
+    (ns) => lookupString(readNamespace(locale, ns), key) !== undefined,
   );
 }
 
 /** First string value for a key across a locale's namespaces. */
 function resolve(locale: string, key: string): string | undefined {
   for (const ns of namespacesOf(locale)) {
-    const value = lookup(readNamespace(locale, ns), key);
-    if (typeof value === 'string') return value;
+    const value = lookupString(readNamespace(locale, ns), key);
+    if (value !== undefined) return value;
   }
   return undefined;
 }
@@ -145,6 +176,18 @@ describe('i18n key coverage', () => {
    * translation is never byte-identical to the English source, whereas German
    * legitimately shares words like "Details", "Status" and "Team".
    */
+  /**
+   * Is this value language-neutral?
+   *
+   * A badge like `v{{version}}` is identical in every language, so comparing it
+   * against EN would report a correct translation as missing. Anything with three
+   * or more letters outside the interpolations is prose and must be translated.
+   */
+  function isLanguageNeutral(value: string): boolean {
+    const letters = value.replace(/\{\{[^}]*\}\}/g, '').replace(/[^\p{L}]/gu, '');
+    return letters.length < 3;
+  }
+
   describe.each(['ru', 'hy'] as const)('%s', (locale) => {
     it.each(Object.keys(GUARDED))('holds no English value on %s', (route) => {
       const untranslated = new Set<string>();
@@ -152,7 +195,8 @@ describe('i18n key coverage', () => {
       for (const file of GUARDED[route]) {
         for (const key of staticKeys(sources.get(file)!)) {
           const en = resolve('en', key);
-          if (en !== undefined && en === resolve(locale, key)) untranslated.add(key);
+          if (en === undefined || isLanguageNeutral(en)) continue;
+          if (en === resolve(locale, key)) untranslated.add(key);
         }
       }
 

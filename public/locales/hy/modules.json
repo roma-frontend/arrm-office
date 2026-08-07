@@ -1498,7 +1498,20 @@
     "fieldRequired": "Պարտադիր",
     "fieldPlaceholder": "Փոխարինող տեքստ",
     "removeField": "Հեռացնել դաշտը",
-    "templatePreview": "Կաղապարի նախադիտում"
+    "templatePreview": "Կաղապարի նախադիտում",
+    "builderTab": "Երկլեզու կաղապարներ",
+    "issuedTab": "Տրված",
+    "loadingTemplates": "Կաղապարները բեռնվում են…",
+    "fields": "Դաշտեր",
+    "edit": "Խմբագրել",
+    "editDocument": "Խմբագրել փաստաթուղթը",
+    "documentTitle": "Անվանում",
+    "expiresAt": "Վավեր է մինչև",
+    "documentUpdated": "Փաստաթուղթը թարմացվել է",
+    "updateError": "Չհաջողվեց պահել փաստաթուղթը",
+    "acknowledge": "Ծանոթացել եմ",
+    "acknowledgedBadge": "Ծանոթացած",
+    "acknowledgeError": "Չհաջողվեց հաստատել ծանոթացումը"
   },
   "documentCategories": {
     "policy": "Քաղաքականություն",

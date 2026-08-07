@@ -50,6 +50,24 @@ function lookup(bundle, path) {
   return node;
 }
 
+/** i18next JSON v4 plural suffixes. */
+const PLURAL_SUFFIXES = ['zero', 'one', 'two', 'few', 'many', 'other'];
+
+/**
+ * A key called as `t('x.y', { count })` is stored as `x.y_one` / `x.y_other`,
+ * so the plain key is absent by design — without this the report listed every
+ * pluralized key as missing.
+ */
+function lookupWithPlurals(bundle, path) {
+  const direct = lookup(bundle, path);
+  if (direct !== undefined) return direct;
+  for (const suffix of PLURAL_SUFFIXES) {
+    const plural = lookup(bundle, `${path}_${suffix}`);
+    if (plural !== undefined) return plural;
+  }
+  return undefined;
+}
+
 /**
  * Mirrors the app's runtime resolution: an explicit `ns:key` prefix wins,
  * otherwise every namespace is tried (the app sets fallbackNS to all of them).
@@ -57,10 +75,10 @@ function lookup(bundle, path) {
 function resolve(bundles, key) {
   if (key.includes(':')) {
     const [ns, rest] = key.split(':', 2);
-    return bundles[ns] ? lookup(bundles[ns], rest) : undefined;
+    return bundles[ns] ? lookupWithPlurals(bundles[ns], rest) : undefined;
   }
   for (const bundle of Object.values(bundles)) {
-    const found = lookup(bundle, key);
+    const found = lookupWithPlurals(bundle, key);
     if (found !== undefined) return found;
   }
   return undefined;
