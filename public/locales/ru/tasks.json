@@ -68,6 +68,8 @@
     "allStatuses": "Все статусы",
     "allProjects": "Все проекты",
     "noProject": "Без проекта",
+    "linkedProject": "Связанный проект",
+    "linkedProjectDesc": "Эта задача относится к следующему проекту",
     "deleteTask": "Удалить задачу",
     "details": "Детали",
     "timeline": "Хронология",

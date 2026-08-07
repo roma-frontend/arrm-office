@@ -68,6 +68,8 @@
     "allStatuses": "All Statuses",
     "allProjects": "All Projects",
     "noProject": "Without project",
+    "linkedProject": "Linked Project",
+    "linkedProjectDesc": "This task belongs to the following project",
     "deleteTask": "Delete Task",
     "details": "Details",
     "timeline": "Timeline",

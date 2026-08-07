@@ -1,22 +1,28 @@
 /**
  * Locale coverage for screens that regressed into English.
  *
- * `t('a.b', 'English default')` renders the inline default in *every* language
- * when `a.b` is absent from the locale files. The screen therefore looks correct
- * in English and silently broken everywhere else, with no console warning and no
- * type error — nothing fails until someone looks at the UI in another language.
- * That is how the tasks board shipped an "All Projects" / "Without project"
- * filter sitting next to fully translated "Все приоритеты" / "Все статусы"
- * siblings, and how `strategyMap.doneTasks` stayed English on the alignment cards.
+ * Two failure modes are guarded, both of which shipped and neither of which the
+ * existing tooling catches:
  *
- * Note on namespaces: `src/i18n/config.ts` passes `ns: [...allNamespaces]`, so
- * i18next preloads every namespace for the active language regardless of what a
- * component declares in `useTranslation`. A missing key is the real failure mode
- * here, not an undeclared namespace.
+ * 1. A key used in code but absent from every locale file. The inline fallback
+ *    then renders in *every* language, so the screen looks right in English and
+ *    silently broken elsewhere. `scripts/check-locale-parity.mjs` compares EN
+ *    against ru/hy/de, so a key missing from EN too keeps parity and passes.
+ *    This is how the tasks board shipped an "All Projects" / "Without project"
+ *    filter beside fully translated "Все приоритеты" / "Все статусы" siblings.
  *
- * Scoped to the screens below rather than the whole tree: a repo-wide sweep
- * currently reports ~196 keys missing from ru, which is a backlog to burn down
- * separately rather than something to gate on today.
+ * 2. A key that exists but holds the English string. Parity is by key, not by
+ *    value, so a block of 12 keys sat in ru/modules.json with their English
+ *    values verbatim ("Details", "Department", "Start Date"...) and the goal
+ *    detail card mixed translated and untranslated labels.
+ *
+ * Namespaces are not a factor: `src/i18n/config.ts` passes `ns: [...allNamespaces]`,
+ * so i18next preloads every namespace for the active language regardless of what
+ * a component declares in useTranslation.
+ *
+ * Scoped to the screens below rather than the whole tree — `check-i18n-keys.mjs`
+ * reports 229 missing keys repo-wide, a backlog to burn down separately rather
+ * than something to gate on today.
  */
 import fs from 'fs';
 import path from 'path';
@@ -31,7 +37,13 @@ const GUARDED: Record<string, string[]> = {
     'src/components/strategy-map/BalancedScorecardDashboard.tsx',
     'src/components/strategy-map/StrategyMapsClient.tsx',
   ],
-  '/tasks': ['src/components/tasks/TasksClient.tsx'],
+  '/tasks': [
+    'src/components/tasks/TasksClient.tsx',
+    'src/components/tasks/TaskDetailClient.tsx',
+    'src/components/tasks/NewTaskClient.tsx',
+    'src/components/tasks/ProjectBadge.tsx',
+  ],
+  '/goals': ['src/components/GoalsClient.tsx', 'src/components/goals/GoalDetailClient.tsx'],
 };
 
 const FILES = Object.values(GUARDED).flat();
@@ -68,7 +80,8 @@ function lookup(bundle: Bundle | null, key: string): unknown {
   return cur;
 }
 
-/** Static keys: t('a.b'). Template-literal keys are covered by the families below. */
+/** Static keys, i.e. a literal single-quoted first argument to t(). Template
+ *  literals are covered by the families below. */
 function staticKeys(source: string): string[] {
   return [...source.matchAll(/\bt\(\s*'([a-zA-Z][\w.]*)'/g)].map((m) => m[1]);
 }
@@ -78,6 +91,15 @@ function isTranslated(locale: string, key: string): boolean {
   return namespacesOf(locale).some(
     (ns) => typeof lookup(readNamespace(locale, ns), key) === 'string',
   );
+}
+
+/** First string value for a key across a locale's namespaces. */
+function resolve(locale: string, key: string): string | undefined {
+  for (const ns of namespacesOf(locale)) {
+    const value = lookup(readNamespace(locale, ns), key);
+    if (typeof value === 'string') return value;
+  }
+  return undefined;
 }
 
 const sources = new Map(
@@ -113,6 +135,29 @@ describe('i18n key coverage', () => {
     );
 
     expect(missing).toEqual([]);
+  });
+
+  /**
+   * A key can exist and still be English: the goal detail page had a block of 12
+   * keys in ru/modules.json holding their English values verbatim ("Details",
+   * "Department", "Start Date"...), so the card mixed translated and untranslated
+   * labels. Restricted to ru and hy — they use non-Latin scripts, so a real
+   * translation is never byte-identical to the English source, whereas German
+   * legitimately shares words like "Details", "Status" and "Team".
+   */
+  describe.each(['ru', 'hy'] as const)('%s', (locale) => {
+    it.each(Object.keys(GUARDED))('holds no English value on %s', (route) => {
+      const untranslated = new Set<string>();
+
+      for (const file of GUARDED[route]) {
+        for (const key of staticKeys(sources.get(file)!)) {
+          const en = resolve('en', key);
+          if (en !== undefined && en === resolve(locale, key)) untranslated.add(key);
+        }
+      }
+
+      expect([...untranslated]).toEqual([]);
+    });
   });
 
   it('routes the BSC grade badge through t() instead of its hardcoded label', () => {

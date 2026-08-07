@@ -891,8 +891,8 @@
     "target": "Ziel",
     "timeline": "Zeitachse",
     "errors": {
-      "completeFailed": "Failed to complete objective",
-      "deleteFailed": "Failed to delete objective"
+      "completeFailed": "Ziel konnte nicht abgeschlossen werden",
+      "deleteFailed": "Ziel konnte nicht gelöscht werden"
     },
     "statusLabel": "Status",
     "levelLabel": "Ebene",

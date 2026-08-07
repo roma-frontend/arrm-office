@@ -68,6 +68,8 @@
     "allStatuses": "Alle Status",
     "allProjects": "Alle Projekte",
     "noProject": "Ohne Projekt",
+    "linkedProject": "Verknüpftes Projekt",
+    "linkedProjectDesc": "Diese Aufgabe gehört zum folgenden Projekt",
     "deleteTask": "Aufgabe löschen",
     "details": "Details",
     "timeline": "Chronologie",

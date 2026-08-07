@@ -500,6 +500,8 @@
   "projects": {
     "title": "Projects",
     "subtitle": "Manage projects, track progress, and collaborate",
+    "linkedProject": "Linked project",
+    "openProject": "Open project",
     "create": "New Project",
     "createTitle": "Create Project",
     "name": "Project Name",
