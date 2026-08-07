@@ -441,7 +441,10 @@ export const updateLeave = mutation({
     if (!isAdmin && leave.status !== 'pending')
       throw new Error('Only pending leaves can be edited');
 
-    await ctx.db.patch(args.leaveId, { ...args, updatedAt: Date.now() });
+    // Strip `leaveId` — it is not a field of the leaveRequests document and
+    // would fail strict schema validation if spread into the patch.
+    const { leaveId, ...updates } = args;
+    await ctx.db.patch(leaveId, { ...updates, updatedAt: Date.now() });
 
     if (isAdmin && !isOwner) {
       await notify(ctx, {
@@ -469,7 +472,7 @@ export const updateLeave = mutation({
       action: 'leave_updated',
       target: args.leaveId,
       details: JSON.stringify({
-        updatedFields: Object.keys(args),
+        updatedFields: Object.keys(updates),
         type: args.type || leave.type,
         startDate: args.startDate || leave.startDate,
         endDate: args.endDate || leave.endDate,
