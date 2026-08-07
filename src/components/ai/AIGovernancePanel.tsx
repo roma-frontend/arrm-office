@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import type { Id } from '@/convex/_generated/dataModel';
 import { formatRelativeTime } from '@/lib/date-format';
 import { Shield, Activity, Eye, Clock, XCircle, Bot, Filter, Lock, Sliders } from 'lucide-react';
@@ -67,7 +68,11 @@ export default function AIGovernancePanel() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [auditFilter, setAuditFilter] = useState<AgentId | 'all'>('all');
 
-  const organizationId = user?.organizationId as Id<'organizations'> | undefined;
+  // Follow the superadmin org selector, like the rest of the dashboard.
+  const selectedOrgId = useSelectedOrganization();
+  const organizationId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
   const userId = user?.id as Id<'users'> | undefined;
   const queryArgs = organizationId && userId ? { organizationId, userId } : 'skip';
 

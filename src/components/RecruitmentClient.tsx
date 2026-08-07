@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useTranslation } from 'react-i18next';
 import {
   Briefcase,
@@ -927,7 +928,11 @@ export default function RecruitmentClient() {
   const { t } = useTranslation();
   const mainRef = useMainRef();
   const user = useAuthUser();
-  const organizationId = user?.organizationId as Id<'organizations'> | undefined;
+  // Follow the superadmin org selector, like the rest of the dashboard.
+  const selectedOrgId = useSelectedOrganization();
+  const organizationId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
   const userId = user?.id as Id<'users'> | undefined;
   const userRole = user?.role || 'employee';
 

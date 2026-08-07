@@ -11,6 +11,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,9 +26,15 @@ export default function AdminJoinRequestsClient() {
   const { t, i18n } = useTranslation();
   const { user } = useAuthStore();
 
+  // Follow the superadmin org selector, like the rest of the dashboard.
+  const selectedOrgId = useSelectedOrganization();
+  const organizationId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
+
   const requests = useQuery(
     api.organizationJoinRequests.getOrgJoinRequests,
-    user?.organizationId ? { organizationId: user.organizationId as Id<'organizations'> } : 'skip',
+    organizationId ? { organizationId } : 'skip',
   );
 
   const approveRequest = useMutation(api.organizationJoinRequests.approveJoinRequest);

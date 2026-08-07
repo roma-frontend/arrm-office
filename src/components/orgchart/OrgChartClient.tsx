@@ -346,15 +346,20 @@ export default function OrgChartClient() {
     [],
   );
 
-  // Update flow elements when tree data changes
+  // Sync flow elements whenever the tree query resolves.
+  //
+  // This used to be guarded by `orgTree.length > 0`, which stranded the previous
+  // organization's chart on screen: switching to an org that has no org chart yet
+  // resolves the query to `[]`, the guard skipped the update, and the stale nodes
+  // kept rendering as if they belonged to the newly selected org. `undefined` is
+  // the loading state and is still skipped — the loader covers that case.
   useEffect(() => {
-    if (orgTree && orgTree.length > 0) {
-      const { nodes: flowNodes, edges: flowEdges } = buildFlowElements(orgTree);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync flow elements when the org tree query resolves
-      setNodes(flowNodes);
-      setEdges(flowEdges);
-    }
-  }, [orgTree, buildFlowElements, setNodes, setEdges]);
+    if (orgTree === undefined) return;
+    const { nodes: flowNodes, edges: flowEdges } = buildFlowElements(orgTree);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync flow elements when the org tree query resolves
+    setNodes(flowNodes);
+    setEdges(flowEdges);
+  }, [orgTree, buildFlowElements]);
 
   // Filter nodes based on search
   const filteredNodes = useMemo(() => {

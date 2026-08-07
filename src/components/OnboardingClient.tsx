@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
@@ -58,13 +59,22 @@ export default function OnboardingClient() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'supervisor';
 
+  // Follow the superadmin org selector, like the rest of the dashboard. Reading
+  // `user.organizationId` directly pinned this screen to the viewer's own
+  // organization, so switching orgs left the programs and templates unchanged —
+  // and the create mutations below wrote into the wrong tenant.
+  const selectedOrgId = useSelectedOrganization();
+  const orgId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
+
   const programs = useQuery(
     api.onboarding.listPrograms,
-    user?.organizationId ? { organizationId: user.organizationId as Id<'organizations'> } : 'skip',
+    orgId ? { organizationId: orgId } : 'skip',
   );
   const templates = useQuery(
     api.onboarding.listTemplates,
-    user?.organizationId ? { organizationId: user.organizationId as Id<'organizations'> } : 'skip',
+    orgId ? { organizationId: orgId } : 'skip',
   );
   const myOnboarding = useQuery(
     api.onboarding.getMyOnboarding,
@@ -607,6 +617,11 @@ function StartOnboardingWizard({
   user: User | null;
   t: TFunction;
 }) {
+  // Create into the organization the screen is showing, not the viewer's own.
+  const selectedOrgId = useSelectedOrganization();
+  const orgId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
   const [step, setStep] = useState(0);
   const [employeeId, setEmployeeId] = useState('');
   const [templateId, setTemplateId] = useState('');
@@ -626,7 +641,7 @@ function StartOnboardingWizard({
     if (!user?.organizationId || !employeeId || !managerId) return;
     try {
       await startOnboarding({
-        organizationId: user.organizationId as Id<'organizations'>,
+        organizationId: orgId as Id<'organizations'>,
         employeeId: employeeId as Id<'users'>,
         templateId: templateId ? (templateId as Id<'onboardingTemplates'>) : undefined,
         startDate: new Date(startDate || Date.now()).getTime(),
@@ -778,6 +793,11 @@ function CreateTemplateWizard({
   t: TFunction;
 }) {
   const [step, setStep] = useState(0);
+  // Create into the organization the screen is showing, not the viewer's own.
+  const selectedOrgId = useSelectedOrganization();
+  const orgId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [department, setDepartment] = useState('');
@@ -817,10 +837,10 @@ function CreateTemplateWizard({
   };
 
   const handleSubmit = async () => {
-    if (!user?.organizationId || !name || tasks.length === 0) return;
+    if (!orgId || !name || tasks.length === 0) return;
     try {
       await createTemplate({
-        organizationId: user.organizationId as Id<'organizations'>,
+        organizationId: orgId,
         name,
         description: description || undefined,
         department: department || undefined,

@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useShallow } from 'zustand/shallow';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
@@ -1646,7 +1647,11 @@ export function ESignaturesClient() {
   } | null>(null);
   const [detailDocId, setDetailDocId] = useState<Id<'signatureDocuments'> | null>(null);
 
-  const organizationId = user?.organizationId as Id<'organizations'> | undefined;
+  // Follow the superadmin org selector, like the rest of the dashboard.
+  const selectedOrgId = useSelectedOrganization();
+  const organizationId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
   const userId = user?.id && user.id !== '' ? (user.id as Id<'users'>) : null;
 
   const documents = useQuery(

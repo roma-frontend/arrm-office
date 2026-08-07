@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMainRef } from '@/hooks/useMainRef';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
@@ -57,13 +58,19 @@ export default function OffboardingClient() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'supervisor';
 
+  // Follow the superadmin org selector — see the note in OnboardingClient.
+  const selectedOrgId = useSelectedOrganization();
+  const orgId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
+
   const programs = useQuery(
     api.offboarding.listPrograms,
-    user?.organizationId ? { organizationId: user.organizationId as Id<'organizations'> } : 'skip',
+    orgId ? { organizationId: orgId } : 'skip',
   );
   const insights = useQuery(
     api.offboarding.getRetentionInsights,
-    user?.organizationId ? { organizationId: user.organizationId as Id<'organizations'> } : 'skip',
+    orgId ? { organizationId: orgId } : 'skip',
   );
 
   const [showWizard, setShowWizard] = useState(false);
@@ -696,6 +703,11 @@ function StartOffboardingWizard({
   user: User | null;
   t: TFunction;
 }) {
+  // Create into the organization the screen is showing, not the viewer's own.
+  const selectedOrgId = useSelectedOrganization();
+  const orgId = (selectedOrgId ?? user?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
   const [step, setStep] = useState(0);
   const [employeeId, setEmployeeId] = useState('');
   const [employeeName, setEmployeeName] = useState('');
@@ -717,7 +729,7 @@ function StartOffboardingWizard({
     if (!user?.organizationId || !employeeId || !managerId || !lastDay) return;
     try {
       await startOffboarding({
-        organizationId: user.organizationId as Id<'organizations'>,
+        organizationId: orgId as Id<'organizations'>,
         employeeId: employeeId as Id<'users'>,
         managerId: managerId as Id<'users'>,
         lastDay: new Date(lastDay).getTime(),
