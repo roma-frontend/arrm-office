@@ -30,7 +30,13 @@
       "unpaid": "Unbezahlt",
       "unpaidDesc": "Unbezahlter Urlaub",
       "doctor": "Arztbesuch",
-      "doctorDesc": "Medizinische Untersuchung oder Termin"
+      "doctorDesc": "Medizinische Untersuchung oder Termin",
+      "dayOff": "Freier Tag",
+      "dayOffDesc": "Einen einzelnen freien Tag nehmen",
+      "maternity": "Mutterschaftsurlaub",
+      "maternityDesc": "Bezahlter Urlaub vor und nach der Geburt",
+      "study": "Bildungsurlaub",
+      "studyDesc": "Bezahlter Urlaub für Prüfungen und Studienzeiten"
     },
     "reason": "Grund",
     "requestDetails": "Details zum Urlaubsantrag",
@@ -49,7 +55,9 @@
     "cannotEditStatus": "Nur ausstehende Anträge können bearbeitet werden",
     "notFound": "Antrag nicht gefunden",
     "notFoundHint": "Dieser Antrag existiert nicht oder Sie haben keinen Zugriff darauf.",
-    "backToLeaves": "Zurück zu den Anträgen"
+    "backToLeaves": "Zurück zu den Anträgen",
+    "type": "Typ",
+    "myLeaves": "Meine Urlaube"
   },
   "leaveTypes": {
     "paid": "Bezahlter Urlaub",

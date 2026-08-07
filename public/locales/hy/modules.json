@@ -1274,7 +1274,8 @@
       "deptPlaceholder": "օրինակ՝ Ինժեներական",
       "taskTitle": "Առաջադրանքի վերնագիր",
       "dayPlaceholder": "Օր"
-    }
+    },
+    "checkLater": "Ստուգեք ավելի ուշ"
   },
   "compliance": {
     "title": "Համապատասխանություն և GDPR",
@@ -2006,7 +2007,8 @@
     "googleCalendarSync": "Google Calendar Սինխրոնիզացիա",
     "googleCalendarSyncDesc": "Սինքրոնիզացրեք արձակուրդների գրաֆիկը Google Calendar-ի հետ: Հասանելի է Professional պլանով և ավելի բարձր:",
     "outlookCalendarSync": "Outlook Calendar Սինխրոնիզացիա",
-    "outlookCalendarSyncDesc": "Սինքրոնիզացրեք արձակուրդների գրաֆիկը Outlook Calendar-ի հետ: Հասանելի է Professional պլանով և ավելի բարձր:"
+    "outlookCalendarSyncDesc": "Սինքրոնիզացրեք արձակուրդների գրաֆիկը Outlook Calendar-ի հետ: Հասանելի է Professional պլանով և ավելի բարձր:",
+    "icsFilename": "տոներ-{{date}}.ics"
   },
   "calendar": {
     "calendar": "Օրացույց",
@@ -2730,6 +2732,10 @@
         "title": "Փաստաթղթեր",
         "desc": "Գիտելիքների բազա և ՀՏՀ"
       }
+    },
+    "plans": {
+      "current": "Ընթացիկ պլան",
+      "recommended": "Առաջարկվում է"
     }
   },
   "support": {
@@ -2744,6 +2750,14 @@
       "health": "Health",
       "communication": "Communication",
       "other": "Other"
+    },
+    "categories": {
+      "technical": "Տեխնիկական խնդիր",
+      "billing": "Վճարումներ",
+      "access": "Մուտք և հաշիվներ",
+      "feature": "Նոր գործառույթի առաջարկ",
+      "bug": "Սխալի հայտնում",
+      "other": "Այլ"
     }
   },
   "supportWizard": {
@@ -2829,7 +2843,8 @@
     "low": "Ցածր",
     "medium": "Միջին",
     "high": "Բարձր",
-    "urgent": "Շտապ"
+    "urgent": "Շտապ",
+    "critical": "Կրիտիկական"
   },
   "category": {
     "technical": "Տեխնիկական",

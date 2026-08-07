@@ -30,7 +30,13 @@
       "unpaid": "Unpaid Leave",
       "unpaidDesc": "Leave without pay",
       "doctor": "Doctor Leave",
-      "doctorDesc": "Medical appointment or checkup"
+      "doctorDesc": "Medical appointment or checkup",
+      "dayOff": "Day Off",
+      "dayOffDesc": "Take a single day off",
+      "maternity": "Maternity Leave",
+      "maternityDesc": "Paid leave before and after childbirth",
+      "study": "Study Leave",
+      "studyDesc": "Paid leave for exams and study sessions"
     },
     "reason": "Reason",
     "requestDetails": "Leave Request Details",
@@ -49,7 +55,9 @@
     "cannotEditStatus": "Only pending leave requests can be edited",
     "notFound": "Request not found",
     "notFoundHint": "This request does not exist or you do not have access to it.",
-    "backToLeaves": "Back to Leaves"
+    "backToLeaves": "Back to Leaves",
+    "type": "Type",
+    "myLeaves": "My leaves"
   },
   "leaveTypes": {
     "paid": "Paid Vacation",

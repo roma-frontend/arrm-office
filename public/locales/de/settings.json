@@ -88,7 +88,8 @@
     },
     "syncEmployees": "Mitarbeiter synchronisieren",
     "syncFailed": "Synchronisierung fehlgeschlagen",
-    "failedToSave": "Speichern fehlgeschlagen"
+    "failedToSave": "Speichern fehlgeschlagen",
+    "resetToDefault": "Einstellungen auf Standard zurückgesetzt"
   },
   "settingsExtended": {
     "appearance": "Erscheinungsbild",

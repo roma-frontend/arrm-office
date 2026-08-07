@@ -88,7 +88,8 @@
     },
     "syncEmployees": "Синхронизировать сотрудников",
     "syncFailed": "Ошибка синхронизации",
-    "failedToSave": "Не удалось сохранить"
+    "failedToSave": "Не удалось сохранить",
+    "resetToDefault": "Настройки сброшены к значениям по умолчанию"
   },
   "settingsExtended": {
     "appearance": "Внешний вид",

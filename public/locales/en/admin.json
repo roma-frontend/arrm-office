@@ -239,7 +239,8 @@
       "failedToCreate": "Failed to create subscription",
       "confirmCancelSub": "Are you sure you want to cancel this subscription?",
       "cancelSuccess": "Subscription canceled successfully",
-      "failedToCancel": "Failed to cancel subscription"
+      "failedToCancel": "Failed to cancel subscription",
+      "cancelNotImplemented": "Subscription cancellation is not available yet"
     },
     "security": {
       "threatLevel": "Threat Level",
@@ -685,7 +686,8 @@
       "storageInfo": "{{used}} of {{total}} used",
       "orgsBackedUpCount": "{{count}} organizations backed up",
       "totalEmployees": "Total Employees",
-      "totalEmployeesCount": "{{count}} employees"
+      "totalEmployeesCount": "{{count}} employees",
+      "accessDenied": "Access denied"
     },
     "user360": {
       "back": "Back",
@@ -843,7 +845,11 @@
     "creatingOrg": "Creating {{name}}…",
     "orgCreated": "Organization \"{{name}}\" created!",
     "adminInviteSent": "Admin invitation sent to {{email}}",
-    "orgCreateFailed": "Failed to create organization"
+    "orgCreateFailed": "Failed to create organization",
+    "leaves": "Leaves",
+    "rides": "Rides",
+    "tasks": "Tasks",
+    "tickets": "Tickets"
   },
   "superadminSecurity": {
     "securityControl": "Security Control Center",
@@ -1044,7 +1050,16 @@
     "warning": "⚠️ Warning: The site is currently unavailable to all users except SuperAdmin.",
     "enablingSite": "Enabling site...",
     "enableSite": "Enable Site",
-    "siteWillBeAvailable": "The site will be available to all users again"
+    "siteWillBeAvailable": "The site will be available to all users again",
+    "title": "System Maintenance",
+    "systemUnavailable": "The system is temporarily unavailable.",
+    "pleasWait": "Please wait while we perform scheduled maintenance.",
+    "autoRefresh": "This page will refresh automatically when maintenance is complete.",
+    "needHelp": "If you need help, please contact support.",
+    "bannerInProgress": "Maintenance in progress",
+    "bannerStartsIn": "Starts in {{time}}",
+    "bannerStartsSoon": "Starting soon",
+    "notificationLabel": "System Announcements"
   },
   "securityAlert": {
     "accessDenied": "Access Denied",

@@ -20,7 +20,8 @@
       "medium": "Mittel",
       "high": "Hoch",
       "urgent": "Dringend"
-    }
+    },
+    "title": "Aufgaben"
   },
   "tasksPage": {
     "title": "Aufgaben",

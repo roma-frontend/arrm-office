@@ -1274,7 +1274,8 @@
       "deptPlaceholder": "e.g. Engineering",
       "taskTitle": "Task title",
       "dayPlaceholder": "Day"
-    }
+    },
+    "checkLater": "Check back later"
   },
   "compliance": {
     "title": "Compliance & GDPR",
@@ -2006,7 +2007,8 @@
     "googleCalendarSync": "Google Calendar Sync",
     "googleCalendarSyncDesc": "Sync leave schedules with Google Calendar. Available on Professional plan and above.",
     "outlookCalendarSync": "Outlook Calendar Sync",
-    "outlookCalendarSyncDesc": "Sync leave schedules with Outlook Calendar. Available on Professional plan and above."
+    "outlookCalendarSyncDesc": "Sync leave schedules with Outlook Calendar. Available on Professional plan and above.",
+    "icsFilename": "holidays-{{date}}.ics"
   },
   "calendar": {
     "calendar": "Calendar",
@@ -2730,6 +2732,10 @@
         "title": "Documentation",
         "desc": "Knowledge base and FAQ"
       }
+    },
+    "plans": {
+      "current": "Current plan",
+      "recommended": "Recommended"
     }
   },
   "support": {
@@ -2743,6 +2749,14 @@
       "training": "Training",
       "health": "Health",
       "communication": "Communication",
+      "other": "Other"
+    },
+    "categories": {
+      "technical": "Technical issue",
+      "billing": "Billing & payments",
+      "access": "Access & accounts",
+      "feature": "Feature request",
+      "bug": "Bug report",
       "other": "Other"
     }
   },
@@ -2829,7 +2843,8 @@
     "high": "High",
     "medium": "Medium",
     "low": "Low",
-    "urgent": "Urgent"
+    "urgent": "Urgent",
+    "critical": "Critical"
   },
   "category": {
     "technical": "Technical",

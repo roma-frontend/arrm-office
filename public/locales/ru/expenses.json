@@ -158,6 +158,8 @@
     "enterPolicyInfo": "Введите название и описание политики",
     "setApprovalLimits": "Установите лимиты одобрения",
     "setReceiptPolicy": "Установите правила чеков и сроков",
-    "policyStatus": "Статус политики"
+    "policyStatus": "Статус политики",
+    "periodEnd": "Конец периода",
+    "periodStart": "Начало периода"
   }
 }

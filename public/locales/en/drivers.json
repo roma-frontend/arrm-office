@@ -511,7 +511,9 @@
         "title": "Date & Time",
         "description": "Specify when you'll be unavailable"
       }
-    }
+    },
+    "blocked": "Blocked",
+    "trip": "Trip"
   },
   "driversWizard": {
     "personalInfo": "Personal Information",

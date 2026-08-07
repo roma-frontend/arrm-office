@@ -1274,7 +1274,8 @@
       "deptPlaceholder": "z.B. Entwicklung",
       "taskTitle": "Aufgabentitel",
       "dayPlaceholder": "Tag {{day}}"
-    }
+    },
+    "checkLater": "Später erneut prüfen"
   },
   "compliance": {
     "title": "Compliance und GDPR",
@@ -2006,7 +2007,8 @@
     "googleCalendarSync": "Google Calendar synchronisieren",
     "googleCalendarSyncDesc": "Synchronisieren Sie den Urlaubsplan mit Google Calendar. Verfügbar im Professional-Plan und höher.",
     "outlookCalendarSync": "Outlook Calendar synchronisieren",
-    "outlookCalendarSyncDesc": "Synchronisieren Sie den Urlaubsplan mit Outlook Calendar. Verfügbar im Professional-Plan und höher."
+    "outlookCalendarSyncDesc": "Synchronisieren Sie den Urlaubsplan mit Outlook Calendar. Verfügbar im Professional-Plan und höher.",
+    "icsFilename": "feiertage-{{date}}.ics"
   },
   "calendar": {
     "calendar": "Kalender",
@@ -2730,6 +2732,10 @@
         "title": "Dokumentation",
         "desc": "Wissensdatenbank und FAQ"
       }
+    },
+    "plans": {
+      "current": "Aktueller Plan",
+      "recommended": "Empfohlen"
     }
   },
   "support": {
@@ -2744,6 +2750,14 @@
       "health": "Health",
       "communication": "Communication",
       "other": "Other"
+    },
+    "categories": {
+      "technical": "Technisches Problem",
+      "billing": "Abrechnung & Zahlungen",
+      "access": "Zugriff & Konten",
+      "feature": "Funktionswunsch",
+      "bug": "Fehlermeldung",
+      "other": "Sonstiges"
     }
   },
   "supportWizard": {
@@ -2829,7 +2843,8 @@
     "low": "Niedrig",
     "medium": "Mittel",
     "high": "Hoch",
-    "urgent": "Dringend"
+    "urgent": "Dringend",
+    "critical": "Kritisch"
   },
   "category": {
     "technical": "Technisch",

@@ -203,7 +203,11 @@
     },
     "notification": {
       "attachment": "Anhang"
-    }
+    },
+    "fileReadyToSend": "Datei bereit zum Senden",
+    "fileSizeLimit": "Datei überschreitet das Größenlimit",
+    "filesReadyToSend": "Dateien bereit zum Senden",
+    "voiceSizeLimit": "Sprachnachricht überschreitet das Größenlimit"
   },
   "chatWidget": {
     "chat": "Chat",
@@ -318,7 +322,9 @@
     },
     "imHere": "Ich bin hier, um zu helfen!",
     "closeChat": "Chat schließen",
-    "viewFullScreen": "Vollständige Antwort anzeigen"
+    "viewFullScreen": "Vollständige Antwort anzeigen",
+    "sickLeave": "Krankmeldung",
+    "whoOnLeaveWeek": "Wer ist diese Woche im Urlaub?"
   },
   "broadcasts": {
     "title": "Serviceankündigungen",
@@ -344,7 +350,8 @@
     "deleteConfirmTitle": "Ankündigung löschen?",
     "deleteConfirmDesc": "Diese Ankündigung wird für alle Benutzer der Organisation gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleting": "Lösche...",
-    "deleteForever": "Für immer löschen"
+    "deleteForever": "Für immer löschen",
+    "deleteFailed": "Ankündigung konnte nicht gelöscht werden: {{error}}"
   },
   "broadcastDialog": {
     "audience": "Zielgruppe",

@@ -203,7 +203,11 @@
     },
     "notification": {
       "attachment": "Attachment"
-    }
+    },
+    "fileReadyToSend": "file ready to send",
+    "fileSizeLimit": "File exceeds the size limit",
+    "filesReadyToSend": "files ready to send",
+    "voiceSizeLimit": "Voice message exceeds the size limit"
   },
   "chatWidget": {
     "chat": "Chat",
@@ -318,7 +322,9 @@
       "payrollReport": "📊 Payroll report",
       "nextPayday": "📅 Next payday"
     },
-    "viewFullScreen": "View full response"
+    "viewFullScreen": "View full response",
+    "sickLeave": "Sick leave",
+    "whoOnLeaveWeek": "Who's on leave this week?"
   },
   "broadcasts": {
     "title": "Service Announcements",
@@ -344,7 +350,8 @@
     "deleteConfirmTitle": "Delete announcement?",
     "deleteConfirmDesc": "This announcement will be deleted for all users in the organization. This action cannot be undone.",
     "deleting": "Deleting...",
-    "deleteForever": "Delete permanently"
+    "deleteForever": "Delete permanently",
+    "deleteFailed": "Failed to delete announcement: {{error}}"
   },
   "broadcastDialog": {
     "audience": "Audience",

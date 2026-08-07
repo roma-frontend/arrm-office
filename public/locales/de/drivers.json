@@ -511,7 +511,9 @@
         "title": "Datum und Uhrzeit auswählen",
         "description": "Geben Sie an, wann Sie nicht verfügbar sein werden"
       }
-    }
+    },
+    "blocked": "Blockiert",
+    "trip": "Fahrt"
   },
   "driversWizard": {
     "personalInfo": "Persönliche Informationen",

@@ -239,7 +239,8 @@
       "failedToCreate": "Не удалось создать подписку",
       "confirmCancelSub": "Вы уверены, что хотите отменить эту подписку?",
       "cancelSuccess": "Подписка успешно отменена",
-      "failedToCancel": "Не удалось отменить подписку"
+      "failedToCancel": "Не удалось отменить подписку",
+      "cancelNotImplemented": "Отмена подписки пока недоступна"
     },
     "security": {
       "threatLevel": "Уровень угрозы",
@@ -685,7 +686,8 @@
       "storageInfo": "Использовано {{used}} из {{total}}",
       "orgsBackedUpCount": "{{count}} организаций с копиями",
       "totalEmployees": "Всего сотрудников",
-      "totalEmployeesCount": "{{count}} сотрудников"
+      "totalEmployeesCount": "{{count}} сотрудников",
+      "accessDenied": "Доступ запрещён"
     },
     "user360": {
       "back": "Назад",
@@ -843,7 +845,11 @@
     "creatingOrg": "Создание {{name}}…",
     "orgCreated": "Организация \"{{name}}\" создана!",
     "adminInviteSent": "Приглашение отправлено на {{email}}",
-    "orgCreateFailed": "Не удалось создать организацию"
+    "orgCreateFailed": "Не удалось создать организацию",
+    "leaves": "Отпуска",
+    "rides": "Поездки",
+    "tasks": "Задачи",
+    "tickets": "Тикеты"
   },
   "superadminSecurity": {
     "securityControl": "Центр управления безопасностью",
@@ -1044,7 +1050,16 @@
     "warning": "⚠️ Внимание: Сайт в настоящее время недоступен для всех пользователей, кроме SuperAdmin.",
     "enablingSite": "Включение сайта...",
     "enableSite": "Включить сайт",
-    "siteWillBeAvailable": "Сайт снова станет доступен для всех пользователей"
+    "siteWillBeAvailable": "Сайт снова станет доступен для всех пользователей",
+    "title": "Техническое обслуживание",
+    "systemUnavailable": "Система временно недоступна.",
+    "pleasWait": "Подождите, пока мы проводим плановое техническое обслуживание.",
+    "autoRefresh": "Страница обновится автоматически после завершения работ.",
+    "needHelp": "Если вам нужна помощь, обратитесь в поддержку.",
+    "bannerInProgress": "Идут технические работы",
+    "bannerStartsIn": "Начнётся через {{time}}",
+    "bannerStartsSoon": "Скоро начнётся",
+    "notificationLabel": "Системные объявления"
   },
   "securityAlert": {
     "accessDenied": "Доступ запрещён",

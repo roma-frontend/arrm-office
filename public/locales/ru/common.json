@@ -138,7 +138,13 @@
     "approved": "Одобрено",
     "someone": "Кто-то",
     "notAssigned": "Не назначено",
-    "exporting": "Экспорт…"
+    "exporting": "Экспорт…",
+    "days": "дн.",
+    "loadMore": "Загрузить ещё",
+    "noPosition": "Без должности",
+    "publishing": "Публикация…",
+    "selectOrganization": "Выберите организацию",
+    "welcome": "Добро пожаловать"
   },
   "nav": {
     "home": "Главная",
@@ -742,7 +748,10 @@
     "userApprovalDetails": "User Approval Details",
     "userApproved": "User Approved",
     "userRejected": "User Rejected",
-    "days": "дн."
+    "days": "дн.",
+    "adminAccessRequired": "Для просмотра этой страницы необходимы права администратора.",
+    "deleting": "Удаление…",
+    "organizationNotFound": "Организация не найдена"
   },
   "commonUI": {
     "loading": "",

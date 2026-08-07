@@ -20,7 +20,8 @@
       "medium": "Medium",
       "high": "High",
       "urgent": "Urgent"
-    }
+    },
+    "title": "Tasks"
   },
   "tasksPage": {
     "title": "Tasks",

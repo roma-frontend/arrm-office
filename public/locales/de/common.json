@@ -138,7 +138,13 @@
     "approved": "Genehmigt",
     "someone": "Jemand",
     "notAssigned": "Nicht zugewiesen",
-    "exporting": "Exportieren…"
+    "exporting": "Exportieren…",
+    "days": "Tage",
+    "loadMore": "Mehr laden",
+    "noPosition": "Keine Position",
+    "publishing": "Veröffentlichen…",
+    "selectOrganization": "Organisation auswählen",
+    "welcome": "Willkommen"
   },
   "nav": {
     "home": "Startseite",
@@ -742,7 +748,10 @@
     "userApprovalDetails": "Details zur Benutzergenehmigung",
     "userApproved": "Benutzer genehmigt",
     "userRejected": "Benutzer abgelehnt",
-    "days": "Tage"
+    "days": "Tage",
+    "adminAccessRequired": "Für die Anzeige dieser Seite sind Administratorrechte erforderlich.",
+    "deleting": "Löschen…",
+    "organizationNotFound": "Organisation nicht gefunden"
   },
   "commonUI": {
     "loading": "",

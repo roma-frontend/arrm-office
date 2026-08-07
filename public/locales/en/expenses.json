@@ -158,6 +158,8 @@
     "enterPolicyInfo": "Enter policy name and description",
     "setApprovalLimits": "Set approval amount limits",
     "setReceiptPolicy": "Set receipt and deadline rules",
-    "policyStatus": "Policy Status"
+    "policyStatus": "Policy Status",
+    "periodEnd": "Period end",
+    "periodStart": "Period start"
   }
 }

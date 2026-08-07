@@ -138,7 +138,13 @@
     "approved": "Approved",
     "someone": "Someone",
     "notAssigned": "Not assigned",
-    "exporting": "Exporting…"
+    "exporting": "Exporting…",
+    "days": "days",
+    "loadMore": "Load more",
+    "noPosition": "No position",
+    "publishing": "Publishing…",
+    "selectOrganization": "Select an organization",
+    "welcome": "Welcome"
   },
   "nav": {
     "home": "Home",
@@ -742,7 +748,10 @@
     "userApprovalDetails": "User Approval Details",
     "userApproved": "User Approved",
     "userRejected": "User Rejected",
-    "days": "days"
+    "days": "days",
+    "adminAccessRequired": "Administrator access is required to view this page.",
+    "deleting": "Deleting…",
+    "organizationNotFound": "Organization not found"
   },
   "commonUI": {
     "loading": "Loading",

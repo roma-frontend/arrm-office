@@ -209,7 +209,11 @@
     },
     "newMessages_one": "{{count}} новое сообщение",
     "newMessages_few": "{{count}} новых сообщения",
-    "newMessages_many": "{{count}} новых сообщений"
+    "newMessages_many": "{{count}} новых сообщений",
+    "fileReadyToSend": "файл готов к отправке",
+    "fileSizeLimit": "Файл превышает допустимый размер",
+    "filesReadyToSend": "файлов готово к отправке",
+    "voiceSizeLimit": "Голосовое сообщение превышает допустимый размер"
   },
   "chatWidget": {
     "chat": "Чат",
@@ -324,7 +328,9 @@
       "payrollReport": "📊 Отчёт по зарплате",
       "nextPayday": "📅 Следующая выплата"
     },
-    "viewFullScreen": "Показать полный ответ"
+    "viewFullScreen": "Показать полный ответ",
+    "sickLeave": "Больничный",
+    "whoOnLeaveWeek": "Кто в отпуске на этой неделе?"
   },
   "broadcasts": {
     "title": "Сервисные объявления",
@@ -350,7 +356,8 @@
     "deleteConfirmTitle": "Удалить объявление?",
     "deleteConfirmDesc": "Это объявление будет удалено для всех пользователей организации. Это действие не может быть отменено.",
     "deleting": "Удаление...",
-    "deleteForever": "Удалить навсегда"
+    "deleteForever": "Удалить навсегда",
+    "deleteFailed": "Не удалось удалить объявление: {{error}}"
   },
   "broadcastDialog": {
     "audience": "Аудитория",

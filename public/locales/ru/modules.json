@@ -1274,7 +1274,8 @@
       "deptPlaceholder": "напр. Разработка",
       "taskTitle": "Название задачи",
       "dayPlaceholder": "День"
-    }
+    },
+    "checkLater": "Загляните позже"
   },
   "compliance": {
     "title": "Соответствие и GDPR",
@@ -2006,7 +2007,8 @@
     "googleCalendarSync": "Синхронизация с Google Calendar",
     "googleCalendarSyncDesc": "Синхронизируйте график отпусков с Google Calendar. Доступно на плане Professional и выше.",
     "outlookCalendarSync": "Синхронизация с Outlook Calendar",
-    "outlookCalendarSyncDesc": "Синхронизируйте график отпусков с Outlook Calendar. Доступно на плане Professional и выше."
+    "outlookCalendarSyncDesc": "Синхронизируйте график отпусков с Outlook Calendar. Доступно на плане Professional и выше.",
+    "icsFilename": "праздники-{{date}}.ics"
   },
   "calendar": {
     "calendar": "Календарь",
@@ -2740,6 +2742,10 @@
         "title": "Документация",
         "desc": "База знаний и FAQ"
       }
+    },
+    "plans": {
+      "current": "Текущий тариф",
+      "recommended": "Рекомендуется"
     }
   },
   "support": {
@@ -2753,6 +2759,14 @@
       "training": "Обучение",
       "health": "Здоровье",
       "communication": "Связь",
+      "other": "Другое"
+    },
+    "categories": {
+      "technical": "Техническая проблема",
+      "billing": "Оплата и счета",
+      "access": "Доступ и учётные записи",
+      "feature": "Запрос функции",
+      "bug": "Сообщение об ошибке",
       "other": "Другое"
     }
   },
@@ -2839,7 +2853,8 @@
     "low": "Низкий",
     "medium": "Средний",
     "high": "Высокий",
-    "urgent": "Срочный"
+    "urgent": "Срочный",
+    "critical": "Критический"
   },
   "category": {
     "technical": "Техническая",

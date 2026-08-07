@@ -239,7 +239,8 @@
       "failedToCreate": "Fehler beim Erstellen des Abonnements",
       "confirmCancelSub": "Sind Sie sicher, dass Sie dieses Abonnement kündigen möchten?",
       "cancelSuccess": "Abonnement erfolgreich gekündigt",
-      "failedToCancel": "Fehler beim Kündigen des Abonnements"
+      "failedToCancel": "Fehler beim Kündigen des Abonnements",
+      "cancelNotImplemented": "Die Kündigung des Abonnements ist noch nicht verfügbar"
     },
     "security": {
       "threatLevel": "Bedrohungsstufe",
@@ -685,7 +686,8 @@
       "storageInfo": "{{used}} von {{total}} verwendet",
       "orgsBackedUpCount": "{{count}} Organisationen mit Backups",
       "totalEmployees": "Mitarbeiter insgesamt",
-      "totalEmployeesCount": "{{count}} Mitarbeiter"
+      "totalEmployeesCount": "{{count}} Mitarbeiter",
+      "accessDenied": "Zugriff verweigert"
     },
     "user360": {
       "back": "Zurück",
@@ -843,7 +845,11 @@
     "creatingOrg": "{{name}} wird erstellt…",
     "orgCreated": "Organisation \"{{name}}\" erstellt!",
     "adminInviteSent": "Admin-Einladung gesendet an {{email}}",
-    "orgCreateFailed": "Organisation konnte nicht erstellt werden"
+    "orgCreateFailed": "Organisation konnte nicht erstellt werden",
+    "leaves": "Urlaube",
+    "rides": "Fahrten",
+    "tasks": "Aufgaben",
+    "tickets": "Tickets"
   },
   "superadminSecurity": {
     "securityControl": "Sicherheitskontrolle",
@@ -1044,7 +1050,16 @@
     "warning": "⚠️ Achtung: Die Website ist derzeit für alle Benutzer außer dem SuperAdmin nicht verfügbar.",
     "enablingSite": "Website wird aktiviert...",
     "enableSite": "Website aktivieren",
-    "siteWillBeAvailable": "Die Website wird wieder für alle Benutzer verfügbar sein"
+    "siteWillBeAvailable": "Die Website wird wieder für alle Benutzer verfügbar sein",
+    "title": "Systemwartung",
+    "systemUnavailable": "Das System ist vorübergehend nicht verfügbar.",
+    "pleasWait": "Bitte warten Sie, während wir planmäßige Wartungsarbeiten durchführen.",
+    "autoRefresh": "Diese Seite wird nach Abschluss der Wartung automatisch aktualisiert.",
+    "needHelp": "Wenn Sie Hilfe benötigen, wenden Sie sich an den Support.",
+    "bannerInProgress": "Wartung läuft",
+    "bannerStartsIn": "Beginnt in {{time}}",
+    "bannerStartsSoon": "Beginnt bald",
+    "notificationLabel": "Systemankündigungen"
   },
   "securityAlert": {
     "accessDenied": "Zugriff verweigert",

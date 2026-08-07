@@ -158,6 +158,8 @@
     "enterPolicyInfo": "Geben Sie den Namen und die Beschreibung der Richtlinie ein",
     "setApprovalLimits": "Genehmigungslimits festlegen",
     "setReceiptPolicy": "Beleg- und Fristenrichtlinien festlegen",
-    "policyStatus": "Richtlinienstatus"
+    "policyStatus": "Richtlinienstatus",
+    "periodEnd": "Ende des Zeitraums",
+    "periodStart": "Beginn des Zeitraums"
   }
 }

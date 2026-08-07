@@ -138,7 +138,13 @@
     "approved": "Հաստատված",
     "someone": "Ինչ-որ մեկը",
     "notAssigned": "Չի նշանակվել",
-    "exporting": "Արտահանում…"
+    "exporting": "Արտահանում…",
+    "days": "օր",
+    "loadMore": "Բեռնել ավելին",
+    "noPosition": "Առանց պաշտոնի",
+    "publishing": "Հրապարակում…",
+    "selectOrganization": "Ընտրեք կազմակերպություն",
+    "welcome": "Բարի գալուստ"
   },
   "nav": {
     "home": "Գլխավոր",
@@ -742,7 +748,10 @@
     "userApprovalDetails": "User Approval Details",
     "userApproved": "User Approved",
     "userRejected": "User Rejected",
-    "days": "օր"
+    "days": "օր",
+    "adminAccessRequired": "Այս էջը դիտելու համար անհրաժեշտ է ադմինիստրատորի մուտք:",
+    "deleting": "Ջնջում…",
+    "organizationNotFound": "Կազմակերպությունը չի գտնվել"
   },
   "commonUI": {
     "loading": "Բեռնվում է",

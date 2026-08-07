@@ -20,7 +20,8 @@
     "tomorrow": "Վաղը",
     "overdue": "Ժամկետը լրացած",
     "topPriority": "Բարձրագույն առաջնահերթություն",
-    "quickAccess": "Արագ մուտք"
+    "quickAccess": "Արագ մուտք",
+    "title": "Առաջադրանքներ"
   },
   "tasksPage": {
     "title": "Խնդիրներ",
