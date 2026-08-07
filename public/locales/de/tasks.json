@@ -66,6 +66,8 @@
     "total": "Insgesamt {{count}} Aufgaben",
     "allPriorities": "Alle Prioritäten",
     "allStatuses": "Alle Status",
+    "allProjects": "Alle Projekte",
+    "noProject": "Ohne Projekt",
     "deleteTask": "Aufgabe löschen",
     "details": "Details",
     "timeline": "Chronologie",

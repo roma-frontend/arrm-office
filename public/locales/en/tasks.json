@@ -66,6 +66,8 @@
     "total": "Total",
     "allPriorities": "All Priorities",
     "allStatuses": "All Statuses",
+    "allProjects": "All Projects",
+    "noProject": "Without project",
     "deleteTask": "Delete Task",
     "details": "Details",
     "timeline": "Timeline",

@@ -66,6 +66,8 @@
     "total": "Всего",
     "allPriorities": "Все приоритеты",
     "allStatuses": "Все статусы",
+    "allProjects": "Все проекты",
+    "noProject": "Без проекта",
     "deleteTask": "Удалить задачу",
     "details": "Детали",
     "timeline": "Хронология",
