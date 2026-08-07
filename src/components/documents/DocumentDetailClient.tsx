@@ -9,6 +9,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +26,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { enUS, ru, hy } from 'date-fns/locale';
+import { enUS, ru, hy, de } from 'date-fns/locale';
 
 const CategoryBadge = ({ category }: { category: string }) => {
   const { t } = useTranslation();
@@ -38,7 +40,10 @@ export default function DocumentDetailClient() {
   const { t, i18n } = useTranslation();
   const documentId = params.id as Id<'documents'>;
 
-  const dateLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
+  // German was missing here even though the app ships a `de` locale, so German
+  // users saw English dates on this page only.
+  const dateLocale =
+    i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : i18n.language === 'de' ? de : enUS;
 
   const document = useQuery(api.documents.getDocumentById, { documentId });
   const currentUser = useQuery(
@@ -49,10 +54,43 @@ export default function DocumentDetailClient() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
+  const [isAcknowledging, setIsAcknowledging] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const updateDocument = useMutation(api.documents.updateDocument);
   const deleteDocument = useMutation(api.documents.deleteDocument);
   const recordView = useMutation(api.documents.recordDocumentView);
+
+  // Own read/acknowledgement state, so the button reflects reality after reload.
+  const myViews = useQuery(
+    api.documents.getMyDocumentViews,
+    document ? { organizationId: document.organizationId } : 'skip',
+  );
+  const myView = myViews?.find((view) => view.documentId === documentId);
+  const acknowledged = !!myView?.acknowledged;
+
+  /**
+   * Confirm the employee has read the document.
+   *
+   * The flag, the badge in the list and the server-side acknowledgement rate all
+   * existed already — nothing ever set it, because no screen offered the action.
+   */
+  const handleAcknowledge = async () => {
+    if (!document) return;
+    setIsAcknowledging(true);
+    try {
+      await recordView({
+        organizationId: document.organizationId,
+        documentId,
+        acknowledged: true,
+      });
+      toast.success(t('documents.acknowledged', 'Marked as read'));
+    } catch {
+      toast.error(t('documents.acknowledgeError', 'Could not confirm reading'));
+    } finally {
+      setIsAcknowledging(false);
+    }
+  };
 
   const handlePublish = async () => {
     if (!currentUser || !document) return;
@@ -131,7 +169,7 @@ export default function DocumentDetailClient() {
         </div>
 
         <div className="flex items-center gap-2">
-          {!document.isPublished && currentUser?.role === 'admin' && (
+          {!document.isPublished && document.canManage && (
             <Button variant="default" onClick={handlePublish} disabled={isPublishing}>
               <CheckCircle className="mr-2 h-4 w-4" />
               {isPublishing ? t('common.saving') : t('documents.publish')}
@@ -141,16 +179,34 @@ export default function DocumentDetailClient() {
             <Eye className="mr-2 h-4 w-4" />
             {t('documents.view')}
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.push(`/documents/${documentId}/edit`)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={handleDelete} disabled={isDeleting}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {/* Mandatory documents ask for an explicit confirmation of reading. */}
+          {document.isMandatory && (
+            <Button
+              variant={acknowledged ? 'ghost' : 'default'}
+              onClick={handleAcknowledge}
+              disabled={isAcknowledging || acknowledged}
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              {acknowledged
+                ? t('documents.acknowledgedBadge', 'Read')
+                : t('documents.acknowledge', 'I have read this')}
+            </Button>
+          )}
+          {document.canManage && (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setEditOpen(true)}
+                title={t('documents.edit', 'Edit')}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={handleDelete} disabled={isDeleting}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -294,6 +350,174 @@ export default function DocumentDetailClient() {
           </CardContent>
         </Card>
       )}
+
+      {/* Edit dialog — replaces the button that used to navigate to a
+          `/documents/[id]/edit` route that was never built. */}
+      {document.canManage && (
+        <DocumentEditDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          document={document}
+          onSave={async (patch) => {
+            await updateDocument({ documentId, ...patch });
+            toast.success(t('documents.documentUpdated', 'Document updated'));
+            setEditOpen(false);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+type EditableFields = {
+  title: string;
+  description?: string;
+  category: DocumentCategoryValue;
+  isMandatory: boolean;
+  expiresAt?: number;
+};
+
+type DocumentCategoryValue =
+  | 'policy'
+  | 'contract'
+  | 'report'
+  | 'template'
+  | 'form'
+  | 'certificate'
+  | 'other';
+
+const CATEGORY_VALUES: DocumentCategoryValue[] = [
+  'policy',
+  'contract',
+  'report',
+  'template',
+  'form',
+  'certificate',
+  'other',
+];
+
+/** Minimal metadata editor: the fields worth changing after upload. */
+function DocumentEditDialog({
+  open,
+  onOpenChange,
+  document,
+  onSave,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  document: {
+    title: string;
+    description?: string;
+    category: string;
+    isMandatory?: boolean;
+    expiresAt?: number;
+  };
+  onSave: (patch: EditableFields) => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [title, setTitle] = useState(document.title);
+  const [description, setDescription] = useState(document.description ?? '');
+  const [category, setCategory] = useState<DocumentCategoryValue>(
+    (CATEGORY_VALUES as string[]).includes(document.category)
+      ? (document.category as DocumentCategoryValue)
+      : 'other',
+  );
+  const [isMandatory, setIsMandatory] = useState(!!document.isMandatory);
+  const [expiresAt, setExpiresAt] = useState(
+    document.expiresAt ? new Date(document.expiresAt).toISOString().slice(0, 10) : '',
+  );
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      await onSave({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        category,
+        isMandatory,
+        expiresAt: expiresAt ? new Date(expiresAt).getTime() : undefined,
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t('documents.updateError', 'Could not save'),
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogTitle>{t('documents.editDocument', 'Edit document')}</DialogTitle>
+        <div className="mt-4 space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="doc-title" className="text-xs font-medium text-muted-foreground">
+              {t('documents.documentTitle', 'Title')}
+            </label>
+            <Input id="doc-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="doc-desc" className="text-xs font-medium text-muted-foreground">
+              {t('documents.description', 'Description')}
+            </label>
+            <Input
+              id="doc-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label htmlFor="doc-category" className="text-xs font-medium text-muted-foreground">
+                {t('documents.category', 'Category')}
+              </label>
+              <select
+                id="doc-category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as DocumentCategoryValue)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              >
+                {CATEGORY_VALUES.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`documentCategories.${value}`, value)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="doc-expires" className="text-xs font-medium text-muted-foreground">
+                {t('documents.expiresAt', 'Expires on')}
+              </label>
+              <Input
+                id="doc-expires"
+                type="date"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={isMandatory}
+              onChange={(e) => setIsMandatory(e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            {t('documents.mandatoryDocument', 'Mandatory document')}
+          </label>
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button onClick={() => void handleSubmit()} disabled={saving || !title.trim()}>
+            {saving ? t('common.saving', 'Saving…') : t('common.save', 'Save')}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

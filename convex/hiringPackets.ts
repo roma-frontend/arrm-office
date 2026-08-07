@@ -23,6 +23,7 @@ import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { isCatalogTemplateId } from './lib/documentTemplateIds';
+import { allocateDocumentNumber } from './lib/documentNumbers';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 import { insertSignatureDocument } from './signatures';
@@ -73,42 +74,6 @@ async function assertCanManagePacket(
   const access = await resolvePacketAccess(ctx, userId, opts);
   if (!access) throw new Error('Not authorized to manage this hiring packet');
   return access;
-}
-
-/**
- * Allocate the next registration number for an organization, e.g. `HR-2026-014`.
- *
- * Uses a dedicated counter row patched in the same transaction, so two documents
- * created concurrently cannot receive the same number (counting existing rows
- * would).
- */
-async function allocateDocumentNumber(
-  ctx: MutationCtx,
-  organizationId: Id<'organizations'>,
-  series = 'HR',
-): Promise<string> {
-  const year = new Date().getFullYear();
-  const existing = await ctx.db
-    .query('documentNumberCounters')
-    .withIndex('by_org_year_series', (q) =>
-      q.eq('organizationId', organizationId).eq('year', year).eq('series', series),
-    )
-    .first();
-
-  const next = (existing?.lastNumber ?? 0) + 1;
-  if (existing) {
-    await ctx.db.patch(existing._id, { lastNumber: next, updatedAt: Date.now() });
-  } else {
-    await ctx.db.insert('documentNumberCounters', {
-      organizationId,
-      year,
-      series,
-      lastNumber: next,
-      updatedAt: Date.now(),
-    });
-  }
-
-  return `${series}-${year}-${String(next).padStart(3, '0')}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
