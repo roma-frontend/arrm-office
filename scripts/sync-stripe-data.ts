@@ -75,15 +75,15 @@ async function syncStripeData() {
     for (const sub of subscriptions.data) {
       try {
         const customer = sub.customer as Stripe.Customer;
-        const priceId = typeof sub.items.data[0].price === 'string'
-          ? sub.items.data[0].price
-          : sub.items.data[0].price.id;
+        const item = sub.items.data[0];
+        if (!item?.price) continue;
+
+        const itemPrice = item.price;
+        const priceId = typeof itemPrice === 'string' ? itemPrice : itemPrice.id;
 
         // Determine plan from price
         let plan = 'starter';
-        const price = typeof sub.items.data[0].price === 'string'
-          ? null
-          : sub.items.data[0].price;
+        const price = typeof itemPrice === 'string' ? null : itemPrice;
 
         if (price && price.unit_amount) {
           if (price.unit_amount >= 19900) plan = 'enterprise';
