@@ -11,7 +11,14 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { detectFace, loadFaceApiModels } from '@/lib/faceApi';
+import {
+  detectFace,
+  detectFaceBox,
+  prefetchFaceApiModels,
+  retryFaceApi,
+  subscribeFaceApiStatus,
+  type FaceApiStatus,
+} from '@/lib/faceApi';
 import { getErrorName, getErrorMessage } from '@/lib/error-handler';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
@@ -36,7 +43,6 @@ export function FaceLogin() {
   const qualityRef = useRef<'poor' | 'good' | 'excellent'>('poor');
   const faceDetectedRef = useRef(false);
 
-  const lastDescriptorRef = useRef<Float32Array | null>(null);
   const noFaceFramesRef = useRef(0);
   const detectionInProgressRef = useRef(false);
 
@@ -45,6 +51,17 @@ export function FaceLogin() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
   const [_stream, setStream] = useState<MediaStream | null>(null);
+
+  // Model loading is surfaced instead of hidden: the detector is a few hundred KB
+  // but the recognition nets are megabytes, and a silent wait behind a red
+  // "No Face" badge is what made this screen feel broken.
+  const [modelStatus, setModelStatus] = useState<FaceApiStatus>({
+    stage: 'idle',
+    progress: 0,
+    canDetect: false,
+    canRecognize: false,
+    error: null,
+  });
 
   const [matchStatus, setMatchStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>(
     'idle',
@@ -92,10 +109,11 @@ export function FaceLogin() {
 
   // ===== Init once: models + camera list =====
   useEffect(() => {
-    loadFaceApiModels().catch((err) => {
-      logger.error('Failed to load face models:', err);
-      toast.error(t('faceLogin.modelsFailed', 'Failed to load face recognition models'));
-    });
+    const unsubscribe = subscribeFaceApiStatus(setModelStatus);
+
+    // Start downloading immediately on mount rather than on button press, so the
+    // detector is usually ready by the time the camera stream opens.
+    prefetchFaceApiModels();
 
     (async () => {
       try {
@@ -109,10 +127,10 @@ export function FaceLogin() {
     })();
 
     return () => {
+      unsubscribe();
       stopDetectionLoop();
       stopStreamTracks();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -139,7 +157,6 @@ export function FaceLogin() {
     progressRef.current = 0;
     qualityRef.current = 'poor';
     faceDetectedRef.current = false;
-    lastDescriptorRef.current = null;
     autoTriggeredRef.current = false;
     processingRef.current = false;
     lastAttemptRef.current = 0;
@@ -309,8 +326,11 @@ export function FaceLogin() {
       try {
         detectionInProgressRef.current = true;
 
-        const detection = await detectFace(video);
-        const faceFound = !!detection;
+        // Detector only. Landmarks and the 128-d descriptor cost far more than
+        // the detection itself and produce nothing the overlay can show, so they
+        // are deferred to the single run inside attemptFaceLogin().
+        const box = await detectFaceBox(video);
+        const faceFound = !!box;
 
         detectionInProgressRef.current = false;
 
@@ -330,8 +350,6 @@ export function FaceLogin() {
             qualityRef.current = 'poor';
             setDetectionQuality('poor');
 
-            lastDescriptorRef.current = null;
-
             autoTriggeredRef.current = false;
             setAutoLoginTriggered(false);
           }
@@ -346,17 +364,13 @@ export function FaceLogin() {
           setFaceDetected(true);
         }
 
-        // cache descriptor
-        lastDescriptorRef.current = detection!.descriptor;
-
         // progress via ref (не через prev => prev+..)
         const nextProgress = Math.min(progressRef.current + 34, 100);
         progressRef.current = nextProgress;
         setScanningProgress(nextProgress);
 
         // quality via ref
-        const box = detection!.detection.box;
-        const faceSize = box.width * box.height;
+        const faceSize = box!.width * box!.height;
 
         let quality: 'poor' | 'good' | 'excellent' = 'poor';
         if (faceSize > 40000) quality = 'excellent';
@@ -428,20 +442,19 @@ export function FaceLogin() {
     setMatchStatus('searching');
 
     try {
-      // Use cached descriptor if we have one, otherwise do a fresh detect
-      let descriptor = lastDescriptorRef.current;
-      if (!descriptor) {
-        const det = await detectFace(video);
-        if (!det) {
-          throw new Error(
-            t(
-              'faceLogin.noFaceDetected',
-              'No face detected. Please position your face in the frame.',
-            ),
-          );
-        }
-        descriptor = det.descriptor;
+      // The scanning loop only ran the detector, so compute the descriptor now —
+      // once, on the frame the user is actually authenticating with, instead of
+      // on every frame of the preview.
+      const det = await detectFace(video);
+      if (!det) {
+        throw new Error(
+          t(
+            'faceLogin.noFaceDetected',
+            'No face detected. Please position your face in the frame.',
+          ),
+        );
       }
+      const descriptor = det.descriptor;
 
       // Convert Float32Array to plain number[] for JSON
       const descriptorArray = Array.from(descriptor);
@@ -584,6 +597,30 @@ export function FaceLogin() {
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white/60">
               <Camera className="w-16 h-16 mb-4" />
               <p className="text-sm">{t('faceLogin.cameraNotActive', 'Camera not active')}</p>
+              {/* The camera can be opened at any time — the preview appears
+                  immediately and the badge over it reports the remaining model
+                  download, so there is no silent wait either way. */}
+              {modelStatus.error ? (
+                <div className="mt-2 max-w-[90%] text-center">
+                  <p className="text-xs text-red-300">{modelStatus.error}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      retryFaceApi();
+                      prefetchFaceApiModels();
+                    }}
+                    className="mt-1 text-xs text-white underline"
+                  >
+                    {t('common.retry', 'Retry')}
+                  </button>
+                </div>
+              ) : (
+                !modelStatus.canDetect && (
+                  <p className="mt-2 text-xs text-white/50">
+                    {t('faceLogin.preparing', 'Preparing detection')} {modelStatus.progress}%
+                  </p>
+                )
+              )}
             </div>
           )}
 
@@ -599,15 +636,25 @@ export function FaceLogin() {
 
               {/* Face detection indicator */}
               <div className="absolute top-4 right-4 space-y-2">
-                {faceDetected ? (
+                {modelStatus.error ? (
+                  <div className="flex items-center gap-2 bg-red-600/90 text-white px-3 py-1.5 rounded-full text-sm">
+                    <XCircle className="w-4 h-4" />
+                    {t('faceLogin.modelsFailed', 'Failed to load face recognition models')}
+                  </div>
+                ) : !modelStatus.canDetect ? (
+                  <div className="flex items-center gap-2 bg-blue-500/90 text-white px-3 py-1.5 rounded-full text-sm">
+                    <ShieldLoader size="xs" variant="inline" />
+                    {t('faceLogin.preparing', 'Preparing detection')} {modelStatus.progress}%
+                  </div>
+                ) : faceDetected ? (
                   <div className="flex items-center gap-2 bg-green-500/90 text-white px-3 py-1.5 rounded-full text-sm animate-pulse">
                     <CheckCircle className="w-4 h-4" />
-                    Face Detected
+                    {t('faceLogin.faceDetected', 'Face detected')}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 bg-red-500/90 text-white px-3 py-1.5 rounded-full text-sm">
                     <XCircle className="w-4 h-4" />
-                    No Face
+                    {t('faceLogin.noFace', 'No face')}
                   </div>
                 )}
 

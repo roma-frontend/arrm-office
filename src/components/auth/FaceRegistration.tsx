@@ -10,7 +10,7 @@ import { Camera, CheckCircle, XCircle } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
-import { detectFace, loadFaceApiModels, createCanvasFromVideo } from '@/lib/faceApi';
+import { detectFace, detectFaceBox, loadFaceApiModels, createCanvasFromVideo } from '@/lib/faceApi';
 import { uploadAvatarToCloudinary } from '@/actions/cloudinary';
 import { Id } from '../../../convex/_generated/dataModel';
 import { logger } from '@/lib/logger';
@@ -255,7 +255,9 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
           return;
         }
 
-        const detection = await detectFace(videoRef.current);
+        // Detector only — this loop just drives the "face detected" badge, so it
+        // has no use for the landmarks or the descriptor that cost most of the time.
+        const detection = await detectFaceBox(videoRef.current);
         const faceFound = !!detection;
 
         // Only log when face detection status changes

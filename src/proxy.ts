@@ -431,7 +431,13 @@ export async function proxy(request: NextRequest) {
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 export const config = {
+  // `models` is excluded deliberately: those are the face-recognition weight
+  // files (~6.6 MB across several requests). Running auth middleware over them
+  // is pure overhead on every byte, and worse, an unauthenticated request for a
+  // weights file could be answered with a redirect to /login — so `fetch` would
+  // resolve with `ok: true` and an HTML body, and tfjs would fail decoding it
+  // with a shape error that says nothing about what actually happened.
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.svg|favicon-animated\\.svg|site\\.webmanifest).*)',
+    '/((?!_next/static|_next/image|models/|favicon\\.svg|favicon-animated\\.svg|site\\.webmanifest).*)',
   ],
 };

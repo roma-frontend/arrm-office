@@ -1,5 +1,18 @@
 // lib/faceApi.ts
-// Lazy load @vladmandic/face-api to reduce initial bundle size
+// Lazy load @vladmandic/face-api to reduce initial bundle size.
+//
+// Loading is staged, because the two things this library does have very
+// different costs and very different urgency:
+//
+//   • Telling the user "I can see your face"  → detector only, 189 KB
+//   • Verifying who they are                  → + landmarks + recognition, 6.6 MB
+//
+// Face login used to wait for all of it (12 MB with the SSD detector) before the
+// first frame was even looked at, so the camera sat there showing "No Face" for
+// 10-15 s and the page felt frozen. Now the detector loads first and the live
+// feedback starts as soon as it is ready, while the recognition nets stream in
+// behind it. The descriptor is only needed at the moment of login, by which time
+// they have long arrived.
 
 import { logger } from './logger';
 
@@ -16,10 +29,65 @@ import { logger } from './logger';
   };
 })();
 
+const MODEL_URL = '/models';
+
+/** Detector input size. 320 keeps inference fast while still finding faces at arm's length. */
+const DETECTOR_INPUT_SIZE = 320;
+const DETECTOR_SCORE_THRESHOLD = 0.5;
+
 let faceapi: typeof import('@vladmandic/face-api') | null = null;
-let modelsLoaded = false;
 let tfInitialized = false;
-let warmedUp = false;
+
+/** Stage of the pipeline that is ready to use. */
+export type FaceApiStage = 'idle' | 'loading-detector' | 'detector-ready' | 'ready' | 'error';
+
+export interface FaceApiStatus {
+  stage: FaceApiStage;
+  /** 0-100, coarse but monotonic — enough to drive a progress bar. */
+  progress: number;
+  /** True once the cheap detector can report face boxes. */
+  canDetect: boolean;
+  /** True once a descriptor can be computed (login is possible). */
+  canRecognize: boolean;
+  /** Set when a stage failed. Loading does not retry on its own — call `retryFaceApi()`. */
+  error: string | null;
+}
+
+let status: FaceApiStatus = {
+  stage: 'idle',
+  progress: 0,
+  canDetect: false,
+  canRecognize: false,
+  error: null,
+};
+
+const listeners = new Set<(s: FaceApiStatus) => void>();
+
+function setStatus(patch: Partial<FaceApiStatus>) {
+  status = { ...status, ...patch };
+  for (const listener of listeners) listener(status);
+}
+
+export function getFaceApiStatus(): FaceApiStatus {
+  return status;
+}
+
+function describeError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+/**
+ * Subscribe to loading progress so the UI can explain the wait instead of
+ * showing a red "No Face" badge while 6 MB downloads.
+ *
+ * @returns unsubscribe
+ */
+export function subscribeFaceApiStatus(listener: (s: FaceApiStatus) => void): () => void {
+  listeners.add(listener);
+  listener(status);
+  return () => listeners.delete(listener);
+}
 
 async function initTensorFlow() {
   if (tfInitialized) return;
@@ -30,9 +98,7 @@ async function initTensorFlow() {
     // Official way to suppress kernel registration warnings (HMR noise in dev)
     tf.env().set('DEBUG', false);
 
-    // Prefer WebGL — SSD MobileNet inference on the CPU backend takes *seconds*
-    // per frame, which is the main cause of the long delay before detection
-    // starts. Try WebGL explicitly and only fall back to CPU if it throws.
+    // Prefer WebGL — inference on the CPU backend takes *seconds* per frame.
     try {
       await tf.setBackend('webgl');
       await tf.ready();
@@ -52,70 +118,308 @@ async function initTensorFlow() {
   }
 }
 
-async function loadFaceApiLibrary() {
-  if (!faceapi) {
-    await initTensorFlow();
-    faceapi = await import('@vladmandic/face-api');
+let libraryPromise: Promise<typeof import('@vladmandic/face-api')> | null = null;
+
+/**
+ * Memoised so concurrent callers share one initialisation. Without this, the
+ * prefetch and the detection loop both raced through `initTensorFlow`, each
+ * calling `tf.setBackend` on a backend the other was still bringing up.
+ */
+function loadFaceApiLibrary() {
+  if (!libraryPromise) {
+    libraryPromise = (async () => {
+      await initTensorFlow();
+      faceapi = await import('@vladmandic/face-api');
+      return faceapi;
+    })();
+    libraryPromise.catch(() => {
+      libraryPromise = null;
+    });
   }
-  return faceapi;
+  return libraryPromise;
 }
 
-export async function loadFaceApiModels() {
-  if (modelsLoaded) return;
-
-  const api = await loadFaceApiLibrary();
-  const MODEL_URL = '/models';
-
-  // Load all models in parallel (SSD instead of TinyFaceDetector which is missing)
-  await Promise.all([
-    api.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-    api.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-    api.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-  ]);
-
-  modelsLoaded = true;
-  logger.log('✅ Face models loaded');
-
-  // Warm up the WebGL pipeline. The first real inference compiles dozens of
-  // GPU shaders synchronously (multi-second freeze) — doing it once here on a
-  // blank canvas means the first camera frame is processed immediately instead
-  // of stalling detection for ~10-20s.
-  void warmUpModels();
+function detectorOptions(api: typeof import('@vladmandic/face-api')) {
+  return new api.TinyFaceDetectorOptions({
+    inputSize: DETECTOR_INPUT_SIZE,
+    scoreThreshold: DETECTOR_SCORE_THRESHOLD,
+  });
 }
 
-async function warmUpModels() {
-  if (warmedUp || typeof document === 'undefined') return;
-  try {
-    const api = await loadFaceApiLibrary();
-    const canvas = document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 240;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#808080';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+/** Blank frame used to compile GPU shaders before the first real one arrives. */
+function blankFrame(): HTMLCanvasElement | null {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = DETECTOR_INPUT_SIZE;
+  canvas.height = DETECTOR_INPUT_SIZE;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  return canvas;
+}
+
+const BYTES_PER_DTYPE: Record<string, number> = { float32: 4, int32: 4, uint8: 1, bool: 1 };
+
+/**
+ * Fetches a model's weight shards past the HTTP cache and checks they are the
+ * size its manifest declares, before face-api gets a chance to decode them.
+ *
+ * Two reasons this exists rather than trusting `loadFromUri`:
+ *
+ *  1. `/models/*` is served with a one-year cache. If a weights file is ever
+ *     cached empty — it was requested while missing from `public/`, or a response
+ *     was truncated — every later load decodes that empty body and fails with
+ *     tfjs's opaque "the tensor should have 432 values but has 0", forever, with
+ *     no reload able to clear it. `cache: 'reload'` bypasses the entry and, since
+ *     the fresh response is written back, also repairs it for face-api's own
+ *     fetch that follows.
+ *  2. When something *is* wrong, the size comparison says so in terms of the file
+ *     rather than in terms of a tensor shape.
+ */
+async function primeWeights(modelName: string): Promise<void> {
+  if (typeof fetch === 'undefined') return;
+
+  const manifestUrl = `${MODEL_URL}/${modelName}-weights_manifest.json`;
+  const response = await fetch(manifestUrl, { cache: 'reload' });
+  if (!response.ok) {
+    throw new Error(`${manifestUrl} returned HTTP ${response.status}`);
+  }
+
+  const manifest = (await response.json()) as {
+    paths: string[];
+    weights: { shape: number[]; dtype: string; quantization?: { dtype: string } }[];
+  }[];
+
+  const expected = manifest.reduce(
+    (total, group) =>
+      total +
+      group.weights.reduce((sum, weight) => {
+        const values = weight.shape.reduce((a, b) => a * b, 1);
+        const dtype = weight.quantization?.dtype ?? weight.dtype;
+        return sum + values * (BYTES_PER_DTYPE[dtype] ?? 4);
+      }, 0),
+    0,
+  );
+
+  const shards = manifest.flatMap((group) => group.paths);
+  let actual = 0;
+  for (const shard of shards) {
+    const url = `${MODEL_URL}/${shard}`;
+    const shardResponse = await fetch(url, { cache: 'reload' });
+    if (!shardResponse.ok) {
+      throw new Error(`${url} returned HTTP ${shardResponse.status}`);
     }
-    const options = new api.SsdMobilenetv1Options({ minConfidence: 0.5 });
-    await api.detectSingleFace(canvas, options).withFaceLandmarks().withFaceDescriptor();
-    warmedUp = true;
-    logger.log('✅ Face model warmup complete');
-  } catch {
-    // Warmup is best-effort; detection still works without it.
+
+    const buffer = await shardResponse.arrayBuffer();
+    actual += buffer.byteLength;
+
+    // A successful response with an empty body is the confusing case, so describe
+    // exactly what arrived rather than leaving it to be inferred from a tensor
+    // shape error several layers down.
+    if (buffer.byteLength === 0) {
+      const contentLength = shardResponse.headers.get('content-length') ?? 'absent';
+      const encoding = shardResponse.headers.get('content-encoding') ?? 'none';
+      const type = shardResponse.headers.get('content-type') ?? 'absent';
+      throw new Error(
+        `${url} returned an empty body. status=${shardResponse.status} ` +
+          `responseType=${shardResponse.type} redirected=${shardResponse.redirected} ` +
+          `content-length=${contentLength} content-encoding=${encoding} content-type=${type}`,
+      );
+    }
+  }
+
+  if (actual !== expected) {
+    throw new Error(
+      `${modelName}: weights are ${actual} bytes but the manifest declares ${expected}. ` +
+        `The file is incomplete or a stale cache entry is being served.`,
+    );
   }
 }
 
-// Detect face and get descriptor
-export async function detectFace(videoElement: HTMLVideoElement) {
-  if (!modelsLoaded) await loadFaceApiModels();
-  const api = await loadFaceApiLibrary();
-  if (!videoElement || videoElement.readyState < 2) return null;
+// ── Stage 1: detector ────────────────────────────────────────────────────────
+
+let detectorPromise: Promise<void> | null = null;
+
+/**
+ * Loads and warms up the tiny face detector — everything needed to draw live
+ * "face detected" feedback, and nothing more.
+ *
+ * The warmup is awaited rather than fired and forgotten: the first inference
+ * compiles dozens of WebGL shaders on the main thread, and letting that happen
+ * on the first camera frame is what made the page judder. Paying for it here,
+ * once, on a blank canvas keeps the detection loop smooth from its first tick.
+ */
+export function loadFaceDetector(): Promise<void> {
+  if (detectorPromise) return detectorPromise;
+
+  detectorPromise = (async () => {
+    setStatus({ stage: 'loading-detector', progress: 5, error: null });
+
+    const api = await loadFaceApiLibrary();
+    setStatus({ progress: 20 });
+
+    await primeWeights('tiny_face_detector_model');
+    await api.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    setStatus({ progress: 45 });
+
+    const canvas = blankFrame();
+    if (canvas) await api.detectSingleFace(canvas, detectorOptions(api));
+
+    setStatus({ stage: 'detector-ready', progress: 60, canDetect: true });
+    logger.log('✅ Face detector ready');
+  })();
+
+  // The rejection is recorded but the promise is *kept*. Clearing it here meant
+  // every caller retried, and since the detection loop asks 3x a second, a single
+  // failed weights fetch turned into an unbounded stream of requests for the same
+  // file. Recovery is explicit, via retryFaceApi().
+  detectorPromise.catch((error: unknown) => {
+    setStatus({ stage: 'error', error: describeError(error) });
+    logger.error('❌ Failed to load face detector:', error);
+  });
+
+  return detectorPromise;
+}
+
+// ── Stage 2: recognition ─────────────────────────────────────────────────────
+
+let recognitionPromise: Promise<void> | null = null;
+
+/**
+ * Loads the landmark and recognition nets (the 6.6 MB half) plus their warmup.
+ * Safe to call while the detection loop is already running — that is the point.
+ */
+export function loadFaceRecognition(): Promise<void> {
+  if (recognitionPromise) return recognitionPromise;
+
+  recognitionPromise = (async () => {
+    const api = await loadFaceApiLibrary();
+    await loadFaceDetector();
+
+    await Promise.all([
+      primeWeights('face_landmark_68_model'),
+      primeWeights('face_recognition_model'),
+    ]);
+    await Promise.all([
+      api.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      api.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+    ]);
+    setStatus({ progress: 90 });
+
+    const canvas = blankFrame();
+    if (canvas) {
+      await api
+        .detectSingleFace(canvas, detectorOptions(api))
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+    }
+
+    setStatus({ stage: 'ready', progress: 100, canRecognize: true });
+    logger.log('✅ Face recognition ready');
+  })();
+
+  // Kept on failure for the same reason as the detector — see loadFaceDetector.
+  recognitionPromise.catch((error: unknown) => {
+    setStatus({ stage: 'error', error: describeError(error) });
+    logger.error('❌ Failed to load face recognition models:', error);
+  });
+
+  return recognitionPromise;
+}
+
+/** Discards the failed load so the next call fetches again. */
+export function retryFaceApi(): void {
+  detectorPromise = null;
+  recognitionPromise = null;
+  setStatus({
+    stage: 'idle',
+    progress: 0,
+    canDetect: false,
+    canRecognize: false,
+    error: null,
+  });
+}
+
+/**
+ * Loads the whole pipeline. Kicks off the detector first so callers that also
+ * render live feedback get it early, then continues with the recognition nets.
+ */
+export async function loadFaceApiModels(): Promise<void> {
+  await loadFaceDetector();
+  await loadFaceRecognition();
+}
+
+/**
+ * Warms the pipeline without blocking the caller — call it on page load so the
+ * download is already in flight by the time the camera button is pressed.
+ */
+export function prefetchFaceApiModels(): void {
+  void loadFaceDetector()
+    .then(() => loadFaceRecognition())
+    .catch(() => {
+      // Already reported through the status; nothing to add here.
+    });
+}
+
+// ── Detection ────────────────────────────────────────────────────────────────
+
+function frameIsUsable(video: HTMLVideoElement | null): video is HTMLVideoElement {
+  return !!video && video.readyState >= 2;
+}
+
+export interface FaceBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  score: number;
+}
+
+/**
+ * Detector-only pass: is there a face, and where. This is what the per-frame
+ * loop should call — it skips the landmark and recognition nets, which cost far
+ * more than the detector and produce nothing the live overlay can use.
+ *
+ * Returns null until the detector is ready. It deliberately does *not* kick off
+ * the load: a per-frame caller must never be the thing that triggers a fetch,
+ * or one failure becomes three requests a second. Call `loadFaceDetector()` once
+ * and drive the loop from `status.canDetect`.
+ */
+export async function detectFaceBox(videoElement: HTMLVideoElement): Promise<FaceBox | null> {
+  if (!status.canDetect || !faceapi) return null;
+  if (!frameIsUsable(videoElement)) return null;
 
   try {
-    if (!faceapi) throw new Error('faceapi not loaded');
+    const detection = await faceapi.detectSingleFace(videoElement, detectorOptions(faceapi));
+    if (!detection) return null;
 
-    const options = new api.SsdMobilenetv1Options({ minConfidence: 0.5 });
-    return await faceapi
-      .detectSingleFace(videoElement, options)
+    const { x, y, width, height } = detection.box;
+    return { x, y, width, height, score: detection.score };
+  } catch (err) {
+    logger.error('❌ Error detecting face:', err);
+    return null;
+  }
+}
+
+/**
+ * Full pipeline: detection + landmarks + descriptor. Needed only at the moment
+ * of enrolment or login, so it is worth waiting on the recognition nets here.
+ */
+export async function detectFace(videoElement: HTMLVideoElement) {
+  try {
+    await loadFaceRecognition();
+  } catch {
+    return null;
+  }
+
+  const api = await loadFaceApiLibrary();
+  if (!frameIsUsable(videoElement)) return null;
+
+  try {
+    return await api
+      .detectSingleFace(videoElement, detectorOptions(api))
       .withFaceLandmarks()
       .withFaceDescriptor();
   } catch (err) {

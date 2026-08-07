@@ -131,11 +131,30 @@ const nextConfig = {
   //       next.config.js headers are only used for CDN-level caching.
   // ═══════════════════════════════════════════════════════════════
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
+
     return [
-      // Face recognition models — immutable cache
+      // Face recognition model weights.
+      //
+      // `immutable` used to be set here, which tells the browser never to
+      // revalidate — so the moment any bad response for a weights file landed in
+      // the cache (a 404 for a file added mid-session, a truncated body), it was
+      // pinned for a year and no reload could dislodge it. tfjs then failed with
+      // "the tensor should have N values but has 0" against a file that was
+      // perfectly fine on the server.
+      //
+      // Weights are content-addressed by filename in practice, so a long max-age
+      // is still right; dropping `immutable` only costs a conditional request
+      // after a year and keeps the cache recoverable. In development the files
+      // change as models are added, so caching is disabled outright.
       {
         source: '/models/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: isDev ? 'no-store, max-age=0' : 'public, max-age=31536000',
+          },
+        ],
       },
       // Images — cache 7 days + stale-while-revalidate
       {

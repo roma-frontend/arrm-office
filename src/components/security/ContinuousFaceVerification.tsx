@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/lib/logger';
+import { detectFace } from '@/lib/faceApi';
 import { useRouter } from 'next/navigation';
 
 interface Props {
@@ -45,9 +46,6 @@ export default function ContinuousFaceVerification({
     setStatus('checking');
 
     try {
-      // Dynamically import face-api to avoid SSR issues
-      const faceapi = await import('@vladmandic/face-api');
-
       // Start camera
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 320, height: 240 },
@@ -65,11 +63,11 @@ export default function ContinuousFaceVerification({
       // Wait for face to be detected
       await new Promise((r) => setTimeout(r, 1500));
 
-      // Detect face
-      const detection = await faceapi
-        .detectSingleFace(videoRef.current!, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceDescriptor();
+      // Detect face. Goes through the shared loader rather than importing
+      // face-api directly: this used to construct TinyFaceDetectorOptions without
+      // anything having loaded the tiny detector weights, so the call threw unless
+      // another screen happened to have loaded them first.
+      const detection = await detectFace(videoRef.current!);
 
       stopCamera();
 
