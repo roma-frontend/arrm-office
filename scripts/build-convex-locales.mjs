@@ -90,7 +90,9 @@ const footer = `};
 export type CatalogLocale = ${LOCALES.map((l) => `'${l}'`).join(' | ')};
 `;
 
-const output = `${header}${blocks.join('\n')}\n${footer}\n`;
+// No trailing extra newline: the file must stay prettier-clean (a blank line
+// at EOF makes `prettier --check` in CI fail on the generated file).
+const output = `${header}${blocks.join('\n')}\n${footer}`;
 
 if (process.argv.includes('--check')) {
   const current = readFileSync(OUTPUT, 'utf8');
