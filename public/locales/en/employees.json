@@ -1,6 +1,8 @@
 {
   "employees": {
     "addEmployee": "Add Employee",
+    "dateOfBirth": "Date of birth",
+    "dateOfBirthHint": "Auto-filled from the passport scan. Required by the personal data and biometric consent forms.",
     "total": "total",
     "totalActive": "Total Active",
     "noFound": "No employees found",

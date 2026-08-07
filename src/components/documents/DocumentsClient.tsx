@@ -22,11 +22,15 @@ import {
   Plus,
   Trash2,
   PenTool,
+  Languages,
+  FileSignature,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import DocumentUploadWizard from '@/components/documents/DocumentUploadWizard';
 import DocumentTemplateWizard from '@/components/documents/DocumentTemplateWizard';
+import DocumentBuilderTab from '@/components/documents/DocumentBuilderTab';
+import IssuedDocumentsTab from '@/components/documents/IssuedDocumentsTab';
 import { Badge } from '@/components/ui/badge';
 type DocumentWithUploader = {
   _id: Id<'documents'>;
@@ -328,39 +332,44 @@ export default function DocumentsClient() {
         </div>
       )}
 
-      {/* Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder={t('documents.searchDocuments', 'Search documents...')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+      {/* Search and Filter Bar — only the file tabs are searchable this way;
+          the builder and the registry carry their own filters. */}
+      {activeTab !== 'builder' && activeTab !== 'issued' && (
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder={t('documents.searchDocuments', 'Search documents...')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div className="w-full sm:w-48">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full grid grid-cols-2 md:grid-cols-3 px-4 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">{t('documents.allCategories', 'All Categories')}</option>
+              <option value="policy">{t('documents.categoryPolicy', 'Policy')}</option>
+              <option value="contract">{t('documents.categoryContract', 'Contract')}</option>
+              <option value="report">{t('documents.categoryReport', 'Report')}</option>
+              <option value="template">{t('documents.categoryTemplate', 'Template')}</option>
+              <option value="form">{t('documents.categoryForm', 'Form')}</option>
+              <option value="certificate">
+                {t('documents.categoryCertificate', 'Certificate')}
+              </option>
+              <option value="other">{t('documents.categoryOther', 'Other')}</option>
+            </select>
+          </div>
         </div>
-        <div className="w-full sm:w-48">
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full grid grid-cols-2 md:grid-cols-3 px-4 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">{t('documents.allCategories', 'All Categories')}</option>
-            <option value="policy">{t('documents.categoryPolicy', 'Policy')}</option>
-            <option value="contract">{t('documents.categoryContract', 'Contract')}</option>
-            <option value="report">{t('documents.categoryReport', 'Report')}</option>
-            <option value="template">{t('documents.categoryTemplate', 'Template')}</option>
-            <option value="form">{t('documents.categoryForm', 'Form')}</option>
-            <option value="certificate">{t('documents.categoryCertificate', 'Certificate')}</option>
-            <option value="other">{t('documents.categoryOther', 'Other')}</option>
-          </select>
-        </div>
-      </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList
-          className={`w-full mb-4 gap-2 bg-transparent p-0 h-auto ${isAdmin ? 'grid grid-cols-2 md:grid-cols-4' : 'grid grid-cols-2 md:grid-cols-3'}`}
+          className={`w-full mb-4 gap-2 bg-transparent p-0 h-auto ${isAdmin ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6' : 'grid grid-cols-2 md:grid-cols-3'}`}
         >
           <TabsTrigger
             value="all"
@@ -385,6 +394,24 @@ export default function DocumentsClient() {
               {t('documents.unpublishedDocuments', 'Unpublished')}
             </TabsTrigger>
           )}
+          {isAdmin && (
+            <TabsTrigger
+              value="builder"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            >
+              <Languages className="h-4 w-4" />
+              {t('documents.builderTab', 'Bilingual templates')}
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger
+              value="issued"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            >
+              <FileSignature className="h-4 w-4" />
+              {t('documents.issuedTab', 'Issued')}
+            </TabsTrigger>
+          )}
           <TabsTrigger
             value="templates"
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
@@ -394,12 +421,26 @@ export default function DocumentsClient() {
           </TabsTrigger>
         </TabsList>
 
+        {/* ── Bilingual template builder ───────────────────────── */}
+        {isAdmin && effectiveOrgId && (
+          <TabsContent value="builder" className="space-y-4">
+            <DocumentBuilderTab organizationId={effectiveOrgId as Id<'organizations'>} />
+          </TabsContent>
+        )}
+
+        {/* ── Issued documents registry ────────────────────────── */}
+        {isAdmin && effectiveOrgId && (
+          <TabsContent value="issued" className="space-y-4">
+            <IssuedDocumentsTab organizationId={effectiveOrgId as Id<'organizations'>} />
+          </TabsContent>
+        )}
+
         {/* Documents List */}
         <TabsContent
           value={activeTab === 'templates' ? 'templates' : activeTab}
           className="space-y-4"
         >
-          {activeTab === 'templates' ? (
+          {activeTab === 'builder' || activeTab === 'issued' ? null : activeTab === 'templates' ? (
             <div>
               {/* Templates header */}
               <div className="flex items-center justify-between mb-4">

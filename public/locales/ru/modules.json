@@ -1498,7 +1498,20 @@
     "fieldRequired": "Обязательное",
     "fieldPlaceholder": "Текст-заполнитель",
     "removeField": "Удалить поле",
-    "templatePreview": "Предпросмотр шаблона"
+    "templatePreview": "Предпросмотр шаблона",
+    "builderTab": "Двуязычные шаблоны",
+    "issuedTab": "Выданные",
+    "loadingTemplates": "Загрузка шаблонов…",
+    "fields": "Поля",
+    "edit": "Изменить",
+    "editDocument": "Изменить документ",
+    "documentTitle": "Название",
+    "expiresAt": "Действует до",
+    "documentUpdated": "Документ обновлён",
+    "updateError": "Не удалось сохранить документ",
+    "acknowledge": "Ознакомлен",
+    "acknowledgedBadge": "Ознакомлен",
+    "acknowledgeError": "Не удалось подтвердить ознакомление"
   },
   "documentCategories": {
     "policy": "Политика",

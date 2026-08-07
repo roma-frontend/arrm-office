@@ -21,12 +21,13 @@ import {
 } from './documentCatalog';
 import { resolveTokens, type MergeSourceData } from './documentTokens';
 import type { SupportedLocale } from './date-format';
-import type {
-  DocumentBlock,
-  DocumentFieldRow,
-  DocumentLabels,
-  DocumentLeafBlock,
-} from './exportDocument';
+import {
+  LOCALE_CAPTIONS,
+  applySignaturesToBlocks as applySignatures,
+  parseTemplateBodyToBlocks as parseBody,
+  type CollectedSignature as EngineSignature,
+} from './bilingualDocument';
+import type { DocumentBlock, DocumentLabels, DocumentLeafBlock } from './exportDocument';
 
 /** Armenian is mandatory and always occupies the primary column. */
 export const PRIMARY_LOCALE: SupportedLocale = 'hy';
@@ -34,123 +35,15 @@ export const PRIMARY_LOCALE: SupportedLocale = 'hy';
 /** Sentinel marking a hiring-packet body inside `signatureDocuments.content`. */
 const HP_PREFIX = '__HP__';
 
-/** Native language names used as column captions. */
-export const LOCALE_CAPTIONS: Record<SupportedLocale, string> = {
-  hy: 'ՀԱՅԵՐԵՆ',
-  ru: 'РУССКИЙ',
-  en: 'ENGLISH',
-  de: 'DEUTSCH',
-};
-
-/**
- * Label separators. Armenian uses the "but" mark `՝` (U+055D) where Latin and
- * Cyrillic text use a colon, so a label/value line has to be recognised by
- * either — otherwise the same template would parse into a different block
- * structure per language and the two columns would fall out of alignment.
- */
-const LABEL_SEPARATORS = [':', '\u055D'];
-
-const MAX_LABEL_LENGTH = 34;
-const MAX_SECTION_LENGTH = 70;
-
-/** Split a label/value line, honouring both separator conventions. */
-function splitLabelValue(line: string): DocumentFieldRow | null {
-  let best: { index: number; separator: string } | null = null;
-  for (const separator of LABEL_SEPARATORS) {
-    const index = line.indexOf(separator);
-    if (index <= 0) continue;
-    if (!best || index < best.index) best = { index, separator };
-  }
-  if (!best) return null;
-
-  const label = line.slice(0, best.index).trim();
-  const value = line.slice(best.index + best.separator.length).trim();
-  if (!label || label.length > MAX_LABEL_LENGTH) return null;
-  return { label, value };
-}
-
-/**
- * A standalone all-caps line is a section heading ("ORDER", "2. DUTIES",
- * "ՊԱՐՏԱԿԱՆՈՒԹՅՈՒՆՆԵՐԸ"). Case comparison works identically for Latin, Cyrillic
- * and Armenian, so both languages of a template classify the same way.
- */
-function asSectionBlock(line: string): DocumentLeafBlock | null {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.length > MAX_SECTION_LENGTH) return null;
-  if (trimmed !== trimmed.toUpperCase()) return null;
-  // A line of only digits/punctuation is not a heading.
-  if (!/\p{L}/u.test(trimmed)) return null;
-
-  const ordinal = /^(\d+)\s*[.)]\s*(.+)$/.exec(trimmed);
-  if (ordinal?.[1] && ordinal[2]) {
-    return { type: 'section', title: ordinal[2].trim(), index: Number(ordinal[1]) };
-  }
-  return { type: 'section', title: trimmed };
-}
+export { LOCALE_CAPTIONS };
 
 /**
  * Turn a template body into leaf blocks.
  *
- * The rules key off structure the templates control (blank lines, `- ` bullets,
- * `N.` ordinals, all-caps headings, label separators) rather than on language, so
- * the Armenian and the translated body always yield the same number of blocks in
- * the same order. That is what makes row-by-row pairing meaningful.
+ * Re-exported from the shared engine, which owns the parsing rules now that
+ * organization blueprints use them too.
  */
-export function parseTemplateBodyToBlocks(body: string): DocumentLeafBlock[] {
-  const blocks: DocumentLeafBlock[] = [];
-  const groups: string[][] = [];
-  let current: string[] = [];
-
-  for (const rawLine of body.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line) {
-      if (current.length) groups.push(current);
-      current = [];
-      continue;
-    }
-    current.push(line);
-  }
-  if (current.length) groups.push(current);
-
-  for (const group of groups) {
-    // Bullet list.
-    if (group.every((line) => /^[-•]\s+/.test(line))) {
-      blocks.push({
-        type: 'bullets',
-        items: group.map((line) => line.replace(/^[-•]\s+/, '')),
-      });
-      continue;
-    }
-
-    // Numbered clauses: one paragraph each, so the numbering survives.
-    if (group.length > 1 && group.every((line) => /^\d+[.)]\s/.test(line))) {
-      for (const line of group) blocks.push({ type: 'paragraph', text: line });
-      continue;
-    }
-
-    // Standalone heading.
-    if (group.length === 1) {
-      const section = asSectionBlock(group[0]!);
-      if (section) {
-        blocks.push(section);
-        continue;
-      }
-    }
-
-    // Definition list: every line is `Label: value`.
-    const rows = group.map(splitLabelValue);
-    if (rows.length > 1 && rows.every((row): row is DocumentFieldRow => row !== null)) {
-      blocks.push({ type: 'fields', rows });
-      continue;
-    }
-
-    // Prose. Multi-line groups are joined: the line breaks inside a template
-    // paragraph are source formatting, not content.
-    blocks.push({ type: 'paragraph', text: group.join(' ') });
-  }
-
-  return blocks;
-}
+export const parseTemplateBodyToBlocks: (body: string) => DocumentLeafBlock[] = parseBody;
 
 /** Pad the shorter column so pair `i` lines up with pair `i` on both sides. */
 function alignColumns(
@@ -288,44 +181,21 @@ export function parseHiringPacketContent(content: string): HiringPacketPayload |
 }
 
 /** One collected signature, in signing order. */
-export interface CollectedSignature {
-  signerName?: string;
-  /** Base64 PNG data URL of the drawn signature. */
-  signatureData?: string;
-  signedAt?: number;
-}
+export type CollectedSignature = EngineSignature;
 
 /**
  * Fill the frozen signature grid with the signatures that were actually
  * collected.
  *
- * The grid is stored empty inside the immutable content: the signature image and
- * date come from the `signatureRequests` rows at render time, so a signature can
- * never be baked into the snapshot before someone really signed. Parties are
- * matched to signatures by signing order (employee first, employer second).
+ * Re-exported from the shared engine: packet documents carry no party ids, so it
+ * falls back to matching by signing order (employee first, employer second) —
+ * exactly what this module did on its own before.
  */
-export function applySignaturesToBlocks(
+export const applySignaturesToBlocks: (
   blocks: DocumentBlock[],
   signatures: CollectedSignature[],
   formatSignedDate: (timestamp: number) => string,
-): DocumentBlock[] {
-  return blocks.map((block) => {
-    if (block.type !== 'signatures') return block;
-    return {
-      ...block,
-      parties: block.parties.map((party, index) => {
-        const signature = signatures[index];
-        if (!signature) return party;
-        return {
-          ...party,
-          name: party.name || (signature.signerName ?? ''),
-          signatureImage: signature.signatureData ?? party.signatureImage,
-          date: signature.signedAt ? formatSignedDate(signature.signedAt) : party.date,
-        };
-      }),
-    };
-  });
-}
+) => DocumentBlock[] = applySignatures;
 
 /** Filesystem-safe download name, e.g. `employment-contract_Anna_Petrosyan.docx`. */ export function hiringPacketFileName(
   templateId: string,

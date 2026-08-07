@@ -54,6 +54,11 @@ export interface DocumentCalloutBlock {
 
 /** One signing party of a signature grid. */
 export interface DocumentSignatureParty {
+  /**
+   * Stable party id (`recipient`, `issuer`, …). Optional because documents
+   * frozen before it existed match their signatures by signing order instead.
+   */
+  id?: string;
   /** Role caption above the line, e.g. "Employee" / "Admin / HR". */
   role: string;
   nameLabel: string;

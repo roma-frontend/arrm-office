@@ -2,7 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation, internalMutation } from './_generated/server';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
-import { personalFileCategory } from './lib/documentTemplateIds';
+import { personalFileCategory, personalFileCategoryForBlueprint } from './lib/documentTemplateIds';
 import { isSuperadmin } from './lib/auth';
 import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { notify } from './lib/notify';
@@ -542,6 +542,15 @@ export const signDocument = mutation({
           updatedAt: now,
         });
       }
+
+      // Same for a document issued from the document builder.
+      const issuedDoc = await ctx.db
+        .query('issuedDocuments')
+        .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', request.documentId))
+        .first();
+      if (issuedDoc && issuedDoc.status !== 'signed') {
+        await ctx.db.patch(issuedDoc._id, { status: 'signed', signedAt: now, updatedAt: now });
+      }
     } else {
       // Partially signed
       await ctx.db.patch(request.documentId, {
@@ -620,18 +629,51 @@ export const attachSignedPdf = mutation({
       .query('hiringPacketDocuments')
       .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', documentId))
       .first();
+
+    const issuedRow = packetRow
+      ? null
+      : await ctx.db
+          .query('issuedDocuments')
+          .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', documentId))
+          .first();
+
+    let filing: {
+      organizationId: Id<'organizations'>;
+      userId: Id<'users'>;
+      category: ReturnType<typeof personalFileCategory>;
+    } | null = null;
+
     if (packetRow) {
+      filing = {
+        organizationId: packetRow.organizationId,
+        userId: packetRow.userId,
+        category: personalFileCategory(packetRow.templateId),
+      };
+    } else if (issuedRow) {
+      // A blueprint has no catalog id, so the category comes from what its
+      // author picked; a catalog-sourced issue reuses the id mapping.
+      const blueprint = issuedRow.blueprintId ? await ctx.db.get(issuedRow.blueprintId) : null;
+      filing = {
+        organizationId: issuedRow.organizationId,
+        userId: issuedRow.recipientId,
+        category: blueprint
+          ? personalFileCategoryForBlueprint(blueprint.category)
+          : personalFileCategory(issuedRow.templateId ?? ''),
+      };
+    }
+
+    if (filing) {
       const alreadyFiled = await ctx.db
         .query('employeeDocuments')
-        .withIndex('by_user', (q) => q.eq('userId', packetRow.userId))
+        .withIndex('by_user', (q) => q.eq('userId', filing.userId))
         .filter((q) => q.eq(q.field('fileUrl'), url))
         .first();
       if (!alreadyFiled) {
         await ctx.db.insert('employeeDocuments', {
-          organizationId: packetRow.organizationId,
-          userId: packetRow.userId,
+          organizationId: filing.organizationId,
+          userId: filing.userId,
           uploaderId: caller._id,
-          category: personalFileCategory(packetRow.templateId),
+          category: filing.category,
           fileName: name,
           fileUrl: url,
           fileSize: size,
@@ -731,14 +773,30 @@ async function releasePacketRow(
     .query('hiringPacketDocuments')
     .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', documentId))
     .first();
-  if (!packetDoc || packetDoc.status === 'signed') return;
+  if (packetDoc && packetDoc.status !== 'signed') {
+    await ctx.db.patch(packetDoc._id, {
+      status: packetDoc.bodyOverride ? 'edited' : 'draft',
+      signatureDocumentId: undefined,
+      sentAt: undefined,
+      updatedAt: Date.now(),
+    });
+    return;
+  }
 
-  await ctx.db.patch(packetDoc._id, {
-    status: packetDoc.bodyOverride ? 'edited' : 'draft',
-    signatureDocumentId: undefined,
-    sentAt: undefined,
-    updatedAt: Date.now(),
-  });
+  // Same for a document issued from the document builder: a declined or
+  // cancelled document goes back to being editable and re-sendable.
+  const issuedDoc = await ctx.db
+    .query('issuedDocuments')
+    .withIndex('by_signature_document', (q) => q.eq('signatureDocumentId', documentId))
+    .first();
+  if (issuedDoc && issuedDoc.status !== 'signed') {
+    await ctx.db.patch(issuedDoc._id, {
+      status: issuedDoc.bodyOverride ? 'edited' : 'draft',
+      signatureDocumentId: undefined,
+      sentAt: undefined,
+      updatedAt: Date.now(),
+    });
+  }
 }
 
 export const declineDocument = mutation({

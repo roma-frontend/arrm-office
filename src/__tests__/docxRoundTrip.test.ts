@@ -10,6 +10,10 @@ import { renderEditableDocxBlob, type DocumentBlock } from '@/lib/exportDocument
 import { parseEditableDocx, DocxImportError } from '@/lib/docxRoundTrip';
 import type { RenderableDocument } from '@/lib/exportDocument';
 
+// Real docx rendering + mammoth parsing is CPU-heavy; the default 5s test
+// timeout is too tight for a full round trip on a busy machine.
+jest.setTimeout(60_000);
+
 const labels = {
   signature: 'Signature',
   name: 'Name',

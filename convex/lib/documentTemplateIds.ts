@@ -91,3 +91,21 @@ export function personalFileCategory(
       return 'other';
   }
 }
+
+/**
+ * Same mapping for a blueprint, which has no catalog id — only the category its
+ * author picked. Keeps signed blueprint documents from all landing under
+ * "other" in the personal file.
+ */
+export function personalFileCategoryForBlueprint(
+  category: 'certificate' | 'hiring' | 'consent' | 'order' | 'other',
+): 'resume' | 'contract' | 'certificate' | 'performance_review' | 'id_document' | 'other' {
+  switch (category) {
+    case 'hiring':
+      return 'contract';
+    case 'certificate':
+      return 'certificate';
+    default:
+      return 'other';
+  }
+}

@@ -1498,7 +1498,20 @@
     "fieldRequired": "Required",
     "fieldPlaceholder": "Placeholder text",
     "removeField": "Remove Field",
-    "templatePreview": "Template Preview"
+    "templatePreview": "Template Preview",
+    "builderTab": "Bilingual templates",
+    "issuedTab": "Issued",
+    "loadingTemplates": "Loading templates…",
+    "fields": "Fields",
+    "edit": "Edit",
+    "editDocument": "Edit document",
+    "documentTitle": "Title",
+    "expiresAt": "Expires on",
+    "documentUpdated": "Document updated",
+    "updateError": "Could not save the document",
+    "acknowledge": "I have read this",
+    "acknowledgedBadge": "Read",
+    "acknowledgeError": "Could not confirm reading"
   },
   "documentCategories": {
     "policy": "Policy",

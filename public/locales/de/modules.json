@@ -1498,7 +1498,20 @@
     "fieldRequired": "Pflichtfeld",
     "fieldPlaceholder": "Platzhaltertext",
     "removeField": "Feld entfernen",
-    "templatePreview": "Vorlagenvorschau"
+    "templatePreview": "Vorlagenvorschau",
+    "builderTab": "Zweisprachige Vorlagen",
+    "issuedTab": "Ausgestellt",
+    "loadingTemplates": "Vorlagen werden geladen…",
+    "fields": "Felder",
+    "edit": "Bearbeiten",
+    "editDocument": "Dokument bearbeiten",
+    "documentTitle": "Titel",
+    "expiresAt": "Gültig bis",
+    "documentUpdated": "Dokument aktualisiert",
+    "updateError": "Dokument konnte nicht gespeichert werden",
+    "acknowledge": "Zur Kenntnis genommen",
+    "acknowledgedBadge": "Gelesen",
+    "acknowledgeError": "Kenntnisnahme konnte nicht bestätigt werden"
   },
   "documentCategories": {
     "policy": "Richtlinie",

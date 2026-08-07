@@ -61,10 +61,11 @@ import {
   exportEditableDocx,
   renderDocumentDocxBlob,
   type DocumentBlock,
-  type DocumentLabels,
   type RenderableDocument,
 } from '@/lib/exportDocument';
 import { parseEditableDocx, DocxImportError } from '@/lib/docxRoundTrip';
+import { DocumentPreview } from '@/components/documents/DocumentBlocksPreview';
+import { useDocumentLabels } from '@/hooks/useDocumentLabels';
 import {
   LOCALE_CAPTIONS,
   PRIMARY_LOCALE,
@@ -115,18 +116,6 @@ interface PacketRow {
   }>;
 }
 
-function useDocumentLabels(): DocumentLabels {
-  const { t } = useTranslation();
-  return {
-    signature: t('docLibrary.signature', 'Signature'),
-    name: t('docLibrary.nameLabel', 'Name'),
-    position: t('docLibrary.positionLabel', 'Position'),
-    date: t('docLibrary.dateLabel', 'Date'),
-    generatedOn: t('docLibrary.generatedOn', 'Generated on'),
-    integrity: t('docLibrary.integrity', 'Integrity'),
-  };
-}
-
 /** Read a File as a base64 data URL (what the Cloudinary action expects). */
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -136,126 +125,6 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Preview
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Render leaf blocks of one language column. */
-function ColumnBlocks({ blocks }: { blocks: DocumentBlock[] }) {
-  return (
-    <div className="space-y-3">
-      {blocks.map((block, index) => {
-        switch (block.type) {
-          case 'section':
-            return (
-              <h4
-                key={index}
-                className="text-xs font-semibold uppercase tracking-wide text-(--text-primary) border-b border-(--border) pb-1"
-              >
-                {block.index != null ? `${block.index}. ` : ''}
-                {block.title}
-              </h4>
-            );
-          case 'paragraph':
-            return (
-              <p key={index} className="text-xs leading-relaxed text-(--text-muted) text-justify">
-                {block.text}
-              </p>
-            );
-          case 'callout':
-            return (
-              <p
-                key={index}
-                className="text-xs leading-relaxed text-(--text-muted) border-l-2 border-primary/60 pl-3"
-              >
-                {block.text}
-              </p>
-            );
-          case 'fields':
-            return (
-              <dl key={index} className="space-y-1">
-                {block.rows.map((row, rowIndex) => (
-                  <div key={rowIndex} className="flex gap-2 text-xs">
-                    <dt className="text-(--text-muted) shrink-0">{row.label}:</dt>
-                    <dd className="font-medium text-(--text-primary) break-words">
-                      {row.value || '—'}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            );
-          case 'bullets':
-            return (
-              <ul key={index} className="list-disc pl-4 space-y-1">
-                {block.items.map((item, itemIndex) => (
-                  <li key={itemIndex} className="text-xs text-(--text-muted)">
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            );
-          case 'signatures':
-            return (
-              <div key={index} className="grid grid-cols-2 gap-4 pt-4">
-                {block.parties.map((party, partyIndex) => (
-                  <div key={partyIndex} className="space-y-1">
-                    <p className="text-[10px] font-semibold uppercase text-primary">{party.role}</p>
-                    <div className="h-8 border-b border-(--border)" />
-                    <p className="text-[10px] text-(--text-muted)">
-                      {party.nameLabel}: {party.name || '—'}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            );
-          case 'spacer':
-            return <div key={index} style={{ height: block.size ?? 8 }} />;
-          default:
-            return null;
-        }
-      })}
-    </div>
-  );
-}
-
-/**
- * Two-column preview mirroring the printed A4 page: Armenian on the left, the
- * chosen language on the right, paragraph aligned with paragraph.
- */
-function DocumentPreview({ doc }: { doc: RenderableDocument }) {
-  const blocks = Array.isArray(doc.body) ? doc.body : [];
-  return (
-    <div className="space-y-6">
-      {blocks.map((block, index) => {
-        if (block.type !== 'bilingual') {
-          return <ColumnBlocks key={index} blocks={[block]} />;
-        }
-        return (
-          <div key={index} className="grid grid-cols-2 gap-6">
-            <div className="space-y-3">
-              {block.leftLabel && (
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
-                  {block.leftLabel}
-                </p>
-              )}
-              <ColumnBlocks blocks={block.left} />
-            </div>
-            <div className="space-y-3 border-l border-(--border) pl-6">
-              {block.rightLabel && (
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
-                  {block.rightLabel}
-                </p>
-              )}
-              <ColumnBlocks blocks={block.right} />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Panel
 // ─────────────────────────────────────────────────────────────────────────────
@@ -728,13 +597,14 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
   const sendOne = useCallback(
     async (row: PacketRow) => {
       const template = getCatalogTemplate(row.templateId);
-      if (!template || !source) throw new Error(t('hiringPacket.buildFailed', 'Build failed'));
+      if (!template || !source)
+        throw new Error(t('hiringPacket.buildFailed', 'Could not build this document'));
 
       const { documentNumber } = await ensureDocumentNumber({ packetDocumentId: row._id });
 
       const doc = buildDoc({ ...row, documentNumber });
       if (!doc || !Array.isArray(doc.body)) {
-        throw new Error(t('hiringPacket.buildFailed', 'Build failed'));
+        throw new Error(t('hiringPacket.buildFailed', 'Could not build this document'));
       }
 
       const content = encodeHiringPacketContent({

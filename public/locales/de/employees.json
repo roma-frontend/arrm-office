@@ -1,6 +1,8 @@
 {
   "employees": {
     "addEmployee": "Mitarbeiter hinzufügen",
+    "dateOfBirth": "Geburtsdatum",
+    "dateOfBirthHint": "Wird automatisch aus dem Passscan übernommen. Erforderlich für die Einwilligungen zu personenbezogenen und biometrischen Daten.",
     "total": "insgesamt",
     "totalActive": "Insgesamt aktiv",
     "noFound": "Keine Mitarbeiter gefunden",
