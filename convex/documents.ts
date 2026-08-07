@@ -7,6 +7,18 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import type { Doc, Id } from './_generated/dataModel';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
+
+/** The seven document categories, shared by create and update. */
+const documentCategoryValidator = v.union(
+  v.literal('policy'),
+  v.literal('contract'),
+  v.literal('report'),
+  v.literal('template'),
+  v.literal('form'),
+  v.literal('certificate'),
+  v.literal('other'),
+);
+
 async function checkAccess(ctx: QueryCtx | MutationCtx, organizationId: Id<'organizations'>) {
   const requester = await getAuthCaller(ctx);
   if (!requester) throw new Error('Not authenticated');
@@ -14,7 +26,10 @@ async function checkAccess(ctx: QueryCtx | MutationCtx, organizationId: Id<'orga
   if (!userIsSuperadmin && requester.organizationId !== organizationId) {
     throw new Error('Access denied');
   }
-  return { requester, isSuperadmin: userIsSuperadmin || requester.role === 'admin' };
+  // `canManage` (not `isSuperadmin`): admins of the organization manage its
+  // documents too. The old name said superadmin and meant "admin or above",
+  // which is how the admin-only gates below came to read as superadmin checks.
+  return { requester, canManage: userIsSuperadmin || requester.role === 'admin' };
 }
 
 // ─── DOCUMENTS ────────────────────────────────────────────────────────────────
@@ -27,14 +42,14 @@ export const listDocuments = query({
     includeUnpublished: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const { isSuperadmin } = await checkAccess(ctx, args.organizationId);
+    const { canManage } = await checkAccess(ctx, args.organizationId);
 
     let docs = await ctx.db
       .query('documents')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(MAX_PAGE_SIZE);
 
-    if (!args.includeUnpublished || !isSuperadmin) {
+    if (!args.includeUnpublished || !canManage) {
       docs = docs.filter((d) => d.isPublished);
     }
 
@@ -74,6 +89,14 @@ export const getDocument = query({
   },
 });
 
+/**
+ * Single document by id — backs `/documents/[id]`.
+ *
+ * The id is the only argument, so the organization has to be checked *after*
+ * the read: without it any authenticated user could open any tenant's document
+ * by guessing an id. Unpublished drafts stay hidden from non-managers for the
+ * same reason the list filters them out.
+ */
 export const getDocumentById = query({
   args: {
     documentId: v.id('documents'),
@@ -83,8 +106,15 @@ export const getDocumentById = query({
     if (!caller) return null;
     const doc = await ctx.db.get(args.documentId);
     if (!doc) return null;
+
+    const isSuper = isSuperadmin(caller);
+    if (!isSuper && caller.organizationId !== doc.organizationId) return null;
+
+    const canManage = isSuper || caller.role === 'admin';
+    if (!doc.isPublished && !canManage) return null;
+
     const uploader = await ctx.db.get(doc.uploadedBy);
-    return { ...doc, uploaderName: uploader?.name ?? 'Unknown' };
+    return { ...doc, uploaderName: uploader?.name ?? 'Unknown', canManage };
   },
 });
 
@@ -93,15 +123,7 @@ export const createDocument = mutation({
     organizationId: v.id('organizations'),
     title: v.string(),
     description: v.optional(v.string()),
-    category: v.union(
-      v.literal('policy'),
-      v.literal('contract'),
-      v.literal('report'),
-      v.literal('template'),
-      v.literal('form'),
-      v.literal('certificate'),
-      v.literal('other'),
-    ),
+    category: documentCategoryValidator,
     fileUrl: v.string(),
     fileName: v.string(),
     fileSize: v.optional(v.number()),
@@ -111,8 +133,8 @@ export const createDocument = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const { requester, isSuperadmin } = await checkAccess(ctx, args.organizationId);
-    if (!isSuperadmin) throw new Error('Only admins can create documents');
+    const { requester, canManage } = await checkAccess(ctx, args.organizationId);
+    if (!canManage) throw new Error('Only admins can create documents');
 
     const now = Date.now();
     return await ctx.db.insert('documents', {
@@ -140,7 +162,7 @@ export const updateDocument = mutation({
     documentId: v.id('documents'),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
-    category: v.optional(v.string()),
+    category: v.optional(documentCategoryValidator),
     fileUrl: v.optional(v.string()),
     fileName: v.optional(v.string()),
     fileSize: v.optional(v.number()),
@@ -153,13 +175,13 @@ export const updateDocument = mutation({
   handler: async (ctx, args) => {
     const doc = await ctx.db.get(args.documentId);
     if (!doc) throw new Error('Document not found');
-    const { isSuperadmin } = await checkAccess(ctx, doc.organizationId);
-    if (!isSuperadmin) throw new Error('Only admins can update documents');
+    const { canManage } = await checkAccess(ctx, doc.organizationId);
+    if (!canManage) throw new Error('Only admins can update documents');
 
     const patch: Partial<Doc<'documents'>> = { updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
     if (args.description !== undefined) patch.description = args.description;
-    if (args.category !== undefined) patch.category = args.category as Doc<'documents'>['category'];
+    if (args.category !== undefined) patch.category = args.category;
     if (args.fileUrl !== undefined) patch.fileUrl = args.fileUrl;
     if (args.fileName !== undefined) patch.fileName = args.fileName;
     if (args.fileSize !== undefined) patch.fileSize = args.fileSize;
@@ -181,7 +203,10 @@ export const deleteDocument = mutation({
   handler: async (ctx, args) => {
     const doc = await ctx.db.get(args.documentId);
     if (!doc) throw new Error('Document not found');
-    await checkAccess(ctx, doc.organizationId);
+    // Same gate as create/update: this deletes the record *and* everyone's read
+    // history, which any org member could previously do for any document.
+    const { canManage } = await checkAccess(ctx, doc.organizationId);
+    if (!canManage) throw new Error('Only admins can delete documents');
 
     const views = await ctx.db
       .query('documentViews')
@@ -198,6 +223,14 @@ export const deleteDocument = mutation({
 
 // ─── DOCUMENT VIEWS ──────────────────────────────────────────────────────────
 
+/**
+ * Record that the caller opened a document, and optionally that they
+ * acknowledged it.
+ *
+ * `acknowledged` is only ever raised, never cleared implicitly: a later plain
+ * view (opening the file again) used to overwrite the flag with `undefined` and
+ * silently revoke an acknowledgement the employee had already given.
+ */
 export const recordDocumentView = mutation({
   args: {
     organizationId: v.id('organizations'),
@@ -206,6 +239,11 @@ export const recordDocumentView = mutation({
   },
   handler: async (ctx, args) => {
     const { requester } = await checkAccess(ctx, args.organizationId);
+
+    const document = await ctx.db.get(args.documentId);
+    if (!document || document.organizationId !== args.organizationId) {
+      throw new Error('Document not found');
+    }
 
     const existing = await ctx.db
       .query('documentViews')
@@ -219,7 +257,10 @@ export const recordDocumentView = mutation({
 
     const now = Date.now();
     if (existing) {
-      await ctx.db.patch(existing._id, { viewedAt: now, acknowledged: args.acknowledged });
+      await ctx.db.patch(existing._id, {
+        viewedAt: now,
+        acknowledged: args.acknowledged ?? existing.acknowledged,
+      });
     } else {
       await ctx.db.insert('documentViews', {
         organizationId: args.organizationId,
@@ -249,13 +290,19 @@ export const getMyDocumentViews = query({
   },
 });
 
+/**
+ * Who read (and acknowledged) a document. Staff-only: it exposes the names and
+ * emails of everyone who opened it, which is not the reading employee's business.
+ * Returns `[]` instead of throwing so a non-manager's page renders empty.
+ */
 export const getDocumentViews = query({
   args: {
     organizationId: v.id('organizations'),
     documentId: v.id('documents'),
   },
   handler: async (ctx, args) => {
-    await checkAccess(ctx, args.organizationId);
+    const { canManage } = await checkAccess(ctx, args.organizationId);
+    if (!canManage) return [];
     const views = await ctx.db
       .query('documentViews')
       .withIndex('by_document', (q) =>
@@ -300,8 +347,8 @@ export const createDocumentCategory = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { isSuperadmin } = await checkAccess(ctx, args.organizationId);
-    if (!isSuperadmin) throw new Error('Only admins can create categories');
+    const { canManage } = await checkAccess(ctx, args.organizationId);
+    if (!canManage) throw new Error('Only admins can create categories');
 
     const now = Date.now();
     return await ctx.db.insert('documentCategories', {
