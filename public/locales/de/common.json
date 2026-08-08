@@ -1717,7 +1717,12 @@
     "leaveRequests": "Urlaubsanträge",
     "calendarEvents": "Kalender-Ereignisse",
     "googleEvents": "Google Kalender",
-    "driverBookings": "Fahrerbuchungen"
+    "driverBookings": "Fahrerbuchungen",
+    "companyEvents": "Unternehmensveranstaltungen",
+    "wholeCompany": "Gesamtes Unternehmen",
+    "namedAttendees": "Ausgewählte Mitarbeitende: {{count}}",
+    "attendance": "Teilnahme: {{audience}}",
+    "openEvent": "Veranstaltung öffnen"
   },
   "careers": {
     "allCompanies": "Alle Unternehmen",

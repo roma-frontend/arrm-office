@@ -20,7 +20,7 @@ import { getLocaleString } from './date-format';
 // Public types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type TimelineSource = 'leave' | 'driver' | 'google' | 'custom';
+export type TimelineSource = 'leave' | 'driver' | 'google' | 'custom' | 'company';
 
 /** Where the event sits relative to `now`. */
 export type TimelinePhase = 'upcoming' | 'live' | 'past';
@@ -204,11 +204,38 @@ export interface CustomTimelineData {
   createdAt?: number;
 }
 
+/**
+ * A company-wide event, as stored in `companyEvents`.
+ *
+ * Unlike the other sources this one carries epoch milliseconds rather than
+ * `yyyy-MM-dd` strings, may span several days, and states who is expected to
+ * attend — by department and by name.
+ */
+export interface CompanyTimelineData {
+  id: string;
+  name: string;
+  description?: string;
+  /** Epoch ms. */
+  startDate: number;
+  /** Epoch ms. */
+  endDate: number;
+  isAllDay?: boolean;
+  eventType: string;
+  priority?: 'high' | 'medium' | 'low';
+  requiredDepartments: string[];
+  requiredEmployeeNames?: string[];
+  requiredCount?: number;
+  creatorName?: string;
+  notifyDaysBefore?: number;
+  createdAt?: number;
+}
+
 export type TimelineInput =
   | { source: 'leave'; data: LeaveTimelineData }
   | { source: 'driver'; data: DriverTimelineData }
   | { source: 'google'; data: GoogleTimelineData }
-  | { source: 'custom'; data: CustomTimelineData };
+  | { source: 'custom'; data: CustomTimelineData }
+  | { source: 'company'; data: CompanyTimelineData };
 
 /** Minimal `t` contract — matches i18next's signature without importing it. */
 export type TimelineT = (key: string, options?: Record<string, unknown>) => string;
@@ -242,6 +269,18 @@ export const TIMELINE_SOURCE_ACCENTS: Record<TimelineSource, string> = {
   driver: '#f97316',
   google: '#8b5cf6',
   custom: '#3b82f6',
+  company: '#0d9488',
+};
+
+/** Accent per company event type, so the calendar reads at a glance. */
+export const COMPANY_EVENT_ACCENTS: Record<string, string> = {
+  meeting: '#0d9488',
+  conference: '#7c3aed',
+  training: '#16a34a',
+  team_building: '#db2777',
+  holiday: '#f59e0b',
+  deadline: '#dc2626',
+  other: '#0d9488',
 };
 
 /** Reminder id → offset before the start, in ms. Mirrors CreateEventModal. */
@@ -303,6 +342,19 @@ function endOfLocalDay(dateStr: string): number | null {
   const start = parseLocalDate(dateStr);
   if (start === null) return null;
   return start + MS_PER_DAY - 1;
+}
+
+/**
+ * Close of the local day containing `ms`.
+ *
+ * Company events are stored as timestamps, and an all-day one sits at the start
+ * of its day. Without this an all-day event would occupy no time at all and read
+ * as finished the moment it began.
+ */
+function endOfDayAt(ms: number): number {
+  const date = new Date(ms);
+  date.setHours(23, 59, 59, 999);
+  return date.getTime();
 }
 
 function parseIso(value: string | null | undefined): number | null {
@@ -1023,6 +1075,136 @@ function buildCustomTimeline(
   };
 }
 
+/**
+ * A company-wide event.
+ *
+ * The dates arrive as epoch milliseconds and an all-day event is stored at the
+ * start of its day, so a one-day all-day event would otherwise have a zero-length
+ * window and show as already over. The end is pushed to the close of its last day
+ * whenever the event is all-day.
+ */
+function buildCompanyTimeline(
+  event: CompanyTimelineData,
+  { now, t }: BuildTimelineOptions,
+): PartialTimeline {
+  const allDay = event.isAllDay !== false;
+  const start = event.startDate;
+  const rawEnd = Math.max(event.endDate, event.startDate);
+  const end = allDay ? endOfDayAt(rawEnd) : rawEnd;
+
+  const typeLabel = t(`event.types.${event.eventType}`, { defaultValue: event.eventType });
+  const accent = COMPANY_EVENT_ACCENTS[event.eventType] ?? TIMELINE_SOURCE_ACCENTS.company;
+
+  const drafts: MilestoneDraft[] = [];
+  if (event.createdAt) {
+    drafts.push({
+      id: 'created',
+      at: event.createdAt,
+      label: t('eventTimeline.milestones.created'),
+      detail: event.creatorName,
+      icon: 'created',
+    });
+  }
+  if (event.notifyDaysBefore && event.notifyDaysBefore > 0) {
+    drafts.push({
+      id: 'reminder',
+      at: start - event.notifyDaysBefore * MS_PER_DAY,
+      label: t('eventTimeline.milestones.reminder'),
+      detail: t('eventTimeline.facts.notifyDaysValue', { count: event.notifyDaysBefore }),
+      tone: 'warning',
+      icon: 'reminder',
+    });
+  }
+  drafts.push(
+    {
+      id: 'start',
+      at: start,
+      label: t('eventTimeline.milestones.eventStarts'),
+      detail: typeLabel,
+      tone: 'accent',
+      icon: 'start',
+    },
+    {
+      id: 'end',
+      at: end,
+      label: t('eventTimeline.milestones.eventEnds'),
+      tone: 'accent',
+      icon: 'end',
+    },
+  );
+
+  const facts: TimelineFact[] = [];
+  pushFact(facts, {
+    id: 'type',
+    label: t('eventTimeline.facts.eventType'),
+    value: typeLabel,
+    icon: 'tag',
+  });
+  if (event.priority) {
+    pushFact(facts, {
+      id: 'priority',
+      label: t('eventTimeline.facts.priority'),
+      value: t(`priority.${event.priority}`, { defaultValue: event.priority }),
+      icon: 'gauge',
+    });
+  }
+  pushFact(facts, {
+    id: 'departments',
+    label: t('eventTimeline.facts.requiredDepartments'),
+    value: event.requiredDepartments.join(', '),
+    icon: 'users',
+  });
+  pushFact(facts, {
+    id: 'requiredPeople',
+    label: t('eventTimeline.facts.requiredEmployees'),
+    value: (event.requiredEmployeeNames ?? []).join(', '),
+    icon: 'users',
+    wide: true,
+  });
+  pushFact(facts, {
+    id: 'organizer',
+    label: t('eventTimeline.facts.organizer'),
+    value: event.creatorName ?? '',
+    icon: 'user',
+  });
+  pushFact(facts, {
+    id: 'description',
+    label: t('eventTimeline.facts.description'),
+    value: event.description ?? '',
+    icon: 'text',
+    wide: true,
+  });
+  facts.push({
+    id: 'eventPage',
+    label: t('eventTimeline.facts.eventPage'),
+    value: t('eventTimeline.facts.openEventPage'),
+    icon: 'link',
+    href: `/events/${event.id}`,
+  });
+
+  const audienceLabel =
+    event.requiredDepartments.length > 0 || (event.requiredCount ?? 0) > 0
+      ? t('eventTimeline.status.attendanceRequired')
+      : t('eventTimeline.status.wholeCompany');
+
+  return {
+    id: event.id,
+    title: event.name,
+    subtitle: typeLabel,
+    accent,
+    status: { label: audienceLabel, tone: 'accent' },
+    start,
+    end,
+    allDay,
+    milestones: toMilestones(drafts, now),
+    facts,
+    people: (event.requiredEmployeeNames ?? []).map((name) => ({
+      name,
+      role: t('eventTimeline.roles.required'),
+    })),
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1041,7 +1223,9 @@ export function buildEventTimeline(
         ? buildDriverTimeline(input.data, options)
         : input.source === 'google'
           ? buildGoogleTimeline(input.data, options)
-          : buildCustomTimeline(input.data, options);
+          : input.source === 'company'
+            ? buildCompanyTimeline(input.data, options)
+            : buildCustomTimeline(input.data, options);
 
   const end = Math.max(partial.end, partial.start);
   const phase: TimelinePhase = now < partial.start ? 'upcoming' : now > end ? 'past' : 'live';

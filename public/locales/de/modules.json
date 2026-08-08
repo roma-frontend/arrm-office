@@ -2184,6 +2184,10 @@
       "holidayDesc": "Firmenfeier oder freier Tag",
       "celebration": "Feier",
       "celebrationDesc": "Party oder Festlichkeit",
+      "team_building": "Teambuilding",
+      "team_buildingDesc": "Gemeinsame Veranstaltung für das Team",
+      "deadline": "Frist",
+      "deadlineDesc": "Datum, bis zu dem die Arbeit fertig sein muss",
       "other": "Andere",
       "otherDesc": "Etwas anderes"
     },
@@ -2599,7 +2603,8 @@
       "leave": "Urlaubsantrag",
       "driver": "Fahrerbuchung",
       "google": "Google Kalender",
-      "custom": "Kalendereintrag"
+      "custom": "Kalendereintrag",
+      "company": "Unternehmensveranstaltung"
     },
     "sections": {
       "timeline": "Zeitverlauf",
@@ -2621,7 +2626,9 @@
     },
     "status": {
       "scheduled": "Geplant",
-      "confirmed": "Bestätigt"
+      "confirmed": "Bestätigt",
+      "attendanceRequired": "Teilnahme erwartet",
+      "wholeCompany": "Gesamtes Unternehmen"
     },
     "milestones": {
       "created": "Erstellt",
@@ -2677,14 +2684,23 @@
       "reminder": "Erinnerung",
       "attendees": "Teilnehmer",
       "attachment": "Anhang",
-      "openAttachment": "Anhang öffnen"
+      "openAttachment": "Anhang öffnen",
+      "eventType": "Veranstaltungstyp",
+      "priority": "Priorität",
+      "requiredDepartments": "Erwartete Abteilungen",
+      "requiredEmployees": "Erwartete Mitarbeitende",
+      "organizer": "Organisator",
+      "notifyDaysValue": "{{count}} Tage vorher",
+      "eventPage": "Veranstaltung",
+      "openEventPage": "Veranstaltungsseite öffnen"
     },
     "roles": {
       "employee": "Mitarbeiter",
       "reviewer": "Prüfer",
       "driver": "Fahrer",
       "bookedBy": "Gebucht von",
-      "attendee": "Teilnehmer"
+      "attendee": "Teilnehmer",
+      "required": "Teilnahme erwartet"
     },
     "driverType": {
       "trip": "Fahrt",

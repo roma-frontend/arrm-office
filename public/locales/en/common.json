@@ -1717,7 +1717,12 @@
     "leaveRequests": "Leave Requests",
     "calendarEvents": "Calendar Events",
     "googleEvents": "Google Calendar",
-    "driverBookings": "Driver Bookings"
+    "driverBookings": "Driver Bookings",
+    "companyEvents": "Company events",
+    "wholeCompany": "Whole company",
+    "namedAttendees": "Selected employees: {{count}}",
+    "attendance": "Attendance: {{audience}}",
+    "openEvent": "Open event"
   },
   "chatWidget": {
     "viewFullScreen": "View full response"

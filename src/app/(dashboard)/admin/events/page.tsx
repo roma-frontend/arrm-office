@@ -145,7 +145,6 @@ export default function CompanyEventsPage() {
   const selectedOrgId = useSelectedOrganization();
   const isSuperadmin = authUser?.role === 'superadmin'; // cspell:disable-line
   const effectiveOrgId = isSuperadmin && selectedOrgId ? selectedOrgId : authUser?.organizationId; // cspell:disable-line
-  const userId = authUser?.id as Id<'users'> | undefined;
 
   const events = useQuery(
     api.events.getCompanyEvents,
@@ -566,7 +565,7 @@ export default function CompanyEventsPage() {
                                     )
                                   ) {
                                     try {
-                                      await deleteEvent({ eventId: event._id, userId: userId! });
+                                      await deleteEvent({ eventId: event._id });
                                       toast.success(t('events.eventDeleted', 'Event deleted'));
                                     } catch (error) {
                                       logger.error(
@@ -599,10 +598,7 @@ export default function CompanyEventsPage() {
 
       {/* Conflicts Tab Content */}
       {activeTab === 'conflicts' && (
-        <LeaveConflictAlerts
-          organizationId={effectiveOrgId as Id<'organizations'>}
-          userId={userId!}
-        />
+        <LeaveConflictAlerts organizationId={effectiveOrgId as Id<'organizations'>} />
       )}
 
       {/* Create Event Dialog */}
@@ -619,7 +615,6 @@ export default function CompanyEventsPage() {
           <div className="flex-1 min-h-0 overflow-y-auto">
             <CreateEventWizard
               organizationId={effectiveOrgId as Id<'organizations'>}
-              userId={userId!}
               onComplete={() => {
                 setShowCreateModal(false);
                 toast.success(t('events.eventCreated', 'Event created successfully'));
@@ -747,7 +742,6 @@ export default function CompanyEventsPage() {
                     try {
                       await updateEvent({
                         eventId: selectedEvent._id,
-                        userId: userId!,
                         name: editName,
                         description: editDescription,
                         startDate: new Date(editStartDate).getTime(),

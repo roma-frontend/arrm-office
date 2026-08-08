@@ -1735,7 +1735,12 @@
     "leaveRequests": "Заявки на отпуск",
     "calendarEvents": "События календаря",
     "googleEvents": "Google Календарь",
-    "driverBookings": "Бронирования водителей"
+    "driverBookings": "Бронирования водителей",
+    "companyEvents": "Мероприятия организации",
+    "wholeCompany": "Вся организация",
+    "namedAttendees": "Выбранные сотрудники: {{count}}",
+    "attendance": "Участие: {{audience}}",
+    "openEvent": "Открыть мероприятие"
   },
   "chatWidget": {
     "viewFullScreen": "Показать полный ответ"

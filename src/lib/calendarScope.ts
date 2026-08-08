@@ -24,6 +24,8 @@ const TEAM_FIRST_ROLES = new Set(['admin', 'supervisor', 'superadmin']);
 export interface ScopeViewer {
   id: string;
   name?: string;
+  /** Needed to tell whether a department-wide company event concerns the viewer. */
+  department?: string;
 }
 
 /** Minimal shapes — only the fields ownership depends on. */
@@ -51,6 +53,12 @@ export interface ScopedRoomBooking {
   organizerName?: string;
   attendeeIds?: string[];
   attendeeNames?: string[];
+}
+
+export interface ScopedCompanyEvent {
+  createdBy?: string;
+  requiredDepartments?: string[];
+  requiredEmployeeIds?: string[];
 }
 
 function sameId(a: string | undefined, b: string | undefined): boolean {
@@ -101,6 +109,24 @@ export function isMyRoomBooking(booking: ScopedRoomBooking, viewer: ScopeViewer)
   if (sameName(booking.organizerName, viewer.name)) return true;
   if ((booking.attendeeIds ?? []).some((id) => sameId(id, viewer.id))) return true;
   return (booking.attendeeNames ?? []).some((name) => sameName(name, viewer.name));
+}
+
+/**
+ * A company event concerns the viewer when they organized it, when they are
+ * required by name or through their department, or when nobody in particular is
+ * required — an event with no named audience is the whole organization's, and
+ * hiding it in the personal view would be the same mistake as leaving it off the
+ * calendar entirely.
+ */
+export function isMyCompanyEvent(event: ScopedCompanyEvent, viewer: ScopeViewer): boolean {
+  if (sameId(event.createdBy, viewer.id)) return true;
+  if ((event.requiredEmployeeIds ?? []).some((id) => sameId(id, viewer.id))) return true;
+
+  const departments = (event.requiredDepartments ?? []).filter((d) => d.trim().length > 0);
+  const targeted = departments.length > 0 || (event.requiredEmployeeIds ?? []).length > 0;
+  if (!targeted) return true;
+
+  return departments.some((department) => sameName(department, viewer.department));
 }
 
 /** `team` shows everything; `mine` keeps only what the viewer owns. */
