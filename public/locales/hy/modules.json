@@ -1011,6 +1011,8 @@
     "pdfExported": "PDF-ը հաջողությամբ արտահանվել է",
     "archivePdf": "Արխիվացնել PDF",
     "archivedPdf": "Արխիվացված PDF",
+    "exportDocx": "Արտահանել Word",
+    "docxExported": "Word ֆայլը արտահանվել է",
     "archiving": "Արխիվացում…",
     "archived": "Ստորագրված փաստաթուղթը արխիվացվել է",
     "alreadyArchived": "Փաստաթուղթն արդեն արխիվացված է"

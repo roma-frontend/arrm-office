@@ -1011,6 +1011,8 @@
     "pdfExported": "PDF exported successfully",
     "archivePdf": "Archive PDF",
     "archivedPdf": "Archived PDF",
+    "exportDocx": "Export Word",
+    "docxExported": "Word file exported",
     "archiving": "Archiving…",
     "archived": "Signed document archived",
     "alreadyArchived": "Document already archived"

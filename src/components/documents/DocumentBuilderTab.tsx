@@ -16,6 +16,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import {
   Archive,
   ArchiveRestore,
@@ -99,8 +100,17 @@ function emptyDraft(): BlueprintDraft {
   };
 }
 
-/** Convert a built-in template into an editable blueprint draft. */
-function draftFromCatalog(templateId: string, spine: SupportedLocale): BlueprintDraft | null {
+/**
+ * Convert a built-in template into an editable blueprint draft.
+ *
+ * @param uiLang Language the admin is working in; it names the draft. The
+ *   catalog falls back to English for languages it has no copy in.
+ */
+function draftFromCatalog(
+  templateId: string,
+  spine: SupportedLocale,
+  uiLang: SupportedLocale,
+): BlueprintDraft | null {
   const template = getCatalogTemplate(templateId);
   if (!template) return null;
 
@@ -121,7 +131,7 @@ function draftFromCatalog(templateId: string, spine: SupportedLocale): Blueprint
   }
 
   return {
-    name: localizedContent(template, 'en').title,
+    name: localizedContent(template, uiLang).title,
     category: template.category,
     accent: template.accent,
     titles,
@@ -140,6 +150,9 @@ export default function DocumentBuilderTab({
   organizationId: Id<'organizations'>;
 }) {
   const { t } = useTranslation();
+  // Template names follow the interface language; the catalog falls back to
+  // English for languages it carries no copy in.
+  const lang = (i18n.language?.slice(0, 2) as SupportedLocale) || 'en';
 
   const blueprints = useQuery(api.documentBlueprints.list, {
     organizationId,
@@ -317,7 +330,7 @@ export default function DocumentBuilderTab({
                 key={template.id}
                 type="button"
                 onClick={() => {
-                  const draft = draftFromCatalog(template.id, 'hy');
+                  const draft = draftFromCatalog(template.id, 'hy', lang);
                   if (!draft) return;
                   setCatalogOpen(false);
                   setEditing(draft);
@@ -330,7 +343,7 @@ export default function DocumentBuilderTab({
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-(--text-primary)">
-                    {localizedContent(template, 'en').title}
+                    {localizedContent(template, lang).title}
                   </span>
                   <span className="block text-xs text-(--text-muted)">
                     {t(`docBuilder.category_${template.category}`, template.category)} ·{' '}

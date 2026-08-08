@@ -61,12 +61,12 @@ import {
   type DocumentLabels,
   type DocumentBlock,
 } from '@/lib/exportDocument';
+import { hiringPacketFileName } from '@/lib/hiringPacketDocument';
 import {
   applySignaturesToBlocks,
-  hiringPacketFileName,
-  parseHiringPacketContent,
+  parseDocumentContent,
   type CollectedSignature,
-} from '@/lib/hiringPacketDocument';
+} from '@/lib/bilingualDocument';
 import {
   assetFormDocumentNumber,
   assetFormFileName,
@@ -106,7 +106,7 @@ function localizedDocTitle(
   t: TFunction,
 ): string {
   if (!doc) return '';
-  const packet = doc.content ? parseHiringPacketContent(doc.content) : null;
+  const packet = doc.content ? parseDocumentContent(doc.content) : null;
   if (packet) return packet.title;
   const parsed = doc.content ? parseAssetFormContent(doc.content) : null;
   if (!parsed) return doc.title;
@@ -116,16 +116,16 @@ function localizedDocTitle(
 /**
  * Plain-text body for the in-app previews.
  *
- * Structured documents (asset acts, hiring-packet bodies) store JSON in
+ * Structured documents (asset acts, frozen bilingual bodies) store JSON in
  * `content`; without this the employee about to sign would be shown the raw
- * `__HP__{...}` payload.
+ * `__DOC__{...}` payload.
  */
 function documentDisplayBody(
   doc: { content?: string } | null | undefined,
   act: { blocks: DocumentBlock[] } | null,
 ): string {
   if (act) return documentBodyToPlainText(act.blocks);
-  const packet = doc?.content ? parseHiringPacketContent(doc.content) : null;
+  const packet = doc?.content ? parseDocumentContent(doc.content) : null;
   if (packet) return documentBodyToPlainText(packet.blocks);
   return doc?.content || '';
 }
@@ -180,8 +180,11 @@ interface SignatureDoc {
  * that was sent (org header, accent, signature block) — not a generic audit
  * report. Falls back to sensible defaults for documents created before the
  * theme was persisted.
+ *
+ * Exported for tests: this is the seam where a frozen bilingual body either
+ * becomes blocks or leaks its own JSON payload into the PDF.
  */
-function toRenderableDocument(
+export function toRenderableDocument(
   doc: SignatureDoc,
   labels: DocumentLabels,
   t?: TFunction,
@@ -196,7 +199,13 @@ function toRenderableDocument(
   // Bilingual body frozen at send time. Everything needed to reproduce the
   // original is in the payload (including the static labels), so an archived
   // copy regenerated later still matches what was signed.
-  const packet = parseHiringPacketContent(doc.content);
+  //
+  // Read through `parseDocumentContent`, which understands both the current
+  // `__DOC__` sentinel and the hiring packet's original `__HP__`. Parsing only
+  // the legacy one — as this did — meant every document issued by the builder
+  // fell through to the plain-text branch and printed its own JSON payload as
+  // the body.
+  const packet = parseDocumentContent(doc.content);
   if (packet) {
     const collected: CollectedSignature[] = (doc.requests || [])
       .slice()
@@ -1281,10 +1290,10 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
     if (!doc) return;
     try {
       const renderable = toRenderableDocument(doc, labels, t, i18n.language);
-      const packet = parseHiringPacketContent(doc.content);
+      const packet = parseDocumentContent(doc.content);
       const fileName = packet
         ? hiringPacketFileName(
-            packet.templateId,
+            packet.templateId ?? packet.blueprintId ?? 'document',
             doc.requests?.find((r) => r.order === 1)?.signerName ?? '',
             'docx',
           )

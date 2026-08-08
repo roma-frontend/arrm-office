@@ -1035,6 +1035,8 @@
     "pdfExported": "PDF успешно экспортирован",
     "archivePdf": "Архивировать PDF",
     "archivedPdf": "Архивный PDF",
+    "exportDocx": "Экспорт Word",
+    "docxExported": "Файл Word выгружен",
     "archiving": "Архивирование…",
     "archived": "Подписанный документ заархивирован",
     "alreadyArchived": "Документ уже заархивирован"
