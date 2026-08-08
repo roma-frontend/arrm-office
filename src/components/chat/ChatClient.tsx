@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -17,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { playChatMessageSound } from '@/lib/notificationSound';
 import { logger } from '@/lib/logger';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { toast } from 'sonner';
 
 interface Props {
   userId: string;
@@ -43,6 +45,7 @@ export default function ChatClient({
   userRole,
 }: Props) {
   const mainRef = useMainRef();
+  const { t } = useTranslation();
   const [selectedConvId, setSelectedConvId] = useState<Id<'chatConversations'> | null>(null);
   const [showNewConv, setShowNewConv] = useState(false);
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
@@ -69,7 +72,7 @@ export default function ChatClient({
   const orgId = organizationId as Id<'organizations'>;
 
   // Respect org selector: if a specific org is selected (e.g. superadmin), use it
-  const { selectedOrgId } = useOrgSelectorStore();
+  const { selectedOrgId, setSelectedOrgId } = useOrgSelectorStore();
   // If superadmin has selected an org, filter by that org; otherwise show all
   const effectiveOrgId =
     userRole === 'superadmin' && selectedOrgId
@@ -107,6 +110,64 @@ export default function ChatClient({
     },
     [listCollapsed],
   );
+
+  /**
+   * Deep link support: `/chat?conversation=<id>`.
+   *
+   * Everything that hands the user a link to a specific chat — most visibly the
+   * "open chat" button on a support ticket in `/superadmin/support` — routes
+   * here. Nothing used to read the parameter, so those links landed on the bare
+   * chat page with the empty state showing and the conversation nowhere in
+   * sight.
+   *
+   * Two things have to line up before the target can actually be displayed:
+   * the conversation must be resolved without regard to the org currently
+   * selected (a ticket chat belongs to the reporter's tenant, not necessarily
+   * the one the superadmin is looking at), and the selector then has to be moved
+   * to that tenant, because both the sidebar list and the chat window read their
+   * data through an org-filtered query.
+   */
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const requestedConvId = searchParams.get('conversation');
+  const requestedConv = useQuery(
+    api.chat.queries.getConversationSummary,
+    requestedConvId && uid
+      ? { conversationId: requestedConvId as Id<'chatConversations'>, userId: uid }
+      : 'skip',
+  );
+  // Guards against re-opening the target after the user navigates away from it.
+  const consumedDeepLink = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!requestedConvId || requestedConv === undefined) return;
+    if (consumedDeepLink.current === requestedConvId) return;
+    consumedDeepLink.current = requestedConvId;
+
+    // Drop the parameter either way: it has been acted on, and leaving it in the
+    // address bar would re-open the chat every time the user closes it.
+    router.replace(pathname, { scroll: false });
+
+    if (!requestedConv) {
+      toast.error(t('chat.conversationUnavailable'));
+      return;
+    }
+
+    if (requestedConv.organizationId && requestedConv.organizationId !== selectedOrgId) {
+      setSelectedOrgId(requestedConv.organizationId);
+    }
+    handleSelectConversation(requestedConv._id);
+  }, [
+    requestedConvId,
+    requestedConv,
+    selectedOrgId,
+    setSelectedOrgId,
+    handleSelectConversation,
+    router,
+    pathname,
+    t,
+  ]);
 
   // When deselecting on mobile
   const handleBack = useCallback(() => {

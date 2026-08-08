@@ -14,6 +14,7 @@
     "openChat": "Открыть чат",
     "createGroup": "Создать группу",
     "creating": "Создание…",
+    "conversationUnavailable": "Переписка недоступна или вы не являетесь её участником",
     "yourMessages": "Ваши сообщения",
     "yourMessagesSubtitle": "Отправляйте сообщения, файлы и начинайте звонки с вашей командой",
     "startConversation": "Начать разговор",

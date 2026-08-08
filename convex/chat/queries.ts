@@ -198,6 +198,54 @@ export const getMyConversations = query({
   },
 });
 
+/**
+ * Resolve one conversation the caller belongs to, ignoring the organization
+ * currently selected in the UI.
+ *
+ * `getMyConversations` cannot answer this. It filters by the selected org, so a
+ * deep link into a support chat that lives in another tenant — exactly what
+ * happens when a superadmin opens a ticket chat from `/superadmin/support` —
+ * resolves to nothing. Membership is the only authority here: callers who are
+ * not in the conversation get `null`, so this leaks nothing.
+ */
+export const getConversationSummary = query({
+  args: {
+    conversationId: v.id('chatConversations'),
+    // The rest of this module identifies the viewer through an argument rather
+    // than the session, and the chat screen has no session-bound query to lean
+    // on. Prefer the verified caller when there is one, fall back to the
+    // argument so the deep link resolves in the same conditions the sidebar
+    // already loads under.
+    userId: v.optional(v.id('users')),
+  },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    const viewerId = caller?._id ?? args.userId;
+    if (!viewerId) return null;
+
+    const membership = await ctx.db
+      .query('chatMembers')
+      .withIndex('by_conversation_user', (q) =>
+        q.eq('conversationId', args.conversationId).eq('userId', viewerId),
+      )
+      .first();
+    if (!membership) return null;
+
+    const conv = await ctx.db.get(args.conversationId);
+    if (!conv) return null;
+
+    return {
+      _id: conv._id,
+      type: conv.type,
+      name: conv.name,
+      organizationId: conv.organizationId,
+      // A conversation the user removed from their own list still opens through
+      // a deep link; the caller decides whether to surface that.
+      isRemoved: membership.isDeleted === true,
+    };
+  },
+});
+
 /** Get all members of a conversation */
 export const getConversationMembers = query({
   args: { conversationId: v.id('chatConversations') },

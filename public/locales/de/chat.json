@@ -14,6 +14,7 @@
     "openChat": "Chat öffnen",
     "createGroup": "Gruppe erstellen",
     "creating": "Erstellen…",
+    "conversationUnavailable": "Diese Unterhaltung ist nicht verfügbar oder Sie sind kein Mitglied",
     "yourMessages": "Ihre Nachrichten",
     "yourMessagesSubtitle": "Senden Sie Nachrichten, Dateien und starten Sie Anrufe mit Ihrem Team",
     "startConversation": "Gespräch beginnen",

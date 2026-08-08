@@ -207,6 +207,14 @@ export const ConversationList = React.memo(function ConversationList({
 
     if (!matchesSearch) return false;
 
+    // The conversation currently on screen is never filtered out of the list.
+    // The stored filter defaults to `chat` (direct only), which silently hid any
+    // group the user was taken to by a link — a support ticket chat opened from
+    // `/superadmin/support` is a group, so it appeared nowhere in the sidebar
+    // while its messages were on screen. Search still applies: hiding a
+    // non-matching row while the user is looking something up is expected.
+    if (selectedId && c._id === selectedId) return true;
+
     const isHidden = c.membership.isArchived || c.isArchived;
     const isUnread = c.membership.unreadCount > 0 && !c.membership.isDeleted;
     const isPinned = c.isPinned && !isHidden && !c.membership.isDeleted;
