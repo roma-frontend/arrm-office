@@ -60,10 +60,10 @@ module.exports = {
     // Coverage floor — ratchet up as coverage improves.
     // Auto-ratchet via: node scripts/ratchet-coverage.mjs
     global: {
-      branches: 28,
-      functions: 28,
-      lines: 37,
-      statements: 37,
+      branches: 30,
+      functions: 30,
+      lines: 40,
+      statements: 39,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
