@@ -23,6 +23,7 @@ import {
   Trash2,
   Users2,
   Zap,
+  CalendarClock,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -33,16 +34,37 @@ import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { MarkdownMessage } from '@/components/MarkdownMessage';
 import { NewsComposer } from './NewsComposer';
+import { NewsScheduleManager } from './NewsScheduleManager';
 import {
   ACCENT,
   CATEGORY_CONFIG,
   CATEGORY_ORDER,
   EMOJI_REACTIONS,
+  localizedText,
   relativeTime,
   type NewsCategory,
 } from './newsCategories';
 
 // ── Types ────────────────────────────────────────────────────────────────────
+
+/** `ru-RU` → `ru`; the schedule stores copy under bare language codes. */
+function langOf(language: string | undefined): string {
+  return (language ?? 'en').slice(0, 2);
+}
+
+function titleOf(
+  item: { title: string; titleI18n?: Record<string, string> },
+  lang: string,
+): string {
+  return localizedText(item.title, item.titleI18n, lang);
+}
+
+function bodyOf(
+  item: { content: string; contentI18n?: Record<string, string> },
+  lang: string,
+): string {
+  return localizedText(item.content, item.contentI18n, lang);
+}
 
 interface ReactionGroup {
   emoji: string;
@@ -61,6 +83,13 @@ interface FeedItem {
   _id: Id<'announcements'>;
   title: string;
   content: string;
+  /**
+   * Copy per locale on posts published from the schedule. The stored `title` and
+   * `content` stay the fallback, so a reader whose language is missing still sees
+   * something rather than a blank card.
+   */
+  titleI18n?: Record<string, string>;
+  contentI18n?: Record<string, string>;
   summary?: string;
   category: NewsCategory;
   isPinned: boolean;
@@ -95,6 +124,7 @@ export default function NewsClient() {
   const [categoryFilter, setCategoryFilter] = useState<'all' | NewsCategory>('all');
   const [search, setSearch] = useState('');
   const [composing, setComposing] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
 
   const feed = useQuery(
     api.news.getNewsFeed,
@@ -157,10 +187,21 @@ export default function NewsClient() {
               />
             </div>
             {canPublish && (
-              <Button onClick={() => setComposing(true)} className="gap-1.5 shrink-0">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('news.compose.publish')}</span>
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setScheduling(true)}
+                  className="gap-1.5 shrink-0"
+                  title={t('news.schedule.title')}
+                >
+                  <CalendarClock className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('news.schedule.open')}</span>
+                </Button>
+                <Button onClick={() => setComposing(true)} className="gap-1.5 shrink-0">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('news.compose.publish')}</span>
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -230,6 +271,14 @@ export default function NewsClient() {
         <NewsComposer
           open={composing}
           onClose={() => setComposing(false)}
+          organizationId={organizationId}
+        />
+      )}
+
+      {scheduling && organizationId && (
+        <NewsScheduleManager
+          open={scheduling}
+          onClose={() => setScheduling(false)}
           organizationId={organizationId}
         />
       )}
@@ -400,7 +449,8 @@ function FeedSkeleton() {
  * item looks like every other row is a noticeboard nobody reads.
  */
 function FeaturedCard({ item }: { item: FeedItem }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = langOf(i18n.language);
   const [open, setOpen] = useState(false);
   const cfg = CATEGORY_CONFIG[item.category] ?? CATEGORY_CONFIG.general;
 
@@ -450,9 +500,9 @@ function FeaturedCard({ item }: { item: FeedItem }) {
           )}
         </div>
 
-        <h2 className="text-lg font-bold leading-snug">{item.title}</h2>
+        <h2 className="text-lg font-bold leading-snug">{titleOf(item, lang)}</h2>
         <p className={`text-sm ${item.imageUrl ? 'text-white/85' : 'text-muted-foreground'}`}>
-          {item.summary || item.content.slice(0, 160)}
+          {item.summary || bodyOf(item, lang).slice(0, 160)}
         </p>
 
         <div className="flex items-center justify-between gap-2 pt-1">
@@ -481,9 +531,10 @@ function FeaturedCard({ item }: { item: FeedItem }) {
 // ── Regular post ─────────────────────────────────────────────────────────────
 
 function PostCard({ item }: { item: FeedItem }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = langOf(i18n.language);
   const [expanded, setExpanded] = useState(false);
-  const long = item.content.length > 420;
+  const long = bodyOf(item, lang).length > 420;
 
   return (
     <Card
@@ -516,7 +567,7 @@ function PostCard({ item }: { item: FeedItem }) {
           ))}
         </div>
 
-        <h3 className="text-base font-semibold leading-snug">{item.title}</h3>
+        <h3 className="text-base font-semibold leading-snug">{titleOf(item, lang)}</h3>
 
         {item.imageUrl && (
           /* eslint-disable-next-line @next/next/no-img-element -- author-supplied external URL */
@@ -556,9 +607,10 @@ function PostCard({ item }: { item: FeedItem }) {
 }
 
 function PostBody({ item }: { item: FeedItem }) {
+  const { i18n } = useTranslation();
   return (
     <div className="text-sm">
-      <MarkdownMessage content={item.content} />
+      <MarkdownMessage content={bodyOf(item, langOf(i18n.language))} />
     </div>
   );
 }

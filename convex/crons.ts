@@ -69,4 +69,15 @@ crons.daily(
 // figures the reward budget is judged on. Points are deliberately not refunded.
 crons.daily('reward-voucher-expiry', { hourUTC: 1, minuteUTC: 0 }, internal.rewards.expireVouchers);
 
+// Dated news entries (birthdays, office events) reach the feed on their own day.
+// Hourly rather than daily: an entry added for today should appear within the
+// hour, and a run missed to a deploy is caught up on the next pass instead of
+// skipping the day. The mutation itself is idempotent per occurrence.
+crons.interval('news-schedule-publish', { hours: 1 }, internal.newsSchedule.publishDueEntries);
+
+// The other half of the same promise: a post whose last day has passed is taken
+// down rather than left to sit in the archive. Runs shortly after the hour so it
+// follows the publishing pass.
+crons.interval('news-schedule-expiry', { hours: 1 }, internal.newsSchedule.expireAnnouncements);
+
 export default crons;

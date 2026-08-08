@@ -458,6 +458,16 @@ export function Sidebar() {
       : 'skip',
   );
 
+  // Unread announcements. The feed is a broadcast surface, so an unopened notice
+  // has to advertise itself in the nav the way an unread chat does — otherwise a
+  // dated post can come and go inside its day without anyone noticing.
+  const newsStats = useQuery(
+    api.news.getNewsStats,
+    mounted && user?.id && user?.organizationId
+      ? { organizationId: user.organizationId as Id<'organizations'> }
+      : 'skip',
+  );
+
   // Task notifications are typed `system`, so they're identified by their route
   // rather than by their title — titles are localized and matching English words
   // in them silently zeroed this badge in every other language.
@@ -689,13 +699,20 @@ export function Sidebar() {
               const taskBadgeCount = taskUnreadCount;
               const leaveBadgeCount = (unreadLeavesCount as number) ?? 0;
               const chatBadgeCount = chatUnreadCount ?? 0;
+              const newsBadgeCount =
+                (newsStats as { unreadCount?: number } | undefined)?.unreadCount ?? 0;
               const showTaskBadge = item.href === '/tasks' && taskBadgeCount > 0;
               const showLeaveBadge =
                 item.href === '/leaves' && leaveBadgeCount > 0 && user?.role === 'admin';
               const showChatBadge = item.href === '/chat' && chatBadgeCount > 0;
               const showSignatureBadge = item.href === '/performance' && signatureBadgeCount > 0;
+              const showNewsBadge = item.href === '/news' && newsBadgeCount > 0;
               const showBadge =
-                showTaskBadge || showLeaveBadge || showChatBadge || showSignatureBadge;
+                showTaskBadge ||
+                showLeaveBadge ||
+                showChatBadge ||
+                showSignatureBadge ||
+                showNewsBadge;
               const badgeCount =
                 item.href === '/leaves'
                   ? leaveBadgeCount
@@ -705,7 +722,9 @@ export function Sidebar() {
                       ? chatBadgeCount
                       : item.href === '/performance'
                         ? signatureBadgeCount
-                        : 0;
+                        : item.href === '/news'
+                          ? newsBadgeCount
+                          : 0;
               const hasChildren = item.children && item.children.length > 0;
 
               return (
@@ -763,7 +782,7 @@ export function Sidebar() {
                             <span
                               className={cn(
                                 'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
-                                item.href === '/chat'
+                                item.href === '/chat' || item.href === '/news'
                                   ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
                                   : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
                               )}
@@ -827,7 +846,7 @@ export function Sidebar() {
                             <span
                               className={cn(
                                 'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
-                                item.href === '/chat'
+                                item.href === '/chat' || item.href === '/news'
                                   ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
                                   : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
                               )}
@@ -896,7 +915,7 @@ export function Sidebar() {
                           <span
                             className={cn(
                               'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
-                              item.href === '/chat'
+                              item.href === '/chat' || item.href === '/news'
                                 ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
                                 : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
                             )}

@@ -35,6 +35,22 @@ export const CATEGORY_CONFIG: Record<
   general: { icon: MessageCircle, color: '#6b7280', labelKey: 'news.category.general' },
 };
 
+/**
+ * Text of a post in the reader's language.
+ *
+ * Posts published from the news schedule carry their copy per locale; everything
+ * written by hand carries one string. Falling back through English keeps a reader
+ * whose language the admin skipped from seeing an empty card.
+ */
+export function localizedText(
+  fallback: string,
+  perLocale: Record<string, string> | undefined,
+  locale: string,
+): string {
+  if (!perLocale) return fallback;
+  return perLocale[locale] ?? perLocale.en ?? fallback;
+}
+
 export const CATEGORY_ORDER = Object.keys(CATEGORY_CONFIG) as NewsCategory[];
 
 /**

@@ -208,7 +208,7 @@ export const createAnnouncement = mutation({
  * is skipped — nobody needs telling about their own post — and the fan-out is
  * capped so a large tenant cannot blow the mutation's write budget.
  */
-async function notifyAudience(
+export async function notifyAudience(
   ctx: MutationCtx,
   args: {
     organizationId: Id<'organizations'>;
@@ -370,34 +370,7 @@ export const deleteAnnouncement = mutation({
     }
 
     // Delete all reactions
-    const reactions = await ctx.db
-      .query('announcementReactions')
-      .withIndex('by_announcement', (q) => q.eq('announcementId', args.announcementId))
-      .collect();
-    for (const r of reactions) {
-      await ctx.db.delete(r._id);
-    }
-
-    // Delete all comments
-    const comments = await ctx.db
-      .query('announcementComments')
-      .withIndex('by_announcement', (q) => q.eq('announcementId', args.announcementId))
-      .collect();
-    for (const c of comments) {
-      await ctx.db.delete(c._id);
-    }
-
-    // View records outlived their announcement, so a re-created post inherited
-    // stale "already seen" rows.
-    const views = await ctx.db
-      .query('announcementViews')
-      .withIndex('by_announcement', (q) => q.eq('announcementId', args.announcementId))
-      .collect();
-    for (const view of views) {
-      await ctx.db.delete(view._id);
-    }
-
-    await ctx.db.delete(args.announcementId);
+    await purgeAnnouncement(ctx, args.announcementId);
 
     await ctx.db.insert('auditLogs', {
       organizationId: announcement.organizationId,
@@ -413,9 +386,43 @@ export const deleteAnnouncement = mutation({
 });
 
 /**
- * Toggle pin status of an announcement. Pinning is a curation decision, so it
- * stays with staff even for your own post.
+ * Delete an announcement and everything hanging off it.
+ *
+ * Shared with the expiry sweep: reactions, comments and view records all key on
+ * the announcement, and a post removed without them leaves rows that a later
+ * post with the same id would inherit as "already seen".
  */
+export async function purgeAnnouncement(
+  ctx: MutationCtx,
+  announcementId: Id<'announcements'>,
+): Promise<void> {
+  const reactions = await ctx.db
+    .query('announcementReactions')
+    .withIndex('by_announcement', (q) => q.eq('announcementId', announcementId))
+    .collect();
+  for (const r of reactions) {
+    await ctx.db.delete(r._id);
+  }
+
+  const comments = await ctx.db
+    .query('announcementComments')
+    .withIndex('by_announcement', (q) => q.eq('announcementId', announcementId))
+    .collect();
+  for (const c of comments) {
+    await ctx.db.delete(c._id);
+  }
+
+  const views = await ctx.db
+    .query('announcementViews')
+    .withIndex('by_announcement', (q) => q.eq('announcementId', announcementId))
+    .collect();
+  for (const view of views) {
+    await ctx.db.delete(view._id);
+  }
+
+  await ctx.db.delete(announcementId);
+}
+
 export const togglePinAnnouncement = mutation({
   args: {
     announcementId: v.id('announcements'),
