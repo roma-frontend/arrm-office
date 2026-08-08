@@ -5,6 +5,7 @@ import { isSuperadmin } from './lib/auth';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { creditBalance, resolveRecognitionSettings } from './lib/points';
 
 // ── Create/Update Supervisor Rating ──────────────────────────────────────
 export const createRating = mutation({
@@ -94,46 +95,19 @@ export const createRating = mutation({
     // Update performance metrics
     await updatePerformanceMetrics(ctx, args.employeeId, args.supervisorId);
 
-    // Award points for positive review (4-5 stars overall → +3 points)
+    // Award points for a positive review. Amount is per-organization policy.
     if (overallRating >= 4) {
       const employee = await ctx.db.get(args.employeeId);
       if (employee?.organizationId) {
         const orgId = employee.organizationId;
-        const now = Date.now();
-        const REVIEW_REWARD = 3;
-
-        const userPointsRecord = await ctx.db
-          .query('userPoints')
-          .withIndex('by_org_user', (q) =>
-            q.eq('organizationId', orgId).eq('userId', args.employeeId),
-          )
-          .first();
-
-        if (userPointsRecord) {
-          await ctx.db.patch(userPointsRecord._id, {
-            balance: userPointsRecord.balance + REVIEW_REWARD,
-            totalEarned: userPointsRecord.totalEarned + REVIEW_REWARD,
-            updatedAt: now,
-          });
-        } else {
-          await ctx.db.insert('userPoints', {
-            organizationId: orgId,
-            userId: args.employeeId,
-            balance: REVIEW_REWARD,
-            totalEarned: REVIEW_REWARD,
-            totalSpent: 0,
-            updatedAt: now,
-          });
-        }
-
-        await ctx.db.insert('pointTransactions', {
+        const settings = await resolveRecognitionSettings(ctx, orgId);
+        await creditBalance(ctx, {
           organizationId: orgId,
           userId: args.employeeId,
-          amount: REVIEW_REWARD,
+          amount: settings.reviewReward,
           type: 'earned_review',
           description: `Positive review (${overallRating.toFixed(1)}★)`,
           referenceId: ratingId,
-          createdAt: now,
         });
       }
     }

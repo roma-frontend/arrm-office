@@ -63,13 +63,27 @@ export const recognition = {
     .index('by_org_user', ['organizationId', 'userId'])
     .index('by_badge', ['badgeId']),
 
-  // Points balance per user
+  /**
+   * Two wallets per member, not one — see `convex/lib/points.ts` for why.
+   *
+   * `balance` is redeemable and only grows from recognition *received*;
+   * `allowance` is the monthly budget for *giving* and can buy nothing.
+   * Both allowance fields are optional so rows written before the split keep
+   * validating: an absent `allowancePeriod` simply reads as "not granted yet"
+   * and is topped up on the owner's next write.
+   */
   userPoints: defineTable({
     organizationId: v.id('organizations'),
     userId: v.id('users'),
     balance: v.number(),
     totalEarned: v.number(),
     totalSpent: v.number(),
+    /** Remaining giving allowance for `allowancePeriod`. */
+    allowance: v.optional(v.number()),
+    /** `YYYY-MM` in organization time the allowance was granted for. */
+    allowancePeriod: v.optional(v.string()),
+    /** Lifetime allowance spent on praising colleagues. */
+    totalGiven: v.optional(v.number()),
     updatedAt: v.number(),
   })
     .index('by_org', ['organizationId'])
@@ -85,8 +99,14 @@ export const recognition = {
       v.literal('earned_attendance'),
       v.literal('earned_review'),
       v.literal('earned_manual'),
+      v.literal('earned_kudos'),
+      v.literal('earned_badge'),
       v.literal('spent_kudos'),
+      v.literal('spent_reward'),
+      v.literal('refund_reward'),
     ),
+    /** Which wallet moved. Absent on rows written before the wallet split. */
+    wallet: v.optional(v.union(v.literal('balance'), v.literal('allowance'))),
     description: v.string(),
     referenceId: v.optional(v.string()),
     createdAt: v.number(),
