@@ -52,12 +52,38 @@ type TemplateTask = {
 const CATEGORIES = ['documentation', 'access', 'training', 'equipment', 'intro', 'other'] as const;
 const ASSIGNEE_TYPES = ['new_hire', 'buddy', 'manager', 'hr', 'it'] as const;
 
+/**
+ * Title of an onboarding task in the viewer's language.
+ *
+ * Task titles are stored as plain text, so the built-in checklist landed in the
+ * database in English and stayed English whatever language was selected — the
+ * labels around it (assignee, category) were translated, which made the mix look
+ * like a bug. Rows created from the built-in list keep their blueprint key
+ * (`default_paperwork`, …), so that key is what gets translated; a task an
+ * organization wrote itself has no such key and falls back to its stored text,
+ * which is the only correct answer for free-form input.
+ */
+function taskTitle(
+  t: TFunction,
+  task: { title: string; templateTaskKey?: string | undefined },
+): string {
+  const key = task.templateTaskKey;
+  if (key && key.startsWith('default_')) {
+    return t(`onboarding.defaultTasks.${key}`, task.title);
+  }
+  return task.title;
+}
+
 // ─── Main Component ──────────────────────────────────────────
 export default function OnboardingClient() {
   const { t } = useTranslation();
   const mainRef = useMainRef();
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'admin' || user?.role === 'supervisor';
+  // Superadmins are staff everywhere on the backend (`assertOrgStaff`), so
+  // leaving them out here hid the start and template buttons from the one role
+  // that can act in every organization.
+  const isAdmin =
+    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
   // Follow the superadmin org selector, like the rest of the dashboard. Reading
   // `user.organizationId` directly pinned this screen to the viewer's own
@@ -439,7 +465,7 @@ function MyOnboardingView({
                 <p
                   className={`text-sm font-medium ${task.status === 'completed' ? 'line-through' : ''}`}
                 >
-                  {task.title}
+                  {taskTitle(t, task)}
                 </p>
                 {task.description && (
                   <p className="text-xs text-muted-foreground truncate">{task.description}</p>
@@ -472,7 +498,8 @@ function ProgramDetailDialog({
   const complete = useMutation(api.onboarding.completeTask);
   const skip = useMutation(api.onboarding.skipTask);
   const completeProgram = useMutation(api.onboarding.completeProgram);
-  const isAdmin = user?.role === 'admin' || user?.role === 'supervisor';
+  const isAdmin =
+    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
   const handleComplete = async (taskId: Id<'onboardingTasks'>) => {
     if (!user?.id) return;
@@ -558,7 +585,7 @@ function ProgramDetailDialog({
                   )}
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm ${task.status === 'completed' ? 'line-through' : ''}`}>
-                      {task.title}
+                      {taskTitle(t, task)}
                     </p>
                     <div className="flex gap-2 mt-0.5">
                       <span className="text-xs text-muted-foreground">
@@ -638,10 +665,13 @@ function StartOnboardingWizard({
   ];
 
   const handleSubmit = async () => {
-    if (!user?.organizationId || !employeeId || !managerId) return;
+    // Guard on the organization being acted on, not the viewer's own: a
+    // superadmin has no organizationId of their own and would never get past
+    // this check while looking at someone else's org.
+    if (!orgId || !employeeId || !managerId) return;
     try {
       await startOnboarding({
-        organizationId: orgId as Id<'organizations'>,
+        organizationId: orgId,
         employeeId: employeeId as Id<'users'>,
         templateId: templateId ? (templateId as Id<'onboardingTemplates'>) : undefined,
         startDate: new Date(startDate || Date.now()).getTime(),
@@ -687,7 +717,7 @@ function StartOnboardingWizard({
           {step === 0 && (
             <div className="space-y-4">
               <UserPicker
-                organizationId={user?.organizationId as Id<'organizations'> | undefined}
+                organizationId={orgId}
                 value={employeeId}
                 onChange={setEmployeeId}
                 label={t('onboarding.fields.employee', 'New hire')}
@@ -714,15 +744,30 @@ function StartOnboardingWizard({
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {templates
-                      .filter((t) => t)
-                      .map((tpl) => (
+                    {templates.length === 0 ? (
+                      // An empty dropdown reads as a broken control. Say why it is
+                      // empty and that the step can be skipped.
+                      <p className="px-2 py-3 text-sm text-muted-foreground max-w-[18rem]">
+                        {t(
+                          'onboarding.fields.noTemplatesHint',
+                          'No templates yet — create one on the Templates tab, or continue without one.',
+                        )}
+                      </p>
+                    ) : (
+                      templates.map((tpl) => (
                         <SelectItem key={tpl._id} value={tpl._id}>
                           {tpl.name}
                         </SelectItem>
-                      ))}
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t(
+                    'onboarding.fields.templateHint',
+                    'Optional. Without a template the built-in checklist is used.',
+                  )}
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium">
@@ -740,7 +785,7 @@ function StartOnboardingWizard({
           {step === 2 && (
             <div className="space-y-5">
               <UserPicker
-                organizationId={user?.organizationId as Id<'organizations'> | undefined}
+                organizationId={orgId}
                 value={managerId}
                 onChange={setManagerId}
                 label={t('onboarding.fields.manager', 'Manager')}
@@ -748,7 +793,7 @@ function StartOnboardingWizard({
                 listHeight={200}
               />
               <UserPicker
-                organizationId={user?.organizationId as Id<'organizations'> | undefined}
+                organizationId={orgId}
                 value={buddyId}
                 onChange={setBuddyId}
                 label={t('onboarding.fields.buddy', 'Buddy / mentor (optional)')}

@@ -1396,6 +1396,17 @@
     "tasks": "tasks",
     "active": "Active",
     "inactive": "Inactive",
+    "defaultTasks": {
+      "default_paperwork": "Sign employment paperwork",
+      "default_accounts": "Create accounts and grant system access",
+      "default_equipment": "Hand over laptop and equipment",
+      "default_workplace": "Prepare workplace and access badge",
+      "default_team_intro": "Introduce to the team",
+      "default_buddy_meeting": "First meeting with the buddy",
+      "default_policies": "Read internal policies and safety rules",
+      "default_goals": "Agree on goals for the probation period",
+      "default_checkin_30": "30-day check-in"
+    },
     "yourProgress": "Your Progress",
     "taskCompleted": "Task completed!",
     "programCompleted": "Onboarding completed!",
@@ -1451,6 +1462,8 @@
     },
     "fields": {
       "employee": "New hire",
+      "templateHint": "Optional. Without a template the built-in checklist is used.",
+      "noTemplatesHint": "No templates yet — create one on the Templates tab, or continue without one.",
       "employeeHint": "The user must already exist in the system",
       "template": "Template",
       "selectTemplate": "Select a template (optional)",
