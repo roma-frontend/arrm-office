@@ -51,6 +51,11 @@ export function FaceLogin() {
   // freshest copy, otherwise retries would repeat with stale values.
   const attemptFaceLoginRef = useRef<() => Promise<void>>(async () => {});
 
+  // startWebcam's closure can outlive the render it was created in (e.g. a
+  // double-click racing the commit); mirror the block flag so the guard reads
+  // the live value instead of a stale one.
+  const isBlockedRef = useRef(false);
+
   // ===== UI State =====
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -202,7 +207,7 @@ export function FaceLogin() {
   };
 
   const startWebcam = async () => {
-    if (isBlocked) {
+    if (isBlockedRef.current) {
       toast.error(t('faceLogin.blocked', 'Face ID is blocked. Please use email/password login.'), {
         duration: 5000,
       });
@@ -584,6 +589,7 @@ export function FaceLogin() {
   // keep the detection loop's view of attemptFaceLogin current
   useEffect(() => {
     attemptFaceLoginRef.current = attemptFaceLogin;
+    isBlockedRef.current = isBlocked;
   });
 
   return (

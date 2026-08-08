@@ -263,6 +263,18 @@ async function tick() {
   });
 }
 
+/**
+ * Grab the real onClick handler React attached to the Start button — the
+ * defensive guards in startWebcam are unreachable through the DOM (the button
+ * unmounts in the blocked/active states), so tests invoke the handler directly.
+ */
+function getStartHandler(): () => Promise<void> {
+  const btn = screen.getByText('Start Face Login');
+  const key = Object.keys(btn).find((k) => k.startsWith('__reactProps'));
+  expect(key).toBeTruthy();
+  return (btn as any)[key!].onClick as () => Promise<void>;
+}
+
 describe('FaceLogin — initial render & model status', () => {
   it('renders the idle screen with email input and start button', async () => {
     render(<FaceLogin />);
@@ -362,6 +374,19 @@ describe('FaceLogin — webcam start/stop', () => {
 
     // a late frame after the stream is gone tears the loop down (guard branch)
     await tick();
+  });
+
+  it('warns when start is invoked while the webcam is already running', async () => {
+    render(<FaceLogin />);
+    await flush();
+    const startHandler = getStartHandler();
+
+    await startWebcam();
+    // direct call — the button itself is gone while the webcam is active
+    await act(async () => {
+      await startHandler();
+    });
+    expect(logger.warn).toHaveBeenCalledWith('⚠️ Webcam already active, ignoring startWebcam');
   });
 
   it('shows a toast when the video fails to play', async () => {
@@ -675,6 +700,46 @@ describe('FaceLogin — auto trigger & login', () => {
     // blocked state → the email/password fallback button navigates away
     fireEvent.click(screen.getByText('Use Email/Password Login'));
     expect(mockPush).toHaveBeenCalledWith('/login');
+  });
+
+  it('toasts when start is invoked while already blocked', async () => {
+    mockDetectBox = { x: 0, y: 0, width: 300, height: 300, score: 0.9 };
+    mockDetectResult = { descriptor: new Float32Array([0.1, 0.2, 0.3]) };
+    jest.spyOn(Date, 'now').mockImplementation(() => fakeNow);
+    faceLoginResponder = () =>
+      Promise.resolve({ ok: false, status: 401, json: async () => ({ error: 'mismatch' }) });
+    render(<FaceLogin />);
+    await flush();
+    // capture the handler while the button still exists, then block the user
+    const startHandler = getStartHandler();
+    await typeEmail('anna@example.com');
+    await startWebcam();
+
+    await tick();
+    await tick();
+    await tick();
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith('Face not recognized. Attempt 1 of 3'),
+    );
+    fakeNow += 3000;
+    await tick();
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith('Face not recognized. Attempt 2 of 3'),
+    );
+    fakeNow += 3000;
+    await tick();
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith('Too many failed attempts. Face ID is now blocked.'),
+    );
+
+    // the captured closure reads the live isBlocked ref
+    await act(async () => {
+      await startHandler();
+    });
+    expect(toast.error).toHaveBeenCalledWith(
+      'Face ID is blocked. Please use email/password login.',
+      expect.objectContaining({ duration: 5000 }),
+    );
   });
 
   it('surfaces the server error message on a failed login', async () => {
