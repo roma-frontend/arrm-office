@@ -314,6 +314,21 @@ describe('offboarding task management', () => {
     expect(after?.status).toBe('skipped');
   });
 
+  it('refuses to skip a task on a non-active program', async () => {
+    const c = await seed();
+    const programId = await startOffboarding(c);
+
+    const hrTask = await c.t.run(async (ctx) => {
+      const tasks = await ctx.db.query('offboardingTasks').collect();
+      return tasks.find((t) => t.assigneeType === 'hr')!;
+    });
+    await asAdmin(c).mutation(api.offboarding.cancelProgram, { programId });
+
+    await expect(
+      asAdmin(c).mutation(api.offboarding.skipTask, { taskId: hrTask._id }),
+    ).rejects.toThrow('This offboarding program is not active');
+  });
+
   it('staff can add a custom step; refuses a foreign assignee', async () => {
     const c = await seed();
     const programId = await startOffboarding(c);
@@ -651,6 +666,121 @@ describe('offboarding.completeProgram edge cases', () => {
 
     const report = await c.t.run(async (ctx) => await ctx.db.get(c.reportId));
     expect(report?.supervisorId).toBeUndefined();
+  });
+});
+
+describe('offboarding.listPrograms', () => {
+  it('lists visible programs with progress, counts and employee names', async () => {
+    const c = await seed();
+    const programId = await startOffboarding(c);
+
+    // Complete one of the eight default steps so progress is non-zero.
+    const employeeTask = await c.t.run(async (ctx) => {
+      const tasks = await ctx.db.query('offboardingTasks').collect();
+      return tasks.find((t) => t.assigneeType === 'employee')!;
+    });
+    await asEmployee(c).mutation(api.offboarding.completeTask, { taskId: employeeTask._id });
+
+    const rows = await asAdmin(c).query(api.offboarding.listPrograms, {
+      organizationId: c.organizationId,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]._id).toBe(programId);
+    expect(rows[0].progress).toBe(13); // 1 of 8 done
+    expect(rows[0].totalTasks).toBe(8);
+    expect(rows[0].completedTasks).toBe(1);
+    expect(rows[0].employeeName).toBe('Employee');
+  });
+
+  it('lets the departing employee and the manager see the program in the list', async () => {
+    const c = await seed();
+    const programId = await startOffboarding(c);
+
+    // The employee sees only their own program, not other people's.
+    const asEmployeeRows = await asEmployee(c).query(api.offboarding.listPrograms, {
+      organizationId: c.organizationId,
+    });
+    expect(asEmployeeRows.map((r) => r._id)).toEqual([programId]);
+
+    // The manager is the process owner and sees it too.
+    const asManagerRows = await asManager(c).query(api.offboarding.listPrograms, {
+      organizationId: c.organizationId,
+    });
+    expect(asManagerRows.map((r) => r._id)).toEqual([programId]);
+  });
+
+  it('handles a program with no tasks', async () => {
+    const c = await seed();
+    // A program created directly (as the reminders cron does) has no tasks yet.
+    const bareProgramId = await c.t.run(async (ctx) => {
+      return await ctx.db.insert('offboardingPrograms', {
+        organizationId: c.organizationId,
+        employeeId: c.employeeId,
+        managerId: c.managerId,
+        lastDay: Date.now(),
+        reason: 'resignation',
+        status: 'active',
+        createdBy: c.adminId,
+        createdAt: Date.now(),
+      } as never);
+    });
+
+    const rows = await asAdmin(c).query(api.offboarding.listPrograms, {
+      organizationId: c.organizationId,
+    });
+    const bare = rows.find((r) => r._id === bareProgramId);
+    expect(bare?.progress).toBe(0);
+    expect(bare?.totalTasks).toBe(0);
+  });
+});
+
+describe('offboarding.getProgram', () => {
+  it('returns the full program with tasks, names and the exit interview', async () => {
+    const c = await seed();
+    const programId = await startOffboarding(c);
+
+    const program = await asAdmin(c).query(api.offboarding.getProgram, { programId });
+
+    expect(program?._id).toBe(programId);
+    expect(program?.totalTasks).toBe(8);
+    expect(program?.employeeName).toBe('Employee');
+    expect(program?.managerName).toBe('Manager');
+    expect(program?.employeeEmail).toBe('employee@acme.test');
+    expect(program?.exitInterview?.status).toBe('scheduled');
+    // Tasks sorted by order, with assignee names resolved from the user rows.
+    expect(program?.tasks).toHaveLength(8);
+    expect(program?.tasks[0].title).toContain('Revoke system access');
+    expect(program?.tasks[0].assigneeName).toBeUndefined(); // IT task: no fixed assignee
+    const employeeTask = program?.tasks.find((t) => t.assigneeType === 'employee');
+    expect(employeeTask?.assigneeName).toBe('Employee');
+  });
+
+  it('returns null for an unrelated employee', async () => {
+    const c = await seed();
+    const programId = await startOffboarding(c);
+
+    // The report is neither staff, nor the leaver, nor the manager.
+    expect(await asReport(c).query(api.offboarding.getProgram, { programId })).toBeNull();
+  });
+
+  it('returns null for a missing program id', async () => {
+    const c = await seed();
+    const ghostId = await c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('offboardingPrograms', {
+        organizationId: c.organizationId,
+        employeeId: c.employeeId,
+        managerId: c.managerId,
+        lastDay: Date.now(),
+        reason: 'resignation',
+        status: 'active',
+        createdBy: c.adminId,
+        createdAt: Date.now(),
+      } as never);
+      await ctx.db.delete(id);
+      return id;
+    });
+
+    expect(await asAdmin(c).query(api.offboarding.getProgram, { programId: ghostId })).toBeNull();
   });
 });
 
