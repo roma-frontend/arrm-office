@@ -18,6 +18,12 @@ import { Ticket, AlertCircle } from 'lucide-react';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import {
+  TICKET_CATEGORIES,
+  TICKET_PRIORITIES,
+  isTicketCategory,
+  isTicketPriority,
+} from '../../../convex/lib/ticketFields';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
@@ -115,26 +121,20 @@ export function CreateSupportTicketWizard({
           <SelectStep
             field="priority"
             label={t('supportWizard.steps.priority.priorityLabel')}
-            options={[
-              { value: 'low', label: t('priority.low') },
-              { value: 'medium', label: t('priority.medium') },
-              { value: 'high', label: t('priority.high') },
-              { value: 'critical', label: t('priority.critical') },
-            ]}
+            options={TICKET_PRIORITIES.map((priority) => ({
+              value: priority,
+              label: t(`priority.${priority}`),
+            }))}
             placeholder={t('supportWizard.steps.priority.priorityPlaceholder')}
             defaultValue="medium"
           />
           <SelectStep
             field="category"
             label={t('supportWizard.steps.priority.categoryLabel')}
-            options={[
-              { value: 'technical', label: t('support.categories.technical') },
-              { value: 'billing', label: t('support.categories.billing') },
-              { value: 'access', label: t('support.categories.access') },
-              { value: 'feature_request', label: t('support.categories.feature') },
-              { value: 'bug', label: t('support.categories.bug') },
-              { value: 'other', label: t('support.categories.other') },
-            ]}
+            options={TICKET_CATEGORIES.map((category) => ({
+              value: category,
+              label: t(`support.categories.${category}`),
+            }))}
             placeholder={t('supportWizard.steps.priority.categoryPlaceholder')}
           />
         </div>
@@ -151,14 +151,8 @@ export function CreateSupportTicketWizard({
         createdBy: userId,
         title: String(data.title),
         description: String(data.description),
-        priority: String(data.priority) as 'low' | 'medium' | 'high' | 'critical',
-        category: String(data.category) as
-          | 'technical'
-          | 'billing'
-          | 'access'
-          | 'feature_request'
-          | 'bug'
-          | 'other',
+        priority: isTicketPriority(data.priority) ? data.priority : 'medium',
+        category: isTicketCategory(data.category) ? data.category : 'other',
       });
 
       toast.success(t('supportWizard.toast.success'));

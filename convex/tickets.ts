@@ -7,6 +7,7 @@ import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { Id, type Doc } from './_generated/dataModel';
 import { encodeSystemMessage } from './lib/systemMessage';
+import { ticketCategoryValidator, ticketPriorityValidator } from './lib/ticketFields';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
@@ -19,20 +20,8 @@ export const createTicket = mutation({
     createdBy: v.id('users'),
     title: v.string(),
     description: v.string(),
-    priority: v.union(
-      v.literal('low'),
-      v.literal('medium'),
-      v.literal('high'),
-      v.literal('critical'),
-    ),
-    category: v.union(
-      v.literal('technical'),
-      v.literal('billing'),
-      v.literal('access'),
-      v.literal('feature_request'),
-      v.literal('bug'),
-      v.literal('other'),
-    ),
+    priority: ticketPriorityValidator,
+    category: ticketCategoryValidator,
     relatedLeaveId: v.optional(v.id('leaveRequests')),
     relatedDriverRequestId: v.optional(v.id('driverRequests')),
     relatedTaskId: v.optional(v.id('tasks')),
