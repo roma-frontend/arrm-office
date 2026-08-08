@@ -515,7 +515,8 @@
   },
   "forms": {
     "required": "*",
-    "optional": "(optional)"
+    "optional": "(optional)",
+    "minChars": "At least {{min}} characters"
   },
   "status": {
     "updated": "Status Updated",

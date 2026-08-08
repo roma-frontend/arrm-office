@@ -41,6 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { PromptDialog } from '@/components/ui/prompt-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -652,6 +653,7 @@ function TicketDetailDialog({
   const [isInternal, setIsInternal] = useState(false);
   const [activeTab, setActiveTab] = useState('comments');
   const [creatingChat, setCreatingChat] = useState(false);
+  const [resolvePromptOpen, setResolvePromptOpen] = useState(false);
 
   const handleAddComment = async () => {
     if (!commentText.trim()) return;
@@ -670,20 +672,19 @@ function TicketDetailDialog({
     }
   };
 
-  const handleResolve = async () => {
-    const resolution = prompt(t('superadmin.support.enterResolution'));
-    if (!resolution) return;
-
+  const handleResolve = async (values: Record<string, string>) => {
     try {
       await resolveTicket({
         ticketId: ticketId as Id<'supportTickets'>,
-        resolution,
+        resolution: values.resolution ?? '',
         userId,
       });
       toast.success(t('superadmin.support.ticketResolved'));
       onOpenChange(false);
-    } catch (_error) {
+    } catch (error) {
       toast.error(t('superadmin.support.errorResolvingTicket'));
+      // Rethrow so the prompt stays open and the text the agent typed survives.
+      throw error;
     }
   };
 
@@ -1149,7 +1150,7 @@ function TicketDetailDialog({
 
               {ticket.status !== 'closed' && ticket.status !== 'resolved' && (
                 <Button
-                  onClick={handleResolve}
+                  onClick={() => setResolvePromptOpen(true)}
                   variant="outline"
                   className="w-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-sm"
                 >
@@ -1279,6 +1280,25 @@ function TicketDetailDialog({
           </div>
         </div>
       </DialogContent>
+
+      <PromptDialog
+        open={resolvePromptOpen}
+        onOpenChange={setResolvePromptOpen}
+        title={t('superadmin.support.resolveTicket')}
+        description={t('superadmin.support.resolveHint')}
+        submitLabel={t('superadmin.support.resolveTicket')}
+        fields={[
+          {
+            name: 'resolution',
+            label: t('superadmin.support.enterResolution'),
+            placeholder: t('superadmin.support.resolutionPlaceholder'),
+            multiline: true,
+            minLength: 10,
+            maxLength: 2000,
+          },
+        ]}
+        onSubmit={handleResolve}
+      />
     </Dialog>
   );
 }
