@@ -389,6 +389,38 @@ describe('FaceLogin — webcam start/stop', () => {
     expect(logger.warn).toHaveBeenCalledWith('⚠️ Webcam already active, ignoring startWebcam');
   });
 
+  it('toasts when the video element never becomes available', async () => {
+    // Deterministic stand-in for the previous unmount race (which raced the
+    // React commit of the <video>): keep the component mounted and make every
+    // ref attachment a no-op — React assigns ref.current = video, the setter
+    // swallows it, so waitForVideo() exhausts its 20 attempts and the
+    // not-found guard fires reliably.
+    const spy = jest.spyOn(React, 'useRef').mockImplementation((_initial: unknown) => {
+      const ref: { current: unknown } = {};
+      Object.defineProperty(ref, 'current', {
+        configurable: true,
+        get: () => null,
+        set: () => {},
+      });
+      return ref as any;
+    });
+
+    render(<FaceLogin />);
+    await flush();
+    fireEvent.click(screen.getByText('Start Face Login'));
+
+    // waitForVideo polls 20 × 50ms before giving up
+    await waitFor(
+      () => expect(toast.error).toHaveBeenCalledWith('Video element not found. Please try again.'),
+      { timeout: 4000 },
+    );
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    // stopWebcam() reset the UI
+    expect(screen.getByText('Camera not active')).toBeInTheDocument();
+    expect(screen.getByText('Start Face Login')).toBeInTheDocument();
+    spy.mockRestore();
+  });
+
   it('shows a toast when the video fails to play', async () => {
     (HTMLMediaElement.prototype.play as any) = jest.fn().mockRejectedValue(new Error('play fail'));
     render(<FaceLogin />);
