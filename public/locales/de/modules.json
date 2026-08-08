@@ -2957,9 +2957,10 @@
     },
     "categories": {
       "technical": "Technisches Problem",
+      "bug": "Systemfehler",
+      "access": "Konto und Zugriff",
       "billing": "Zahlung und Rechnungen",
-      "account": "Konto und Zugriff",
-      "feature": "Funktionsvorschlag",
+      "feature_request": "Funktionsvorschlag",
       "other": "Anderes"
     },
     "tabs": {
@@ -3020,7 +3021,7 @@
       "technical": "Technisches Problem",
       "billing": "Abrechnung & Zahlungen",
       "access": "Zugriff & Konten",
-      "feature": "Funktionswunsch",
+      "feature_request": "Funktionswunsch",
       "bug": "Fehlermeldung",
       "other": "Sonstiges"
     }

@@ -98,6 +98,7 @@ import type * as lib_sanitize from "../lib/sanitize.js";
 import type * as lib_sha256 from "../lib/sha256.js";
 import type * as lib_systemMessage from "../lib/systemMessage.js";
 import type * as lib_taxRules from "../lib/taxRules.js";
+import type * as lib_ticketFields from "../lib/ticketFields.js";
 import type * as lib_travelAllowance from "../lib/travelAllowance.js";
 import type * as lib_userProfile from "../lib/userProfile.js";
 import type * as lib_userRedaction from "../lib/userRedaction.js";
@@ -324,6 +325,7 @@ declare const fullApi: ApiFromModules<{
   "lib/sha256": typeof lib_sha256;
   "lib/systemMessage": typeof lib_systemMessage;
   "lib/taxRules": typeof lib_taxRules;
+  "lib/ticketFields": typeof lib_ticketFields;
   "lib/travelAllowance": typeof lib_travelAllowance;
   "lib/userProfile": typeof lib_userProfile;
   "lib/userRedaction": typeof lib_userRedaction;

@@ -19,6 +19,12 @@ import { toast } from 'sonner';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import {
+  TICKET_CATEGORIES,
+  TICKET_PRIORITIES,
+  isTicketCategory,
+  isTicketPriority,
+} from '../../../convex/lib/ticketFields';
 import { logger } from '@/lib/logger';
 
 interface CreateTicketWizardProps {
@@ -102,25 +108,20 @@ export function CreateTicketWizard({ userId, onComplete, onCancel }: CreateTicke
           <SelectStep
             field="priority"
             label={t('help.wizard.step3.priorityLabel')}
-            options={[
-              { value: 'low', label: t('priority.low') },
-              { value: 'medium', label: t('priority.medium') },
-              { value: 'high', label: t('priority.high') },
-              { value: 'critical', label: t('priority.critical') },
-            ]}
+            options={TICKET_PRIORITIES.map((priority) => ({
+              value: priority,
+              label: t(`priority.${priority}`),
+            }))}
             placeholder={t('help.wizard.step3.priorityPlaceholder')}
             required
           />
           <SelectStep
             field="category"
             label={t('help.wizard.step3.categoryLabel')}
-            options={[
-              { value: 'technical', label: t('help.categories.technical') },
-              { value: 'billing', label: t('help.categories.billing') },
-              { value: 'account', label: t('help.categories.account') },
-              { value: 'feature', label: t('help.categories.feature') },
-              { value: 'other', label: t('help.categories.other') },
-            ]}
+            options={TICKET_CATEGORIES.map((category) => ({
+              value: category,
+              label: t(`help.categories.${category}`),
+            }))}
             placeholder={t('help.wizard.step3.categoryPlaceholder')}
           />
         </div>
@@ -136,14 +137,11 @@ export function CreateTicketWizard({ userId, onComplete, onCancel }: CreateTicke
         createdBy: userId,
         title: String(data.title),
         description: String(data.description),
-        category: (String(data.category) || 'other') as
-          | 'technical'
-          | 'billing'
-          | 'access'
-          | 'feature_request'
-          | 'bug'
-          | 'other',
-        priority: (String(data.priority) || 'medium') as 'low' | 'medium' | 'high' | 'critical',
+        // Narrowed rather than cast: the wizard hands back plain strings, and the
+        // cast this used to perform is what let unsupported categories through to
+        // the server, where they failed argument validation.
+        category: isTicketCategory(data.category) ? data.category : 'other',
+        priority: isTicketPriority(data.priority) ? data.priority : 'medium',
       });
 
       toast.success(t('help.alerts.ticketCreated'));

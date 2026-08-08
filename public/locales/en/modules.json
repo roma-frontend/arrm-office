@@ -2957,9 +2957,10 @@
     },
     "categories": {
       "technical": "Technical Issue",
+      "bug": "Bug",
+      "access": "Account & Access",
       "billing": "Billing & Payments",
-      "account": "Account & Access",
-      "feature": "Feature Request",
+      "feature_request": "Feature Request",
       "other": "Other"
     },
     "tabs": {
@@ -3020,7 +3021,7 @@
       "technical": "Technical issue",
       "billing": "Billing & payments",
       "access": "Access & accounts",
-      "feature": "Feature request",
+      "feature_request": "Feature request",
       "bug": "Bug report",
       "other": "Other"
     }
