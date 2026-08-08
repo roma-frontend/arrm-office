@@ -23,6 +23,7 @@ import { ai } from './ai';
 import { aiGovernance } from './aiGovernance';
 import { payroll } from './payroll';
 import { recognition } from './recognition';
+import { rewards } from './rewards';
 import { surveys } from './surveys';
 import { performance } from './performance';
 import { signatures } from './signatures';
@@ -76,6 +77,7 @@ export default defineSchema({
   ...aiGovernance,
   ...payroll,
   ...recognition,
+  ...rewards,
   ...surveys,
   ...performance,
   ...signatures,
@@ -130,6 +132,7 @@ export {
   aiGovernance,
   payroll,
   recognition,
+  rewards,
   surveys,
   performance,
   signatures,
