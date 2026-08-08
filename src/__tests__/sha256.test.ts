@@ -74,3 +74,26 @@ describe('sha256Hex — output shape', () => {
     expect(a).not.toBe(b);
   });
 });
+
+describe('sha256Hex — TextEncoder fallback', () => {
+  // Node always has TextEncoder, so the module's manual UTF-8 encoder is only
+  // reachable by hiding the global. Its output must match the standard path.
+  it('matches node:crypto without a global TextEncoder (manual UTF-8 encoder)', () => {
+    const original = globalThis.TextEncoder;
+    // @ts-expect-error — temporarily removing the global to reach the fallback.
+    delete globalThis.TextEncoder;
+    try {
+      for (const input of [
+        'abc',
+        'ASCII only',
+        'Армянский: Աշխատանքային պայմանագիր',
+        'emoji 🎉 and lone surrogate \uD800',
+        'x'.repeat(100),
+      ]) {
+        expect(sha256Hex(input)).toBe(createHash('sha256').update(input, 'utf8').digest('hex'));
+      }
+    } finally {
+      globalThis.TextEncoder = original;
+    }
+  });
+});
