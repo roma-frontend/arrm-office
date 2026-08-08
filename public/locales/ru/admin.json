@@ -443,7 +443,9 @@
       "priorityLow": "Низкий",
       "commentAdded": "Комментарий добавлен",
       "errorAddingComment": "Ошибка при добавлении комментария",
-      "enterResolution": "Введите решение:",
+      "enterResolution": "Решение",
+      "resolutionPlaceholder": "Что помогло, и что стоит знать автору обращения…",
+      "resolveHint": "Автор обращения увидит этот текст в тикете — пишите для него.",
       "ticketResolved": "Тикет решен",
       "errorResolvingTicket": "Ошибка при решении тикета",
       "internal": "Внутренний",
@@ -470,10 +472,10 @@
         "activateTitle": "Активировать чат тикета",
         "activateDesc": "Напишите первое сообщение, чтобы активировать чат. После этого сотрудник увидит этот чат и сможет в нем общаться.",
         "firstMessage": "Первое сообщение",
-        "placeholder": "Здравствуйте! Я суперадмин, готов помочь вам с этим тикетом...",
+        "placeholder": "Здравствуйте! Я помощник поддержки, разбираюсь с вашим тикетом...",
         "cancel": "Отмена",
         "activateAndSend": "Активировать и отправить",
-        "defaultActivateMessage": "Здравствуйте! Я суперадмин, готов помочь вам с тикетом {{ticketNumber}}."
+        "defaultActivateMessage": "Здравствуйте! Я помощник поддержки. Взял тикет {{ticketNumber}} в работу и помогу вам его решить — пишите здесь любые подробности."
       },
       "chatCreated": "Чат создан: {{chatName}}",
       "chatCreateError": "Ошибка создания чата",
@@ -538,8 +540,12 @@
         "errorCreatingIncident": "Ошибка создания инцидента",
         "errorResolvingIncident": "Ошибка решения инцидента",
         "fillRequiredFields": "Заполните обязательные поля",
-        "specifyRootCause": "Укажите корневую причину:",
-        "specifyResolution": "Укажите решение:"
+        "specifyRootCause": "Корневая причина",
+        "rootCausePlaceholder": "Что на самом деле пошло не так…",
+        "specifyResolution": "Решение",
+        "resolutionPlaceholder": "Что сделали, чтобы вернуть работоспособность…",
+        "resolveIncidentTitle": "Закрыть инцидент",
+        "resolveIncidentHint": "Оба поля сохраняются в инциденте и остаются частью его истории."
       },
       "problemsDetected": "Обнаружено проблем: {{problems}}",
       "activeIncidentsDesc": "Активные системные инциденты",

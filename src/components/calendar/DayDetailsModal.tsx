@@ -15,6 +15,7 @@ import {
   CalendarPlus,
   ExternalLink,
   DoorOpen,
+  Building2,
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -23,7 +24,11 @@ import { Badge } from '@/components/ui/badge';
 import { getLeaveTypeLabel, type LeaveType, type LeaveStatus } from '@/lib/types';
 import { getInitials } from '@/lib/stringUtils';
 import type { CalendarEvent } from './CreateEventModal';
-import type { TimelineInput } from '@/lib/eventTimeline';
+import {
+  COMPANY_EVENT_ACCENTS,
+  type CompanyTimelineData,
+  type TimelineInput,
+} from '@/lib/eventTimeline';
 import type { RoomBookingDoc } from '@/components/rooms/types';
 
 type LeaveRequest = {
@@ -93,6 +98,41 @@ type GoogleCalendarEvent = {
   htmlLink: string;
 };
 
+type CompanyEvent = {
+  _id: string;
+  name: string;
+  description?: string;
+  startDate: number;
+  endDate: number;
+  isAllDay?: boolean;
+  eventType: string;
+  priority?: 'high' | 'medium' | 'low';
+  requiredDepartments: string[];
+  requiredEmployeeIds: string[];
+  creatorName?: string;
+  notifyDaysBefore?: number;
+  createdAt?: number;
+};
+
+/** Row data → timeline input, so a double-click opens the full event. */
+function toCompanyTimeline(event: CompanyEvent): CompanyTimelineData {
+  return {
+    id: event._id,
+    name: event.name,
+    description: event.description,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    isAllDay: event.isAllDay,
+    eventType: event.eventType,
+    priority: event.priority,
+    requiredDepartments: event.requiredDepartments,
+    requiredCount: event.requiredEmployeeIds.length,
+    creatorName: event.creatorName,
+    notifyDaysBefore: event.notifyDaysBefore,
+    createdAt: event.createdAt,
+  };
+}
+
 const LEAVE_TYPE_BG: Record<string, string> = {
   paid: '#2563eb',
   unpaid: '#f59e0b',
@@ -110,6 +150,8 @@ interface DayDetailsModalProps {
   customEvents: CalendarEvent[];
   /** Meeting-room bookings for the day. */
   roomBookings?: RoomBookingDoc[];
+  /** Organization-wide events from `/admin/events`. */
+  companyEvents?: CompanyEvent[];
   onClose: () => void;
   /** Double-clicking a row hands the entry up to the timeline modal. */
   onOpenTimeline?: (input: TimelineInput) => void;
@@ -125,6 +167,7 @@ export function DayDetailsModal({
   driverEvents,
   customEvents,
   roomBookings = [],
+  companyEvents = [],
   onClose,
   onOpenTimeline,
   onOpenRoom,
@@ -137,7 +180,8 @@ export function DayDetailsModal({
     googleEvents.length +
     driverEvents.length +
     customEvents.length +
-    roomBookings.length;
+    roomBookings.length +
+    companyEvents.length;
 
   // Spread onto an event row to make it open its timeline on double-click.
   const rowProps = (input: TimelineInput) =>
@@ -227,6 +271,82 @@ export function DayDetailsModal({
             </div>
           ) : (
             <>
+              {/* Company events — organization-wide, so they lead the day */}
+              {companyEvents.length > 0 && (
+                <Section title={t('dayDetails.companyEvents')}>
+                  {companyEvents.map((event, i) => {
+                    const accent = COMPANY_EVENT_ACCENTS[event.eventType] ?? '#0d9488';
+                    const audience =
+                      event.requiredDepartments.length > 0
+                        ? event.requiredDepartments.join(', ')
+                        : event.requiredEmployeeIds.length > 0
+                          ? t('dayDetails.namedAttendees', {
+                              count: event.requiredEmployeeIds.length,
+                            })
+                          : t('dayDetails.wholeCompany');
+                    return (
+                      <motion.div
+                        key={event._id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        {...rowProps({ source: 'company', data: toCompanyTimeline(event) })}
+                        className="flex items-start gap-3 p-3 rounded-xl border border-(--border) bg-(--background-subtle) hover:border-(--primary)/40 transition-colors cursor-pointer"
+                      >
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: `${accent}1a`, color: accent }}
+                        >
+                          <Building2 className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-(--text-primary) truncate">
+                              {event.name}
+                            </p>
+                            {event.priority && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] shrink-0"
+                                style={{ background: `${accent}1a`, color: accent }}
+                              >
+                                {t(`priority.${event.priority}`, { defaultValue: event.priority })}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs mt-0.5" style={{ color: accent }}>
+                            {t(`event.types.${event.eventType}`, { defaultValue: event.eventType })}
+                          </p>
+                          <p className="text-xs text-(--text-muted) mt-1 flex items-center gap-1">
+                            <Clock className="w-3 h-3 shrink-0" />
+                            {event.isAllDay === false
+                              ? `${format(new Date(event.startDate), 'HH:mm')} – ${format(new Date(Math.max(event.endDate, event.startDate)), 'HH:mm')}`
+                              : t('createMeeting.allDay')}
+                          </p>
+                          <p className="text-xs text-(--text-muted) mt-0.5 truncate">
+                            {t('dayDetails.attendance', { audience })}
+                          </p>
+                          {event.description && (
+                            <p className="text-xs text-(--text-muted) mt-1 line-clamp-2">
+                              {event.description}
+                            </p>
+                          )}
+                          <a
+                            href={`/events/${event._id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs font-medium mt-1.5 inline-flex items-center gap-1 hover:underline"
+                            style={{ color: accent }}
+                          >
+                            {t('dayDetails.openEvent')}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </Section>
+              )}
+
               {/* Leave Requests */}
               {leaves.length > 0 && (
                 <Section title={t('dayDetails.leaveRequests', 'Leave Requests')}>

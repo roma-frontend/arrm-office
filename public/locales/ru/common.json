@@ -533,7 +533,8 @@
   },
   "forms": {
     "required": "Обязательно",
-    "optional": "(необязательно)"
+    "optional": "(необязательно)",
+    "minChars": "Не короче {{min}} символов"
   },
   "status": {
     "updated": "Статус обновлен",
@@ -1734,7 +1735,12 @@
     "leaveRequests": "Заявки на отпуск",
     "calendarEvents": "События календаря",
     "googleEvents": "Google Календарь",
-    "driverBookings": "Бронирования водителей"
+    "driverBookings": "Бронирования водителей",
+    "companyEvents": "Мероприятия организации",
+    "wholeCompany": "Вся организация",
+    "namedAttendees": "Выбранные сотрудники: {{count}}",
+    "attendance": "Участие: {{audience}}",
+    "openEvent": "Открыть мероприятие"
   },
   "chatWidget": {
     "viewFullScreen": "Показать полный ответ"
@@ -2059,7 +2065,7 @@
     "needs_action": "ещё не ответил на"
   },
   "ticket": {
-    "chatCreated": "Чат создан для тикета {{ticketNumber}}. Вы увидите этот чат после первого сообщения от суперадмина.",
-    "chatCreatedShort": "Чат создан для тикета {{ticketNumber}}"
+    "chatCreated": "По тикету {{ticketNumber}} открыт чат поддержки. Он появится у вас, как только помощник поддержки напишет первое сообщение.",
+    "chatCreatedShort": "По тикету {{ticketNumber}} открыт чат поддержки"
   }
 }

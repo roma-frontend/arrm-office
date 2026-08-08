@@ -35,7 +35,10 @@ jest.mock('convex/react', () => ({
 jest.mock('../../convex/_generated/api', () => ({
   api: {
     chat: {
-      queries: { getMyConversations: { _name: 'getMyConversations' } },
+      queries: {
+        getMyConversations: { _name: 'getMyConversations' },
+        getConversationSummary: { _name: 'getConversationSummary' },
+      },
       mutations: {
         togglePin: { _name: 'togglePin' },
         deleteConversation: { _name: 'deleteConversation' },
@@ -60,7 +63,26 @@ jest.mock('@/hooks/useMediaQuery', () => ({
 }));
 
 jest.mock('@/store/useOrgSelectorStore', () => ({
-  useOrgSelectorStore: () => ({ selectedOrgId: null }),
+  useOrgSelectorStore: () => ({
+    selectedOrgId: mockSelectedOrgId,
+    setSelectedOrgId: mockSetSelectedOrgId,
+  }),
+}));
+
+// ── Routing mock: drives the `?conversation=` deep link ──────────────────────
+let mockQueryParams: Record<string, string> = {};
+const mockRouterReplace = jest.fn();
+let mockSelectedOrgId: string | null = null;
+const mockSetSelectedOrgId = jest.fn();
+
+jest.mock('next/navigation', () => ({
+  useSearchParams: () => ({ get: (k: string) => mockQueryParams[k] ?? null }),
+  useRouter: () => ({ replace: mockRouterReplace, push: jest.fn() }),
+  usePathname: () => '/chat',
+}));
+
+jest.mock('sonner', () => ({
+  toast: { error: jest.fn(), success: jest.fn() },
 }));
 
 jest.mock('@/lib/notificationSound', () => ({
@@ -153,6 +175,7 @@ jest.mock('@/components/ui/ShieldLoader', () => ({
 
 // ── Module under test ──
 import ChatClient from '@/components/chat/ChatClient';
+import { toast } from 'sonner';
 
 const defaultProps = {
   userId: 'user-1',
@@ -187,6 +210,8 @@ describe('ChatClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     queryResults = { getMyConversations: undefined };
+    mockQueryParams = {};
+    mockSelectedOrgId = null;
     // jsdom doesn't implement window.scrollTo — mock it
     window.scrollTo = jest.fn();
   });
@@ -393,6 +418,103 @@ describe('ChatClient', () => {
       // The sheet no longer escapes its container, so there is nothing behind it
       // to freeze — the component must not reach out and mutate body styles.
       expect(document.body.style.overflow).toBe('');
+    });
+  });
+
+  /**
+   * `?conversation=<id>` deep link. Everything that links to a specific chat —
+   * the "open chat" button on a support ticket above all — relies on it.
+   */
+  describe('Deep link', () => {
+    const ticketChat = {
+      _id: 'conv-ticket',
+      type: 'group',
+      name: 'SUP-1',
+      organizationId: 'org-1',
+      isRemoved: false,
+    };
+
+    beforeEach(() => {
+      queryResults.getMyConversations = mockConversations;
+      mockQueryParams = { conversation: 'conv-ticket' };
+    });
+
+    it('opens the conversation named in the query string', async () => {
+      queryResults.getConversationSummary = ticketChat;
+      render(<ChatClient {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-window').getAttribute('data-conv-id')).toBe('conv-ticket');
+      });
+    });
+
+    it('opens a conversation that is absent from the sidebar list', async () => {
+      // A ticket chat can live in another org, so the org-filtered list query
+      // does not return it. The link still has to land on the conversation.
+      queryResults.getMyConversations = [];
+      queryResults.getConversationSummary = ticketChat;
+      render(<ChatClient {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-window').getAttribute('data-conv-id')).toBe('conv-ticket');
+      });
+    });
+
+    it('moves the org selector to the conversation org', async () => {
+      mockSelectedOrgId = 'org-other';
+      queryResults.getConversationSummary = ticketChat;
+      render(<ChatClient {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockSetSelectedOrgId).toHaveBeenCalledWith('org-1');
+      });
+    });
+
+    it('leaves the org selector alone when it already matches', async () => {
+      mockSelectedOrgId = 'org-1';
+      queryResults.getConversationSummary = ticketChat;
+      render(<ChatClient {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('chat-window')).toBeInTheDocument();
+      });
+      expect(mockSetSelectedOrgId).not.toHaveBeenCalled();
+    });
+
+    it('drops the parameter once it has been acted on', async () => {
+      queryResults.getConversationSummary = ticketChat;
+      render(<ChatClient {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockRouterReplace).toHaveBeenCalledWith('/chat', { scroll: false });
+      });
+    });
+
+    it('waits for the lookup instead of acting on a half-loaded answer', () => {
+      queryResults.getConversationSummary = undefined; // still loading
+      render(<ChatClient {...defaultProps} />);
+
+      expect(screen.queryByTestId('chat-window')).not.toBeInTheDocument();
+      expect(mockRouterReplace).not.toHaveBeenCalled();
+    });
+
+    it('reports a conversation it cannot resolve', async () => {
+      queryResults.getConversationSummary = null; // not a member, or gone
+      render(<ChatClient {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('chat.conversationUnavailable');
+      });
+      expect(screen.queryByTestId('chat-window')).not.toBeInTheDocument();
+    });
+
+    it('ignores the lookup when there is no parameter', () => {
+      mockQueryParams = {};
+      queryResults.getConversationSummary = ticketChat;
+      render(<ChatClient {...defaultProps} />);
+
+      expect(screen.queryByTestId('chat-window')).not.toBeInTheDocument();
+      expect(mockRouterReplace).not.toHaveBeenCalled();
     });
   });
 

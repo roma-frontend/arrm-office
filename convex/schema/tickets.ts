@@ -1,5 +1,6 @@
 import { defineTable } from 'convex/server';
 import { v } from 'convex/values';
+import { ticketCategoryValidator, ticketPriorityValidator } from '../lib/ticketFields';
 
 export const tickets = {
   supportTickets: defineTable({
@@ -7,12 +8,7 @@ export const tickets = {
     ticketNumber: v.string(),
     title: v.string(),
     description: v.string(),
-    priority: v.union(
-      v.literal('low'),
-      v.literal('medium'),
-      v.literal('high'),
-      v.literal('critical'),
-    ),
+    priority: ticketPriorityValidator,
     status: v.union(
       v.literal('open'),
       v.literal('in_progress'),
@@ -20,14 +16,7 @@ export const tickets = {
       v.literal('resolved'),
       v.literal('closed'),
     ),
-    category: v.union(
-      v.literal('technical'),
-      v.literal('billing'),
-      v.literal('access'),
-      v.literal('feature_request'),
-      v.literal('bug'),
-      v.literal('other'),
-    ),
+    category: ticketCategoryValidator,
     createdBy: v.id('users'),
     assignedTo: v.optional(v.id('users')),
     relatedLeaveId: v.optional(v.id('leaveRequests')),

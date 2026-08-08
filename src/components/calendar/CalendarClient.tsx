@@ -23,6 +23,7 @@ import {
   Trash2,
   Eye,
   DoorOpen,
+  Building2,
 } from 'lucide-react';
 import {
   format,
@@ -77,6 +78,7 @@ import type { RoomBookingDoc, RoomDoc } from '@/components/rooms/types';
 import {
   defaultScopeForRole,
   filterForScope,
+  isMyCompanyEvent,
   isMyCustomEvent,
   isMyDriverEvent,
   isMyLeave,
@@ -85,7 +87,11 @@ import {
   storeScope,
   type CalendarScope,
 } from '@/lib/calendarScope';
-import type { TimelineInput } from '@/lib/eventTimeline';
+import {
+  COMPANY_EVENT_ACCENTS,
+  type CompanyTimelineData,
+  type TimelineInput,
+} from '@/lib/eventTimeline';
 import { getInitials } from '@/lib/stringUtils';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
@@ -161,6 +167,29 @@ type GoogleCalendarEvent = {
   allDay: boolean;
   location: string;
   htmlLink: string;
+};
+
+/**
+ * A company-wide event from `companyEvents`.
+ *
+ * Dates are epoch milliseconds here, not `yyyy-MM-dd` like the other sources,
+ * and an event may run across several days.
+ */
+type CompanyEvent = {
+  _id: string;
+  name: string;
+  description?: string;
+  startDate: number;
+  endDate: number;
+  isAllDay?: boolean;
+  eventType: string;
+  priority?: 'high' | 'medium' | 'low';
+  requiredDepartments: string[];
+  requiredEmployeeIds: string[];
+  creatorName?: string;
+  notifyDaysBefore?: number;
+  createdBy?: string;
+  createdAt?: number;
 };
 
 // --- Helpers ------------------------------------------------------------------
@@ -239,15 +268,43 @@ function singleTimelineFor(
   googleEvents: GoogleCalendarEvent[],
   driverEvents: DriverScheduleEvent[],
   customEvents: CalendarEvent[],
+  companyEvents: CompanyEvent[] = [],
 ): TimelineInput | null {
-  if (leaves.length + googleEvents.length + driverEvents.length + customEvents.length !== 1) {
+  if (
+    leaves.length +
+      googleEvents.length +
+      driverEvents.length +
+      customEvents.length +
+      companyEvents.length !==
+    1
+  ) {
     return null;
   }
   if (leaves[0]) return { source: 'leave', data: leaves[0] };
   if (driverEvents[0]) return { source: 'driver', data: driverEvents[0] };
   if (googleEvents[0]) return { source: 'google', data: googleEvents[0] };
   if (customEvents[0]) return { source: 'custom', data: customEvents[0] };
+  if (companyEvents[0]) return { source: 'company', data: toCompanyTimelineData(companyEvents[0]) };
   return null;
+}
+
+/** Company event → timeline input. Kept next to the day list that also needs it. */
+function toCompanyTimelineData(event: CompanyEvent): CompanyTimelineData {
+  return {
+    id: event._id,
+    name: event.name,
+    description: event.description,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    isAllDay: event.isAllDay,
+    eventType: event.eventType,
+    priority: event.priority,
+    requiredDepartments: event.requiredDepartments,
+    requiredCount: event.requiredEmployeeIds.length,
+    creatorName: event.creatorName,
+    notifyDaysBefore: event.notifyDaysBefore,
+    createdAt: event.createdAt,
+  };
 }
 
 /**
@@ -323,6 +380,7 @@ const LEAVE_TYPE_BG: Record<string, string> = {
 const GOOGLE_EVENT_COLOR = '#8b5cf6';
 const DRIVER_EVENT_COLOR = '#f97316'; // orange for driver bookings
 const ROOM_EVENT_COLOR = '#0ea5e9'; // sky blue fallback when a room has no colour
+const COMPANY_EVENT_COLOR = '#0d9488'; // teal for organization-wide events
 
 // A date is "past" if it is strictly before the start of today.
 // Past days can be viewed but not booked.
@@ -339,6 +397,7 @@ function DayCell({
   driverEvents,
   customEvents,
   roomBookings,
+  companyEvents,
   onClick,
   onDoubleClick,
 }: {
@@ -350,6 +409,7 @@ function DayCell({
   driverEvents: DriverScheduleEvent[];
   customEvents: CalendarEvent[];
   roomBookings: RoomBookingDoc[];
+  companyEvents: CompanyEvent[];
   onClick: () => void;
   onDoubleClick: () => void;
 }) {
@@ -362,12 +422,14 @@ function DayCell({
   const hasDriver = driverEvents.length > 0 && isCurrentMonth;
   const hasCustom = customEvents.length > 0 && isCurrentMonth;
   const hasRooms = roomBookings.length > 0 && isCurrentMonth;
+  const hasCompany = companyEvents.length > 0 && isCurrentMonth;
   const totalItems =
     leaves.length +
     googleEvents.length +
     driverEvents.length +
     customEvents.length +
-    roomBookings.length;
+    roomBookings.length +
+    companyEvents.length;
 
   return (
     <button
@@ -404,8 +466,30 @@ function DayCell({
       </span>
 
       {/* Event pills */}
-      {(hasLeaves || hasGoogle || hasDriver || hasCustom || hasRooms) && (
+      {(hasLeaves || hasGoogle || hasDriver || hasCustom || hasRooms || hasCompany) && (
         <div className="flex flex-col gap-0.5 mt-0.5">
+          {/* Company event pills — first, because they concern everyone */}
+          {companyEvents.slice(0, 1).map((evt, i) => {
+            const accent = COMPANY_EVENT_ACCENTS[evt.eventType] ?? COMPANY_EVENT_COLOR;
+            return (
+              <div
+                key={`o-${i}`}
+                className="flex items-center gap-1 rounded-full px-1.5 py-0.5"
+                style={{ background: isSelected ? 'rgba(255,255,255,0.2)' : `${accent}22` }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: isSelected ? '#fff' : accent }}
+                />
+                <span
+                  className="text-[9px] font-semibold truncate hidden sm:block"
+                  style={{ color: isSelected ? '#fff' : accent }}
+                >
+                  {evt.name}
+                </span>
+              </div>
+            );
+          })}
           {/* Leave pills */}
           {leaves.slice(0, hasGoogle || hasDriver ? 1 : 2).map((l, i) => (
             <div
@@ -593,7 +677,16 @@ export const CalendarClient = React.memo(function CalendarClient() {
     [deleteEventMutation, t],
   );
 
-  const viewer = useMemo(() => ({ id: user?.id ?? '', name: user?.name }), [user?.id, user?.name]);
+  const viewer = useMemo(
+    () => ({
+      id: user?.id ?? '',
+      name: user?.name,
+      // Department decides whether a department-wide event belongs on the
+      // personal calendar.
+      department: (user as { department?: string } | null | undefined)?.department,
+    }),
+    [user],
+  );
   const isPersonalScope = scope === 'mine';
 
   const DAYS_OF_WEEK = [
@@ -751,6 +844,48 @@ export const CalendarClient = React.memo(function CalendarClient() {
     [customEvents, scope, viewer],
   );
 
+  // --- Company events --------------------------------------------------------
+  // Events created in /admin/events live in their own table and were never read
+  // here, so an organization-wide event was invisible on the organization's own
+  // calendar. Everyone in the org may read them; `requiredDepartments` and
+  // `requiredEmployeeIds` say who must attend, not who may know.
+  const companyEventsData = useQuery(
+    api.events.getCompanyEvents,
+    mounted && selectedOrgId
+      ? {
+          organizationId: selectedOrgId as Id<'organizations'>,
+          startDate: monthStart,
+          endDate: monthEnd,
+        }
+      : 'skip',
+  );
+
+  const companyEvents: CompanyEvent[] = useMemo(
+    () =>
+      (companyEventsData ?? []).map((e) => ({
+        _id: e._id,
+        name: e.name,
+        description: e.description,
+        startDate: e.startDate,
+        endDate: e.endDate,
+        isAllDay: e.isAllDay,
+        eventType: e.eventType,
+        priority: e.priority,
+        requiredDepartments: e.requiredDepartments ?? [],
+        requiredEmployeeIds: e.requiredEmployeeIds ?? [],
+        creatorName: e.creatorName,
+        notifyDaysBefore: e.notifyDaysBefore,
+        createdBy: e.createdBy,
+        createdAt: e.createdAt,
+      })),
+    [companyEventsData],
+  );
+
+  const scopedCompanyEvents = useMemo(
+    () => filterForScope(companyEvents, scope, (evt) => isMyCompanyEvent(evt, viewer)),
+    [companyEvents, scope, viewer],
+  );
+
   // --- Meeting rooms ---------------------------------------------------------
   // Room bookings are a fifth calendar source. They live in their own module but
   // show up here so "what is happening this month" stays one screen.
@@ -888,6 +1023,30 @@ export const CalendarClient = React.memo(function CalendarClient() {
     return map;
   }, [scopedCustomEvents]);
 
+  /**
+   * Build the company events map.
+   *
+   * These carry timestamps rather than `yyyy-MM-dd`, and a multi-day event has to
+   * appear on every day it covers — a three-day conference that only marked its
+   * first day would look like it had been cancelled on the second.
+   */
+  const companyEventsMap = useMemo(() => {
+    const map = new Map<string, CompanyEvent[]>();
+    scopedCompanyEvents.forEach((evt) => {
+      const cur = new Date(evt.startDate);
+      cur.setHours(0, 0, 0, 0);
+      const last = new Date(Math.max(evt.endDate, evt.startDate));
+      last.setHours(0, 0, 0, 0);
+      while (cur <= last) {
+        const key = format(cur, 'yyyy-MM-dd');
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(evt);
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+    return map;
+  }, [scopedCompanyEvents]);
+
   // Build calendar grid
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth));
@@ -926,6 +1085,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
     return roomDateMap.get(format(selectedDay, 'yyyy-MM-dd')) ?? [];
   }, [selectedDay, roomDateMap]);
 
+  const selectedDayCompanyEvents = useMemo(() => {
+    if (!selectedDay) return [];
+    return companyEventsMap.get(format(selectedDay, 'yyyy-MM-dd')) ?? [];
+  }, [selectedDay, companyEventsMap]);
+
   /**
    * How many entries the personal view hides on the selected day. Surfacing the
    * number (instead of silently dropping them) keeps the empty state honest and
@@ -943,6 +1107,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
         format(new Date(evt.endTime), 'yyyy-MM-dd') >= key,
     ).length;
     const teamCustom = customEvents.filter((evt) => evt.date === key).length;
+    const teamCompany = companyEvents.filter(
+      (evt) =>
+        format(new Date(evt.startDate), 'yyyy-MM-dd') <= key &&
+        format(new Date(Math.max(evt.endDate, evt.startDate)), 'yyyy-MM-dd') >= key,
+    ).length;
     const teamRooms = roomBookings.filter(
       (booking) =>
         format(new Date(booking.startTime), 'yyyy-MM-dd') <= key &&
@@ -952,8 +1121,9 @@ export const CalendarClient = React.memo(function CalendarClient() {
       selectedDayLeaves.length +
       selectedDayDriverEvents.length +
       selectedDayCustomEvents.length +
-      selectedDayRoomBookings.length;
-    return Math.max(0, teamLeaves + teamDrivers + teamCustom + teamRooms - visible);
+      selectedDayRoomBookings.length +
+      selectedDayCompanyEvents.length;
+    return Math.max(0, teamLeaves + teamDrivers + teamCustom + teamRooms + teamCompany - visible);
   }, [
     isPersonalScope,
     selectedDay,
@@ -961,10 +1131,12 @@ export const CalendarClient = React.memo(function CalendarClient() {
     driverSchedules,
     customEvents,
     roomBookings,
+    companyEvents,
     selectedDayLeaves.length,
     selectedDayDriverEvents.length,
     selectedDayCustomEvents.length,
     selectedDayRoomBookings.length,
+    selectedDayCompanyEvents.length,
   ]);
 
   const prevMonth = () => setCurrentMonth((m) => subMonths(m, 1));
@@ -1158,6 +1330,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                     const dEvents = driverDateMap.get(key) ?? [];
                     const cEvents = customEventsMap.get(key) ?? [];
                     const rBookings = roomDateMap.get(key) ?? [];
+                    const orgEvents = companyEventsMap.get(key) ?? [];
                     return (
                       <ContextMenu key={i}>
                         <ContextMenuTrigger>
@@ -1170,6 +1343,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             driverEvents={dEvents}
                             customEvents={cEvents}
                             roomBookings={rBookings}
+                            companyEvents={orgEvents}
                             onClick={() => setSelectedDay(date)}
                             onDoubleClick={() => {
                               setSelectedDay(date);
@@ -1179,7 +1353,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               // An empty day keeps the "create event" shortcut.
                               const single =
                                 rBookings.length === 0
-                                  ? singleTimelineFor(leaves, gEvents, dEvents, cEvents)
+                                  ? singleTimelineFor(leaves, gEvents, dEvents, cEvents, orgEvents)
                                   : null;
                               if (single) {
                                 setTimelineInput(single);
@@ -1188,7 +1362,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                   gEvents.length +
                                   dEvents.length +
                                   cEvents.length +
-                                  rBookings.length >
+                                  rBookings.length +
+                                  orgEvents.length >
                                 0
                               ) {
                                 setShowDayDetails(true);
@@ -1309,6 +1484,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
               />
               <span className="text-xs text-(--text-muted)">{t('rooms.calendar.legend')}</span>
             </div>
+            {companyEvents.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ background: COMPANY_EVENT_COLOR }}
+                />
+                <span className="text-xs text-(--text-muted)">{t('dayDetails.companyEvents')}</span>
+              </div>
+            )}
             {googleConnected && (
               <div className="flex items-center gap-2">
                 <span
@@ -1347,7 +1531,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
                 selectedDayGoogle.length === 0 &&
                 selectedDayDriverEvents.length === 0 &&
                 selectedDayCustomEvents.length === 0 &&
-                selectedDayRoomBookings.length === 0 ? (
+                selectedDayRoomBookings.length === 0 &&
+                selectedDayCompanyEvents.length === 0 ? (
                   <motion.div
                     key="empty"
                     initial={{ opacity: 0 }}
@@ -1368,6 +1553,63 @@ export const CalendarClient = React.memo(function CalendarClient() {
                     exit={{ opacity: 0 }}
                     className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide"
                   >
+                    {/* Company events — first, they concern the whole org */}
+                    {selectedDayCompanyEvents.map((event, i) => {
+                      const accent = COMPANY_EVENT_ACCENTS[event.eventType] ?? COMPANY_EVENT_COLOR;
+                      return (
+                        <motion.div
+                          key={event._id}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.04 }}
+                          title={t('eventTimeline.hints.doubleClick')}
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors"
+                          style={{ borderColor: `${accent}55`, background: `${accent}0f` }}
+                          onClick={() =>
+                            dualClick.single(() => {
+                              setShowDayDetails(true);
+                            })
+                          }
+                          onDoubleClick={() =>
+                            dualClick.double(() =>
+                              setTimelineInput({
+                                source: 'company',
+                                data: toCompanyTimelineData(event),
+                              }),
+                            )
+                          }
+                        >
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ background: `${accent}1f`, color: accent }}
+                          >
+                            <Building2 className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-(--text-primary) truncate">
+                              {event.name}
+                            </p>
+                            <p className="text-xs truncate" style={{ color: accent }}>
+                              {t(`event.types.${event.eventType}`, {
+                                defaultValue: event.eventType,
+                              })}
+                            </p>
+                            <p className="text-[11px] text-(--text-muted) mt-0.5 truncate">
+                              {event.isAllDay === false
+                                ? `${format(new Date(event.startDate), 'HH:mm')} – ${format(
+                                    new Date(Math.max(event.endDate, event.startDate)),
+                                    'HH:mm',
+                                  )}`
+                                : t('createMeeting.allDay')}
+                              {event.requiredDepartments.length > 0
+                                ? ` · ${event.requiredDepartments.join(', ')}`
+                                : ` · ${t('dayDetails.wholeCompany')}`}
+                            </p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+
                     {/* Leave requests */}
                     {selectedDayLeaves.map((leave, i) => (
                       <motion.div
@@ -1854,6 +2096,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
           driverEvents={selectedDayDriverEvents}
           customEvents={selectedDayCustomEvents}
           roomBookings={selectedDayRoomBookings}
+          companyEvents={selectedDayCompanyEvents}
           onClose={() => setShowDayDetails(false)}
           onOpenTimeline={setTimelineInput}
           onOpenRoom={(roomId) => {

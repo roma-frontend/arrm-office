@@ -2184,6 +2184,10 @@
       "holidayDesc": "Company holiday or day off",
       "celebration": "Celebration",
       "celebrationDesc": "Party or celebration",
+      "team_building": "Team building",
+      "team_buildingDesc": "Getting the team together",
+      "deadline": "Deadline",
+      "deadlineDesc": "A date work has to be finished by",
       "other": "Other",
       "otherDesc": "Something else"
     },
@@ -2599,7 +2603,8 @@
       "leave": "Leave request",
       "driver": "Driver booking",
       "google": "Google Calendar",
-      "custom": "Calendar event"
+      "custom": "Calendar event",
+      "company": "Company event"
     },
     "sections": {
       "timeline": "Timeline",
@@ -2621,7 +2626,9 @@
     },
     "status": {
       "scheduled": "Scheduled",
-      "confirmed": "Confirmed"
+      "confirmed": "Confirmed",
+      "attendanceRequired": "Attendance expected",
+      "wholeCompany": "Whole company"
     },
     "milestones": {
       "created": "Created",
@@ -2677,14 +2684,23 @@
       "reminder": "Reminder",
       "attendees": "Attendees",
       "attachment": "Attachment",
-      "openAttachment": "Open attachment"
+      "openAttachment": "Open attachment",
+      "eventType": "Event type",
+      "priority": "Priority",
+      "requiredDepartments": "Departments expected",
+      "requiredEmployees": "Employees expected",
+      "organizer": "Organizer",
+      "notifyDaysValue": "{{count}} d. before",
+      "eventPage": "Event",
+      "openEventPage": "Open event page"
     },
     "roles": {
       "employee": "Employee",
       "reviewer": "Reviewer",
       "driver": "Driver",
       "bookedBy": "Booked by",
-      "attendee": "Attendee"
+      "attendee": "Attendee",
+      "required": "Expected to attend"
     },
     "driverType": {
       "trip": "Trip",
@@ -2957,9 +2973,10 @@
     },
     "categories": {
       "technical": "Technical Issue",
+      "bug": "Bug",
+      "access": "Account & Access",
       "billing": "Billing & Payments",
-      "account": "Account & Access",
-      "feature": "Feature Request",
+      "feature_request": "Feature Request",
       "other": "Other"
     },
     "tabs": {
@@ -3020,7 +3037,7 @@
       "technical": "Technical issue",
       "billing": "Billing & payments",
       "access": "Access & accounts",
-      "feature": "Feature request",
+      "feature_request": "Feature request",
       "bug": "Bug report",
       "other": "Other"
     }

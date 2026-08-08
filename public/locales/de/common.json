@@ -515,7 +515,8 @@
   },
   "forms": {
     "required": "Erforderlich",
-    "optional": "(optional)"
+    "optional": "(optional)",
+    "minChars": "Mindestens {{min}} Zeichen"
   },
   "status": {
     "updated": "Status aktualisiert",
@@ -1716,7 +1717,12 @@
     "leaveRequests": "Urlaubsanträge",
     "calendarEvents": "Kalender-Ereignisse",
     "googleEvents": "Google Kalender",
-    "driverBookings": "Fahrerbuchungen"
+    "driverBookings": "Fahrerbuchungen",
+    "companyEvents": "Unternehmensveranstaltungen",
+    "wholeCompany": "Gesamtes Unternehmen",
+    "namedAttendees": "Ausgewählte Mitarbeitende: {{count}}",
+    "attendance": "Teilnahme: {{audience}}",
+    "openEvent": "Veranstaltung öffnen"
   },
   "careers": {
     "allCompanies": "Alle Unternehmen",
@@ -2039,7 +2045,7 @@
     "needs_action": "noch nicht reagiert auf"
   },
   "ticket": {
-    "chatCreated": "Chat für Ticket {{ticketNumber}} erstellt. Sie sehen diesen Chat nach der ersten Nachricht des Superadmins.",
-    "chatCreatedShort": "Chat für Ticket {{ticketNumber}} erstellt"
+    "chatCreated": "Für Ticket {{ticketNumber}} wurde ein Support-Chat eröffnet. Sie sehen ihn, sobald der Support-Assistent die erste Nachricht schreibt.",
+    "chatCreatedShort": "Support-Chat für Ticket {{ticketNumber}} eröffnet"
   }
 }

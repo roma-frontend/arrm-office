@@ -443,7 +443,9 @@
       "priorityLow": "Low",
       "commentAdded": "Comment added",
       "errorAddingComment": "Error adding comment",
-      "enterResolution": "Enter resolution:",
+      "enterResolution": "Resolution",
+      "resolutionPlaceholder": "What fixed the issue, and anything the reporter should know…",
+      "resolveHint": "The reporter sees this on the ticket, so write it for them.",
       "ticketResolved": "Ticket resolved",
       "errorResolvingTicket": "Error resolving ticket",
       "internal": "Internal",
@@ -470,10 +472,10 @@
         "activateTitle": "Activate Ticket Chat",
         "activateDesc": "Write the first message to activate the chat. After this, the employee will see this chat and be able to communicate in it.",
         "firstMessage": "First Message",
-        "placeholder": "Hello! I am a superadmin, ready to help you with this ticket...",
+        "placeholder": "Hello! I'm your support assistant and I'm looking into your ticket...",
         "cancel": "Cancel",
         "activateAndSend": "Activate and Send",
-        "defaultActivateMessage": "Hello! I'm a superadmin, ready to help you with ticket {{ticketNumber}}."
+        "defaultActivateMessage": "Hello! I'm your support assistant. I've taken ticket {{ticketNumber}} and will help you resolve it — feel free to add any details here."
       },
       "chatCreated": "Chat created: {{chatName}}",
       "chatCreateError": "Error creating chat",
@@ -538,8 +540,12 @@
         "errorCreatingIncident": "Error creating incident",
         "errorResolvingIncident": "Error resolving incident",
         "fillRequiredFields": "Fill required fields",
-        "specifyRootCause": "Specify root cause:",
-        "specifyResolution": "Specify resolution:"
+        "specifyRootCause": "Root cause",
+        "rootCausePlaceholder": "What actually went wrong…",
+        "specifyResolution": "Resolution",
+        "resolutionPlaceholder": "What was done to bring the service back…",
+        "resolveIncidentTitle": "Resolve incident",
+        "resolveIncidentHint": "Both fields are recorded on the incident and stay part of its history."
       },
       "problemsDetected": "Problems detected: {{problems}}",
       "activeIncidentsDesc": "System incidents in progress",

@@ -29,7 +29,6 @@ import { logger } from '@/lib/logger';
 
 interface LeaveConflictAlertsProps {
   organizationId: Id<'organizations'>;
-  userId: Id<'users'>;
 }
 
 interface ConflictAlert {
@@ -48,7 +47,7 @@ interface ConflictAlert {
   [key: string]: unknown;
 }
 
-export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAlertsProps) {
+export function LeaveConflictAlerts({ organizationId }: LeaveConflictAlertsProps) {
   const { t } = useTranslation();
   const [selectedAlert, setSelectedAlert] = useState<ConflictAlert | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
@@ -73,7 +72,6 @@ export function LeaveConflictAlerts({ organizationId, userId }: LeaveConflictAle
     try {
       await reviewAlert({
         alertId: selectedAlert._id,
-        adminId: userId,
         isApproved,
         reviewNotes: reviewNotes || undefined,
       });

@@ -9,22 +9,122 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import {
+  assertOrgScope,
+  assertOrgStaff,
+  resolveOrgScope,
+  resolveOrgStaff,
+  scopeOwnsRecord,
+} from './lib/orgAccess';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
 import { logger } from '../src/lib/logger';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
+import type { MutationCtx } from './_generated/server';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPANY EVENTS MANAGEMENT
 // ─────────────────────────────────────────────────────────────────────────────
 
+const MAX_EVENT_NAME = 200;
+const MAX_EVENT_DESCRIPTION = 5000;
+
 /**
- * Create a company event
+ * Fan-out ceiling for the announcement. A very large organization gets the event
+ * on the calendar either way — the calendar reads the table, not the inbox — so
+ * capping the notifications trades a complete inbox sweep for a bounded
+ * mutation.
+ */
+const MAX_EVENT_NOTIFIED = 500;
+
+/** Drops ids that do not belong to the organization. */
+async function filterOrgMembers(
+  ctx: MutationCtx,
+  organizationId: Id<'organizations'>,
+  ids: Id<'users'>[] | undefined,
+): Promise<Id<'users'>[] | undefined> {
+  if (!ids || ids.length === 0) return ids;
+
+  const unique = [...new Set(ids)];
+  const users = await Promise.all(unique.map((id) => ctx.db.get(id)));
+  return users
+    .filter((u): u is Doc<'users'> => !!u && u.organizationId === organizationId)
+    .map((u) => u._id);
+}
+
+/**
+ * Announce an event to the people it concerns.
+ *
+ * Previously only admins were told, which left the rest of the organization to
+ * discover an event by chance. Everyone required to attend hears about it by
+ * name; when nobody in particular is required, the event concerns the whole
+ * organization and everyone gets it.
+ */
+async function notifyEventAudience(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<'organizations'>;
+    event: {
+      name: string;
+      startDate: number;
+      requiredDepartments: string[];
+      requiredEmployeeIds?: Id<'users'>[];
+    };
+    actorId: Id<'users'>;
+    eventId: Id<'companyEvents'>;
+  },
+): Promise<number> {
+  const { organizationId, event, actorId, eventId } = args;
+
+  const members = await ctx.db
+    .query('users')
+    .withIndex('by_org_active', (q) => q.eq('organizationId', organizationId).eq('isActive', true))
+    .take(DEFAULT_LIST_CAP);
+
+  const departments = event.requiredDepartments
+    .map((d) => d.trim().toLowerCase())
+    .filter((d) => d.length > 0);
+  const requiredIds = new Set(event.requiredEmployeeIds ?? []);
+  const targeted = departments.length > 0 || requiredIds.size > 0;
+
+  const audience = members.filter((member) => {
+    if (member._id === actorId) return false;
+    if (member.role === 'superadmin') return false;
+    if (!targeted) return true;
+    if (requiredIds.has(member._id)) return true;
+    return departments.includes((member.department ?? '').trim().toLowerCase());
+  });
+
+  const startDateLabel = new Date(event.startDate).toISOString().split('T')[0] ?? '';
+  const recipients = audience.slice(0, MAX_EVENT_NOTIFIED);
+
+  for (const member of recipients) {
+    await notify(ctx, {
+      organizationId,
+      userId: member._id,
+      type: 'system',
+      titleKey: 'notifications.titles.eventCreated',
+      messageKey: 'notifications.messages.eventCreated',
+      params: { name: event.name, date: startDateLabel },
+      fallbackTitle: '📅 New company event',
+      fallbackMessage: `${event.name} (${startDateLabel})`,
+      route: `/events/${eventId}`,
+    });
+  }
+
+  return recipients.length;
+}
+
+/**
+ * Create a company event.
+ *
+ * The event is visible to the whole organization: `requiredDepartments` and
+ * `requiredEmployeeIds` say who is *expected to attend*, not who is allowed to
+ * know it is happening.
  */
 export const createCompanyEvent = mutation({
   args: {
     organizationId: v.id('organizations'),
-    userId: v.id('users'),
     name: v.string(),
     description: v.optional(v.string()),
     startDate: v.number(),
@@ -45,60 +145,59 @@ export const createCompanyEvent = mutation({
     notifyDaysBefore: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Verify user is admin/manager
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error('User not found');
+    // Identity comes from the session: `userId` used to be an argument, so any
+    // caller could act as an admin of any organization by passing their id.
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
+    const organizationId = scope.organizationId ?? args.organizationId;
 
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
-    if (!isAdmin) {
-      throw new Error('Only admins can create company events');
+    const name = args.name.trim();
+    if (!name) throw new Error('Event name is required');
+    if (name.length > MAX_EVENT_NAME) throw new Error('Event name is too long');
+    if ((args.description?.length ?? 0) > MAX_EVENT_DESCRIPTION) {
+      throw new Error('Event description is too long');
+    }
+    if (args.endDate < args.startDate) {
+      throw new Error('Event cannot end before it starts');
     }
 
+    // A required attendee from another organization would leak that person into
+    // this org's attendance view.
+    const requiredEmployeeIds = await filterOrgMembers(
+      ctx,
+      organizationId,
+      args.requiredEmployeeIds,
+    );
+
     const eventId = await ctx.db.insert('companyEvents', {
-      organizationId: args.organizationId,
-      name: args.name,
+      organizationId,
+      name,
       description: args.description,
       startDate: args.startDate,
       endDate: args.endDate,
       isAllDay: args.isAllDay,
       requiredDepartments: args.requiredDepartments,
-      requiredEmployeeIds: args.requiredEmployeeIds,
+      requiredEmployeeIds,
       eventType: args.eventType,
       priority: args.priority,
       notifyDaysBefore: args.notifyDaysBefore,
-      createdBy: args.userId,
+      createdBy: scope.caller._id,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
-    // Notify all admins about the new event
-    const admins = await ctx.db
-      .query('users')
-      .withIndex('by_org_role', (q) =>
-        q.eq('organizationId', args.organizationId).eq('role', 'admin'),
-      )
-      .take(SMALL_LIST_CAP);
+    const notified = await notifyEventAudience(ctx, {
+      organizationId,
+      event: {
+        name,
+        startDate: args.startDate,
+        requiredDepartments: args.requiredDepartments,
+        requiredEmployeeIds,
+      },
+      actorId: scope.caller._id,
+      eventId,
+    });
 
-    const startDateLabel = new Date(args.startDate).toLocaleDateString();
-
-    for (const admin of admins) {
-      await notify(ctx, {
-        organizationId: args.organizationId,
-        userId: admin._id,
-        type: 'system',
-        titleKey: 'notifications.titles.eventCreated',
-        messageKey: 'notifications.messages.eventCreated',
-        params: {
-          name: args.name,
-          date: startDateLabel,
-        },
-        fallbackTitle: '📅 New Company Event Created',
-        fallbackMessage: `${args.name} (${startDateLabel})`,
-        route: '/events',
-      });
-    }
-
-    return eventId;
+    return { eventId, notified };
   },
 });
 
@@ -108,7 +207,6 @@ export const createCompanyEvent = mutation({
 export const updateCompanyEvent = mutation({
   args: {
     eventId: v.id('companyEvents'),
-    userId: v.id('users'),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     startDate: v.optional(v.number()),
@@ -123,21 +221,39 @@ export const updateCompanyEvent = mutation({
     const event = await ctx.db.get(args.eventId);
     if (!event) throw new Error('Event not found');
 
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error('User not found');
-
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
-    if (!isAdmin && event.createdBy !== args.userId) {
+    const scope = await assertOrgScope(ctx, event.organizationId);
+    if (!scopeOwnsRecord(scope, event)) throw new Error('Event not found');
+    if (!scope.isAdmin && event.createdBy !== scope.caller._id) {
       throw new Error('Only event creator or admin can update');
     }
 
+    const start = args.startDate ?? event.startDate;
+    const end = args.endDate ?? event.endDate;
+    if (end < start) throw new Error('Event cannot end before it starts');
+
     const patch: Partial<Doc<'companyEvents'>> = { updatedAt: Date.now() };
-    if (args.name) patch.name = args.name;
-    if (args.description !== undefined) patch.description = args.description;
+    if (args.name) {
+      const name = args.name.trim();
+      if (!name) throw new Error('Event name is required');
+      if (name.length > MAX_EVENT_NAME) throw new Error('Event name is too long');
+      patch.name = name;
+    }
+    if (args.description !== undefined) {
+      if (args.description.length > MAX_EVENT_DESCRIPTION) {
+        throw new Error('Event description is too long');
+      }
+      patch.description = args.description;
+    }
     if (args.startDate) patch.startDate = args.startDate;
     if (args.endDate) patch.endDate = args.endDate;
     if (args.requiredDepartments) patch.requiredDepartments = args.requiredDepartments;
-    if (args.requiredEmployeeIds) patch.requiredEmployeeIds = args.requiredEmployeeIds;
+    if (args.requiredEmployeeIds) {
+      patch.requiredEmployeeIds = await filterOrgMembers(
+        ctx,
+        event.organizationId,
+        args.requiredEmployeeIds,
+      );
+    }
     // Handle empty string as undefined (clear priority)
     if (args.priority && (args.priority as string) !== '') patch.priority = args.priority;
     if ((args.priority as string) === '') patch.priority = undefined; // Clear priority if empty string
@@ -165,18 +281,15 @@ export const updateCompanyEvent = mutation({
 export const deleteCompanyEvent = mutation({
   args: {
     eventId: v.id('companyEvents'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { eventId, userId } = args;
+    const { eventId } = args;
     const event = await ctx.db.get(eventId);
     if (!event) throw new Error('Event not found');
 
-    const user = await ctx.db.get(userId);
-    if (!user) throw new Error('User not found');
-
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
-    if (!isAdmin && event.createdBy !== userId) {
+    const scope = await assertOrgScope(ctx, event.organizationId);
+    if (!scopeOwnsRecord(scope, event)) throw new Error('Event not found');
+    if (!scope.isAdmin && event.createdBy !== scope.caller._id) {
       throw new Error('Only event creator or admin can delete');
     }
 
@@ -196,7 +309,13 @@ export const deleteCompanyEvent = mutation({
 });
 
 /**
- * Get company events for organization
+ * Company events for an organization, for every member of it.
+ *
+ * This is the query the shared calendar reads, so it deliberately does not
+ * narrow by role or department: an event concerns the organization, and hiding
+ * it from the people around it is what made the calendar look empty. It does
+ * check the caller belongs to the organization — it used to accept any
+ * `organizationId` from any caller and hand back that tenant's schedule.
  */
 export const getCompanyEvents = query({
   args: {
@@ -205,21 +324,23 @@ export const getCompanyEvents = query({
     endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const scope = await resolveOrgScope(ctx, args.organizationId);
+    if (!scope) return [];
+
     let events;
 
     if (args.startDate && args.endDate) {
-      // Get events in date range
+      const windowStart = args.startDate;
+      const windowEnd = args.endDate;
       const allEvents = await ctx.db
         .query('companyEvents')
         .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
         .take(DEFAULT_LIST_CAP);
 
-      events = allEvents.filter(
-        (e) =>
-          (e.startDate >= args.startDate! && e.startDate <= args.endDate!) ||
-          (e.endDate >= args.startDate! && e.endDate <= args.endDate!) ||
-          (e.startDate <= args.startDate! && e.endDate >= args.endDate!),
-      );
+      // Canonical overlap test. The previous three-clause version missed nothing
+      // but read as if it might, which matters for a multi-day event spanning the
+      // whole visible month.
+      events = allEvents.filter((e) => e.startDate <= windowEnd && e.endDate >= windowStart);
     } else {
       events = await ctx.db
         .query('companyEvents')
@@ -430,6 +551,10 @@ export const getLeaveConflictAlerts = query({
     isReviewed: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // Staff only: every row names an employee and the dates of their leave.
+    const scope = await resolveOrgStaff(ctx, args.organizationId);
+    if (!scope) return [];
+
     let alerts = await ctx.db
       .query('leaveConflictAlerts')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
@@ -473,17 +598,18 @@ export const getLeaveConflictAlerts = query({
 export const reviewConflictAlert = mutation({
   args: {
     alertId: v.id('leaveConflictAlerts'),
-    adminId: v.id('users'),
     isApproved: v.boolean(), // Approve leave despite conflict
     reviewNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { alertId, adminId, isApproved, reviewNotes } = args;
+    const { alertId, isApproved, reviewNotes } = args;
     const alert = await ctx.db.get(alertId);
     if (!alert) throw new Error('Alert not found');
 
-    const admin = await ctx.db.get(adminId);
-    if (!admin) throw new Error('Admin not found');
+    // The reviewer is the caller, not an id the browser chose: `adminId` was an
+    // argument, and nothing verified it was the person clicking or an admin.
+    const scope = await assertOrgStaff(ctx, alert.organizationId);
+    if (!scopeOwnsRecord(scope, alert)) throw new Error('Alert not found');
 
     await ctx.db.patch(alertId, {
       isReviewed: true,
@@ -518,7 +644,8 @@ export const reviewConflictAlert = mutation({
 });
 
 /**
- * Get a single event by ID for detail view
+ * A single event for its detail page. Members of the organization may read it;
+ * it used to be readable by anyone holding an id.
  */
 export const getEventById = query({
   args: {
@@ -528,6 +655,9 @@ export const getEventById = query({
     const { eventId } = args;
     const event = await ctx.db.get(eventId);
     if (!event) return null;
+
+    const scope = await resolveOrgScope(ctx, event.organizationId);
+    if (!scope || !scopeOwnsRecord(scope, event)) return null;
 
     const creator = await ctx.db.get(event.createdBy);
 
@@ -539,7 +669,10 @@ export const getEventById = query({
 });
 
 /**
- * Get upcoming events with attendance status
+ * Attendance status for an event.
+ *
+ * Staff only: it reports who has approved leave clashing with the event, which
+ * is other people's absence data and not something a colleague needs.
  */
 export const getEventAttendanceStatus = query({
   args: {
@@ -548,8 +681,12 @@ export const getEventAttendanceStatus = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, eventId } = args;
+    const scope = await resolveOrgStaff(ctx, organizationId);
+    if (!scope) return null;
+
     const event = await ctx.db.get(eventId);
     if (!event) return null;
+    if (!scopeOwnsRecord(scope, event)) return null;
 
     // Get all users from required departments
     const users = (

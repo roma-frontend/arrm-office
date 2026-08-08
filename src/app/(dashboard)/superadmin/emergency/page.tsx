@@ -29,6 +29,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { toast } from 'sonner';
 import { CreateIncidentWizard } from '@/components/superadmin/CreateIncidentWizard';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { PromptDialog } from '@/components/ui/prompt-dialog';
 import { logger } from '@/lib/logger';
 
 interface Ticket {
@@ -75,6 +76,7 @@ export default function EmergencyDashboardPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [createIncidentOpen, setCreateIncidentOpen] = useState(false);
+  const [resolvingIncidentId, setResolvingIncidentId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const data = useQuery(api.superadmin.getEmergencyDashboard);
@@ -122,26 +124,31 @@ export default function EmergencyDashboardPage() {
     }
   };
 
-  const handleResolveIncident = async (incidentId: string) => {
-    const rootCause = prompt(t('superadmin.emergency.alerts.specifyRootCause'));
-    if (!rootCause) return;
-
-    const resolution = prompt(t('superadmin.emergency.alerts.specifyResolution'));
-    if (!resolution) return;
+  /**
+   * Resolving an incident needs both a root cause and a resolution. They used to
+   * be asked for through two native prompts in a row, which meant the root cause
+   * was already typed and then thrown away if the second prompt was dismissed.
+   * One form now collects both, or neither.
+   */
+  const handleResolveIncident = async (values: Record<string, string>) => {
+    if (!resolvingIncidentId) return;
 
     try {
       await updateIncidentStatus({
-        incidentId: incidentId as Id<'emergencyIncidents'>,
+        incidentId: resolvingIncidentId as Id<'emergencyIncidents'>,
         status: 'resolved',
         userId: user.id as Id<'users'>,
-        rootCause,
-        resolution,
+        rootCause: values.rootCause ?? '',
+        resolution: values.resolution ?? '',
       });
 
       toast.success(t('superadmin.emergency.alerts.incidentResolved'));
+      setResolvingIncidentId(null);
     } catch (error) {
       toast.error(t('superadmin.emergency.alerts.errorResolvingIncident'));
       logger.error(error);
+      // Rethrow so the form stays open with both answers intact.
+      throw error;
     }
   };
 
@@ -422,7 +429,7 @@ export default function EmergencyDashboardPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleResolveIncident(incident._id)}
+                            onClick={() => setResolvingIncidentId(incident._id)}
                             className="border-(--border) bg-(--background) hover:bg-(--background-subtle) text-(--foreground) text-xs"
                           >
                             {t('superadmin.emergency.actions.resolve')}
@@ -559,6 +566,33 @@ export default function EmergencyDashboardPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <PromptDialog
+          open={resolvingIncidentId !== null}
+          onOpenChange={(next) => !next && setResolvingIncidentId(null)}
+          title={t('superadmin.emergency.alerts.resolveIncidentTitle')}
+          description={t('superadmin.emergency.alerts.resolveIncidentHint')}
+          submitLabel={t('superadmin.emergency.actions.resolve')}
+          fields={[
+            {
+              name: 'rootCause',
+              label: t('superadmin.emergency.alerts.specifyRootCause'),
+              placeholder: t('superadmin.emergency.alerts.rootCausePlaceholder'),
+              multiline: true,
+              minLength: 10,
+              maxLength: 2000,
+            },
+            {
+              name: 'resolution',
+              label: t('superadmin.emergency.alerts.specifyResolution'),
+              placeholder: t('superadmin.emergency.alerts.resolutionPlaceholder'),
+              multiline: true,
+              minLength: 10,
+              maxLength: 2000,
+            },
+          ]}
+          onSubmit={handleResolveIncident}
+        />
       </div>
     </ErrorBoundary>
   );

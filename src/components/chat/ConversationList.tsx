@@ -3,6 +3,7 @@ import Image from 'next/image';
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { Id } from '../../../convex/_generated/dataModel';
+import { decodeSystemMessage } from '../../../convex/lib/systemMessage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   ContextMenu,
@@ -206,6 +207,14 @@ export const ConversationList = React.memo(function ConversationList({
     const matchesSearch = name.toLowerCase().includes(search.toLowerCase());
 
     if (!matchesSearch) return false;
+
+    // The conversation currently on screen is never filtered out of the list.
+    // The stored filter defaults to `chat` (direct only), which silently hid any
+    // group the user was taken to by a link — a support ticket chat opened from
+    // `/superadmin/support` is a group, so it appeared nowhere in the sidebar
+    // while its messages were on screen. Search still applies: hiding a
+    // non-matching row while the user is looking something up is expected.
+    if (selectedId && c._id === selectedId) return true;
 
     const isHidden = c.membership.isArchived || c.isArchived;
     const isUnread = c.membership.unreadCount > 0 && !c.membership.isDeleted;
@@ -510,8 +519,12 @@ export const ConversationList = React.memo(function ConversationList({
           const isDeleted = deletedMessages.includes(conv.lastMessageText || '');
           const rawLastText = isDeleted ? '' : conv.lastMessageText;
 
+          // A system message is stored as a translation token; render it in the
+          // reader's language rather than leaking the token into the preview.
+          const lastToken = rawLastText ? decodeSystemMessage(rawLastText) : null;
+
           // Remove sender prefix for System Announcements (in case it's still there)
-          let displayLastText = rawLastText;
+          let displayLastText = lastToken ? t(lastToken.key, lastToken.params) : rawLastText;
           if (isSystemAnnouncements && displayLastText) {
             const match = displayLastText.match(/^[^:]*:\s*/);
             if (match) {

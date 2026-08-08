@@ -443,7 +443,9 @@
       "priorityLow": "Ցածր",
       "commentAdded": "Մեկնաբանությունը ավելացված է",
       "errorAddingComment": "Սխալ մեկնաբանությունը ավելացնելիս",
-      "enterResolution": "Մուտքագրեք լուծումը:",
+      "enterResolution": "Լուծում",
+      "resolutionPlaceholder": "Ինչն օգնեց և ինչ պետք է իմանա դիմողը…",
+      "resolveHint": "Դիմողը կտեսնի այս տեքստը տոմսում — գրեք նրա համար։",
       "ticketResolved": "Տոմսը լուծված է",
       "errorResolvingTicket": "Սխալ տոմսը լուծելիս",
       "internal": "Ներքին",
@@ -470,10 +472,10 @@
         "activateTitle": "Ակտիվացնել տոմսի չատը",
         "activateDesc": "Գրեք առաջին հաղորդագրությունը՝ չատը ակտիվացնելու համար: Դրանից հետո աշխատակիցը կտեսնի այս չատը և կկարողանա հաղորդակցվել դրանում:",
         "firstMessage": "Առաջին հաղորդագրություն",
-        "placeholder": "Ողջույն: Ես սուպերադմին եմ, պատրաստ եմ օգնել ձեզ այս տոմսով...",
+        "placeholder": "Ողջույն։ Ես աջակցման օգնականն եմ և զբաղվում եմ ձեր տոմսով...",
         "cancel": "Չեղարկել",
         "activateAndSend": "Ակտիվացնել և ուղարկել",
-        "defaultActivateMessage": "Ողջույն: Ես սուպերադմին եմ, պատրաստ եմ օգնել ձեզ {{ticketNumber}} տոմսով:"
+        "defaultActivateMessage": "Ողջույն։ Ես աջակցման օգնականն եմ։ {{ticketNumber}} տոմսը վերցրել եմ աշխատանքի և կօգնեմ ձեզ լուծել այն — գրեք այստեղ ցանկացած մանրամասն։"
       },
       "chatCreated": "Չատը ստեղծված է՝ {{chatName}}",
       "chatCreateError": "Սխալ չատի ստեղծման ժամանակ",
@@ -537,8 +539,12 @@
         "errorCreatingIncident": "Սխալ միջադեպի ստեղծման ժամանակ",
         "errorResolvingIncident": "Սխալ միջադեպի լուծման ժամանակ",
         "fillRequiredFields": "Լրացրեք պարտադիր դաշտերը",
-        "specifyRootCause": "Նշեք հիմնական պատճառը:",
-        "specifyResolution": "Նշեք լուծումը:"
+        "specifyRootCause": "Հիմնական պատճառ",
+        "rootCausePlaceholder": "Ինչն իրականում սխալ գնաց…",
+        "specifyResolution": "Լուծում",
+        "resolutionPlaceholder": "Ինչ արվեց ծառայությունը վերականգնելու համար…",
+        "resolveIncidentTitle": "Փակել միջադեպը",
+        "resolveIncidentHint": "Երկու դաշտերը պահվում են միջադեպում և մնում են դրա պատմության մասը։"
       },
       "problemsDetected": "Հայտնաբերված խնդիրներ՝ {{problems}}",
       "activeIncidentsDesc": "Համակարգի միջադեպեր ընթացքի մեջ",

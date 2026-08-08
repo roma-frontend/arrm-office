@@ -2208,6 +2208,10 @@
       "holidayDesc": "Корпоративный праздник или выходной",
       "celebration": "Празднование",
       "celebrationDesc": "Вечеринка или торжество",
+      "team_building": "Тимбилдинг",
+      "team_buildingDesc": "Совместное мероприятие для команды",
+      "deadline": "Дедлайн",
+      "deadlineDesc": "Дата, к которой нужно закончить работу",
       "other": "Другое",
       "otherDesc": "Что-то еще"
     },
@@ -2633,7 +2637,8 @@
       "leave": "Заявка на отпуск",
       "driver": "Бронирование водителя",
       "google": "Google Календарь",
-      "custom": "Событие календаря"
+      "custom": "Событие календаря",
+      "company": "Мероприятие организации"
     },
     "sections": {
       "timeline": "Хронология",
@@ -2655,7 +2660,9 @@
     },
     "status": {
       "scheduled": "Запланировано",
-      "confirmed": "Подтверждено"
+      "confirmed": "Подтверждено",
+      "attendanceRequired": "Ожидается участие",
+      "wholeCompany": "Вся организация"
     },
     "milestones": {
       "created": "Создано",
@@ -2711,14 +2718,23 @@
       "reminder": "Напоминание",
       "attendees": "Участники",
       "attachment": "Вложение",
-      "openAttachment": "Открыть вложение"
+      "openAttachment": "Открыть вложение",
+      "eventType": "Тип мероприятия",
+      "priority": "Приоритет",
+      "requiredDepartments": "Ожидаются отделы",
+      "requiredEmployees": "Ожидаются сотрудники",
+      "organizer": "Организатор",
+      "notifyDaysValue": "за {{count}} дн.",
+      "eventPage": "Мероприятие",
+      "openEventPage": "Открыть страницу мероприятия"
     },
     "roles": {
       "employee": "Сотрудник",
       "reviewer": "Проверяющий",
       "driver": "Водитель",
       "bookedBy": "Забронировал",
-      "attendee": "Участник"
+      "attendee": "Участник",
+      "required": "Ожидается участие"
     },
     "driverType": {
       "trip": "Поездка",
@@ -2991,9 +3007,10 @@
     },
     "categories": {
       "technical": "Техническая проблема",
+      "bug": "Ошибка в системе",
+      "access": "Аккаунт и доступ",
       "billing": "Оплата и счета",
-      "account": "Аккаунт и доступ",
-      "feature": "Предложение функции",
+      "feature_request": "Предложение функции",
       "other": "Другое"
     },
     "tabs": {
@@ -3054,7 +3071,7 @@
       "technical": "Техническая проблема",
       "billing": "Оплата и счета",
       "access": "Доступ и учётные записи",
-      "feature": "Запрос функции",
+      "feature_request": "Запрос функции",
       "bug": "Сообщение об ошибке",
       "other": "Другое"
     }

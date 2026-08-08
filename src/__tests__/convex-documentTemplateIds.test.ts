@@ -10,6 +10,7 @@ import {
   HIRING_PACKET_MANDATORY_IDS,
   isCatalogTemplateId,
   personalFileCategory,
+  personalFileCategoryForBlueprint,
 } from '../../convex/lib/documentTemplateIds';
 
 describe('catalog template ids', () => {
@@ -90,5 +91,21 @@ describe('personalFileCategory', () => {
     expect(personalFileCategory('biometric-consent')).toBe('other');
     expect(personalFileCategory('job-description')).toBe('other');
     expect(personalFileCategory('unknown-id')).toBe('other');
+  });
+});
+
+describe('personalFileCategoryForBlueprint', () => {
+  it('files hiring blueprints under contract', () => {
+    expect(personalFileCategoryForBlueprint('hiring')).toBe('contract');
+  });
+
+  it('files certificate blueprints under certificate', () => {
+    expect(personalFileCategoryForBlueprint('certificate')).toBe('certificate');
+  });
+
+  it('files everything else under other', () => {
+    expect(personalFileCategoryForBlueprint('consent')).toBe('other');
+    expect(personalFileCategoryForBlueprint('order')).toBe('other');
+    expect(personalFileCategoryForBlueprint('other')).toBe('other');
   });
 });

@@ -144,6 +144,14 @@ async function createItem(c: Ctx, overrides: Record<string, unknown> = {}) {
   });
 }
 
+/** Issue one voucher to Anna through the product path. */
+async function issued(c: Ctx, overrides: Record<string, unknown> = {}) {
+  const itemId = await createItem(c, { costPoints: 10, ...overrides });
+  await giveBalance(c, c.annaId, 40);
+  const result = await asAnna(c).mutation(api.rewards.redeem, { itemId });
+  return { itemId, ...result };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('recognition economy', () => {
@@ -755,13 +763,6 @@ describe('redeeming', () => {
 });
 
 describe('vouchers', () => {
-  async function issued(c: Ctx, overrides: Record<string, unknown> = {}) {
-    const itemId = await createItem(c, { costPoints: 10, ...overrides });
-    await giveBalance(c, c.annaId, 40);
-    const result = await asAnna(c).mutation(api.rewards.redeem, { itemId });
-    return { itemId, ...result };
-  }
-
   it('is found by code at the desk and marked used once', async () => {
     const c = await seed();
     const { voucherId, code } = await issued(c);
@@ -918,6 +919,437 @@ describe('vouchers', () => {
       organizationId: c.organizationId,
     });
     expect(foreignSummary).toBeNull();
+  });
+});
+
+describe('storefront and admin queries', () => {
+  it('exposes the caller wallet with the point value', async () => {
+    const c = await seed();
+    await giveBalance(c, c.annaId, 25);
+
+    const wallet = await asAnna(c).query(api.rewards.getMyWallet, {
+      organizationId: c.organizationId,
+    });
+    expect(wallet?.balance).toBe(25);
+    expect(wallet?.pointValue).toBe(DEFAULT_RECOGNITION_SETTINGS.pointValue);
+    expect(wallet?.currency).toBe(DEFAULT_RECOGNITION_SETTINGS.currency);
+
+    const foreign = await asOutsider(c).query(api.rewards.getMyWallet, {
+      organizationId: c.organizationId,
+    });
+    expect(foreign).toBeNull();
+  });
+
+  it('shows live pool availability, personal usage and sorted order on the shelf', async () => {
+    const c = await seed();
+    const poolItemId = await createItem(c, {
+      name: 'Cinema card',
+      category: 'experience',
+      fulfillment: 'code_pool',
+      costPoints: 10,
+      sortOrder: 2,
+    });
+    await asAdmin(c).mutation(api.rewards.uploadCodes, {
+      itemId: poolItemId,
+      codes: ['C-1', 'C-2', 'C-3'],
+    });
+    const limitedItemId = await createItem(c, {
+      name: 'Canteen credit',
+      category: 'meal',
+      costPoints: 5,
+      perUserLimitPerMonth: 2,
+      sortOrder: 1,
+    });
+    await giveBalance(c, c.annaId, 20);
+    await asAnna(c).mutation(api.rewards.redeem, { itemId: limitedItemId });
+
+    const shelf = await asAnna(c).query(api.rewards.listCatalog, {
+      organizationId: c.organizationId,
+    });
+
+    // Sorted by sortOrder first: Canteen credit (1) before Cinema card (2).
+    expect(shelf.map((i) => i.name)).toEqual(['Canteen credit', 'Cinema card']);
+    const pool = shelf.find((i) => i._id === poolItemId);
+    expect(pool?.codesAvailable).toBe(3);
+    expect(pool?.soldOut).toBe(false);
+    const limited = shelf.find((i) => i._id === limitedItemId);
+    expect(limited?.myThisMonth).toBe(1);
+    expect(limited?.limitReached).toBe(false);
+  });
+
+  it('filters my vouchers to live ones with activeOnly', async () => {
+    const c = await seed();
+    await issued(c);
+
+    // A second voucher that has lapsed.
+    const { voucherId } = await issued(c);
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(voucherId, { expiresAt: Date.now() - 1000 });
+    });
+
+    const active = await asAnna(c).query(api.rewards.listMyVouchers, {
+      organizationId: c.organizationId,
+      activeOnly: true,
+    });
+    expect(active).toHaveLength(1);
+    expect(active[0]?.status).toBe('issued');
+  });
+
+  it('filters the staff registry by status and lists newest first', async () => {
+    const c = await seed();
+    await issued(c);
+    await issued(c);
+
+    const pending = await asAdmin(c).query(api.rewards.listVouchers, {
+      organizationId: c.organizationId,
+      status: 'issued',
+    });
+    expect(pending).toHaveLength(2);
+    expect(pending[0]?.issuedAt).toBeGreaterThanOrEqual(pending[1]?.issuedAt ?? 0);
+  });
+
+  it('lists codes of a pool item for staff only', async () => {
+    const c = await seed();
+    const itemId = await createItem(c, { fulfillment: 'code_pool' });
+    await asAdmin(c).mutation(api.rewards.uploadCodes, {
+      itemId,
+      codes: ['CODE-1', 'CODE-2'],
+    });
+
+    const staffView = await asAdmin(c).query(api.rewards.listCodes, { rewardItemId: itemId });
+    expect(staffView).toHaveLength(2);
+    expect(staffView.map((row) => row.code).sort()).toEqual(['CODE-1', 'CODE-2']);
+
+    const employeeView = await asAnna(c).query(api.rewards.listCodes, { rewardItemId: itemId });
+    expect(employeeView).toEqual([]);
+
+    // A real id that no longer exists is validated then resolves to nothing.
+    const goneItemId = await createItem(c);
+    await asAdmin(c).mutation(api.rewards.removeItem, { itemId: goneItemId });
+    const missing = await asAdmin(c).query(api.rewards.listCodes, { rewardItemId: goneItemId });
+    expect(missing).toEqual([]);
+  });
+});
+
+describe('catalog administration', () => {
+  it('edits an item in place', async () => {
+    const c = await seed();
+    const itemId = await createItem(c, { costPoints: 13 });
+
+    await asAdmin(c).mutation(api.rewards.updateItem, {
+      itemId,
+      name: 'Latté',
+      costPoints: 15,
+      description: '  Flat white  ',
+      stockLimit: null,
+      validDays: null,
+      perUserLimitPerMonth: null,
+    });
+
+    const shelf = await asAdmin(c).query(api.rewards.listCatalog, {
+      organizationId: c.organizationId,
+      includeArchived: true,
+    });
+    expect(shelf[0]).toMatchObject({
+      name: 'Latté',
+      costPoints: 15,
+      description: 'Flat white',
+    });
+    expect(shelf[0]?.stockLimit).toBeUndefined();
+    expect(shelf[0]?.validDays).toBeUndefined();
+    expect(shelf[0]?.perUserLimitPerMonth).toBeUndefined();
+  });
+
+  it('validates item input on update too', async () => {
+    const c = await seed();
+    const itemId = await createItem(c);
+
+    await expect(
+      asAdmin(c).mutation(api.rewards.updateItem, { itemId, faceValue: -1 }),
+    ).rejects.toThrow(/negative/i);
+    await expect(
+      asAdmin(c).mutation(api.rewards.updateItem, {
+        itemId,
+        description: 'x'.repeat(2001),
+      }),
+    ).rejects.toThrow(/at most 2000/i);
+  });
+
+  it('refuses an item with a negative face value or oversized text', async () => {
+    const c = await seed();
+    await expect(createItem(c, { faceValue: -5 })).rejects.toThrow(/negative/i);
+    await expect(createItem(c, { description: 'x'.repeat(2001) })).rejects.toThrow(/at most 2000/i);
+  });
+
+  it('caps the catalog size at 200 items', async () => {
+    const c = await seed();
+    await c.t.run(async (ctx) => {
+      for (let i = 0; i < 201; i += 1) {
+        await ctx.db.insert('rewardItems', {
+          organizationId: c.organizationId,
+          name: `Item ${i}`,
+          category: 'other' as const,
+          costPoints: 1,
+          fulfillment: 'manual' as const,
+          issuedCount: 0,
+          requiresApproval: false,
+          status: 'active' as const,
+          createdBy: c.adminId,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        } as never);
+      }
+    });
+
+    await expect(createItem(c)).rejects.toThrow(/at most 200/i);
+  });
+
+  it('deletes an item together with its unused codes', async () => {
+    const c = await seed();
+    const itemId = await createItem(c, { fulfillment: 'code_pool' });
+    await asAdmin(c).mutation(api.rewards.uploadCodes, { itemId, codes: ['SPARE-1', 'SPARE-2'] });
+
+    await asAdmin(c).mutation(api.rewards.removeItem, { itemId });
+
+    const codes = await asAdmin(c).query(api.rewards.listCodes, { rewardItemId: itemId });
+    expect(codes).toEqual([]);
+    const shelf = await asAdmin(c).query(api.rewards.listCatalog, {
+      organizationId: c.organizationId,
+      includeArchived: true,
+    });
+    expect(shelf).toEqual([]);
+  });
+
+  it('caps a single code upload at 500 codes', async () => {
+    const c = await seed();
+    const itemId = await createItem(c, { fulfillment: 'code_pool' });
+    await expect(
+      asAdmin(c).mutation(api.rewards.uploadCodes, {
+        itemId,
+        codes: Array.from({ length: 501 }, (_, i) => `B-${i}`),
+      }),
+    ).rejects.toThrow(/at most 500/i);
+  });
+
+  it('voids an unused code and refuses to void an assigned one', async () => {
+    const c = await seed();
+    const itemId = await createItem(c, { fulfillment: 'code_pool', costPoints: 10 });
+    await asAdmin(c).mutation(api.rewards.uploadCodes, { itemId, codes: ['GONE-1'] });
+    await giveBalance(c, c.annaId, 10);
+    await asAnna(c).mutation(api.rewards.redeem, { itemId });
+
+    // A second, untouched code added after the voucher took the first one.
+    await asAdmin(c).mutation(api.rewards.uploadCodes, { itemId, codes: ['VOID-1'] });
+
+    const codes = await asAdmin(c).query(api.rewards.listCodes, { rewardItemId: itemId });
+    const unassigned = codes.find((row) => row.code === 'VOID-1')!;
+    const assigned = codes.find((row) => row.code === 'GONE-1')!;
+    expect(assigned.status).toBe('assigned');
+
+    await asAdmin(c).mutation(api.rewards.voidCode, { codeId: unassigned._id });
+    await expect(
+      asAdmin(c).mutation(api.rewards.voidCode, { codeId: assigned._id }),
+    ).rejects.toThrow(/already handed out/i);
+  });
+});
+
+describe('staff actions on vouchers', () => {
+  it('refunds and notifies when staff cancel someone else voucher', async () => {
+    const c = await seed();
+    const { voucherId } = await issued(c);
+
+    await asAdmin(c).mutation(api.rewards.cancelVoucher, {
+      voucherId,
+      reason: 'Cannot honour this reward',
+    });
+
+    const wallet = await asAnna(c).query(api.recognition.getUserPoints, {
+      organizationId: c.organizationId,
+    });
+    expect(wallet.balance).toBe(40);
+
+    // The owner is told the reward was cancelled (staff-cancel path notifies).
+    const rows = await c.t.run(async (ctx) =>
+      ctx.db
+        .query('notifications')
+        .withIndex('by_user', (q) => q.eq('userId', c.annaId))
+        .collect(),
+    );
+    expect(rows.some((row) => row.type === 'system')).toBe(true);
+  });
+
+  it('returns the pool code to the shelf when an expired voucher is swept', async () => {
+    const c = await seed();
+    const itemId = await createItem(c, { fulfillment: 'code_pool', costPoints: 10 });
+    await asAdmin(c).mutation(api.rewards.uploadCodes, { itemId, codes: ['RECYCLE-1'] });
+    await giveBalance(c, c.annaId, 10);
+    const { voucherId } = await asAnna(c).mutation(api.rewards.redeem, { itemId });
+
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(voucherId, { expiresAt: Date.now() - 1000 });
+    });
+
+    const swept = await c.t.mutation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- internal mutation handle
+      (api as any).rewards.expireVouchers,
+      {},
+    );
+    expect(swept.expired).toBe(1);
+
+    const codes = await asAdmin(c).query(api.rewards.listCodes, { rewardItemId: itemId });
+    expect(codes[0]?.status).toBe('available');
+  });
+});
+
+// Line 91 of rewards.ts (allocateVoucherCode retry exhaustion) is the only
+// uncovered line: it needs 6 random-code collisions in a row, which is not
+// reachable deterministically without mocking Math.random.
+describe('defensive guards', () => {
+  /** Insert a row and delete it again, to get a valid but gone id. */
+  async function goneItem(c: Ctx): Promise<Id<'rewardItems'>> {
+    return c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('rewardItems', {
+        organizationId: c.organizationId,
+        name: 'Gone',
+        category: 'other' as const,
+        costPoints: 1,
+        fulfillment: 'manual' as const,
+        issuedCount: 0,
+        requiresApproval: false,
+        status: 'active' as const,
+        createdBy: c.adminId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as never);
+      await ctx.db.delete(id);
+      return id;
+    });
+  }
+
+  async function goneVoucher(c: Ctx): Promise<Id<'rewardVouchers'>> {
+    const itemId = await createItem(c);
+    return c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('rewardVouchers', {
+        organizationId: c.organizationId,
+        rewardItemId: itemId,
+        userId: c.annaId,
+        code: 'GONE-V',
+        title: 'Gone',
+        costPoints: 1,
+        status: 'issued' as const,
+        issuedAt: Date.now(),
+        expiresAt: Date.now() + 86400000,
+        updatedAt: Date.now(),
+      } as never);
+      await ctx.db.delete(id);
+      return id;
+    });
+  }
+
+  it('refuses to touch a missing item anywhere in the catalog', async () => {
+    const c = await seed();
+    const gone = await goneItem(c);
+
+    await expect(asAdmin(c).mutation(api.rewards.updateItem, { itemId: gone })).rejects.toThrow(
+      /reward not found/i,
+    );
+    await expect(
+      asAdmin(c).mutation(api.rewards.setItemStatus, { itemId: gone, status: 'archived' }),
+    ).rejects.toThrow(/reward not found/i);
+    await expect(asAdmin(c).mutation(api.rewards.removeItem, { itemId: gone })).rejects.toThrow(
+      /reward not found/i,
+    );
+    await expect(
+      asAdmin(c).mutation(api.rewards.uploadCodes, { itemId: gone, codes: ['X-1'] }),
+    ).rejects.toThrow(/reward not found/i);
+    await expect(asAnna(c).mutation(api.rewards.redeem, { itemId: gone })).rejects.toThrow(
+      /reward not found/i,
+    );
+  });
+
+  it('refuses to void a missing code', async () => {
+    const c = await seed();
+    const itemId = await createItem(c);
+    const gone = await c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('rewardCodes', {
+        organizationId: c.organizationId,
+        rewardItemId: itemId,
+        code: 'GONE-C',
+        status: 'available' as const,
+        uploadedBy: c.adminId,
+        createdAt: Date.now(),
+      } as never);
+      await ctx.db.delete(id);
+      return id;
+    });
+
+    await expect(asAdmin(c).mutation(api.rewards.voidCode, { codeId: gone })).rejects.toThrow(
+      /code not found/i,
+    );
+  });
+
+  it('refuses to approve, redeem or cancel a missing voucher', async () => {
+    const c = await seed();
+    const gone = await goneVoucher(c);
+
+    await expect(
+      asAdmin(c).mutation(api.rewards.approveVoucher, { voucherId: gone }),
+    ).rejects.toThrow(/voucher not found/i);
+    await expect(
+      asAdmin(c).mutation(api.rewards.markRedeemed, { voucherId: gone }),
+    ).rejects.toThrow(/voucher not found/i);
+    await expect(
+      asAnna(c).mutation(api.rewards.cancelVoucher, { voucherId: gone }),
+    ).rejects.toThrow(/voucher not found/i);
+  });
+
+  it('only approves a pending voucher and only redeems an issued one', async () => {
+    const c = await seed();
+    const { voucherId } = await issued(c); // issued, not pending
+
+    await expect(asAdmin(c).mutation(api.rewards.approveVoucher, { voucherId })).rejects.toThrow(
+      /not awaiting approval/i,
+    );
+
+    const pending = await issued(c, { requiresApproval: true }); // pending
+    await expect(
+      asAdmin(c).mutation(api.rewards.markRedeemed, { voucherId: pending.voucherId }),
+    ).rejects.toThrow(/not active/i);
+  });
+
+  it('filters the registry by user and rejects empty codes at the desk', async () => {
+    const c = await seed();
+    const { code } = await issued(c);
+    await issued(c);
+
+    const onlyAnna = await asAdmin(c).query(api.rewards.listVouchers, {
+      organizationId: c.organizationId,
+      userId: c.annaId,
+    });
+    expect(onlyAnna).toHaveLength(2);
+
+    const blank = await asAdmin(c).query(api.rewards.findVoucherByCode, {
+      organizationId: c.organizationId,
+      code: '   ',
+    });
+    expect(blank).toBeNull();
+
+    const missing = await asAdmin(c).query(api.rewards.findVoucherByCode, {
+      organizationId: c.organizationId,
+      code: 'NOPE-1',
+    });
+    expect(missing).toBeNull();
+  });
+
+  it('rejects oversized names and hides settings from other orgs', async () => {
+    const c = await seed();
+
+    await expect(createItem(c, { name: 'x'.repeat(121) })).rejects.toThrow(/at most 120/i);
+
+    const settings = await asOutsider(c).query(api.rewards.getSettings, {
+      organizationId: c.organizationId,
+    });
+    expect(settings).toBeNull();
   });
 });
 

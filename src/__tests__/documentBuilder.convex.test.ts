@@ -361,6 +361,300 @@ describe('documentBlueprints lifecycle', () => {
   });
 });
 
+describe('documentBlueprints validation and edge paths', () => {
+  it('rejects oversized and structurally invalid segment payloads', async () => {
+    const c = await seed();
+
+    // More than MAX_SEGMENTS (120).
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.create, {
+        organizationId: c.organizationId,
+        ...blueprintArgs({
+          segments: Array.from({ length: 121 }, (_, i) => ({
+            id: `s${i}`,
+            kind: 'paragraph',
+            text: { hy: 'x' },
+          })),
+        }),
+      }),
+    ).rejects.toThrow(/cannot exceed 120 segments/i);
+
+    // A single segment text longer than MAX_SEGMENT_CHARS (4000).
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.create, {
+        organizationId: c.organizationId,
+        ...blueprintArgs({
+          segments: [{ id: 's1', kind: 'paragraph', text: { hy: 'a'.repeat(4001) } }],
+        }),
+      }),
+    ).rejects.toThrow(/cannot exceed 4000 characters/i);
+
+    // A blank segment id.
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.create, {
+        organizationId: c.organizationId,
+        ...blueprintArgs({
+          segments: [{ id: '   ', kind: 'paragraph', text: { hy: 'x' } }],
+        }),
+      }),
+    ).rejects.toThrow(/every segment needs an id/i);
+
+    // All texts blank — nothing readable would ever print.
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.create, {
+        organizationId: c.organizationId,
+        ...blueprintArgs({
+          segments: [{ id: 's1', kind: 'paragraph', text: { hy: '  ' } }],
+        }),
+      }),
+    ).rejects.toThrow(/text in at least one language/i);
+  });
+
+  it('rejects a name that is empty or too long', async () => {
+    const c = await seed();
+
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.create, {
+        organizationId: c.organizationId,
+        ...blueprintArgs({ name: '   ' }),
+      }),
+    ).rejects.toThrow(/needs a name/i);
+
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.create, {
+        organizationId: c.organizationId,
+        ...blueprintArgs({ name: 'n'.repeat(121) }),
+      }),
+    ).rejects.toThrow(/name is too long/i);
+  });
+
+  it('reads a published version snapshot by blueprint and version', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+
+    const snapshot = await asAdmin(c).query(api.documentBlueprints.getVersion, {
+      blueprintId,
+      version: 1,
+    });
+    expect(snapshot?.version).toBe(1);
+    expect(snapshot?.blueprintId).toBe(blueprintId);
+    expect(snapshot?.segments).toHaveLength(2);
+
+    // A version that was never published does not exist.
+    expect(
+      await asAdmin(c).query(api.documentBlueprints.getVersion, { blueprintId, version: 99 }),
+    ).toBeNull();
+
+    // Another organization cannot read the snapshot.
+    expect(
+      await asOutsider(c).query(api.documentBlueprints.getVersion, {
+        blueprintId,
+        version: 1,
+      }),
+    ).toBeNull();
+  });
+
+  it('updates name, titles, locales and series of a published blueprint', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+
+    await asAdmin(c).mutation(api.documentBlueprints.update, {
+      blueprintId,
+      name: '  Renewed contract  ',
+      titles: { hy: 'ՆՈՐ ՎԵՐՆԱԳԻՐ', ru: 'НОВЫЙ ЗАГОЛОВОК' },
+      requiredLocale: 'hy',
+      defaultPrimaryLocale: 'hy',
+      defaultSecondaryLocale: 'de',
+      series: 'nda',
+    });
+
+    const row = await asAdmin(c).query(api.documentBlueprints.get, { blueprintId });
+    expect(row?.name).toBe('Renewed contract'); // trimmed
+    expect(row?.titles).toEqual({ hy: 'ՆՈՐ ՎԵՐՆԱԳԻՐ', ru: 'НОВЫЙ ЗАГОЛОВОК' });
+    expect(row?.requiredLocale).toBe('hy');
+    expect(row?.defaultPrimaryLocale).toBe('hy');
+    expect(row?.defaultSecondaryLocale).toBe('de');
+    expect(row?.series).toBe('NDA'); // normalized
+  });
+
+  it('clears the series and validates updates before applying them', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+
+    // Empty series clears it; an invalid code falls back to the default.
+    await asAdmin(c).mutation(api.documentBlueprints.update, { blueprintId, series: '' });
+    let row = await asAdmin(c).query(api.documentBlueprints.get, { blueprintId });
+    expect(row?.series).toBeUndefined();
+
+    await asAdmin(c).mutation(api.documentBlueprints.update, { blueprintId, series: '!!bad' });
+    row = await asAdmin(c).query(api.documentBlueprints.get, { blueprintId });
+    expect(row?.series).toBe(DEFAULT_DOCUMENT_SERIES);
+
+    // A renamed blueprint cannot lose its heading entirely.
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.update, { blueprintId, titles: {} }),
+    ).rejects.toThrow(/heading in at least one language/i);
+
+    // An empty renamed name is refused as well.
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.update, { blueprintId, name: '  ' }),
+    ).rejects.toThrow(/needs a name/i);
+
+    // A blank description clears the stored one.
+    await asAdmin(c).mutation(api.documentBlueprints.update, {
+      blueprintId,
+      description: '   ',
+    });
+    row = await asAdmin(c).query(api.documentBlueprints.get, { blueprintId });
+    expect(row?.description).toBeUndefined();
+  });
+
+  it('requires an organization in scope to create a blueprint', async () => {
+    const c = await seed();
+    await c.t.run(async (ctx) => {
+      await ctx.db.insert('users', {
+        passwordHash: 'x',
+        employeeType: 'staff',
+        isActive: true,
+        isApproved: true,
+        travelAllowance: 0,
+        paidLeaveBalance: 10,
+        sickLeaveBalance: 5,
+        familyLeaveBalance: 5,
+        createdAt: Date.now(),
+        name: 'Super',
+        email: 'super@acme.test',
+        role: 'superadmin',
+      });
+    });
+
+    // A superadmin with no requested org has nothing to own the blueprint in.
+    await expect(
+      c.t.withIdentity({ email: 'super@acme.test' }).mutation(api.documentBlueprints.create, {
+        name: 'Orphan',
+        category: 'other',
+        accent: 'slate',
+        titles: { en: 'Orphan' },
+        segments: [{ id: 's1', kind: 'paragraph', text: { en: 'x' } }],
+        signature: false,
+      }),
+    ).rejects.toThrow(/no organization in scope/i);
+  });
+
+  it('deletes a never-issued blueprint together with its version snapshots', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+
+    const result = await asAdmin(c).mutation(api.documentBlueprints.remove, { blueprintId });
+    expect(result).toEqual({ ok: true });
+
+    expect(await asAdmin(c).query(api.documentBlueprints.get, { blueprintId })).toBeNull();
+    expect(
+      await asAdmin(c).query(api.documentBlueprints.getVersion, { blueprintId, version: 1 }),
+    ).toBeNull();
+  });
+
+  it('degrades to empty results for an employee browsing single records', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+
+    expect(await asEmployee(c).query(api.documentBlueprints.get, { blueprintId })).toBeNull();
+    expect(
+      await asEmployee(c).query(api.documentBlueprints.getVersion, { blueprintId, version: 1 }),
+    ).toBeNull();
+  });
+
+  it('treats a missing blueprint as not found in every mutation', async () => {
+    const c = await seed();
+    // A real, well-formed id that no longer exists: create, then delete it.
+    const doomedId = await asAdmin(c).mutation(api.documentBlueprints.create, {
+      organizationId: c.organizationId,
+      ...blueprintArgs(),
+    });
+    await asAdmin(c).mutation(api.documentBlueprints.remove, { blueprintId: doomedId });
+
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.update, { blueprintId: doomedId, name: 'x' }),
+    ).rejects.toThrow(/document not found/i);
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.publish, { blueprintId: doomedId }),
+    ).rejects.toThrow(/document not found/i);
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.setArchived, {
+        blueprintId: doomedId,
+        archived: true,
+      }),
+    ).rejects.toThrow(/document not found/i);
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.remove, { blueprintId: doomedId }),
+    ).rejects.toThrow(/document not found/i);
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.duplicate, { blueprintId: doomedId }),
+    ).rejects.toThrow(/document not found/i);
+  });
+
+  it('updates description, category, accent and signature of a blueprint', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+
+    await asAdmin(c).mutation(api.documentBlueprints.update, {
+      blueprintId,
+      description: '  Employment terms  ',
+      category: 'consent',
+      accent: 'burgundy',
+      signature: false,
+    });
+
+    const row = await asAdmin(c).query(api.documentBlueprints.get, { blueprintId });
+    expect(row?.description).toBe('Employment terms'); // trimmed
+    expect(row?.category).toBe('consent');
+    expect(row?.accent).toBe('burgundy');
+    expect(row?.signature).toBe(false);
+  });
+
+  it('rejects an overlong renamed blueprint', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+
+    await expect(
+      asAdmin(c).mutation(api.documentBlueprints.update, {
+        blueprintId,
+        name: 'n'.repeat(121),
+      }),
+    ).rejects.toThrow(/name is too long/i);
+  });
+
+  it('restores a draft blueprint back to draft after archiving', async () => {
+    const c = await seed();
+    const blueprintId = await asAdmin(c).mutation(api.documentBlueprints.create, {
+      organizationId: c.organizationId,
+      ...blueprintArgs(),
+    });
+
+    await asAdmin(c).mutation(api.documentBlueprints.setArchived, { blueprintId, archived: true });
+    // Never published: restoring must not claim it was published.
+    await asAdmin(c).mutation(api.documentBlueprints.setArchived, {
+      blueprintId,
+      archived: false,
+    });
+    const restored = await asAdmin(c).query(api.documentBlueprints.get, { blueprintId });
+    expect(restored?.status).toBe('draft');
+  });
+
+  it('duplicates with an explicit name', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+
+    const copyId = await asAdmin(c).mutation(api.documentBlueprints.duplicate, {
+      blueprintId,
+      name: '  Renewed copy  ',
+    });
+    const copy = await asAdmin(c).query(api.documentBlueprints.get, { blueprintId: copyId });
+    expect(copy?.name).toBe('Renewed copy'); // trimmed
+    expect(copy?.status).toBe('draft');
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Issued documents
 // ═══════════════════════════════════════════════════════════════════════════

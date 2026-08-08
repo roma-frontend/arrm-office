@@ -14,6 +14,7 @@
     "openChat": "Բացել չաթ",
     "createGroup": "Ստեղծել խումբ",
     "creating": "Ստեղծվում է…",
+    "conversationUnavailable": "Զրույցը հասանելի չէ կամ դուք դրա մասնակից չեք",
     "yourMessages": "Ձեր հաղորդագրությունները",
     "yourMessagesSubtitle": "Ուղարկեք հաղորդագրություններ, ֆայլեր և սկսեք զանգեր ձեր թիմի հետ",
     "startConversation": "Սկսել զրույց",

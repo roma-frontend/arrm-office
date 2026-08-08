@@ -515,7 +515,8 @@
   },
   "forms": {
     "required": "Պարտադիր",
-    "optional": "(ըստ ցանկության)"
+    "optional": "(ըստ ցանկության)",
+    "minChars": "Առնվազն {{min}} նշան"
   },
   "status": {
     "updated": "Կարգավիճակ թարմացվել է",
@@ -1716,7 +1717,12 @@
     "leaveRequests": "Արձակուրդի հայտեր",
     "calendarEvents": "Օրացույցի իրադարձություններ",
     "googleEvents": "Google Օրացույց",
-    "driverBookings": "Վարորդների պատվերներ"
+    "driverBookings": "Վարորդների պատվերներ",
+    "companyEvents": "Կազմակերպության միջոցառումներ",
+    "wholeCompany": "Ողջ կազմակերպությունը",
+    "namedAttendees": "Ընտրված աշխատակիցներ՝ {{count}}",
+    "attendance": "Մասնակցություն՝ {{audience}}",
+    "openEvent": "Բացել միջոցառումը"
   },
   "careers": {
     "allCompanies": "Բոլոր ընկերությունները",
@@ -2039,7 +2045,7 @@
     "needs_action": "դեռ չի պատասխանել"
   },
   "ticket": {
-    "chatCreated": "Չաթը ստեղծվել է {{ticketNumber}} տոմսի համար։ Դուք կտեսնեք այս չաթը սուպերադմինի առաջին հաղորդագրությունից հետո։",
-    "chatCreatedShort": "Չաթը ստեղծվել է {{ticketNumber}} տոմսի համար"
+    "chatCreated": "{{ticketNumber}} տոմսի համար բացվել է աջակցման զրույց։ Այն կհայտնվի ձեզ մոտ հենց աջակցման օգնականը գրի առաջին հաղորդագրությունը։",
+    "chatCreatedShort": "{{ticketNumber}} տոմսի համար բացվել է աջակցման զրույց"
   }
 }

@@ -562,6 +562,282 @@ describe('migrations_orgUnits.backfillOrgUnitLinks', () => {
     expect(after?.departmentId).toBeUndefined();
     expect(departmentId).toBeDefined();
   });
+
+  it('scopes a run to a single organization', async () => {
+    const c = await seed();
+    await seedUnlinked(c, 'Engineering', 'Developer');
+    // A second org with its own unlinked employee must be left untouched.
+    await c.t.run(async (ctx) => {
+      const otherOrg = await insertOrg(ctx, 'Globex');
+      await ctx.db.insert('users', {
+        organizationId: otherOrg,
+        name: 'Other employee',
+        email: 'other@globex.test',
+        passwordHash: 'x',
+        role: 'employee',
+        employeeType: 'staff',
+        isActive: true,
+        isApproved: true,
+        travelAllowance: 0,
+        paidLeaveBalance: 0,
+        sickLeaveBalance: 0,
+        familyLeaveBalance: 0,
+        createdAt: Date.now(),
+        department: 'Sales',
+        position: 'Manager',
+      });
+    });
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      organizationId: c.organizationId,
+    });
+
+    expect(report.organizations).toHaveLength(1);
+    expect(report.organizations[0].organizationId).toBe(c.organizationId);
+    // Only Acme's four seeded users were scanned — not Globex's.
+    expect(report.organizations[0].employeesScanned).toBe(4);
+  });
+
+  it('skips a nonexistent organization id', async () => {
+    const c = await seed();
+    // A real, well-formed id that no longer exists: insert, then delete.
+    const ghostOrg = await c.t.run(async (ctx) => {
+      const id = await insertOrg(ctx, 'Ghost Co');
+      await ctx.db.delete(id);
+      return id;
+    });
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      organizationId: ghostOrg,
+    });
+
+    expect(report.organizations).toHaveLength(0);
+  });
+
+  it('reports what a createMissing run would create without writing', async () => {
+    const c = await seed();
+    await seedUnlinked(c, 'Logistics', 'Driver');
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      createMissing: true, // dryRun stays true by default
+    });
+
+    expect(report.dryRun).toBe(true);
+    expect(report.organizations[0].departmentsCreated).toEqual(['Logistics']);
+    expect(report.organizations[0].positionsCreated).toEqual(['Driver']);
+    expect(report.totals.departmentsCreated).toBe(1);
+    expect(report.totals.positionsCreated).toBe(1);
+    // Nothing was written during the dry run.
+    const counts = await c.t.run(async (ctx) => ({
+      departments: (await ctx.db.query('departments').collect()).length,
+      positions: (await ctx.db.query('positions').collect()).length,
+    }));
+    expect(counts).toEqual({ departments: 0, positions: 0 });
+  });
+
+  it('lists names with no matching record when creation is disabled', async () => {
+    const c = await seed();
+    await seedUnlinked(c, 'Logistics', 'Driver');
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      dryRun: false,
+    });
+
+    const org = report.organizations[0];
+    expect(org.unmatchedDepartments).toEqual(['Logistics']);
+    expect(org.unmatchedPositions).toEqual(['Driver']);
+    expect(report.totals.departmentLinked).toBe(0);
+    expect(report.totals.positionLinked).toBe(0);
+    const after = await c.t.run(async (ctx) => await ctx.db.get(c.employeeId));
+    expect(after?.departmentId).toBeUndefined();
+    expect(after?.positionId).toBeUndefined();
+  });
+
+  it('links an existing position record case-insensitively', async () => {
+    const c = await seed();
+    await seedUnlinked(c, 'Engineering', 'Developer');
+    const positionId = await c.t.run(
+      async (ctx) =>
+        await ctx.db.insert('positions', {
+          organizationId: c.organizationId,
+          title: 'developer ', // case/spacing variant on purpose
+          isActive: true,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }),
+    );
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      dryRun: false,
+    });
+    expect(report.totals.positionLinked).toBe(1);
+
+    const after = await c.t.run(async (ctx) => await ctx.db.get(c.employeeId));
+    expect(after?.positionId).toBe(positionId);
+  });
+
+  it('clears a positionId pointing at a deleted position', async () => {
+    const c = await seed();
+    const positionId = await c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('positions', {
+        organizationId: c.organizationId,
+        title: 'Ghost role',
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      await ctx.db.patch(c.employeeId, { positionId: id });
+      await ctx.db.delete(id);
+      return id;
+    });
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      dryRun: false,
+    });
+    expect(report.totals.danglingPositionIds).toBe(1);
+
+    const after = await c.t.run(async (ctx) => await ctx.db.get(c.employeeId));
+    expect(after?.positionId).toBeUndefined();
+    expect(positionId).toBeDefined();
+  });
+
+  it('clears a dangling id while the free-text name has no record', async () => {
+    const c = await seed();
+    await c.t.run(async (ctx) => {
+      const deptId = await ctx.db.insert('departments', {
+        organizationId: c.organizationId,
+        name: 'Ghost dept',
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      const posId = await ctx.db.insert('positions', {
+        organizationId: c.organizationId,
+        title: 'Ghost role',
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      // Dangling ids + a free-text name that matches nothing and no create.
+      await ctx.db.patch(c.employeeId, {
+        departmentId: deptId,
+        positionId: posId,
+        department: 'Logistics',
+        position: 'Driver',
+      });
+      await ctx.db.delete(deptId);
+      await ctx.db.delete(posId);
+    });
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      dryRun: false,
+    });
+    expect(report.totals.danglingDepartmentIds).toBe(1);
+    expect(report.totals.danglingPositionIds).toBe(1);
+    // The names are reported as unmatched and the stale ids are cleared.
+    expect(report.organizations[0].unmatchedDepartments).toEqual(['Logistics']);
+    expect(report.organizations[0].unmatchedPositions).toEqual(['Driver']);
+
+    const after = await c.t.run(async (ctx) => await ctx.db.get(c.employeeId));
+    expect(after?.departmentId).toBeUndefined();
+    expect(after?.positionId).toBeUndefined();
+  });
+
+  it('skips superadmin users entirely', async () => {
+    const c = await seed();
+    await c.t.run(async (ctx) => {
+      await ctx.db.insert('users', {
+        organizationId: c.organizationId,
+        name: 'Boss',
+        email: 'boss@acme.test',
+        passwordHash: 'x',
+        role: 'superadmin',
+        employeeType: 'staff',
+        isActive: true,
+        isApproved: true,
+        travelAllowance: 0,
+        paidLeaveBalance: 0,
+        sickLeaveBalance: 0,
+        familyLeaveBalance: 0,
+        createdAt: Date.now(),
+        department: 'Anywhere',
+        position: 'Anything',
+      });
+    });
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      dryRun: false,
+      createMissing: true,
+    });
+    // Only the seeded employees were scanned — the superadmin is skipped.
+    expect(report.organizations[0].employeesScanned).toBe(4);
+    expect(report.totals.departmentsCreated).toBe(0);
+    expect(report.totals.positionsCreated).toBe(0);
+  });
+
+  it('dedupes planned unit names across employees in a dry run', async () => {
+    const c = await seed();
+    // Two employees share the same missing department/position: the second
+    // must not be reported as a second creation.
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(c.employeeId, { department: 'Logistics', position: 'Driver' });
+      await ctx.db.patch(c.reportId, { department: 'Logistics', position: 'Driver' });
+    });
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      createMissing: true, // dryRun stays true by default
+    });
+
+    expect(report.organizations[0].departmentsCreated).toEqual(['Logistics']);
+    expect(report.organizations[0].positionsCreated).toEqual(['Driver']);
+    expect(report.totals.departmentsCreated).toBe(1);
+    expect(report.totals.positionsCreated).toBe(1);
+    expect(report.totals.departmentLinked).toBe(2);
+    expect(report.totals.positionLinked).toBe(2);
+  });
+
+  it('dedupes unmatched names across employees', async () => {
+    const c = await seed();
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(c.employeeId, { department: 'Logistics', position: 'Driver' });
+      await ctx.db.patch(c.reportId, { department: 'Logistics', position: 'Driver' });
+    });
+
+    const report = await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      dryRun: false, // creation stays off
+    });
+
+    expect(report.organizations[0].unmatchedDepartments).toEqual(['Logistics']);
+    expect(report.organizations[0].unmatchedPositions).toEqual(['Driver']);
+  });
+
+  it('links a created position to an already-linked department', async () => {
+    const c = await seed();
+    const departmentId = await c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('departments', {
+        organizationId: c.organizationId,
+        name: 'Engineering',
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      // Department already linked; only the position is missing.
+      await ctx.db.patch(c.employeeId, { departmentId: id, position: 'Developer' });
+      return id;
+    });
+
+    await c.t.mutation(internal.migrations_orgUnits.backfillOrgUnitLinks, {
+      dryRun: false,
+      createMissing: true,
+    });
+
+    const positions = await c.t.run(async (ctx) => {
+      const rows = await ctx.db.query('positions').collect();
+      return rows.map((p) => p.departmentId);
+    });
+    // The created position inherits the user's already-linked department.
+    expect(positions).toEqual([departmentId]);
+  });
 });
 
 describe('lib/leaveBalances + lib/orgUnits', () => {

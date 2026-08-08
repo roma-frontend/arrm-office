@@ -89,7 +89,7 @@ export default function EventDetailClient() {
     if (!currentUser) return;
     setIsDeleting(true);
     try {
-      await deleteEvent({ eventId, userId: currentUser._id });
+      await deleteEvent({ eventId });
       toast.success(t('events.eventDeleted'));
       router.push('/events');
     } catch {

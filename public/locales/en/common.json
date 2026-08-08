@@ -515,7 +515,8 @@
   },
   "forms": {
     "required": "*",
-    "optional": "(optional)"
+    "optional": "(optional)",
+    "minChars": "At least {{min}} characters"
   },
   "status": {
     "updated": "Status Updated",
@@ -1716,7 +1717,12 @@
     "leaveRequests": "Leave Requests",
     "calendarEvents": "Calendar Events",
     "googleEvents": "Google Calendar",
-    "driverBookings": "Driver Bookings"
+    "driverBookings": "Driver Bookings",
+    "companyEvents": "Company events",
+    "wholeCompany": "Whole company",
+    "namedAttendees": "Selected employees: {{count}}",
+    "attendance": "Attendance: {{audience}}",
+    "openEvent": "Open event"
   },
   "chatWidget": {
     "viewFullScreen": "View full response"
@@ -2039,7 +2045,7 @@
     "needs_action": "has not yet responded to"
   },
   "ticket": {
-    "chatCreated": "Chat created for ticket {{ticketNumber}}. You will see this chat after the first message from superadmin.",
-    "chatCreatedShort": "Chat created for ticket {{ticketNumber}}"
+    "chatCreated": "A support chat has been opened for ticket {{ticketNumber}}. It becomes visible to you as soon as the support assistant writes the first message.",
+    "chatCreatedShort": "Support chat opened for ticket {{ticketNumber}}"
   }
 }

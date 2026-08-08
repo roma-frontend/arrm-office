@@ -2184,6 +2184,10 @@
       "holidayDesc": "Ընկերության տոն կամ հանգստյան օր",
       "celebration": "Տոնակատարություն",
       "celebrationDesc": "Երեկույթ կամ տոնակատարություն",
+      "team_building": "Թիմային միջոցառում",
+      "team_buildingDesc": "Թիմը միասին հավաքող միջոցառում",
+      "deadline": "Վերջնաժամկետ",
+      "deadlineDesc": "Ամսաթիվ, երբ աշխատանքը պետք է ավարտված լինի",
       "other": "Այլ",
       "otherDesc": "Ինչ-որ այլ բան"
     },
@@ -2599,7 +2603,8 @@
       "leave": "Արձակուրդի հայտ",
       "driver": "Վարորդի պատվեր",
       "google": "Google Օրացույց",
-      "custom": "Օրացույցի իրադարձություն"
+      "custom": "Օրացույցի իրադարձություն",
+      "company": "Կազմակերպության միջոցառում"
     },
     "sections": {
       "timeline": "Ժամանակագրություն",
@@ -2621,7 +2626,9 @@
     },
     "status": {
       "scheduled": "Ծրագրված",
-      "confirmed": "Հաստատված"
+      "confirmed": "Հաստատված",
+      "attendanceRequired": "Ակնկալվում է մասնակցություն",
+      "wholeCompany": "Ողջ կազմակերպությունը"
     },
     "milestones": {
       "created": "Ստեղծված",
@@ -2677,14 +2684,23 @@
       "reminder": "Հիշեցում",
       "attendees": "Մասնակիցներ",
       "attachment": "Կցորդ",
-      "openAttachment": "Բացել կցորդը"
+      "openAttachment": "Բացել կցորդը",
+      "eventType": "Միջոցառման տեսակ",
+      "priority": "Առաջնահերթություն",
+      "requiredDepartments": "Ակնկալվող բաժիններ",
+      "requiredEmployees": "Ակնկալվող աշխատակիցներ",
+      "organizer": "Կազմակերպիչ",
+      "notifyDaysValue": "{{count}} օր առաջ",
+      "eventPage": "Միջոցառում",
+      "openEventPage": "Բացել միջոցառման էջը"
     },
     "roles": {
       "employee": "Աշխատակից",
       "reviewer": "Քննարկող",
       "driver": "Վարորդ",
       "bookedBy": "Պատվիրել է",
-      "attendee": "Մասնակից"
+      "attendee": "Մասնակից",
+      "required": "Ակնկալվում է մասնակցություն"
     },
     "driverType": {
       "trip": "Ուղևորություն",
@@ -2957,9 +2973,10 @@
     },
     "categories": {
       "technical": "Տեխնիկական խնդիր",
+      "bug": "Համակարգի սխալ",
+      "access": "Հաշիվ և մուտք",
       "billing": "Վարումներ և հաշիվներ",
-      "account": "Հաշիվ և մուտք",
-      "feature": "Ֆունկցիայի առաջարկ",
+      "feature_request": "Ֆունկցիայի առաջարկ",
       "other": "Այլ"
     },
     "tabs": {
@@ -3020,7 +3037,7 @@
       "technical": "Տեխնիկական խնդիր",
       "billing": "Վճարումներ",
       "access": "Մուտք և հաշիվներ",
-      "feature": "Նոր գործառույթի առաջարկ",
+      "feature_request": "Նոր գործառույթի առաջարկ",
       "bug": "Սխալի հայտնում",
       "other": "Այլ"
     }

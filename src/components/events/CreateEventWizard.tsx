@@ -24,14 +24,12 @@ import { logger } from '@/lib/logger';
 
 interface CreateEventWizardProps {
   organizationId: Id<'organizations'>;
-  userId: Id<'users'>;
   onComplete?: () => void;
   onCancel?: () => void;
 }
 
 export function CreateEventWizard({
   organizationId,
-  userId,
   onComplete,
   onCancel,
 }: CreateEventWizardProps) {
@@ -215,7 +213,6 @@ export function CreateEventWizard({
 
       await createEvent({
         organizationId,
-        userId,
         name: String(data.title),
         description: String(data.description) || '',
         startDate: new Date(String(data.startDate)).getTime(),
