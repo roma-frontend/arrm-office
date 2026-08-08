@@ -51,8 +51,10 @@ const roleValidator = v.array(
 /**
  * Keep only known locales, trimmed and non-empty.
  *
- * English is required because it is the fallback every other language falls back
- * to; a row whose only copy is Armenian would read as blank for everyone else.
+ * Any one language is enough. Requiring English would be an odd tax on an office
+ * that works in Armenian: a row written only in Armenian is shown to everyone,
+ * because a reader seeing the entry in a language not their own is a far smaller
+ * failure than not being allowed to write the entry at all.
  */
 function sanitizeCopy(
   input: Record<string, string>,
@@ -66,11 +68,16 @@ function sanitizeCopy(
     if (text.length > limit) throw new Error(`Schedule ${field} is too long for ${locale}`);
     copy[locale] = text;
   }
-  if (!copy.en) throw new Error(`Schedule ${field} needs an English version`);
+  if (Object.keys(copy).length === 0) {
+    throw new Error(`Schedule ${field} needs at least one language`);
+  }
   return copy;
 }
 
-/** Pick the reader's language, falling back to English and then to anything. */
+/**
+ * Pick the reader's language, then English, then whatever the entry does have —
+ * so a card is never blank just because its author wrote in one language.
+ */
 export function pickLocalized(copy: Record<string, string>, locale: string): string {
   return copy[locale] ?? copy.en ?? Object.values(copy)[0] ?? '';
 }

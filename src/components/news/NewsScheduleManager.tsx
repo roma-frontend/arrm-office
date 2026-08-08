@@ -163,8 +163,14 @@ export function NewsScheduleManager({
 
   const save = async () => {
     if (!draft) return;
-    if (!draft.title.en.trim() || !draft.content.en.trim()) {
-      toast.error(t('news.schedule.englishRequired'));
+    // Any one language is enough. The office may work in Armenian, and being told
+    // to write English first would be a pointless obstacle; readers whose language
+    // is missing fall back to whatever the entry does have.
+    const written = LOCALES.filter(
+      (locale) => draft.title[locale].trim() && draft.content[locale].trim(),
+    );
+    if (written.length === 0) {
+      toast.error(t('news.schedule.anyLanguageRequired'));
       return;
     }
     if (draft.endDate < draft.startDate) {
@@ -317,7 +323,9 @@ function Group({
       </h4>
       {entries.map((entry) => {
         const cfg = CATEGORY_CONFIG[entry.category] ?? CATEGORY_CONFIG.general;
-        const title = entry.title[lang] ?? entry.title.en ?? '';
+        // Fall through to whatever the entry has: an Armenian-only row must still
+        // be readable in this list, not an empty line the admin cannot identify.
+        const title = entry.title[lang] ?? entry.title.en ?? Object.values(entry.title)[0] ?? '';
         const missing = LOCALES.filter((locale) => !entry.title[locale]);
         const multiDay = entry.endDate !== entry.startDate;
 
@@ -414,8 +422,10 @@ function DraftForm({
   onCancel: () => void;
   onSave: () => void;
 }) {
-  const { t } = useTranslation();
-  const [tab, setTab] = useState<Locale>('en');
+  const { t, i18n } = useTranslation();
+  // Open on the language the admin is working in — that is the one they will type.
+  const ownLocale = (i18n.language ?? 'en').slice(0, 2) as Locale;
+  const [tab, setTab] = useState<Locale>(LOCALES.includes(ownLocale) ? ownLocale : 'en');
 
   const set = <K extends keyof DraftState>(key: K, value: DraftState[K]) =>
     onChange({ ...draft, [key]: value });
@@ -523,7 +533,8 @@ function DraftForm({
       <div className="space-y-2">
         <div className="flex flex-wrap gap-1.5">
           {LOCALES.map((locale) => {
-            const filled = draft.title[locale].trim().length > 0;
+            const filled =
+              draft.title[locale].trim().length > 0 && draft.content[locale].trim().length > 0;
             return (
               <button
                 key={locale}
@@ -535,7 +546,7 @@ function DraftForm({
                 style={tab === locale ? { backgroundColor: 'var(--primary)' } : undefined}
               >
                 {LOCALE_LABELS[locale]}
-                {locale === 'en' ? ' *' : filled ? ' ✓' : ''}
+                {filled ? ' ✓' : ''}
               </button>
             );
           })}

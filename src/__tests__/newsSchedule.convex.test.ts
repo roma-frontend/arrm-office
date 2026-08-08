@@ -133,14 +133,37 @@ describe('news schedule — access', () => {
     ).rejects.toThrow();
   });
 
-  it('requires the English copy every other language falls back to', async () => {
+  it('accepts an entry written only in Armenian and shows it to everyone', async () => {
+    const ctx = await seed();
+
+    // The office may work in Armenian; requiring English first would be a tax on
+    // the people the feature is for.
+    await ctx.asAdmin.mutation(api.newsSchedule.createScheduleEntry, {
+      organizationId: ctx.organizationId,
+      category: 'birthday',
+      title: { hy: 'Ծնունդդ շնորհավոր, Աննա։' },
+      content: { hy: 'Աննան այսօր ծնունդ ունի։' },
+      startDate: TODAY,
+      endDate: TODAY,
+      repeat: 'none',
+    });
+
+    const feed = await feedFor(ctx);
+    expect(feed).toHaveLength(1);
+    // No English to fall back to, so the card carries the Armenian rather than a blank.
+    expect(feed[0]!.title).toBe('Ծնունդդ շնորհավոր, Աննա։');
+    expect(feed[0]!.titleI18n?.hy).toBe('Ծնունդդ շնորհավոր, Աննա։');
+    expect(feed[0]!.titleI18n?.en).toBeUndefined();
+  });
+
+  it('still requires at least one language', async () => {
     const ctx = await seed();
     await expect(
       ctx.asAdmin.mutation(api.newsSchedule.createScheduleEntry, {
         organizationId: ctx.organizationId,
         category: 'event',
-        title: { ru: 'Только по-русски' },
-        content: { ru: 'Текст' },
+        title: { en: '   ' },
+        content: { ru: '' },
         startDate: TODAY,
         endDate: TODAY,
         repeat: 'none',
