@@ -7,7 +7,17 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
-import { DEFAULT_LIST_CAP } from './lib/limits';
+import type { QueryCtx, MutationCtx } from './_generated/server';
+import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { assertOrgScope, assertOrgStaff, resolveOrgScope, scopeOwnsRecord } from './lib/orgAccess';
+import type { OrgScope } from './lib/orgAccess';
+import { notify } from './lib/notify';
+
+const MAX_TITLE = 200;
+const MAX_CONTENT = 20_000;
+const MAX_COMMENT = 2_000;
+/** Ceiling on notification fan-out for one post. */
+const MAX_NOTIFIED = 500;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,15 +35,71 @@ function getCategoryIcon(category: string): string {
   return CATEGORY_ICONS[category] ?? '💬';
 }
 
+/**
+ * Whether one person may see one post.
+ *
+ * `targetDepartment` and `targetRoles` were stored and then ignored by both
+ * reads, so "visible to HR only" published to the whole company — the fields
+ * made the UI look considerate while leaking the content. Targeting is enforced
+ * here, in one place, and the same predicate decides who gets notified.
+ *
+ * Staff see everything so they can moderate; the author always sees their own.
+ */
+export function canSeeAnnouncement(
+  announcement: Pick<
+    Doc<'announcements'>,
+    'authorId' | 'targetDepartment' | 'targetRoles' | 'organizationId'
+  >,
+  viewer: { _id: Id<'users'>; role: string; departmentId?: Id<'departments'> },
+  isStaff: boolean,
+): boolean {
+  if (isStaff) return true;
+  if (announcement.authorId === viewer._id) return true;
+
+  if (announcement.targetDepartment && announcement.targetDepartment !== viewer.departmentId) {
+    return false;
+  }
+  if (
+    announcement.targetRoles &&
+    announcement.targetRoles.length > 0 &&
+    !announcement.targetRoles.includes(viewer.role as Doc<'users'>['role'])
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/** Caller as the targeting predicate needs them: role plus resolved department. */
+async function viewerOf(
+  ctx: QueryCtx | MutationCtx,
+  scope: OrgScope,
+): Promise<{ _id: Id<'users'>; role: string; departmentId?: Id<'departments'> }> {
+  const user = await ctx.db.get(scope.caller._id);
+  return {
+    _id: scope.caller._id,
+    role: scope.caller.role,
+    departmentId: user?.departmentId,
+  };
+}
+
 // ── Mutations ────────────────────────────────────────────────────────────────
 
 /**
- * Create a new announcement.
+ * Publish an announcement.
+ *
+ * `authorId` used to be an argument, so anyone could post to any organization's
+ * feed under anyone's name — on a company-wide broadcast surface. The author is
+ * now the authenticated caller and publishing requires staff rights.
+ *
+ * Publishing also notifies its audience. Until now a post appeared in the feed
+ * and nowhere else, so it was only seen by people who happened to open /news;
+ * an urgent notice reached nobody in particular. Recipients are resolved through
+ * the same targeting predicate the feed uses, so a department-scoped post does
+ * not notify the whole company.
  */
 export const createAnnouncement = mutation({
   args: {
-    organizationId: v.id('organizations'),
-    authorId: v.id('users'),
+    organizationId: v.optional(v.id('organizations')),
     title: v.string(),
     content: v.string(),
     summary: v.optional(v.string()),
@@ -62,25 +128,45 @@ export const createAnnouncement = mutation({
     ),
     tags: v.optional(v.array(v.string())),
     imageUrl: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
+    const scope = await assertOrgStaff(ctx, args.organizationId);
+    const organizationId = scope.organizationId;
+    if (!organizationId) throw new Error('Organization is required');
 
+    const title = args.title.trim();
+    const content = args.content.trim();
+    if (!title) throw new Error('Title is required');
+    if (title.length > MAX_TITLE) throw new Error(`Title must be at most ${MAX_TITLE} characters`);
+    if (!content) throw new Error('Content is required');
+    if (content.length > MAX_CONTENT) {
+      throw new Error(`Content must be at most ${MAX_CONTENT} characters`);
+    }
+
+    if (args.targetDepartment) {
+      const department = await ctx.db.get(args.targetDepartment);
+      if (!department || department.organizationId !== organizationId) {
+        throw new Error('Department not found in this organization');
+      }
+    }
+
+    const now = Date.now();
     const announcementId = await ctx.db.insert('announcements', {
-      organizationId: args.organizationId,
-      authorId: args.authorId,
-      title: args.title,
-      content: args.content,
-      summary: args.summary,
+      organizationId,
+      authorId: scope.caller._id,
+      title,
+      content,
+      summary: args.summary?.trim() || undefined,
       category: args.category,
       isPinned: args.isPinned,
       isUrgent: args.isUrgent ?? false,
       targetDepartment: args.targetDepartment,
-      targetRoles: args.targetRoles,
-      tags: args.tags,
+      targetRoles: args.targetRoles?.length ? args.targetRoles : undefined,
+      tags: args.tags?.length ? args.tags : undefined,
       imageUrl: args.imageUrl,
       publishedAt: now,
-      expiresAt: undefined,
+      expiresAt: args.expiresAt,
       viewCount: 0,
       reactionCount: 0,
       commentCount: 0,
@@ -88,19 +174,99 @@ export const createAnnouncement = mutation({
       updatedAt: undefined,
     });
 
+    const notified = await notifyAudience(ctx, {
+      organizationId,
+      announcementId,
+      authorName: scope.caller.name,
+      title,
+      isUrgent: args.isUrgent ?? false,
+      targetDepartment: args.targetDepartment,
+      targetRoles: args.targetRoles,
+      authorId: scope.caller._id,
+      now,
+    });
+
     // Log to audit
     await ctx.db.insert('auditLogs', {
-      organizationId: args.organizationId,
-      userId: args.authorId,
+      organizationId,
+      userId: scope.caller._id,
       action: 'announcement.created',
       target: `announcement_${announcementId}`,
-      details: `Created announcement: "${args.title}"`,
+      details: `Created announcement: "${title}"`,
       createdAt: now,
     });
 
-    return { success: true, announcementId };
+    return { success: true, announcementId, notified };
   },
 });
+
+/**
+ * Notify everyone a post is addressed to.
+ *
+ * Reads the roster once and filters with `canSeeAnnouncement`, so the audience of
+ * a notification and the audience of the feed can never drift apart. The author
+ * is skipped — nobody needs telling about their own post — and the fan-out is
+ * capped so a large tenant cannot blow the mutation's write budget.
+ */
+async function notifyAudience(
+  ctx: MutationCtx,
+  args: {
+    organizationId: Id<'organizations'>;
+    announcementId: Id<'announcements'>;
+    authorId: Id<'users'>;
+    authorName: string;
+    title: string;
+    isUrgent: boolean;
+    targetDepartment?: Id<'departments'>;
+    targetRoles?: Doc<'users'>['role'][];
+    now: number;
+  },
+): Promise<number> {
+  const members = await ctx.db
+    .query('users')
+    .withIndex('by_org_active', (q) =>
+      q.eq('organizationId', args.organizationId).eq('isActive', true),
+    )
+    .take(DEFAULT_LIST_CAP);
+
+  const audience = members
+    .filter((member) => member._id !== args.authorId)
+    .filter((member) =>
+      canSeeAnnouncement(
+        {
+          authorId: args.authorId,
+          organizationId: args.organizationId,
+          targetDepartment: args.targetDepartment,
+          targetRoles: args.targetRoles,
+        },
+        { _id: member._id, role: member.role, departmentId: member.departmentId },
+        // Staff would otherwise be notified about posts aimed elsewhere: the
+        // moderation exemption belongs to reading, not to being told.
+        false,
+      ),
+    )
+    .slice(0, MAX_NOTIFIED);
+
+  for (const member of audience) {
+    await notify(ctx, {
+      organizationId: args.organizationId,
+      userId: member._id,
+      type: 'announcement_published',
+      titleKey: args.isUrgent
+        ? 'notifications.titles.announcementUrgent'
+        : 'notifications.titles.announcementPublished',
+      messageKey: 'notifications.messages.announcementPublished',
+      params: { author: args.authorName, title: args.title },
+      fallbackTitle: args.isUrgent ? 'Urgent announcement' : 'Company news',
+      fallbackMessage: `${args.authorName}: ${args.title}`,
+      relatedId: args.announcementId,
+      route: '/news',
+      createdAt: args.now,
+    });
+  }
+
+  return audience.length;
+}
 
 /**
  * Update an existing announcement.
@@ -108,7 +274,6 @@ export const createAnnouncement = mutation({
 export const updateAnnouncement = mutation({
   args: {
     announcementId: v.id('announcements'),
-    userId: v.id('users'),
     title: v.optional(v.string()),
     content: v.optional(v.string()),
     summary: v.optional(v.string()),
@@ -142,10 +307,32 @@ export const updateAnnouncement = mutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { announcementId, userId, ...rest } = args;
+    const { announcementId, ...rest } = args;
 
     const announcement = await ctx.db.get(announcementId);
     if (!announcement) throw new Error('Announcement not found');
+
+    // Reached by its own id, so the organization check follows the read. Staff
+    // may moderate anything in their org; the author may fix their own post.
+    const scope = await assertOrgScope(ctx, announcement.organizationId);
+    if (!scopeOwnsRecord(scope, announcement)) throw new Error('Announcement not found');
+    if (!scope.isStaff && announcement.authorId !== scope.caller._id) {
+      throw new Error('Not authorized to edit this announcement');
+    }
+
+    if (rest.title !== undefined && !rest.title.trim()) throw new Error('Title is required');
+    if (rest.title && rest.title.length > MAX_TITLE) {
+      throw new Error(`Title must be at most ${MAX_TITLE} characters`);
+    }
+    if (rest.content && rest.content.length > MAX_CONTENT) {
+      throw new Error(`Content must be at most ${MAX_CONTENT} characters`);
+    }
+    if (rest.targetDepartment) {
+      const department = await ctx.db.get(rest.targetDepartment);
+      if (!department || department.organizationId !== announcement.organizationId) {
+        throw new Error('Department not found in this organization');
+      }
+    }
 
     const patchData: Partial<Doc<'announcements'>> = { updatedAt: Date.now() };
     Object.assign(patchData, rest);
@@ -154,7 +341,7 @@ export const updateAnnouncement = mutation({
 
     await ctx.db.insert('auditLogs', {
       organizationId: announcement.organizationId,
-      userId,
+      userId: scope.caller._id,
       action: 'announcement.updated',
       target: `announcement_${announcementId}`,
       details: `Updated announcement: "${announcement.title}"`,
@@ -166,16 +353,21 @@ export const updateAnnouncement = mutation({
 });
 
 /**
- * Delete an announcement.
+ * Delete an announcement together with its reactions, comments and views.
  */
 export const deleteAnnouncement = mutation({
   args: {
     announcementId: v.id('announcements'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
     const announcement = await ctx.db.get(args.announcementId);
     if (!announcement) throw new Error('Announcement not found');
+
+    const scope = await assertOrgScope(ctx, announcement.organizationId);
+    if (!scopeOwnsRecord(scope, announcement)) throw new Error('Announcement not found');
+    if (!scope.isStaff && announcement.authorId !== scope.caller._id) {
+      throw new Error('Not authorized to delete this announcement');
+    }
 
     // Delete all reactions
     const reactions = await ctx.db
@@ -195,11 +387,21 @@ export const deleteAnnouncement = mutation({
       await ctx.db.delete(c._id);
     }
 
+    // View records outlived their announcement, so a re-created post inherited
+    // stale "already seen" rows.
+    const views = await ctx.db
+      .query('announcementViews')
+      .withIndex('by_announcement', (q) => q.eq('announcementId', args.announcementId))
+      .collect();
+    for (const view of views) {
+      await ctx.db.delete(view._id);
+    }
+
     await ctx.db.delete(args.announcementId);
 
     await ctx.db.insert('auditLogs', {
       organizationId: announcement.organizationId,
-      userId: args.userId,
+      userId: scope.caller._id,
       action: 'announcement.deleted',
       target: `announcement_${args.announcementId}`,
       details: `Deleted announcement: "${announcement.title}"`,
@@ -211,16 +413,19 @@ export const deleteAnnouncement = mutation({
 });
 
 /**
- * Toggle pin status of an announcement.
+ * Toggle pin status of an announcement. Pinning is a curation decision, so it
+ * stays with staff even for your own post.
  */
 export const togglePinAnnouncement = mutation({
   args: {
     announcementId: v.id('announcements'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
     const announcement = await ctx.db.get(args.announcementId);
     if (!announcement) throw new Error('Announcement not found');
+
+    const scope = await assertOrgStaff(ctx, announcement.organizationId);
+    if (!scopeOwnsRecord(scope, announcement)) throw new Error('Announcement not found');
 
     await ctx.db.patch(args.announcementId, {
       isPinned: !announcement.isPinned,
@@ -232,85 +437,123 @@ export const togglePinAnnouncement = mutation({
 });
 
 /**
- * Add a reaction to an announcement.
+ * Toggle a reaction on an announcement. Any member of the audience may react.
  */
 export const addReaction = mutation({
   args: {
-    organizationId: v.id('organizations'),
     announcementId: v.id('announcements'),
-    userId: v.id('users'),
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
+    const announcement = await ctx.db.get(args.announcementId);
+    if (!announcement) throw new Error('Announcement not found');
+
+    const scope = await assertOrgScope(ctx, announcement.organizationId);
+    if (!scopeOwnsRecord(scope, announcement)) throw new Error('Announcement not found');
+    const viewer = await viewerOf(ctx, scope);
+    if (!canSeeAnnouncement(announcement, viewer, scope.isStaff)) {
+      throw new Error('Announcement not found');
+    }
+
+    const emoji = args.emoji.trim();
+    if (!emoji || emoji.length > 8) throw new Error('Invalid reaction');
+    const userId = scope.caller._id;
+
     const existing = await ctx.db
       .query('announcementReactions')
       .withIndex('by_announcement_user', (q) =>
-        q.eq('announcementId', args.announcementId).eq('userId', args.userId),
+        q.eq('announcementId', args.announcementId).eq('userId', userId),
       )
-      .filter((q) => q.eq(q.field('emoji'), args.emoji))
+      .filter((q) => q.eq(q.field('emoji'), emoji))
       .first();
 
     if (existing) {
       // Toggle off
       await ctx.db.delete(existing._id);
-      const announcement = await ctx.db.get(args.announcementId);
-      if (announcement) {
-        await ctx.db.patch(args.announcementId, {
-          reactionCount: Math.max(0, (announcement.reactionCount ?? 0) - 1),
-        });
-      }
+      await ctx.db.patch(args.announcementId, {
+        reactionCount: Math.max(0, (announcement.reactionCount ?? 0) - 1),
+      });
       return { success: true, action: 'removed' };
     }
 
     await ctx.db.insert('announcementReactions', {
-      organizationId: args.organizationId,
+      organizationId: announcement.organizationId,
       announcementId: args.announcementId,
-      userId: args.userId,
-      emoji: args.emoji,
+      userId,
+      emoji,
       createdAt: Date.now(),
     });
 
-    // Update reaction count
-    const announcement = await ctx.db.get(args.announcementId);
-    if (announcement) {
-      await ctx.db.patch(args.announcementId, {
-        reactionCount: (announcement.reactionCount ?? 0) + 1,
-      });
-    }
+    await ctx.db.patch(args.announcementId, {
+      reactionCount: (announcement.reactionCount ?? 0) + 1,
+    });
 
     return { success: true, action: 'added' };
   },
 });
 
 /**
- * Add a comment to an announcement.
+ * Comment on an announcement.
+ *
+ * The author of the post is notified, which is what makes the feed a
+ * conversation rather than a noticeboard — previously a comment reached nobody.
  */
 export const addComment = mutation({
   args: {
-    organizationId: v.id('organizations'),
     announcementId: v.id('announcements'),
-    authorId: v.id('users'),
     content: v.string(),
     parentCommentId: v.optional(v.id('announcementComments')),
   },
   handler: async (ctx, args) => {
-    if (!args.content.trim()) throw new Error('Comment cannot be empty');
+    const announcement = await ctx.db.get(args.announcementId);
+    if (!announcement) throw new Error('Announcement not found');
+
+    const scope = await assertOrgScope(ctx, announcement.organizationId);
+    if (!scopeOwnsRecord(scope, announcement)) throw new Error('Announcement not found');
+    const viewer = await viewerOf(ctx, scope);
+    if (!canSeeAnnouncement(announcement, viewer, scope.isStaff)) {
+      throw new Error('Announcement not found');
+    }
+
+    const content = args.content.trim();
+    if (!content) throw new Error('Comment cannot be empty');
+    if (content.length > MAX_COMMENT) {
+      throw new Error(`Comment must be at most ${MAX_COMMENT} characters`);
+    }
+
+    if (args.parentCommentId) {
+      const parent = await ctx.db.get(args.parentCommentId);
+      if (!parent || parent.announcementId !== args.announcementId) {
+        throw new Error('Parent comment not found');
+      }
+    }
 
     const commentId = await ctx.db.insert('announcementComments', {
-      organizationId: args.organizationId,
+      organizationId: announcement.organizationId,
       announcementId: args.announcementId,
-      authorId: args.authorId,
-      content: args.content.trim(),
+      authorId: scope.caller._id,
+      content,
       parentCommentId: args.parentCommentId,
       isEdited: false,
       createdAt: Date.now(),
     });
 
-    // Update comment count
-    const announcement = await ctx.db.get(args.announcementId);
-    if (announcement) {
-      await ctx.db.patch(args.announcementId, {
-        commentCount: (announcement.commentCount ?? 0) + 1,
+    await ctx.db.patch(args.announcementId, {
+      commentCount: (announcement.commentCount ?? 0) + 1,
+    });
+
+    if (announcement.authorId !== scope.caller._id) {
+      await notify(ctx, {
+        organizationId: announcement.organizationId,
+        userId: announcement.authorId,
+        type: 'announcement_published',
+        titleKey: 'notifications.titles.announcementComment',
+        messageKey: 'notifications.messages.announcementComment',
+        params: { author: scope.caller.name, title: announcement.title },
+        fallbackTitle: 'New comment',
+        fallbackMessage: `${scope.caller.name} commented on "${announcement.title}"`,
+        relatedId: args.announcementId,
+        route: '/news',
       });
     }
 
@@ -319,21 +562,19 @@ export const addComment = mutation({
 });
 
 /**
- * Delete a comment.
+ * Delete a comment. Author or staff, and only inside their own organization.
  */
 export const deleteComment = mutation({
   args: {
     commentId: v.id('announcementComments'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
     const comment = await ctx.db.get(args.commentId);
     if (!comment) throw new Error('Comment not found');
 
-    // Check if user is author or admin
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error('User not found');
-    if (comment.authorId !== args.userId && user.role !== 'admin' && user.role !== 'superadmin') {
+    const scope = await assertOrgScope(ctx, comment.organizationId);
+    if (!scopeOwnsRecord(scope, comment)) throw new Error('Comment not found');
+    if (comment.authorId !== scope.caller._id && !scope.isStaff) {
       throw new Error('Not authorized to delete this comment');
     }
 
@@ -367,10 +608,15 @@ export const deleteComment = mutation({
 export const incrementViewCount = mutation({
   args: {
     announcementId: v.id('announcements'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { announcementId, userId } = args;
+    const { announcementId } = args;
+    const announcement = await ctx.db.get(announcementId);
+    if (!announcement) return { success: false };
+
+    const scope = await assertOrgScope(ctx, announcement.organizationId);
+    if (!scopeOwnsRecord(scope, announcement)) return { success: false };
+    const userId = scope.caller._id;
 
     // Check if this user already viewed this announcement
     const existing = await ctx.db
@@ -384,10 +630,6 @@ export const incrementViewCount = mutation({
       // Already counted — skip
       return { success: true, alreadyViewed: true };
     }
-
-    // Insert a view record
-    const announcement = await ctx.db.get(announcementId);
-    if (!announcement) return { success: false };
 
     await ctx.db.insert('announcementViews', {
       organizationId: announcement.organizationId,
@@ -405,19 +647,29 @@ export const incrementViewCount = mutation({
 });
 
 /**
- * Reset the viewCount of all announcements to their actual unique view counts.
+ * Recount views from the view records, for the organization in scope.
+ *
+ * Was an unauthenticated mutation that walked *every* announcement of *every*
+ * tenant and rewrote their counters — a maintenance tool anyone could fire.
  */
 export const resetAllViewCounts = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const announcements = await ctx.db.query('announcements').take(1000);
+  args: { organizationId: v.optional(v.id('organizations')) },
+  handler: async (ctx, args) => {
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
+    const organizationId = scope.organizationId;
+    if (!organizationId) throw new Error('Organization is required');
+
+    const announcements = await ctx.db
+      .query('announcements')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .take(DEFAULT_LIST_CAP);
     let totalReset = 0;
 
     for (const announcement of announcements) {
       const uniqueViews = await ctx.db
         .query('announcementViews')
         .withIndex('by_announcement', (q) => q.eq('announcementId', announcement._id))
-        .collect();
+        .take(SMALL_LIST_CAP);
 
       if (uniqueViews.length !== announcement.viewCount) {
         await ctx.db.patch(announcement._id, {
@@ -455,6 +707,9 @@ export const getNewsFeed = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, category, limit = 20 } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
+    const viewer = await viewerOf(ctx, scope);
 
     let announcements = await ctx.db
       .query('announcements')
@@ -469,6 +724,9 @@ export const getNewsFeed = query({
     // Filter out expired
     const now = Date.now();
     announcements = announcements.filter((a) => !a.expiresAt || a.expiresAt > now);
+
+    // Apply targeting: a department- or role-scoped post is not company-wide.
+    announcements = announcements.filter((a) => canSeeAnnouncement(a, viewer, scope.isStaff));
 
     // Sort: pinned first, then by publishedAt desc
     announcements.sort((a, b) => {
@@ -529,6 +787,17 @@ export const getNewsFeed = query({
           }),
         );
 
+        // Has the reader opened this one? Drives the "new" marker in the feed,
+        // which is what makes a broadcast surface scannable.
+        const myView = await ctx.db
+          .query('announcementViews')
+          .withIndex('by_announcement_user', (q) =>
+            q.eq('announcementId', announcement._id).eq('userId', viewer._id),
+          )
+          .first();
+
+        const myReactions = reactions.filter((r) => r.userId === viewer._id).map((r) => r.emoji);
+
         return {
           ...announcement,
           authorName: author?.name ?? 'Unknown',
@@ -538,6 +807,9 @@ export const getNewsFeed = query({
           reactionsByEmoji,
           comments: enrichedComments.reverse(),
           totalComments: announcement.commentCount ?? 0,
+          isUnread: !myView,
+          myReactions,
+          canManage: scope.isStaff || announcement.authorId === viewer._id,
         };
       }),
     );
@@ -556,6 +828,12 @@ export const getAnnouncement = query({
   handler: async (ctx, args) => {
     const announcement = await ctx.db.get(args.announcementId);
     if (!announcement) return null;
+
+    // Reached by id, so scope and targeting are checked after the read.
+    const scope = await resolveOrgScope(ctx, announcement.organizationId);
+    if (!scope || !scopeOwnsRecord(scope, announcement)) return null;
+    const viewer = await viewerOf(ctx, scope);
+    if (!canSeeAnnouncement(announcement, viewer, scope.isStaff)) return null;
 
     const author = await ctx.db.get(announcement.authorId);
 
@@ -614,6 +892,7 @@ export const getAnnouncement = query({
       reactionsByEmoji,
       comments: enrichedComments,
       totalComments: announcement.commentCount ?? 0,
+      canManage: scope.isStaff || announcement.authorId === viewer._id,
     };
   },
 });
@@ -627,11 +906,18 @@ export const getNewsStats = query({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const scope = await resolveOrgScope(ctx, args.organizationId);
+    if (!scope) return null;
+    const viewer = await viewerOf(ctx, scope);
 
-    const announcements = await ctx.db
+    const all = await ctx.db
       .query('announcements')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .take(DEFAULT_LIST_CAP);
+
+    // Counters must match what the reader can actually open, otherwise the
+    // header promises posts the feed will not show.
+    const announcements = all.filter((a) => canSeeAnnouncement(a, viewer, scope.isStaff));
 
     const active = announcements.filter((a) => !a.expiresAt || a.expiresAt > now);
     const pinned = active.filter((a) => a.isPinned);
@@ -649,6 +935,15 @@ export const getNewsStats = query({
     const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
     const recentCount = active.filter((a) => a.publishedAt > weekAgo).length;
 
+    // Unread for this reader, so the header can lead with the one number that
+    // makes someone open the page.
+    const myViews = await ctx.db
+      .query('announcementViews')
+      .withIndex('by_user', (q) => q.eq('userId', viewer._id))
+      .take(DEFAULT_LIST_CAP);
+    const seen = new Set(myViews.map((view) => view.announcementId));
+    const unreadCount = active.filter((a) => !seen.has(a._id)).length;
+
     return {
       total: announcements.length,
       active: active.length,
@@ -656,6 +951,7 @@ export const getNewsStats = query({
       urgent: urgent.length,
       byCategory,
       recentCount,
+      unreadCount,
     };
   },
 });
