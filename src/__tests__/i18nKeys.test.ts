@@ -58,6 +58,13 @@ const GUARDED: Record<string, string[]> = {
     'src/components/documents/DocumentBuilderTab.tsx',
     'src/components/documents/IssuedDocumentsTab.tsx',
   ],
+  // The reward storefront and its administration. Money-adjacent copy that an
+  // employee reads before spending points, so an untranslated string here is
+  // worse than an ugly one.
+  '/recognition (rewards)': [
+    'src/components/recognition/RewardsTab.tsx',
+    'src/components/recognition/RewardsAdminPanel.tsx',
+  ],
 };
 
 const FILES = Object.values(GUARDED).flat();
