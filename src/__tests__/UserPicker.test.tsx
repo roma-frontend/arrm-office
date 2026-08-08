@@ -12,13 +12,14 @@ jest.mock('react-i18next', () => ({
 const mockUseQuery = jest.fn();
 jest.mock('convex/react', () => ({ useQuery: (...args: any[]) => mockUseQuery(...args) }));
 
-jest.mock(
-  '@/convex/_generated/api',
-  () => ({
-    api: { reporting: { getPotentialManagers: 'getPotentialManagers' } },
-  }),
-  { virtual: true },
-);
+// Not `virtual: true`: the module exists, and registering it as virtual made the
+// mock lose to an already-resolved real module depending on which other suites
+// shared the worker. The component then received the real Convex `api` proxy —
+// which throws "Cannot convert object to primitive value" the moment Jest tries
+// to print it — so the failure was both intermittent and unreadable.
+jest.mock('@/convex/_generated/api', () => ({
+  api: { reporting: { getPotentialManagers: 'getPotentialManagers' } },
+}));
 
 jest.mock('next/image', () => ({
   __esModule: true,
@@ -96,7 +97,10 @@ describe('UserPicker', () => {
     mockUseQuery.mockReturnValue(undefined);
     render(<UserPicker value="" onChange={() => {}} />);
 
-    expect(mockUseQuery).toHaveBeenCalledWith('getPotentialManagers', 'skip');
+    // The query reference itself is not the point — that the second argument is
+    // `'skip'` is. Asserting on the reference tied the test to how the api module
+    // happened to resolve.
+    expect(mockUseQuery).toHaveBeenCalledWith(expect.anything(), 'skip');
     expect(screen.getByText('No organization selected')).toBeInTheDocument();
   });
 });
