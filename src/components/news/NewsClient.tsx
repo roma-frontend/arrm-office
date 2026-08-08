@@ -1,85 +1,48 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from '@/lib/convex-typed';
+import { useMutation, useQuery } from '@/lib/convex-typed';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { motion } from '@/lib/cssMotion';
-import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Megaphone,
-  Calendar,
-  Cake,
-  Trophy,
-  FileText,
+  ChevronDown,
+  Eye,
   MessageCircle,
-  Zap,
-  Plus,
   Pin,
   PinOff,
-  Trash2,
-  Clock,
-  Eye,
+  Plus,
+  Search,
   Send,
+  SmilePlus,
   Sparkles,
-  Newspaper,
+  Trash2,
+  Users2,
+  Zap,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { MarkdownMessage } from '@/components/MarkdownMessage';
+import { NewsComposer } from './NewsComposer';
+import {
+  ACCENT,
+  CATEGORY_CONFIG,
+  CATEGORY_ORDER,
+  EMOJI_REACTIONS,
+  relativeTime,
+  type NewsCategory,
+} from './newsCategories';
 
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const CATEGORY_CONFIG: Record<
-  string,
-  {
-    icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-    color: string;
-    labelKey: string;
-  }
-> = {
-  news: { icon: Newspaper, color: '#3b82f6', labelKey: 'news.category.news' },
-  announcement: { icon: Megaphone, color: '#8b5cf6', labelKey: 'news.category.announcement' },
-  event: { icon: Calendar, color: '#f59e0b', labelKey: 'news.category.event' },
-  birthday: { icon: Cake, color: '#ec4899', labelKey: 'news.category.birthday' },
-  achievement: { icon: Trophy, color: '#10b981', labelKey: 'news.category.achievement' },
-  policy: { icon: FileText, color: '#06b6d4', labelKey: 'news.category.policy' },
-  general: { icon: MessageCircle, color: '#6b7280', labelKey: 'news.category.general' },
-};
-
-const EMOJI_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥', '😮', '👏'];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface ReactionGroup {
   emoji: string;
@@ -94,517 +57,32 @@ interface FeedComment {
   createdAt: number;
 }
 
-interface NewsFeedAnnouncement {
+interface FeedItem {
   _id: Id<'announcements'>;
   title: string;
   content: string;
-  category: 'news' | 'announcement' | 'event' | 'birthday' | 'achievement' | 'policy' | 'general';
+  summary?: string;
+  category: NewsCategory;
   isPinned: boolean;
   isUrgent: boolean;
   imageUrl?: string;
+  tags?: string[];
+  targetDepartment?: Id<'departments'>;
+  targetRoles?: string[];
   publishedAt: number;
   viewCount: number;
   authorName: string;
   authorAvatar: string;
+  authorRole: string;
   reactionsByEmoji: ReactionGroup[];
   comments: FeedComment[];
   totalComments: number;
+  isUnread: boolean;
+  myReactions: string[];
+  canManage: boolean;
 }
 
-// ── Create Announcement Dialog ───────────────────────────────────────────────
-
-function CreateAnnouncementDialog({
-  open,
-  onClose,
-  organizationId,
-  userId,
-}: {
-  open: boolean;
-  onClose: () => void;
-  organizationId: Id<'organizations'>;
-  userId: Id<'users'>;
-}) {
-  const { t } = useTranslation();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState<string>('announcement');
-  const [isPinned, setIsPinned] = useState(false);
-  const [isUrgent, setIsUrgent] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const createAnnouncement = useMutation(api.news.createAnnouncement);
-
-  const handleSubmit = async () => {
-    if (!title.trim() || !content.trim()) {
-      toast.error(t('news.errors.fillRequired'));
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await createAnnouncement({
-        organizationId,
-        authorId: userId,
-        title: title.trim(),
-        content: content.trim(),
-        category: category as
-          | 'news'
-          | 'announcement'
-          | 'event'
-          | 'birthday'
-          | 'achievement'
-          | 'policy'
-          | 'general',
-        isPinned,
-        isUrgent,
-      });
-      toast.success(t('news.announcementCreated'));
-      setTitle('');
-      setContent('');
-      setCategory('announcement');
-      setIsPinned(false);
-      setIsUrgent(false);
-      onClose();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('common.error'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Megaphone className="w-5 h-5 text-purple-500" />
-            {t('news.createAnnouncement')}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">{t('news.title')}</label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('news.titlePlaceholder')}
-              maxLength={200}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium mb-1 block">
-                {t('news.selectCategory', 'Category')}
-              </label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => {
-                    const Icon = cfg.icon;
-                    return (
-                      <SelectItem key={key} value={key}>
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-4 h-4" style={{ color: cfg.color }} />
-                          <span>{t(cfg.labelKey)}</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">{t('news.options')}</label>
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setIsPinned(!isPinned)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                    isPinned
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-600'
-                      : 'border-border text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  <Pin className="w-3 h-3" />
-                  {t('news.pin')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsUrgent(!isUrgent)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                    isUrgent
-                      ? 'bg-red-500/10 border-red-500/30 text-red-600'
-                      : 'border-border text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  <Zap className="w-3 h-3" />
-                  {t('news.urgent')}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-1 block">{t('news.content')}</label>
-            <Textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={t('news.contentPlaceholder')}
-              rows={6}
-              maxLength={5000}
-            />
-            <p className="text-xs text-muted-foreground mt-1 text-right">{content.length}/5000</p>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting} className="gap-1.5">
-            <Send className="w-4 h-4" />
-            {submitting ? t('common.publishing') : t('news.publish')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ── Comment Section ─────────────────────────────────────────────────────────
-
-function CommentSection({
-  announcementId,
-  comments,
-  totalComments,
-  organizationId,
-  userId,
-  isExpanded,
-  onToggle,
-  t,
-}: {
-  announcementId: Id<'announcements'>;
-  comments: {
-    _id: string;
-    authorName: string;
-    authorAvatar?: string;
-    content: string;
-    createdAt: number;
-  }[];
-  totalComments: number;
-  organizationId: Id<'organizations'>;
-  userId: Id<'users'>;
-  isExpanded: boolean;
-  onToggle: () => void;
-  t: (key: string, options?: Record<string, unknown>) => string;
-}) {
-  const [newComment, setNewComment] = useState('');
-  const addComment = useMutation(api.news.addComment);
-
-  const handleSubmit = async () => {
-    if (!newComment.trim()) return;
-    try {
-      await addComment({
-        organizationId,
-        announcementId,
-        authorId: userId,
-        content: newComment.trim(),
-      });
-      setNewComment('');
-      toast.success(t('news.commentAdded'));
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('common.error'));
-    }
-  };
-
-  return (
-    <div className="mt-3">
-      {/* Comment input */}
-      <div className="flex gap-2">
-        <Input
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder={t('news.writeComment')}
-          className="text-sm h-9"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit();
-            }
-          }}
-        />
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleSubmit}
-          disabled={!newComment.trim()}
-          className="h-9 w-9 p-0"
-        >
-          <Send className="w-4 h-4" />
-        </Button>
-      </div>
-
-      {/* Comments list */}
-      {comments.length > 0 && (
-        <div className="mt-2 space-y-2">
-          {comments.map((comment) => (
-            <div key={comment._id} className="flex gap-2 text-sm">
-              <Avatar className="w-6 h-6 shrink-0 mt-0.5">
-                <AvatarImage src={comment.authorAvatar} />
-                <AvatarFallback className="text-[8px]">
-                  {comment.authorName?.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-xs">{comment.authorName}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {format(comment.createdAt, 'MMM d, HH:mm')}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{comment.content}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Show more comments link */}
-      {totalComments > comments.length && !isExpanded && (
-        <button
-          onClick={onToggle}
-          className="text-xs text-primary hover:underline mt-1 flex items-center gap-1"
-        >
-          <MessageCircle className="w-3 h-3" />
-          {t('news.viewAllComments', { count: totalComments })}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ── Announcement Card ────────────────────────────────────────────────────────
-
-function AnnouncementCard({
-  announcement,
-  organizationId,
-  userId,
-  userRole,
-  t,
-  onDelete,
-}: {
-  announcement: NewsFeedAnnouncement;
-  organizationId: Id<'organizations'>;
-  userId: Id<'users'>;
-  userRole: string;
-  t: (key: string) => string;
-  onDelete: (id: Id<'announcements'>) => void;
-}) {
-  const [showComments, setShowComments] = useState(false);
-  const [showAllComments, setShowAllComments] = useState(false);
-  const addReaction = useMutation(api.news.addReaction);
-  const incrementView = useMutation(api.news.incrementViewCount);
-  const togglePin = useMutation(api.news.togglePinAnnouncement);
-
-  const categoryConfig = CATEGORY_CONFIG[announcement.category] || CATEGORY_CONFIG.general!;
-  const CategoryIcon = categoryConfig.icon;
-
-  // Increment view once on mount (unique per user)
-  React.useEffect(() => {
-    incrementView({ announcementId: announcement._id, userId });
-  }, [announcement._id, userId, incrementView]);
-
-  const timeAgo = getTimeAgo(announcement.publishedAt);
-
-  const isAdmin = userRole === 'admin' || userRole === 'superadmin';
-
-  const reactionsList: Array<{
-    emoji: string;
-    users: Array<{ userId: string; userName: string }>;
-  }> = announcement.reactionsByEmoji ?? [];
-  const _totalReactions = reactionsList.reduce((sum: number, r) => sum + r.users.length, 0);
-
-  const _hasMyReaction = reactionsList.some((r) => r.users.some((u) => u.userId === userId));
-
-  const handleReact = async (emoji: string) => {
-    try {
-      await addReaction({
-        organizationId,
-        announcementId: announcement._id,
-        userId,
-        emoji,
-      });
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('common.error'));
-    }
-  };
-
-  return (
-    <motion.div variants={itemVariants}>
-      <Card
-        className={`overflow-hidden transition-all duration-200 hover:shadow-md ${
-          announcement.isUrgent ? 'ring-1 ring-red-500/30' : ''
-        } ${announcement.isPinned ? 'ring-1 ring-amber-500/20' : ''}`}
-      >
-        <CardContent className="p-4">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <Avatar className="w-9 h-9 shrink-0">
-                <AvatarImage src={announcement.authorAvatar} />
-                <AvatarFallback className="text-xs">
-                  {announcement.authorName?.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {announcement.isUrgent && (
-                    <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-[10px] px-1.5 py-0 gap-1">
-                      <Zap className="w-2.5 h-2.5" />
-                      {t('news.urgent')}
-                    </Badge>
-                  )}
-                  {announcement.isPinned && (
-                    <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] px-1.5 py-0 gap-1">
-                      <Pin className="w-2.5 h-2.5" />
-                      {t('news.pinned')}
-                    </Badge>
-                  )}
-                  <Badge
-                    className="text-[10px] px-1.5 py-0 gap-1"
-                    style={{
-                      backgroundColor: `${categoryConfig.color}15`,
-                      color: categoryConfig.color,
-                      borderColor: `${categoryConfig.color}25`,
-                    }}
-                  >
-                    <CategoryIcon className="w-2.5 h-2.5" />
-                    {t(categoryConfig.labelKey)}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                  <span className="font-medium text-foreground">{announcement.authorName}</span>
-                  <span>·</span>
-                  <span className="flex items-center gap-0.5">
-                    <Clock className="w-3 h-3" />
-                    {timeAgo}
-                  </span>
-                  <span>·</span>
-                  <span className="flex items-center gap-0.5">
-                    <Eye className="w-3 h-3" />
-                    {announcement.viewCount}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Admin actions */}
-            {isAdmin && (
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => togglePin({ announcementId: announcement._id, userId })}
-                  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                  title={announcement.isPinned ? t('news.unpin') : t('news.pin')}
-                >
-                  {announcement.isPinned ? (
-                    <PinOff className="w-3.5 h-3.5 text-muted-foreground" />
-                  ) : (
-                    <Pin className="w-3.5 h-3.5 text-muted-foreground" />
-                  )}
-                </button>
-                <button
-                  onClick={() => onDelete(announcement._id)}
-                  className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
-                  title={t('common.delete')}
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-red-500" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Title */}
-          <h3 className="font-semibold text-sm mb-1">{announcement.title}</h3>
-
-          {/* Content */}
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-            {announcement.content}
-          </p>
-
-          {/* Image */}
-          {announcement.imageUrl && (
-            <div className="mt-2 rounded-lg overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={announcement.imageUrl}
-                alt={announcement.title}
-                className="w-full h-48 object-cover"
-              />
-            </div>
-          )}
-
-          {/* Reactions bar */}
-          <div className="flex items-center gap-1.5 mt-3 flex-wrap">
-            {/* Emoji reaction buttons */}
-            {EMOJI_REACTIONS.map((emoji) => {
-              const reactors = reactionsList.find((r) => r.emoji === emoji)?.users ?? [];
-              const count = reactors.length;
-              const isActive = reactors.some((r) => r.userId === userId);
-              return (
-                <button
-                  key={emoji}
-                  onClick={() => handleReact(emoji)}
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-all ${
-                    isActive
-                      ? 'bg-primary/10 text-primary border border-primary/20'
-                      : 'bg-muted/50 hover:bg-muted border border-transparent'
-                  }`}
-                  title={reactors.map((r) => r.userName).join(', ')}
-                >
-                  <span>{emoji}</span>
-                  {count > 0 && <span className="font-medium">{count}</span>}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Action bar */}
-          <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50">
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-muted/50"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span>{announcement.totalComments ?? 0}</span>
-            </button>
-            <span className="text-[10px] text-muted-foreground">
-              {format(announcement.publishedAt, 'MMM d, yyyy HH:mm')}
-            </span>
-          </div>
-
-          {/* Comments section */}
-          {showComments && (
-            <CommentSection
-              announcementId={announcement._id}
-              comments={announcement.comments ?? []}
-              totalComments={announcement.totalComments ?? 0}
-              organizationId={organizationId}
-              userId={userId}
-              isExpanded={showAllComments}
-              onToggle={() => setShowAllComments(!showAllComments)}
-              t={t}
-            />
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
-// ── Main Component ───────────────────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NewsClient() {
   const { t } = useTranslation();
@@ -614,223 +92,707 @@ export default function NewsClient() {
     | Id<'organizations'>
     | undefined;
 
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<'all' | NewsCategory>('all');
+  const [search, setSearch] = useState('');
+  const [composing, setComposing] = useState(false);
 
-  const newsFeed = useQuery(
+  const feed = useQuery(
     api.news.getNewsFeed,
     organizationId
-      ? {
-          organizationId,
-          category:
-            categoryFilter !== 'all'
-              ? (categoryFilter as
-                  | 'news'
-                  | 'announcement'
-                  | 'event'
-                  | 'birthday'
-                  | 'achievement'
-                  | 'policy'
-                  | 'general')
-              : undefined,
-        }
+      ? { organizationId, category: categoryFilter === 'all' ? undefined : categoryFilter }
       : 'skip',
   );
+  const stats = useQuery(api.news.getNewsStats, organizationId ? { organizationId } : 'skip');
 
-  const newsStats = useQuery(api.news.getNewsStats, organizationId ? { organizationId } : 'skip');
+  // Staff-only actions are gated by `canManage` on each row, which the server
+  // computes — the client no longer guesses from the role alone.
+  const canPublish =
+    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
-  const deleteAnnouncement = useMutation(api.news.deleteAnnouncement);
+  const items = useMemo(() => {
+    const rows = (feed ?? []) as unknown as FeedItem[];
+    const needle = search.trim().toLowerCase();
+    if (!needle) return rows;
+    return rows.filter(
+      (row) =>
+        row.title.toLowerCase().includes(needle) ||
+        row.content.toLowerCase().includes(needle) ||
+        row.authorName.toLowerCase().includes(needle),
+    );
+  }, [feed, search]);
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const featured = items.filter((row) => row.isPinned || row.isUrgent);
+  const rest = items.filter((row) => !row.isPinned && !row.isUrgent);
 
-  const handleDelete = async (id: Id<'announcements'>) => {
-    if (!confirm(t('news.confirmDelete'))) return;
-    try {
-      await deleteAnnouncement({ announcementId: id, userId: user!.id as Id<'users'> });
-      toast.success(t('news.announcementDeleted'));
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : t('common.error'));
-    }
-  };
-
-  if (!user || !organizationId) return <ShieldLoader />;
+  if (!user || !organizationId) {
+    return <FeedSkeleton />;
+  }
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-6"
-    >
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+    <div className="space-y-6 pb-10">
+      {/* Header */}
+      <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-background/80 backdrop-blur-xl border-b">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-              <Megaphone className="w-7 h-7 text-purple-500" />
               {t('news.title')}
+              {stats && stats.unreadCount > 0 && (
+                <Badge className="text-white" style={{ backgroundColor: ACCENT }}>
+                  {t('news.unreadBadge', { count: stats.unreadCount })}
+                </Badge>
+              )}
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">{t('news.subtitle')}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t('news.subtitle')}</p>
           </div>
-          {isAdmin && (
-            <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 w-full sm:w-auto">
-              <Plus className="w-4 h-4" />
-              {t('news.createAnnouncement')}
-            </Button>
-          )}
+
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 lg:w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t('news.searchPlaceholder')}
+                className="pl-8"
+                aria-label={t('news.searchPlaceholder')}
+              />
+            </div>
+            {canPublish && (
+              <Button onClick={() => setComposing(true)} className="gap-1.5 shrink-0">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('news.compose.publish')}</span>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      {newsStats && (
-        <motion.div variants={itemVariants}>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card>
-              <CardContent className="p-3 flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-blue-500/10">
-                  <Newspaper className="w-4 h-4 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold">{newsStats.active}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('news.activePosts')}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-500/10">
-                  <Pin className="w-4 h-4 text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold">{newsStats.pinned}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('news.pinned')}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-red-500/10">
-                  <Zap className="w-4 h-4 text-red-500" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold">{newsStats.urgent}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('news.urgent')}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-3 flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-green-500/10">
-                  <Sparkles className="w-4 h-4 text-green-500" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold">{newsStats.recentCount}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('news.thisWeek')}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Category Filter */}
-      <motion.div variants={itemVariants}>
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setCategoryFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              categoryFilter === 'all'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {t('news.allCategories')}
-          </button>
-          {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => {
-            const Icon = cfg.icon;
-            return (
-              <button
-                key={key}
-                onClick={() => setCategoryFilter(key)}
-                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  categoryFilter === key
-                    ? 'text-white shadow-sm'
-                    : 'text-muted-foreground hover:bg-muted'
-                }`}
-                style={
-                  categoryFilter === key
-                    ? { backgroundColor: cfg.color }
-                    : { backgroundColor: 'transparent' }
-                }
-              >
-                <Icon className="w-3 h-3" />
-                {t(cfg.labelKey)}
-              </button>
-            );
-          })}
-        </div>
-      </motion.div>
-
-      {/* News Feed */}
-      {newsFeed === undefined ? (
-        <ShieldLoader />
-      ) : newsFeed.length === 0 ? (
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Megaphone className="w-14 h-14 mx-auto text-muted-foreground/40 mb-4" />
-              <h3 className="text-lg font-semibold mb-1">{t('news.emptyFeed')}</h3>
-              <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                {t('news.emptyFeedHint')}
-              </p>
-              {isAdmin && (
-                <Button onClick={() => setShowCreateDialog(true)} variant="outline">
-                  <Plus className="w-4 h-4 mr-1" />
-                  {t('news.createFirst')}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      ) : (
-        <div className="space-y-3 max-w-2xl">
-          {newsFeed.map((announcement) => (
-            <AnnouncementCard
-              key={announcement._id}
-              announcement={announcement}
-              organizationId={organizationId}
-              userId={user.id as Id<'users'>}
-              userRole={user.role}
-              t={t}
-              onDelete={handleDelete}
+      {/* Category chips with live counts */}
+      <div className="flex flex-wrap gap-2">
+        <Chip
+          active={categoryFilter === 'all'}
+          label={t('news.allCategories')}
+          count={stats?.active}
+          onClick={() => setCategoryFilter('all')}
+        />
+        {CATEGORY_ORDER.map((key) => {
+          const cfg = CATEGORY_CONFIG[key];
+          const count = stats?.byCategory?.[key];
+          if (!count && categoryFilter !== key) return null;
+          return (
+            <Chip
+              key={key}
+              active={categoryFilter === key}
+              label={t(cfg.labelKey)}
+              count={count}
+              color={cfg.color}
+              icon={cfg.icon}
+              onClick={() => setCategoryFilter(key)}
             />
-          ))}
-        </div>
+          );
+        })}
+      </div>
+
+      {feed === undefined ? (
+        <FeedSkeleton />
+      ) : items.length === 0 ? (
+        <EmptyState
+          canPublish={canPublish}
+          searching={search.trim().length > 0}
+          onCompose={() => setComposing(true)}
+        />
+      ) : (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+          {featured.length > 0 && (
+            <section className="space-y-3">
+              <SectionLabel icon={Sparkles} text={t('news.featured')} />
+              <div className="grid gap-4 lg:grid-cols-2">
+                {featured.map((item) => (
+                  <FeaturedCard key={item._id} item={item} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {rest.length > 0 && (
+            <section className="space-y-3">
+              {featured.length > 0 && <SectionLabel icon={MessageCircle} text={t('news.latest')} />}
+              <div className="space-y-4 max-w-3xl">
+                {rest.map((item) => (
+                  <PostCard key={item._id} item={item} />
+                ))}
+              </div>
+            </section>
+          )}
+        </motion.div>
       )}
 
-      {/* Create Dialog */}
-      {showCreateDialog && organizationId && (
-        <CreateAnnouncementDialog
-          open={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
+      {composing && organizationId && (
+        <NewsComposer
+          open={composing}
+          onClose={() => setComposing(false)}
           organizationId={organizationId}
-          userId={user.id as Id<'users'>}
         />
       )}
-    </motion.div>
+    </div>
   );
 }
 
-// ── Helper ───────────────────────────────────────────────────────────────────
+// ── Small pieces ─────────────────────────────────────────────────────────────
 
-function getTimeAgo(timestamp: number): string {
-  const diff = Date.now() - timestamp;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return format(timestamp, 'MMM d');
+function SectionLabel({
+  icon: Icon,
+  text,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+      <Icon className="h-4 w-4" />
+      {text}
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  label,
+  count,
+  color,
+  icon: Icon,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  count?: number;
+  color?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+        active
+          ? 'border-transparent text-white shadow-sm'
+          : 'border-border text-muted-foreground hover:bg-muted'
+      }`}
+      style={active ? { backgroundColor: color ?? ACCENT } : undefined}
+    >
+      {Icon && <Icon className="h-3.5 w-3.5" />}
+      {label}
+      {count !== undefined && count > 0 && (
+        <span className={active ? 'opacity-80' : 'text-muted-foreground/70'}>{count}</span>
+      )}
+    </button>
+  );
+}
+
+function AuthorLine({ item }: { item: FeedItem }) {
+  const { i18n, t } = useTranslation();
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={item.authorAvatar || undefined} alt="" />
+        <AvatarFallback>{item.authorName.charAt(0).toUpperCase()}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0">
+        <p className="text-sm font-medium truncate">{item.authorName}</p>
+        <p className="text-xs text-muted-foreground">
+          {relativeTime(item.publishedAt, i18n.language)}
+          {item.authorRole ? ` · ${t(`roles.${item.authorRole}`, item.authorRole)}` : ''}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function CategoryChip({ category }: { category: NewsCategory }) {
+  const { t } = useTranslation();
+  const cfg = CATEGORY_CONFIG[category] ?? CATEGORY_CONFIG.general;
+  const Icon = cfg.icon;
+  return (
+    <Badge
+      variant="outline"
+      className="gap-1 font-normal border-transparent"
+      style={{ backgroundColor: `${cfg.color}1a`, color: cfg.color }}
+    >
+      <Icon className="h-3 w-3" />
+      {t(cfg.labelKey)}
+    </Badge>
+  );
+}
+
+/** Marks a post whose audience is narrower than the whole company. */
+function AudienceChip({ item }: { item: FeedItem }) {
+  const { t } = useTranslation();
+  if (!item.targetDepartment && !(item.targetRoles && item.targetRoles.length > 0)) return null;
+  return (
+    <Badge variant="outline" className="gap-1 font-normal">
+      <Users2 className="h-3 w-3" />
+      {t('news.targeted')}
+    </Badge>
+  );
+}
+
+function EmptyState({
+  canPublish,
+  searching,
+  onCompose,
+}: {
+  canPublish: boolean;
+  searching: boolean;
+  onCompose: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Card>
+      <CardContent className="py-14 text-center">
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-muted">
+          <MessageCircle className="h-7 w-7 text-muted-foreground/60" />
+        </div>
+        <h3 className="text-lg font-semibold mb-1">
+          {searching ? t('news.noMatches') : t('news.emptyFeed')}
+        </h3>
+        <p className="mx-auto mb-4 max-w-md text-sm text-muted-foreground">
+          {searching ? t('news.noMatchesHint') : t('news.emptyFeedHint')}
+        </p>
+        {!searching && canPublish && (
+          <Button variant="outline" onClick={onCompose}>
+            <Plus className="mr-1 h-4 w-4" />
+            {t('news.createFirst')}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function FeedSkeleton() {
+  return (
+    <div className="space-y-4 max-w-3xl">
+      {[0, 1, 2].map((i) => (
+        <Card key={i}>
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Skeleton variant="circular" width={32} height={32} />
+              <div className="space-y-1.5">
+                <Skeleton variant="text" width={120} height={12} />
+                <Skeleton variant="text" width={80} height={10} />
+              </div>
+            </div>
+            <Skeleton variant="rounded" width="70%" height={20} />
+            <SkeletonText lines={3} />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ── Featured (pinned / urgent) ───────────────────────────────────────────────
+
+/**
+ * Pinned and urgent posts get a poster treatment: the image becomes the
+ * background, everything else sits on top. A noticeboard where the important
+ * item looks like every other row is a noticeboard nobody reads.
+ */
+function FeaturedCard({ item }: { item: FeedItem }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const cfg = CATEGORY_CONFIG[item.category] ?? CATEGORY_CONFIG.general;
+
+  return (
+    <Card
+      className="group relative overflow-hidden border-0 shadow-sm"
+      style={{
+        background: item.imageUrl
+          ? undefined
+          : `linear-gradient(135deg, ${cfg.color}22 0%, ${cfg.color}0a 60%, transparent 100%)`,
+      }}
+    >
+      {item.imageUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+          style={{ backgroundImage: `url(${item.imageUrl})` }}
+          aria-hidden
+        />
+      )}
+      {item.imageUrl && <div className="absolute inset-0 bg-black/55" aria-hidden />}
+
+      <CardContent className={`relative p-5 space-y-3 ${item.imageUrl ? 'text-white' : ''}`}>
+        <div className="flex flex-wrap items-center gap-2">
+          {item.isUrgent && (
+            <Badge className="gap-1 bg-red-500 text-white hover:bg-red-500">
+              <Zap className="h-3 w-3" />
+              {t('news.urgent')}
+            </Badge>
+          )}
+          {item.isPinned && (
+            <Badge variant="secondary" className="gap-1 font-normal">
+              <Pin className="h-3 w-3" />
+              {t('news.pinned')}
+            </Badge>
+          )}
+          <CategoryChip category={item.category} />
+          <AudienceChip item={item} />
+          {item.isUnread && (
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: ACCENT }}
+                aria-hidden
+              />
+              {t('news.new')}
+            </span>
+          )}
+        </div>
+
+        <h2 className="text-lg font-bold leading-snug">{item.title}</h2>
+        <p className={`text-sm ${item.imageUrl ? 'text-white/85' : 'text-muted-foreground'}`}>
+          {item.summary || item.content.slice(0, 160)}
+        </p>
+
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <AuthorLine item={item} />
+          <Button
+            size="sm"
+            variant={item.imageUrl ? 'secondary' : 'outline'}
+            onClick={() => setOpen((prev) => !prev)}
+          >
+            {open ? t('news.collapse') : t('news.readMore')}
+          </Button>
+        </div>
+
+        {open && (
+          <div className="rounded-xl bg-background/95 p-4 text-foreground">
+            <PostBody item={item} />
+            <ReactionBar item={item} />
+            <CommentSection item={item} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Regular post ─────────────────────────────────────────────────────────────
+
+function PostCard({ item }: { item: FeedItem }) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const long = item.content.length > 420;
+
+  return (
+    <Card
+      className="overflow-hidden transition-shadow hover:shadow-md"
+      style={item.isUnread ? { borderColor: ACCENT } : undefined}
+    >
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <AuthorLine item={item} />
+          <div className="flex items-center gap-1.5">
+            {item.isUnread && (
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: ACCENT }}
+                aria-label={t('news.new')}
+                role="img"
+              />
+            )}
+            <PostMenu item={item} />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <CategoryChip category={item.category} />
+          <AudienceChip item={item} />
+          {item.tags?.slice(0, 3).map((tag) => (
+            <span key={tag} className="text-xs text-muted-foreground">
+              #{tag}
+            </span>
+          ))}
+        </div>
+
+        <h3 className="text-base font-semibold leading-snug">{item.title}</h3>
+
+        {item.imageUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element -- author-supplied external URL */
+          <img
+            src={item.imageUrl}
+            alt=""
+            className="max-h-80 w-full rounded-xl object-cover"
+            loading="lazy"
+          />
+        )}
+
+        <div className={!expanded && long ? 'relative max-h-40 overflow-hidden' : undefined}>
+          <PostBody item={item} />
+          {!expanded && long && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
+          )}
+        </div>
+        {long && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 px-2"
+            onClick={() => setExpanded((prev) => !prev)}
+          >
+            {expanded ? t('news.collapse') : t('news.readMore')}
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            />
+          </Button>
+        )}
+
+        <ReactionBar item={item} />
+        <CommentSection item={item} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function PostBody({ item }: { item: FeedItem }) {
+  return (
+    <div className="text-sm">
+      <MarkdownMessage content={item.content} />
+    </div>
+  );
+}
+
+/** Pin and delete, shown only when the server says this reader may manage the post. */
+function PostMenu({ item }: { item: FeedItem }) {
+  const { t } = useTranslation();
+  const togglePin = useMutation(api.news.togglePinAnnouncement);
+  const remove = useMutation(api.news.deleteAnnouncement);
+  const [busy, setBusy] = useState(false);
+
+  if (!item.canManage) return null;
+
+  const run = async (action: () => Promise<unknown>, successKey: string) => {
+    setBusy(true);
+    try {
+      await action();
+      toast.success(t(successKey));
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('common.error'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        disabled={busy}
+        aria-label={item.isPinned ? t('news.unpin') : t('news.pin')}
+        onClick={() => run(() => togglePin({ announcementId: item._id }), 'news.pinToggled')}
+      >
+        {item.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-destructive"
+        disabled={busy}
+        aria-label={t('common.delete')}
+        onClick={() => {
+          if (!window.confirm(t('news.confirmDelete'))) return;
+          void run(() => remove({ announcementId: item._id }), 'news.announcementDeleted');
+        }}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+// ── Reactions ────────────────────────────────────────────────────────────────
+
+function ReactionBar({ item }: { item: FeedItem }) {
+  const { t } = useTranslation();
+  const react = useMutation(api.news.addReaction);
+  const [picking, setPicking] = useState(false);
+
+  const toggle = async (emoji: string) => {
+    setPicking(false);
+    try {
+      await react({ announcementId: item._id, emoji });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('common.error'));
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 border-t pt-3">
+      {item.reactionsByEmoji.map((group) => {
+        const mine = item.myReactions.includes(group.emoji);
+        return (
+          <button
+            key={group.emoji}
+            type="button"
+            onClick={() => toggle(group.emoji)}
+            title={group.users.map((u) => u.userName).join(', ')}
+            className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors hover:bg-muted"
+            style={
+              mine
+                ? {
+                    borderColor: ACCENT,
+                    color: ACCENT,
+                    backgroundColor: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+                  }
+                : undefined
+            }
+          >
+            <span aria-hidden>{group.emoji}</span>
+            {group.users.length}
+          </button>
+        );
+      })}
+
+      <div className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => setPicking((prev) => !prev)}
+          aria-label={t('news.addReaction')}
+        >
+          <SmilePlus className="h-4 w-4" />
+        </Button>
+        {picking && (
+          <div className="absolute bottom-9 left-0 z-20 flex gap-1 rounded-full border bg-popover p-1.5 shadow-lg">
+            {EMOJI_REACTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => toggle(emoji)}
+                className="rounded-full px-1.5 py-0.5 text-base transition-transform hover:scale-125"
+                aria-label={emoji}
+              >
+                <span aria-hidden>{emoji}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <span className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <Eye className="h-3.5 w-3.5" />
+          {item.viewCount}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <MessageCircle className="h-3.5 w-3.5" />
+          {item.totalComments}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+// ── Comments ─────────────────────────────────────────────────────────────────
+
+function CommentSection({ item }: { item: FeedItem }) {
+  const { t, i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const addComment = useMutation(api.news.addComment);
+  const markViewed = useMutation(api.news.incrementViewCount);
+
+  const openThread = () => {
+    setOpen((prev) => !prev);
+    // Opening the thread is the moment a post is genuinely read, so the view is
+    // recorded here rather than on mount, where a scroll past counted as a read.
+    if (!open && item.isUnread) {
+      void markViewed({ announcementId: item._id }).catch(() => undefined);
+    }
+  };
+
+  const submit = async () => {
+    const content = draft.trim();
+    if (!content) return;
+    setSending(true);
+    try {
+      await addComment({ announcementId: item._id, content });
+      setDraft('');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t('common.error'));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <Button variant="ghost" size="sm" className="gap-1 px-2" onClick={openThread}>
+        <MessageCircle className="h-3.5 w-3.5" />
+        {item.totalComments > 0
+          ? t('news.commentsCount', { count: item.totalComments })
+          : t('news.beFirstToComment')}
+      </Button>
+
+      {open && (
+        <div className="space-y-3 rounded-xl bg-muted/40 p-3">
+          {item.comments.length === 0 && (
+            <p className="text-xs text-muted-foreground">{t('news.noComments')}</p>
+          )}
+          {item.comments.map((comment) => (
+            <div key={comment._id} className="flex gap-2">
+              <Avatar className="h-7 w-7 shrink-0">
+                <AvatarImage src={comment.authorAvatar || undefined} alt="" />
+                <AvatarFallback>{comment.authorName.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1 rounded-xl bg-background px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium truncate">{comment.authorName}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {relativeTime(comment.createdAt, i18n.language)}
+                  </span>
+                </div>
+                <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
+              </div>
+            </div>
+          ))}
+
+          {item.totalComments > item.comments.length && (
+            <p className="text-xs text-muted-foreground">
+              {t('news.showingLatest', { count: item.comments.length })}
+            </p>
+          )}
+
+          <div className="flex items-end gap-2">
+            <Textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={t('news.commentPlaceholder')}
+              rows={2}
+              className="min-h-0 resize-none bg-background"
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  void submit();
+                }
+              }}
+            />
+            <Button
+              size="icon"
+              onClick={submit}
+              disabled={sending || !draft.trim()}
+              aria-label={t('news.sendComment')}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

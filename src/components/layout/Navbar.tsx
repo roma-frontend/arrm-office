@@ -74,6 +74,7 @@ const NOTIFICATION_ROUTES: Record<string, string> = {
   asset_assigned: '/assets',
   room_booked: '/rooms',
   room_booking_cancelled: '/rooms',
+  announcement_published: '/news',
 };
 
 /**

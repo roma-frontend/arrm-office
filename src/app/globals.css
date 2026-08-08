@@ -387,8 +387,21 @@ html.light {
   --input-border: #93bef7;
   --ring: #2563eb;
 
-  /* Primary */
-  --primary: linear-gradient(135deg, rgb(37, 99, 235), rgb(96, 165, 250));
+  /* Primary
+   *
+   * `--primary` has to stay a *colour*. Tailwind maps `bg-primary`,
+   * `text-primary`, `border-primary` and `ring-primary` onto
+   * `background-color: var(--primary)` and friends (see `--color-primary` in the
+   * `@theme` block), and a `linear-gradient` is not a valid value there — the
+   * browser drops the declaration. While this held a gradient, every one of the
+   * ~1400 accented utilities in the app painted nothing in the light theme:
+   * white labels on white surfaces, invisible unread dots, borderless
+   * highlights. It only looked right in dark mode, where the value was solid.
+   *
+   * The brand gradient now lives in `--primary-gradient`, for the few surfaces
+   * that set `background` and genuinely want it. */
+  --primary: #2563eb;
+  --primary-gradient: linear-gradient(135deg, rgb(37, 99, 235), rgb(96, 165, 250));
   --primary-hover: #1d4ed8;
   --primary-foreground: #ffffff;
   --primary-rgb: 37, 99, 235;
@@ -423,7 +436,9 @@ html.light {
   --info-foreground: #ffffff;
 
   /* Button colors */
-  --button-primary-bg: var(--primary);
+  /* Primary buttons keep the gradient they have always had in this theme; only
+     the token they read it from changed. */
+  --button-primary-bg: var(--primary-gradient);
   --button-primary-hover: var(--primary-hover);
   --button-primary-text: #ffffff;
   --button-secondary-bg: rgba(37, 99, 235, 0.08);
@@ -561,6 +576,7 @@ html.light {
 
   /* Primary */
   --primary: #3b82f6;
+  --primary-gradient: linear-gradient(135deg, #3b82f6, #60a5fa);
   --primary-hover: #2563eb;
   --primary-foreground: #ffffff;
   --primary-rgb: 59, 130, 246;
