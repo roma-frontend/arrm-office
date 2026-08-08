@@ -46,6 +46,11 @@ export function FaceLogin() {
   const noFaceFramesRef = useRef(0);
   const detectionInProgressRef = useRef(false);
 
+  // attemptFaceLogin is recreated on every render (it closes over state like
+  // failedAttempts); the one-shot detection interval must always call the
+  // freshest copy, otherwise retries would repeat with stale values.
+  const attemptFaceLoginRef = useRef<() => Promise<void>>(async () => {});
+
   // ===== UI State =====
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -410,7 +415,7 @@ export function FaceLogin() {
           setLastAttemptTime(now);
 
           logger.log('🚀 Auto-triggering attemptFaceLogin()');
-          attemptFaceLogin();
+          attemptFaceLoginRef.current();
         }
       } catch (e) {
         logger.error('❌ Error in face detection loop:', e);
@@ -575,6 +580,11 @@ export function FaceLogin() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stopWebcam is recreated each render; including it would change callback identity every render
   }, [isBlocked, emailInput, failedAttempts, t, router]);
+
+  // keep the detection loop's view of attemptFaceLogin current
+  useEffect(() => {
+    attemptFaceLoginRef.current = attemptFaceLogin;
+  });
 
   return (
     <Card className="p-6 bg-[var(--surface-base)] border-[var(--border-primary)]">
