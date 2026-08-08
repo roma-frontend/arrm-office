@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20.18.0'
+  NODE_VERSION: '24.14.1'
   CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT }}
   NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
 
@@ -24,8 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -42,8 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -55,8 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -84,7 +84,7 @@ jobs:
             console.log(s);
           "
       - name: Upload LCOV report to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -92,7 +92,7 @@ jobs:
           fail_ci_if_error: false
           verbose: false
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
@@ -100,7 +100,7 @@ jobs:
             coverage/
             coverage-summary.md
           retention-days: 30
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: unit-test-results
@@ -121,9 +121,9 @@ jobs:
       # Must come first: this job runs a repo script (compare-coverage.mjs), and
       # actions/checkout cleans the workspace, which would delete the coverage
       # artifacts if it ran after the downloads below.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download base branch coverage from main
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v21
         continue-on-error: true
         with:
           branch: main
@@ -131,7 +131,7 @@ jobs:
           path: base-coverage
           if_no_artifact_found: warn
       - name: Download head coverage summary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: coverage-report
       - name: Compare coverage with base branch
@@ -156,14 +156,14 @@ jobs:
             echo "_Coverage diff: no base data available yet._" >> combined.md
           fi
       - name: Find or create coverage comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@v4
         id: find-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: github-actions[bot]
           body-includes: '### ☂️ Coverage Report'
       - name: Post or update coverage comment
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -180,7 +180,7 @@ jobs:
       contents: write
       pages: write
       id-token: write
-      # create-pull-request@v7 needs this to open the threshold-bump PR when
+      # create-pull-request@v8 needs this to open the threshold-bump PR when
       # coverage improves (ratchet); without it the job fails with
       # "Resource not accessible by integration".
       pull-requests: write
@@ -188,9 +188,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download coverage report from unit-tests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: coverage-report
       - name: Check if coverage thresholds can be ratcheted up
@@ -207,7 +207,7 @@ jobs:
         run: node scripts/ratchet-coverage.mjs --apply
       - name: Create PR with threshold bump
         if: steps.ratchet.outputs.ratchet_needed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         # Non-blocking: opening the ratchet PR also requires the repo/org setting
         # "Allow GitHub Actions to create and approve pull requests", which a
         # workflow `permissions:` block cannot grant. When it is off the API
@@ -231,12 +231,12 @@ jobs:
       - name: Generate badge JSON
         run: node scripts/generate-coverage-badge.mjs
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: badges/
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # ═════════════════════════════════════════════════════════════
   # SECURITY — supply-chain + static analysis
@@ -251,8 +251,8 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -261,7 +261,7 @@ jobs:
         continue-on-error: true
       - name: Dependency Review (PRs only)
         if: github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         # Non-blocking: the job must not fail if the Dependency Graph API is
         # unavailable (e.g. graph still propagating, or disabled). Real high+
         # advisories are already reported by the npm audit step above.
@@ -279,12 +279,12 @@ jobs:
       actions: read
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: actions/checkout@v5
+      - uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
           queries: +security-and-quality
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           category: '/language:javascript-typescript'
 
@@ -294,8 +294,8 @@ jobs:
     timeout-minutes: 15
     needs: [lint, type-check, unit-tests]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -314,11 +314,11 @@ jobs:
           NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL || 'https://build-placeholder.convex.cloud' }}
           AUTH_GOOGLE_ID: build-placeholder
           AUTH_GOOGLE_SECRET: build-placeholder
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: .next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nextjs-build
           path: .next/
@@ -330,13 +330,13 @@ jobs:
     timeout-minutes: 30
     needs: [build]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
       - run: npm ci --prefer-offline --no-audit
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -376,13 +376,13 @@ jobs:
           NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL || 'https://build-placeholder.convex.cloud' }}
           AUTH_GOOGLE_ID: build-placeholder
           AUTH_GOOGLE_SECRET: build-placeholder
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-traces
@@ -413,8 +413,8 @@ jobs:
       name: preview
       url: ${{ steps.deploy.outputs.preview-url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -436,8 +436,8 @@ jobs:
       name: production
       url: https://hr-project-sigma.vercel.app
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
