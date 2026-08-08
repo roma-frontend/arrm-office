@@ -1396,6 +1396,17 @@
     "tasks": "Aufgaben",
     "active": "Aktiv",
     "inactive": "Inaktiv",
+    "defaultTasks": {
+      "default_paperwork": "Einstellungsunterlagen unterschreiben",
+      "default_accounts": "Konten anlegen und Zugänge einrichten",
+      "default_equipment": "Laptop und Ausrüstung übergeben",
+      "default_workplace": "Arbeitsplatz und Zugangskarte vorbereiten",
+      "default_team_intro": "Dem Team vorstellen",
+      "default_buddy_meeting": "Erstes Treffen mit dem Buddy",
+      "default_policies": "Interne Richtlinien und Sicherheitsregeln lesen",
+      "default_goals": "Ziele für die Probezeit vereinbaren",
+      "default_checkin_30": "Check-in nach 30 Tagen"
+    },
     "yourProgress": "Ihr Fortschritt",
     "taskCompleted": "Aufgabe abgeschlossen!",
     "programCompleted": "Onboarding abgeschlossen!",
@@ -1451,6 +1462,8 @@
     },
     "fields": {
       "employee": "Neuer Mitarbeiter",
+      "templateHint": "Optional. Ohne Vorlage wird die eingebaute Checkliste verwendet.",
+      "noTemplatesHint": "Noch keine Vorlagen — im Tab „Vorlagen“ anlegen oder ohne Vorlage fortfahren.",
       "employeeHint": "Der Benutzer muss bereits im System existieren",
       "template": "Template",
       "selectTemplate": "Template auswählen (optional)",
