@@ -56,6 +56,13 @@ export function CallModal({
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // The auto-retry timer runs initMedia from the render that scheduled it, so a
+  // plain state read inside the catch block would always see the first value
+  // (infinite "Attempt 1" retries, final message unreachable). Mirror it in a ref.
+  const retryCountRef = useRef(0);
+  useEffect(() => {
+    retryCountRef.current = retryCount;
+  }, [retryCount]);
 
   const endCallMutation = useMutation(api.chat.calls.endCall);
   const answerCallMutation = useMutation(api.chat.calls.answerCall);
@@ -282,10 +289,11 @@ export function CallModal({
         err instanceof Error &&
         (err.name === 'NotReadableError' || err.name === 'TrackStartError')
       ) {
+        const attempt = retryCountRef.current;
         const message =
-          retryCount >= 3
+          attempt >= 3
             ? t('chat.call.mediaErrorFinal')
-            : t('chat.call.mediaErrorRetry', { attempt: retryCount + 1 });
+            : t('chat.call.mediaErrorRetry', { attempt: attempt + 1 });
 
         setMediaError(message);
 
@@ -293,14 +301,14 @@ export function CallModal({
         cleanup();
 
         // Auto-retry after delay (exponential backoff with longer delays for device conflicts)
-        if (retryCount < 3) {
+        if (attempt < 3) {
           // Longer delays to ensure device is fully released
           const delays = [2000, 4000, 8000]; // 2s, 4s, 8s
-          const delay = retryCount < delays.length ? delays[retryCount] : 10000;
-          logger.log(`[CallModal] Scheduling retry in ${delay}ms (attempt ${retryCount + 2})...`);
+          const delay = attempt < delays.length ? delays[attempt] : 10000;
+          logger.log(`[CallModal] Scheduling retry in ${delay}ms (attempt ${attempt + 2})...`);
 
           retryTimerRef.current = setTimeout(() => {
-            logger.log(`[CallModal] Retrying media initialization (attempt ${retryCount + 2})`);
+            logger.log(`[CallModal] Retrying media initialization (attempt ${attempt + 2})`);
             setRetryCount((c) => c + 1);
             initMedia();
           }, delay);
