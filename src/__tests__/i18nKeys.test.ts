@@ -65,6 +65,9 @@ const GUARDED: Record<string, string[]> = {
     'src/components/recognition/RewardsTab.tsx',
     'src/components/recognition/RewardsAdminPanel.tsx',
   ],
+  // The rebuilt news feed and its composer. A company-wide broadcast surface is
+  // the worst place for an untranslated label.
+  '/news': ['src/components/news/NewsClient.tsx', 'src/components/news/NewsComposer.tsx'],
 };
 
 const FILES = Object.values(GUARDED).flat();
