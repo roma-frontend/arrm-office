@@ -34,6 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MarkdownMessage } from '@/components/MarkdownMessage';
 import { NewsComposer } from './NewsComposer';
 import {
+  ACCENT,
   CATEGORY_CONFIG,
   CATEGORY_ORDER,
   EMOJI_REACTIONS,
@@ -136,7 +137,7 @@ export default function NewsClient() {
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
               {t('news.title')}
               {stats && stats.unreadCount > 0 && (
-                <Badge className="bg-primary text-primary-foreground">
+                <Badge className="text-white" style={{ backgroundColor: ACCENT }}>
                   {t('news.unreadBadge', { count: stats.unreadCount })}
                 </Badge>
               )}
@@ -278,7 +279,7 @@ function Chip({
           ? 'border-transparent text-white shadow-sm'
           : 'border-border text-muted-foreground hover:bg-muted'
       }`}
-      style={active ? { backgroundColor: color ?? 'var(--primary)' } : undefined}
+      style={active ? { backgroundColor: color ?? ACCENT } : undefined}
     >
       {Icon && <Icon className="h-3.5 w-3.5" />}
       {label}
@@ -439,7 +440,11 @@ function FeaturedCard({ item }: { item: FeedItem }) {
           <AudienceChip item={item} />
           {item.isUnread && (
             <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium">
-              <span className="h-2 w-2 rounded-full bg-primary" aria-hidden />
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: ACCENT }}
+                aria-hidden
+              />
               {t('news.new')}
             </span>
           )}
@@ -482,9 +487,8 @@ function PostCard({ item }: { item: FeedItem }) {
 
   return (
     <Card
-      className={`overflow-hidden transition-shadow hover:shadow-md ${
-        item.isUnread ? 'border-primary/40' : ''
-      }`}
+      className="overflow-hidden transition-shadow hover:shadow-md"
+      style={item.isUnread ? { borderColor: ACCENT } : undefined}
     >
       <CardContent className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-3">
@@ -492,7 +496,8 @@ function PostCard({ item }: { item: FeedItem }) {
           <div className="flex items-center gap-1.5">
             {item.isUnread && (
               <span
-                className="h-2 w-2 rounded-full bg-primary"
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: ACCENT }}
                 aria-label={t('news.new')}
                 role="img"
               />
@@ -634,9 +639,16 @@ function ReactionBar({ item }: { item: FeedItem }) {
             type="button"
             onClick={() => toggle(group.emoji)}
             title={group.users.map((u) => u.userName).join(', ')}
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors ${
-              mine ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border hover:bg-muted'
-            }`}
+            className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors hover:bg-muted"
+            style={
+              mine
+                ? {
+                    borderColor: ACCENT,
+                    color: ACCENT,
+                    backgroundColor: 'color-mix(in srgb, var(--tab-active-bg) 12%, transparent)',
+                  }
+                : undefined
+            }
           >
             <span aria-hidden>{group.emoji}</span>
             {group.users.length}
