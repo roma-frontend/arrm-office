@@ -4,6 +4,7 @@ import { Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { creditBalance, resolveRecognitionSettings } from './lib/points';
 
 // Armenia timezone offset: UTC+4
 const ARMENIA_OFFSET_MS = 4 * 60 * 60 * 1000;
@@ -103,52 +104,34 @@ export const checkIn = mutation({
       });
     }
 
-    // Award attendance points (+1)
+    // Attendance credit. The amount is per-organization policy now (0 switches
+    // it off): once points buy real vouchers, paying for mere presence is a
+    // choice a tenant makes, not a constant baked into check-in.
     const user = await ctx.db.get(args.userId);
     if (user?.organizationId) {
       const orgId = user.organizationId;
-      const todayObj = new Date();
-      todayObj.setHours(0, 0, 0, 0);
-      const todayStart = todayObj.getTime();
-      const existingPointsToday = await ctx.db
-        .query('pointTransactions')
-        .withIndex('by_org_user_created', (q) =>
-          q.eq('organizationId', orgId).eq('userId', args.userId).gte('createdAt', todayStart),
-        )
-        .filter((q) => q.eq(q.field('type'), 'earned_attendance'))
-        .first();
-
-      if (!existingPointsToday) {
-        const userPointsRecord = await ctx.db
-          .query('userPoints')
-          .withIndex('by_org_user', (q) => q.eq('organizationId', orgId).eq('userId', args.userId))
+      const settings = await resolveRecognitionSettings(ctx, orgId);
+      if (settings.attendanceReward > 0) {
+        const todayObj = new Date();
+        todayObj.setHours(0, 0, 0, 0);
+        const todayStart = todayObj.getTime();
+        const existingPointsToday = await ctx.db
+          .query('pointTransactions')
+          .withIndex('by_org_user_created', (q) =>
+            q.eq('organizationId', orgId).eq('userId', args.userId).gte('createdAt', todayStart),
+          )
+          .filter((q) => q.eq(q.field('type'), 'earned_attendance'))
           .first();
 
-        if (userPointsRecord) {
-          await ctx.db.patch(userPointsRecord._id, {
-            balance: userPointsRecord.balance + 1,
-            totalEarned: userPointsRecord.totalEarned + 1,
-            updatedAt: now,
-          });
-        } else {
-          await ctx.db.insert('userPoints', {
+        if (!existingPointsToday) {
+          await creditBalance(ctx, {
             organizationId: orgId,
             userId: args.userId,
-            balance: 1,
-            totalEarned: 1,
-            totalSpent: 0,
-            updatedAt: now,
+            amount: settings.attendanceReward,
+            type: 'earned_attendance',
+            description: 'Daily attendance',
           });
         }
-
-        await ctx.db.insert('pointTransactions', {
-          organizationId: orgId,
-          userId: args.userId,
-          amount: 1,
-          type: 'earned_attendance',
-          description: 'Daily attendance',
-          createdAt: now,
-        });
       }
     }
 
