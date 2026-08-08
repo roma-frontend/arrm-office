@@ -5,13 +5,32 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
+import { assertOrgScope, resolveOrgScope, assertOrgStaff, scopeOwnsRecord } from './lib/orgAccess';
+import {
+  creditBalance,
+  debitAllowance,
+  getWalletView,
+  periodStart,
+  resolveRecognitionSettings,
+  DEFAULT_RECOGNITION_SETTINGS,
+} from './lib/points';
+
+/** A kudos message long enough to say something, short enough to read. */
+const MAX_KUDOS_MESSAGE = 1000;
+/** Ceiling on a single manual award, so a typo cannot mint a salary. */
+const MAX_MANUAL_AWARD = 1000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Get kudos feed for organization (public kudos only, or all for admins)
+ * Get kudos feed for organization.
+ *
+ * Private kudos (`isPublic: false`) used to be returned to everyone, which made
+ * the flag decorative: the sender chose "only the two of us" and the whole
+ * organization still read it in the feed. Non-staff now see public entries plus
+ * their own on either side.
  */
 export const getKudosFeed = query({
   args: {
@@ -20,13 +39,22 @@ export const getKudosFeed = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, limit } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
     const pageSize = Math.min(limit ?? 50, MAX_PAGE_SIZE);
 
-    const kudos = await ctx.db
+    const rows = await ctx.db
       .query('kudos')
       .withIndex('by_org_created', (q) => q.eq('organizationId', organizationId))
       .order('desc')
-      .take(pageSize);
+      .take(scope.isStaff ? pageSize : Math.min(pageSize * 2, MAX_PAGE_SIZE));
+
+    const me = scope.caller._id;
+    const kudos = (
+      scope.isStaff
+        ? rows
+        : rows.filter((k) => k.isPublic || k.senderId === me || k.receiverId === me)
+    ).slice(0, pageSize);
 
     if (kudos.length === 0) return [];
 
@@ -79,6 +107,10 @@ export const getKudosForUser = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, userId } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
+    // Someone else's inbox is staff-only; your own is always yours.
+    if (!scope.isStaff && scope.caller._id !== userId) return [];
     const kudos = await ctx.db
       .query('kudos')
       .withIndex('by_org_receiver', (q) =>
@@ -116,6 +148,9 @@ export const getKudosSentByUser = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, userId } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
+    if (!scope.isStaff && scope.caller._id !== userId) return [];
     const kudos = await ctx.db
       .query('kudos')
       .withIndex('by_org_sender', (q) =>
@@ -161,6 +196,8 @@ export const getLeaderboard = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, period } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
     let startDate = 0;
     const now = Date.now();
 
@@ -221,6 +258,11 @@ export const getUserKudosStats = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, userId } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return { totalReceived: 0, totalSent: 0, categoryBreakdown: {} };
+    if (!scope.isStaff && scope.caller._id !== userId) {
+      return { totalReceived: 0, totalSent: 0, categoryBreakdown: {} };
+    }
     const received = await ctx.db
       .query('kudos')
       .withIndex('by_org_receiver', (q) =>
@@ -258,6 +300,8 @@ export const getBadges = query({
   },
   handler: async (ctx, args) => {
     const { organizationId } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
     return await ctx.db
       .query('kudosBadges')
       .withIndex('by_org_active', (q) =>
@@ -277,6 +321,8 @@ export const getUserBadges = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, userId } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
     const awards = await ctx.db
       .query('kudosBadgeAwards')
       .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
@@ -300,11 +346,19 @@ export const getUserBadges = query({
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Send kudos to a colleague
+ * Send kudos to a colleague.
+ *
+ * The sender is the authenticated caller. It used to be a `senderId` argument,
+ * which meant anyone could praise on anyone's behalf and spend their points.
+ *
+ * The economics changed with it: the cost comes out of the sender's monthly
+ * *giving allowance*, and the receiver is credited redeemable points. Before,
+ * the sender paid from the same wallet rewards would come from and the receiver
+ * got nothing — so recognition made the giver poorer and the recipient no
+ * richer, and "enough recognition earns you something" was unimplementable.
  */
 export const sendKudos = mutation({
   args: {
-    senderId: v.id('users'),
     receiverId: v.id('users'),
     category: v.union(
       v.literal('teamwork'),
@@ -320,72 +374,83 @@ export const sendKudos = mutation({
     isPublic: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const KUDOS_COST = 3;
+    const scope = await assertOrgScope(ctx);
+    const sender = scope.caller;
+    const organizationId = scope.organizationId;
+    if (!organizationId) throw new Error('Sender has no organization');
 
-    const sender = await ctx.db.get(args.senderId);
-    if (!sender) throw new Error('Sender not found');
-    if (!sender.organizationId) throw new Error('Sender has no organization');
+    const message = args.message.trim();
+    if (!message) throw new Error('Message is required');
+    if (message.length > MAX_KUDOS_MESSAGE) {
+      throw new Error(`Message must be at most ${MAX_KUDOS_MESSAGE} characters`);
+    }
 
     const receiver = await ctx.db.get(args.receiverId);
     if (!receiver) throw new Error('Receiver not found');
-
-    if (sender.organizationId !== receiver.organizationId) {
+    if (receiver.organizationId !== organizationId) {
       throw new Error('Cannot send kudos to users in different organizations');
     }
-
-    if (args.senderId === args.receiverId) {
+    if (sender._id === args.receiverId) {
       throw new Error('Cannot send kudos to yourself');
     }
 
-    // Check points balance
-    const userPointsRecord = await ctx.db
-      .query('userPoints')
-      .withIndex('by_org_user', (q) =>
-        q.eq('organizationId', sender.organizationId!).eq('userId', args.senderId),
-      )
-      .first();
+    const settings = await resolveRecognitionSettings(ctx, organizationId);
 
-    const currentBalance = userPointsRecord?.balance ?? 0;
-    if (currentBalance < KUDOS_COST) {
-      throw new Error(
-        `Not enough points. You need ${KUDOS_COST} points but have ${currentBalance}.`,
-      );
+    // Anti-collusion: points now convert into things of value, so two people
+    // praising each other on a loop would be a money printer. Cap how often one
+    // person can reward the same colleague inside a month.
+    if (settings.maxKudosPerColleaguePerMonth > 0) {
+      const monthStart = periodStart();
+      const recentToSame = await ctx.db
+        .query('kudos')
+        .withIndex('by_org_sender', (q) =>
+          q.eq('organizationId', organizationId).eq('senderId', sender._id),
+        )
+        .order('desc')
+        .take(DEFAULT_LIST_CAP);
+      const usedThisMonth = recentToSame.filter(
+        (k) => k.receiverId === args.receiverId && k.createdAt >= monthStart,
+      ).length;
+      if (usedThisMonth >= settings.maxKudosPerColleaguePerMonth) {
+        throw new Error(
+          `Monthly limit reached: at most ${settings.maxKudosPerColleaguePerMonth} kudos to the same colleague`,
+        );
+      }
     }
 
-    // Deduct points
-    if (userPointsRecord) {
-      await ctx.db.patch(userPointsRecord._id, {
-        balance: userPointsRecord.balance - KUDOS_COST,
-        totalSpent: userPointsRecord.totalSpent + KUDOS_COST,
-        updatedAt: Date.now(),
-      });
-    }
-
-    // Record transaction
-    await ctx.db.insert('pointTransactions', {
-      organizationId: sender.organizationId!,
-      userId: args.senderId,
-      amount: -KUDOS_COST,
+    // Throws when the allowance is short, before anything else is written.
+    await debitAllowance(ctx, {
+      organizationId,
+      userId: sender._id,
+      amount: settings.kudosCost,
       type: 'spent_kudos',
       description: `Sent kudos to ${receiver.name}`,
-      createdAt: Date.now(),
     });
 
     const kudoId = await ctx.db.insert('kudos', {
-      organizationId: sender.organizationId!,
-      senderId: args.senderId,
+      organizationId,
+      senderId: sender._id,
       receiverId: args.receiverId,
       category: args.category,
-      message: args.message,
+      message,
       isPublic: args.isPublic,
-      pointsCost: KUDOS_COST,
+      pointsCost: settings.kudosCost,
       reactions: [],
       createdAt: Date.now(),
     });
 
+    await creditBalance(ctx, {
+      organizationId,
+      userId: args.receiverId,
+      amount: settings.receiverReward,
+      type: 'earned_kudos',
+      description: `Kudos from ${sender.name}`,
+      referenceId: kudoId,
+    });
+
     // Create notification for receiver
     await notify(ctx, {
-      organizationId: sender.organizationId!,
+      organizationId,
       userId: args.receiverId,
       type: 'system',
       titleKey: 'notifications.titles.kudosNew',
@@ -410,19 +475,18 @@ export const sendKudos = mutation({
 export const reactToKudos = mutation({
   args: {
     kudoId: v.id('kudos'),
-    userId: v.id('users'),
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
-    const { kudoId, userId, emoji } = args;
+    const { kudoId, emoji } = args;
+    if (!emoji.trim() || emoji.length > 8) throw new Error('Invalid reaction');
+
     const kudo = await ctx.db.get(kudoId);
     if (!kudo) throw new Error('Kudos not found');
 
-    const user = await ctx.db.get(userId);
-    if (!user) throw new Error('User not found');
-    if (user.organizationId !== kudo.organizationId) {
-      throw new Error('Access denied');
-    }
+    const scope = await assertOrgScope(ctx, kudo.organizationId);
+    if (!scopeOwnsRecord(scope, kudo)) throw new Error('Access denied');
+    const userId = scope.caller._id;
 
     const reactions = kudo.reactions ?? [];
 
@@ -442,26 +506,26 @@ export const reactToKudos = mutation({
 });
 
 /**
- * Delete kudos (only sender or admin can delete)
+ * Delete kudos (only sender or admin can delete).
+ *
+ * The receiver's points are *not* clawed back: the praise was genuine when it
+ * was given, and reversing someone else's balance because the author changed
+ * their mind is a worse surprise than an inflated ledger.
  */
 export const deleteKudos = mutation({
   args: {
     kudoId: v.id('kudos'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { kudoId, userId } = args;
+    const { kudoId } = args;
     const kudo = await ctx.db.get(kudoId);
     if (!kudo) throw new Error('Kudos not found');
 
-    const user = await ctx.db.get(userId);
-    if (!user) throw new Error('User not found');
+    const scope = await assertOrgScope(ctx, kudo.organizationId);
+    if (!scopeOwnsRecord(scope, kudo)) throw new Error('Access denied');
 
-    // Only sender or admin/superadmin can delete
-    const isAuthor = kudo.senderId === userId;
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
-
-    if (!isAuthor && !isAdmin) {
+    const isAuthor = kudo.senderId === scope.caller._id;
+    if (!isAuthor && !scope.isAdmin) {
       throw new Error('Not authorized to delete this kudos');
     }
 
@@ -472,11 +536,11 @@ export const deleteKudos = mutation({
 // ── Badge Management (Admin only) ─────────────────────────────────────────────
 
 /**
- * Create a badge (admin/superadmin only)
+ * Create a badge (admin only)
  */
 export const createBadge = mutation({
   args: {
-    userId: v.id('users'),
+    organizationId: v.optional(v.id('organizations')),
     name: v.string(),
     description: v.string(),
     icon: v.string(),
@@ -484,20 +548,20 @@ export const createBadge = mutation({
     criteria: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) throw new Error('User not found');
-    if (!user.organizationId) throw new Error('User has no organization');
-    if (user.role !== 'admin' && user.role !== 'superadmin') {
-      throw new Error('Only admins can create badges');
-    }
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
+    const organizationId = scope.organizationId;
+    if (!organizationId) throw new Error('Organization is required');
+
+    const name = args.name.trim();
+    if (!name) throw new Error('Name is required');
 
     return await ctx.db.insert('kudosBadges', {
-      organizationId: user.organizationId,
-      name: args.name,
-      description: args.description,
+      organizationId,
+      name,
+      description: args.description.trim(),
       icon: args.icon,
       color: args.color,
-      criteria: args.criteria,
+      criteria: args.criteria?.trim() || undefined,
       isActive: true,
       createdAt: Date.now(),
     });
@@ -505,47 +569,63 @@ export const createBadge = mutation({
 });
 
 /**
- * Award a badge to a user (admin/supervisor)
+ * Award a badge to a user (admin/supervisor).
+ *
+ * `points` turns a badge into a nomination with a prize. Keeping the prize
+ * inside the recognition ledger — rather than paying it out separately — is what
+ * lets the award be documented as a competition prize, which in Armenia is
+ * exempt from personal income tax up to 50,000 AMD per prize. At the default
+ * rate of 100 AMD per point that ceiling is 500 points, which is why the cap
+ * below is where it is.
  */
 export const awardBadge = mutation({
   args: {
-    awardedBy: v.id('users'),
     userId: v.id('users'),
     badgeId: v.id('kudosBadges'),
     reason: v.optional(v.string()),
+    points: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const awarder = await ctx.db.get(args.awardedBy);
-    if (!awarder) throw new Error('User not found');
-    if (!awarder.organizationId) throw new Error('User has no organization');
-    if (!['admin', 'superadmin', 'supervisor'].includes(awarder.role)) {
-      throw new Error('Not authorized to award badges');
+    const badge = await ctx.db.get(args.badgeId);
+    if (!badge) throw new Error('Badge not found');
+
+    const scope = await assertOrgStaff(ctx, badge.organizationId);
+    const organizationId = scope.organizationId;
+    if (!organizationId || !scopeOwnsRecord(scope, badge)) {
+      throw new Error('Badge does not belong to this organization');
     }
+    const awarder = scope.caller;
 
     const recipient = await ctx.db.get(args.userId);
     if (!recipient) throw new Error('Recipient not found');
-    if (recipient.organizationId !== awarder.organizationId) {
+    if (recipient.organizationId !== organizationId) {
       throw new Error('Cannot award badge to user in different organization');
     }
 
-    const badge = await ctx.db.get(args.badgeId);
-    if (!badge) throw new Error('Badge not found');
-    if (badge.organizationId !== awarder.organizationId) {
-      throw new Error('Badge does not belong to this organization');
-    }
-
     const awardId = await ctx.db.insert('kudosBadgeAwards', {
-      organizationId: awarder.organizationId,
+      organizationId,
       badgeId: args.badgeId,
       userId: args.userId,
-      awardedBy: args.awardedBy,
-      reason: args.reason,
+      awardedBy: awarder._id,
+      reason: args.reason?.trim() || undefined,
       createdAt: Date.now(),
     });
 
+    const prize = Math.min(Math.max(Math.round(args.points ?? 0), 0), MAX_MANUAL_AWARD);
+    if (prize > 0) {
+      await creditBalance(ctx, {
+        organizationId,
+        userId: args.userId,
+        amount: prize,
+        type: 'earned_badge',
+        description: `Badge: ${badge.name}`,
+        referenceId: awardId,
+      });
+    }
+
     // Notify recipient
     await notify(ctx, {
-      organizationId: awarder.organizationId,
+      organizationId,
       userId: args.userId,
       type: 'system',
       titleKey: 'notifications.titles.badgeAwarded',
@@ -568,26 +648,34 @@ export const awardBadge = mutation({
 // POINTS SYSTEM
 // ─────────────────────────────────────────────────────────────────────────────
 
-const KUDOS_COST = 3;
-const ATTENDANCE_REWARD = 1;
-const REVIEW_REWARD = 3; // for 4-5 star reviews
-
 /**
- * Get user's points balance
+ * Wallet of a member: redeemable balance plus the month's giving allowance.
+ *
+ * `userId` is optional and defaults to the caller. Reading a colleague's wallet
+ * is staff-only — it used to be readable by anyone who could name a user id.
  */
 export const getUserPoints = query({
   args: {
     organizationId: v.id('organizations'),
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
-    const { organizationId, userId } = args;
-    const record = await ctx.db
-      .query('userPoints')
-      .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
-      .first();
+    const empty = {
+      balance: 0,
+      allowance: 0,
+      allowanceTotal: 0,
+      totalEarned: 0,
+      totalSpent: 0,
+      totalGiven: 0,
+    };
+    const scope = await resolveOrgScope(ctx, args.organizationId);
+    if (!scope) return empty;
 
-    return record ?? { balance: 0, totalEarned: 0, totalSpent: 0 };
+    const userId = args.userId ?? scope.caller._id;
+    if (!scope.isStaff && userId !== scope.caller._id) return empty;
+
+    const settings = await resolveRecognitionSettings(ctx, args.organizationId);
+    return getWalletView(ctx, args.organizationId, userId, settings);
   },
 });
 
@@ -597,11 +685,16 @@ export const getUserPoints = query({
 export const getPointTransactions = query({
   args: {
     organizationId: v.id('organizations'),
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { organizationId, userId, limit } = args;
+    const { organizationId, limit } = args;
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
+
+    const userId = args.userId ?? scope.caller._id;
+    if (!scope.isStaff && userId !== scope.caller._id) return [];
     const pageSize = Math.min(limit ?? 30, MAX_PAGE_SIZE);
 
     return ctx.db
@@ -615,183 +708,68 @@ export const getPointTransactions = query({
 });
 
 /**
- * Get points config (costs)
+ * Economy configuration in force for an organization.
+ *
+ * Was a hardcoded triple of module constants; every tenant now sets its own
+ * rate, allowance and limits, and the UI needs the effective values to price
+ * the catalog and explain what an action costs.
  */
 export const getPointsConfig = query({
-  args: {},
-  handler: async () => {
-    return {
-      kudosCost: KUDOS_COST,
-      attendanceReward: ATTENDANCE_REWARD,
-      reviewReward: REVIEW_REWARD,
-    };
-  },
-});
-
-/**
- * Award points for attendance (called when attendance is recorded)
- */
-export const awardAttendancePoints = mutation({
-  args: {
-    organizationId: v.id('organizations'),
-    userId: v.id('users'),
-  },
+  args: { organizationId: v.optional(v.id('organizations')) },
   handler: async (ctx, args) => {
-    const { organizationId, userId } = args;
-    const now = Date.now();
-
-    // Check if already awarded today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStart = today.getTime();
-
-    const existingToday = await ctx.db
-      .query('pointTransactions')
-      .withIndex('by_org_user_created', (q) =>
-        q.eq('organizationId', organizationId).eq('userId', userId).gte('createdAt', todayStart),
-      )
-      .filter((q) => q.eq(q.field('type'), 'earned_attendance'))
-      .first();
-
-    if (existingToday) return; // Already awarded today
-
-    // Get or create user points record
-    const userPointsRecord = await ctx.db
-      .query('userPoints')
-      .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
-      .first();
-
-    if (userPointsRecord) {
-      await ctx.db.patch(userPointsRecord._id, {
-        balance: userPointsRecord.balance + ATTENDANCE_REWARD,
-        totalEarned: userPointsRecord.totalEarned + ATTENDANCE_REWARD,
-        updatedAt: now,
-      });
-    } else {
-      await ctx.db.insert('userPoints', {
-        organizationId,
-        userId,
-        balance: ATTENDANCE_REWARD,
-        totalEarned: ATTENDANCE_REWARD,
-        totalSpent: 0,
-        updatedAt: now,
-      });
-    }
-
-    // Record transaction
-    await ctx.db.insert('pointTransactions', {
-      organizationId,
-      userId,
-      amount: ATTENDANCE_REWARD,
-      type: 'earned_attendance',
-      description: 'Daily attendance',
-      createdAt: now,
-    });
+    const scope = await resolveOrgScope(ctx, args.organizationId);
+    if (!scope?.organizationId) return { ...DEFAULT_RECOGNITION_SETTINGS };
+    return resolveRecognitionSettings(ctx, scope.organizationId);
   },
 });
 
 /**
- * Award points for a positive review from supervisor (4-5 stars)
- */
-export const awardReviewPoints = mutation({
-  args: {
-    organizationId: v.id('organizations'),
-    userId: v.id('users'),
-    rating: v.number(),
-    reviewId: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const { organizationId, userId, rating, reviewId } = args;
-    // Only award for 4-5 star reviews
-    if (rating < 4) return;
-
-    const now = Date.now();
-
-    const userPointsRecord = await ctx.db
-      .query('userPoints')
-      .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
-      .first();
-
-    if (userPointsRecord) {
-      await ctx.db.patch(userPointsRecord._id, {
-        balance: userPointsRecord.balance + REVIEW_REWARD,
-        totalEarned: userPointsRecord.totalEarned + REVIEW_REWARD,
-        updatedAt: now,
-      });
-    } else {
-      await ctx.db.insert('userPoints', {
-        organizationId,
-        userId,
-        balance: REVIEW_REWARD,
-        totalEarned: REVIEW_REWARD,
-        totalSpent: 0,
-        updatedAt: now,
-      });
-    }
-
-    // Record transaction
-    await ctx.db.insert('pointTransactions', {
-      organizationId,
-      userId,
-      amount: REVIEW_REWARD,
-      type: 'earned_review',
-      description: `Positive review (${rating}★)`,
-      referenceId: reviewId,
-      createdAt: now,
-    });
-  },
-});
-
-/**
- * Manually award points (admin/supervisor only)
+ * Manually award redeemable points (admin only).
+ *
+ * The old signature took `awardedBy` from the client and checked *that* user's
+ * role, so passing any admin's id was enough to mint points for anyone.
  */
 export const awardManualPoints = mutation({
   args: {
-    organizationId: v.id('organizations'),
+    organizationId: v.optional(v.id('organizations')),
     userId: v.id('users'),
     amount: v.number(),
     description: v.string(),
-    awardedBy: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { organizationId, userId, amount, description, awardedBy } = args;
-    const awarder = await ctx.db.get(awardedBy);
-    if (!awarder) throw new Error('Awarder not found');
-    if (!['admin', 'superadmin', 'supervisor'].includes(awarder.role)) {
-      throw new Error('Not authorized to award points');
+    const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
+    const organizationId = scope.organizationId;
+    if (!organizationId) throw new Error('Organization is required');
+
+    const recipient = await ctx.db.get(args.userId);
+    if (!recipient || recipient.organizationId !== organizationId) {
+      throw new Error('Recipient not found in this organization');
     }
 
-    const now = Date.now();
-
-    const userPointsRecord = await ctx.db
-      .query('userPoints')
-      .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
-      .first();
-
-    if (userPointsRecord) {
-      await ctx.db.patch(userPointsRecord._id, {
-        balance: userPointsRecord.balance + amount,
-        totalEarned: userPointsRecord.totalEarned + amount,
-        updatedAt: now,
-      });
-    } else {
-      await ctx.db.insert('userPoints', {
-        organizationId,
-        userId,
-        balance: amount,
-        totalEarned: amount,
-        totalSpent: 0,
-        updatedAt: now,
-      });
+    const amount = Math.round(args.amount);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_MANUAL_AWARD) {
+      throw new Error(`Amount must be between 1 and ${MAX_MANUAL_AWARD}`);
     }
 
-    await ctx.db.insert('pointTransactions', {
+    const description = args.description.trim() || 'Manual award';
+    await creditBalance(ctx, {
       organizationId,
-      userId,
+      userId: args.userId,
       amount,
       type: 'earned_manual',
       description,
-      createdAt: now,
+    });
+
+    await notify(ctx, {
+      organizationId,
+      userId: args.userId,
+      type: 'system',
+      titleKey: 'notifications.titles.pointsAwarded',
+      messageKey: 'notifications.messages.pointsAwarded',
+      params: { amount: String(amount), reason: description },
+      fallbackTitle: 'Points awarded',
+      fallbackMessage: `You received ${amount} points: ${description}`,
+      route: '/recognition',
     });
   },
 });
@@ -805,6 +783,18 @@ export const getKudoById = query({
     const { kudoId } = args;
     const kudo = await ctx.db.get(kudoId);
     if (!kudo) return null;
+
+    // Reached by its own id, so the organization check has to follow the read.
+    const scope = await resolveOrgScope(ctx, kudo.organizationId);
+    if (!scope || !scopeOwnsRecord(scope, kudo)) return null;
+    if (
+      !kudo.isPublic &&
+      !scope.isStaff &&
+      kudo.senderId !== scope.caller._id &&
+      kudo.receiverId !== scope.caller._id
+    ) {
+      return null;
+    }
 
     const sender = await ctx.db.get(kudo.senderId);
     const receiver = await ctx.db.get(kudo.receiverId);
@@ -836,20 +826,30 @@ export const getKudoById = query({
 });
 
 /**
- * Get user points summary
+ * Points summary. Kept as a separate name because the profile page calls it;
+ * same access rule as {@link getUserPoints}.
  */
 export const getUserPointsSummary = query({
   args: {
     organizationId: v.id('organizations'),
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
-    const { organizationId, userId } = args;
-    const record = await ctx.db
-      .query('userPoints')
-      .withIndex('by_org_user', (q) => q.eq('organizationId', organizationId).eq('userId', userId))
-      .first();
+    const empty = {
+      balance: 0,
+      allowance: 0,
+      allowanceTotal: 0,
+      totalEarned: 0,
+      totalSpent: 0,
+      totalGiven: 0,
+    };
+    const scope = await resolveOrgScope(ctx, args.organizationId);
+    if (!scope) return empty;
 
-    return record ?? { balance: 0, totalEarned: 0, totalSpent: 0 };
+    const userId = args.userId ?? scope.caller._id;
+    if (!scope.isStaff && userId !== scope.caller._id) return empty;
+
+    const settings = await resolveRecognitionSettings(ctx, args.organizationId);
+    return getWalletView(ctx, args.organizationId, userId, settings);
   },
 });
