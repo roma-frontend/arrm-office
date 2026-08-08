@@ -2039,7 +2039,7 @@
     "needs_action": "noch nicht reagiert auf"
   },
   "ticket": {
-    "chatCreated": "Chat für Ticket {{ticketNumber}} erstellt. Sie sehen diesen Chat nach der ersten Nachricht des Superadmins.",
-    "chatCreatedShort": "Chat für Ticket {{ticketNumber}} erstellt"
+    "chatCreated": "Für Ticket {{ticketNumber}} wurde ein Support-Chat eröffnet. Sie sehen ihn, sobald der Support-Assistent die erste Nachricht schreibt.",
+    "chatCreatedShort": "Support-Chat für Ticket {{ticketNumber}} eröffnet"
   }
 }

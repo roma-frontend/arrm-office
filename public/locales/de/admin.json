@@ -470,10 +470,10 @@
         "activateTitle": "Chat aktivieren",
         "activateDesc": "Schreiben Sie die erste Nachricht, um den Chat zu aktivieren. Danach sieht der Mitarbeiter diesen Chat und kann darin kommunizieren.",
         "firstMessage": "Erste Nachricht",
-        "placeholder": "Hallo! Ich bin der Superadmin und bereit, Ihnen bei diesem Ticket zu helfen...",
+        "placeholder": "Hallo! Ich bin Ihr Support-Assistent und kümmere mich um Ihr Ticket...",
         "cancel": "Abbrechen",
         "activateAndSend": "Aktivieren und senden",
-        "defaultActivateMessage": "Hallo! Ich bin der Superadmin und bereit, Ihnen bei Ticket {{ticketNumber}} zu helfen."
+        "defaultActivateMessage": "Hallo! Ich bin Ihr Support-Assistent. Ich habe Ticket {{ticketNumber}} übernommen und helfe Ihnen bei der Lösung — schreiben Sie hier gerne alle Details."
       },
       "chatCreated": "Chat erstellt: {{chatName}}",
       "chatCreateError": "Fehler beim Erstellen des Chats",

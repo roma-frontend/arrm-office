@@ -49,7 +49,7 @@ describe('translateOrNull', () => {
 
   it('returns the raw string for a known key', () => {
     expect(translateOrNull('en', 'ticket.chatCreatedShort')).toBe(
-      'Chat created for ticket {{ticketNumber}}',
+      'Support chat opened for ticket {{ticketNumber}}',
     );
   });
 
@@ -120,7 +120,7 @@ describe('translate', () => {
   it('returns the en string for unknown locales', () => {
     const result = translate('fr' as CatalogLocale, 'ticket.chatCreated', { ticketNumber: 'T-9' });
     expect(result).toBe(
-      'Chat created for ticket T-9. You will see this chat after the first message from superadmin.',
+      'A support chat has been opened for ticket T-9. It becomes visible to you as soon as the support assistant writes the first message.',
     );
   });
 

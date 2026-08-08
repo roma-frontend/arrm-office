@@ -3,6 +3,7 @@ import Image from 'next/image';
 
 import React, { useState, useRef, useEffect } from 'react';
 import type { Id } from '../../../convex/_generated/dataModel';
+import { decodeSystemMessage } from '../../../convex/lib/systemMessage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   ContextMenu,
@@ -518,8 +519,12 @@ export const ConversationList = React.memo(function ConversationList({
           const isDeleted = deletedMessages.includes(conv.lastMessageText || '');
           const rawLastText = isDeleted ? '' : conv.lastMessageText;
 
+          // A system message is stored as a translation token; render it in the
+          // reader's language rather than leaking the token into the preview.
+          const lastToken = rawLastText ? decodeSystemMessage(rawLastText) : null;
+
           // Remove sender prefix for System Announcements (in case it's still there)
-          let displayLastText = rawLastText;
+          let displayLastText = lastToken ? t(lastToken.key, lastToken.params) : rawLastText;
           if (isSystemAnnouncements && displayLastText) {
             const match = displayLastText.match(/^[^:]*:\s*/);
             if (match) {

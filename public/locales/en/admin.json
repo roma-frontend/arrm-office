@@ -470,10 +470,10 @@
         "activateTitle": "Activate Ticket Chat",
         "activateDesc": "Write the first message to activate the chat. After this, the employee will see this chat and be able to communicate in it.",
         "firstMessage": "First Message",
-        "placeholder": "Hello! I am a superadmin, ready to help you with this ticket...",
+        "placeholder": "Hello! I'm your support assistant and I'm looking into your ticket...",
         "cancel": "Cancel",
         "activateAndSend": "Activate and Send",
-        "defaultActivateMessage": "Hello! I'm a superadmin, ready to help you with ticket {{ticketNumber}}."
+        "defaultActivateMessage": "Hello! I'm your support assistant. I've taken ticket {{ticketNumber}} and will help you resolve it — feel free to add any details here."
       },
       "chatCreated": "Chat created: {{chatName}}",
       "chatCreateError": "Error creating chat",

@@ -6,7 +6,7 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { Id, type Doc } from './_generated/dataModel';
-import { getTranslation, getUserLocale } from './translations';
+import { encodeSystemMessage } from './lib/systemMessage';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
@@ -704,7 +704,11 @@ export const createTicketChat = mutation({
     );
 
     // Generate smart chat name based on ticket
-    const chatName = `🎫 ${ticket.ticketNumber}: ${ticket.title}`;
+    // The subject leads: the sidebar truncates long names, and with the ticket
+    // number in front every support chat looked alike and the actual subject was
+    // the part that got cut off.
+    const subject = ticket.title.length > 70 ? `${ticket.title.slice(0, 69)}…` : ticket.title;
+    const chatName = `${subject} · ${ticket.ticketNumber}`;
 
     // Create group conversation
     const chatId = await ctx.db.insert('chatConversations', {
@@ -821,9 +825,9 @@ export const createTicketChat = mutation({
       }
     }
 
-    // Add system message about chat creation (translated based on creator's language)
-    const creatorLocale = getUserLocale(creator?.language);
-    const systemMessage = getTranslation(creatorLocale, 'ticket.chatCreated', {
+    // Add system message about chat creation. Stored as a token so each member
+    // reads it in their own language instead of the creator's.
+    const systemMessage = encodeSystemMessage('ticket.chatCreated', {
       ticketNumber: ticket.ticketNumber,
     });
 

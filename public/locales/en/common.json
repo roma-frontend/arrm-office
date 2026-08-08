@@ -2039,7 +2039,7 @@
     "needs_action": "has not yet responded to"
   },
   "ticket": {
-    "chatCreated": "Chat created for ticket {{ticketNumber}}. You will see this chat after the first message from superadmin.",
-    "chatCreatedShort": "Chat created for ticket {{ticketNumber}}"
+    "chatCreated": "A support chat has been opened for ticket {{ticketNumber}}. It becomes visible to you as soon as the support assistant writes the first message.",
+    "chatCreatedShort": "Support chat opened for ticket {{ticketNumber}}"
   }
 }

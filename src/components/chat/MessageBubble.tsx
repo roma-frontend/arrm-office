@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
+import { decodeSystemMessage } from '../../../convex/lib/systemMessage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -343,6 +344,26 @@ function ReadReceipt({
   );
 }
 
+/**
+ * Render a system message body in the reader's language.
+ *
+ * Bodies written by the server are translation tokens, so the ticket reporter,
+ * the assignee and the support agent each see the notice in their own language.
+ * Anything else — free-form text, and messages stored before tokens existed — is
+ * passed through untouched.
+ */
+function systemMessageText(
+  t: (key: string, params?: Record<string, string>) => string,
+  content: string,
+): string {
+  const token = decodeSystemMessage(content);
+  if (!token) return content;
+  const translated = t(token.key, token.params);
+  // i18next echoes the key back when it cannot resolve it; a raw key on screen is
+  // worse than no notice, so drop it.
+  return translated === token.key ? '' : translated;
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export const MessageBubble = React.memo(function MessageBubble({
   message,
@@ -485,7 +506,7 @@ export const MessageBubble = React.memo(function MessageBubble({
           className="px-3 py-1 rounded-full text-[11px]"
           style={{ background: 'var(--background-subtle)', color: 'var(--text-muted)' }}
         >
-          {message.content}
+          {systemMessageText(t, message.content)}
         </span>
       </div>
     );
