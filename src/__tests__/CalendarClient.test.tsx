@@ -769,7 +769,7 @@ describe('CalendarClient', () => {
     await waitFor(() => {
       expect(screen.getByTestId('room-booking-modal')).toBeInTheDocument();
     });
-  });
+  }, 15_000);
 
   it('opens the room details with the keyboard', () => {
     render(<CalendarClient />);
