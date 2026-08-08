@@ -132,6 +132,60 @@ function makeCtx() {
   return { ctx: { db }, get, insert, patch, query, withIndex, order, take, first };
 }
 
+/**
+ * Per-table query stub where every branch answers every terminal method.
+ *
+ * `createRating` reads four tables: its own ratings, performanceMetrics, and —
+ * since point crediting moved behind `lib/points` — userPoints and
+ * recognitionSettings. Stubs that only implement the terminals one test happens
+ * to reach break as soon as the handler reads one more table, which is exactly
+ * what happened when the wallet split landed. Passing `{}` for a table means
+ * "no row": `first` resolves null and `take` resolves empty.
+ */
+function tableStub(rows: Record<string, { first?: unknown; take?: unknown }>) {
+  return (table: string) => {
+    const row = rows[table] ?? {};
+    const terminals = {
+      first: jest.fn().mockResolvedValue(row.first ?? null),
+      take: jest.fn().mockResolvedValue(row.take ?? []),
+      collect: jest.fn().mockResolvedValue(row.take ?? []),
+    };
+    const chain = { ...terminals, order: () => terminals };
+    return { ...chain, withIndex: () => chain };
+  };
+}
+
+/**
+ * Model the wallet the way `lib/points` uses it: the insert returns a distinct
+ * id and the follow-up read gives back a real wallet row, so credited totals in
+ * the assertions are numbers rather than NaN.
+ */
+const WALLET_ID = 'points_new';
+
+function withWallet(
+  ctx: any,
+  get: jest.Mock,
+  insert: jest.Mock,
+  existing: Record<string, unknown> | null = null,
+) {
+  insert.mockImplementation(async (table: string) =>
+    table === 'userPoints' ? WALLET_ID : 'rating_1',
+  );
+  get.mockImplementation(async (id: string) =>
+    id === WALLET_ID
+      ? { _id: WALLET_ID, balance: 0, totalEarned: 0, totalSpent: 0, updatedAt: 0 }
+      : employeeDoc({ organizationId: ORG_A }),
+  );
+  ctx.db.query.mockImplementation(
+    tableStub({
+      performanceMetrics: {},
+      recognitionSettings: {},
+      userPoints: existing ? { first: existing } : {},
+      supervisorRatings: { take: [ratingDoc()] },
+    }),
+  );
+}
+
 describe('createRating — RBAC', () => {
   it('rejects unauthenticated callers', async () => {
     mockGetAuthCaller.mockResolvedValue(null);
@@ -226,22 +280,9 @@ describe('createRating — success paths', () => {
 
   it('creates the rating, updates performance metrics and awards points for a 4+ review', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, SUPERVISOR_ID));
-    const { ctx, get, insert, patch, withIndex, take, first } = makeCtx();
+    const { ctx, get, insert, patch } = makeCtx();
     get.mockResolvedValueOnce(employeeDoc()); // target
-    // updatePerformanceMetrics: ratings query returns [rating]
-    ctx.db.query.mockImplementation((table: string) => {
-      if (table === 'performanceMetrics') {
-        return { withIndex: () => ({ first: jest.fn().mockResolvedValue(null) }) };
-      }
-      if (table === 'userPoints') {
-        return { withIndex: () => ({ first: jest.fn().mockResolvedValue(null) }) };
-      }
-      return { withIndex: () => ({ take: jest.fn().mockResolvedValue([ratingDoc()]) }) };
-    });
-    insert.mockResolvedValue('rating_1');
-    // updatePerformanceMetrics inserts metrics (no existing row)
-    // then employee.get for points
-    get.mockResolvedValue(employeeDoc({ organizationId: ORG_A }));
+    withWallet(ctx, get, insert);
 
     await handlers.createRating(ctx, ratingArgs());
 
@@ -250,14 +291,19 @@ describe('createRating — success paths', () => {
       'performanceMetrics',
       expect.objectContaining({ userId: EMPLOYEE_ID, kpiScore: expect.any(Number) }),
     );
-    // points record created for a 4+ review
+    // A wallet is opened empty and then credited, so the reward shows up in the
+    // patch rather than in the insert.
     expect(insert).toHaveBeenCalledWith(
       'userPoints',
+      expect.objectContaining({ balance: 0, totalEarned: 0, allowance: expect.any(Number) }),
+    );
+    expect(patch).toHaveBeenCalledWith(
+      WALLET_ID,
       expect.objectContaining({ balance: 3, totalEarned: 3 }),
     );
     expect(insert).toHaveBeenCalledWith(
       'pointTransactions',
-      expect.objectContaining({ amount: 3, type: 'earned_review' }),
+      expect.objectContaining({ amount: 3, type: 'earned_review', wallet: 'balance' }),
     );
   });
 
@@ -265,20 +311,12 @@ describe('createRating — success paths', () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, SUPERVISOR_ID));
     const { ctx, get, insert, patch } = makeCtx();
     get.mockResolvedValueOnce(employeeDoc());
-    ctx.db.query.mockImplementation((table: string) => {
-      if (table === 'performanceMetrics') {
-        return { withIndex: () => ({ first: jest.fn().mockResolvedValue(null) }) };
-      }
-      if (table === 'userPoints') {
-        return {
-          withIndex: () => ({
-            first: jest.fn().mockResolvedValue({ _id: 'points_1', balance: 5, totalEarned: 10 }),
-          }),
-        };
-      }
-      return { withIndex: () => ({ take: jest.fn().mockResolvedValue([ratingDoc()]) }) };
+    withWallet(ctx, get, insert, {
+      _id: 'points_1',
+      balance: 5,
+      totalEarned: 10,
+      totalSpent: 0,
     });
-    get.mockResolvedValue(employeeDoc({ organizationId: ORG_A }));
 
     await handlers.createRating(ctx, ratingArgs());
 
@@ -286,22 +324,14 @@ describe('createRating — success paths', () => {
       'points_1',
       expect.objectContaining({ balance: 8, totalEarned: 13 }),
     );
+    expect(insert).not.toHaveBeenCalledWith('userPoints', expect.anything());
   });
 
   it('does not award points for a review below 4', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, SUPERVISOR_ID));
     const { ctx, get, insert } = makeCtx();
     get.mockResolvedValueOnce(employeeDoc());
-    ctx.db.query.mockImplementation((table: string) => {
-      if (table === 'performanceMetrics') {
-        return { withIndex: () => ({ first: jest.fn().mockResolvedValue(null) }) };
-      }
-      if (table === 'userPoints') {
-        return { withIndex: () => ({ first: jest.fn().mockResolvedValue(null) }) };
-      }
-      return { withIndex: () => ({ take: jest.fn().mockResolvedValue([ratingDoc()]) }) };
-    });
-    get.mockResolvedValue(employeeDoc({ organizationId: ORG_A }));
+    withWallet(ctx, get, insert);
 
     await handlers.createRating(
       ctx,
@@ -323,16 +353,7 @@ describe('createRating — success paths', () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, SUPERVISOR_ID));
     const { ctx, get, insert } = makeCtx();
     get.mockResolvedValueOnce(employeeDoc());
-    ctx.db.query.mockImplementation((table: string) => {
-      if (table === 'performanceMetrics') {
-        return { withIndex: () => ({ first: jest.fn().mockResolvedValue(null) }) };
-      }
-      if (table === 'userPoints') {
-        return { withIndex: () => ({ first: jest.fn().mockResolvedValue(null) }) };
-      }
-      return { withIndex: () => ({ take: jest.fn().mockResolvedValue([ratingDoc()]) }) };
-    });
-    get.mockResolvedValue(employeeDoc({ organizationId: ORG_A }));
+    withWallet(ctx, get, insert);
 
     await handlers.createRating(ctx, ratingArgs({ ratingPeriod: undefined }));
 
