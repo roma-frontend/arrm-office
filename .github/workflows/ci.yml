@@ -323,6 +323,7 @@ jobs:
           name: nextjs-build
           path: .next/
           retention-days: 7
+          include-hidden-files: true
 
   e2e-tests:
     name: '🎭 E2E Tests'
