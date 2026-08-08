@@ -16,7 +16,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
-import i18n from 'i18next';
 import {
   Archive,
   ArchiveRestore,
@@ -149,10 +148,12 @@ export default function DocumentBuilderTab({
 }: {
   organizationId: Id<'organizations'>;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n: i18nInstance } = useTranslation();
   // Template names follow the interface language; the catalog falls back to
-  // English for languages it carries no copy in.
-  const lang = (i18n.language?.slice(0, 2) as SupportedLocale) || 'en';
+  // English for languages it carries no copy in. Read off the instance bound to
+  // this render rather than the module singleton, so a language switch renames
+  // the list instead of leaving it in whatever language it first rendered in.
+  const lang = (i18nInstance.language?.slice(0, 2) as SupportedLocale) || 'en';
 
   const blueprints = useQuery(api.documentBlueprints.list, {
     organizationId,
