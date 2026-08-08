@@ -13,6 +13,8 @@ import {
   Sparkles,
   Users,
   Award,
+  Gift,
+  Settings2,
   TrendingUp,
   CheckCircle,
   ChevronLeft,
@@ -41,6 +43,8 @@ import {
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { Id, Doc } from '@/convex/_generated/dataModel';
 import { api } from '@/convex/_generated/api';
+import { RewardsTab } from './RewardsTab';
+import { RewardsAdminPanel } from './RewardsAdminPanel';
 
 // ── Category Config ──────────────────────────────────────────────────────────
 
@@ -109,11 +113,19 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
 
   const sendKudosMutation = useMutation(api.recognition.sendKudos);
 
-  // Load user points balance
+  // Giving allowance, not the redeemable balance: praising a colleague spends
+  // the monthly budget for it, and never the points the sender earned.
   const userPoints = useQuery(
     api.recognition.getUserPoints,
-    organizationId && senderId ? { organizationId, userId: senderId } : 'skip',
+    organizationId && senderId ? { organizationId } : 'skip',
   );
+  const pointsConfig = useQuery(
+    api.recognition.getPointsConfig,
+    organizationId ? { organizationId } : 'skip',
+  );
+  const kudosCost = pointsConfig?.kudosCost ?? 3;
+  const allowance = userPoints?.allowance ?? 0;
+  const cannotAfford = allowance < kudosCost;
 
   // Load org users for recipient selection
   const orgUsers = useQuery(
@@ -177,7 +189,6 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
     setIsSubmitting(true);
     try {
       await sendKudosMutation({
-        senderId,
         receiverId: receiverId as Id<'users'>,
         category: category as
           | 'teamwork'
@@ -213,12 +224,12 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
               {t('recognition.sendKudos')}
             </span>
             <Badge variant="outline" className="text-xs gap-1 font-normal">
-              <Star className="h-3 w-3 text-yellow-500" />
-              {userPoints?.balance ?? 0} {t('recognition.points.label')}
+              <Gift className="h-3 w-3 text-blue-500" />
+              {allowance} / {userPoints?.allowanceTotal ?? 0} {t('rewards.wallet.allowanceShort')}
             </Badge>
           </DialogTitle>
-          {(userPoints?.balance ?? 0) < 3 && (
-            <p className="text-xs text-destructive mt-1">{t('recognition.points.notEnough')}</p>
+          {cannotAfford && (
+            <p className="text-xs text-destructive mt-1">{t('rewards.wallet.allowanceSpent')}</p>
           )}
         </DialogHeader>
 
@@ -412,9 +423,7 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
             <Button
               onClick={handleNext}
               disabled={
-                !canGoNext() ||
-                isSubmitting ||
-                (currentStep === steps.length - 1 && (userPoints?.balance ?? 0) < 3)
+                !canGoNext() || isSubmitting || (currentStep === steps.length - 1 && cannotAfford)
               }
               size="sm"
               className="gap-1"
@@ -455,6 +464,8 @@ export function RecognitionClient() {
     | Id<'organizations'>
     | undefined;
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
   // Queries
   const kudosFeed = useQuery(
     api.recognition.getKudosFeed,
@@ -473,7 +484,7 @@ export function RecognitionClient() {
 
   const myPoints = useQuery(
     api.recognition.getUserPoints,
-    orgId && user?.id ? { organizationId: orgId, userId: user.id as Id<'users'> } : 'skip',
+    orgId && user?.id ? { organizationId: orgId } : 'skip',
   );
 
   // Mutations
@@ -482,11 +493,7 @@ export function RecognitionClient() {
   const handleReact = async (kudoId: Id<'kudos'>, emoji: string) => {
     if (!user?.id) return;
     try {
-      await reactToKudosMutation({
-        kudoId,
-        userId: user.id as Id<'users'>,
-        emoji,
-      });
+      await reactToKudosMutation({ kudoId, emoji });
     } catch {
       toast.error(t('recognition.errors.reactFailed'));
     }
@@ -528,7 +535,7 @@ export function RecognitionClient() {
 
       {/* Stats Cards */}
       {myStats && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -568,12 +575,33 @@ export function RecognitionClient() {
               </div>
             </CardContent>
           </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-white dark:bg-blue-900/30 p-2 border border-blue-200 dark:border-blue-800">
+                  <Gift className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {myPoints?.allowance ?? 0}
+                    <span className="text-sm font-normal text-muted-foreground">
+                      {' / '}
+                      {myPoints?.allowanceTotal ?? 0}
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">{t('rewards.wallet.allowance')}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* Tabs */}
       <Tabs defaultValue="feed" className="w-full my-4">
-        <TabsList className="w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2">
+        <TabsList
+          className={`w-full mb-4 gap-2 bg-transparent p-0 h-auto grid ${isAdmin ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'}`}
+        >
           <TabsTrigger
             value="feed"
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
@@ -588,6 +616,22 @@ export function RecognitionClient() {
             <Trophy className="h-4 w-4" />
             {t('recognition.tabs.leaderboard')}
           </TabsTrigger>
+          <TabsTrigger
+            value="rewards"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+          >
+            <Gift className="h-4 w-4" />
+            {t('rewards.tabs.shop')}
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger
+              value="manage"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            >
+              <Settings2 className="h-4 w-4" />
+              {t('rewards.tabs.manage')}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Feed Tab */}
@@ -688,6 +732,18 @@ export function RecognitionClient() {
             </div>
           )}
         </TabsContent>
+
+        {/* Rewards Tab */}
+        <TabsContent value="rewards" className="mt-4">
+          <RewardsTab organizationId={orgId} currentUserId={user.id as Id<'users'>} />
+        </TabsContent>
+
+        {/* Manage Tab (admins) */}
+        {isAdmin && (
+          <TabsContent value="manage" className="mt-4">
+            <RewardsAdminPanel organizationId={orgId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Send Kudos Modal */}
