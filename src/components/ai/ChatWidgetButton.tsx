@@ -29,7 +29,9 @@ function DockedPulse({ dockedSide, dockedY }: { dockedSide: 'left' | 'right'; do
       className="fixed z-50 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium shadow-lg animate-pulse"
       style={{
         top: `${dockedY}%`,
-        background: 'var(--primary)',
+        // Brand gradient, not the flat accent: `--primary` used to hold the
+        // gradient itself and now holds a colour.
+        background: 'var(--primary-gradient, var(--primary))',
         color: 'white',
         ...(isRight
           ? { right: 36 }

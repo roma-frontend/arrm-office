@@ -40,13 +40,12 @@ export const CATEGORY_ORDER = Object.keys(CATEGORY_CONFIG) as NewsCategory[];
 /**
  * Accent for controls that are not tied to a category.
  *
- * Deliberately not `var(--primary)`: in the light theme that variable holds a
- * `linear-gradient`, which `background-color` cannot take — so an active chip
- * painted with it came out transparent and its white label vanished into the
- * page. Tailwind's `bg-primary` / `text-primary` break the same way. This theme
- * ships a solid token for exactly this purpose, defined in both light and dark.
+ * `--primary` is the theme's accent and is now guaranteed to be a colour rather
+ * than a gradient — see the note next to its definition in `globals.css`, where
+ * holding a `linear-gradient` there used to make every `bg-primary` utility in
+ * the app paint nothing in the light theme.
  */
-export const ACCENT = 'var(--tab-active-bg)';
+export const ACCENT = 'var(--primary)';
 
 export const EMOJI_REACTIONS = ['👍', '❤️', '🎉', '🔥', '👏', '😮', '😂'] as const;
 

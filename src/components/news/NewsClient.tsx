@@ -645,7 +645,7 @@ function ReactionBar({ item }: { item: FeedItem }) {
                 ? {
                     borderColor: ACCENT,
                     color: ACCENT,
-                    backgroundColor: 'color-mix(in srgb, var(--tab-active-bg) 12%, transparent)',
+                    backgroundColor: 'color-mix(in srgb, var(--primary) 12%, transparent)',
                   }
                 : undefined
             }
