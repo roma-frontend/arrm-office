@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { logger } from '@/lib/logger';
@@ -67,6 +67,20 @@ function ensureLeafletCSS() {
     }
   `;
   document.head.appendChild(style);
+}
+
+/** Reverse-geocode a coordinate pair via Nominatim. Pure — only touches fetch. */
+export async function reverseGeocode(lat: number, lng: number): Promise<string | undefined> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } },
+    );
+    const data = (await res.json()) as { display_name?: string };
+    return data.display_name || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function DriverMap({
@@ -141,23 +155,6 @@ export function DriverMap({
       cancelled = true;
     };
   }, []);
-
-  // Reverse geocode
-  const reverseGeocode = useCallback(
-    async (lat: number, lng: number): Promise<string | undefined> => {
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-          { headers: { 'Accept-Language': 'en' } },
-        );
-        const data = (await res.json()) as { display_name?: string };
-        return data.display_name || undefined;
-      } catch {
-        return undefined;
-      }
-    },
-    [],
-  );
 
   // Init map
   useEffect(() => {
