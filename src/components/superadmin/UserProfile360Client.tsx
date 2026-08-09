@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { localizedTaskTitle } from '@/lib/taskTitle';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -409,7 +410,7 @@ export default function UserProfile360Page() {
                               className="font-semibold mb-1"
                               style={{ color: 'var(--text-primary)' }}
                             >
-                              {task.title}
+                              {localizedTaskTitle(t, task)}
                             </p>
                             {task.description && (
                               <p className="text-sm text-muted-foreground">{task.description}</p>

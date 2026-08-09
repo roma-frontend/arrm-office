@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, useEffect } from 'react';
+import { localizedTaskTitle } from '@/lib/taskTitle';
 import { useRouter } from 'next/navigation';
 import { useNow } from '@/hooks/useNow';
 import { useTranslation } from 'react-i18next';
@@ -359,7 +360,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                   {statusIcon(task.status)}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-(--text-primary) truncate group-hover:text-blue-400 transition-colors">
-                      {task.title}
+                      {localizedTaskTitle(t, task)}
                     </p>
                     <p className="text-[10px] text-(--text-muted) truncate">
                       {task.assignedToUser?.name ?? '—'}
@@ -471,7 +472,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                         {/* Task title on bar */}
                         <div className="absolute inset-0 flex items-center px-2 overflow-hidden">
                           <span className="text-[11px] font-semibold text-white truncate drop-shadow-sm">
-                            {task.title}
+                            {localizedTaskTitle(t, task)}
                           </span>
                         </div>
                       </div>
@@ -479,7 +480,9 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                       {/* Hover tooltip */}
                       <div className="absolute -top-1 left-1/2 -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30">
                         <div className="bg-(--card) border border-(--border) rounded-xl shadow-2xl p-3 whitespace-nowrap backdrop-blur-sm">
-                          <p className="text-sm font-bold text-(--text-primary)">{task.title}</p>
+                          <p className="text-sm font-bold text-(--text-primary)">
+                            {localizedTaskTitle(t, task)}
+                          </p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-(--text-muted)">
                             <span>{task.assignedToUser?.name ?? '—'}</span>
                             {task.deadline && (

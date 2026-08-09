@@ -32,6 +32,7 @@ import {
   List,
   MapPin,
   QrCode,
+  User as UserIcon,
 } from 'lucide-react';
 import { useQuery, useMutation } from '@/lib/convex-typed';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
@@ -163,6 +164,86 @@ function formatDate(timestamp: number, lang?: string): string {
 
 function getCategoryCfg(category: string): (typeof CATEGORY_CONFIG)['laptop'] {
   return (CATEGORY_CONFIG[category] ?? CATEGORY_CONFIG.other) as (typeof CATEGORY_CONFIG)['laptop'];
+}
+
+/**
+ * Who is holding an asset, and on what terms.
+ *
+ * The catalogue is the page someone opens to find out where a thing went, and it
+ * answered with a bare name — everything else meant opening the asset. The holder
+ * is now identified by role and department, with the date it was handed over, who
+ * handed it over, and the return date called out when it has passed.
+ */
+function AssignmentDetails({
+  asset,
+  t,
+  language,
+}: {
+  asset: {
+    currentUser?: {
+      name: string;
+      email?: string;
+      position?: string;
+      department?: string;
+    } | null;
+    assignedAt?: number;
+    expectedReturnAt?: number;
+    isReturnOverdue?: boolean;
+    assignedByName?: string;
+    assignmentNotes?: string;
+  };
+  t: TFunction;
+  language?: string;
+}) {
+  const holder = asset.currentUser;
+  if (!holder) return null;
+
+  const overdue = asset.isReturnOverdue === true;
+  const role = [holder.position, holder.department].filter(Boolean).join(' · ');
+
+  return (
+    <div className="mt-3 pt-3 border-t border-(--border) space-y-2">
+      <div className="flex items-start gap-2">
+        <UserIcon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-(--text-muted)" />
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-wide text-(--text-muted)">
+            {t('assets.assignedTo')}
+          </p>
+          <p className="text-sm font-medium text-(--text-primary) truncate">{holder.name}</p>
+          {role && <p className="text-xs text-(--text-muted) truncate">{role}</p>}
+          {holder.email && <p className="text-xs text-(--text-muted) truncate">{holder.email}</p>}
+        </div>
+      </div>
+
+      <div className="space-y-1 text-xs">
+        {asset.assignedAt != null && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-(--text-muted)">{t('assets.assignedAt')}</span>
+            <span className="text-(--text-primary)">{formatDate(asset.assignedAt, language)}</span>
+          </div>
+        )}
+        {asset.expectedReturnAt != null && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-(--text-muted)">{t('assets.expectedReturn')}</span>
+            <span className={overdue ? 'font-medium text-red-500' : 'text-(--text-primary)'}>
+              {formatDate(asset.expectedReturnAt, language)}
+              {overdue ? ` · ${t('assets.overdue')}` : ''}
+            </span>
+          </div>
+        )}
+        {asset.assignedByName && (
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-(--text-muted)">{t('assets.assignedBy')}</span>
+            <span className="text-(--text-primary) truncate">{asset.assignedByName}</span>
+          </div>
+        )}
+      </div>
+
+      {asset.assignmentNotes && (
+        <p className="text-xs text-(--text-muted) line-clamp-2">{asset.assignmentNotes}</p>
+      )}
+    </div>
+  );
 }
 
 function getStatusBadge(status: string, t: (key: string) => string): React.ReactNode {
@@ -1331,16 +1412,6 @@ export default function AssetsClient() {
                                     </span>
                                   </div>
                                 )}
-                                {asset.currentUser && (
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-(--text-muted)">
-                                      {t('assets.assignedTo')}
-                                    </span>
-                                    <span className="text-(--text-primary) font-medium">
-                                      {asset.currentUser.name}
-                                    </span>
-                                  </div>
-                                )}
                                 {asset.location && (
                                   <div className="flex items-center justify-between">
                                     <span className="text-(--text-muted)">
@@ -1350,6 +1421,10 @@ export default function AssetsClient() {
                                   </div>
                                 )}
                               </div>
+
+                              {asset.currentUser && (
+                                <AssignmentDetails asset={asset} t={t} language={i18n.language} />
+                              )}
                             </div>
 
                             {/* Hover Actions */}
@@ -1473,7 +1548,46 @@ export default function AssetsClient() {
                                   {asset.serialNumber || '—'}
                                 </td>
                                 <td className="px-4 py-3 text-(--text-primary)">
-                                  {asset.currentUser?.name || '—'}
+                                  {asset.currentUser ? (
+                                    <div className="min-w-0">
+                                      <p className="font-medium truncate">
+                                        {asset.currentUser.name}
+                                      </p>
+                                      {[asset.currentUser.position, asset.currentUser.department]
+                                        .filter(Boolean)
+                                        .join(' · ') && (
+                                        <p className="text-xs text-(--text-muted) truncate">
+                                          {[
+                                            asset.currentUser.position,
+                                            asset.currentUser.department,
+                                          ]
+                                            .filter(Boolean)
+                                            .join(' · ')}
+                                        </p>
+                                      )}
+                                      {asset.assignedAt != null && (
+                                        <p className="text-xs text-(--text-muted)">
+                                          {t('assets.assignedAt')}:{' '}
+                                          {formatDate(asset.assignedAt, i18n.language)}
+                                        </p>
+                                      )}
+                                      {asset.expectedReturnAt != null && (
+                                        <p
+                                          className={`text-xs ${
+                                            asset.isReturnOverdue
+                                              ? 'font-medium text-red-500'
+                                              : 'text-(--text-muted)'
+                                          }`}
+                                        >
+                                          {t('assets.returnBy')}:{' '}
+                                          {formatDate(asset.expectedReturnAt, i18n.language)}
+                                          {asset.isReturnOverdue ? ` · ${t('assets.overdue')}` : ''}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    '—'
+                                  )}
                                 </td>
                                 <td className="px-4 py-3 text-(--text-primary)">
                                   <div className="flex items-center gap-1">

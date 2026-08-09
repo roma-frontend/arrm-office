@@ -1,5 +1,6 @@
 {
   "tasks": {
+    "onboardingPrefix": "Ադապտացիա",
     "taskCompleted": "Առաջադրանք ավարտված! 🎉",
     "taskReopened": "Առաջադրանքը վերաբացվել է",
     "status": {

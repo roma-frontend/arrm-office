@@ -1,5 +1,6 @@
 {
   "tasks": {
+    "onboardingPrefix": "Onboarding",
     "taskCompleted": "Task completed! 🎉",
     "taskReopened": "Task reopened",
     "today": "Today",

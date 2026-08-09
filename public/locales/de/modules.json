@@ -135,6 +135,19 @@
       "vehicle": "Fahrzeug",
       "other": "Sonstiges"
     },
+    "urgency": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch"
+    },
+    "requestCategory": {
+      "laptop": "Laptop",
+      "monitor": "Monitor",
+      "phone": "Telefon",
+      "peripheral": "Peripheriegerät",
+      "software": "Software",
+      "other": "Sonstiges"
+    },
     "brand": "Marke",
     "brandPlaceholder": "z.B. Apple",
     "model": "Modell",
@@ -159,6 +172,8 @@
     "searchEmployee": "Mitarbeiter suchen...",
     "noEmployeesFound": "Keine Mitarbeiter gefunden",
     "expectedReturn": "Erwartetes Rückgabedatum",
+    "assignedBy": "Ausgegeben von",
+    "overdue": "Überfällig",
     "assignmentHistory": "Zuweisungsverlauf",
     "maintenanceHistory": "Wartungsverlauf",
     "maintenanceType": {

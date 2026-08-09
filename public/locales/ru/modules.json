@@ -135,6 +135,19 @@
       "vehicle": "Транспорт",
       "other": "Другое"
     },
+    "urgency": {
+      "low": "Низкая",
+      "medium": "Средняя",
+      "high": "Высокая"
+    },
+    "requestCategory": {
+      "laptop": "Ноутбук",
+      "monitor": "Монитор",
+      "phone": "Телефон",
+      "peripheral": "Периферия",
+      "software": "Программное обеспечение",
+      "other": "Другое"
+    },
     "brand": "Бренд",
     "brandPlaceholder": "например Apple",
     "model": "Модель",
@@ -159,6 +172,8 @@
     "searchEmployee": "Поиск сотрудника...",
     "noEmployeesFound": "Сотрудники не найдены",
     "expectedReturn": "Ожидаемая дата возврата",
+    "assignedBy": "Выдал",
+    "overdue": "Просрочен",
     "assignmentHistory": "История назначений",
     "maintenanceHistory": "История обслуживания",
     "maintenanceType": {

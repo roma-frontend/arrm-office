@@ -202,10 +202,26 @@ export const listAssets = query({
           .withIndex('by_asset_active', (q) => q.eq('assetId', asset._id).eq('status', 'active'))
           .first();
 
+        // The catalogue is where someone goes to find out who is holding a thing,
+        // so the holder is spelled out: who they are, what they do, when they took
+        // it and when it is due back. A name alone left the obvious questions to a
+        // second click into the detail dialog.
         let assignedToUser = null;
+        let assignedByName: string | undefined;
         if (activeAssignment) {
           const user = await ctx.db.get(activeAssignment.assignedTo);
-          assignedToUser = user ? { _id: user._id, name: user.name, email: user.email } : null;
+          if (user) {
+            const department = user.departmentId ? await ctx.db.get(user.departmentId) : null;
+            assignedToUser = {
+              _id: user._id,
+              name: user.name,
+              email: user.email,
+              position: user.position,
+              department: department?.name,
+            };
+          }
+          const issuer = await ctx.db.get(activeAssignment.assignedBy);
+          assignedByName = issuer?.name;
         }
 
         // Count maintenance history
@@ -219,6 +235,15 @@ export const listAssets = query({
           ...asset,
           icon: getCategoryIcon(asset.category),
           currentUser: assignedToUser,
+          assignedAt: activeAssignment?.assignedAt,
+          expectedReturnAt: activeAssignment?.expectedReturnAt,
+          // Decided here rather than in the interface: the server already knows
+          // the time, and a render that reads the clock is impure.
+          isReturnOverdue:
+            activeAssignment?.expectedReturnAt != null &&
+            activeAssignment.expectedReturnAt < Date.now(),
+          assignedByName,
+          assignmentNotes: activeAssignment?.notes,
           maintenanceCount: maintenanceCount.length,
           isAssigned: activeAssignment !== null,
         };

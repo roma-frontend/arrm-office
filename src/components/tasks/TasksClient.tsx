@@ -11,6 +11,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { CreateTaskWizard } from './CreateTaskWizard';
 import { ProjectBadge } from './ProjectBadge';
+import { localizedTaskTitle } from '@/lib/taskTitle';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AssignSupervisorModal } from './AssignSupervisorModal';
@@ -53,6 +54,8 @@ interface TaskAssignee {
 interface TaskItem {
   _id: string;
   title: string;
+  /** Set for tasks the system generated (onboarding steps) so they can be translated. */
+  titleKey?: string | null;
   description?: string;
   status: Status;
   priority: Priority;
@@ -242,7 +245,7 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
       <p
         className={`font-semibold text-sm leading-snug line-clamp-2 ${isDragging ? 'text-blue-400' : 'text-(--text-primary)'}`}
       >
-        {task.title}
+        {localizedTaskTitle(t, task)}
       </p>
       {task.description && (
         <p className="text-xs text-(--text-muted) line-clamp-2 leading-relaxed">
@@ -418,7 +421,7 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
             <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
             <div className="min-w-0">
               <span className="block font-medium text-(--text-primary) text-sm group-hover:text-blue-400 transition-colors truncate">
-                {task.title}
+                {localizedTaskTitle(t, task)}
               </span>
               <ProjectBadge
                 projectId={task.projectId}
@@ -474,7 +477,7 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
                   <span className={`font-semibold text-sm text-(--text-primary) line-clamp-2`}>
-                    {task.title}
+                    {localizedTaskTitle(t, task)}
                   </span>
                 </div>
                 {task.description && (

@@ -135,6 +135,19 @@
       "vehicle": "Տրանսպորտ",
       "other": "Այլ"
     },
+    "urgency": {
+      "low": "Ցածր",
+      "medium": "Միջին",
+      "high": "Բարձր"
+    },
+    "requestCategory": {
+      "laptop": "Նոութբուք",
+      "monitor": "Մոնիտոր",
+      "phone": "Հեռախոս",
+      "peripheral": "Ծայրամասային սարք",
+      "software": "Ծրագրային ապահովում",
+      "other": "Այլ"
+    },
     "brand": "Բրենդ",
     "brandPlaceholder": "օր. Apple",
     "model": "Մոդել",
@@ -159,6 +172,8 @@
     "searchEmployee": "Որոնել աշխատակցի...",
     "noEmployeesFound": "Աշխատակիցներ չեն գտնվել",
     "expectedReturn": "Վերադարձի ակնկալվող ամսաթիվ",
+    "assignedBy": "Տրամադրել է",
+    "overdue": "Ժամկետանց",
     "assignmentHistory": "Նշանակումների պատմություն",
     "maintenanceHistory": "Սպասարկման պատմություն",
     "maintenanceType": {

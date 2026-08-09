@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { localizedTaskTitle } from '@/lib/taskTitle';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
@@ -231,7 +232,7 @@ export default function TaskDetailClient() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{task.title}</h1>
+            <h1 className="text-2xl font-bold">{localizedTaskTitle(t, task)}</h1>
             <p className="text-muted-foreground">
               {t('tasksClient.task')} #{task._id.slice(-6).toUpperCase()}
             </p>

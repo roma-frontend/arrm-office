@@ -6,6 +6,17 @@ export const tasks = {
     organizationId: v.optional(v.id('organizations')),
     projectId: v.optional(v.id('projects')),
     title: v.string(),
+    /**
+     * Translation key for tasks the system generated itself.
+     *
+     * Onboarding mirrors each of its steps into this table, and the text was
+     * written in English at creation time — so a Russian board showed
+     * "[Onboarding] Prepare workplace and access badge" among its translated
+     * columns. The key travels with the row and the reader's language is applied
+     * on display; `title` stays as the fallback for rows that predate it and for
+     * anything a person typed themselves.
+     */
+    titleKey: v.optional(v.string()),
     description: v.optional(v.string()),
     assignedTo: v.id('users'),
     assignedBy: v.id('users'),

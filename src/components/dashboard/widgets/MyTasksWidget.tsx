@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo } from 'react';
+import { localizedTaskTitle } from '@/lib/taskTitle';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
@@ -68,7 +69,7 @@ export const MyTasksWidget = memo(function MyTasksWidget({ userId }: { userId: s
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-(--text-primary) truncate">
-                      {task.title}
+                      {localizedTaskTitle(t, task)}
                     </p>
                     {typeof task.deadline === 'number' && (
                       <p

@@ -1,5 +1,6 @@
 {
   "tasks": {
+    "onboardingPrefix": "Онбординг",
     "taskCompleted": "Задача выполнена! 🎉",
     "taskReopened": "Задача переоткрыта",
     "today": "Сегодня",

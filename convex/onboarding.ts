@@ -579,6 +579,10 @@ export const startOnboarding = mutation({
       const mainTaskId = await ctx.db.insert('tasks', {
         organizationId: orgId,
         title: `[Onboarding] ${t.title}`,
+        // Steps from the built-in checklist carry their key so the board can show
+        // them in the reader's language. A template an organization wrote itself
+        // has no key: its wording is the organization's own and is left alone.
+        titleKey: usedTemplate ? undefined : `onboarding.defaultTasks.${t.key}`,
         description: t.description || undefined,
         assignedTo: assigneeId || args.employeeId,
         assignedBy: createdBy,

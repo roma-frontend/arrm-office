@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { localizedTaskTitle } from '@/lib/taskTitle';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
@@ -527,7 +528,7 @@ export default function GoalDetailClient() {
                         />
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                            {task.title}
+                            {localizedTaskTitle(t, task)}
                           </p>
                           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                             <User className="w-3 h-3" />

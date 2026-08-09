@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { localizedTaskTitle } from '@/lib/taskTitle';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
@@ -218,7 +219,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
                     }`}
                   />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{task.title}</p>
+                    <p className="text-sm font-medium truncate">{localizedTaskTitle(t, task)}</p>
                     <p className="text-xs text-(--text-muted)">
                       {task.assignedToUser?.name ?? t('projects.unassigned', 'Unassigned')}
                     </p>
