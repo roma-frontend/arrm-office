@@ -209,6 +209,67 @@ describe('StatsCard', () => {
     expect(container.querySelector('[data-testid="test-icon"]')).toBeInTheDocument();
   });
 
+  // ── Context, links and sparkline ───────────────────────────────────────
+
+  it('renders a hint under the number', () => {
+    render(
+      <StatsCard
+        title="On leave"
+        value={2}
+        hint="25% of the team"
+        icon={defaultIcon}
+        color="purple"
+      />,
+    );
+    expect(screen.getByText('25% of the team')).toBeInTheDocument();
+  });
+
+  it('turns the tile into a link when href is given', () => {
+    const { container } = render(
+      <StatsCard title="Team" value={4} href="/team" icon={defaultIcon} color="blue" />,
+    );
+    const link = container.querySelector('a[href="/team"]');
+    expect(link).toBeInTheDocument();
+    // The whole tile is the target, so the number is inside it.
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(link?.textContent).toContain('4');
+  });
+
+  it('stays a plain tile without href', () => {
+    const { container } = render(
+      <StatsCard title="Team" value={4} icon={defaultIcon} color="blue" />,
+    );
+    expect(container.querySelector('a')).toBeNull();
+  });
+
+  it('draws a sparkline for a series that varies', () => {
+    const { container } = render(
+      <StatsCard
+        title="Approved"
+        value={5}
+        trend={[1, 4, 2, 5]}
+        icon={defaultIcon}
+        color="green"
+      />,
+    );
+    expect(container.querySelector('svg path')).toBeInTheDocument();
+  });
+
+  it('omits the sparkline when the series is flat or too short', () => {
+    // A flat line would read as decoration rather than data.
+    const { container: flat } = render(
+      <StatsCard title="Flat" value={3} trend={[3, 3, 3]} icon={defaultIcon} color="green" />,
+    );
+    expect(flat.querySelector('svg')).toBeNull();
+
+    const { container: short } = render(
+      <StatsCard title="Short" value={3} trend={[3]} icon={defaultIcon} color="green" />,
+    );
+    expect(short.querySelector('svg')).toBeNull();
+  });
+
   // ── Index / delay ──────────────────────────────────────────────────────
 
   it('applies different animation delay based on index', () => {

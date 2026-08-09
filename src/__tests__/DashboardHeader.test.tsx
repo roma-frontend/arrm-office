@@ -101,19 +101,22 @@ describe('DashboardHeader', () => {
 
   it('renders dashboard title', () => {
     render(<DashboardHeader selectedOrganization={undefined} userRole="admin" />);
-    // t('nav.dashboard', { defaultValue: 'Dashboard' }) returns fallback 'Dashboard'
+    // Without an organization there is nothing to label, so the heading stands alone.
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it('renders org name in title when organization is selected', () => {
+  it('makes the organization the heading, with the section as its label', () => {
     render(<DashboardHeader selectedOrganization={defaultOrg as any} userRole="admin" />);
-    // t('nav.dashboard', { defaultValue: 'Dashboard' }) + ' - ' + org.name
-    // → 'Dashboard' + ' - ' + 'Test Org'
-    expect(screen.getByText('Dashboard - Test Org')).toBeInTheDocument();
+    // The old title read "Dashboard - Test Org", which spent the largest type in
+    // the page on the word "Dashboard".
+    expect(screen.getByText('Test Org')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it('renders formatted date', () => {
+  it('renders the date as a chip beside the heading', () => {
     render(<DashboardHeader selectedOrganization={undefined} userRole="admin" />);
+    // The formatter is mocked, so this asserts the date is still rendered — the
+    // component now asks it for a shorter pattern and shows it inside a chip.
     expect(screen.getByText('Monday, January 1, 2024')).toBeInTheDocument();
   });
 

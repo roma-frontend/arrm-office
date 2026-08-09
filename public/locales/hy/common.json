@@ -1597,6 +1597,13 @@
     "failedToDeleteAvatar": "Չհաջողվեց ջնջել ավատարը"
   },
   "dashboard": {
+    "stat": {
+      "inOrganization": "կազմակերպությունում",
+      "needsDecision": "սպասում են որոշման",
+      "allClear": "սպասող չկա",
+      "vsLastMonth": "նախորդ ամսվա համեմատ",
+      "ofTeam": "թիմի {{percent}}%-ը"
+    },
     "paidLeaveBalance": "Վճարովի արձակուրդի մնացորդը: {{count}} օր",
     "sickLeaveBalance": "Հիվանդանոցից արձակուրդի մնացորդը: {{count}} օր",
     "familyLeaveBalance": "Ընտանեկան արձակուրդի մնացորդը: {{count}} օր"

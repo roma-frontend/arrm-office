@@ -1597,6 +1597,13 @@
     "failedToDeleteAvatar": "Avatar konnte nicht gelöscht werden"
   },
   "dashboard": {
+    "stat": {
+      "inOrganization": "in der Organisation",
+      "needsDecision": "warten auf Entscheidung",
+      "allClear": "nichts offen",
+      "vsLastMonth": "vs. Vormonat",
+      "ofTeam": "{{percent}}% des Teams"
+    },
     "paidLeaveBalance": "Bezahlter Urlaub: {{count}} Tage",
     "sickLeaveBalance": "Krankmeldung: {{count}} Tage",
     "familyLeaveBalance": "Familienurlaub: {{count}} Tage"

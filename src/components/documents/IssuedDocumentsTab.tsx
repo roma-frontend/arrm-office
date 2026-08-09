@@ -668,7 +668,7 @@ export default function IssuedDocumentsTab({
 }
 
 /** Authored text of a parsed block — the inverse used for catalog templates. */
-function blockText(block: ReturnType<typeof parseTemplateBodyToBlocks>[number]): string {
+export function blockText(block: ReturnType<typeof parseTemplateBodyToBlocks>[number]): string {
   switch (block.type) {
     case 'section':
       return block.index === undefined ? block.title : `${block.index}. ${block.title}`;
@@ -686,7 +686,7 @@ function blockText(block: ReturnType<typeof parseTemplateBodyToBlocks>[number]):
 }
 
 /** Segment kind for position `index`, taken from whichever language has it. */
-function blockKind(
+export function blockKind(
   perLocale: Map<SupportedLocale, ReturnType<typeof parseTemplateBodyToBlocks>>,
   index: number,
 ): DocumentSegment['kind'] {

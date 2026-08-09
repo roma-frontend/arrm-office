@@ -1615,6 +1615,13 @@
     "failedToDeleteAvatar": "Не удалось удалить аватар"
   },
   "dashboard": {
+    "stat": {
+      "inOrganization": "в организации",
+      "needsDecision": "ждут решения",
+      "allClear": "ничего не ждёт",
+      "vsLastMonth": "к прошлому месяцу",
+      "ofTeam": "{{percent}}% команды"
+    },
     "paidLeaveBalance": "Оплачиваемый отпуск: {{count}} дн.",
     "sickLeaveBalance": "Больничный: {{count}} дн.",
     "familyLeaveBalance": "Семейный: {{count}} дн."

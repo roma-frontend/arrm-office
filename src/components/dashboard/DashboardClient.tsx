@@ -120,6 +120,31 @@ export default function DashboardClient() {
     });
   }, [stats.monthlyTrend, t]);
 
+  /**
+   * Context for the tiles.
+   *
+   * A bare "0" says nothing about whether that is normal. The monthly trend the
+   * charts already use is enough to say how this month compares and what the last
+   * few months looked like.
+   */
+  const approvedTrend = useMemo(
+    () => stats.monthlyTrend.map((m) => m.approved),
+    [stats.monthlyTrend],
+  );
+  const pendingTrend = useMemo(
+    () => stats.monthlyTrend.map((m) => m.pending),
+    [stats.monthlyTrend],
+  );
+  const approvedChange = useMemo(() => {
+    const series = stats.monthlyTrend;
+    if (series.length < 2) return undefined;
+    const previous = series[series.length - 2]!.approved;
+    const current = series[series.length - 1]!.approved;
+    // A rise from zero has no percentage; showing one would be arithmetic theatre.
+    if (previous === 0) return undefined;
+    return Math.round(((current - previous) / previous) * 100);
+  }, [stats.monthlyTrend]);
+
   if (!mounted) return null;
 
   const isLoading = dashboardStats === undefined || recentLeavesData === undefined;
@@ -155,37 +180,55 @@ export default function DashboardClient() {
       <DashboardBanners />
 
       <motion.div variants={itemVariants}>
-        <div
-          data-tour="quick-stats"
-          className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4"
-        >
+        <div data-tour="quick-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
           <StatsCard
             title={t('titles.totalEmployees')}
             value={isLoading ? '—' : stats.totalEmployees}
-            icon={<Users className="w-4 h-4 sm:w-5 sm:h-5" />}
+            icon={<Users className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />}
             color="blue"
             index={0}
+            href="/team"
+            hint={t('dashboard.stat.inOrganization')}
           />
           <StatsCard
             title={t('titles.pendingRequests')}
             value={isLoading ? '—' : stats.pendingRequests}
-            icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}
+            icon={<Clock className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />}
             color="yellow"
             index={1}
+            href="/leaves"
+            hint={
+              stats.pendingRequests > 0
+                ? t('dashboard.stat.needsDecision')
+                : t('dashboard.stat.allClear')
+            }
+            trend={pendingTrend}
           />
           <StatsCard
             title={t('titles.approvedThisMonth')}
             value={isLoading ? '—' : stats.approvedThisMonth}
-            icon={<CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
+            icon={<CheckCircle className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />}
             color="green"
             index={2}
+            href="/leaves"
+            change={approvedChange}
+            changeLabel={approvedChange !== undefined ? t('dashboard.stat.vsLastMonth') : undefined}
+            trend={approvedTrend}
           />
           <StatsCard
             title={t('titles.onLeaveNow')}
             value={isLoading ? '—' : stats.onLeaveNow}
-            icon={<UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />}
+            icon={<UserCheck className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />}
             color="purple"
             index={3}
+            href="/calendar"
+            hint={
+              stats.totalEmployees > 0
+                ? t('dashboard.stat.ofTeam', {
+                    percent: Math.round((stats.onLeaveNow / stats.totalEmployees) * 100),
+                  })
+                : undefined
+            }
           />
         </div>
       </motion.div>
