@@ -1,6 +1,5 @@
 import { v } from 'convex/values';
-import { getAuthCaller } from './lib/getAuthCaller';
-import { query, mutation } from './_generated/server';
+import { query, mutation, type MutationCtx, type QueryCtx } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import { api } from './_generated/api';
 import type { Id } from './_generated/dataModel';
@@ -9,6 +8,67 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 import { getStartingLeaveBalances } from './lib/leaveBalances';
 import { resolveOrgUnitsByName } from './lib/orgUnits';
+import {
+  assertOrgScope,
+  assertOrgStaff,
+  resolveOrgScope,
+  resolveOrgStaff,
+  scopeOwnsRecord,
+  type OrgScope,
+} from './lib/orgAccess';
+
+/**
+ * Candidate records are personal data: a name, an email, a phone number, a CV and
+ * whatever the interviewers wrote down. Every read here is therefore staff-only
+ * and pinned to one organization, and every write takes its actor from the
+ * session — the module used to accept `userId` as an argument, which made the
+ * audit trail in `applicationEvents` something the caller could dictate.
+ */
+
+/** Stages a candidate can be moved to from each stage. */
+const ALLOWED_TRANSITIONS: Record<string, readonly string[]> = {
+  applied: ['screening', 'interview', 'rejected'],
+  screening: ['interview', 'offer', 'rejected'],
+  interview: ['offer', 'screening', 'rejected'],
+  offer: ['hired', 'interview', 'rejected'],
+  // Terminal stages. Reopening is deliberate rather than forbidden: a rejection
+  // gets reversed, an offer falls through after the fact.
+  hired: ['offer'],
+  rejected: ['applied', 'screening', 'interview', 'offer'],
+};
+
+/** Stages that require an approved CV to enter. */
+const STAGES_BEHIND_CV_GATE = new Set(['interview', 'offer', 'hired']);
+
+/**
+ * Whether the CV blocks this move.
+ *
+ * Only an application that actually has a CV can be gated by it. A referral HR
+ * typed in by hand never had one, and neither did anything recorded before the
+ * gate existed; refusing to advance those would break hiring rather than
+ * improve it. Rejection is never gated — a CV nobody approved is one of the
+ * reasons to reject.
+ */
+function cvBlocksAdvance(
+  app: { cvFileUrl?: string; cvStatus?: string },
+  newStage: string,
+): boolean {
+  if (!STAGES_BEHIND_CV_GATE.has(newStage)) return false;
+  if (!app.cvFileUrl) return false;
+  return app.cvStatus !== 'approved';
+}
+
+/** Read an application and confirm it belongs to the caller's organization. */
+async function ownedApplication(
+  ctx: QueryCtx | MutationCtx,
+  scope: OrgScope,
+  applicationId: Id<'applications'>,
+) {
+  const app = await ctx.db.get(applicationId);
+  if (!app) throw new Error('Application not found');
+  if (!scopeOwnsRecord(scope, app)) throw new Error('Not authorized for this application');
+  return app;
+}
 
 // ============ QUERIES ============
 
@@ -19,6 +79,10 @@ export const listVacancies = query({
   },
   handler: async (ctx, args) => {
     const { organizationId, status } = args;
+    // Vacancy rows carry pipeline counts, so this is a staff view. The public
+    // careers page reads through convex/careers.ts instead.
+    const scope = await resolveOrgStaff(ctx, organizationId);
+    if (!scope) return [];
     let vacancies;
     if (status) {
       vacancies = await ctx.db
@@ -71,6 +135,8 @@ export const getVacancy = query({
     const { vacancyId } = args;
     const vac = await ctx.db.get(vacancyId);
     if (!vac) return null;
+    const scope = await resolveOrgStaff(ctx, vac.organizationId);
+    if (!scope) return null;
     const manager = await ctx.db.get(vac.hiringManagerId);
     return { ...vac, managerName: manager?.name ?? 'Unknown' };
   },
@@ -83,6 +149,11 @@ export const listCandidatesByVacancy = query({
   },
   handler: async (ctx, args) => {
     const { vacancyId, stage } = args;
+    // Candidate contact details and CVs — staff of the owning org only.
+    const vacancy = await ctx.db.get(vacancyId);
+    if (!vacancy) return [];
+    const scope = await resolveOrgStaff(ctx, vacancy.organizationId);
+    if (!scope) return [];
     let apps;
     if (stage) {
       apps = await ctx.db
@@ -134,6 +205,9 @@ export const listApplicationsPaginated = query({
   args: { vacancyId: v.id('vacancies'), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     const { vacancyId, paginationOpts } = args;
+    const vacancy = await ctx.db.get(vacancyId);
+    const scope = vacancy ? await resolveOrgStaff(ctx, vacancy.organizationId) : null;
+    if (!scope) return { page: [], isDone: true, continueCursor: '' };
     const result = await ctx.db
       .query('applications')
       .withIndex('by_vacancy', (q) => q.eq('vacancyId', vacancyId))
@@ -157,6 +231,8 @@ export const getCandidate = query({
     const { applicationId } = args;
     const app = await ctx.db.get(applicationId);
     if (!app) return null;
+    const scope = await resolveOrgStaff(ctx, app.organizationId);
+    if (!scope) return null;
 
     const profile = await ctx.db.get(app.candidateId);
     const vacancy = await ctx.db.get(app.vacancyId);
@@ -211,10 +287,14 @@ export const getCandidate = query({
 export const getMyInterviews = query({
   args: {
     organizationId: v.id('organizations'),
-    userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { organizationId, userId } = args;
+    const { organizationId } = args;
+    // "Mine" is the session's, not an id the caller picks: interview notes name
+    // the candidate and the interviewer's read on them.
+    const scope = await resolveOrgScope(ctx, organizationId);
+    if (!scope) return [];
+    const userId = scope.caller._id;
     const interviews = await ctx.db
       .query('interviews')
       .withIndex('by_interviewer', (q) => q.eq('interviewerId', userId))
@@ -248,6 +328,22 @@ export const getPipelineStats = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
     const { organizationId } = args;
+    const scope = await resolveOrgStaff(ctx, organizationId);
+    if (!scope) {
+      return {
+        openVacancies: 0,
+        totalCandidates: 0,
+        cvPending: 0,
+        pipeline: {
+          applied: 0,
+          screening: 0,
+          interview: 0,
+          offer: 0,
+          hired: 0,
+          rejected: 0,
+        },
+      };
+    }
     const openVacancies = await ctx.db
       .query('vacancies')
       .withIndex('by_org_status', (q) =>
@@ -263,6 +359,8 @@ export const getPipelineStats = query({
     return {
       openVacancies: openVacancies.length,
       totalCandidates: allApps.length,
+      // How many CVs are waiting on HR — the queue the gate creates.
+      cvPending: allApps.filter((a) => a.cvFileUrl && a.cvStatus === 'pending').length,
       pipeline: {
         applied: allApps.filter((a) => a.stage === 'applied').length,
         screening: allApps.filter((a) => a.stage === 'screening').length,
@@ -293,13 +391,23 @@ export const createVacancy = mutation({
     requirements: v.optional(v.string()),
     salary: v.optional(v.object({ min: v.number(), max: v.number(), currency: v.string() })),
     hiringManagerId: v.id('users'),
-    createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    const scope = await assertOrgStaff(ctx, args.organizationId);
+    const organizationId = scope.organizationId ?? args.organizationId;
+
+    const manager = await ctx.db.get(args.hiringManagerId);
+    if (!manager || manager.organizationId !== organizationId) {
+      throw new Error('Hiring manager must belong to this organization');
+    }
+
     const now = Date.now();
     return await ctx.db.insert('vacancies', {
       ...args,
+      organizationId,
       status: 'open',
+      // Attribution comes from the session, never from the caller's arguments.
+      createdBy: scope.caller._id,
       createdAt: now,
       updatedAt: now,
     });
@@ -332,6 +440,15 @@ export const updateVacancy = mutation({
     const { vacancyId, ...updates } = args;
     const vac = await ctx.db.get(vacancyId);
     if (!vac) throw new Error('Vacancy not found');
+    const scope = await assertOrgStaff(ctx, vac.organizationId);
+    if (!scopeOwnsRecord(scope, vac)) throw new Error('Not authorized for this vacancy');
+
+    if (updates.hiringManagerId !== undefined) {
+      const manager = await ctx.db.get(updates.hiringManagerId);
+      if (!manager || manager.organizationId !== vac.organizationId) {
+        throw new Error('Hiring manager must belong to this organization');
+      }
+    }
 
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
     if (updates.title !== undefined) patch.title = updates.title;
@@ -351,42 +468,68 @@ export const updateVacancy = mutation({
   },
 });
 
+/**
+ * Remove an application and everything hanging off it.
+ *
+ * Scorecards used to survive the deletion of the application they scored, and
+ * events were found by a full table scan although `by_application` exists.
+ */
+async function purgeApplication(
+  ctx: MutationCtx,
+  applicationId: Id<'applications'>,
+): Promise<void> {
+  const events = await ctx.db
+    .query('applicationEvents')
+    .withIndex('by_application', (q) => q.eq('applicationId', applicationId))
+    .take(DEFAULT_LIST_CAP);
+  for (const ev of events) await ctx.db.delete(ev._id);
+
+  const interviews = await ctx.db
+    .query('interviews')
+    .withIndex('by_application', (q) => q.eq('applicationId', applicationId))
+    .take(DEFAULT_LIST_CAP);
+  for (const iv of interviews) await ctx.db.delete(iv._id);
+
+  const scorecards = await ctx.db
+    .query('interviewScorecards')
+    .withIndex('by_application', (q) => q.eq('applicationId', applicationId))
+    .take(DEFAULT_LIST_CAP);
+  for (const sc of scorecards) await ctx.db.delete(sc._id);
+
+  await ctx.db.delete(applicationId);
+}
+
+/** Drop a candidate profile once no application refers to it any more. */
+async function purgeOrphanCandidate(
+  ctx: MutationCtx,
+  candidateId: Id<'candidateProfiles'>,
+): Promise<void> {
+  const remaining = await ctx.db
+    .query('applications')
+    .withIndex('by_candidate', (q) => q.eq('candidateId', candidateId))
+    .first();
+  if (!remaining) await ctx.db.delete(candidateId);
+}
+
 export const deleteVacancy = mutation({
   args: { vacancyId: v.id('vacancies') },
   handler: async (ctx, args) => {
     const { vacancyId } = args;
     const vac = await ctx.db.get(vacancyId);
     if (!vac) throw new Error('Vacancy not found');
+    const scope = await assertOrgStaff(ctx, vac.organizationId, { adminOnly: true });
+    if (!scopeOwnsRecord(scope, vac)) throw new Error('Not authorized for this vacancy');
 
-    // Delete all related applications and events
     const applications = await ctx.db
       .query('applications')
       .withIndex('by_vacancy', (q) => q.eq('vacancyId', vacancyId))
       .take(DEFAULT_LIST_CAP);
 
-    for (const app of applications) {
-      // Delete application events (no by_application index — inline filter;
-      // TODO: add index for cleaner cascade).
-      const events = await ctx.db
-        .query('applicationEvents')
-        .filter((q) => q.eq(q.field('applicationId'), app._id))
-        .take(SMALL_LIST_CAP);
-      for (const ev of events) {
-        await ctx.db.delete(ev._id);
-      }
-      await ctx.db.delete(app._id);
-    }
-
-    // Delete interviews for this vacancy (via applications)
-    for (const app of applications) {
-      const interviews = await ctx.db
-        .query('interviews')
-        .withIndex('by_application', (q) => q.eq('applicationId', app._id))
-        .take(SMALL_LIST_CAP);
-      for (const interview of interviews) {
-        await ctx.db.delete(interview._id);
-      }
-    }
+    const candidateIds = new Set(applications.map((a) => a.candidateId));
+    for (const app of applications) await purgeApplication(ctx, app._id);
+    // A profile only exists to be applied with; without applications it is a
+    // stranded record of someone's personal data.
+    for (const candidateId of candidateIds) await purgeOrphanCandidate(ctx, candidateId);
 
     await ctx.db.delete(vacancyId);
   },
@@ -396,39 +539,12 @@ export const deleteCandidate = mutation({
   args: { applicationId: v.id('applications') },
   handler: async (ctx, args) => {
     const { applicationId } = args;
-    const app = await ctx.db.get(applicationId);
-    if (!app) throw new Error('Application not found');
+    const scope = await assertOrgScope(ctx);
+    const app = await ownedApplication(ctx, scope, applicationId);
+    if (!scope.isStaff) throw new Error('Not authorized: staff access required');
 
-    // Delete application events
-    const events = await ctx.db
-      .query('applicationEvents')
-      .filter((q) => q.eq(q.field('applicationId'), applicationId))
-      .take(SMALL_LIST_CAP);
-    for (const ev of events) {
-      await ctx.db.delete(ev._id);
-    }
-
-    // Delete interviews for this application
-    const interviews = await ctx.db
-      .query('interviews')
-      .filter((q) => q.eq(q.field('applicationId'), applicationId))
-      .take(SMALL_LIST_CAP);
-    for (const interview of interviews) {
-      await ctx.db.delete(interview._id);
-    }
-
-    // Delete the application
-    await ctx.db.delete(applicationId);
-
-    // Check if candidate has other applications — if not, delete profile too
-    const otherApps = await ctx.db
-      .query('applications')
-      .filter((q) => q.eq(q.field('candidateId'), app.candidateId))
-      .first();
-
-    if (!otherApps) {
-      await ctx.db.delete(app.candidateId);
-    }
+    await purgeApplication(ctx, applicationId);
+    await purgeOrphanCandidate(ctx, app.candidateId);
   },
 });
 
@@ -448,7 +564,11 @@ export const addCandidate = mutation({
       v.literal('other'),
     ),
     referredBy: v.optional(v.id('users')),
-    createdBy: v.id('users'),
+    /** CV metadata, when HR attaches the file it was sent. */
+    cvFileUrl: v.optional(v.string()),
+    cvFileName: v.optional(v.string()),
+    cvFileSize: v.optional(v.number()),
+    cvMimeType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const {
@@ -459,14 +579,31 @@ export const addCandidate = mutation({
       resumeText,
       source,
       referredBy,
-      organizationId,
-      createdBy,
+      cvFileUrl,
+      cvFileName,
+      cvFileSize,
+      cvMimeType,
     } = args;
+
+    const scope = await assertOrgStaff(ctx, args.organizationId);
+    const organizationId = scope.organizationId ?? args.organizationId;
+    const createdBy = scope.caller._id;
+
+    const vacancy = await ctx.db.get(vacancyId);
+    if (!vacancy || vacancy.organizationId !== organizationId) {
+      throw new Error('Vacancy not found in this organization');
+    }
+
+    // The career page stores emails lowercased; matching raw here created a
+    // second profile for the same person depending on how they typed it.
+    const normalizedEmail = email.trim().toLowerCase();
 
     // Check if candidate profile exists by email
     const existing = await ctx.db
       .query('candidateProfiles')
-      .withIndex('by_org_email', (q) => q.eq('organizationId', organizationId).eq('email', email))
+      .withIndex('by_org_email', (q) =>
+        q.eq('organizationId', organizationId).eq('email', normalizedEmail),
+      )
       .first();
 
     const now = Date.now();
@@ -474,11 +611,16 @@ export const addCandidate = mutation({
 
     if (existing) {
       candidateId = existing._id;
+      // A returning candidate usually sends a fresh CV; keeping the old text
+      // silently discarded whatever they just wrote.
+      if (resumeText && resumeText !== existing.resumeText) {
+        await ctx.db.patch(existing._id, { resumeText });
+      }
     } else {
       candidateId = await ctx.db.insert('candidateProfiles', {
         organizationId,
         name,
-        email,
+        email: normalizedEmail,
         phone,
         resumeText,
         source,
@@ -488,12 +630,32 @@ export const addCandidate = mutation({
       });
     }
 
+    // One open application per person per vacancy, however it was entered.
+    const duplicate = await ctx.db
+      .query('applications')
+      .withIndex('by_vacancy', (q) => q.eq('vacancyId', vacancyId))
+      .filter((q) =>
+        q.and(q.eq(q.field('candidateId'), candidateId), q.neq(q.field('stage'), 'rejected')),
+      )
+      .first();
+    if (duplicate) throw new Error('This candidate already has an open application');
+
     // Create application
     const applicationId = await ctx.db.insert('applications', {
       organizationId,
       candidateId,
       vacancyId,
       stage: 'applied',
+      ...(cvFileUrl
+        ? {
+            cvFileUrl,
+            cvFileName,
+            cvFileSize,
+            cvMimeType,
+            cvUploadedAt: now,
+            cvStatus: 'pending' as const,
+          }
+        : {}),
       createdBy,
       createdAt: now,
       updatedAt: now,
@@ -515,7 +677,6 @@ export const addCandidate = mutation({
       .filter((q) => q.or(q.eq(q.field('role'), 'admin'), q.eq(q.field('role'), 'superadmin')))
       .take(SMALL_LIST_CAP);
 
-    const vacancy = await ctx.db.get(vacancyId);
     for (const admin of orgAdmins) {
       if (admin._id === createdBy) continue; // don't notify self
       await notify(ctx, {
@@ -568,16 +729,34 @@ export const moveCandidate = mutation({
       v.literal('hired'),
       v.literal('rejected'),
     ),
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { applicationId, newStage, userId, reason } = args;
-    const app = await ctx.db.get(applicationId);
-    if (!app) throw new Error('Application not found');
+    const { applicationId, newStage, reason } = args;
+    const scope = await assertOrgStaff(ctx, undefined);
+    const app = await ownedApplication(ctx, scope, applicationId);
+    const userId = scope.caller._id;
 
     const oldStage = app.stage;
     if (oldStage === newStage) return;
+
+    // The pipeline is a sequence, and nothing enforced it: applied → hired in one
+    // move skipped the screening, the interview and the offer, and the events
+    // table recorded the jump as if it were normal.
+    const allowed = ALLOWED_TRANSITIONS[oldStage] ?? [];
+    if (!allowed.includes(newStage)) {
+      throw new Error(`Cannot move a candidate from ${oldStage} to ${newStage}`);
+    }
+
+    // The CV gate. Anything past screening needs HR to have read the CV.
+    if (cvBlocksAdvance(app, newStage)) {
+      throw new Error(
+        app.cvStatus === 'rejected'
+          ? 'The CV was rejected — reopen the review before advancing'
+          : 'The CV has not been reviewed yet',
+      );
+    }
 
     const now = Date.now();
     const patch: Record<string, unknown> = { stage: newStage, updatedAt: now };
@@ -602,6 +781,16 @@ export const moveCandidate = mutation({
 
     if (candidate?.email && vacancy) {
       if (newStage === 'offer') {
+        // The offer used to leave with invented terms: "To be discussed" instead
+        // of the posted range, and hr@company.com — a domain the organization
+        // does not own — as the address to reply to.
+        const hiringManager = await ctx.db.get(vacancy.hiringManagerId);
+        const salary = vacancy.salary
+          ? `${vacancy.salary.min.toLocaleString('en-US')}–${vacancy.salary.max.toLocaleString(
+              'en-US',
+            )} ${vacancy.salary.currency}`
+          : 'To be discussed';
+
         await ctx.scheduler.runAfter(0, api.recruitmentEmails.sendOfferLetter, {
           candidateEmail: candidate.email,
           candidateName: candidate.name,
@@ -613,13 +802,13 @@ export const moveCandidate = mutation({
             month: 'long',
             day: 'numeric',
           }),
-          salary: 'To be discussed',
+          salary,
           offerExpiryDate: new Date(now + 7 * 86400000).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
           }),
-          contactEmail: 'hr@company.com',
+          contactEmail: hiringManager?.email ?? scope.caller.email,
         });
       } else if (newStage === 'rejected') {
         const rejectionDate = new Date(now).toLocaleDateString('en-US', {
@@ -643,18 +832,23 @@ export const moveCandidate = mutation({
 export const rejectCandidate = mutation({
   args: {
     applicationId: v.id('applications'),
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { applicationId, userId, reason } = args;
-    const app = await ctx.db.get(applicationId);
-    if (!app) throw new Error('Application not found');
+    const { applicationId, reason } = args;
+    const scope = await assertOrgStaff(ctx, undefined);
+    const app = await ownedApplication(ctx, scope, applicationId);
+    const userId = scope.caller._id;
+    // Rejecting twice sent the candidate a second "we have decided not to
+    // proceed" letter and overwrote the recorded reason with nothing.
+    if (app.stage === 'rejected') return;
 
     const now = Date.now();
     await ctx.db.patch(applicationId, {
       stage: 'rejected',
-      rejectionReason: reason,
+      // Keep an earlier reason rather than blanking it when none is given.
+      ...(reason ? { rejectionReason: reason } : {}),
       updatedAt: now,
     });
 
@@ -709,18 +903,36 @@ export const scheduleInterview = mutation({
     additionalNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const scope = await assertOrgStaff(ctx, args.organizationId);
+    const app = await ownedApplication(ctx, scope, args.applicationId);
+    // Inviting someone who has been rejected, or already hired, is a mistake
+    // worth stopping before the email goes out.
+    if (app.stage === 'rejected' || app.stage === 'hired') {
+      throw new Error(`Cannot schedule an interview for a ${app.stage} application`);
+    }
+    if (cvBlocksAdvance(app, 'interview')) {
+      throw new Error('The CV has not been approved yet');
+    }
+    const interviewer = await ctx.db.get(args.interviewerId);
+    if (!interviewer || interviewer.organizationId !== app.organizationId) {
+      throw new Error('Interviewer must belong to this organization');
+    }
+    if (args.scheduledAt < Date.now())
+      throw new Error('Interviews cannot be scheduled in the past');
+    if (args.duration <= 0) throw new Error('Interview duration must be positive');
+
     const interviewId = await ctx.db.insert('interviews', {
       ...args,
+      organizationId: app.organizationId,
       status: 'scheduled',
       createdAt: Date.now(),
     });
 
     // 📧 Send interview invitation email
-    const app = await ctx.db.get(args.applicationId);
-    if (app) {
+    {
       const candidate = await ctx.db.get(app.candidateId);
       const vacancy = await ctx.db.get(app.vacancyId);
-      const interviewer = await ctx.db.get(args.interviewerId);
+      const invitedBy = await ctx.db.get(args.interviewerId);
 
       if (candidate?.email && vacancy) {
         const interviewDate = new Date(args.scheduledAt).toLocaleDateString('en-US', {
@@ -741,7 +953,7 @@ export const scheduleInterview = mutation({
           interviewDate,
           interviewTime,
           interviewType: args.type,
-          interviewerName: interviewer?.name ?? 'HR Team',
+          interviewerName: invitedBy?.name ?? 'HR Team',
           location: args.location,
           meetingLink: args.meetingLink,
           additionalNotes: args.additionalNotes,
@@ -761,6 +973,13 @@ export const updateInterviewStatus = mutation({
   },
   handler: async (ctx, args) => {
     const { interviewId, status, notes } = args;
+    const interview = await ctx.db.get(interviewId);
+    if (!interview) throw new Error('Interview not found');
+    const scope = await assertOrgScope(ctx, interview.organizationId);
+    // Staff run the pipeline; the interviewer may close out their own slot.
+    if (!scope.isStaff && interview.interviewerId !== scope.caller._id) {
+      throw new Error('Not authorized for this interview');
+    }
     const patch: Record<string, unknown> = { status };
     if (notes !== undefined) patch.notes = notes;
     await ctx.db.patch(interviewId, patch);
@@ -772,7 +991,7 @@ export const submitScorecard = mutation({
     applicationId: v.id('applications'),
     organizationId: v.id('organizations'),
     interviewId: v.optional(v.id('interviews')),
-    interviewerId: v.id('users'),
+    interviewerId: v.optional(v.id('users')),
     ratings: v.array(
       v.object({
         criterion: v.string(),
@@ -791,13 +1010,44 @@ export const submitScorecard = mutation({
     summary: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Mark interview as completed if linked
-    if (args.interviewId) {
-      await ctx.db.patch(args.interviewId, { status: 'completed' });
+    const { applicationId, interviewId, ratings, overallScore, recommendation, summary } = args;
+    const scope = await assertOrgScope(ctx, args.organizationId);
+    const app = await ownedApplication(ctx, scope, applicationId);
+
+    // A scorecard is signed by whoever wrote it. Anyone in the organization may
+    // score an interview they took part in; staff may record one either way.
+    const interview = interviewId ? await ctx.db.get(interviewId) : null;
+    if (interviewId && (!interview || interview.applicationId !== applicationId)) {
+      throw new Error('Interview does not belong to this application');
+    }
+    if (!scope.isStaff && interview?.interviewerId !== scope.caller._id) {
+      throw new Error('Not authorized to score this interview');
+    }
+
+    // Scores feed the average shown next to a candidate; out-of-range values
+    // silently skewed it.
+    for (const r of ratings) {
+      if (!Number.isFinite(r.score) || r.score < 1 || r.score > 5) {
+        throw new Error('Each score must be between 1 and 5');
+      }
+    }
+    if (!Number.isFinite(overallScore) || overallScore < 1 || overallScore > 5) {
+      throw new Error('The overall score must be between 1 and 5');
+    }
+
+    if (interviewId) {
+      await ctx.db.patch(interviewId, { status: 'completed' });
     }
 
     return await ctx.db.insert('interviewScorecards', {
-      ...args,
+      applicationId,
+      organizationId: app.organizationId,
+      interviewId,
+      interviewerId: scope.caller._id,
+      ratings,
+      overallScore,
+      recommendation,
+      summary,
       createdAt: Date.now(),
     });
   },
@@ -810,23 +1060,112 @@ export const updateCandidateNotes = mutation({
   },
   handler: async (ctx, args) => {
     const { applicationId, notes } = args;
+    const scope = await assertOrgStaff(ctx, undefined);
+    await ownedApplication(ctx, scope, applicationId);
     await ctx.db.patch(applicationId, { notes, updatedAt: Date.now() });
+  },
+});
+
+/**
+ * HR's decision on the attached CV.
+ *
+ * This is the gate the first stage exists for: an approval opens the interview
+ * and everything after it, a rejection holds the candidate at screening while
+ * leaving the reason on the record. Re-reviewing is allowed — a second reader
+ * disagrees, or the candidate sends a corrected file.
+ */
+export const reviewCv = mutation({
+  args: {
+    applicationId: v.id('applications'),
+    decision: v.union(v.literal('approved'), v.literal('rejected'), v.literal('pending')),
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { applicationId, decision, note } = args;
+    const scope = await assertOrgStaff(ctx, undefined);
+    const app = await ownedApplication(ctx, scope, applicationId);
+    if (!app.cvFileUrl) throw new Error('This application has no CV to review');
+
+    const now = Date.now();
+    await ctx.db.patch(applicationId, {
+      cvStatus: decision,
+      cvReviewedBy: scope.caller._id,
+      cvReviewedAt: now,
+      cvReviewNote: note,
+      updatedAt: now,
+    });
+
+    // The review is part of the candidate's history, not a hidden flag.
+    await ctx.db.insert('applicationEvents', {
+      applicationId,
+      organizationId: app.organizationId,
+      fromStage: app.stage,
+      toStage: app.stage,
+      changedBy: scope.caller._id,
+      reason: note ? `CV ${decision}: ${note}` : `CV ${decision}`,
+      createdAt: now,
+    });
+
+    return { cvStatus: decision };
+  },
+});
+
+/** Applications whose CV is still waiting on a reader. */
+export const listCvQueue = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, args) => {
+    const scope = await resolveOrgStaff(ctx, args.organizationId);
+    if (!scope) return [];
+
+    const pending = await ctx.db
+      .query('applications')
+      .withIndex('by_org_cvStatus', (q) =>
+        q.eq('organizationId', args.organizationId).eq('cvStatus', 'pending'),
+      )
+      .take(DEFAULT_LIST_CAP);
+
+    const enriched = await Promise.all(
+      pending.map(async (app) => {
+        const candidate = await ctx.db.get(app.candidateId);
+        const vacancy = await ctx.db.get(app.vacancyId);
+        return {
+          _id: app._id,
+          stage: app.stage,
+          cvFileUrl: app.cvFileUrl,
+          cvFileName: app.cvFileName,
+          cvUploadedAt: app.cvUploadedAt,
+          candidateName: candidate?.name ?? 'Unknown',
+          candidateEmail: candidate?.email,
+          vacancyTitle: vacancy?.title ?? 'Unknown',
+        };
+      }),
+    );
+
+    return enriched.sort((a, b) => (a.cvUploadedAt ?? 0) - (b.cvUploadedAt ?? 0));
   },
 });
 
 export const hireCandidate = mutation({
   args: {
     applicationId: v.id('applications'),
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
     startDate: v.optional(v.number()),
     position: v.optional(v.string()),
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { applicationId, userId, startDate, position, department } = args;
-    const app = await ctx.db.get(applicationId);
-    if (!app) throw new Error('Application not found');
+    const { applicationId, startDate, position, department } = args;
+    // Hiring creates a user account with access to the organization, so it is an
+    // admin action rather than a staff one.
+    const scope = await assertOrgStaff(ctx, undefined, { adminOnly: true });
+    const app = await ownedApplication(ctx, scope, applicationId);
+    const userId = scope.caller._id;
     if (app.stage === 'hired') throw new Error('Candidate already hired');
+    const allowed = ALLOWED_TRANSITIONS[app.stage] ?? [];
+    if (!allowed.includes('hired')) {
+      throw new Error(`Cannot hire from ${app.stage}`);
+    }
+    if (cvBlocksAdvance(app, 'hired')) throw new Error('The CV has not been approved yet');
 
     const now = Date.now();
 
@@ -995,13 +1334,21 @@ export const hireCandidate = mutation({
 export const secureDeleteVacancy = mutation({
   args: { vacancyId: v.id('vacancies') },
   handler: async (ctx, { vacancyId }) => {
-    const caller = await getAuthCaller(ctx);
-    if (!caller) throw new Error('Not authenticated');
     const vacancy = await ctx.db.get(vacancyId);
     if (!vacancy) throw new Error('Vacancy not found');
-    if (caller.role !== 'superadmin' && caller.organizationId !== vacancy.organizationId) {
-      throw new Error('Access denied');
-    }
+    const scope = await assertOrgStaff(ctx, vacancy.organizationId, { adminOnly: true });
+    if (!scopeOwnsRecord(scope, vacancy)) throw new Error('Access denied');
+
+    // Deleting the posting used to leave its applications, events, interviews and
+    // scorecards behind as unreachable rows of personal data.
+    const applications = await ctx.db
+      .query('applications')
+      .withIndex('by_vacancy', (q) => q.eq('vacancyId', vacancyId))
+      .take(DEFAULT_LIST_CAP);
+    const candidateIds = new Set(applications.map((a) => a.candidateId));
+    for (const app of applications) await purgeApplication(ctx, app._id);
+    for (const candidateId of candidateIds) await purgeOrphanCandidate(ctx, candidateId);
+
     await ctx.db.delete(vacancyId);
   },
 });
@@ -1009,11 +1356,14 @@ export const secureDeleteVacancy = mutation({
 export const secureDeleteCandidate = mutation({
   args: { applicationId: v.id('applications') },
   handler: async (ctx, { applicationId }) => {
-    const caller = await getAuthCaller(ctx);
-    if (!caller) throw new Error('Not authenticated');
-    const app = await ctx.db.get(applicationId);
-    if (!app) throw new Error('Application not found');
-    if (app.candidateId) await ctx.db.delete(app.candidateId);
-    await ctx.db.delete(applicationId);
+    const scope = await assertOrgStaff(ctx, undefined);
+    // The organization check was missing here while its sibling had one, so an
+    // authenticated user of one tenant could delete another tenant's candidate.
+    const app = await ownedApplication(ctx, scope, applicationId);
+
+    await purgeApplication(ctx, applicationId);
+    // The profile is shared between applications; dropping it unconditionally
+    // took the other vacancies' candidates with it.
+    await purgeOrphanCandidate(ctx, app.candidateId);
   },
 });

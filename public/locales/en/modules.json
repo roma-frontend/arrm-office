@@ -1286,6 +1286,21 @@
       "careerPage": "Career Page",
       "other": "Other"
     },
+    "cv": {
+      "open": "Open the CV",
+      "pending": "CV awaiting review",
+      "approved": "CV approved",
+      "rejected": "CV rejected",
+      "approve": "Approve CV",
+      "rejectCv": "Reject CV",
+      "reopen": "Reopen review",
+      "gateHint": "The candidate cannot go past screening until the CV is approved.",
+      "saved": {
+        "approved": "CV approved — the candidate can move on",
+        "rejected": "CV rejected",
+        "pending": "The CV is back in the review queue"
+      }
+    },
     "candidate": {
       "addTitle": "Add Candidate",
       "name": "Full Name",
@@ -1382,6 +1397,11 @@
     "formResume": "Resume / Cover Letter",
     "resumePlaceholder": "Tell us about yourself, your experience, and why you're interested in this role...",
     "consent": "I consent to the processing of my personal data for recruitment purposes.",
+    "cvLabel": "CV (PDF)",
+    "cvHint": "A PDF up to 10 MB. HR reviews it before the next step.",
+    "cvMustBePdf": "The CV must be a PDF",
+    "cvTooLarge": "The CV must be under 10 MB",
+    "cvUploadFailed": "Could not upload the CV",
     "consentText": "I agree to the processing of my personal data in accordance with the Privacy Policy. My data will be used solely for recruitment purposes.",
     "consentRequired": "Please agree to the privacy policy",
     "fillRequired": "Name and email are required",

@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ChevronLeft,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   Calendar,
   Star,
@@ -51,6 +52,15 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 // ============ PIPELINE STAGES ============
 
 const STAGES = ['applied', 'screening', 'interview', 'offer', 'hired'] as const;
+
+/** Stages an unreviewed CV holds a candidate back from (mirrors the backend). */
+const CV_GATED_STAGES = new Set<string>(['interview', 'offer', 'hired']);
+
+const CV_BADGE: Record<string, string> = {
+  pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  approved: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  rejected: 'bg-red-500/10 text-red-600 border-red-500/20',
+};
 
 function getStageBadgeColor(stage: string) {
   switch (stage) {
@@ -123,7 +133,6 @@ function CreateVacancyWizard({
             ? { min: Number(salaryMin), max: Number(salaryMax), currency }
             : undefined,
         hiringManagerId: userId,
-        createdBy: userId,
       });
       toast.success(t('recruitment.wizard.success', 'Vacancy created'));
       onClose();
@@ -449,12 +458,10 @@ function CreateVacancyWizard({
 function AddCandidateDialog({
   vacancyId,
   organizationId,
-  userId,
   onClose,
 }: {
   vacancyId: Id<'vacancies'>;
   organizationId: Id<'organizations'>;
-  userId: Id<'users'>;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -503,7 +510,6 @@ function AddCandidateDialog({
         phone: phone.trim() || undefined,
         resumeText: resumeText.trim() || undefined,
         source,
-        createdBy: userId,
       });
       toast.success(t('recruitment.candidate.added', 'Candidate added'));
       onClose();
@@ -609,6 +615,7 @@ function CandidateDetailDialog({
   const data = useQuery(api.recruitment.getCandidate, { applicationId });
   const moveMutation = useMutation(api.recruitment.moveCandidate);
   const rejectMutation = useMutation(api.recruitment.rejectCandidate);
+  const reviewCvMutation = useMutation(api.recruitment.reviewCv);
 
   const deleteCandidateMut = useMutation(api.recruitment.deleteCandidate);
 
@@ -650,6 +657,19 @@ function CandidateDetailDialog({
     try {
       await rejectMutation({ applicationId, userId });
       toast.success(t('recruitment.candidate.rejected', 'Candidate rejected'));
+    } catch (e) {
+      toast.error(String(e));
+    }
+  };
+
+  // An attached CV holds the candidate at screening until someone reads it. An
+  // application without one — a referral typed in by hand — is not gated.
+  const cvGateBlocks = !!data.cvFileUrl && data.cvStatus !== 'approved';
+
+  const handleReviewCv = async (decision: 'approved' | 'rejected' | 'pending') => {
+    try {
+      await reviewCvMutation({ applicationId, decision });
+      toast.success(t(`recruitment.cv.saved.${decision}`));
     } catch (e) {
       toast.error(String(e));
     }
@@ -704,11 +724,63 @@ function CandidateDetailDialog({
           </div>
         )}
 
+        {/* CV review — the first stage's gate */}
+        {data.cvFileUrl && (
+          <div className="border rounded-lg p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <a
+                href={data.cvFileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm font-medium text-primary hover:underline min-w-0"
+              >
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="truncate">{data.cvFileName ?? t('recruitment.cv.open')}</span>
+              </a>
+              <Badge className={CV_BADGE[data.cvStatus ?? 'pending']}>
+                {t(`recruitment.cv.${data.cvStatus ?? 'pending'}`)}
+              </Badge>
+            </div>
+
+            {data.cvReviewNote && (
+              <p className="text-xs text-muted-foreground">{data.cvReviewNote}</p>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              {data.cvStatus !== 'approved' && (
+                <Button size="sm" onClick={() => handleReviewCv('approved')}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  {t('recruitment.cv.approve')}
+                </Button>
+              )}
+              {data.cvStatus !== 'rejected' && (
+                <Button size="sm" variant="outline" onClick={() => handleReviewCv('rejected')}>
+                  <XCircle className="h-4 w-4 mr-1" />
+                  {t('recruitment.cv.rejectCv')}
+                </Button>
+              )}
+              {data.cvStatus === 'rejected' && (
+                <Button size="sm" variant="ghost" onClick={() => handleReviewCv('pending')}>
+                  {t('recruitment.cv.reopen')}
+                </Button>
+              )}
+            </div>
+
+            {cvGateBlocks && (
+              <p className="text-xs text-amber-600">{t('recruitment.cv.gateHint')}</p>
+            )}
+          </div>
+        )}
+
         {/* Actions */}
         {data.stage !== 'rejected' && data.stage !== 'hired' && (
           <div className="flex flex-wrap gap-2 border-t pt-3">
             {nextStage && (
-              <Button size="sm" onClick={() => handleMove(nextStage)}>
+              <Button
+                size="sm"
+                onClick={() => handleMove(nextStage)}
+                disabled={cvGateBlocks && CV_GATED_STAGES.has(nextStage)}
+              >
                 <ArrowRight className="h-4 w-4 mr-1" />
                 {t(`recruitment.stage.${nextStage}`, nextStage)}
               </Button>
@@ -960,7 +1032,7 @@ export default function RecruitmentClient() {
 
   const myInterviews = useQuery(
     api.recruitment.getMyInterviews,
-    organizationId && userId ? { organizationId, userId } : 'skip',
+    organizationId && userId ? { organizationId } : 'skip',
   );
 
   const deleteVacancyMut = useMutation(api.recruitment.deleteVacancy);
@@ -1340,7 +1412,6 @@ export default function RecruitmentClient() {
           <AddCandidateDialog
             vacancyId={addCandidateVacancy}
             organizationId={organizationId}
-            userId={userId}
             onClose={() => setAddCandidateVacancy(null)}
           />
         )}

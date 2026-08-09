@@ -447,6 +447,8 @@ function VacancyDetailModal({
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState('');
   const [resumeText, setResumeText] = useState('');
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvError, setCvError] = useState('');
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -484,12 +486,36 @@ function VacancyDetailModal({
         return;
       }
 
+      // The CV goes up first: if it fails there is no half-made application to
+      // explain, and the reference the mutation stores is already real.
+      let cv: { url: string; name: string; size: number; type: string } | null = null;
+      if (cvFile) {
+        const body = new FormData();
+        body.append('file', cvFile);
+        const res = await fetch('/api/careers/cv', { method: 'POST', body });
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => ({}))) as { error?: string };
+          setCvError(payload.error || t('careers.cvUploadFailed', 'Could not upload the CV'));
+          setSubmitting(false);
+          return;
+        }
+        cv = (await res.json()) as { url: string; name: string; size: number; type: string };
+      }
+
       await applyMutation({
         vacancyId: vacancy._id,
         name,
         email,
         phone: phone || undefined,
         resumeText: resumeText || undefined,
+        ...(cv
+          ? {
+              cvFileUrl: cv.url,
+              cvFileName: cv.name,
+              cvFileSize: cv.size,
+              cvMimeType: cv.type,
+            }
+          : {}),
         consentGiven: consent,
       });
       setSubmitted(true);
@@ -706,6 +732,40 @@ function VacancyDetailModal({
                     color: 'var(--landing-text-primary)',
                   }}
                 />
+              </div>
+              <div>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--landing-text-secondary)' }}
+                >
+                  {t('careers.cvLabel')}
+                </label>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setCvError('');
+                    if (file && file.type !== 'application/pdf') {
+                      setCvError(t('careers.cvMustBePdf'));
+                      return;
+                    }
+                    if (file && file.size > 10 * 1024 * 1024) {
+                      setCvError(t('careers.cvTooLarge'));
+                      return;
+                    }
+                    setCvFile(file);
+                  }}
+                  className="w-full px-4 py-2.5 rounded-lg outline-none text-sm"
+                  style={{
+                    background: 'var(--landing-bg)',
+                    border: '1px solid var(--landing-card-border)',
+                    color: 'var(--landing-text-primary)',
+                  }}
+                />
+                <p className="mt-1 text-xs" style={{ color: 'var(--landing-text-muted)' }}>
+                  {cvError || t('careers.cvHint')}
+                </p>
               </div>
               <label className="flex items-start gap-2 cursor-pointer">
                 <input

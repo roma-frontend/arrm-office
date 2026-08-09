@@ -74,6 +74,29 @@ export const recruitment = {
       v.literal('hired'),
       v.literal('rejected'),
     ),
+    /**
+     * The CV the candidate attached, and what HR decided about it.
+     *
+     * A pipeline that lets everyone through to an interview wastes the
+     * interviewers' time, so the first stage is a gate: the candidate attaches a
+     * PDF, HR reads it, and only an approved CV opens the rest of the stages.
+     *
+     * All optional. Applications recorded before this existed carry no CV, and
+     * neither do candidates HR enters by hand from a referral or an inbox — the
+     * gate must not strand either of them (see `cvBlocksAdvance` in
+     * convex/recruitment.ts).
+     */
+    cvFileUrl: v.optional(v.string()),
+    cvFileName: v.optional(v.string()),
+    cvFileSize: v.optional(v.number()),
+    cvMimeType: v.optional(v.string()),
+    cvUploadedAt: v.optional(v.number()),
+    cvStatus: v.optional(
+      v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected')),
+    ),
+    cvReviewedBy: v.optional(v.id('users')),
+    cvReviewedAt: v.optional(v.number()),
+    cvReviewNote: v.optional(v.string()),
     rating: v.optional(v.number()),
     notes: v.optional(v.string()),
     rejectionReason: v.optional(v.string()),
@@ -85,7 +108,9 @@ export const recruitment = {
     .index('by_vacancy_stage', ['vacancyId', 'stage'])
     .index('by_candidate', ['candidateId'])
     .index('by_org', ['organizationId'])
-    .index('by_org_stage', ['organizationId', 'stage']),
+    .index('by_org_stage', ['organizationId', 'stage'])
+    // The review queue: applications whose CV is still waiting on someone.
+    .index('by_org_cvStatus', ['organizationId', 'cvStatus']),
 
   // Application stage events (audit trail)
   applicationEvents: defineTable({
@@ -115,6 +140,10 @@ export const recruitment = {
       v.literal('hr'),
     ),
     location: v.optional(v.string()),
+    // Sent in the invitation email and therefore has to be storable; the
+    // scheduling mutation passed both through and the insert failed on them.
+    meetingLink: v.optional(v.string()),
+    additionalNotes: v.optional(v.string()),
     status: v.union(
       v.literal('scheduled'),
       v.literal('completed'),

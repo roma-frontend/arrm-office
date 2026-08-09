@@ -1286,6 +1286,21 @@
       "careerPage": "Karriereseite",
       "other": "Andere"
     },
+    "cv": {
+      "open": "CV öffnen",
+      "pending": "CV wartet auf Prüfung",
+      "approved": "CV freigegeben",
+      "rejected": "CV abgelehnt",
+      "approve": "CV freigeben",
+      "rejectCv": "CV ablehnen",
+      "reopen": "Prüfung erneut öffnen",
+      "gateHint": "Ohne freigegebenes CV kommt die Bewerbung nicht über das Screening hinaus.",
+      "saved": {
+        "approved": "CV freigegeben — die Bewerbung kann weiter",
+        "rejected": "CV abgelehnt",
+        "pending": "Das CV ist wieder in der Prüfliste"
+      }
+    },
     "candidate": {
       "addTitle": "Kandidat hinzufügen",
       "name": "Name",
@@ -1382,6 +1397,11 @@
     "formResume": "Lebenslauf / Anschreiben",
     "resumePlaceholder": "Erzählen Sie uns von sich, Ihrer Erfahrung und warum Sie an dieser Rolle interessiert sind...",
     "consent": "Ich stimme der Verarbeitung personenbezogener Daten für Personalzwecke zu.",
+    "cvLabel": "CV (PDF)",
+    "cvHint": "Eine PDF bis 10 MB. HR prüft sie vor dem nächsten Schritt.",
+    "cvMustBePdf": "Das CV muss eine PDF sein",
+    "cvTooLarge": "Das CV muss unter 10 MB sein",
+    "cvUploadFailed": "CV konnte nicht hochgeladen werden",
     "consentText": "Ich stimme der Verarbeitung meiner personenbezogenen Daten gemäß der Datenschutzrichtlinie zu.",
     "consentRequired": "Die Zustimmung zur Datenschutzrichtlinie ist erforderlich",
     "fillRequired": "Name und Email sind erforderlich",

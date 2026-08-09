@@ -3,6 +3,9 @@ import { v } from 'convex/values';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 
+/** Ceiling for an attached CV — matches the document upload limit. */
+const MAX_CV_BYTES = 10 * 1024 * 1024;
+
 // Public query: list ALL open vacancies across all organizations (for global /careers page)
 export const listAllOpenVacancies = query({
   args: {},
@@ -133,6 +136,18 @@ export const applyToVacancy = mutation({
     email: v.string(),
     phone: v.optional(v.string()),
     resumeText: v.optional(v.string()),
+    /**
+     * The CV, already uploaded from the browser.
+     *
+     * The file itself goes to Cloudinary through the same server action the rest
+     * of the product's documents use, which is where the type and size are
+     * enforced; what arrives here is the resulting URL plus metadata. The URL is
+     * re-checked below because this mutation is public.
+     */
+    cvFileUrl: v.optional(v.string()),
+    cvFileName: v.optional(v.string()),
+    cvFileSize: v.optional(v.number()),
+    cvMimeType: v.optional(v.string()),
     consentGiven: v.boolean(),
   },
   handler: async (ctx, args) => {
@@ -144,6 +159,20 @@ export const applyToVacancy = mutation({
     const vacancy = await ctx.db.get(args.vacancyId);
     if (!vacancy || vacancy.status !== 'open') {
       throw new Error('This vacancy is no longer accepting applications');
+    }
+
+    // Anyone on the internet can call this, so the CV reference is checked rather
+    // than trusted: our own storage host, a PDF, and a plausible size.
+    if (args.cvFileUrl) {
+      if (!/^https:\/\/res\.cloudinary\.com\//.test(args.cvFileUrl)) {
+        throw new Error('The CV must be uploaded through this form');
+      }
+      if (args.cvMimeType && args.cvMimeType !== 'application/pdf') {
+        throw new Error('The CV must be a PDF');
+      }
+      if (args.cvFileSize != null && args.cvFileSize > MAX_CV_BYTES) {
+        throw new Error('The CV is too large');
+      }
     }
 
     const orgId = vacancy.organizationId;
@@ -189,6 +218,17 @@ export const applyToVacancy = mutation({
       candidateId: candidate._id,
       vacancyId: args.vacancyId,
       stage: 'applied',
+      ...(args.cvFileUrl
+        ? {
+            cvFileUrl: args.cvFileUrl,
+            cvFileName: args.cvFileName,
+            cvFileSize: args.cvFileSize,
+            cvMimeType: args.cvMimeType,
+            cvUploadedAt: Date.now(),
+            // Waiting on HR: this is what holds the candidate at the first stage.
+            cvStatus: 'pending' as const,
+          }
+        : {}),
       createdBy: vacancy.createdBy, // system attribution
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -231,6 +271,6 @@ export const applyToVacancy = mutation({
       });
     }
 
-    return { success: true };
+    return { success: true, applicationId };
   },
 });
