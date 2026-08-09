@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNow } from '@/hooks/useNow';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -40,6 +40,48 @@ interface DriverRequestModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedDate?: Date;
+}
+
+/**
+ * Geocode a free-text query via the public Nominatim API. Extracted to module
+ * scope so it can be unit-tested; the component calls it with no deps.
+ */
+export async function geocodeSearch(
+  query: string,
+): Promise<{ lat: number; lng: number; display_name: string }[]> {
+  if (query.length < 3) {
+    logger.log('[geocode] Query too short:', query);
+    return [];
+  }
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
+    logger.log('[geocode] Searching:', url);
+    const res = await fetch(url, {
+      headers: { 'Accept-Language': 'en,ru' },
+    });
+    if (!res.ok) {
+      logger.error('[geocode] HTTP error:', res.status);
+      return [];
+    }
+    const data = (await res.json()) as Array<{
+      lat: string;
+      lon: string;
+      display_name: string;
+    }>;
+    logger.log('[geocode] Results:', data.length, data);
+    if (data.length === 0) {
+      logger.log('[geocode] No results found');
+      return [];
+    }
+    return data.map((item) => ({
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      display_name: item.display_name,
+    }));
+  } catch (err) {
+    logger.error('[geocode] Error:', err);
+    return [];
+  }
 }
 
 export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverRequestModalProps) {
@@ -122,45 +164,6 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
   const [_showDropoffResults, setShowDropoffResults] = useState(false);
   const pickupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const geocodeSearch = useCallback(
-    async (query: string): Promise<{ lat: number; lng: number; display_name: string }[]> => {
-      if (query.length < 3) {
-        logger.log('[geocode] Query too short:', query);
-        return [];
-      }
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
-        logger.log('[geocode] Searching:', url);
-        const res = await fetch(url, {
-          headers: { 'Accept-Language': 'en,ru' },
-        });
-        if (!res.ok) {
-          logger.error('[geocode] HTTP error:', res.status);
-          return [];
-        }
-        const data = (await res.json()) as Array<{
-          lat: string;
-          lon: string;
-          display_name: string;
-        }>;
-        logger.log('[geocode] Results:', data.length, data);
-        if (data.length === 0) {
-          logger.log('[geocode] No results found');
-          return [];
-        }
-        return data.map((item) => ({
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lon),
-          display_name: item.display_name,
-        }));
-      } catch (err) {
-        logger.error('[geocode] Error:', err);
-        return [];
-      }
-    },
-    [],
-  );
 
   // Close dropdowns on outside click
   useEffect(() => {
