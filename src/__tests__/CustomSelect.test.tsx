@@ -10,11 +10,26 @@ import React from 'react';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-jest.mock('lucide-react', () => ({
-  ChevronDown: (props: any) => <span data-testid="icon-ChevronDown" {...props} />,
-}));
+jest.mock('lucide-react', () => {
+  const React = require('react');
+  // Any icon the dialog primitives reach for resolves to a stub, so this suite can
+  // render CustomSelect inside a real Radix dialog.
+  return new Proxy(
+    {},
+    {
+      get: (_target, name: string) => {
+        if (name === '__esModule') return true;
+        const Icon = (props: any) =>
+          React.createElement('span', { 'data-testid': `icon-${name}`, ...props });
+        Icon.displayName = `Icon(${name})`;
+        return Icon;
+      },
+    },
+  );
+});
 
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 const OPTIONS = [
   { value: 'en', label: 'English' },
@@ -212,5 +227,42 @@ describe('CustomSelect', () => {
     expect(chevron.className).not.toContain('rotate-180');
     fireEvent.click(screen.getByRole('button'));
     expect(screen.getByTestId('icon-ChevronDown').className).toContain('rotate-180');
+  });
+});
+
+describe('CustomSelect inside a modal dialog', () => {
+  /**
+   * A Radix dialog marks everything outside its content inert by setting
+   * `pointer-events: none` on <body>. The dropdown is a portal into <body>, so it
+   * inherited that and the options were visible but could not be clicked — the
+   * list opened and nothing could be picked from it.
+   */
+  it('opts the dropdown back into pointer events', () => {
+    render(<CustomSelect value="en" onChange={() => {}} options={OPTIONS} />);
+    fireEvent.click(screen.getByRole('button'));
+
+    const dropdown = screen.getByText('Russian').closest('div[style]') as HTMLElement;
+    expect(dropdown.style.pointerEvents).toBe('auto');
+  });
+
+  it('picks an option while a dialog holds the page inert', () => {
+    const onChange = jest.fn();
+
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Edit employee</DialogTitle>
+          <CustomSelect value="" onChange={onChange} options={OPTIONS} placeholder="Pick one" />
+        </DialogContent>
+      </Dialog>,
+    );
+
+    fireEvent.click(screen.getByText('Pick one'));
+    fireEvent.click(screen.getByText('Russian'));
+
+    expect(onChange).toHaveBeenCalledWith('ru');
+    // Radix closes on a pointerdown outside its content, and the dropdown is
+    // outside it — choosing an option must not take the dialog down with it.
+    expect(screen.getByText('Edit employee')).toBeInTheDocument();
   });
 });

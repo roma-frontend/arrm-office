@@ -137,6 +137,13 @@ export function CustomSelect({
               zIndex: 999999,
               maxHeight: 240,
               overflowY: 'auto',
+              // The dropdown is a child of <body>, and a Radix dialog sets
+              // `pointer-events: none` there while it is open — everything outside
+              // the dialog content is meant to be inert. That made the options
+              // visible but unclickable inside every modal: the list opened, and
+              // nothing could be picked from it. Opting back in is what makes the
+              // portal usable inside a dialog.
+              pointerEvents: 'auto',
               background: 'var(--landing-modal-bg, #fff)',
               border: '1px solid var(--landing-card-border, #e5e7eb)',
             }}
