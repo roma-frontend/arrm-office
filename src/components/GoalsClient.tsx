@@ -63,7 +63,7 @@ interface KRInput {
 
 // ============ PERIOD HELPERS ============
 
-function getPeriodDates(type: PeriodType, year: number): { start: number; end: number } {
+export function getPeriodDates(type: PeriodType, year: number): { start: number; end: number } {
   const y = year;
   switch (type) {
     case 'Q1':
@@ -600,7 +600,7 @@ function CreateObjectiveWizard({
 
 // ============ CHECK-IN DIALOG ============
 
-function CheckinDialog({
+export function CheckinDialog({
   krId,
   krTitle,
   currentValue,
@@ -735,8 +735,7 @@ function CheckinDialog({
 
 // ============ OBJECTIVE DETAIL DIALOG ============
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for upcoming objective detail view
-function ObjectiveDetailDialog({
+export function ObjectiveDetailDialog({
   objectiveId,
   onClose,
   onCheckin,
