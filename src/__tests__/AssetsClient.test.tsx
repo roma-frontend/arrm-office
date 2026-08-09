@@ -236,6 +236,7 @@ jest.mock('lucide-react', () => {
     ClipboardCheck: Icon,
     CheckCircle: Icon,
     X: Icon,
+    User: Icon,
     UserPlus: Icon,
     History: Icon,
     FileSignature: Icon,
