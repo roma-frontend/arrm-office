@@ -86,7 +86,7 @@ const NOTIFICATION_ROUTES: Record<string, string> = {
  * or `message`: those are localized, so matching English words in them broke as
  * soon as the reader switched language.
  */
-function notificationTarget(n: NotificationItem, role?: string): string | null {
+export function notificationTarget(n: NotificationItem, role?: string): string | null {
   if (n.type === 'security_alert' && n.relatedId && !n.relatedId.includes(':')) {
     return `/superadmin/security/alert/${n.relatedId}`;
   }
@@ -133,7 +133,7 @@ import { logger } from '@/lib/logger';
 import { notificationMessage, notificationTitle } from '@/lib/notificationText';
 import Link from 'next/link';
 
-function getInitials(name: string) {
+export function getInitials(name: string) {
   return name
     .split(' ')
     .map((n) => n[0])
