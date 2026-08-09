@@ -64,9 +64,9 @@ module.exports = {
     // Coverage floor — ratchet up as coverage improves.
     // Auto-ratchet via: node scripts/ratchet-coverage.mjs
     global: {
-      branches: 42,
+      branches: 43,
       functions: 44,
-      lines: 52,
+      lines: 53,
       statements: 52,
     },
   },
