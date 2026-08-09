@@ -261,6 +261,8 @@ const PENDING = [
     signerName: 'Bob Smith',
     order: 1,
     document: { title: 'NDA Agreement' },
+    waitingFor: [],
+    isMyTurn: true,
   },
 ];
 
