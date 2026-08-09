@@ -101,8 +101,6 @@ export async function POST(req: NextRequest) {
       // ── Get recent failed attempts for risk score ─────────────────────────────
       const _fifteenMinAgo = Date.now() - 15 * 60 * 1000;
       let recentFailedAttempts = 0;
-      const isKnownDevice = false;
-      const isTrustedDevice = false;
       let lastLoginDaysAgo: number | undefined;
       let keystrokeSimilarity: number | undefined;
 
@@ -118,14 +116,17 @@ export async function POST(req: NextRequest) {
       }
 
       // ── Calculate risk score ─────────────────────────────────────────────────
+      // NOTE: device identity is deliberately NOT a risk factor here. The real
+      // new-device check (deviceResult.isNew below) runs only after a successful
+      // login and boosts the audit-log riskScore, not the block/challenge
+      // decision. Rewire it into the context once device registration can run
+      // before this point.
       const riskResult = calculateRiskScore({
         ip,
         userAgent,
         deviceFingerprint,
         email,
         method: 'password',
-        isKnownDevice,
-        isTrustedDevice,
         recentFailedAttempts,
         currentHour: new Date().getHours(),
         keystrokeSimilarity,

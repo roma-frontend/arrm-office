@@ -13,8 +13,6 @@ export interface RiskContext {
   email: string;
   method: 'password' | 'face_id' | 'webauthn' | 'google';
   // From DB lookups (passed in from API)
-  isKnownDevice?: boolean;
-  isTrustedDevice?: boolean;
   recentFailedAttempts?: number; // in last 15 min
   lastLoginHour?: number; // 0-23, hour of last successful login
   currentHour?: number; // 0-23
@@ -32,14 +30,6 @@ export interface RiskResult {
 export function calculateRiskScore(ctx: RiskContext): RiskResult {
   let score = 0;
   const factors: string[] = [];
-
-  // ── Device recognition ────────────────────────────────────────────────────
-  if (ctx.isKnownDevice === false) {
-    score += 30;
-    factors.push('new_device');
-  } else if (ctx.isTrustedDevice) {
-    score -= 10; // bonus for trusted device
-  }
 
   // ── Failed attempts ───────────────────────────────────────────────────────
   if (ctx.recentFailedAttempts !== undefined) {

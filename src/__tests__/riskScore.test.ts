@@ -4,15 +4,13 @@ describe('calculateRiskScore', () => {
   const baseContext = {
     email: 'user@example.com',
     method: 'password' as const,
-    isKnownDevice: true,
-    isTrustedDevice: true,
     recentFailedAttempts: 0,
     currentHour: 12,
     keystrokeSimilarity: 0.9,
     lastLoginDaysAgo: 1,
   };
 
-  it('returns low risk for trusted device with normal conditions', () => {
+  it('returns low risk for normal conditions', () => {
     const result = calculateRiskScore(baseContext);
     expect(result.level).toBe('low');
     expect(result.action).toBe('allow');
@@ -20,11 +18,9 @@ describe('calculateRiskScore', () => {
     expect(result.score).toBeLessThanOrEqual(100);
   });
 
-  it('returns high risk for unknown device with multiple failed attempts', () => {
+  it('returns high risk for multiple failed attempts', () => {
     const result = calculateRiskScore({
       ...baseContext,
-      isKnownDevice: false,
-      isTrustedDevice: false,
       recentFailedAttempts: 5,
       currentHour: 3,
       keystrokeSimilarity: 0.3,
@@ -38,8 +34,7 @@ describe('calculateRiskScore', () => {
   it('returns medium risk for moderate anomalies', () => {
     const result = calculateRiskScore({
       ...baseContext,
-      isKnownDevice: false,
-      recentFailedAttempts: 2,
+      recentFailedAttempts: 3,
       currentHour: 2,
     });
     expect(result.level).toBe('medium');
@@ -51,7 +46,6 @@ describe('calculateRiskScore', () => {
   it('clamps score to 0-100 range', () => {
     const result = calculateRiskScore({
       ...baseContext,
-      isTrustedDevice: true,
       keystrokeSimilarity: 0.95,
       method: 'webauthn' as const,
     });
@@ -69,14 +63,6 @@ describe('calculateRiskScore', () => {
     const webauthnResult = calculateRiskScore({ ...baseContext, method: 'webauthn' as const });
     const passwordResult = calculateRiskScore({ ...baseContext, method: 'password' as const });
     expect(webauthnResult.score).toBeLessThanOrEqual(passwordResult.score);
-  });
-
-  it('adds risk factors for new device', () => {
-    const result = calculateRiskScore({
-      ...baseContext,
-      isKnownDevice: false,
-    });
-    expect(result.factors).toContain('new_device');
   });
 
   it('adds risk factors for failed attempts', () => {
