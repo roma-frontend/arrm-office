@@ -135,6 +135,54 @@ const TABS = [
   { key: 'education', icon: GraduationCap, labelKey: 'extendedProfile.tabEducation' },
 ];
 
+/**
+ * A labelled field.
+ *
+ * Declared at module scope on purpose. While this lived inside the modal it was a
+ * new function on every keystroke, so React saw a different component type, threw
+ * the old DOM node away and mounted a fresh one — which dropped the caret and made
+ * the field impossible to type a whole word into.
+ */
+const Input = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  icon,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  icon?: React.ReactNode;
+}) => (
+  <div className="space-y-1.5">
+    <label className="text-xs font-medium text-(--text-muted) flex items-center gap-1.5">
+      {icon}
+      {label}
+    </label>
+    {type === 'textarea' ? (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={2}
+        className="w-full px-3 py-2 rounded-xl border border-(--border) text-sm outline-none transition-all bg-(--input) text-(--text-primary) focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 resize-none"
+      />
+    ) : (
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 rounded-xl border border-(--border) text-sm outline-none transition-all bg-(--input) text-(--text-primary) focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+      />
+    )}
+  </div>
+);
+
 export default function EditExtendedProfileModal({
   open,
   onClose,
@@ -217,47 +265,6 @@ export default function EditExtendedProfileModal({
 
   const updateField = <K extends keyof FormData>(key: K, value: FormData[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
-
-  // ── Reusable Input ──
-  const Input = ({
-    label,
-    value,
-    onChange,
-    placeholder,
-    type = 'text',
-    icon,
-  }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-    type?: string;
-    icon?: React.ReactNode;
-  }) => (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-(--text-muted) flex items-center gap-1.5">
-        {icon}
-        {label}
-      </label>
-      {type === 'textarea' ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={2}
-          className="w-full px-3 py-2 rounded-xl border border-(--border) text-sm outline-none transition-all bg-(--input) text-(--text-primary) focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 resize-none"
-        />
-      ) : (
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full px-3 py-2 rounded-xl border border-(--border) text-sm outline-none transition-all bg-(--input) text-(--text-primary) focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
-        />
-      )}
-    </div>
-  );
 
   // ── Helpers for array updates ──
   const updateWorkEntry = (idx: number, patch: Partial<WorkHistoryEntry>) => {

@@ -44,6 +44,55 @@ interface CreateTaskWizardProps {
   onCancel?: () => void;
 }
 
+/**
+ * Key-result selector for the objective the wizard is currently pointing at.
+ *
+ * Reads the objective from wizard context rather than props, and lives at module
+ * scope: declared inside the wizard it was a new component type on every render,
+ * so the field was unmounted and remounted — and lost focus — as the draft changed.
+ */
+const ObjectiveLinkedKRField = ({
+  objectivesForLinking: objs,
+}: {
+  objectivesForLinking:
+    | Array<{
+        _id: string;
+        title: string;
+        keyResults: Array<{
+          _id: string;
+          title: string;
+          completionPercent: number;
+        }>;
+      }>
+    | undefined;
+}) => {
+  const { t } = useTranslation();
+  const { stepData } = useWizardContext();
+  const selObjectiveId = stepData.objectiveId as string | undefined;
+  const selObjective = objs?.find((o) => o._id === selObjectiveId);
+
+  if (!selObjective || selObjective.keyResults.length === 0) return null;
+
+  return (
+    <SelectStep
+      field="keyResultId"
+      label={t('taskWizard.steps.objectiveLink.keyResultLabel', 'Key Result')}
+      options={selObjective.keyResults.map((kr) => ({
+        value: kr._id,
+        label: `${kr.title} (${kr.completionPercent}%)`,
+      }))}
+      placeholder={t(
+        'taskWizard.steps.objectiveLink.keyResultPlaceholder',
+        'Select a key result (optional)',
+      )}
+      description={t(
+        'taskWizard.steps.objectiveLink.keyResultHint',
+        'Link to a specific key result',
+      )}
+    />
+  );
+};
+
 export function CreateTaskWizard({
   currentUserId,
   userRole,
@@ -57,47 +106,6 @@ export function CreateTaskWizard({
   const { t } = useTranslation();
   const { createOptimistic: createTask } = useOptimisticCreateTask();
 
-  // Internal component that reads objectiveId from Wizard context and shows KR selector
-  const ObjectiveLinkedKRField = ({
-    objectivesForLinking: objs,
-  }: {
-    objectivesForLinking:
-      | Array<{
-          _id: string;
-          title: string;
-          keyResults: Array<{
-            _id: string;
-            title: string;
-            completionPercent: number;
-          }>;
-        }>
-      | undefined;
-  }) => {
-    const { stepData } = useWizardContext();
-    const selObjectiveId = stepData.objectiveId as string | undefined;
-    const selObjective = objs?.find((o) => o._id === selObjectiveId);
-
-    if (!selObjective || selObjective.keyResults.length === 0) return null;
-
-    return (
-      <SelectStep
-        field="keyResultId"
-        label={t('taskWizard.steps.objectiveLink.keyResultLabel', 'Key Result')}
-        options={selObjective.keyResults.map((kr) => ({
-          value: kr._id,
-          label: `${kr.title} (${kr.completionPercent}%)`,
-        }))}
-        placeholder={t(
-          'taskWizard.steps.objectiveLink.keyResultPlaceholder',
-          'Select a key result (optional)',
-        )}
-        description={t(
-          'taskWizard.steps.objectiveLink.keyResultHint',
-          'Link to a specific key result',
-        )}
-      />
-    );
-  };
   const addAttachment = useMutation(api.tasks.addAttachment);
 
   const safeUserId = currentUserId && currentUserId !== '' ? currentUserId : null;
