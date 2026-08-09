@@ -691,6 +691,7 @@
     "callToAction": "Call to action",
     "gridView": "Grid view",
     "listView": "List view",
+    "rowMenu": "Row actions menu",
     "openMenu": "Open menu",
     "deleteAvatar": "Delete avatar",
     "editProfile": "Edit profile",

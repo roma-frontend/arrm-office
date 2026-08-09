@@ -369,17 +369,6 @@ export function EmployeesClient() {
                   ]
                 : []),
             ].map(({ value, setter, options, label }) => {
-              const _getTranslation = (o: string) => {
-                if (o === 'all') {
-                  if (label === 'Role')
-                    return t('employees.allRoles', { defaultValue: 'All Roles' });
-                  if (label === 'Type')
-                    return t('employees.allTypes', { defaultValue: 'All Types' });
-                  if (label === 'Status')
-                    return t('employees.allStatuses', { defaultValue: 'All Statuses' });
-                }
-                return t(`employees.filter_${o}`, { defaultValue: o });
-              };
               return (
                 <CustomSelect
                   key={label}
@@ -461,6 +450,7 @@ export function EmployeesClient() {
                     e.stopPropagation();
                     setOpenMenuId(openMenuId === emp._id ? null : emp._id);
                   }}
+                  title={t('ariaLabels.rowMenu')}
                   className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                   style={{ color: 'var(--text-muted)', background: 'var(--background-subtle)' }}
                 >
@@ -574,6 +564,7 @@ export function EmployeesClient() {
                                 {t(roleConf.labelKey)}
                               </span>
                             </div>
+                            {_renderMenu(emp)}
                           </div>
                           <div className="space-y-1.5 text-xs">
                             <div
@@ -669,24 +660,6 @@ export function EmployeesClient() {
                       </p>
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* Load More Button */}
-              {hasMore && filtered.length > 0 && (
-                <div className="flex justify-center mt-6">
-                  <button
-                    onClick={() => loadMore(50)}
-                    disabled={isLoadingMore}
-                    className="px-6 py-3 rounded-xl border text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      background: 'var(--card)',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)',
-                    }}
-                  >
-                    {isLoadingMore ? <ShieldLoader /> : t('common.loadMore')}
-                  </button>
                 </div>
               )}
 
@@ -952,7 +925,7 @@ export function EmployeesClient() {
                 </>
               )}
 
-              {/* Load More Button for List View */}
+              {/* Load More Button — one per view mode */}
               {hasMore && filtered.length > 0 && (
                 <div className="flex justify-center mt-6">
                   <button
@@ -989,6 +962,7 @@ export function EmployeesClient() {
           {deleteConfirm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <motion.div
+                data-testid="dialog-overlay"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -1037,7 +1011,13 @@ export function EmployeesClient() {
         </AnimatePresence>
 
         {/* Close menu on outside click */}
-        {openMenuId && <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />}
+        {openMenuId && (
+          <div
+            data-testid="menu-overlay"
+            className="fixed inset-0 z-10"
+            onClick={() => setOpenMenuId(null)}
+          />
+        )}
 
         {/* Team Sidebar - Compact collapsible panel */}
         <TeamSidebar userId={user?.id as Id<'users'>} onToggle={setIsPanelOpen} />
