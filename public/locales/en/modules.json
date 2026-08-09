@@ -961,6 +961,8 @@
     "save": "Save Template",
     "signers": "Signers",
     "signingOrder": "Order",
+    "waitingForSigners": "Waiting for {{names}}",
+    "yourTurnLater": "Your turn is coming",
     "noDocuments": "No documents yet",
     "noPending": "No documents to sign",
     "noPendingHint": "You're all caught up!",

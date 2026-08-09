@@ -961,6 +961,8 @@
     "save": "Vorlage speichern",
     "signers": "Unterzeichner",
     "signingOrder": "Reihenfolge",
+    "waitingForSigners": "Wartet auf {{names}}",
+    "yourTurnLater": "Sie sind später an der Reihe",
     "noDocuments": "Keine Dokumente vorhanden",
     "noPending": "Keine Dokumente zur Unterschrift vorhanden",
     "noPendingHint": "Alle Dokumente wurden unterschrieben!",

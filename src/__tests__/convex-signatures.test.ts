@@ -436,6 +436,79 @@ describe('getMyPendingSignatures', () => {
 
     expect(res).toEqual([]);
   });
+
+  /**
+   * Signing is sequential, and the list used to offer the pen to everyone at
+   * once — people further down the order got a raw "Previous signers have not
+   * yet signed" from the mutation. Whose turn it is now travels with the row.
+   */
+  it('names the people ahead in the queue and withholds the turn', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    const { ctx, get, chains } = makeCtx();
+    const reqCh = chain(chains, 'signatureRequests');
+    reqCh.take.mockResolvedValue([
+      requestDoc({ _id: 'req_mine', order: 3 }),
+      requestDoc({ _id: 'req_boris', order: 1, signerName: 'Boris', signerId: 'user_boris' }),
+      requestDoc({ _id: 'req_maria', order: 2, signerName: 'Maria', signerId: 'user_maria' }),
+    ]);
+    get.mockResolvedValue(signatureDoc());
+
+    const res = (await handlers.getMyPendingSignatures(ctx, {
+      organizationId: ORG_A,
+      userId: USER_ID,
+    })) as any[];
+
+    const mine = res.find((r) => r._id === 'req_mine');
+    expect(mine.isMyTurn).toBe(false);
+    // In signing order, so the interface can name them as they will sign.
+    expect(mine.waitingFor).toEqual(['Boris', 'Maria']);
+  });
+
+  it('grants the turn once everyone ahead has signed', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    const { ctx, get, chains } = makeCtx();
+    const reqCh = chain(chains, 'signatureRequests');
+    reqCh.take.mockResolvedValue([
+      requestDoc({ _id: 'req_mine', order: 2 }),
+      requestDoc({
+        _id: 'req_boris',
+        order: 1,
+        status: 'signed',
+        signerName: 'Boris',
+        signerId: 'user_boris',
+      }),
+    ]);
+    get.mockResolvedValue(signatureDoc());
+
+    const res = (await handlers.getMyPendingSignatures(ctx, {
+      organizationId: ORG_A,
+      userId: USER_ID,
+    })) as any[];
+
+    const mine = res.find((r) => r._id === 'req_mine');
+    expect(mine.isMyTurn).toBe(true);
+    expect(mine.waitingFor).toEqual([]);
+  });
+
+  it('does not wait on signers who come after', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    const { ctx, get, chains } = makeCtx();
+    const reqCh = chain(chains, 'signatureRequests');
+    reqCh.take.mockResolvedValue([
+      requestDoc({ _id: 'req_mine', order: 1 }),
+      requestDoc({ _id: 'req_later', order: 5, signerName: 'Later', signerId: 'user_later' }),
+    ]);
+    get.mockResolvedValue(signatureDoc());
+
+    const res = (await handlers.getMyPendingSignatures(ctx, {
+      organizationId: ORG_A,
+      userId: USER_ID,
+    })) as any[];
+
+    const mine = res.find((r) => r._id === 'req_mine');
+    expect(mine.isMyTurn).toBe(true);
+    expect(mine.waitingFor).toEqual([]);
+  });
 });
 
 // ── getAuditLog ──────────────────────────────────────────────────────────────

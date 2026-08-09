@@ -1020,8 +1020,30 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
   const convex = useConvex();
   const labels = useDocumentLabels();
 
+  // Signing runs in order. The dialog used to offer the pen regardless and let
+  // the mutation refuse, which surfaced as a raw server error; the people ahead
+  // in the queue are named instead.
+  const myOrder = doc?.requests?.find((r) => r._id === request?._id)?.order;
+  const waitingFor =
+    myOrder == null
+      ? []
+      : (doc?.requests ?? [])
+          .filter((r) => r.order < myOrder && r.status === 'pending')
+          .sort((a, b) => a.order - b.order)
+          .map((r) => r.signerName);
+  const isMyTurn = waitingFor.length === 0;
+
   const handleSign = async () => {
     if (!request || !signatureData) return;
+    if (!isMyTurn) {
+      toast.error(
+        t('signatures.waitingForSigners', {
+          names: waitingFor.join(', '),
+          defaultValue: 'Waiting for {{names}}',
+        }),
+      );
+      return;
+    }
     try {
       const result = await signMutation({
         requestId: request._id,
@@ -1054,7 +1076,15 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.includes('Previous signers')) {
-        toast.error(t('signatures.errors.previousSigners', 'Waiting for previous signers'));
+        // Someone ahead signed between the page loading and this click.
+        toast.error(
+          waitingFor.length > 0
+            ? t('signatures.waitingForSigners', {
+                names: waitingFor.join(', '),
+                defaultValue: 'Waiting for {{names}}',
+              })
+            : t('signatures.errors.previousSigners', 'Waiting for previous signers'),
+        );
       } else {
         toast.error(t('signatures.errors.signFailed', 'Failed to sign document'));
       }
@@ -1155,17 +1185,32 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
           )}
         </div>
 
-        <div className="px-5 py-4 border-t bg-muted/30 flex items-center justify-between">
+        <div className="px-5 py-4 border-t bg-muted/30 flex items-center justify-between gap-3">
           {!declineMode ? (
             <>
               <Button variant="outline" size="sm" onClick={() => setDeclineMode(true)}>
                 <XCircle className="w-4 h-4 mr-1" />
                 {t('signatures.decline', 'Decline')}
               </Button>
-              <Button size="sm" disabled={!signatureData} onClick={handleSign}>
-                <CheckCircle className="w-4 h-4 mr-1" />
-                {t('signatures.sign', 'Sign Document')}
-              </Button>
+              <div className="flex items-center gap-3 min-w-0">
+                {!isMyTurn && waitingFor.length > 0 && (
+                  <p className="text-xs text-amber-600 truncate">
+                    {t('signatures.waitingForSigners', {
+                      names: waitingFor.join(', '),
+                      defaultValue: 'Waiting for {{names}}',
+                    })}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  disabled={!signatureData || !isMyTurn}
+                  onClick={handleSign}
+                  className="shrink-0"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  {t('signatures.sign', 'Sign Document')}
+                </Button>
+              </div>
             </>
           ) : (
             <>
@@ -1817,8 +1862,13 @@ export function ESignaturesClient() {
               {myPending.map((req) => (
                 <Card
                   key={req._id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  className={
+                    req.isMyTurn
+                      ? 'cursor-pointer hover:shadow-md transition-shadow'
+                      : 'transition-shadow'
+                  }
                   onClick={() =>
+                    req.isMyTurn &&
                     setSignDialogData({
                       _id: req._id,
                       documentId: req.documentId,
@@ -1838,12 +1888,28 @@ export function ESignaturesClient() {
                         <p className="text-xs text-muted-foreground">
                           {t('signatures.signingOrder', 'Order')}: #{req.order}
                         </p>
+                        {/* Sequential signing: name who is being waited on rather
+                            than offering a pen that the mutation will refuse. */}
+                        {!req.isMyTurn && req.waitingFor.length > 0 && (
+                          <p className="text-xs text-amber-600 truncate">
+                            {t('signatures.waitingForSigners', {
+                              names: req.waitingFor.join(', '),
+                              defaultValue: 'Waiting for {{names}}',
+                            })}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <Button size="sm" className="w-full sm:w-auto shrink-0">
-                      <PenTool className="w-4 h-4 mr-1" />
-                      {t('signatures.sign', 'Sign')}
-                    </Button>
+                    {req.isMyTurn ? (
+                      <Button size="sm" className="w-full sm:w-auto shrink-0">
+                        <PenTool className="w-4 h-4 mr-1" />
+                        {t('signatures.sign', 'Sign')}
+                      </Button>
+                    ) : (
+                      <Badge variant="secondary" className="shrink-0">
+                        {t('signatures.yourTurnLater', 'Your turn is coming')}
+                      </Badge>
+                    )}
                   </CardContent>
                 </Card>
               ))}

@@ -213,7 +213,22 @@ export const getMyPendingSignatures = query({
     const enriched = await Promise.all(
       requests.map(async (req) => {
         const doc = await ctx.db.get(req.documentId);
-        return { ...req, document: doc };
+
+        // Signing is sequential, and the interface used to offer the pen to
+        // everyone at once — so people further down the order hit a raw
+        // "Previous signers have not yet signed" from the mutation. Whose turn it
+        // is, and who is being waited on, is knowable here.
+        const siblings = await ctx.db
+          .query('signatureRequests')
+          .withIndex('by_document', (q) => q.eq('documentId', req.documentId))
+          .take(DEFAULT_LIST_CAP);
+
+        const waitingFor = siblings
+          .filter((r) => r.order < req.order && r.status === 'pending')
+          .sort((a, b) => a.order - b.order)
+          .map((r) => r.signerName);
+
+        return { ...req, document: doc, waitingFor, isMyTurn: waitingFor.length === 0 };
       }),
     );
 

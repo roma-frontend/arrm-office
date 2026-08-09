@@ -985,6 +985,8 @@
     "save": "Сохранить шаблон",
     "signers": "Подписанты",
     "signingOrder": "Порядок",
+    "waitingForSigners": "Ожидает подписи: {{names}}",
+    "yourTurnLater": "Ваша очередь позже",
     "noDocuments": "Документов пока нет",
     "noPending": "Нет документов для подписи",
     "noPendingHint": "Все документы подписаны!",
