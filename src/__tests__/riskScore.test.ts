@@ -96,6 +96,42 @@ describe('calculateRiskScore', () => {
     });
     expect(result.factors).toContain('long_absence');
   });
+
+  it('adds risk for a new device and escalates to a challenge', () => {
+    const result = calculateRiskScore({
+      ...baseContext,
+      keystrokeSimilarity: 0.7,
+      isNewDevice: true,
+    });
+    expect(result.score).toBe(30);
+    expect(result.factors).toContain('new_device');
+    expect(result.level).toBe('medium');
+    expect(result.action).toBe('challenge');
+  });
+
+  it('escalates to block when a new device combines with other risk factors', () => {
+    const result = calculateRiskScore({
+      ...baseContext,
+      recentFailedAttempts: 3,
+      currentHour: 2,
+      keystrokeSimilarity: 0.7,
+      isNewDevice: true,
+    });
+    expect(result.score).toBeGreaterThanOrEqual(60);
+    expect(result.factors).toContain('new_device');
+    expect(result.level).toBe('high');
+    expect(result.action).toBe('block');
+  });
+
+  it('does not flag a known device', () => {
+    const result = calculateRiskScore({
+      ...baseContext,
+      keystrokeSimilarity: 0.7,
+      isNewDevice: false,
+    });
+    expect(result.score).toBe(0);
+    expect(result.factors).not.toContain('new_device');
+  });
 });
 
 describe('compareKeystrokeTimings', () => {

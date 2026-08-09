@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { AuthLoginResult } from '@/actions/auth';
 import { signJWT } from '@/lib/jwt';
-import { calculateRiskScore } from '@/lib/riskScore';
+import { calculateRiskScore, type RiskContext } from '@/lib/riskScore';
 import { withTracing, addSpanAttributes } from '@/lib/tracing';
 import { logger } from '@/lib/logger';
 
@@ -116,12 +116,10 @@ export async function POST(req: NextRequest) {
       }
 
       // ── Calculate risk score ─────────────────────────────────────────────────
-      // NOTE: device identity is deliberately NOT a risk factor here. The real
-      // new-device check (deviceResult.isNew below) runs only after a successful
-      // login and boosts the audit-log riskScore, not the block/challenge
-      // decision. Rewire it into the context once device registration can run
-      // before this point.
-      const riskResult = calculateRiskScore({
+      // The device flag is added below, right after registerDevice runs (a user
+      // id is required for it). The recomputed result feeds both the
+      // block/challenge decision and the audit log.
+      const buildRiskContext = (isNewDevice?: boolean): RiskContext => ({
         ip,
         userAgent,
         deviceFingerprint,
@@ -131,7 +129,10 @@ export async function POST(req: NextRequest) {
         currentHour: new Date().getHours(),
         keystrokeSimilarity,
         lastLoginDaysAgo,
+        ...(isNewDevice ? { isNewDevice: true } : {}),
       });
+
+      let riskResult = calculateRiskScore(buildRiskContext());
 
       // ── Block high-risk if adaptive auth is on ───────────────────────────────
       if (
@@ -241,19 +242,54 @@ export async function POST(req: NextRequest) {
       }
 
       // ── Register device fingerprint ──────────────────────────────────────────
+      let deviceIsNew = false;
       if (deviceFingerprint && result.userId) {
         const deviceResult = await convexMutation<RegisterDeviceResult>('security:registerDevice', {
           userId: result.userId,
           fingerprint: deviceFingerprint,
           userAgent,
         });
+        deviceIsNew = deviceResult?.isNew ?? false;
 
-        // If new device and feature enabled — notify admin
+        // The real new-device signal now feeds the risk score: a first login
+        // from an unknown device boosts the score (+30, factor 'new_device'),
+        // which can escalate the block/challenge decision below.
+        if (deviceIsNew) {
+          riskResult = calculateRiskScore(buildRiskContext(true));
+        }
+      }
+
+      // ── Block high-risk logins (incl. new devices) if adaptive auth is on ─────
+      // NOTE: a 'challenge' (medium) result is not enforced server-side — the
+      // JWT is still issued and riskLevel is returned for the client to act on.
+      if (adaptiveEnabled && riskResult.action === 'block') {
+        if (auditEnabled) {
+          await convexMutation('security:logLoginAttempt', {
+            email,
+            userId: result.userId,
+            organizationId: result.organizationId,
+            success: false,
+            method: 'password',
+            ip,
+            userAgent,
+            deviceFingerprint,
+            riskScore: riskResult.score,
+            riskFactors: riskResult.factors,
+            blockedReason: 'High-risk login blocked by adaptive auth',
+          });
+        }
+        return NextResponse.json(
+          { error: 'Login blocked by security policy. Contact your administrator.' },
+          { status: 403 },
+        );
+      }
+
+      // ── Notify admins about a new device (only for logins that proceed) ───────
+      if (deviceIsNew) {
         const newDeviceAlertEnabled = await convexQuery<boolean>('security:getSetting', {
           key: 'new_device_alert',
         });
-        if (newDeviceAlertEnabled && deviceResult?.isNew) {
-          // Notify org admins about new device login
+        if (newDeviceAlertEnabled) {
           await convexMutation('security:logLoginAttempt', {
             email,
             userId: result.userId,
@@ -263,8 +299,8 @@ export async function POST(req: NextRequest) {
             ip,
             userAgent,
             deviceFingerprint,
-            riskScore: riskResult.score + 30, // boost score for new device
-            riskFactors: [...riskResult.factors, 'new_device'],
+            riskScore: riskResult.score, // already includes the new-device boost
+            riskFactors: riskResult.factors,
           });
         }
       }

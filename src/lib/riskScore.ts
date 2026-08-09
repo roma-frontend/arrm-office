@@ -18,6 +18,7 @@ export interface RiskContext {
   currentHour?: number; // 0-23
   keystrokeSimilarity?: number; // 0-1, 1 = perfect match
   lastLoginDaysAgo?: number; // how long since last login
+  isNewDevice?: boolean; // true when this device has never successfully logged in before
 }
 
 export interface RiskResult {
@@ -76,6 +77,12 @@ export function calculateRiskScore(ctx: RiskContext): RiskResult {
       score += 10;
       factors.push('extended_absence');
     }
+  }
+
+  // ── New device ───────────────────────────────────────────────────────────
+  if (ctx.isNewDevice) {
+    score += 30;
+    factors.push('new_device');
   }
 
   // ── Auth method bonus (stronger methods lower risk) ───────────────────────
