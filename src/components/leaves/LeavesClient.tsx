@@ -216,28 +216,8 @@ export function LeavesClient() {
   };
 
   const isLoading = leavesStatus === 'LoadingFirstPage';
-  const isError = false;
   const isSuperadmin = user?.role === 'superadmin';
   const isAdmin = !isSuperadmin && (user?.role === 'admin' || user?.role === 'supervisor');
-
-  if (isError)
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-          <Plus className="w-8 h-8 text-amber-500" />
-        </div>
-        <h2 className="text-xl font-bold text-(--text-primary)">
-          {t('dashboard.convexNotDeployed')}
-        </h2>
-        <p className="text-(--text-muted) text-sm max-w-sm">
-          Run{' '}
-          <code className="bg-(--background-subtle) px-2 py-0.5 rounded text-[#2563eb]">
-            npx convex dev
-          </code>{' '}
-          in the terminal to connect to the database.
-        </p>
-      </div>
-    );
 
   return (
     <div className="space-y-4 sm:space-y-6">
