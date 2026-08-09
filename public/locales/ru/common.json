@@ -245,6 +245,17 @@
     "news": "Новости",
     "assets": "Активы"
   },
+  "mobileNav": {
+    "menu": "Меню",
+    "close": "Закрыть",
+    "search": "Поиск по разделам…",
+    "noResults": "Ничего не найдено",
+    "aiSubtitle": "Спросите что угодно про HR",
+    "tabHome": "Главная",
+    "tabLeaves": "Отпуска",
+    "tabTasks": "Задачи",
+    "tabChat": "Чат"
+  },
   "userPicker": {
     "search": "Поиск по имени, email, отделу…",
     "loading": "Загрузка…",

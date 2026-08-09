@@ -12,6 +12,12 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
 
+  // Dev-only floating badge, bottom-left. It sits exactly on top of the mobile
+  // bottom dock (see MobileTabBar) and covered the first tab's label on a phone
+  // viewport. Build and runtime errors are still surfaced with this off — only
+  // the indicator is hidden. Set to `{ position: 'bottom-left' }` to restore it.
+  devIndicators: false,
+
   // Emit browser source maps in production.
   // Lighthouse flags "Missing source maps for large first-party JavaScript"
   // without them, and Sentry needs them to un-minify stack traces. The .map

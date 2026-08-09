@@ -245,6 +245,17 @@
     "news": "News",
     "assets": "Assets"
   },
+  "mobileNav": {
+    "menu": "Menu",
+    "close": "Close",
+    "search": "Search sections…",
+    "noResults": "Nothing found",
+    "aiSubtitle": "Ask anything about HR",
+    "tabHome": "Home",
+    "tabLeaves": "Leaves",
+    "tabTasks": "Tasks",
+    "tabChat": "Chat"
+  },
   "userPicker": {
     "search": "Search by name, email, department…",
     "loading": "Loading…",

@@ -2490,3 +2490,209 @@ input[type='date']:focus {
 .dark .react-flow__node {
   color: var(--foreground);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE DOCK — floating bottom navigation (see MobileTabBar)
+   ═══════════════════════════════════════════════════════════════ */
+
+.mobile-dock {
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 50%, transparent),
+    0 10px 30px -12px rgb(0 0 0 / 28%),
+    0 2px 8px -4px rgb(0 0 0 / 18%);
+  /* Promote to its own compositing layer. A translucent, blurred bar sitting
+     over a scrolling container is otherwise re-rasterised on every frame, which
+     shows up as a visible flicker on Android Chrome and older iOS Safari. */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.dark .mobile-dock {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 8%, transparent),
+    0 10px 34px -12px rgb(0 0 0 / 70%);
+}
+
+.mobile-dock-fab {
+  background: var(--primary-gradient, var(--primary));
+  box-shadow:
+    0 0 0 4px var(--card),
+    0 10px 26px -8px color-mix(in srgb, var(--primary) 70%, transparent);
+}
+
+.mobile-dock-fab-aura {
+  position: absolute;
+  top: -1.5rem;
+  left: 50%;
+  width: 4rem;
+  height: 4rem;
+  margin-left: -2rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(7px);
+  opacity: 0.6;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--primary) 75%, transparent) 80deg,
+    transparent 180deg,
+    color-mix(in srgb, var(--purple, #9333ea) 70%, transparent) 280deg,
+    transparent 360deg
+  );
+  animation: mobileDockAura 6s linear infinite;
+}
+
+@keyframes mobileDockAura {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* Content padding that clears the dock (dock height + gap + safe area). */
+.pb-mobile-dock {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
+}
+
+@media (min-width: 1024px) {
+  .pb-mobile-dock {
+    padding-bottom: 1.5rem;
+  }
+}
+
+/* Anchor for floating buttons that must stay clear of the dock (AI assistant).
+   A plain `bottom-24` was not enough: on devices with a home-indicator inset the
+   dock is pushed up by the bottom safe-area env() value and slid under them. */
+.above-mobile-dock {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
+}
+
+@media (min-width: 1024px) {
+  .above-mobile-dock {
+    bottom: 1.5rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE MENU SHEET — "all sections" grid behind the dock's centre button
+   ═══════════════════════════════════════════════════════════════ */
+
+.mobile-sheet-panel {
+  background: var(--card);
+  box-shadow: 0 -18px 50px -18px rgb(0 0 0 / 35%);
+}
+
+@keyframes mobileSheetIn {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes mobileSheetOut {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+
+@keyframes mobileSheetScrim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.mobile-sheet-in {
+  animation: mobileSheetIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mobile-sheet-out {
+  animation: mobileSheetOut 260ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.mobile-sheet-scrim-in {
+  animation: mobileSheetScrim 200ms ease-out both;
+}
+
+.mobile-sheet-scrim-out {
+  animation: mobileSheetScrim 200ms ease-in reverse both;
+}
+
+.mobile-sheet-ai {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 18%, transparent),
+    color-mix(in srgb, var(--primary) 6%, transparent),
+    transparent
+  );
+}
+
+.mobile-sheet-ai-sheen {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 18%), transparent);
+  animation: mobileSheetSheen 3.4s ease-in-out infinite;
+}
+
+@keyframes mobileSheetSheen {
+  0% {
+    transform: translateX(-130%);
+  }
+  55%,
+  100% {
+    transform: translateX(330%);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE PAGE ENTER — route-change transition (see MobilePageTransition)
+
+   Enter-only on purpose. The previous version faded the *outgoing* content to
+   zero opacity and back over 250ms on every navigation, which read as the whole
+   page blinking each time a dock tab was tapped.
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes mobilePageEnter {
+  from {
+    opacity: 0;
+    transform: translate3d(14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mobile-page-enter {
+  animation: mobilePageEnter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (min-width: 1024px) {
+  .mobile-page-enter {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-dock-fab-aura,
+  .mobile-sheet-ai-sheen {
+    animation: none;
+  }
+
+  .mobile-page-enter,
+  .mobile-sheet-in,
+  .mobile-sheet-out,
+  .mobile-sheet-scrim-in,
+  .mobile-sheet-scrim-out {
+    animation-duration: 1ms;
+  }
+}

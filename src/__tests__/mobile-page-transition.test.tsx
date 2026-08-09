@@ -1,13 +1,13 @@
 /**
- * Tests for MobilePageTransition — mobile-only page wrapper that fades out on
- * route change and slides back in after a short delay.
+ * Tests for MobilePageTransition — mobile-only page wrapper that replays a CSS
+ * enter animation on route change (and never fades the outgoing page out).
  *
  * Mocks: next/navigation (mutable usePathname).
  */
 
 import React from 'react';
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import { render, screen, act } from '@testing-library/react';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { render, screen } from '@testing-library/react';
 
 // ── next/navigation: mutable pathname per test ───────────────────────────────
 let mockPathname = '/home';
@@ -21,26 +21,20 @@ const wrapperOf = () => screen.getByText('Page content').parentElement as HTMLEl
 
 describe('MobilePageTransition', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
     mockPathname = '/home';
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it('renders children and starts visible', () => {
+  it('renders children with the enter animation class', () => {
     render(
       <MobilePageTransition>
         <span>Page content</span>
       </MobilePageTransition>,
     );
     expect(screen.getByText('Page content')).toBeInTheDocument();
-    expect(wrapperOf().className).toContain('opacity-100');
-    expect(wrapperOf().className).toContain('translate-x-0');
+    expect(wrapperOf().className).toContain('mobile-page-enter');
   });
 
-  it('fades out on route change then slides back in after the delay', () => {
+  it('keeps the enter class (never hides the page) across a route change', () => {
     const { rerender } = render(
       <MobilePageTransition>
         <span>Page content</span>
@@ -54,50 +48,45 @@ describe('MobilePageTransition', () => {
       </MobilePageTransition>,
     );
 
-    // Fade-out applied synchronously on the route change
-    expect(wrapperOf().className).toContain('opacity-0');
-    expect(wrapperOf().className).toContain('translate-x-4');
-
-    // After the 50ms delay the page slides back in
-    act(() => {
-      jest.advanceTimersByTime(50);
-    });
-    expect(wrapperOf().className).toContain('opacity-100');
-    expect(wrapperOf().className).toContain('translate-x-0');
+    // The effect replays the keyframe; the class is present again afterwards and
+    // no opacity-0 state is ever applied to already-painted content.
+    expect(wrapperOf().className).toContain('mobile-page-enter');
+    expect(wrapperOf().className).not.toContain('opacity-0');
   });
 
-  it('stays visible when the pathname does not change', () => {
+  it('does not remount children on route change', () => {
     const { rerender } = render(
       <MobilePageTransition>
+        <input defaultValue="" aria-label="field" />
         <span>Page content</span>
       </MobilePageTransition>,
     );
 
+    const field = screen.getByLabelText('field') as HTMLInputElement;
+    field.value = 'typed';
+
+    mockPathname = '/contact';
     rerender(
       <MobilePageTransition>
+        <input defaultValue="" aria-label="field" />
         <span>Page content</span>
       </MobilePageTransition>,
     );
 
-    expect(wrapperOf().className).toContain('opacity-100');
-    act(() => {
-      jest.advanceTimersByTime(100);
-    });
-    expect(wrapperOf().className).toContain('opacity-100');
+    expect((screen.getByLabelText('field') as HTMLInputElement).value).toBe('typed');
   });
 
-  it('applies the passed className and the desktop overrides', () => {
+  it('applies the passed className alongside the animation class', () => {
     render(
       <MobilePageTransition className="pt-4">
         <span>Page content</span>
       </MobilePageTransition>,
     );
     expect(wrapperOf().className).toContain('pt-4');
-    expect(wrapperOf().className).toContain('lg:!opacity-100');
-    expect(wrapperOf().className).toContain('lg:!translate-x-0');
+    expect(wrapperOf().className).toContain('mobile-page-enter');
   });
 
-  it('clears the pending timer on unmount mid-transition', () => {
+  it('unmounts cleanly mid-transition', () => {
     const { rerender, unmount } = render(
       <MobilePageTransition>
         <span>Page content</span>
@@ -110,11 +99,7 @@ describe('MobilePageTransition', () => {
         <span>Page content</span>
       </MobilePageTransition>,
     );
-    expect(wrapperOf().className).toContain('opacity-0');
 
     expect(() => unmount()).not.toThrow();
-    act(() => {
-      jest.advanceTimersByTime(50);
-    });
   });
 });

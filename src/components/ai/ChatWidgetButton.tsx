@@ -262,7 +262,7 @@ export function ChatWidgetButton({
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="fixed bottom-24 right-6 z-50 px-4 py-2 rounded-xl bg-[#2563eb] text-white text-sm font-medium shadow-lg flex items-center gap-2"
+            className="fixed above-mobile-dock right-6 z-50 px-4 py-2 rounded-xl bg-[#2563eb] text-white text-sm font-medium shadow-lg flex items-center gap-2"
           >
             <Mic className="w-4 h-4 animate-pulse" />
             Hey HR! I&apos;m listening…
@@ -417,7 +417,7 @@ export function ChatWidgetButton({
       {/* Pulsing animation background */}
       {!docked && (
         <motion.div
-          className="fixed bottom-24 lg:bottom-6 right-6 z-50 w-10 sm:w-14 h-10 sm:h-14 rounded-full bg-primary/20"
+          className="fixed above-mobile-dock right-6 z-50 w-10 sm:w-14 h-10 sm:h-14 rounded-full bg-primary/20"
           animate={{
             scale: [1, 1.2, 1] as unknown as number,
             opacity: [0.7, 0, 0.7] as unknown as number,
@@ -437,7 +437,7 @@ export function ChatWidgetButton({
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
-            className="fixed bottom-24 right-6 z-50 max-w-[200px] px-3 py-2 rounded-lg text-xs font-medium shadow-lg"
+            className="fixed above-mobile-dock right-6 z-50 max-w-[200px] px-3 py-2 rounded-lg text-xs font-medium shadow-lg"
             style={{
               background: 'var(--card)',
               border: '1px solid var(--border)',
@@ -467,7 +467,7 @@ export function ChatWidgetButton({
             setIsOpen((o: boolean) => !o);
             setLastActivityTime(Date.now());
           }}
-          className="fixed bottom-24 lg:bottom-6 right-6 z-50 w-10 sm:w-14 h-10 sm:h-14 rounded-full flex items-center gap-2 justify-center btn-gradient text-white font-medium shadow-md hover:shadow-[0_0_24px_rgba(37,99,235,0.6)] transition-shadow duration-300"
+          className="fixed above-mobile-dock right-6 z-50 w-10 sm:w-14 h-10 sm:h-14 rounded-full flex items-center gap-2 justify-center btn-gradient text-white font-medium shadow-md hover:shadow-[0_0_24px_rgba(37,99,235,0.6)] transition-shadow duration-300"
           style={
             dragPos && !returning
               ? {

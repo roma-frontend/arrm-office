@@ -245,6 +245,17 @@
     "news": "Neuigkeiten",
     "assets": "Anlagen"
   },
+  "mobileNav": {
+    "menu": "Menü",
+    "close": "Schließen",
+    "search": "Bereiche durchsuchen…",
+    "noResults": "Nichts gefunden",
+    "aiSubtitle": "Fragen Sie alles rund um HR",
+    "tabHome": "Start",
+    "tabLeaves": "Urlaub",
+    "tabTasks": "Aufgaben",
+    "tabChat": "Chat"
+  },
   "userPicker": {
     "search": "Nach Name, E-Mail oder Abteilung suchen…",
     "loading": "Wird geladen…",

@@ -44,8 +44,16 @@ export function ReactQueryProvider({ children }: { children: React.ReactNode }) 
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {/* Devtools только в development режиме */}
-      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+      {/* Devtools только в development режиме.
+          Кнопка девтулзов — position: fixed в правом нижнем углу, то есть ровно
+          там, где на телефоне стоит мобильный док. Прячем её ниже lg, чтобы она
+          не перекрывала навигацию (родитель с display:none убирает и fixed
+          потомков). */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="hidden lg:block">
+          <ReactQueryDevtools initialIsOpen={false} />
+        </div>
+      )}
     </QueryClientProvider>
   );
 }
