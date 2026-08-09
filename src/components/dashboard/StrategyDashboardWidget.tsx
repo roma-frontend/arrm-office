@@ -73,23 +73,16 @@ export default function StrategyDashboardWidget() {
       transition={{ duration: 0.4, delay: 0.2 }}
     >
       <Card className="overflow-hidden border-(--border) relative">
-        {/* Gradient accent */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              'linear-gradient(135deg, rgba(139,92,246,0.06) 0%, rgba(37,99,235,0.03) 100%)',
-          }}
-        />
-
-        <CardContent className="p-5 relative">
+        <CardContent className="p-4 sm:p-5 relative">
           {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg shadow-purple-500/20">
-                <Layers className="w-5 h-5 text-white" />
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {/* A glowing gradient chip made this one widget shout over the rest
+                  of the page; the icon is tinted like every other section marker. */}
+              <div className="w-9 h-9 rounded-xl bg-[#a855f7]/12 text-[#a855f7] flex items-center justify-center shrink-0">
+                <Layers className="w-[18px] h-[18px]" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   {t('strategyMap.title', 'Strategy Map')}
                   <span className="text-[10px] text-(--text-muted) font-normal">{year}</span>

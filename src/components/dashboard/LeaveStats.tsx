@@ -138,14 +138,14 @@ export default React.memo(
               ) : (
                 <CheckCircle className="w-5 h-5 text-green-500" />
               )}
-              🏖️ {t('leaveStats.burnoutPrevention')}
+              {t('leaveStats.burnoutPrevention')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {burnoutRisk ? (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                  ⚠️ {t('leaveStats.notOnLeave', { days: stats.daysSinceLastLeave })}
+                  {t('leaveStats.notOnLeave', { days: stats.daysSinceLastLeave })}
                 </p>
                 <p className="text-xs text-orange-600 dark:text-orange-400">
                   {t('leaveStats.lastLeave')}:{' '}
@@ -165,12 +165,12 @@ export default React.memo(
                   </Badge>
                 </div>
                 <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
-                  💡 {t('leaveStats.productivityBoost')}
+                  {t('leaveStats.productivityBoost')}
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-green-600">✅ {t('leaveStats.allGood')}</p>
+                <p className="text-sm font-medium text-green-600">{t('leaveStats.allGood')}</p>
                 <p className="text-xs text-green-600 dark:text-green-400">
                   {t('leaveStats.lastLeave')}:{' '}
                   {stats.lastLeaveDate
@@ -194,7 +194,7 @@ export default React.memo(
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-blue-500" />
-              📊 {t('leaveStats.personalStats', { year: stats.currentYear })}
+              {t('leaveStats.personalStats', { year: stats.currentYear })}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -230,15 +230,15 @@ export default React.memo(
             </div>
 
             {/* Общий баланс */}
-            <div className="p-4 rounded-lg bg-linear-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+            <div className="p-4 rounded-xl border border-(--border) bg-(--muted)/40">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">{t('leaveStats.totalAvailable')}</p>
-                  <p className="text-3xl font-bold bg-linear-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  <p className="text-3xl font-semibold text-(--text-primary) tabular-nums tracking-tight">
                     {stats.totalBalance} {t('leaveStats.days')}
                   </p>
                 </div>
-                <Award className="w-12 h-12 text-purple-500 opacity-50" />
+                <Award className="w-9 h-9 text-(--text-muted)" />
               </div>
             </div>
 

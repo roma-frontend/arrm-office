@@ -227,11 +227,13 @@ describe('LeaveCharts', () => {
     expect(cards.length).toBe(2);
   });
 
-  it('renders trending up icon on monthly trend card', () => {
+  it('drops the decorative icon from the trend header', () => {
     const { container } = render(
       <LeaveCharts monthlyTrend={defaultMonthlyTrend} pieData={defaultPieData} />,
     );
-    expect(container.querySelector('[data-testid="trending-up"]')).toBeInTheDocument();
+    // It looked like a control and did nothing; the header carries the legend now.
+    expect(container.querySelector('[data-testid="trending-up"]')).toBeNull();
+    expect(screen.getByText('dashboard.monthlyLeaveTrend')).toBeInTheDocument();
   });
 
   it('renders with all zeros in monthly trend', () => {
@@ -241,7 +243,10 @@ describe('LeaveCharts', () => {
         pieData={defaultPieData}
       />,
     );
-    expect(container.querySelector('[data-testid="bar-chart"]')).toBeInTheDocument();
+    // A chart of nothing is worse than saying there is nothing: empty axes read
+    // as a loading failure.
+    expect(container.querySelector('[data-testid="bar-chart"]')).toBeNull();
+    expect(screen.getByText('dashboard.noLeaveData')).toBeInTheDocument();
   });
 
   it('renders with single pie entry', () => {
@@ -290,10 +295,29 @@ describe('LeaveCharts', () => {
     expect(container.querySelector('[data-testid="grid"]')).toBeInTheDocument();
   });
 
-  it('renders legend on bar chart', () => {
-    const { container } = render(
-      <LeaveCharts monthlyTrend={defaultMonthlyTrend} pieData={defaultPieData} />,
+  it('names the statuses in the header instead of inside the plot', () => {
+    render(<LeaveCharts monthlyTrend={defaultMonthlyTrend} pieData={defaultPieData} />);
+    // The chart library's own legend cost a row of the chart's height; the same
+    // information now sits next to the title.
+    expect(screen.getByText('statuses.approved')).toBeInTheDocument();
+    expect(screen.getByText('statuses.pending')).toBeInTheDocument();
+    expect(screen.getByText('statuses.rejected')).toBeInTheDocument();
+  });
+
+  it('reads out the distribution rather than leaving bare slices', () => {
+    render(
+      <LeaveCharts
+        monthlyTrend={defaultMonthlyTrend}
+        pieData={[
+          { name: 'Paid Leave', value: 3, color: '#3b82f6' },
+          { name: 'Sick Leave', value: 1, color: '#ef4444' },
+        ]}
+      />,
     );
-    expect(container.querySelector('[data-testid="legend"]')).toBeInTheDocument();
+    // Total in the middle of the ring, then each type with its count and share.
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('Paid Leave')).toBeInTheDocument();
+    expect(screen.getByText('75%')).toBeInTheDocument();
+    expect(screen.getByText('25%')).toBeInTheDocument();
   });
 });

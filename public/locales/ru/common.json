@@ -1615,6 +1615,8 @@
     "failedToDeleteAvatar": "Не удалось удалить аватар"
   },
   "dashboard": {
+    "viewAll": "Все",
+    "total": "Всего",
     "stat": {
       "inOrganization": "в организации",
       "needsDecision": "ждут решения",

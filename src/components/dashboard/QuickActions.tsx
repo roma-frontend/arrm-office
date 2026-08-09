@@ -21,11 +21,11 @@ import {
   BarChart3,
   Users,
   Settings2,
-  Zap,
   ArrowUpRight,
   Layers,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { SectionHeader } from '@/components/dashboard/SectionHeader';
 import { useAuthUser } from '@/store/useAuthStore';
 
 interface QuickAction {
@@ -34,7 +34,8 @@ interface QuickAction {
   icon: LucideIcon;
   href: string;
   description: string;
-  gradientClass: string;
+  /** Colour that marks the action; the surface stays neutral. */
+  accent: string;
   role?: string[];
 }
 
@@ -69,7 +70,7 @@ export function QuickActions() {
         icon: Plane,
         href: '/leaves',
         description: t('quickActions.leaveRequestDesc'),
-        gradientClass: 'quick-action-primary',
+        accent: '#2563eb',
       },
       {
         id: 'check-in',
@@ -77,7 +78,7 @@ export function QuickActions() {
         icon: Fingerprint,
         href: '/attendance',
         description: t('quickActions.checkInDesc'),
-        gradientClass: 'quick-action-success',
+        accent: '#10b981',
       },
       {
         id: 'chat',
@@ -85,7 +86,7 @@ export function QuickActions() {
         icon: MessageSquare,
         href: '/chat',
         description: t('quickActions.chatDesc'),
-        gradientClass: 'quick-action-chat',
+        accent: '#8b5cf6',
       },
       {
         id: 'tasks',
@@ -93,7 +94,7 @@ export function QuickActions() {
         icon: CheckCircle2,
         href: '/tasks',
         description: t('quickActions.tasksDesc'),
-        gradientClass: 'quick-action-warning',
+        accent: '#f59e0b',
       },
     ];
 
@@ -104,7 +105,7 @@ export function QuickActions() {
         icon: Layers,
         href: '/strategy',
         description: t('quickActions.strategyDesc') || 'OKR cascade',
-        gradientClass: 'quick-action-purple',
+        accent: '#a855f7',
         role: ['admin', 'supervisor', 'superadmin'],
       },
       {
@@ -113,7 +114,7 @@ export function QuickActions() {
         icon: ShieldCheck,
         href: '/approvals',
         description: t('quickActions.approvalsDesc'),
-        gradientClass: 'quick-action-indigo',
+        accent: '#6366f1',
         role: ['admin', 'supervisor'],
       },
       {
@@ -122,7 +123,7 @@ export function QuickActions() {
         icon: BarChart3,
         href: '/analytics',
         description: t('quickActions.analyticsDesc'),
-        gradientClass: 'quick-action-rose',
+        accent: '#f43f5e',
         role: ['admin', 'supervisor'],
       },
     ];
@@ -134,7 +135,7 @@ export function QuickActions() {
         icon: Users,
         href: '/employees',
         description: t('quickActions.employeesDesc'),
-        gradientClass: 'quick-action-cyan',
+        accent: '#06b6d4',
         role: ['admin', 'superadmin'],
       },
       {
@@ -143,7 +144,7 @@ export function QuickActions() {
         icon: Settings2,
         href: '/settings',
         description: t('quickActions.settingsDesc'),
-        gradientClass: 'quick-action-slate',
+        accent: '#64748b',
         role: ['admin', 'superadmin'],
       },
     ];
@@ -166,63 +167,56 @@ export function QuickActions() {
 
   return (
     <Card className="border-(--border) overflow-hidden bg-(--card)">
-      <CardHeader className="pb-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-(--primary) to-(--primary-hover) shadow-lg shadow-(--primary)/20">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute -inset-1 rounded-xl bg-(--primary)/20 blur-md -z-10" />
-            </div>
-            <div>
-              <CardTitle className="text-lg tracking-tight">{t('quickActions.title')}</CardTitle>
-              <p className="text-sm text-(--muted-foreground) mt-0.5">
-                {t('quickActions.subtitle') || 'Быстрый доступ к основным функциям'}
-              </p>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-(--muted-foreground)">
-            <kbd className="px-2 py-1 rounded-md bg-(--muted) border border-(--border) font-mono text-[11px]">
+      <SectionHeader
+        title={t('quickActions.title')}
+        aside={
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-(--muted-foreground) ml-auto">
+            <kbd className="px-1.5 py-0.5 rounded-md bg-(--muted) border border-(--border) font-mono text-[11px]">
               Ctrl
             </kbd>
             <span className="opacity-50">+</span>
-            <kbd className="px-2 py-1 rounded-md bg-(--muted) border border-(--border) font-mono text-[11px]">
+            <kbd className="px-1.5 py-0.5 rounded-md bg-(--muted) border border-(--border) font-mono text-[11px]">
               K
             </kbd>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+        }
+      />
+      <CardContent className="px-4 sm:px-5 pb-4">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3"
         >
           {actions.map((action) => {
             const Icon = action.icon;
             return (
               <motion.div key={action.id} variants={itemVariants}>
+                {/* Eight saturated gradient tiles shouted over the whole page and
+                    over each other. The surface is the card, the colour marks the
+                    action, and the label is finally legible on it. */}
                 <button
                   onClick={() => handleAction(action.href)}
-                  className={`${action.gradientClass} group relative overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/50 focus-visible:ring-offset-2 focus-visible:ring-offset-(--card)`}
+                  className="group w-full h-full text-left rounded-xl border border-(--border) bg-(--card) p-3 transition-all duration-200 hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/40 focus-visible:ring-offset-1"
                 >
-                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300" />
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-1 group-hover:translate-x-0">
-                    <ArrowUpRight className="w-3.5 h-3.5 text-white/80" />
-                  </div>
-                  <div className="relative z-10 flex flex-col items-center justify-center gap-2 py-4 px-3">
-                    <div className="p-2 rounded-lg bg-white/15 backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-sm font-semibold text-white leading-tight text-center">
-                      {action.label}
+                  <div className="flex items-start justify-between gap-2">
+                    <span
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: `color-mix(in srgb, ${action.accent} 12%, transparent)`,
+                        color: action.accent,
+                      }}
+                    >
+                      <Icon className="w-[18px] h-[18px]" />
                     </span>
-                    <span className="text-[11px] text-white/70 text-center leading-snug line-clamp-2">
-                      {action.description}
-                    </span>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-(--text-muted) opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </div>
+                  <p className="mt-2 text-sm font-semibold text-(--text-primary) leading-tight">
+                    {action.label}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-(--text-muted) leading-snug line-clamp-2">
+                    {action.description}
+                  </p>
                 </button>
               </motion.div>
             );
