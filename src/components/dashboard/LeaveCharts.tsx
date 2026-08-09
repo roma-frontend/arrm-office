@@ -18,6 +18,7 @@ import {
 import { Cell, Tooltip as RechartsTooltip } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { SectionHeader, SectionEmpty } from '@/components/dashboard/SectionHeader';
+import { cn } from '@/lib/utils';
 
 interface LeaveChartsProps {
   monthlyTrend: Array<{ month: string; approved: number; pending: number; rejected: number }>;
@@ -40,6 +41,11 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
   const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  // Index of the slice under the pointer, or null. Drives three things at once:
+  // the slice highlight, the dimming of the others, and hiding the total in the
+  // hole — the tooltip is anchored to the pointer, so the total has to step
+  // aside rather than be covered by it.
+  const [activeSlice, setActiveSlice] = React.useState<number | null>(null);
 
   const tooltipBg = isDark ? '#0f172a' : '#ffffff';
   const tooltipBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(0, 0, 0, 0.1)';
@@ -138,9 +144,14 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
           <CardContent className="px-4 sm:px-5 pb-4">
             {pieData.length > 0 ? (
               <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-3">
-                <div className="relative shrink-0">
+                <div
+                  className="relative shrink-0"
+                  // Safety net: if the pointer leaves the chart faster than
+                  // Recharts reports it, the highlight would otherwise stick.
+                  onMouseLeave={() => setActiveSlice(null)}
+                >
                   <ResponsiveContainer width={150} height={150}>
-                    <PieChart>
+                    <PieChart onMouseLeave={() => setActiveSlice(null)}>
                       <Pie
                         data={pieData}
                         cx="50%"
@@ -150,20 +161,47 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
                         outerRadius={72}
                         paddingAngle={2}
                         dataKey="value"
+                        onMouseEnter={(_: unknown, index: number) => setActiveSlice(index)}
+                        onMouseLeave={() => setActiveSlice(null)}
                       >
                         {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            stroke="none"
+                            // Dim the rest so the tooltip is unmistakably about
+                            // the slice under the pointer.
+                            opacity={activeSlice === null || activeSlice === index ? 1 : 0.3}
+                          />
                         ))}
                       </Pie>
                       <RechartsTooltip
                         contentStyle={tooltipStyle}
                         itemStyle={{ color: tooltipColor }}
                         labelStyle={{ color: tooltipColor }}
+                        formatter={(value, name) => [
+                          `${value} · ${pieTotal > 0 ? Math.round((Number(value) / pieTotal) * 100) : 0}%`,
+                          name,
+                        ]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
-                  {/* The hole in the middle is where the total belongs. */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  {/* The hole in the middle is where the total belongs — except
+                      while a slice is hovered, when the pointer-anchored tooltip
+                      occupies that space. Fading it out beats letting the two
+                      overlap.
+
+                      The delay only applies to coming *back*: moving from one
+                      slice straight to its neighbour briefly reports "left a
+                      slice" before "entered a slice", and without the delay the
+                      total flashed on for that frame. */}
+                  <div
+                    aria-hidden={activeSlice !== null}
+                    className={cn(
+                      'absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-150 motion-reduce:transition-none',
+                      activeSlice === null ? 'opacity-100 delay-100' : 'opacity-0 delay-0',
+                    )}
+                  >
                     <span className="text-xl font-semibold text-(--text-primary) tabular-nums leading-none">
                       {pieTotal}
                     </span>

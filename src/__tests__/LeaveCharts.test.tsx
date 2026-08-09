@@ -320,4 +320,14 @@ describe('LeaveCharts', () => {
     expect(screen.getByText('75%')).toBeInTheDocument();
     expect(screen.getByText('25%')).toBeInTheDocument();
   });
+
+  it('keeps a tooltip on the donut but never on top of the total', () => {
+    const { container } = render(
+      <LeaveCharts monthlyTrend={defaultMonthlyTrend} pieData={defaultPieData} />,
+    );
+    // One tooltip per chart. Recharts anchors the donut's tooltip to the
+    // pointer, i.e. over the hole, so the total in the hole fades out while a
+    // slice is hovered instead of being covered.
+    expect(container.querySelectorAll('[data-testid="tooltip"]')).toHaveLength(2);
+  });
 });
