@@ -101,7 +101,7 @@ function useDocumentLabels(): DocumentLabels {
  * technical title (`Movement Form - <asset>`) so they stay searchable in the DB;
  * every UI surface shows the act name in the active language instead.
  */
-function localizedDocTitle(
+export function localizedDocTitle(
   doc: { title: string; content?: string } | null | undefined,
   t: TFunction,
 ): string {
@@ -120,7 +120,7 @@ function localizedDocTitle(
  * `content`; without this the employee about to sign would be shown the raw
  * `__DOC__{...}` payload.
  */
-function documentDisplayBody(
+export function documentDisplayBody(
   doc: { content?: string } | null | undefined,
   act: { blocks: DocumentBlock[] } | null,
 ): string {
@@ -134,7 +134,7 @@ function documentDisplayBody(
  * Build the fully localized, structured body of an asset act stored on a
  * signature document. Returns `null` for generic documents.
  */
-function buildActBody(
+export function buildActBody(
   doc: { content?: string } | null | undefined,
   t: TFunction,
   lang: string | undefined,
@@ -323,7 +323,7 @@ const ACCEPTED_SIGNATURE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
  * data URL. On any failure (e.g. a tainted canvas) it resolves to the original
  * data URL so upload still works.
  */
-function normalizeSignatureImage(dataUrl: string): Promise<string> {
+export function normalizeSignatureImage(dataUrl: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -431,7 +431,7 @@ function SignatureCapture({ onSave, width, height }: SignatureCaptureProps) {
 
 // ============ SIGNATURE UPLOAD ============
 
-function SignatureUpload({ onSave }: { onSave: (dataUrl: string) => void }) {
+export function SignatureUpload({ onSave }: { onSave: (dataUrl: string) => void }) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -515,7 +515,7 @@ interface SignaturePadProps {
   height?: number;
 }
 
-function SignaturePad({ onSave, width = 400, height = 200 }: SignaturePadProps) {
+export function SignaturePad({ onSave, width = 400, height = 200 }: SignaturePadProps) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -956,7 +956,13 @@ function CreateDocumentWizard({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => (step > 0 ? setStep(step - 1) : onClose())}
+            onClick={() => {
+              if (step > 0) setStep(step - 1);
+              else {
+                onClose();
+                resetForm();
+              }
+            }}
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             {step > 0 ? t('common.back', 'Back') : t('common.cancel', 'Cancel')}

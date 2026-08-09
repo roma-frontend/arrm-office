@@ -14,13 +14,20 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => fallback || key,
+    t: (key: string, fallback?: string | { defaultValue?: string; names?: string }) => {
+      if (typeof fallback === 'object' && fallback?.defaultValue) {
+        return fallback.defaultValue.replace('{{names}}', fallback.names ?? '');
+      }
+      return fallback || key;
+    },
     i18n: { language: 'en' },
   }),
 }));
 
 let queryResults: Record<string, unknown> = {};
 const mutationCalls: Array<{ name?: string; args: any[] }> = [];
+/** Per-mutation result overrides, keyed by _name. */
+const mutationResults: Record<string, unknown> = {};
 
 jest.mock('@/lib/convex-typed', () => ({
   useQuery: (ref: { _name?: string }) => queryResults[ref?._name ?? ''],
@@ -28,7 +35,9 @@ jest.mock('@/lib/convex-typed', () => ({
     (ref: { _name?: string }) =>
     (...args: any[]) => {
       mutationCalls.push({ name: ref?._name, args });
-      return Promise.resolve();
+      const result = mutationResults[ref?._name ?? ''];
+      if (result instanceof Error) return Promise.reject(result);
+      return Promise.resolve(result);
     },
   useConvex: () => ({
     query: async (ref: { _name?: string }) => queryResults[ref?._name ?? ''],
@@ -168,13 +177,28 @@ jest.mock('@/components/ui/dialog', () => ({
   DialogDescription: ({ children }: any) => <div>{children}</div>,
 }));
 
-jest.mock('@/components/ui/select', () => ({
-  Select: ({ children }: any) => <div data-testid="select">{children}</div>,
-  SelectTrigger: ({ children }: any) => <div>{children}</div>,
-  SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
-  SelectContent: ({ children }: any) => <div>{children}</div>,
-  SelectItem: ({ children }: any) => <span>{children}</span>,
-}));
+jest.mock('@/components/ui/select', () => {
+  const ReactMod = require('react');
+  const SelectCtx = ReactMod.createContext({ onValueChange: (_v: string) => {} });
+  return {
+    Select: ({ children, onValueChange }: any) => (
+      <SelectCtx.Provider value={{ onValueChange: onValueChange || (() => {}) }}>
+        <div data-testid="select">{children}</div>
+      </SelectCtx.Provider>
+    ),
+    SelectTrigger: ({ children }: any) => <div>{children}</div>,
+    SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
+    SelectContent: ({ children }: any) => <div>{children}</div>,
+    SelectItem: ({ value, children }: any) => {
+      const { onValueChange } = ReactMod.useContext(SelectCtx);
+      return (
+        <button type="button" onClick={() => onValueChange(value)}>
+          {children}
+        </button>
+      );
+    },
+  };
+});
 
 jest.mock('@/components/ui/tabs', () => {
   const ReactMod = require('react');
@@ -273,6 +297,7 @@ const TEMPLATES = [{ _id: 'tpl-1', title: 'NDA', content: 'Template body', categ
 const USERS = [
   { _id: 'u-2', name: 'Bob Smith', email: 'bob@example.com', role: 'employee' },
   { _id: 'u-3', name: 'Super Admin', email: 'sa@example.com', role: 'superadmin' },
+  { _id: 'u-4', name: 'Carol Jones', email: 'carol@example.com', role: 'employee' },
 ];
 
 const AUDIT_LOG = [
@@ -284,6 +309,7 @@ describe('ESignaturesClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mutationCalls.length = 0;
+    for (const k of Object.keys(mutationResults)) delete mutationResults[k];
     mockUser = { id: 'user-1', organizationId: 'org-1', role: 'admin' };
     queryResults = {
       listDocuments: [DOC],
@@ -584,5 +610,560 @@ describe('ESignaturesClient', () => {
     render(<ESignaturesClient />);
     expect(screen.queryByText('New Document')).not.toBeInTheDocument();
     expect(screen.queryByText('Templates')).not.toBeInTheDocument();
+  });
+
+  it('signs a document after drawing a signature on the pad', async () => {
+    queryResults['getDocument'] = DOC;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    const canvas = dialog.querySelector('canvas') as HTMLCanvasElement;
+    const ctx = {
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      clearRect: jest.fn(),
+    };
+    (canvas as any).getContext = () => ctx;
+    canvas.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 400, bottom: 200, width: 400, height: 200 }) as DOMRect;
+
+    fireEvent.mouseDown(canvas, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(canvas, { clientX: 40, clientY: 40 });
+    (canvas as any).toDataURL = () => 'data:image/png;base64,SIG';
+    fireEvent.click(within(dialog).getByText('Apply Signature'));
+
+    // "Sign Document" appears both in the dialog title and on the action button.
+    const signButtons = within(dialog).getAllByText('Sign Document');
+    fireEvent.click(signButtons[signButtons.length - 1]);
+    await waitFor(() => {
+      expect(mutationCalls).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'signDocument',
+            args: [
+              { requestId: 'req-1', signatureData: 'data:image/png;base64,SIG', userId: 'user-1' },
+            ],
+          }),
+        ]),
+      );
+    });
+    expect(toast.success).toHaveBeenCalledWith('Document signed successfully!');
+  });
+
+  it('shows the redraw option after capturing a signature', async () => {
+    queryResults['getDocument'] = DOC;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    const canvas = dialog.querySelector('canvas') as HTMLCanvasElement;
+    const ctx = {
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      clearRect: jest.fn(),
+    };
+    (canvas as any).getContext = () => ctx;
+    canvas.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 400, bottom: 200, width: 400, height: 200 }) as DOMRect;
+    fireEvent.mouseDown(canvas, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(canvas, { clientX: 40, clientY: 40 });
+    (canvas as any).toDataURL = () => 'data:image/png;base64,SIG';
+    fireEvent.click(within(dialog).getByText('Apply Signature'));
+
+    expect(within(dialog).getByText('Redraw')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByText('Redraw'));
+    // Pad is back.
+    expect(within(dialog).queryByText('Apply Signature')).toBeInTheDocument();
+  });
+
+  it('blocks signing while waiting for a previous signer', async () => {
+    queryResults['getDocument'] = {
+      ...DOC,
+      requests: [
+        { _id: 'req-0', status: 'pending', order: 1, signerName: 'First Guy' },
+        { _id: 'req-1', status: 'pending', order: 2, signerName: 'Bob Smith' },
+      ],
+    };
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    expect(within(dialog).getByText('Waiting for First Guy')).toBeInTheDocument();
+    const signButtons = within(dialog).getAllByText('Sign Document');
+    expect(signButtons[signButtons.length - 1]).toBeDisabled();
+  });
+
+  it('shows a fallback error when the sign mutation rejects', async () => {
+    queryResults['getDocument'] = DOC;
+    mutationResults['signDocument'] = new Error('server down');
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    const canvas = dialog.querySelector('canvas') as HTMLCanvasElement;
+    const ctx = {
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      clearRect: jest.fn(),
+    };
+    (canvas as any).getContext = () => ctx;
+    canvas.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 400, bottom: 200, width: 400, height: 200 }) as DOMRect;
+    fireEvent.mouseDown(canvas, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(canvas, { clientX: 40, clientY: 40 });
+    (canvas as any).toDataURL = () => 'data:image/png;base64,SIG';
+    fireEvent.click(within(dialog).getByText('Apply Signature'));
+    const signButtons = within(dialog).getAllByText('Sign Document');
+    fireEvent.click(signButtons[signButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to sign document');
+    });
+  });
+
+  it('warns about previous signers when the mutation says so', async () => {
+    queryResults['getDocument'] = DOC;
+    mutationResults['signDocument'] = new Error('Previous signers have not signed');
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    const canvas = dialog.querySelector('canvas') as HTMLCanvasElement;
+    const ctx = {
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      clearRect: jest.fn(),
+    };
+    (canvas as any).getContext = () => ctx;
+    canvas.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 400, bottom: 200, width: 400, height: 200 }) as DOMRect;
+    fireEvent.mouseDown(canvas, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(canvas, { clientX: 40, clientY: 40 });
+    (canvas as any).toDataURL = () => 'data:image/png;base64,SIG';
+    fireEvent.click(within(dialog).getByText('Apply Signature'));
+    const signButtons = within(dialog).getAllByText('Sign Document');
+    fireEvent.click(signButtons[signButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Waiting for previous signers');
+    });
+  });
+
+  it('archives the signed PDF when the sign completes the document', async () => {
+    queryResults['getDocument'] = { ...DOC, status: 'completed' };
+    mutationResults['signDocument'] = { completed: true };
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    const canvas = dialog.querySelector('canvas') as HTMLCanvasElement;
+    const ctx = {
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      clearRect: jest.fn(),
+    };
+    (canvas as any).getContext = () => ctx;
+    canvas.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 400, bottom: 200, width: 400, height: 200 }) as DOMRect;
+    fireEvent.mouseDown(canvas, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(canvas, { clientX: 40, clientY: 40 });
+    (canvas as any).toDataURL = () => 'data:image/png;base64,SIG';
+    fireEvent.click(within(dialog).getByText('Apply Signature'));
+    const signButtons = within(dialog).getAllByText('Sign Document');
+    fireEvent.click(signButtons[signButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mutationCalls).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'attachSignedPdf',
+            args: [expect.objectContaining({ documentId: 'doc-1' })],
+          }),
+        ]),
+      );
+    });
+    expect(toast.success).toHaveBeenCalledWith('Signed document archived');
+  });
+
+  it('prefills the wizard from a selected template', async () => {
+    queryResults['listTemplates'] = TEMPLATES;
+    queryResults['getUsersByOrganizationId'] = USERS;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('New Document'));
+
+    fireEvent.click(screen.getByText('NDA'));
+    const titleInput = screen.getByPlaceholderText(
+      'e.g., Employment Contract — John Doe',
+    ) as HTMLInputElement;
+    expect(titleInput.value).toBe('NDA');
+    const contentArea = screen.getByPlaceholderText(
+      'Enter document text...',
+    ) as HTMLTextAreaElement;
+    expect(contentArea.value).toBe('Template body');
+  });
+
+  it('goes back through the wizard and cancels from the first step', async () => {
+    queryResults['getUsersByOrganizationId'] = USERS;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('New Document'));
+
+    const back = () => screen.getByText('Back');
+    fireEvent.change(screen.getByPlaceholderText('e.g., Employment Contract — John Doe'), {
+      target: { value: 'Doc' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Enter document text...'), {
+      target: { value: 'Body' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+    // Step 2 offers the Back button.
+    fireEvent.click(back());
+    // Step 1 again — the footer button is labelled Cancel.
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByText('Create Document for Signing')).not.toBeInTheDocument();
+  });
+
+  it('backs out of decline mode in the sign dialog', async () => {
+    queryResults['getDocument'] = DOC;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getByText('Decline'));
+    expect(within(dialog).getByText('Confirm Decline')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByText('Back'));
+    expect(within(dialog).getAllByText('Sign Document').length).toBeGreaterThan(0);
+  });
+
+  it('backs out of the template creation form', async () => {
+    queryResults['listTemplates'] = TEMPLATES;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('Templates'));
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getByText('New Template'));
+    fireEvent.click(within(dialog).getByText('Back'));
+    expect(within(dialog).getByText('New Template')).toBeInTheDocument();
+  });
+
+  it('sets an expiration date in the wizard review step', async () => {
+    queryResults['getUsersByOrganizationId'] = USERS;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('New Document'));
+
+    fireEvent.change(screen.getByPlaceholderText('e.g., Employment Contract — John Doe'), {
+      target: { value: 'Doc' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Enter document text...'), {
+      target: { value: 'Body' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+
+    // The expiration date lives on the Signers step.
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2026-12-31' } });
+    fireEvent.click(screen.getByText('Bob Smith'));
+    fireEvent.click(screen.getByText('Next'));
+
+    expect(screen.getByText('Expires')).toBeInTheDocument();
+  });
+
+  it('removes a signer from the wizard selection and reorders the rest', async () => {
+    queryResults['getUsersByOrganizationId'] = USERS;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('New Document'));
+
+    fireEvent.change(screen.getByPlaceholderText('e.g., Employment Contract — John Doe'), {
+      target: { value: 'Doc' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Enter document text...'), {
+      target: { value: 'Body' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+
+    // Two signers — the second gets order #2.
+    fireEvent.click(screen.getByText('Bob Smith'));
+    fireEvent.click(screen.getByText('Carol Jones'));
+    expect(screen.getByText('#2')).toBeInTheDocument();
+
+    // Removing Bob renumbers Carol from #2 → #1.
+    fireEvent.click(screen.getByText('Bob Smith'));
+    expect(screen.queryByText('#2')).not.toBeInTheDocument();
+    expect(screen.getByText('#1')).toBeInTheDocument();
+  });
+
+  it('toasts a create error when the wizard submit fails', async () => {
+    queryResults['getUsersByOrganizationId'] = USERS;
+    mutationResults['createDocument'] = new Error('nope');
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('New Document'));
+
+    fireEvent.change(screen.getByPlaceholderText('e.g., Employment Contract — John Doe'), {
+      target: { value: 'Doc' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Enter document text...'), {
+      target: { value: 'Body' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Bob Smith'));
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Send for Signing'));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to create document');
+    });
+  });
+
+  it('resets the wizard form when reopened', async () => {
+    queryResults['getUsersByOrganizationId'] = USERS;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('New Document'));
+    fireEvent.change(screen.getByPlaceholderText('e.g., Employment Contract — John Doe'), {
+      target: { value: 'Doc' },
+    });
+    fireEvent.click(screen.getByText('Cancel'));
+    fireEvent.click(screen.getByText('New Document'));
+    expect(
+      (screen.getByPlaceholderText('e.g., Employment Contract — John Doe') as HTMLInputElement)
+        .value,
+    ).toBe('');
+  });
+
+  it('toasts an archive failure in the detail dialog', async () => {
+    const completedDoc = { ...DOC, status: 'completed', completedAt: 1_750_000_200_000 };
+    queryResults['getDocument'] = completedDoc;
+    queryResults['getAuditLog'] = [];
+    // Break the export lib so archiveSignedDocument throws.
+    const { renderDocumentPdfBase64 } = require('@/lib/exportDocument') as any;
+    renderDocumentPdfBase64.mockRejectedValue(new Error('pdf render failed'));
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('Documents'));
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getByText('Archive PDF'));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to archive signed PDF: pdf render failed');
+    });
+    renderDocumentPdfBase64.mockResolvedValue('data:application/pdf;base64,AAA');
+  });
+
+  it('toasts an error when cancelling a document fails', async () => {
+    queryResults['getDocument'] = DOC;
+    queryResults['getAuditLog'] = [];
+    mutationResults['cancelDocument'] = new Error('boom');
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('Documents'));
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getByText('Cancel Document'));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to cancel');
+    });
+  });
+
+  it('toasts an error when sending a reminder fails', async () => {
+    queryResults['getDocument'] = DOC;
+    queryResults['getAuditLog'] = [];
+    mutationResults['sendReminder'] = new Error('nope');
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('Documents'));
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getAllByTestId('icon-RefreshCw')[0]);
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to send reminder');
+    });
+  });
+
+  it('toasts an error when exporting the completed PDF fails', async () => {
+    const completedDoc = { ...DOC, status: 'completed', completedAt: 1_750_000_200_000 };
+    queryResults['getDocument'] = completedDoc;
+    queryResults['getAuditLog'] = [];
+    const { exportDocumentToPDF } = require('@/lib/exportDocument') as any;
+    exportDocumentToPDF.mockRejectedValue(new Error('no pdf'));
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('Documents'));
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getByText('Export PDF'));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to export PDF');
+    });
+    exportDocumentToPDF.mockResolvedValue(undefined);
+  });
+
+  it('toasts an error when exporting the Word copy fails', async () => {
+    const completedDoc = { ...DOC, status: 'completed', completedAt: 1_750_000_200_000 };
+    queryResults['getDocument'] = completedDoc;
+    queryResults['getAuditLog'] = [];
+    const { renderDocumentDocxBlob } = require('@/lib/exportDocument') as any;
+    renderDocumentDocxBlob.mockRejectedValue(new Error('no docx'));
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('Documents'));
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getByText('Export Word'));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to export');
+    });
+    renderDocumentDocxBlob.mockResolvedValue(new Blob());
+  });
+
+  it('toasts an error when declining fails', async () => {
+    queryResults['getDocument'] = DOC;
+    mutationResults['declineDocument'] = new Error('nope');
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getByText('Decline'));
+    fireEvent.change(within(dialog).getByPlaceholderText('Explain why you are declining...'), {
+      target: { value: 'Not for me' },
+    });
+    fireEvent.click(within(dialog).getByText('Confirm Decline'));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to decline');
+    });
+  });
+
+  it('toasts an error when creating a template fails', async () => {
+    queryResults['listTemplates'] = TEMPLATES;
+    mutationResults['createTemplate'] = new Error('nope');
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('Templates'));
+
+    const dialog = screen.getByTestId('dialog');
+    fireEvent.click(within(dialog).getByText('New Template'));
+    fireEvent.change(within(dialog).getByPlaceholderText('e.g., NDA Agreement'), {
+      target: { value: 'Offer Letter' },
+    });
+    const textboxes = within(dialog).getAllByRole('textbox');
+    fireEvent.change(textboxes[2], { target: { value: 'Offer body' } });
+    fireEvent.click(within(dialog).getByText('Save Template'));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to create template');
+    });
+  });
+
+  it('opens the wizard from the empty documents state', async () => {
+    mockUser = { id: 'user-1', organizationId: 'org-1', role: 'admin' };
+    queryResults['listDocuments'] = [];
+    queryResults['getUsersByOrganizationId'] = USERS;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('Documents'));
+    fireEvent.click(screen.getByText('Create your first document'));
+    expect(screen.getAllByText('Create Document for Signing').length).toBeGreaterThan(0);
+  });
+
+  it('resets the wizard form after a successful send', async () => {
+    queryResults['listTemplates'] = TEMPLATES;
+    queryResults['getUsersByOrganizationId'] = USERS;
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('New Document'));
+
+    fireEvent.change(screen.getByPlaceholderText('e.g., Employment Contract — John Doe'), {
+      target: { value: 'Doc' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Enter document text...'), {
+      target: { value: 'Body' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Bob Smith'));
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Send for Signing'));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Document sent for signing!');
+    });
+    // Reopening shows a fresh form.
+    fireEvent.click(screen.getByText('New Document'));
+    expect(
+      (screen.getByPlaceholderText('e.g., Employment Contract — John Doe') as HTMLInputElement)
+        .value,
+    ).toBe('');
+  });
+
+  it('skips archiving when the signed PDF is already stored', async () => {
+    queryResults['getDocument'] = {
+      ...DOC,
+      status: 'completed',
+      signedPdfUrl: 'https://cdn/x.pdf',
+    };
+    mutationResults['signDocument'] = { completed: true };
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    const canvas = dialog.querySelector('canvas') as HTMLCanvasElement;
+    const ctx = {
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      clearRect: jest.fn(),
+    };
+    (canvas as any).getContext = () => ctx;
+    canvas.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 400, bottom: 200, width: 400, height: 200 }) as DOMRect;
+    fireEvent.mouseDown(canvas, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(canvas, { clientX: 40, clientY: 40 });
+    (canvas as any).toDataURL = () => 'data:image/png;base64,SIG';
+    fireEvent.click(within(dialog).getByText('Apply Signature'));
+    const signButtons = within(dialog).getAllByText('Sign Document');
+    fireEvent.click(signButtons[signButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Document signed successfully!');
+    });
+    // No attachSignedPdf call — the URL already exists.
+    expect(mutationCalls.some((m) => m.name === 'attachSignedPdf')).toBe(false);
+  });
+
+  it('toasts an archive failure when signing completes the document', async () => {
+    queryResults['getDocument'] = { ...DOC, status: 'completed' };
+    mutationResults['signDocument'] = { completed: true };
+    const { renderDocumentPdfBase64 } = require('@/lib/exportDocument') as any;
+    renderDocumentPdfBase64.mockRejectedValue(new Error('render failed'));
+    render(<ESignaturesClient />);
+    fireEvent.click(screen.getByText('NDA Agreement'));
+
+    const dialog = screen.getByTestId('dialog');
+    const canvas = dialog.querySelector('canvas') as HTMLCanvasElement;
+    const ctx = {
+      beginPath: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      stroke: jest.fn(),
+      clearRect: jest.fn(),
+    };
+    (canvas as any).getContext = () => ctx;
+    canvas.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 400, bottom: 200, width: 400, height: 200 }) as DOMRect;
+    fireEvent.mouseDown(canvas, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(canvas, { clientX: 40, clientY: 40 });
+    (canvas as any).toDataURL = () => 'data:image/png;base64,SIG';
+    fireEvent.click(within(dialog).getByText('Apply Signature'));
+    const signButtons = within(dialog).getAllByText('Sign Document');
+    fireEvent.click(signButtons[signButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to archive signed PDF');
+    });
+    renderDocumentPdfBase64.mockResolvedValue('data:application/pdf;base64,AAA');
   });
 });
