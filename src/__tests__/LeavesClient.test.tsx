@@ -10,7 +10,7 @@
  * keys), i18next (language), sonner, @/store/useAuthStore,
  * @/hooks/useSelectedOrganization, @/hooks/useOptimisticActions,
  * @/lib/notificationSound, @/lib/logger, next/dynamic (AILeaveAssistant),
- * @/components/leaves/{LeaveRequestModal,LeaveRequestWizard},
+ * @/components/leaves/LeaveRequestModal,
  * @/components/ui/{button,input,badge,card,select,skeleton}, lucide-react.
  */
 
@@ -156,10 +156,6 @@ jest.mock('@/components/leaves/LeaveRequestModal', () => ({
         </button>
       </div>
     ) : null,
-}));
-
-jest.mock('@/components/leaves/LeaveRequestWizard', () => ({
-  LeaveRequestWizard: () => <div data-testid="leave-wizard">wizard</div>,
 }));
 
 // ── UI primitives ────────────────────────────────────────────────────────────
@@ -317,6 +313,9 @@ describe('LeavesClient — rendering', () => {
     expect(screen.getByText('leave.title')).toBeInTheDocument();
     fireEvent.click(screen.getByText('dashboard.newRequest'));
     expect(screen.getByTestId('leave-modal')).toBeInTheDocument();
+    // The legacy modal also closes through its own close button.
+    fireEvent.click(screen.getByTestId('modal-close'));
+    expect(screen.queryByTestId('leave-modal')).not.toBeInTheDocument();
   });
 
   it('renders a desktop table row with employee and department', () => {

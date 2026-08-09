@@ -24,7 +24,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { LeaveRequestModal } from '@/components/leaves/LeaveRequestModal';
-import { LeaveRequestWizard } from '@/components/leaves/LeaveRequestWizard';
 import { useAuthStore, type User } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import {
@@ -96,7 +95,6 @@ export function LeavesClient() {
   const selectedOrgId = useSelectedOrganization();
   const lang = i18n.language || 'en';
   const _dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -624,18 +622,7 @@ export function LeavesClient() {
         </Card>
       </motion.div>
 
-      {/* Leave Request Wizard (New) */}
-      {wizardOpen && user?.id && (
-        <LeaveRequestWizard
-          userId={user.id as Id<'users'>}
-          isSuperadmin={isSuperadmin}
-          selectedOrgId={selectedOrgId as Id<'organizations'> | undefined}
-          onComplete={() => setWizardOpen(false)}
-          onCancel={() => setWizardOpen(false)}
-        />
-      )}
-
-      {/* Legacy Modal (keep for backward compatibility) */}
+      {/* Single request entry point (the wizard was removed — its state was never set). */}
       <LeaveRequestModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
