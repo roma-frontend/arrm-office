@@ -41,11 +41,16 @@ async function _getUserIdIdentityOrEmail(
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ALL USERS — scoped to caller's organization
+//
+// Passing `organizationId` pins the result to that one organization. Omitting it
+// keeps the historical behaviour, which several callers depend on: a superadmin
+// gets every user across every organization (see the chat "All orgs" mode).
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllUsers = query({
   args: {
     cursor: v.optional(v.id('users')),
     limit: v.optional(v.number()),
+    organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
     const requester = await getAuthCaller(ctx);
@@ -53,6 +58,21 @@ export const getAllUsers = query({
     const DEFAULT_LIMIT = 50;
     const MAX_LIMIT = 100;
     const effectiveLimit = Math.min(args.limit || DEFAULT_LIMIT, MAX_LIMIT);
+
+    // An explicit organization wins over the caller's own, so a superadmin
+    // browsing one organization is not served the whole database. Nobody else
+    // may name an organization other than their own.
+    if (args.organizationId) {
+      if (!isSuperadmin(requester) && requester.organizationId !== args.organizationId) {
+        return [];
+      }
+      const scoped = await ctx.db
+        .query('users')
+        .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+        .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')))
+        .take(effectiveLimit + 1);
+      return scoped.map(redactUser);
+    }
 
     // Superadmin sees all users across all orgs (with org info)
     if (isSuperadmin(requester)) {

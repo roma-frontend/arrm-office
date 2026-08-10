@@ -71,20 +71,29 @@ export const getMyTasks = query({
 });
 
 // ── Upcoming Birthdays ────────────────────────────────────────────────────────
-// Colleagues in the caller's organization whose birthday lands within the next
+// Colleagues in one organization whose birthday lands within the next
 // `withinDays` days (today inclusive). dateOfBirth is stored as ISO yyyy-mm-dd.
 export const getUpcomingBirthdays = query({
-  args: { withinDays: v.optional(v.number()) },
+  args: {
+    withinDays: v.optional(v.number()),
+    organizationId: v.optional(v.id('organizations')),
+  },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
-    if (!caller || !caller.organizationId) return [];
+    if (!caller) return [];
+
+    // Superadmins browse one organization at a time, so an explicit organization
+    // has to win over their own; everyone else is confined to theirs.
+    const organizationId = args.organizationId ?? caller.organizationId;
+    if (!organizationId) return [];
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) return [];
 
     const withinDays = args.withinDays ?? 30;
 
     const users = await ctx.db
       .query('users')
       .withIndex('by_org_active', (q) =>
-        q.eq('organizationId', caller.organizationId).eq('isActive', true),
+        q.eq('organizationId', organizationId).eq('isActive', true),
       )
       .take(DEFAULT_LIST_CAP);
 
@@ -233,17 +242,26 @@ export const getReportingLine = query({
 // ── Out of Office ─────────────────────────────────────────────────────────────
 // Colleagues whose approved leave overlaps the window [today, today+withinDays].
 export const getOutOfOffice = query({
-  args: { withinDays: v.optional(v.number()) },
+  args: {
+    withinDays: v.optional(v.number()),
+    organizationId: v.optional(v.id('organizations')),
+  },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
-    if (!caller || !caller.organizationId) return [];
+    if (!caller) return [];
+
+    // Same scoping rule as getUpcomingBirthdays: an explicit organization wins
+    // for a superadmin, and nobody else may look outside their own.
+    const organizationId = args.organizationId ?? caller.organizationId;
+    if (!organizationId) return [];
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) return [];
 
     const withinDays = args.withinDays ?? 7;
 
     const approved = await ctx.db
       .query('leaveRequests')
       .withIndex('by_org_status', (q) =>
-        q.eq('organizationId', caller.organizationId).eq('status', 'approved'),
+        q.eq('organizationId', organizationId).eq('status', 'approved'),
       )
       .take(DEFAULT_LIST_CAP);
 

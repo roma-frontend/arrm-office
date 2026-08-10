@@ -46,6 +46,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { motion } from '@/lib/cssMotion';
 import { cn } from '@/lib/utils';
 import { useAuthUser } from '@/store/useAuthStore';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 
@@ -192,9 +193,27 @@ export default function TeamClient() {
   const { t, i18n } = useTranslation();
   const me = useAuthUser();
 
-  const usersRaw = useQuery(api.users.queries.getAllUsers, { limit: 100 });
-  const birthdaysRaw = useQuery(api.dashboard.getUpcomingBirthdays, { withinDays: 45 });
-  const awayRaw = useQuery(api.dashboard.getOutOfOffice, { withinDays: 14 });
+  // The directory describes one organization — its headcount, departments,
+  // birthdays and who is away all have to agree. For a superadmin that is the
+  // organization picked in the selector, falling back to their own so the page
+  // is never a mix of every tenant at once.
+  const selectedOrgId = useSelectedOrganization();
+  const orgId = (selectedOrgId ?? me?.organizationId ?? undefined) as
+    | Id<'organizations'>
+    | undefined;
+
+  const usersRaw = useQuery(
+    api.users.queries.getAllUsers,
+    orgId ? { limit: 100, organizationId: orgId } : 'skip',
+  );
+  const birthdaysRaw = useQuery(
+    api.dashboard.getUpcomingBirthdays,
+    orgId ? { withinDays: 45, organizationId: orgId } : 'skip',
+  );
+  const awayRaw = useQuery(
+    api.dashboard.getOutOfOffice,
+    orgId ? { withinDays: 14, organizationId: orgId } : 'skip',
+  );
   const reportingLine = useQuery(api.dashboard.getReportingLine, {});
 
   const members = useMemo(
