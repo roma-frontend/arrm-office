@@ -100,6 +100,46 @@ interface MotionProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
+ * Composes a CSS `transform` from the transform-ish keys of a motion state.
+ *
+ * Returns `undefined` when the state declares no transform keys, and the string
+ * `'none'` when it declares keys that all happen to be identity values. The
+ * distinction matters: `'none'` is used to actively clear a transform inherited
+ * from `initial`, while `undefined` means "this state has nothing to say about
+ * transforms".
+ */
+function buildTransform(state: {
+  x?: number | string;
+  y?: number | string;
+  scale?: number;
+  rotate?: number;
+}): string | undefined {
+  const parts: string[] = [];
+
+  if (state.x !== undefined && state.x !== 0) {
+    parts.push(`translateX(${typeof state.x === 'number' ? `${state.x}px` : state.x})`);
+  }
+  if (state.y !== undefined && state.y !== 0) {
+    parts.push(`translateY(${typeof state.y === 'number' ? `${state.y}px` : state.y})`);
+  }
+  if (state.scale !== undefined && state.scale !== 1) {
+    parts.push(`scale(${state.scale})`);
+  }
+  if (state.rotate !== undefined && state.rotate !== 0) {
+    parts.push(`rotate(${state.rotate}deg)`);
+  }
+
+  const declaresTransform =
+    state.x !== undefined ||
+    state.y !== undefined ||
+    state.scale !== undefined ||
+    state.rotate !== undefined;
+
+  if (!declaresTransform) return undefined;
+  return parts.length > 0 ? parts.join(' ') : 'none';
+}
+
+/**
  * MotionDiv - Drop-in replacement for motion.div
  * Uses CSS animations instead of Framer Motion
  */
@@ -205,35 +245,27 @@ export function MotionDiv({
     const style: React.CSSProperties = {};
     const exitState = typeof exitObj === 'string' ? undefined : exitObj;
     const animateState = typeof animateObj === 'string' ? undefined : animateObj;
+    const target = exiting && exitState ? exitState : animateState;
 
-    if (exiting && exitState) {
-      if (exitState.width !== undefined) {
-        style.width =
-          typeof exitState.width === 'number' ? `${exitState.width}px` : exitState.width;
-      }
-      if (exitState.opacity !== undefined) style.opacity = exitState.opacity;
-      if (exitState.x !== undefined) {
-        style.transform = `translateX(${typeof exitState.x === 'number' ? `${exitState.x}px` : exitState.x})`;
-      }
-      if (exitState.y !== undefined) {
-        style.transform =
-          `${style.transform || ''} translateY(${typeof exitState.y === 'number' ? `${exitState.y}px` : exitState.y})`.trim();
-      }
-    } else if (animateState) {
-      // Apply animate styles immediately, not waiting for mounted
-      if (animateState.width !== undefined) {
-        style.width =
-          typeof animateState.width === 'number' ? `${animateState.width}px` : animateState.width;
-      }
-      if (animateState.opacity !== undefined) style.opacity = animateState.opacity;
-      if (animateState.x !== undefined) {
-        style.transform = `translateX(${typeof animateState.x === 'number' ? `${animateState.x}px` : animateState.x})`;
-      }
-      if (animateState.y !== undefined) {
-        style.transform =
-          `${style.transform || ''} translateY(${typeof animateState.y === 'number' ? `${animateState.y}px` : animateState.y})`.trim();
-      }
+    if (!target) return style;
+
+    if (target.width !== undefined) {
+      style.width = typeof target.width === 'number' ? `${target.width}px` : target.width;
     }
+    if (target.opacity !== undefined) style.opacity = target.opacity;
+
+    // The resting transform is owned entirely by the animate/exit target, and is
+    // written even when the target declares no transform at all. Otherwise the
+    // `initial` transform (which is merged in underneath this style object)
+    // leaks into the resting state: `initial={{ scale: 0.95 }}` with
+    // `animate={{ scale: 1 }}` used to render permanently at scale(0.95),
+    // because `scale` was never read here.
+    //
+    // `none` matters beyond cosmetics — any transform other than `none` makes
+    // the element a stacking context, which traps the z-index of absolutely
+    // positioned children (e.g. a row dropdown ending up underneath a
+    // full-screen click-catcher overlay).
+    style.transform = buildTransform(target) ?? 'none';
 
     return style;
   };
@@ -249,15 +281,8 @@ export function MotionDiv({
       style.width =
         typeof initialState.width === 'number' ? `${initialState.width}px` : initialState.width;
     }
-    if (initialState.x !== undefined) {
-      style.transform = `translateX(${typeof initialState.x === 'number' ? `${initialState.x}px` : initialState.x})`;
-    }
-    if (initialState.y !== undefined) {
-      style.transform =
-        `${style.transform || ''} translateY(${typeof initialState.y === 'number' ? `${initialState.y}px` : initialState.y})`.trim();
-    }
-    if (initialState.scale !== undefined)
-      style.transform = `${style.transform || ''} scale(${initialState.scale})`.trim();
+    const transform = buildTransform(initialState);
+    if (transform) style.transform = transform;
 
     return style;
   };

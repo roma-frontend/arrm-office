@@ -54,6 +54,40 @@ describe('MotionDiv', () => {
     expect(el.style.opacity).toBe('1');
   });
 
+  // Regression: `scale` used to be read from `initial` but never from `animate`,
+  // so an element declaring 0.95 -> 1 stayed pinned at scale(0.95) forever. Any
+  // transform other than `none` also makes the element a stacking context, which
+  // trapped the z-index of absolutely positioned children such as a row dropdown.
+  it('lets the animate target clear a transform inherited from initial', () => {
+    render(
+      <MotionDiv initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+        Card
+      </MotionDiv>,
+    );
+    const el = screen.getByText('Card');
+    expect(el.style.transform).toBe('none');
+  });
+
+  it('clears the initial transform when the animate target declares none', () => {
+    render(
+      <MotionDiv initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1 }}>
+        Banner
+      </MotionDiv>,
+    );
+    const el = screen.getByText('Banner');
+    expect(el.style.transform).toBe('none');
+  });
+
+  it('keeps non-identity transform values from the animate target', () => {
+    render(
+      <MotionDiv initial={{ scale: 0.5 }} animate={{ y: -8, scale: 0.9 }}>
+        Menu
+      </MotionDiv>,
+    );
+    const el = screen.getByText('Menu');
+    expect(el.style.transform).toBe('translateY(-8px) scale(0.9)');
+  });
+
   it('applies animate style for translateX', () => {
     render(<MotionDiv animate={{ x: 100 }}>Slide Right</MotionDiv>);
     const el = screen.getByText('Slide Right');

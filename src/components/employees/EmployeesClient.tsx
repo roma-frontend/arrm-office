@@ -442,7 +442,7 @@ export function EmployeesClient() {
             return cfg[status ?? 'available'] ?? cfg['available'];
           };
 
-          const _renderMenu = (emp: Doc<'users'>) =>
+          const renderMenu = (emp: Doc<'users'>) =>
             canManage ? (
               <div className="relative shrink-0">
                 <button
@@ -533,6 +533,13 @@ export function EmployeesClient() {
                             background: 'var(--card)',
                             borderColor: emp.isActive ? 'var(--border)' : 'rgba(239,68,68,0.2)',
                             opacity: emp.isActive ? 1 : 0.6,
+                            // Lift the whole card over the full-screen click-catcher
+                            // below while its menu is open. The menu's own z-20 is
+                            // not enough on its own: an inactive card is painted at
+                            // opacity 0.6, which makes it a stacking context and
+                            // confines the menu's z-index to the card, leaving the
+                            // z-10 catcher on top to swallow every click.
+                            zIndex: openMenuId === emp._id ? 30 : undefined,
                           }}
                         >
                           <div className="flex items-start gap-3 mb-4">
@@ -564,7 +571,7 @@ export function EmployeesClient() {
                                 {t(roleConf.labelKey)}
                               </span>
                             </div>
-                            {_renderMenu(emp)}
+                            {renderMenu(emp)}
                           </div>
                           <div className="space-y-1.5 text-xs">
                             <div
