@@ -276,4 +276,344 @@ describe('fetchAllContexts', () => {
     expect(result.aiInsights).toBe('');
     expect(result.fullContext).toBe('');
   });
+
+  it('returns empty insights when the insights endpoint fails', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/insights')) {
+        return Promise.resolve({ ok: false });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({ ...baseOptions, needsInsights: true });
+    expect(result.aiInsights).toBe('');
+  });
+
+  it('assembles all insight sections when present', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/insights')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              balanceWarning: 'Low balance',
+              patterns: ['pattern-a', 'pattern-b', 'pattern-c', 'pattern-d'],
+              bestDates: ['15.06', '20.06', '25.06', '30.06'],
+              teamConflicts: ['conflict-1', 'conflict-2'],
+            }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({ ...baseOptions, needsInsights: true });
+    expect(result.aiInsights).toContain('⚠️ Low balance');
+    expect(result.aiInsights).toContain('Patterns: pattern-a, pattern-b, pattern-c');
+    expect(result.aiInsights).toContain('Best dates: 15.06, 20.06, 25.06');
+    expect(result.aiInsights).toContain('Conflicts: conflict-1, conflict-2');
+  });
+
+  it('skips empty insight sections', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/insights')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({ ...baseOptions, needsInsights: true });
+    expect(result.aiInsights).toBe('');
+  });
+
+  it('reports conflicts when the conflict-check finds them', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/conflict-check')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({ hasConflicts: true, conflictCount: 3, aiMessage: 'Team overlap' }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({
+      ...baseOptions,
+      needsConflictCheck: true,
+      lastUserMessage: 'book leave from 15.06',
+    });
+    expect(result.conflictCheckData).toContain('CONFLICTS: 3 found');
+    expect(result.conflictCheckData).toContain('Team overlap');
+  });
+
+  it('reports no conflicts when the conflict-check finds none', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/conflict-check')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ hasConflicts: false, conflictCount: 0, aiMessage: '' }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({
+      ...baseOptions,
+      needsConflictCheck: true,
+      lastUserMessage: 'book leave from 15.06',
+    });
+    expect(result.conflictCheckData).toContain('No conflicts detected');
+  });
+
+  it('sends the driver request type when the message mentions a driver', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/conflict-check')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ hasConflicts: false }) });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    await fetchAllContexts({
+      ...baseOptions,
+      needsConflictCheck: true,
+      lastUserMessage: 'нужен водитель с 20/07',
+    });
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    const conflictCall = calls.find((call: any) =>
+      String(call[0]).includes('/api/chat/conflict-check'),
+    );
+    expect(conflictCall).toBeDefined();
+    expect(String(conflictCall[0])).toContain('requestType=driver');
+  });
+
+  it('skips the conflict check when the message has no date', async () => {
+    const result = await fetchAllContexts({
+      ...baseOptions,
+      needsConflictCheck: true,
+      lastUserMessage: 'hello there',
+    });
+    expect(result.conflictCheckData).toBe('');
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    expect(calls.some((call: any) => String(call[0]).includes('/api/chat/conflict-check'))).toBe(
+      false,
+    );
+  });
+
+  it('builds a full-context summary from employees, calendar, attendance, tickets and drivers', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/full-context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              totalEmployees: 10,
+              currentlyAtWork: 7,
+              onLeaveToday: 1,
+              employees: [
+                { name: 'Ann', department: 'Sales', presenceStatus: 'available' },
+                { name: 'Bob', department: 'Eng', presenceStatus: 'in_meeting' },
+                {
+                  name: 'Cid',
+                  department: 'HR',
+                  presenceStatus: 'out_of_office',
+                  currentLeave: { type: 'paid', startDate: '01.06', endDate: '05.06' },
+                  pendingLeaves: [{ type: 'sick', startDate: '10.06', endDate: '11.06' }],
+                },
+              ],
+              calendarEvents: [
+                { employee: 'Ann', type: 'paid', startDate: '01.06', endDate: '05.06' },
+              ],
+              todayAttendance: [
+                { name: 'Ann', status: 'checked_in', checkIn: '09:00', isLate: false },
+                { name: 'Bob', status: 'absent', isLate: true, lateMinutes: 15 },
+              ],
+              tickets: [
+                { ticketNumber: 'SUP-1', title: 'Printer', status: 'open', isOverdue: true },
+              ],
+              ticketStats: { total: 12 },
+              availableDrivers: [{ userName: 'Dan', vehicleInfo: { model: 'Toyota' } }],
+            }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({ ...baseOptions, needsFullContext: true });
+    expect(result.fullContext).toContain('10 employees, 7 at work, 1 on leave');
+    expect(result.fullContext).toContain('🟢 Ann (Sales)');
+    expect(result.fullContext).toContain('📅 Bob (Eng)');
+    expect(result.fullContext).toContain('ON LEAVE: paid (01.06-05.06)');
+    expect(result.fullContext).toContain('Pending: 1');
+    expect(result.fullContext).toContain('📅 Ann: paid 01.06-05.06');
+    expect(result.fullContext).toContain('SUP-1: Printer [open] ⚠️');
+    expect(result.fullContext).toContain('Tickets (12 total)');
+    expect(result.fullContext).toContain('🚘 Dan: Toyota [Available]');
+  });
+
+  it('shows placeholders when full-context data is empty', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/full-context')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({ ...baseOptions, needsFullContext: true });
+    expect(result.fullContext).toContain('0 employees, 0 at work, 0 on leave');
+    expect(result.fullContext).toContain('Employees:\nNo data');
+    expect(result.fullContext).toContain('No upcoming leaves');
+    expect(result.fullContext).toContain('No tickets');
+    expect(result.fullContext).toContain('No drivers');
+  });
+
+  it('renders the in-call presence status', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/full-context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              employees: [{ name: 'Zoe', department: 'Ops', presenceStatus: 'in_call' }],
+            }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({ ...baseOptions, needsFullContext: true });
+    expect(result.fullContext).toContain('📞 Zoe (Ops)');
+  });
+
+  it('renders the default presence status for unknown values', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('/api/chat/context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              user: { name: 'T', role: 'employee', email: 't@o.com', organizationId: 'o' },
+              leaveBalances: { paid: 1, sick: 1, family: 1, unpaid: 0 },
+              stats: { totalDaysTaken: 0, pendingDays: 0 },
+            }),
+        });
+      }
+      if (url.includes('/api/chat/full-context')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              employees: [{ name: 'Sam', department: 'Ops', presenceStatus: 'busy' }],
+            }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const result = await fetchAllContexts({ ...baseOptions, needsFullContext: true });
+    expect(result.fullContext).toContain('⛔ Sam (Ops)');
+  });
+
+  it('falls back to an empty full-context when the endpoint is unavailable', async () => {
+    const result = await fetchAllContexts({ ...baseOptions, needsFullContext: true });
+    expect(result.fullContext).toBe('');
+  });
 });

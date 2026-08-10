@@ -1407,3 +1407,26 @@ describe('settings helpers', () => {
     expect(settings?.monthlyBudgetCap).toBeUndefined();
   });
 });
+
+describe('voucher code allocation', () => {
+  it('gives up after six colliding attempts when every code is taken', async () => {
+    const c = await seed();
+    const itemId = await createItem(c);
+    await giveBalance(c, c.annaId, 40);
+
+    // Pin Math.random so the generated code is deterministic: the second
+    // redemption then collides with the first voucher on every attempt.
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    try {
+      const first = await asAnna(c).mutation(api.rewards.redeem, { itemId });
+      expect(first.status).toBe('issued');
+
+      await giveBalance(c, c.annaId, 40);
+      await expect(asAnna(c).mutation(api.rewards.redeem, { itemId })).rejects.toThrow(
+        /could not allocate a voucher code/i,
+      );
+    } finally {
+      randomSpy.mockRestore();
+    }
+  });
+});

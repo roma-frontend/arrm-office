@@ -121,6 +121,14 @@ function makeTakeCtx() {
   return { ctx: { db }, take, order, withIndex };
 }
 
+/** Returns an ISO date `days` from today, so leave fixtures never fall on
+ * the current day (keeps getLeaveStats' onLeaveToday counting stable). */
+function futureDate(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0] || '';
+}
+
 function leaveDoc(overrides: Record<string, unknown> = {}) {
   return {
     _id: LEAVE_ID,
@@ -128,8 +136,8 @@ function leaveDoc(overrides: Record<string, unknown> = {}) {
     organizationId: ORG_A,
     status: 'pending',
     type: 'paid',
-    startDate: '2026-08-10',
-    endDate: '2026-08-12',
+    startDate: futureDate(30),
+    endDate: futureDate(32),
     days: 3,
     reason: 'Family event',
     ...overrides,

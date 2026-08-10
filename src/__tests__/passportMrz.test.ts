@@ -233,6 +233,116 @@ describe('parseMrzLines', () => {
     // Raw set already parses validly — the repaired fallback is never attempted.
     expect(mockParse).toHaveBeenCalledTimes(1);
   });
+
+  it('maps expiry dates into the 2000s and recent birth dates into the 2000s', async () => {
+    mockParse.mockReturnValue({
+      fields: {
+        documentNumber: 'X',
+        expirationDate: '310101',
+        nationality: 'UTO',
+        birthDate: '050101', // born 2005 — must NOT be mapped to 1905
+        firstName: null,
+        lastName: 'X',
+      },
+      details: [],
+      valid: true,
+    });
+
+    const result = await parseMrzLines([TD3_LINE_1, TD3_LINE_2]);
+    expect(result.passportExpiryDate).toBe('2031-01-01');
+    expect(result.dateOfBirth).toBe('2005-01-01');
+  });
+
+  it('maps pre-1971 birth dates into the 1900s', async () => {
+    mockParse.mockReturnValue({
+      fields: {
+        documentNumber: 'X',
+        expirationDate: undefined,
+        nationality: 'UTO',
+        birthDate: '691231', // 1969
+        firstName: null,
+        lastName: 'X',
+      },
+      details: [],
+      valid: true,
+    });
+
+    const result = await parseMrzLines([TD3_LINE_1, TD3_LINE_2]);
+    expect(result.dateOfBirth).toBe('1969-12-31');
+  });
+
+  it('drops malformed MRZ dates from the result', async () => {
+    mockParse.mockReturnValue({
+      fields: {
+        documentNumber: 'X',
+        expirationDate: '9406', // too short
+        nationality: 'UTO',
+        birthDate: 'ABCDEF', // non-digits
+        firstName: null,
+        lastName: 'X',
+      },
+      details: [],
+      valid: true,
+    });
+
+    const result = await parseMrzLines([TD3_LINE_1, TD3_LINE_2]);
+    expect(result.passportExpiryDate).toBeUndefined();
+    expect(result.dateOfBirth).toBeUndefined();
+  });
+
+  it('normalises digits read as letters inside the personal-number zone of line 2', async () => {
+    // The personal-number zone (positions 28-41) should be '<'-padded; OCR may
+    // read '0' as 'O'. repairTd3Line2 must swap those back to '<' so the rebuilt
+    // line matches TD3 layout and the parse succeeds.
+    mockParse
+      .mockImplementationOnce(() => {
+        throw new Error('Invalid number of characters for line 2');
+      })
+      .mockReturnValueOnce(validParseResult);
+
+    const noisyL1 = 'P<ARMSTEVENSON<<PETER<<<<<<<<<<<<<<<<<<<<<<<'; // already 44
+    const noisyL2 = 'L898902C<3ARM6908061F9406236ZE184226BOOOO14'; // 'O' instead of '<'
+
+    const result = await parseMrzLines([noisyL1, noisyL2]);
+    expect(result?.valid).toBe(true);
+    const repairedL2 = 'L898902C<3ARM6908061F9406236ZE184226B<<<<<14';
+    expect(mockParse).toHaveBeenNthCalledWith(2, [noisyL1, repairedL2], { autocorrect: true });
+  });
+
+  it('uses a parsed-but-invalid result as fallback when no set is valid', async () => {
+    const invalid = {
+      fields: {
+        documentNumber: 'L898902C',
+        expirationDate: '940623',
+        nationality: 'UTO',
+        birthDate: '690806',
+        firstName: 'PETER',
+        lastName: 'STEVENSON',
+      },
+      details: [{ valid: false, label: 'check digit', error: 'Invalid check digit' }],
+      valid: false,
+    };
+    mockParse.mockReturnValue(invalid);
+
+    const result = await parseMrzLines([TD3_LINE_1, TD3_LINE_2]);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.passportNumber).toBe('L898902C'); // fields still surfaced
+  });
+
+  it('filters a stray third line that itself parses invalid before falling back', async () => {
+    mockParse
+      .mockReturnValueOnce({
+        fields: {},
+        details: [{ valid: false, label: 'TD1', error: 'Too many lines' }],
+        valid: false,
+      })
+      .mockReturnValueOnce(validParseResult);
+
+    const result = await parseMrzLines(['STRAY<LINE<<WITH<<<<<<<', TD3_LINE_1, TD3_LINE_2]);
+    expect(result?.valid).toBe(true);
+    expect(mockParse).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('scanPassportImage', () => {
@@ -346,5 +456,122 @@ describe('scanPassportImage', () => {
     // The finally block terminates the worker we got, and the promise-chain
     // guard must not double-terminate the same worker.
     expect(mockTerminate).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to AUTO page-segmentation when SINGLE_BLOCK finds no MRZ', async () => {
+    // First recognize pass (SINGLE_BLOCK) yields garbage; the second (AUTO)
+    // finds the two MRZ lines — the module must retry and use the AUTO result.
+    mockRecognize
+      .mockResolvedValueOnce({ data: { text: 'random noise without any MRZ' } })
+      .mockResolvedValueOnce({
+        data: {
+          text: 'P<UTOSTEVENSON<<PETER<<<<<<<<<<<<<<<<<<<<<<<\nL898902C<3UTO6908061F9406236ZE184226B<<<<<14',
+        },
+      });
+    mockParse.mockReturnValue(validParseResult);
+
+    const result = await scanPassportImage('data:image/jpeg;base64,abc');
+    expect(result?.valid).toBe(true);
+    expect(mockRecognize).toHaveBeenCalledTimes(2);
+    // The AUTO fallback must be applied between the two recognize calls.
+    expect(mockSetParameters).toHaveBeenCalledWith(
+      expect.objectContaining({ tessedit_pageseg_mode: '3' }),
+    );
+  });
+
+  it('stops after the first page-segmentation mode that yields MRZ lines', async () => {
+    mockRecognize.mockResolvedValue({
+      data: {
+        text: 'P<UTOSTEVENSON<<PETER<<<<<<<<<<<<<<<<<<<<<<<\nL898902C<3UTO6908061F9406236ZE184226B<<<<<14',
+      },
+    });
+    mockParse.mockReturnValue(validParseResult);
+
+    await scanPassportImage('data:image/jpeg;base64,abc');
+    // SINGLE_BLOCK already found the MRZ — no AUTO retry.
+    expect(mockRecognize).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns null when neither page-segmentation mode finds MRZ lines', async () => {
+    mockRecognize.mockResolvedValue({ data: { text: 'still no MRZ in auto mode either' } });
+
+    const result = await scanPassportImage('data:image/jpeg;base64,abc');
+    expect(result).toBeNull();
+    expect(mockRecognize).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes a preprocessed (upscaled) image to the worker when canvas is available', async () => {
+    // jsdom's canvas returns null from getContext — stub a working 2d context
+    // so prepareImageForOcr() takes the real preprocessing path.
+    const originalCreateElement = document.createElement.bind(document);
+    const mockCtx = {
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: '',
+      drawImage: jest.fn(),
+      getImageData: jest.fn(() => ({ data: new Uint8ClampedArray(200 * 100 * 4) })),
+      putImageData: jest.fn(),
+    };
+    const canvasStub: any = {
+      width: 0,
+      height: 0,
+      getContext: jest.fn(() => mockCtx),
+      toDataURL: jest.fn(() => 'data:image/png;base64,PROCESSED'),
+    };
+    document.createElement = jest.fn((tag: string) =>
+      tag === 'canvas' ? canvasStub : originalCreateElement(tag),
+    ) as any;
+    // An image WITH dimensions so the scale guard passes.
+    class SizedMockImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      naturalWidth = 800;
+      naturalHeight = 600;
+      set src(_value: string) {
+        this.onload?.();
+      }
+    }
+    (globalThis as { Image?: unknown }).Image = SizedMockImage;
+    mockRecognize.mockResolvedValue({
+      data: {
+        text: 'P<UTOSTEVENSON<<PETER<<<<<<<<<<<<<<<<<<<<<<<\nL898902C<3UTO6908061F9406236ZE184226B<<<<<14',
+      },
+    });
+    mockParse.mockReturnValue(validParseResult);
+
+    try {
+      const result = await scanPassportImage('data:image/jpeg;base64,abc');
+      expect(result?.valid).toBe(true);
+      // 800x600 upscaled 2x → canvas 1600x1200, grayscaled and re-encoded.
+      expect(canvasStub.width).toBe(1600);
+      expect(canvasStub.height).toBe(1200);
+      expect(mockCtx.drawImage).toHaveBeenCalled();
+      expect(mockCtx.putImageData).toHaveBeenCalled();
+      expect(mockRecognize).toHaveBeenCalledWith('data:image/png;base64,PROCESSED');
+    } finally {
+      document.createElement = originalCreateElement as any;
+      (globalThis as { Image?: unknown }).Image = MockImage;
+    }
+  });
+
+  it('returns the original image when canvas preprocessing throws', async () => {
+    const originalCreateElement = document.createElement.bind(document);
+    document.createElement = jest.fn(() => {
+      throw new Error('no canvas');
+    }) as any;
+    mockRecognize.mockResolvedValue({
+      data: {
+        text: 'P<UTOSTEVENSON<<PETER<<<<<<<<<<<<<<<<<<<<<<<\nL898902C<3UTO6908061F9406236ZE184226B<<<<<14',
+      },
+    });
+    mockParse.mockReturnValue(validParseResult);
+
+    try {
+      const result = await scanPassportImage('data:image/jpeg;base64,abc');
+      // Preprocessing failure must not fail the scan — the original URL is OCR'd.
+      expect(result?.valid).toBe(true);
+      expect(mockRecognize).toHaveBeenCalledWith('data:image/jpeg;base64,abc');
+    } finally {
+      document.createElement = originalCreateElement as any;
+    }
   });
 });

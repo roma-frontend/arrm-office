@@ -633,3 +633,13 @@ describe('points wallet and manual awards', () => {
     ).rejects.toThrow(/at most 1000/i);
   });
 });
+
+describe('unauthenticated recognition access', () => {
+  it('returns an empty feed instead of throwing', async () => {
+    const c = await seed();
+    const feed = await c.t.query(api.recognition.getKudosFeed, {
+      organizationId: c.organizationId,
+    });
+    expect(feed).toEqual([]);
+  });
+});

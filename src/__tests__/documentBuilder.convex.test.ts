@@ -1074,3 +1074,107 @@ describe('issuedDocuments cancellation', () => {
     ).rejects.toThrow(/staff access required/i);
   });
 });
+
+/** Insert an issued-document row directly, skipping the product paths. */
+async function ghostIssue(
+  c: Ctx,
+  status: 'draft' | 'edited' | 'sent' | 'signed' | 'cancelled',
+  overrides: Record<string, unknown> = {},
+): Promise<Id<'issuedDocuments'>> {
+  return c.t.run(async (ctx) => {
+    return ctx.db.insert('issuedDocuments', {
+      organizationId: c.organizationId,
+      recipientId: c.employeeId,
+      source: 'blueprint',
+      primaryLocale: 'hy',
+      title: 'Ghost',
+      status,
+      issuedBy: c.adminId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      ...overrides,
+    } as never);
+  });
+}
+
+describe('issuedDocuments defensive paths', () => {
+  it('requires a non-empty title when issuing', async () => {
+    const c = await seed();
+    await expect(
+      asAdmin(c).mutation(api.issuedDocuments.issue, {
+        organizationId: c.organizationId,
+        recipientIds: [c.employeeId],
+        source: 'blueprint',
+        blueprintId: await createPublished(c),
+        primaryLocale: 'hy',
+        title: '   ',
+      }),
+    ).rejects.toThrow(/a document needs a title/i);
+  });
+
+  it('refuses to cancel a signed document', async () => {
+    const c = await seed();
+    const issuedId = await ghostIssue(c, 'signed');
+    await expect(
+      asAdmin(c).mutation(api.issuedDocuments.cancel, { issuedDocumentId: issuedId }),
+    ).rejects.toThrow(/signed document cannot be cancelled/i);
+  });
+
+  it('refuses to edit a signed document', async () => {
+    const c = await seed();
+    const issuedId = await ghostIssue(c, 'signed');
+    await expect(
+      asAdmin(c).mutation(api.issuedDocuments.setLocalePair, {
+        issuedDocumentId: issuedId,
+        primaryLocale: 'ru',
+      }),
+    ).rejects.toThrow(/signed and can no longer be changed/i);
+  });
+
+  it('refuses to edit a cancelled document', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+    const issuedId = await issueTo(c, blueprintId);
+    await asAdmin(c).mutation(api.issuedDocuments.cancel, { issuedDocumentId: issuedId });
+
+    await expect(
+      asAdmin(c).mutation(api.issuedDocuments.setLocalePair, {
+        issuedDocumentId: issuedId,
+        primaryLocale: 'ru',
+      }),
+    ).rejects.toThrow(/was cancelled/i);
+  });
+
+  it('reports the catalog template id as the render source', async () => {
+    const c = await seed();
+    const result = await asAdmin(c).mutation(api.issuedDocuments.issue, {
+      organizationId: c.organizationId,
+      recipientIds: [c.employeeId],
+      source: 'catalog',
+      templateId: 'employment-contract',
+      primaryLocale: 'hy',
+      title: 'Employment contract',
+    });
+    const issuedId = result.ids[0];
+    if (!issuedId) throw new Error('nothing was issued');
+
+    const source = await asAdmin(c).query(api.issuedDocuments.getRenderSource, {
+      issuedDocumentId: issuedId,
+    });
+    expect(source).toEqual({
+      source: 'catalog',
+      templateId: 'employment-contract',
+      snapshot: null,
+    });
+  });
+
+  it('degrades a blueprint document with no pinned version to a bare source', async () => {
+    const c = await seed();
+    const issuedId = await ghostIssue(c, 'draft', { source: 'blueprint' });
+
+    const source = await asAdmin(c).query(api.issuedDocuments.getRenderSource, {
+      issuedDocumentId: issuedId,
+    });
+    expect(source).toEqual({ source: 'blueprint', templateId: null, snapshot: null });
+  });
+});

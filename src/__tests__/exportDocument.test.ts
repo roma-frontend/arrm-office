@@ -11,7 +11,12 @@ import {
   exportDocumentToPDF,
   renderDocumentPdfBase64,
   exportDocumentToDOCX,
+  exportEditableDocx,
+  renderDocumentDocxBlob,
+  renderEditableDocxBlob,
   documentBodyToPlainText,
+  containsSignatures,
+  isBlockBody,
   type RenderableDocument,
   type DocumentBlock,
 } from '@/lib/exportDocument';
@@ -238,6 +243,50 @@ describe('exportDocumentToDOCX', () => {
   });
 });
 
+describe('renderDocumentDocxBlob', () => {
+  it('returns a Blob from the docx Packer', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    loadDocx.mockResolvedValue(createMockDocx());
+
+    const blob = await renderDocumentDocxBlob(baseDoc);
+    expect(blob).toBeInstanceOf(Blob);
+  });
+
+  it('instantiates the Document with the Sylfaen default font', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    const mod = createMockDocx();
+    loadDocx.mockResolvedValue(mod);
+
+    await renderDocumentDocxBlob(baseDoc);
+
+    const documentCtor = mod.Document;
+    const instance = documentCtor.mock.instances[0];
+    expect(instance.opts.styles.default.document.run.font).toBe('Sylfaen');
+    expect(instance.opts.sections).toHaveLength(1);
+  });
+});
+
+describe('renderEditableDocxBlob / exportEditableDocx', () => {
+  it('renders the round-trip file with a single Heading 1 and body', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    const mod = createMockDocx();
+    loadDocx.mockResolvedValue(mod);
+
+    const blob = await renderEditableDocxBlob(baseDoc);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(mod.Packer.toBlob).toHaveBeenCalled();
+  });
+
+  it('downloads the editable DOCX via exportEditableDocx', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    loadDocx.mockResolvedValue(createMockDocx());
+
+    const result = await exportEditableDocx(baseDoc, 'editable.docx');
+    expect(result).toEqual({ success: true });
+    expect(mockClick).toHaveBeenCalled();
+  });
+});
+
 describe('structured block bodies', () => {
   const blocks: DocumentBlock[] = [
     { type: 'section', index: 1, title: 'Asset Details' },
@@ -348,6 +397,196 @@ describe('structured block bodies', () => {
       exportDocumentToDOCX({ ...baseDoc, body: blocks, subtitle: 'Lenovo X1' }, 'act.docx'),
     ).resolves.toEqual({ success: true });
   });
+
+  it('renders a bilingual two-column block to PDF with both languages', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF(
+      {
+        ...baseDoc,
+        body: [
+          {
+            type: 'bilingual',
+            leftLabel: 'ՀԱՅԵՐԵՆ',
+            rightLabel: 'РУССКИЙ',
+            left: [
+              { type: 'section', index: 1, title: 'ՊԱՅՄԱՆԱԳԻՐ' },
+              { type: 'paragraph', text: 'Հայերեն տեքստ' },
+            ],
+            right: [{ type: 'paragraph', text: 'Русский текст' }],
+          },
+        ],
+      },
+      'bilingual.pdf',
+    );
+
+    const def = mockPdf.createPdf.mock.calls[0][0];
+    const json = JSON.stringify(def.content);
+    expect(json).toContain('ՀԱՅԵՐԵՆ');
+    expect(json).toContain('РУССКИЙ');
+    expect(json).toContain('1.  ՊԱՅՄԱՆԱԳԻՐ');
+    expect(json).toContain('Русский текст');
+  });
+
+  it('renders a bilingual block to DOCX as a two-column table', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    loadDocx.mockResolvedValue(createMockDocx());
+
+    await expect(
+      exportDocumentToDOCX({
+        ...baseDoc,
+        body: [
+          {
+            type: 'bilingual',
+            leftLabel: 'ՀԱՅԵՐԵՆ',
+            rightLabel: 'РУССКИЙ',
+            left: [{ type: 'paragraph', text: 'Հայերեն' }],
+            right: [{ type: 'paragraph', text: 'Русский' }],
+          },
+        ],
+      }),
+    ).resolves.toEqual({ success: true });
+  });
+
+  it('renders a muted paragraph and callout block', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF(
+      {
+        ...baseDoc,
+        body: [
+          { type: 'paragraph', text: 'Fine print note', muted: true },
+          { type: 'callout', text: 'Important notice' },
+        ],
+      },
+      'muted.pdf',
+    );
+
+    const json = JSON.stringify(mockPdf.createPdf.mock.calls[0][0]);
+    expect(json).toContain('Fine print note');
+    expect(json).toContain('Important notice');
+    expect(json).toContain('blockMuted');
+    expect(json).toContain('callout');
+  });
+
+  it('renders a single-party signature block in structured body', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF(
+      {
+        ...baseDoc,
+        body: [
+          {
+            type: 'signatures',
+            parties: [
+              {
+                role: 'Employee',
+                nameLabel: 'Name',
+                name: 'Alice',
+                dateLabel: 'Date',
+                date: '1 August 2026',
+                positionLabel: 'Position',
+                position: 'Manager',
+              },
+            ],
+          },
+        ],
+      },
+      'one-party.pdf',
+    );
+
+    const json = JSON.stringify(mockPdf.createPdf.mock.calls[0][0]);
+    // Position/date are separate label+value text nodes inside the party stack.
+    expect(json).toContain('Position: ');
+    expect(json).toContain('"text":"Manager"');
+    expect(json).toContain('1 August 2026');
+  });
+});
+
+describe('containsSignatures', () => {
+  it('detects a top-level signatures block', () => {
+    expect(
+      containsSignatures([
+        { type: 'section', title: 'X' },
+        { type: 'signatures', parties: [] },
+      ]),
+    ).toBe(true);
+  });
+
+  it('detects signatures nested inside a bilingual column', () => {
+    expect(
+      containsSignatures([
+        {
+          type: 'bilingual',
+          left: [{ type: 'signatures', parties: [] }],
+          right: [{ type: 'paragraph', text: 'x' }],
+        },
+      ]),
+    ).toBe(true);
+    expect(
+      containsSignatures([
+        {
+          type: 'bilingual',
+          left: [{ type: 'paragraph', text: 'x' }],
+          right: [{ type: 'signatures', parties: [] }],
+        },
+      ]),
+    ).toBe(true);
+  });
+
+  it('returns false when no signatures are present', () => {
+    expect(containsSignatures([{ type: 'section', title: 'X' }])).toBe(false);
+    expect(
+      containsSignatures([
+        { type: 'bilingual', left: [{ type: 'paragraph', text: 'a' }], right: [] },
+      ]),
+    ).toBe(false);
+  });
+
+  it('does not append the generic signature block when signatures are inside bilingual', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF(
+      {
+        ...baseDoc,
+        signature: true,
+        body: [
+          {
+            type: 'bilingual',
+            left: [
+              {
+                type: 'signatures',
+                parties: [{ role: 'A', nameLabel: 'N', name: '', dateLabel: 'D' }],
+              },
+            ],
+            right: [],
+          },
+        ],
+      },
+      'nested-sig.pdf',
+    );
+
+    const json = JSON.stringify(mockPdf.createPdf.mock.calls[0][0]);
+    // The generic block's title node (style + color) must not appear in content;
+    // the styles table always defines signatureTitle, so check the usage node.
+    expect(json).not.toContain('"text":"Signature","style":"signatureTitle"');
+  });
+});
+
+describe('isBlockBody', () => {
+  it('distinguishes structured bodies from plain strings', () => {
+    expect(isBlockBody('text')).toBe(false);
+    expect(isBlockBody([])).toBe(true);
+    expect(isBlockBody([{ type: 'section', title: 'X' }])).toBe(true);
+  });
 });
 
 describe('documentBodyToPlainText', () => {
@@ -367,6 +606,77 @@ describe('documentBodyToPlainText', () => {
     expect(text).toContain('2. HANDOVER DETAILS');
     expect(text).toContain('Handed To: Alice');
     expect(text).toContain('Date: ____________');
+  });
+
+  it('renders bullets, callouts, spacers and empty field values', () => {
+    const text = documentBodyToPlainText([
+      { type: 'bullets', items: ['one', 'two'] },
+      { type: 'callout', text: 'Callout text' },
+      { type: 'fields', rows: [{ label: 'Empty', value: '' }] },
+      { type: 'spacer', size: 12 },
+    ]);
+    expect(text).toContain('•  one');
+    expect(text).toContain('•  two');
+    expect(text).toContain('Callout text');
+    expect(text).toContain('Empty: —');
+  });
+
+  it('renders bilingual blocks sequentially with captions', () => {
+    const text = documentBodyToPlainText([
+      {
+        type: 'bilingual',
+        leftLabel: 'ՀԱՅԵՐԵՆ',
+        rightLabel: 'РУССКИЙ',
+        left: [{ type: 'paragraph', text: 'Հայերեն' }],
+        right: [{ type: 'paragraph', text: 'Русский' }],
+      },
+    ]);
+    expect(text).toContain('[ՀԱՅԵՐԵՆ]');
+    expect(text).toContain('Հայերեն');
+    expect(text).toContain('[РУССКИЙ]');
+    expect(text).toContain('Русский');
+  });
+
+  it('renders signature parties with position lines and dashes for missing values', () => {
+    const text = documentBodyToPlainText([
+      {
+        type: 'signatures',
+        parties: [
+          {
+            role: 'Employee',
+            nameLabel: 'Name',
+            name: '',
+            dateLabel: 'Date',
+            positionLabel: 'Position',
+            position: '',
+          },
+        ],
+      },
+    ]);
+    expect(text).toContain('Employee');
+    expect(text).toContain('Name: —');
+    expect(text).toContain('Position: —');
+    expect(text).toContain('Date: ____________');
+  });
+});
+
+describe('legacy string bodies', () => {
+  it('heuristic layout: section headers and bullets', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    // The trailing sentence is longer than the section-header cap (55 chars), so
+    // the heuristic must lay it out as a justified body paragraph.
+    const body =
+      'Section Title\n\n• First item\n• Second item\n\nThis is a longer paragraph sentence that comfortably exceeds the fifty-five character section header threshold.';
+    await exportDocumentToPDF({ ...baseDoc, body }, 'legacy.pdf');
+
+    const def = mockPdf.createPdf.mock.calls[0][0];
+    const json = JSON.stringify(def.content);
+    expect(json).toContain('"style":"sectionHeader"');
+    expect(json).toContain('•  First item');
+    expect(json).toContain('"style":"body"');
   });
 });
 
@@ -413,5 +723,79 @@ describe('types', () => {
     };
     expect(doc.contentHash).toBeDefined();
     expect(doc.signed?.signerName).toBe('Bob');
+  });
+});
+
+describe('signed signature rendering', () => {
+  const signedDoc: RenderableDocument = {
+    ...baseDoc,
+    signature: true,
+    signed: {
+      signatureData: 'data:image/png;base64,iVBORw0KGgo=',
+      signerName: 'Alice Smith',
+      signedAt: new Date(2026, 6, 15, 12).getTime(),
+    },
+  };
+
+  it('embeds the signature image and signer name in the PDF', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF(signedDoc, 'signed.pdf');
+
+    const json = JSON.stringify(mockPdf.createPdf.mock.calls[0][0]);
+    expect(json).toContain('data:image/png;base64,iVBORw0KGgo=');
+    expect(json).toContain('Alice Smith');
+    // signedAt is formatted as a long date in the document language
+    expect(json).toContain('15 July 2026');
+  });
+
+  it('renders the signed date in the document language', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF({ ...signedDoc, lang: 'ru' }, 'signed-ru.pdf');
+
+    const json = JSON.stringify(mockPdf.createPdf.mock.calls[0][0]);
+    expect(json).toContain('15 июля 2026');
+  });
+
+  it('includes the signer name in the DOCX signature party', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    const mod = createMockDocx();
+    loadDocx.mockResolvedValue(mod);
+
+    await renderDocumentDocxBlob(signedDoc);
+    // The signer name flows into a TextRun child of the signature paragraph.
+    const textRuns = mod.TextRun.mock.calls.map((c: any) => c[0]);
+    expect(textRuns.some((t: any) => t.text === 'Alice Smith')).toBe(true);
+  });
+});
+
+describe('font loading fallback', () => {
+  it('falls back to Roboto when DejaVu fonts cannot be fetched', async () => {
+    // ensureDejaVu() caches its result at module scope, so earlier tests in
+    // this file already resolved it (Node fetch rejects the relative /fonts
+    // URL). Reset the module registry so this test runs with a fresh cache and
+    // genuinely exercises the fetch-failure path.
+    jest.resetModules();
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 });
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    try {
+      const mod = await import('@/lib/exportDocument');
+      await mod.exportDocumentToPDF(baseDoc);
+      const def = mockPdf.createPdf.mock.calls[0][0];
+      expect(def.defaultStyle.font).toBe('Roboto');
+      // The font fetch must have been attempted against the failing stub.
+      expect(global.fetch).toHaveBeenCalled();
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });

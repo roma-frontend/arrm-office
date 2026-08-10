@@ -591,6 +591,8 @@ export const awardBadge = mutation({
 
     const scope = await assertOrgStaff(ctx, badge.organizationId);
     const organizationId = scope.organizationId;
+    // Defensive: assertOrgStaff resolves the badge's own org, so a staff caller
+    // always owns it here — this guard only fires if that invariant changes.
     if (!organizationId || !scopeOwnsRecord(scope, badge)) {
       throw new Error('Badge does not belong to this organization');
     }

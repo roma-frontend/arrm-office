@@ -7,7 +7,14 @@
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MotionDiv, MotionButton, MotionSpan, AnimatePresence, motion } from '@/lib/cssMotion';
+import {
+  MotionDiv,
+  MotionButton,
+  MotionSpan,
+  AnimatePresence,
+  motion,
+  default as motionDefault,
+} from '@/lib/cssMotion';
 
 describe('MotionDiv', () => {
   it('renders children correctly', () => {
@@ -168,6 +175,97 @@ describe('MotionDiv', () => {
     const el = screen.getByText('WidthAnimate');
     expect(el.style.width).toBe('50%');
   });
+
+  it('handles numeric width animation in px', () => {
+    render(<MotionDiv animate={{ width: 200 }}>NumWidth</MotionDiv>);
+    const el = screen.getByText('NumWidth');
+    expect(el.style.width).toBe('200px');
+  });
+
+  it('applies slide-up class for positive y in animate', () => {
+    render(<MotionDiv animate={{ y: 40 }}>SlideUpY</MotionDiv>);
+    expect(screen.getByText('SlideUpY').className).toContain('animate-slide-up');
+  });
+
+  it('applies slide-down class for negative string y in animate', () => {
+    render(<MotionDiv animate={{ y: '-40px' }}>SlideDownY</MotionDiv>);
+    expect(screen.getByText('SlideDownY').className).toContain('animate-slide-down');
+  });
+
+  it('applies slide-in-right class for positive string x in animate', () => {
+    render(<MotionDiv animate={{ x: '100px' }}>SlideRight</MotionDiv>);
+    expect(screen.getByText('SlideRight').className).toContain('animate-slide-in-right');
+  });
+
+  it('combines x and y transforms in the animate style', () => {
+    render(<MotionDiv animate={{ x: 20, y: 10 }}>ComboTransform</MotionDiv>);
+    const el = screen.getByText('ComboTransform');
+    expect(el.style.transform).toContain('translateX(20px)');
+    expect(el.style.transform).toContain('translateY(10px)');
+  });
+
+  it('applies scale from initial state', () => {
+    render(<MotionDiv initial={{ scale: 0.5 }}>InitialScale</MotionDiv>);
+    const el = screen.getByText('InitialScale');
+    expect(el.style.transform).toContain('scale(0.5)');
+  });
+
+  it('combines initial x and scale transforms', () => {
+    render(<MotionDiv initial={{ x: -20, scale: 0.9 }}>InitialCombo</MotionDiv>);
+    const el = screen.getByText('InitialCombo');
+    expect(el.style.transform).toContain('translateX(-20px)');
+    expect(el.style.transform).toContain('scale(0.9)');
+  });
+
+  it('applies initial width as number in px', () => {
+    render(<MotionDiv initial={{ width: 300 }}>InitialWidth</MotionDiv>);
+    expect(screen.getByText('InitialWidth').style.width).toBe('300px');
+  });
+
+  it('applies string initial width verbatim', () => {
+    render(<MotionDiv initial={{ width: '80%' }}>InitialWidthPct</MotionDiv>);
+    expect(screen.getByText('InitialWidthPct').style.width).toBe('80%');
+  });
+
+  it('handles whileHover x translation', () => {
+    render(<MotionDiv whileHover={{ x: 10 }}>HoverX</MotionDiv>);
+    expect(screen.getByText('HoverX').className).toContain('hover:translate-x');
+  });
+
+  it('handles whileHover y translation', () => {
+    render(<MotionDiv whileHover={{ y: 10 }}>HoverY</MotionDiv>);
+    expect(screen.getByText('HoverY').className).toContain('hover:translate-y');
+  });
+
+  it('combines hover and tap classes', () => {
+    render(
+      <MotionDiv whileHover={{ scale: 1.1, x: 5 }} whileTap={{ scale: 0.9 }}>
+        Both
+      </MotionDiv>,
+    );
+    const el = screen.getByText('Both');
+    expect(el.className).toContain('hover:scale');
+    expect(el.className).toContain('hover:translate-x');
+    expect(el.className).toContain('active:scale');
+  });
+
+  it('strips framer-motion-only props from the DOM', () => {
+    render(
+      <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        Stripped
+      </MotionDiv>,
+    );
+    const el = screen.getByText('Stripped');
+    // fill/rx are destructured out; initial/animate/exit never reach the DOM.
+    expect(el.getAttribute('initial')).toBeNull();
+    expect(el.getAttribute('animate')).toBeNull();
+    expect(el.getAttribute('exit')).toBeNull();
+  });
+
+  it('passes unknown data attributes through', () => {
+    render(<MotionDiv data-custom="yes">CustomAttr</MotionDiv>);
+    expect(screen.getByText('CustomAttr').getAttribute('data-custom')).toBe('yes');
+  });
 });
 
 describe('MotionButton', () => {
@@ -214,6 +312,35 @@ describe('MotionButton', () => {
     // since no explicit type prop is passed
     expect(btn.type).toBe('submit');
   });
+
+  it('honours an explicit type prop', () => {
+    render(<MotionButton type="button">ExplicitType</MotionButton>);
+    const btn = screen.getByText('ExplicitType') as HTMLButtonElement;
+    expect(btn.type).toBe('button');
+  });
+
+  it('applies layout class', () => {
+    render(<MotionButton layout>LayoutBtn</MotionButton>);
+    expect(screen.getByText('LayoutBtn').className).toContain('transition-all');
+  });
+
+  it('strips framer-motion props from the button element', () => {
+    render(
+      <MotionButton initial={{ opacity: 0 }} animate={{ opacity: 1 }} layout>
+        StrippedBtn
+      </MotionButton>,
+    );
+    const btn = screen.getByText('StrippedBtn');
+    expect(btn.getAttribute('layout')).toBeNull();
+    expect(btn.getAttribute('initial')).toBeNull();
+    expect(btn.getAttribute('animate')).toBeNull();
+    expect(btn.getAttribute('exit')).toBeNull();
+  });
+
+  it('passes aria attributes through', () => {
+    render(<MotionButton aria-label="Save">AriaBtn</MotionButton>);
+    expect(screen.getByText('AriaBtn').getAttribute('aria-label')).toBe('Save');
+  });
 });
 
 describe('MotionSpan', () => {
@@ -231,6 +358,28 @@ describe('MotionSpan', () => {
   it('applies whileHover scale class', () => {
     render(<MotionSpan whileHover={{ scale: 1.2 }}>ScaleSpan</MotionSpan>);
     expect(screen.getByText('ScaleSpan').className).toContain('hover:scale');
+  });
+
+  it('applies whileTap scale class', () => {
+    render(<MotionSpan whileTap={{ scale: 0.8 }}>TapSpan</MotionSpan>);
+    expect(screen.getByText('TapSpan').className).toContain('active:scale');
+  });
+
+  it('applies layout class', () => {
+    render(<MotionSpan layout>LayoutSpan</MotionSpan>);
+    expect(screen.getByText('LayoutSpan').className).toContain('transition-all');
+  });
+
+  it('strips framer-motion props from the span element', () => {
+    render(
+      <MotionSpan initial="hidden" animate="visible" variants={{}} type="button" disabled>
+        StrippedSpan
+      </MotionSpan>,
+    );
+    const span = screen.getByText('StrippedSpan');
+    expect(span.getAttribute('type')).toBeNull();
+    expect(span.getAttribute('disabled')).toBeNull();
+    expect(span.getAttribute('initial')).toBeNull();
   });
 });
 
@@ -277,6 +426,10 @@ describe('AnimatePresence', () => {
 });
 
 describe('motion export object', () => {
+  it('has a default export matching the named motion object', () => {
+    expect(motionDefault).toBe(motion);
+  });
+
   it('exports motion.div as MotionDiv', () => {
     expect(motion.div).toBe(MotionDiv);
   });
