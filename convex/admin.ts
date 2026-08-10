@@ -1,4 +1,4 @@
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { query, mutation } from './_generated/server';
 import type { Id } from './_generated/dataModel';
@@ -768,6 +768,10 @@ export const getMaintenanceMode = query({
 /**
  * SUPERADMIN: Assign a user as admin of an organization
  * Used when a user signs up via Google without selecting an organization
+ *
+ * Failures are raised as `ConvexError` on purpose: plain `throw new Error(...)`
+ * messages are redacted to a bare "Server Error" on production deployments,
+ * which is what made this mutation impossible to debug from the UI.
  */
 export const assignUserAsOrgAdmin = mutation({
   args: {
@@ -776,34 +780,71 @@ export const assignUserAsOrgAdmin = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, args.superadminUserId, 'superadmin');
+    // Prefer the identity from the verified JWT. Fall back to the id the client
+    // sent (impersonation sessions, clients whose Convex token has not been
+    // minted yet) — the role is re-checked against the DB either way, so the
+    // client can never grant itself privileges by passing another user's id.
+    const caller = (await getAuthCaller(ctx)) ?? (await ctx.db.get(args.superadminUserId));
+    if (!caller) {
+      throw new ConvexError({
+        code: 'NOT_AUTHENTICATED',
+        message: 'Caller account not found. Sign out and sign in again.',
+      });
+    }
+    if (caller.role !== 'superadmin') {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'Only a superadmin can assign organization admins.',
+      });
+    }
+
+    const email = args.userEmail.toLowerCase().trim();
 
     // Find user by email
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', args.userEmail.toLowerCase()))
+      .withIndex('by_email', (q) => q.eq('email', email))
       .unique();
 
     if (!user) {
-      throw new Error(`User with email ${args.userEmail} not found`);
+      throw new ConvexError({
+        code: 'USER_NOT_FOUND',
+        message: `No account exists with email ${email}. The person must register (or be invited) before they can be made an admin.`,
+      });
+    }
+
+    if (user.role === 'superadmin') {
+      throw new ConvexError({
+        code: 'CANNOT_DEMOTE_SUPERADMIN',
+        message: `${email} is a superadmin. Change their role from the user management screen instead — assigning them here would remove their superadmin access.`,
+      });
     }
 
     // Verify org exists
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
-      throw new Error('Organization not found');
+      throw new ConvexError({
+        code: 'ORG_NOT_FOUND',
+        message: 'The selected organization no longer exists. Reload the page and pick it again.',
+      });
     }
 
-    // Update user
+    // Update user. Approving here is part of the flow this mutation exists for:
+    // a Google signup that never picked an org is stuck as unapproved, so an
+    // admin role without approval would still leave them in onboarding limbo.
     await ctx.db.patch(user._id, {
       organizationId: args.organizationId,
       role: 'admin',
+      isApproved: true,
+      isActive: true,
+      approvedBy: caller._id,
+      approvedAt: Date.now(),
       updatedAt: Date.now(),
     });
 
     return {
       userId: user._id,
-      email: args.userEmail,
+      email,
       role: 'admin',
       organizationId: args.organizationId,
     };
@@ -969,14 +1010,41 @@ export const getSuperadminDashboard = query({
 export const secureAssignUserAsOrgAdmin = mutation({
   args: { userEmail: v.string(), organizationId: v.id('organizations') },
   handler: async (ctx, { userEmail, organizationId }) => {
+    // This mutation previously ran with no authorization check at all, so any
+    // caller could promote any account to admin of any organization.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) {
+      throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    }
+    if (caller.role !== 'superadmin') {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'Only a superadmin can assign organization admins.',
+      });
+    }
+
+    const email = userEmail.toLowerCase().trim();
     const user = await ctx.db
       .query('users')
-      .withIndex('by_email', (q) => q.eq('email', userEmail.toLowerCase()))
+      .withIndex('by_email', (q) => q.eq('email', email))
       .unique();
-    if (!user) throw new Error(`User with email ${userEmail} not found`);
+    if (!user) {
+      throw new ConvexError({
+        code: 'USER_NOT_FOUND',
+        message: `No account exists with email ${email}.`,
+      });
+    }
+    if (user.role === 'superadmin') {
+      throw new ConvexError({
+        code: 'CANNOT_DEMOTE_SUPERADMIN',
+        message: `${email} is a superadmin; refusing to downgrade them to admin.`,
+      });
+    }
 
     const org = await ctx.db.get(organizationId);
-    if (!org) throw new Error('Organization not found');
+    if (!org) {
+      throw new ConvexError({ code: 'ORG_NOT_FOUND', message: 'Organization not found' });
+    }
 
     await ctx.db.patch(user._id, { organizationId, role: 'admin', updatedAt: Date.now() });
     return user._id;

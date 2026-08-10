@@ -163,6 +163,35 @@ export function getErrorCode(error: unknown): string {
 }
 
 /**
+ * Extract a readable message out of an error thrown by a Convex function.
+ *
+ * Convex only ships the payload of a `ConvexError` to the client; anything
+ * thrown as a plain `Error` is redacted to `"Server Error"` on production
+ * deployments. Structured payloads (`{ code, message }`) are unwrapped here so
+ * the UI can show the real reason instead of `"Server Error"`.
+ */
+export function getConvexErrorMessage(error: unknown, fallback: string): string {
+  const data = (error as { data?: unknown } | null | undefined)?.data;
+
+  if (typeof data === 'string' && data.trim().length > 0) {
+    return data;
+  }
+  if (data && typeof data === 'object' && 'message' in data) {
+    const message = (data as { message?: unknown }).message;
+    if (typeof message === 'string' && message.trim().length > 0) {
+      return message;
+    }
+  }
+
+  const raw = getErrorMessage(error);
+  // A redacted server error carries no useful text — prefer the caller's copy.
+  if (!raw || raw.includes('Server Error') || raw === 'An unexpected error occurred') {
+    return fallback;
+  }
+  return raw;
+}
+
+/**
  * Extract HTTP status code from any error type.
  */
 export function getErrorStatusCode(error: unknown): number | undefined {

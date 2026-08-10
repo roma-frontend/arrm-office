@@ -18,6 +18,7 @@ import SLASettings from '@/components/admin/SLASettings';
 import type { Id } from '@/convex/_generated/dataModel';
 import type { Doc } from '@/convex/_generated/dataModel';
 import { cn } from '@/lib/utils';
+import { getConvexErrorMessage } from '@/lib/error-handler';
 import HolidayCalendarSync from '@/components/admin/HolidayCalendarSync';
 import SmartSuggestions from '@/components/admin/SmartSuggestions';
 import ConflictDetection from '@/components/admin/ConflictDetection';
@@ -72,8 +73,7 @@ export default function AdminPage() {
       setAssignEmail('');
       clearSelection();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : t('admin.failedToAssignUser');
-      toast.error(errorMessage);
+      toast.error(getConvexErrorMessage(error, t('admin.failedToAssignUser')));
     } finally {
       setIsAssigning(false);
     }
