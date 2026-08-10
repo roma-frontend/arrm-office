@@ -190,7 +190,7 @@ describe('drivers.addFavoriteDriver remaining branches', () => {
     );
   });
 
-  it('throws when neither the args nor the driver provide an organization', async () => {
+  it('rejects when the driver record is missing', async () => {
     mockGetAuthCaller.mockResolvedValue(callerA);
     mockGet.mockResolvedValueOnce(null); // driver record missing
 
@@ -198,13 +198,13 @@ describe('drivers.addFavoriteDriver remaining branches', () => {
       driverRegistration.addFavoriteDriver.handler(makeCtx(null), {
         driverId: 'driver-1' as any,
       }),
-    ).rejects.toThrow('Organization not found');
+    ).rejects.toThrow('Driver not found');
     expect(mockInsert).not.toHaveBeenCalled();
   });
 
   it('runs the by_user_driver index predicate when looking for an existing favorite', async () => {
     mockGetAuthCaller.mockResolvedValue(callerA);
-    // org provided via args, so no driver lookup happens at all.
+    mockGet.mockResolvedValueOnce(sampleDriver);
 
     const ctx = makeCtx(null); // no existing favorite
     await driverRegistration.addFavoriteDriver.handler(ctx, {

@@ -268,6 +268,7 @@ export const drivers = {
     createdAt: v.number(),
   })
     .index('by_user', ['userId'])
+    .index('by_user_org', ['userId', 'organizationId'])
     .index('by_user_driver', ['userId', 'driverId']),
 
   passengerRatings: defineTable({

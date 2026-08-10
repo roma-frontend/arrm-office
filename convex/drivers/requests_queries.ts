@@ -344,16 +344,27 @@ export const getRecurringTrips = query({
   },
 });
 
-/** Get favorite drivers for a user */
+/** Get favorite drivers for a user, scoped to a single organization */
 export const getFavoriteDrivers = query({
-  args: {},
-  handler: async (ctx, _args) => {
+  args: {
+    organizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) return [];
+
+    // Favourites are per user AND per organization. Reading them by user alone
+    // leaked drivers across tenants in two ways: a superadmin browsing another
+    // org saw the drivers they had saved in their own, and anyone moved between
+    // organizations kept seeing the drivers of the org they left.
+    const organizationId = args.organizationId ?? caller.organizationId;
+    if (!organizationId) return [];
+    if (!isSuperadmin(caller) && caller.organizationId !== organizationId) return [];
+
     const userId = caller._id;
     const favorites = await ctx.db
       .query('favoriteDrivers')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .withIndex('by_user_org', (q) => q.eq('userId', userId).eq('organizationId', organizationId))
       .take(MAX_PAGE_SIZE);
 
     // Batch-load all unique driver IDs upfront
@@ -389,6 +400,10 @@ export const getFavoriteDrivers = query({
     const enriched = favorites.map((fav) => {
       const driver = driverMap.get(fav.driverId);
       if (!driver) return null;
+      // The organizationId on the favourite row is a snapshot taken when it was
+      // saved; the driver record is the authority. Re-checking it here also
+      // discards rows written before this query was scoped.
+      if (driver.organizationId !== organizationId) return null;
 
       const driverUser = driverUserMap.get(driver.userId);
       const driverProfile = favDriverProfileMap.get(driver.userId);

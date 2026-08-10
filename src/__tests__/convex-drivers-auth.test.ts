@@ -881,7 +881,7 @@ describe('drivers.addFavoriteDriver', () => {
 
   it('returns existing favorite id instead of creating duplicate', async () => {
     mockGetAuthCaller.mockResolvedValue(callerA);
-    // no mockGet needed (org is provided via args, not looked up)
+    mockGet.mockResolvedValueOnce(sampleDriver); // org lookup
     // query chain returns existing favorite from first()
     const ctx = makeCtx({ _id: 'fav-1' });
     const result = await driverRegistration.addFavoriteDriver.handler(ctx, {
@@ -891,6 +891,58 @@ describe('drivers.addFavoriteDriver', () => {
 
     expect(result).toBe('fav-1');
     expect(mockInsert).not.toHaveBeenCalledWith('favoriteDrivers', expect.anything());
+  });
+
+  it('rejects favoriting a driver from another organization', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminB); // caller lives in ORG_B
+    mockGet.mockResolvedValueOnce(sampleDriver); // driver lives in ORG_A
+
+    await expect(
+      driverRegistration.addFavoriteDriver.handler(makeCtx(null), {
+        driverId: 'driver-1' as any,
+      }),
+    ).rejects.toThrow('cross-organization');
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects an organizationId that contradicts the driver's own organization", async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    mockGet.mockResolvedValueOnce(sampleDriver); // driver lives in ORG_A
+
+    await expect(
+      driverRegistration.addFavoriteDriver.handler(makeCtx(null), {
+        organizationId: ORG_B, // caller claims a different org for the row
+        driverId: 'driver-1' as any,
+      }),
+    ).rejects.toThrow('cross-organization');
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('lets a superadmin favorite a driver outside their own organization', async () => {
+    mockGetAuthCaller.mockResolvedValue({ ...superadmin, organizationId: ORG_B });
+    mockIsSuperadmin.mockReturnValue(true);
+    mockGet.mockResolvedValueOnce(sampleDriver); // driver lives in ORG_A
+
+    await driverRegistration.addFavoriteDriver.handler(makeCtx(null), {
+      driverId: 'driver-1' as any,
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'favoriteDrivers',
+      expect.objectContaining({ organizationId: ORG_A, driverId: 'driver-1' }),
+    );
+  });
+
+  it('rejects when the driver record does not exist', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    mockGet.mockResolvedValueOnce(null);
+
+    await expect(
+      driverRegistration.addFavoriteDriver.handler(makeCtx(null), {
+        driverId: 'driver-1' as any,
+      }),
+    ).rejects.toThrow('Driver not found');
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 });
 

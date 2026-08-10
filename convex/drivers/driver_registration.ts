@@ -121,17 +121,22 @@ export const addFavoriteDriver = mutation({
     if (!caller) throw new Error('Not authenticated');
     const { organizationId, driverId } = args;
     const userId = caller._id;
-    // If org not provided, get from driver record
-    let orgId = organizationId;
-    if (!orgId) {
-      const driver = await ctx.db.get(driverId);
-      if (driver) {
-        orgId = driver.organizationId;
-      }
+
+    // The driver record owns the organization, so it is the only trustworthy
+    // source for the row we are about to write. Taking the caller-supplied id at
+    // face value allowed a favourite for a driver in org B to be filed under
+    // org A, which then passed an org-scoped read.
+    const driver = await ctx.db.get(driverId);
+    if (!driver) throw new Error('Driver not found');
+    const orgId = driver.organizationId;
+
+    if (organizationId && organizationId !== orgId) {
+      throw new Error('Access denied: cross-organization operation');
     }
-    if (!orgId) {
-      throw new Error('Organization not found');
+    if (!isSuperadmin(caller) && caller.organizationId !== orgId) {
+      throw new Error('Access denied: cross-organization operation');
     }
+
     const existing = await ctx.db
       .query('favoriteDrivers')
       .withIndex('by_user_driver', (q) => q.eq('userId', userId).eq('driverId', driverId))

@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -55,11 +56,16 @@ export default function FavoritesPage() {
   const userId = user?.id as Id<'users'> | undefined;
   const orgId = user?.organizationId as Id<'organizations'> | undefined;
 
+  // Superadmins browse one organization at a time, so the favourites list has to
+  // follow the org selector rather than the superadmin's own organization.
+  const selectedOrgId = useSelectedOrganization();
+  const effectiveOrgId = (selectedOrgId ?? undefined) as Id<'organizations'> | undefined;
+
   const removeFavorite = useMutation(removeFavoriteApi);
 
   const favoriteDrivers = useQuery(
     api.drivers.requests_queries.getFavoriteDrivers,
-    userId ? {} : 'skip',
+    userId ? (effectiveOrgId ? { organizationId: effectiveOrgId } : {}) : 'skip',
   );
 
   const drivers = useMemo((): DriverData[] => {

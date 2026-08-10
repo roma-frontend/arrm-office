@@ -167,7 +167,7 @@ export default function DriversPage() {
 
   const favoriteDrivers = useQuery(
     api.drivers.requests_queries.getFavoriteDrivers,
-    userId ? {} : 'skip',
+    userId ? (shouldFilterByOrg ? { organizationId: effectiveOrgId } : {}) : 'skip',
   );
 
   // Optimistic favorite IDs state - initialized from query when available
