@@ -720,6 +720,24 @@ describe('issuedDocuments.issue', () => {
     expect(row?.secondaryLocale).toBeUndefined();
   });
 
+  it('rejects bulk issues beyond the recipient cap', async () => {
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+    // 201 valid ids — the validator only checks length, so reuse the same id.
+    const tooMany = Array.from({ length: 201 }, () => c.employeeId);
+
+    await expect(
+      asAdmin(c).mutation(api.issuedDocuments.issue, {
+        organizationId: c.organizationId,
+        recipientIds: tooMany as never,
+        source: 'blueprint',
+        blueprintId,
+        primaryLocale: 'hy',
+        title: 'ՊԱՅՄԱՆԱԳԻՐ',
+      }),
+    ).rejects.toThrow(/Cannot issue to more than 200 people at once/);
+  });
+
   it('skips recipients from another organization', async () => {
     const c = await seed();
     const blueprintId = await createPublished(c);

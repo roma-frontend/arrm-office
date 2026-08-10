@@ -100,9 +100,26 @@ const sampleRequest = {
 };
 
 function makeQueryChain(fakeResult: any) {
+  // q mimics the Convex expression builder so withIndex/filter callbacks
+  // execute — covering the `q.eq(...)` predicate lines.
+  const q: any = {
+    eq: (..._args: unknown[]) => q,
+    field: (..._args: unknown[]) => q,
+    and: (..._args: unknown[]) => q,
+    gte: (..._args: unknown[]) => q,
+    lte: (..._args: unknown[]) => q,
+    neq: (..._args: unknown[]) => q,
+    or: (..._args: unknown[]) => q,
+  };
   let chain: any = {
-    withIndex: () => chain,
-    filter: () => chain,
+    withIndex: (_name: string, cb?: (q: any) => unknown) => {
+      if (typeof cb === 'function') cb(q);
+      return chain;
+    },
+    filter: (cb?: (q: any) => unknown) => {
+      if (typeof cb === 'function') cb(q);
+      return chain;
+    },
     order: () => chain,
     take: async () => (typeof fakeResult === 'function' ? fakeResult() : fakeResult),
     first: async () => (typeof fakeResult === 'function' ? fakeResult() : fakeResult),

@@ -98,7 +98,13 @@ function makeCtx() {
   const first = jest.fn().mockResolvedValue(null);
   const unique = jest.fn().mockResolvedValue(null);
   const order = jest.fn().mockReturnValue({ take, first });
-  const withIndex = jest.fn().mockReturnValue({ unique, first, order, take });
+  // q mimics the Convex expression builder so withIndex callbacks execute —
+  // covering the `q.eq('email', ...)` predicate lines.
+  const q: any = { eq: (..._args: unknown[]) => q };
+  const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+    if (typeof cb === 'function') cb(q);
+    return { unique, first, order, take };
+  });
   const query = jest.fn().mockReturnValue({ withIndex, order, take, first, unique });
   const db = { get, insert, patch, delete: jest.fn(), query };
   return { ctx: { db }, get, insert, patch, query, withIndex, order, take, first, unique };

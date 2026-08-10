@@ -230,6 +230,21 @@ describe('dashboard.getReportingLine', () => {
     expect(result!.directReports[0].position).toBe('Engineer');
     expect(result!.directReports[0].department).toBe('Eng');
   });
+
+  it('sorts multiple active direct reports by name', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    const me = user('user-caller');
+    // Deliberately returned out of order → the localeCompare sort must fix it.
+    const zed = user('user-zed', { supervisorId: 'user-caller', name: 'Zed' });
+    const ann = user('user-ann', { supervisorId: 'user-caller', name: 'Ann' });
+    const ctx = makeCtx([zed, ann]);
+    ctx.db.get.mockImplementation(async (id: string) => (id === 'user-caller' ? me : null));
+    mockGetProfile.mockResolvedValue(null);
+
+    const result = await dashboard.getReportingLine.handler(ctx, {});
+    expect(result!.directReports.map((r: any) => r._id)).toEqual(['user-ann', 'user-zed']);
+    expect(result!.directReports.map((r: any) => r.name)).toEqual(['Ann', 'Zed']);
+  });
 });
 
 // ═════════════════════════════════════════════════════════════════════════════

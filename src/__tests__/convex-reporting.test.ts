@@ -580,6 +580,28 @@ describe('reporting.assignManager', () => {
     expect(result.success).toBe(true);
   });
 
+  it('patches the existing user profile when one is present', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminCallerA);
+    mockGet
+      .mockResolvedValueOnce(sampleEmployee) // emp
+      .mockResolvedValueOnce(sampleManager) // supervisor
+      .mockResolvedValueOnce(sampleTopManager); // audit name
+    // The handler queries userProfiles directly (not via getProfile mock).
+    // Pass an existing profile doc as the query result so `if (profile)` hits.
+    const ctx = makeCtx({ _id: 'profile-9', supervisorId: 'old-manager' });
+    const result = await reporting.assignManager.handler(ctx, {
+      employeeId: 'user-target' as any,
+      supervisorId: 'user-manager-1' as any,
+    });
+    expect(result.success).toBe(true);
+    expect(mockPatch).toHaveBeenCalledTimes(2);
+    // Second patch is on the profile doc.
+    expect(mockPatch.mock.calls[1]).toEqual([
+      'profile-9',
+      expect.objectContaining({ supervisorId: 'user-manager-1' }),
+    ]);
+  });
+
   it('allows superadmin from any org', async () => {
     mockGetAuthCaller.mockResolvedValue(adminCallerB);
     mockIsSuperadmin.mockReturnValue(true);

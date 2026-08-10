@@ -60,16 +60,20 @@ function makeTarget(
 }
 
 function makeCtx(overrides: Record<string, unknown> = {}) {
+  // q mimics the Convex expression builder so withIndex callbacks execute —
+  // covering the `q.eq('userId', userId)` predicate lines.
+  const q: any = { eq: (..._args: unknown[]) => q };
+  const first = jest.fn().mockResolvedValue(null);
+  const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+    if (typeof cb === 'function') cb(q);
+    return { first };
+  });
   return {
     db: {
       get: jest.fn(),
       patch: jest.fn().mockResolvedValue(undefined),
       insert: jest.fn().mockResolvedValue('profile_1'),
-      query: jest.fn().mockReturnValue({
-        withIndex: jest.fn().mockReturnValue({
-          first: jest.fn().mockResolvedValue(null),
-        }),
-      }),
+      query: jest.fn().mockReturnValue({ withIndex }),
     },
     ...overrides,
   };

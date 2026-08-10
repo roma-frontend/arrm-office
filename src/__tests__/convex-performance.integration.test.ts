@@ -291,6 +291,15 @@ describe('createCycle', () => {
     expect(actives).toHaveLength(0);
   });
 
+  it('listCycles returns all cycles when no status is given', async () => {
+    const c = await seed();
+    await c.t.run((ctx) => ctx.runMutation(api.performance.createCycle, cycleArgs(c)));
+    const all = await c.t.run((ctx) =>
+      ctx.runQuery(api.performance.listCycles, { organizationId: c.organizationId }),
+    );
+    expect(all).toHaveLength(1);
+  });
+
   it('getCycleDetails returns null for a missing cycle', async () => {
     const c = await seed();
     const cycleId = await c.t.run((ctx) =>

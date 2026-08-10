@@ -337,6 +337,23 @@ describe('calendarEvents.update', () => {
     ).rejects.toThrow('Event not found');
   });
 
+  it('blocks a cross-org admin from updating the event', async () => {
+    const c = await seed();
+    const id = await createEvent(c);
+    await expect(
+      asOther(c).mutation(api.calendarEvents.update, {
+        id,
+        title: 'Meddling',
+        date: '2026-09-02',
+        startTime: '14:00',
+        endTime: '15:00',
+        allDay: false,
+        category: 'meeting',
+        reminder: '1h',
+      }),
+    ).rejects.toThrow('Access denied: different organization');
+  });
+
   it('re-books the room on reschedule and releases the old reservation', async () => {
     const c = await seed();
     const roomId = await insertRoom(c);

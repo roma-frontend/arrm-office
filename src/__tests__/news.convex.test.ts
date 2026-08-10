@@ -394,6 +394,22 @@ describe('targeting in reads', () => {
     });
     expect(feed).toHaveLength(0);
   });
+
+  it('sorts pinned first, then publishedAt descending', async () => {
+    const c = await seed();
+    // First post of two unpinned posts — the publishedAt sort comparator runs.
+    await publish(c, { title: 'Older', isPinned: false });
+    await publish(c, { title: 'Newer', isPinned: false });
+
+    const feed = await asSales(c).query(api.news.getNewsFeed, {
+      organizationId: c.organizationId,
+    });
+
+    expect(feed).toHaveLength(2);
+    // Both unpinned, so the newer (publishedAt-desc) one is first.
+    expect(feed[0]?.title).toBe('Newer');
+    expect(feed[1]?.title).toBe('Older');
+  });
 });
 
 describe('moderation', () => {

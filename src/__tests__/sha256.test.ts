@@ -88,6 +88,9 @@ describe('sha256Hex — TextEncoder fallback', () => {
         'ASCII only',
         'Армянский: Աշխատանքային պայմանագիր',
         'emoji 🎉 and lone surrogate \uD800',
+        // Real lone high surrogate (no valid low surrogate after it) →
+        // triggers the replacement branch at code = 0xfffd.
+        String.fromCharCode(0xd800),
         'x'.repeat(100),
       ]) {
         expect(sha256Hex(input)).toBe(createHash('sha256').update(input, 'utf8').digest('hex'));
