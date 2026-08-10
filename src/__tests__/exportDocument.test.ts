@@ -340,6 +340,36 @@ describe('structured block bodies', () => {
     // Two signing parties side by side, with the drawn signature embedded
     expect(json).toContain('data:image/png;base64,AAA');
     expect(json).toContain('Admin / HR');
+
+    // Exercise the fields-table layout callbacks (hairline rules + padding).
+    const fieldTable = def.content.find(
+      (c: any) => c.table && c.table.body?.[0]?.[0]?.style === 'fieldLabel',
+    );
+    expect(fieldTable).toBeDefined();
+    const body = fieldTable.table.body;
+    expect(fieldTable.layout.hLineWidth(0, { table: { body } })).toBe(0);
+    expect(fieldTable.layout.hLineWidth(1, { table: { body } })).toBe(0.5);
+    expect(fieldTable.layout.vLineWidth()).toBe(0);
+    expect(fieldTable.layout.hLineColor()).toBe('#e2e8f0');
+    expect(fieldTable.layout.paddingTop()).toBe(5);
+    expect(fieldTable.layout.paddingBottom()).toBe(5);
+    expect(fieldTable.layout.paddingLeft()).toBe(0);
+    expect(fieldTable.layout.paddingRight()).toBe(4);
+
+    // Exercise the callout table layout callbacks (accent bar + padding).
+    const callout = def.content.find(
+      (c: any) => c.table && c.table.body?.[0]?.[0]?.style === 'callout',
+    );
+    expect(callout).toBeDefined();
+    expect(callout.layout.hLineWidth()).toBe(0);
+    expect(callout.layout.vLineWidth(0)).toBe(2.5);
+    expect(callout.layout.vLineWidth(1)).toBe(0);
+    expect(callout.layout.vLineColor()).toBe('#1d4ed8');
+    expect(callout.layout.paddingLeft()).toBe(10);
+    expect(callout.layout.paddingRight()).toBe(10);
+    expect(callout.layout.paddingTop()).toBe(8);
+    expect(callout.layout.paddingBottom()).toBe(8);
+    expect(callout.layout.fillColor()).toBe('#f8fafc');
   });
 
   it('does not append the generic signature block when the body has its own', async () => {
@@ -428,6 +458,19 @@ describe('structured block bodies', () => {
     expect(json).toContain('РУССКИЙ');
     expect(json).toContain('1.  ՊԱՅՄԱՆԱԳԻՐ');
     expect(json).toContain('Русский текст');
+
+    // Exercise the bilingual table layout callbacks so their branches are hit.
+    const biTable = def.content.find((c: any) => c.table && Array.isArray(c.table.widths));
+    expect(biTable).toBeDefined();
+    expect(biTable.layout.hLineWidth()).toBe(0);
+    expect(biTable.layout.vLineWidth(1)).toBe(0.5);
+    expect(biTable.layout.vLineColor()).toBe('#e2e8f0');
+    expect(biTable.layout.paddingLeft(0)).toBe(0);
+    expect(biTable.layout.paddingLeft(1)).toBe(9);
+    expect(biTable.layout.paddingRight(0)).toBe(9);
+    expect(biTable.layout.paddingRight(1)).toBe(0);
+    expect(biTable.layout.paddingTop()).toBe(0);
+    expect(biTable.layout.paddingBottom()).toBe(0);
   });
 
   it('renders a bilingual block to DOCX as a two-column table', async () => {
@@ -678,6 +721,44 @@ describe('legacy string bodies', () => {
     expect(json).toContain('•  First item');
     expect(json).toContain('"style":"body"');
   });
+
+  it('stops a paragraph at a double blank line', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    // Two consecutive blanks inside a paragraph force a section break (L419).
+    // The first line is long enough to avoid the section-header heuristic.
+    const body =
+      'First paragraph of plain prose that is long enough to not look like a section heading at all.\n\n\nSecond paragraph after a break.';
+    await exportDocumentToPDF({ ...baseDoc, body }, 'blank.pdf');
+
+    const def = mockPdf.createPdf.mock.calls[0][0];
+    const texts = def.content
+      .filter((c: any) => typeof c.text === 'string')
+      .map((c: any) => c.text);
+    expect(texts.some((t: string) => t.startsWith('First paragraph of plain prose'))).toBe(true);
+    expect(texts).toContain('Second paragraph after a break.');
+  });
+
+  it('keeps a non-bullet continuation line inside a bullet group', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    // A long non-bullet line after bullets is treated as a list continuation,
+    // not as a new section header (L397 branch).
+    const body =
+      '• Alpha\n• Beta\nA continuation line that is too long to be mistaken for a section heading by the heuristic.';
+    await exportDocumentToPDF({ ...baseDoc, body }, 'cont.pdf');
+
+    const def = mockPdf.createPdf.mock.calls[0][0];
+    const json = JSON.stringify(def.content);
+    expect(json).toContain('•  Alpha');
+    expect(json).toContain('•  Beta');
+    // The long line ends up as the third bullet of the same group.
+    expect(json).toContain('•  A continuation line that is too long');
+  });
 });
 
 describe('types', () => {
@@ -772,6 +853,98 @@ describe('signed signature rendering', () => {
     const textRuns = mod.TextRun.mock.calls.map((c: any) => c[0]);
     expect(textRuns.some((t: any) => t.text === 'Alice Smith')).toBe(true);
   });
+
+  it('draws placeholder lines when the signature has no name or date', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    // signed without signerName/signedAt → underscore placeholder branches.
+    await exportDocumentToPDF(
+      { ...baseDoc, signature: true, signed: { signatureData: 'data:image/png;base64,AAA' } },
+      'unsigned.pdf',
+    );
+
+    const json = JSON.stringify(mockPdf.createPdf.mock.calls[0][0]);
+    expect(json).toContain('_________________________');
+    expect(json).toContain('_________________');
+  });
+
+  it('prints the integrity hash in the footer when contentHash is set', async () => {
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    await exportDocumentToPDF(
+      { ...baseDoc, contentHash: 'sha256:abcdef0123456789', lang: 'ru' },
+      'hash.pdf',
+    );
+
+    const def = mockPdf.createPdf.mock.calls[0][0];
+    const footer = def.footer(1, 3);
+    const json = JSON.stringify(footer);
+    // The hash is truncated to 16 chars in the footer.
+    expect(json).toContain('sha256:abcdef012');
+    expect(json).toContain('1 / 3');
+  });
+
+  it('renders a single-party signature block to DOCX without a table', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    const mod = createMockDocx();
+    loadDocx.mockResolvedValue(mod);
+
+    await exportDocumentToDOCX({
+      ...baseDoc,
+      body: [
+        {
+          type: 'signatures',
+          parties: [
+            {
+              role: 'Employee',
+              nameLabel: 'Name',
+              name: 'Alice',
+              dateLabel: 'Date',
+              date: '1 August 2026',
+              positionLabel: 'Position',
+              position: 'Manager',
+            },
+          ],
+        },
+      ],
+    });
+
+    // Single party → pushed directly via docxSignatureParty, no Table wrapper.
+    expect(mod.Table).not.toHaveBeenCalled();
+    const textRuns = mod.TextRun.mock.calls.map((c: any) => c[0]);
+    expect(textRuns.some((t: any) => t.text === 'Alice')).toBe(true);
+  });
+
+  it('tolerates an invalid base64 signature image in DOCX', async () => {
+    const { loadDocx } = jest.requireMock('@/lib/dynamic-imports');
+    const mod = createMockDocx();
+    loadDocx.mockResolvedValue(mod);
+
+    // Malformed base64 → dataUrlToUint8Array catch returns null → no ImageRun.
+    await exportDocumentToDOCX({
+      ...baseDoc,
+      body: [
+        {
+          type: 'signatures',
+          parties: [
+            {
+              role: 'Employee',
+              nameLabel: 'Name',
+              name: 'Alice',
+              dateLabel: 'Date',
+              signatureImage: 'data:image/png;base64,!!!!invalid!!!!',
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(mod.ImageRun).not.toHaveBeenCalled();
+  });
 });
 
 describe('font loading fallback', () => {
@@ -796,6 +969,48 @@ describe('font loading fallback', () => {
       expect(global.fetch).toHaveBeenCalled();
     } finally {
       global.fetch = originalFetch;
+    }
+  });
+
+  it('registers DejaVu fonts when the font fetch succeeds', async () => {
+    jest.resetModules();
+    const originalFetch = global.fetch;
+    const arrayBuffer = new Uint8Array([0x68, 0x65, 0x6c, 0x6c, 0x6f]).buffer; // 'hello'
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => arrayBuffer,
+    });
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    const mockPdf = createMockPdfMake(true);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    try {
+      const mod = await import('@/lib/exportDocument');
+      await mod.exportDocumentToPDF(baseDoc);
+      const def = mockPdf.createPdf.mock.calls[0][0];
+      expect(def.defaultStyle.font).toBe('DejaVuSans');
+      // The fetched bytes were base64-encoded into the pdfmake virtual file system.
+      const vfsValues = Object.values(mockPdf.vfs) as string[];
+      expect(vfsValues).toContain(btoa('hello'));
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('falls back to the bundled vfs_fonts module when pdfmake has no vfs', async () => {
+    jest.resetModules();
+    const { loadPdfMake } = jest.requireMock('@/lib/dynamic-imports');
+    // No vfs property → the loader must import pdfmake/build/vfs_fonts.
+    const mockPdf = createMockPdfMake(false);
+    loadPdfMake.mockResolvedValue(mockPdf);
+
+    try {
+      const mod = await import('@/lib/exportDocument');
+      await mod.exportDocumentToPDF(baseDoc);
+      expect(mockPdf.vfs).toBeDefined();
+    } finally {
+      jest.isolateModules(() => {});
     }
   });
 });
