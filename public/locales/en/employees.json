@@ -1,4 +1,52 @@
 {
+  "team": {
+    "title": "Team",
+    "eyebrow": "Directory",
+    "subtitle": "{{people}} colleagues across {{departments}} departments",
+    "searchPlaceholder": "Search by name, role, department…",
+    "sortBy": "Sort",
+    "viewMode": "Layout",
+    "results": "{{shown}} of {{total}} shown",
+    "clearFilters": "Clear filters",
+    "you": "You",
+    "now": "Now",
+    "inDays": "in {{days}}d",
+    "birthdayToday": "Today",
+    "backOn": "Back {{date}}",
+    "awayFrom": "Away {{date}}",
+    "stat": {
+      "total": "Headcount",
+      "inOffice": "In today",
+      "outToday": "Away today",
+      "departments": "Departments",
+      "birthdays": "Birthdays soon"
+    },
+    "sort": {
+      "name": "Name",
+      "department": "Department",
+      "newest": "Newest"
+    },
+    "view": {
+      "grid": "Grid",
+      "list": "List"
+    },
+    "filter": {
+      "allDepartments": "All departments",
+      "allRoles": "All roles"
+    },
+    "empty": {
+      "title": "Nobody matches that",
+      "body": "Try another name or department, or clear the filters."
+    },
+    "rail": {
+      "birthdays": "Upcoming birthdays",
+      "away": "Away soon",
+      "reportingLine": "Your reporting line",
+      "managers": "Managers",
+      "directReports": "Direct reports",
+      "empty": "Nothing here yet"
+    }
+  },
   "employees": {
     "addEmployee": "Add Employee",
     "dateOfBirth": "Date of birth",

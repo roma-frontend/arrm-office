@@ -212,9 +212,13 @@ export default function TeamClient() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   // Remember the layout choice; it is a preference, not navigation state.
+  // Read in an effect rather than a useState initializer: this component is
+  // server-rendered, and touching localStorage during render would hydrate a
+  // different layout than the server painted.
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(VIEW_STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate one-shot client-side init
       if (stored === 'grid' || stored === 'list') setView(stored);
     } catch {
       /* private mode / storage disabled — the default is fine */

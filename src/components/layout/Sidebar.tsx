@@ -37,6 +37,7 @@ import {
   PenTool,
   Crosshair,
   Briefcase,
+  Contact,
   Rocket,
   UserMinus,
   Network,
@@ -102,6 +103,7 @@ const navItems: NavEntry[] = [
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
     children: [
       { href: '/employees', labelKey: 'nav.employees.all', icon: Users },
+      { href: '/team', labelKey: 'team.title', icon: Contact },
       { href: '/employees/departments', labelKey: 'nav.employees.departments', icon: Building2 },
       { href: '/employees/positions', labelKey: 'nav.employees.positions', icon: Briefcase },
     ],

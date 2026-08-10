@@ -4,6 +4,11 @@
  * Mocks @upstash/redis entirely.
  */
 
+// Mock logger so error-path tests don't spam output and can assert on it.
+jest.mock('@/lib/logger', () => ({
+  logger: { error: jest.fn(), warn: jest.fn(), log: jest.fn(), info: jest.fn() },
+}));
+
 // ── Redis mock — single shared mock instance ─────────────────────────────────
 jest.mock('@upstash/redis', () => {
   function createMockInstance() {
@@ -281,5 +286,221 @@ describe('redis — getCache / setCache / deleteCache / invalidateCachePattern',
     getMockRedis().keys.mockResolvedValue(['cache:users:1', 'cache:users:2']);
     await invalidateCachePattern('users:*');
     expect(getMockRedis().del).toHaveBeenCalledWith('cache:users:1', 'cache:users:2');
+  });
+});
+
+/**
+ * No-env fallback paths. These need a *fresh* module instance because the
+ * module-level redisClient caches the first getRedis() result — once an env
+ * configured client exists, the `if (!redis)` branches are unreachable.
+ */
+describe('redis — no-env fallback (fresh module)', () => {
+  let fresh: typeof import('@/lib/redis');
+
+  beforeEach(() => {
+    jest.resetModules();
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.NODE_ENV;
+    fresh = require('@/lib/redis');
+  });
+
+  afterAll(() => {
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.NODE_ENV;
+  });
+
+  it('warns and returns null when Redis is not configured', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const { getRedis } = require('@/lib/redis') as { getRedis?: () => unknown };
+      // getRedis is not exported; the warning is emitted by the first public call.
+      return fresh.checkRateLimit('k', 5, 60000).then(() => {
+        expect(warnSpy).toHaveBeenCalled();
+        warnSpy.mockRestore();
+      });
+    } catch (e) {
+      warnSpy.mockRestore();
+      throw e;
+    }
+  });
+
+  it('checkRateLimit allows in non-production when Redis is unavailable', async () => {
+    const result = await fresh.checkRateLimit('k', 5, 60000);
+    expect(result).toEqual({ allowed: true, remaining: 5, resetAt: expect.any(Number) });
+  });
+
+  it('checkRateLimit fails closed in production when Redis is unavailable', async () => {
+    process.env.NODE_ENV = 'production';
+    const result = await fresh.checkRateLimit('k', 5, 60000);
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+  });
+
+  it('isBlocked returns false without Redis', async () => {
+    expect(await fresh.isBlocked('k')).toBe(false);
+  });
+
+  it('getBlockReason returns null without Redis', async () => {
+    expect(await fresh.getBlockReason('k')).toBeNull();
+  });
+
+  it('getFailedLoginCount returns 0 without Redis', async () => {
+    expect(await fresh.getFailedLoginCount('a@b.com', '1.1.1.1')).toBe(0);
+  });
+
+  it('getSecurityEvents returns empty array without Redis', async () => {
+    expect(await fresh.getSecurityEvents('uid')).toEqual([]);
+  });
+
+  it('testRedisConnection returns false without Redis', async () => {
+    expect(await fresh.testRedisConnection()).toBe(false);
+  });
+
+  it('getRedisStats reports disconnected without Redis', async () => {
+    expect(await fresh.getRedisStats()).toEqual({ connected: false });
+  });
+
+  it('getCache returns null without Redis', async () => {
+    expect(await fresh.getCache('ck')).toBeNull();
+  });
+
+  it('returns null from getRedis when constructor throws', async () => {
+    // Give getRedis a configured env so it actually reaches the constructor.
+    process.env.UPSTASH_REDIS_REST_URL = 'https://test.upstash.io';
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'test-token';
+    const { Redis } = jest.requireMock('@upstash/redis') as {
+      Redis: jest.Mock;
+    };
+    Redis.mockImplementationOnce(() => {
+      throw new Error('construction boom');
+    });
+    const result = await fresh.checkRateLimit('k2', 5, 60000);
+    // Failed closed in prod is not relevant here; dev allows.
+    expect(result.allowed).toBe(true);
+  });
+});
+
+/**
+ * Error paths inside the try/catch of each helper — the redis methods reject
+ * and the helper logs + falls back. The shared (env-configured) client is
+ * re-created per describe via resetModules for a clean client.
+ */
+describe('redis — error paths', () => {
+  let mod: typeof import('@/lib/redis');
+
+  beforeEach(() => {
+    jest.resetModules();
+    process.env.UPSTASH_REDIS_REST_URL = 'https://test.upstash.io';
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'test-token';
+    delete process.env.NODE_ENV; // dev mode → fall open
+    mod = require('@/lib/redis');
+    // Force construction to happen so the module caches a client.
+    const { Redis } = jest.requireMock('@upstash/redis') as { Redis: jest.Mock };
+    (Redis as jest.Mock).mockClear();
+    (Redis as jest.Mock)();
+    resetRedisMock();
+  });
+
+  const getClient = () => {
+    const { Redis } = jest.requireMock('@upstash/redis') as { Redis: jest.Mock };
+    const results = (Redis as jest.Mock).mock.results;
+    return results[results.length - 1]?.value as any;
+  };
+
+  it('checkRateLimit falls open and logs when redis errors', async () => {
+    getClient().incr.mockRejectedValue(new Error('boom'));
+    const result = await mod.checkRateLimit('k', 5, 60000);
+    expect(result.allowed).toBe(true);
+    const { logger } = jest.requireMock('@/lib/logger') as { logger: { error: jest.Mock } };
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  it('checkRateLimit fails closed in production when redis errors', async () => {
+    process.env.NODE_ENV = 'production';
+    getClient().incr.mockRejectedValue(new Error('boom'));
+    const result = await mod.checkRateLimit('k', 5, 60000);
+    expect(result.allowed).toBe(false);
+    expect(result.remaining).toBe(0);
+  });
+
+  it('isBlocked returns false when redis get rejects', async () => {
+    getClient().get.mockRejectedValue(new Error('boom'));
+    expect(await mod.isBlocked('k')).toBe(false);
+  });
+
+  it('blockKey logs and swallows redis errors', async () => {
+    getClient().multi.mockImplementation(() => {
+      throw new Error('multi boom');
+    });
+    await expect(mod.blockKey('k', 60000, 'why')).resolves.toBeUndefined();
+  });
+
+  it('unblockKey logs and swallows redis errors', async () => {
+    getClient().del.mockRejectedValue(new Error('boom'));
+    await expect(mod.unblockKey('k')).resolves.toBeUndefined();
+  });
+
+  it('getBlockReason returns null when redis get rejects', async () => {
+    getClient().get.mockRejectedValue(new Error('boom'));
+    expect(await mod.getBlockReason('k')).toBeNull();
+  });
+
+  it('logLoginAttempt logs and swallows redis errors', async () => {
+    getClient().incr.mockRejectedValue(new Error('boom'));
+    await expect(mod.logLoginAttempt('a@b.com', '1.1.1.1', false)).resolves.toBeUndefined();
+  });
+
+  it('logLoginAttempt auto-blocks after 5 failed attempts', async () => {
+    getClient().incr.mockResolvedValue(5);
+    await mod.logLoginAttempt('a@b.com', '1.1.1.1', false);
+    // blockKey ran → multi was used to set the block entry.
+    expect(getClient().multi).toHaveBeenCalled();
+  });
+
+  it('getFailedLoginCount returns 0 when redis get rejects', async () => {
+    getClient().get.mockRejectedValue(new Error('boom'));
+    expect(await mod.getFailedLoginCount('a@b.com', '1.1.1.1')).toBe(0);
+  });
+
+  it('logSecurityEvent logs and swallows redis errors', async () => {
+    getClient().lpush.mockRejectedValue(new Error('boom'));
+    await expect(mod.logSecurityEvent('login', 'uid', '1.1.1.1')).resolves.toBeUndefined();
+  });
+
+  it('getSecurityEvents returns empty array when redis errors', async () => {
+    getClient().lrange.mockRejectedValue(new Error('boom'));
+    expect(await mod.getSecurityEvents('uid')).toEqual([]);
+  });
+
+  it('testRedisConnection returns false when ping rejects', async () => {
+    getClient().ping.mockRejectedValue(new Error('boom'));
+    expect(await mod.testRedisConnection()).toBe(false);
+  });
+
+  it('getRedisStats reports disconnected when ping rejects', async () => {
+    getClient().ping.mockRejectedValue(new Error('boom'));
+    expect(await mod.getRedisStats()).toEqual({ connected: false });
+  });
+
+  it('getCache returns null when redis get rejects', async () => {
+    getClient().get.mockRejectedValue(new Error('boom'));
+    expect(await mod.getCache('ck')).toBeNull();
+  });
+
+  it('setCache logs and swallows redis errors', async () => {
+    getClient().set.mockRejectedValue(new Error('boom'));
+    await expect(mod.setCache('ck', 'v')).resolves.toBeUndefined();
+  });
+
+  it('deleteCache logs and swallows redis errors', async () => {
+    getClient().del.mockRejectedValue(new Error('boom'));
+    await expect(mod.deleteCache('ck')).resolves.toBeUndefined();
+  });
+
+  it('invalidateCachePattern logs and swallows redis errors', async () => {
+    getClient().keys.mockRejectedValue(new Error('boom'));
+    await expect(mod.invalidateCachePattern('users:*')).resolves.toBeUndefined();
   });
 });

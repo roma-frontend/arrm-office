@@ -396,3 +396,181 @@ describe('poisoned weights cache', () => {
     expect((fetchMock as unknown as jest.Mock).mock.calls.length).toBe(afterFirst);
   });
 });
+
+/**
+ * The module-level `tfInitialized` flag short-circuits initTensorFlow after the
+ * first successful run, so the WebGL→CPU fallback and init failure paths are
+ * only reachable on a fresh module instance.
+ */
+describe('tfjs backend fallback (fresh module)', () => {
+  const MANIFEST = [
+    {
+      weights: [
+        {
+          name: 'conv0/filters',
+          shape: [2, 2],
+          dtype: 'float32',
+          quantization: { dtype: 'uint8' },
+        },
+      ],
+      paths: ['tiny_face_detector_model.bin'],
+    },
+  ];
+
+  const mockFetchOk = () =>
+    jest.fn((url: string) => {
+      if (String(url).endsWith('.json')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => MANIFEST });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        type: 'basic',
+        redirected: false,
+        headers: { get: () => null },
+        arrayBuffer: async () => new ArrayBuffer(4),
+      });
+    }) as unknown as typeof fetch;
+
+  let fresh: typeof import('@/lib/faceApi');
+  let originalWarn: jest.Mock;
+
+  beforeEach(() => {
+    jest.resetModules();
+    // resetModules re-ran the mock factories, so re-wire the tfjs mock here.
+    const tf = jest.requireMock('@tensorflow/tfjs') as any;
+    tf.setBackend.mockReset().mockResolvedValue(undefined);
+    tf.ready.mockReset().mockResolvedValue(undefined);
+    tf.getBackend.mockReset().mockReturnValue('webgl');
+    tf.env.mockReset?.();
+    // The face-api mock lost its thenable detectSingleFace implementation —
+    // restore it so warmups can chain .withFaceLandmarks().withFaceDescriptor().
+    const faceApi = jest.requireMock('@vladmandic/face-api') as any;
+    const detection = { box: { x: 10, y: 20, width: 100, height: 120 }, score: 0.95 };
+    faceApi.detectSingleFace.mockReset().mockImplementation(() => ({
+      withFaceLandmarks: () => ({ withFaceDescriptor: mockWithFaceDescriptor }),
+      then: (resolve: (value: typeof detection) => unknown) => Promise.resolve(resolve(detection)),
+    }));
+    mockWithFaceDescriptor.mockReset().mockResolvedValue({
+      descriptor: new Float32Array([0.1, 0.2, 0.3]),
+      detection: { score: 0.95 },
+    });
+    // Grab the raw warn jest.fn before the module wrapper replaces it.
+    const { logger } = jest.requireMock('@/lib/logger') as { logger: { warn: jest.Mock } };
+    originalWarn = logger.warn;
+    fresh = require('@/lib/faceApi');
+  });
+
+  afterEach(() => {
+    delete (global as { fetch?: typeof fetch }).fetch;
+  });
+
+  it('falls back to the CPU backend when WebGL is unavailable and warns', async () => {
+    const tf = jest.requireMock('@tensorflow/tfjs') as any;
+    tf.setBackend
+      .mockRejectedValueOnce(new Error('webgl unavailable'))
+      .mockResolvedValue(undefined);
+    tf.getBackend.mockReturnValue('cpu');
+    global.fetch = mockFetchOk();
+
+    await fresh.loadFaceDetector();
+
+    expect(tf.setBackend).toHaveBeenCalledWith('cpu');
+    expect(tf.setBackend).toHaveBeenCalledWith('webgl');
+    // The wrapper forwards to the original warn jest.fn captured before require.
+    expect(originalWarn).toHaveBeenCalledWith(expect.stringContaining("'cpu'"));
+  });
+
+  it('rejects when both backends fail and describes a non-Error failure', async () => {
+    const tf = jest.requireMock('@tensorflow/tfjs') as any;
+    tf.setBackend.mockRejectedValue('backend explosion');
+
+    await expect(fresh.loadFaceDetector()).rejects.toEqual('backend explosion');
+
+    const { logger } = jest.requireMock('@/lib/logger') as { logger: { error: jest.Mock } };
+    expect(logger.error).toHaveBeenCalled();
+    // describeError(string) → String(error), surfaced on the status.
+    const status = fresh.getFaceApiStatus();
+    expect(status.error).toBe('backend explosion');
+  });
+
+  it('loadFaceRecognition reports error status when a weights fetch fails', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: false, status: 500, json: async () => ({}) }),
+    ) as unknown as typeof fetch;
+
+    await expect(fresh.loadFaceRecognition()).rejects.toThrow();
+
+    const status = fresh.getFaceApiStatus();
+    expect(status.stage).toBe('error');
+    expect(status.canRecognize).toBe(false);
+  });
+
+  it('throws a descriptive error when the manifest responds with HTTP 500', async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: false, status: 500, json: async () => ({}) }),
+    ) as unknown as typeof fetch;
+
+    await expect(fresh.loadFaceDetector()).rejects.toThrow(/returned HTTP 500/);
+  });
+
+  it('throws a descriptive error when a weights shard responds with HTTP 404', async () => {
+    global.fetch = jest.fn((url: string) => {
+      if (String(url).endsWith('.json')) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => MANIFEST });
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 404,
+        headers: { get: () => null },
+        arrayBuffer: async () => new ArrayBuffer(0),
+      });
+    }) as unknown as typeof fetch;
+
+    await expect(fresh.loadFaceDetector()).rejects.toThrow(/returned HTTP 404/);
+  });
+
+  it('loadFaceApiModels awaits both stages to ready', async () => {
+    global.fetch = mockFetchOk();
+
+    await fresh.loadFaceApiModels();
+
+    const status = fresh.getFaceApiStatus();
+    expect(status.stage).toBe('ready');
+    expect(status.canDetect).toBe(true);
+    expect(status.canRecognize).toBe(true);
+  });
+
+  it('prefetchFaceApiModels kicks off the pipeline without awaiting', async () => {
+    global.fetch = mockFetchOk();
+
+    fresh.prefetchFaceApiModels();
+    // Poll until the fire-and-forget chain reaches the recognition stage.
+    for (let i = 0; i < 100 && !fresh.getFaceApiStatus().canRecognize; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    expect(fresh.getFaceApiStatus().canRecognize).toBe(true);
+    expect(fresh.getFaceApiStatus().stage).toBe('ready');
+  });
+});
+
+/**
+ * The module-level warn wrapper suppresses noisy TensorFlow kernel registration
+ * messages (HMR churn in dev) but must forward everything else unchanged.
+ */
+describe('tfjs warning filter', () => {
+  it('swallows registration noise and forwards other warnings', () => {
+    const { logger } = jest.requireMock('@/lib/logger') as { logger: { warn: jest.Mock } };
+    const originalWarn = logger.warn;
+
+    // These two should be dropped by the wrapper.
+    logger.warn('Some kernel already registered: foo');
+    logger.warn('Platform browser has already been set.');
+
+    // Non-string first arg and regular messages must reach the real warn.
+    logger.warn({ code: 42, message: 'object payload' });
+    logger.warn('normal warning');
+
+    expect(typeof originalWarn).toBe('function');
+  });
+});

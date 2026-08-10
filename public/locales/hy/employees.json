@@ -1,4 +1,52 @@
 {
+  "team": {
+    "title": "Թիմ",
+    "eyebrow": "Տեղեկագիրք",
+    "subtitle": "{{people}} գործընկեր {{departments}} բաժնում",
+    "searchPlaceholder": "Որոնել ըստ անվան, պաշտոնի, բաժնի…",
+    "sortBy": "Դասավորել",
+    "viewMode": "Տեսք",
+    "results": "Ցուցադրված է {{shown}}՝ {{total}}-ից",
+    "clearFilters": "Մաքրել զտիչները",
+    "you": "Դուք",
+    "now": "Հիմա",
+    "inDays": "{{days}} օրից",
+    "birthdayToday": "Այսօր",
+    "backOn": "Կվերադառնա {{date}}",
+    "awayFrom": "Բացակայում է {{date}}-ից",
+    "stat": {
+      "total": "Աշխատակիցներ",
+      "inOffice": "Ներկա այսօր",
+      "outToday": "Բացակայում են",
+      "departments": "Բաժիններ",
+      "birthdays": "Մոտակա ծնունդներ"
+    },
+    "sort": {
+      "name": "Ըստ անվան",
+      "department": "Ըստ բաժնի",
+      "newest": "Նորերը առաջին"
+    },
+    "view": {
+      "grid": "Ցանց",
+      "list": "Ցուցակ"
+    },
+    "filter": {
+      "allDepartments": "Բոլոր բաժինները",
+      "allRoles": "Բոլոր դերերը"
+    },
+    "empty": {
+      "title": "Ոչ ոք չի գտնվել",
+      "body": "Փորձեք այլ անուն կամ բաժին, կամ մաքրեք զտիչները։"
+    },
+    "rail": {
+      "birthdays": "Մոտակա ծննդյան օրեր",
+      "away": "Շուտով արձակուրդում",
+      "reportingLine": "Ձեր ենթակայության գիծը",
+      "managers": "Ղեկավարներ",
+      "directReports": "Ուղիղ ենթականեր",
+      "empty": "Դեռ ոչինչ չկա"
+    }
+  },
   "employees": {
     "addEmployee": "Ավելացնել աշխատակից",
     "dateOfBirth": "Ծննդյան ամսաթիվ",

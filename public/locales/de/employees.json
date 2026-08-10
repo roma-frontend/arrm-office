@@ -1,4 +1,52 @@
 {
+  "team": {
+    "title": "Team",
+    "eyebrow": "Verzeichnis",
+    "subtitle": "{{people}} Kolleginnen und Kollegen in {{departments}} Abteilungen",
+    "searchPlaceholder": "Nach Name, Position, Abteilung suchen…",
+    "sortBy": "Sortieren",
+    "viewMode": "Ansicht",
+    "results": "{{shown}} von {{total}} angezeigt",
+    "clearFilters": "Filter zurücksetzen",
+    "you": "Sie",
+    "now": "Jetzt",
+    "inDays": "in {{days}} T.",
+    "birthdayToday": "Heute",
+    "backOn": "Zurück {{date}}",
+    "awayFrom": "Abwesend ab {{date}}",
+    "stat": {
+      "total": "Mitarbeitende",
+      "inOffice": "Heute da",
+      "outToday": "Heute abwesend",
+      "departments": "Abteilungen",
+      "birthdays": "Geburtstage bald"
+    },
+    "sort": {
+      "name": "Name",
+      "department": "Abteilung",
+      "newest": "Neueste"
+    },
+    "view": {
+      "grid": "Raster",
+      "list": "Liste"
+    },
+    "filter": {
+      "allDepartments": "Alle Abteilungen",
+      "allRoles": "Alle Rollen"
+    },
+    "empty": {
+      "title": "Niemand gefunden",
+      "body": "Versuchen Sie einen anderen Namen oder eine andere Abteilung, oder setzen Sie die Filter zurück."
+    },
+    "rail": {
+      "birthdays": "Bevorstehende Geburtstage",
+      "away": "Bald abwesend",
+      "reportingLine": "Ihre Berichtslinie",
+      "managers": "Vorgesetzte",
+      "directReports": "Direkt unterstellt",
+      "empty": "Noch nichts vorhanden"
+    }
+  },
   "employees": {
     "addEmployee": "Mitarbeiter hinzufügen",
     "dateOfBirth": "Geburtsdatum",

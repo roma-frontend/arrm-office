@@ -1,4 +1,52 @@
 {
+  "team": {
+    "title": "Команда",
+    "eyebrow": "Справочник",
+    "subtitle": "{{people}} коллег в {{departments}} отделах",
+    "searchPlaceholder": "Поиск по имени, должности, отделу…",
+    "sortBy": "Сортировка",
+    "viewMode": "Вид",
+    "results": "Показано {{shown}} из {{total}}",
+    "clearFilters": "Сбросить фильтры",
+    "you": "Вы",
+    "now": "Сейчас",
+    "inDays": "через {{days}} дн.",
+    "birthdayToday": "Сегодня",
+    "backOn": "Вернётся {{date}}",
+    "awayFrom": "Отсутствует с {{date}}",
+    "stat": {
+      "total": "Численность",
+      "inOffice": "На месте",
+      "outToday": "Отсутствуют",
+      "departments": "Отделы",
+      "birthdays": "Дни рождения"
+    },
+    "sort": {
+      "name": "По имени",
+      "department": "По отделу",
+      "newest": "Сначала новые"
+    },
+    "view": {
+      "grid": "Плитка",
+      "list": "Список"
+    },
+    "filter": {
+      "allDepartments": "Все отделы",
+      "allRoles": "Все роли"
+    },
+    "empty": {
+      "title": "Никто не найден",
+      "body": "Попробуйте другое имя или отдел либо сбросьте фильтры."
+    },
+    "rail": {
+      "birthdays": "Скоро дни рождения",
+      "away": "Скоро в отпуске",
+      "reportingLine": "Ваша линия подчинения",
+      "managers": "Руководители",
+      "directReports": "Прямые подчинённые",
+      "empty": "Пока ничего нет"
+    }
+  },
   "employees": {
     "addEmployee": "Добавить сотрудника",
     "dateOfBirth": "Дата рождения",
