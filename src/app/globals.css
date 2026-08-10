@@ -2495,13 +2495,16 @@ input[type='date']:focus {
    MOBILE DOCK — floating bottom navigation (see MobileTabBar)
    ═══════════════════════════════════════════════════════════════ */
 
+/* Every visual property below is declared twice: an opaque, keyword-free
+   fallback first, then the translucent version behind `@supports`.
+   `color-mix(… , transparent)` fails to parse on iOS Safari < 17.2, and a
+   dropped declaration is not a slightly-off dock — it is an invisible one
+   (transparent background, no border, no shadow, page content scrolling
+   straight through it). Solid is the safe floor. */
 .mobile-dock {
-  background: color-mix(in srgb, var(--card) 86%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  backdrop-filter: blur(18px) saturate(160%);
+  background-color: var(--card);
+  border: 1px solid var(--border);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #ffffff 50%, transparent),
     0 10px 30px -12px rgb(0 0 0 / 28%),
     0 2px 8px -4px rgb(0 0 0 / 18%);
   /* Promote to its own compositing layer. A translucent, blurred bar sitting
@@ -2514,15 +2517,37 @@ input[type='date']:focus {
 
 .dark .mobile-dock {
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #ffffff 8%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 8%),
     0 10px 34px -12px rgb(0 0 0 / 70%);
 }
 
+@supports (background: color-mix(in srgb, red 50%, transparent)) {
+  .mobile-dock {
+    background-color: color-mix(in srgb, var(--card) 86%, transparent);
+    border-color: color-mix(in srgb, var(--border) 75%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 50%),
+      0 10px 30px -12px rgb(0 0 0 / 28%),
+      0 2px 8px -4px rgb(0 0 0 / 18%);
+  }
+}
+
 .mobile-dock-fab {
-  background: var(--primary-gradient, var(--primary));
-  box-shadow:
-    0 0 0 4px var(--card),
-    0 10px 26px -8px color-mix(in srgb, var(--primary) 70%, transparent);
+  /* background-color carries the circle on its own; the gradient is a separate
+     longhand so that an unparsable value can never take the fill with it. */
+  background-color: var(--primary);
+  background-image: var(--primary-gradient);
+  box-shadow: 0 0 0 4px var(--card);
+}
+
+@supports (box-shadow: 0 0 0 1px color-mix(in srgb, red 50%, transparent)) {
+  .mobile-dock-fab {
+    box-shadow:
+      0 0 0 4px var(--card),
+      0 10px 26px -8px color-mix(in srgb, var(--primary) 70%, transparent);
+  }
 }
 
 .mobile-dock-fab-aura {
@@ -2538,11 +2563,11 @@ input[type='date']:focus {
   opacity: 0.6;
   background: conic-gradient(
     from 0deg,
-    transparent 0deg,
-    color-mix(in srgb, var(--primary) 75%, transparent) 80deg,
-    transparent 180deg,
-    color-mix(in srgb, var(--purple, #9333ea) 70%, transparent) 280deg,
-    transparent 360deg
+    rgb(0 0 0 / 0%) 0deg,
+    rgb(37 99 235 / 75%) 80deg,
+    rgb(0 0 0 / 0%) 180deg,
+    rgb(147 51 234 / 70%) 280deg,
+    rgb(0 0 0 / 0%) 360deg
   );
   animation: mobileDockAura 6s linear infinite;
 }
