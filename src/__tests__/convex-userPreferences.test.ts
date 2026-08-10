@@ -35,7 +35,12 @@ function makeCtx({ users = [], prefs = [], prefFirst = undefined }: any = {}) {
   const patch = jest.fn();
   const take = jest.fn().mockResolvedValue(users);
   const first = jest.fn().mockResolvedValue(prefFirst);
-  const withIndex = jest.fn().mockReturnValue({ first, take });
+  // q mimics the Convex expression builder so withIndex callbacks execute.
+  const q: any = { eq: (..._args: unknown[]) => q };
+  const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+    if (typeof cb === 'function') cb(q);
+    return { first, take };
+  });
   const order = jest.fn().mockReturnValue({ take });
   // getCurrentUserId: query('users').order('desc').take(MAX_PAGE_SIZE)
   const query = jest

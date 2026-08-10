@@ -94,7 +94,12 @@ function makeCaller(role: string, org: string | undefined = ORG_A, id: string = 
 function makeCtx() {
   const get = jest.fn();
   const first = jest.fn().mockResolvedValue(null);
-  const withIndex = jest.fn().mockReturnValue({ first });
+  // q mimics the Convex expression builder so withIndex callbacks execute.
+  const q: any = { eq: (..._args: unknown[]) => q };
+  const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+    if (typeof cb === 'function') cb(q);
+    return { first };
+  });
   return {
     ctx: {
       db: {
@@ -258,5 +263,33 @@ describe('getSettlementPreview', () => {
     const result = (await getSettlementPreviewHandler(ctx, { employeeId: EMP_ID })) as any;
     expect(result.country).toBe('russia');
     expect(result.currency).toBe('RUB');
+  });
+
+  it('defaults to armenia when the employee has no organization', async () => {
+    // Superadmin bypasses the org-membership check, so the employee's missing
+    // org doesn't matter for RBAC.
+    mockGetAuthCaller.mockResolvedValue(makeCaller('superadmin', ORG_A));
+    mockIsSuperadmin.mockReturnValue(true);
+    const { ctx, get, withIndex } = makeCtx();
+    // No orgId → salarySettings lookup is skipped entirely (settings = null),
+    // and the org fallback branch is skipped too.
+    get.mockResolvedValueOnce(empDoc({ organizationId: undefined }));
+
+    const result = (await getSettlementPreviewHandler(ctx, { employeeId: EMP_ID })) as any;
+
+    expect(withIndex).not.toHaveBeenCalledWith('by_org', expect.any(Function));
+    expect(result.country).toBe('armenia');
+  });
+
+  it('keeps armenia when the org country is not a valid code', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin'));
+    const { ctx, get } = makeCtx();
+    get.mockResolvedValueOnce(empDoc()).mockResolvedValueOnce({ _id: ORG_A, country: 'Atlantis' });
+    // salarySettings first() → null, org fallback: country present but toCountryCode
+    // returns null → `if (code)` false → country stays armenia.
+    mockToCountryCode.mockReturnValue(null as any);
+
+    const result = (await getSettlementPreviewHandler(ctx, { employeeId: EMP_ID })) as any;
+    expect(result.country).toBe('armenia');
   });
 });

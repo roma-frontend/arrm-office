@@ -118,9 +118,21 @@ const sampleUser = {
 };
 
 function makeQueryChain(fakeResult: any) {
+  // q mimics the Convex expression builder so withIndex/filter callbacks
+  // execute — covering the `q.eq`/`q.field` predicate lines.
+  const q: any = {
+    eq: (..._args: unknown[]) => q,
+    field: (name: string) => ({ __field: name }),
+  };
   let chain: any = {
-    withIndex: () => chain,
-    filter: () => chain,
+    withIndex: (_name: string, cb?: (q: any) => unknown) => {
+      if (cb) cb(q);
+      return chain;
+    },
+    filter: (cb?: (q: any) => unknown) => {
+      if (cb) cb(q);
+      return chain;
+    },
     order: () => chain,
     take: async () => (typeof fakeResult === 'function' ? fakeResult() : fakeResult),
     first: async () => (typeof fakeResult === 'function' ? fakeResult() : fakeResult),
@@ -287,6 +299,52 @@ describe('settings.updateUserSettings', () => {
     });
     expect(result).toEqual({ success: true });
   });
+
+  it('skips the db.patch when every provided field is undefined', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    mockGet.mockResolvedValue(sampleSettings);
+
+    const ctx = makeCtx(sampleSettings);
+    const result = await settings.updateUserSettings.handler(ctx, {
+      language: undefined as any,
+      theme: undefined as any,
+      timezone: undefined as any,
+    });
+
+    // Empty patch → the `if (Object.keys(patch).length > 0)` branch is skipped.
+    expect(mockPatch).not.toHaveBeenCalled();
+    expect(result).toEqual({ success: true });
+  });
+
+  it('creates a settings doc from the user fallback when none exists', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    // No settings row (makeCtx(null) → first() = null), so getOrCreateSettings
+    // falls back to the users table: db.get(userId) → user, then db.get(newId).
+    mockGet
+      .mockResolvedValueOnce(sampleUser) // user doc (fallback source)
+      .mockResolvedValueOnce({ _id: 'settings-new', ...sampleUser }); // created row
+
+    const ctx = makeCtx(null);
+    const result = await settings.updateUserSettings.handler(ctx, {
+      language: 'ru',
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'userSettings',
+      expect.objectContaining({ userId: 'user-1', language: 'en' }),
+    );
+    expect(result).toEqual({ success: true });
+  });
+
+  it('throws when the user doc is missing during fallback creation', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    mockGet.mockResolvedValue(null); // user not found
+
+    await expect(
+      settings.updateUserSettings.handler(makeCtx(null), { language: 'ru' }),
+    ).rejects.toThrow('User not found');
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -451,6 +509,33 @@ describe('settings.updateSessionProfile', () => {
     expect(mockPatch).toHaveBeenCalledWith('settings-1', {
       language: 'de',
       timezone: 'Europe/Berlin',
+    });
+  });
+
+  it('patches firstDayOfWeek when provided', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    mockGet.mockResolvedValue(sampleSettings);
+
+    const ctx = makeCtx(sampleSettings);
+    await settings.updateSessionProfile.handler(ctx, {
+      profile: { firstDayOfWeek: 'sunday' },
+    });
+
+    expect(mockPatch).toHaveBeenCalledWith('settings-1', { firstDayOfWeek: 'sunday' });
+  });
+
+  it('patches dateFormat and timeFormat when provided', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    mockGet.mockResolvedValue(sampleSettings);
+
+    const ctx = makeCtx(sampleSettings);
+    await settings.updateSessionProfile.handler(ctx, {
+      profile: { dateFormat: 'YYYY-MM-DD', timeFormat: '12h' },
+    });
+
+    expect(mockPatch).toHaveBeenCalledWith('settings-1', {
+      dateFormat: 'YYYY-MM-DD',
+      timeFormat: '12h',
     });
   });
 

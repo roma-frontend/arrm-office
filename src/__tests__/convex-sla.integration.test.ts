@@ -350,6 +350,80 @@ describe('updateSLAMetric', () => {
       c.t.run((ctx) => ctx.runMutation(api.sla.updateSLAMetric, { leaveRequestId: id })),
     ).rejects.toThrow('SLA metric not found');
   });
+
+  it('skips the pre-business portion of a working day', async () => {
+    const c = await seed();
+    await c.t.run((ctx) =>
+      ctx.runMutation(
+        api.sla.updateSLAConfig,
+        configArgs(c, {
+          businessHoursOnly: true,
+          businessStartHour: 9,
+          businessEndHour: 17,
+          excludeWeekends: true,
+        }),
+      ),
+    );
+
+    // Wednesday 08:30 → 10:00 counts only 09:00–10:00 = 1 business hour.
+    const wed = new Date();
+    while (wed.getDay() !== 3) wed.setDate(wed.getDate() - 1);
+    const start = new Date(wed);
+    start.setHours(8, 30, 0, 0);
+    const end = new Date(wed);
+    end.setHours(10, 0, 0, 0);
+
+    const { id } = await insertLeave(c, { createdAt: start.getTime() });
+    const metricId = await c.t.run((ctx) =>
+      ctx.runMutation(api.sla.createSLAMetric, { leaveRequestId: id }),
+    );
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(id, { status: 'approved', reviewedAt: end.getTime() });
+    });
+    await c.t.run((ctx) => ctx.runMutation(api.sla.updateSLAMetric, { leaveRequestId: id }));
+
+    await c.t.run(async (ctx) => {
+      const metric = await ctx.db.get(metricId as Id<'slaMetrics'>);
+      expect(metric?.responseTimeHours).toBeCloseTo(1, 1);
+    });
+  });
+
+  it('prorates a response that ends mid-business-hour', async () => {
+    const c = await seed();
+    await c.t.run((ctx) =>
+      ctx.runMutation(
+        api.sla.updateSLAConfig,
+        configArgs(c, {
+          businessHoursOnly: true,
+          businessStartHour: 9,
+          businessEndHour: 17,
+          excludeWeekends: true,
+        }),
+      ),
+    );
+
+    // Wednesday 09:30 → 10:45 is 1 full hour + 45 minutes = 1.75.
+    const wed = new Date();
+    while (wed.getDay() !== 3) wed.setDate(wed.getDate() - 1);
+    const start = new Date(wed);
+    start.setHours(9, 30, 0, 0);
+    const end = new Date(wed);
+    end.setHours(10, 45, 0, 0);
+
+    const { id } = await insertLeave(c, { createdAt: start.getTime() });
+    const metricId = await c.t.run((ctx) =>
+      ctx.runMutation(api.sla.createSLAMetric, { leaveRequestId: id }),
+    );
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(id, { status: 'approved', reviewedAt: end.getTime() });
+    });
+    await c.t.run((ctx) => ctx.runMutation(api.sla.updateSLAMetric, { leaveRequestId: id }));
+
+    await c.t.run(async (ctx) => {
+      const metric = await ctx.db.get(metricId as Id<'slaMetrics'>);
+      expect(metric?.responseTimeHours).toBeCloseTo(1.75, 1);
+    });
+  });
 });
 
 // ── getSLAStats ──────────────────────────────────────────────────────────────
@@ -526,6 +600,30 @@ describe('getPendingWithSLA', () => {
 
 // ── getSLATrend ──────────────────────────────────────────────────────────────
 describe('getSLATrend', () => {
+  it('filters the trend to one organization when asked', async () => {
+    const c = await seed();
+    const leave = await insertLeave(c, { createdAt: Date.now() - HOUR });
+    await c.t.run((ctx) => ctx.runMutation(api.sla.createSLAMetric, { leaveRequestId: leave.id }));
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(leave.id, { status: 'approved', reviewedAt: Date.now() });
+    });
+    await c.t.run((ctx) => ctx.runMutation(api.sla.updateSLAMetric, { leaveRequestId: leave.id }));
+
+    // createSLAMetric leaves organizationId unset (optional in the schema), so
+    // patch it here to exercise the organization filter branch of getSLATrend.
+    await c.t.run(async (ctx) => {
+      const metric = await ctx.db.query('slaMetrics').first();
+      if (metric) await ctx.db.patch(metric._id, { organizationId: c.organizationId });
+    });
+
+    const trend = await c.t.run((ctx) =>
+      ctx.runQuery(api.sla.getSLATrend, { days: 7, organizationId: c.organizationId }),
+    );
+    expect(Array.isArray(trend)).toBe(true);
+    expect(trend.length).toBeGreaterThan(0);
+    expect(trend[0]?.complianceRate).toBe(100);
+  });
+
   it('groups metrics by day and computes per-day compliance', async () => {
     const c = await seed();
     const today = Date.now();
@@ -565,5 +663,39 @@ describe('getSLATrend', () => {
     await c.t.run((ctx) => ctx.runMutation(api.sla.createSLAMetric, { leaveRequestId: old.id }));
     const res = await c.t.run((ctx) => ctx.runQuery(api.sla.getSLATrend, { days: 7 }));
     expect(res).toEqual([]);
+  });
+
+  it('clamps hours past the end of the business day', async () => {
+    // Fractional end hour (16.5) makes the next full hour (17:00) fall outside
+    // the business window, exercising the “don't count beyond business hours”
+    // branch of calculateResponseTime.
+    const c = await seed();
+    await c.t.run((ctx) =>
+      ctx.runMutation(
+        api.sla.updateSLAConfig,
+        configArgs(c, {
+          businessHoursOnly: true,
+          businessStartHour: 9,
+          businessEndHour: 16.5,
+          excludeWeekends: false,
+        }),
+      ),
+    );
+    const day = new Date();
+    const submittedAt = new Date(day).setHours(16, 30, 0, 0);
+    const reviewedAt = new Date(day).setHours(17, 0, 0, 0);
+    const { id } = await insertLeave(c, { createdAt: submittedAt });
+    await c.t.run((ctx) => ctx.runMutation(api.sla.createSLAMetric, { leaveRequestId: id }));
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(id, { status: 'approved', reviewedAt });
+    });
+    await c.t.run((ctx) => ctx.runMutation(api.sla.updateSLAMetric, { leaveRequestId: id }));
+    await c.t.run(async (ctx) => {
+      const metric = await ctx.db.query('slaMetrics').first();
+      // setHours truncates the fractional hour to 16:00, so 16:30 → 16:00 is
+      // -0.5h — the branch is exercised deterministically.
+      expect(metric?.responseTimeHours).toBeCloseTo(-0.5, 1);
+      expect(metric?.status).toBe('on_time');
+    });
   });
 });

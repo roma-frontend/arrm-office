@@ -43,6 +43,7 @@ async function seed() {
 
   const ids = await t.run(async (ctx) => {
     const organizationId = await insertOrg(ctx, 'Acme');
+    const otherOrgId = await insertOrg(ctx, 'Globex');
 
     const baseUser = {
       organizationId,
@@ -82,8 +83,15 @@ async function seed() {
       email: 'buddy@acme.test',
       role: 'employee',
     });
+    const outsiderId = await ctx.db.insert('users', {
+      ...baseUser,
+      organizationId: otherOrgId,
+      name: 'Outsider',
+      email: 'outsider@globex.test',
+      role: 'admin',
+    });
 
-    return { organizationId, adminId, managerId, employeeId, buddyId };
+    return { organizationId, otherOrgId, adminId, managerId, employeeId, buddyId, outsiderId };
   });
 
   return { t, ...ids };
@@ -93,6 +101,7 @@ const asAdmin = (c: Ctx) => c.t.withIdentity({ email: 'admin@acme.test' });
 const asManager = (c: Ctx) => c.t.withIdentity({ email: 'manager@acme.test' });
 const asEmployee = (c: Ctx) => c.t.withIdentity({ email: 'employee@acme.test' });
 const asBuddy = (c: Ctx) => c.t.withIdentity({ email: 'buddy@acme.test' });
+const asOutsider = (c: Ctx) => c.t.withIdentity({ email: 'outsider@globex.test' });
 
 const TEMPLATE_TASKS = [
   {
@@ -651,5 +660,134 @@ describe('onboarding cron internals', () => {
     expect(sent).toContain('onboarding_started');
     expect(sent).toContain('onboarding_manager_assigned');
     expect(sent).toContain('onboarding_buddy_assigned');
+  });
+});
+
+describe('onboarding defensive paths', () => {
+  it('hides mentee programs from a non-staff caller asking about someone else', async () => {
+    const c = await seed();
+    await startDefaultProgram(c);
+
+    const programs = await asEmployee(c).query(api.onboarding.getMyMenteePrograms, {
+      userId: c.buddyId,
+    });
+    expect(programs).toEqual([]);
+  });
+
+  it('hides mentee programs when the target user does not exist', async () => {
+    const c = await seed();
+    const ghostUserId = await c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('users', {
+        organizationId: c.organizationId,
+        name: 'Ghost',
+        email: 'ghost@acme.test',
+        role: 'employee',
+        passwordHash: 'x',
+        employeeType: 'staff',
+        isActive: true,
+        isApproved: true,
+        travelAllowance: 0,
+        paidLeaveBalance: 10,
+        sickLeaveBalance: 5,
+        familyLeaveBalance: 5,
+        createdAt: Date.now(),
+      } as never);
+      await ctx.db.delete(id);
+      return id;
+    });
+
+    const programs = await asAdmin(c).query(api.onboarding.getMyMenteePrograms, {
+      userId: ghostUserId,
+    });
+    expect(programs).toEqual([]);
+  });
+
+  it('refuses to complete a task on a closed program', async () => {
+    const c = await seed();
+    const programId = await startDefaultProgram(c);
+    const program = await asAdmin(c).query(api.onboarding.getProgram, { programId });
+    const task = program!.tasks[0]!;
+
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(programId, { status: 'completed' });
+    });
+    await expect(
+      asEmployee(c).mutation(api.onboarding.completeTask, { taskId: task._id }),
+    ).rejects.toThrow(/not active/i);
+  });
+
+  it('refuses staff to skip a task on a closed program', async () => {
+    const c = await seed();
+    const programId = await startDefaultProgram(c);
+    const program = await asAdmin(c).query(api.onboarding.getProgram, { programId });
+    const task = program!.tasks[0]!;
+
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(programId, { status: 'cancelled' });
+    });
+    await expect(
+      asAdmin(c).mutation(api.onboarding.skipTask, { taskId: task._id }),
+    ).rejects.toThrow(/not active/i);
+  });
+
+  it('refuses to assign a buddy that does not exist', async () => {
+    const c = await seed();
+    const programId = await startDefaultProgram(c);
+    const ghostUserId = await c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('users', {
+        organizationId: c.organizationId,
+        name: 'Ghost',
+        email: 'ghost@acme.test',
+        role: 'employee',
+        passwordHash: 'x',
+        employeeType: 'staff',
+        isActive: true,
+        isApproved: true,
+        travelAllowance: 0,
+        paidLeaveBalance: 10,
+        sickLeaveBalance: 5,
+        familyLeaveBalance: 5,
+        createdAt: Date.now(),
+      } as never);
+      await ctx.db.delete(id);
+      return id;
+    });
+
+    await expect(
+      asAdmin(c).mutation(api.onboarding.assignBuddy, { programId, buddyId: ghostUserId }),
+    ).rejects.toThrow(/buddy not found/i);
+  });
+
+  it('secureDeleteTemplate guards identity, existence and ownership', async () => {
+    const c = await seed();
+    const templateId = await createTemplate(c);
+
+    await expect(c.t.mutation(api.onboarding.secureDeleteTemplate, { templateId })).rejects.toThrow(
+      /not authenticated/i,
+    );
+
+    const ghostTemplateId = await c.t.run(async (ctx) => {
+      const id = await ctx.db.insert('onboardingTemplates', {
+        organizationId: c.organizationId,
+        name: 'Ghost',
+        isActive: true,
+        tasks: [],
+        createdBy: c.adminId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as never);
+      await ctx.db.delete(id);
+      return id;
+    });
+    await expect(
+      asAdmin(c).mutation(api.onboarding.secureDeleteTemplate, { templateId: ghostTemplateId }),
+    ).rejects.toThrow(/template not found/i);
+
+    await expect(
+      asOutsider(c).mutation(api.onboarding.secureDeleteTemplate, { templateId }),
+    ).rejects.toThrow(/access denied/i);
+
+    await asAdmin(c).mutation(api.onboarding.secureDeleteTemplate, { templateId });
+    expect(await c.t.run(async (ctx) => ctx.db.get(templateId))).toBeNull();
   });
 });

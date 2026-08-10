@@ -93,11 +93,25 @@ beforeAll(() => {
 
 function makeQueryChain(fakeResult: any) {
   let chain: any = {
-    withIndex: () => chain,
-    filter: () => chain,
+    // Invoke the index/filter predicates so the `q.eq(...)`/`q.and(...)` lines
+    // are hit. `q.field` returns a field token the predicates chain on.
+    withIndex: (_name: string, cb?: (q: any) => any) => {
+      if (typeof cb === 'function') cb(chain);
+      return chain;
+    },
+    filter: (cb?: (q: any) => any) => {
+      if (typeof cb === 'function') cb(chain);
+      return chain;
+    },
     order: () => chain,
     take: async () => (typeof fakeResult === 'function' ? fakeResult() : fakeResult),
     first: async () => (typeof fakeResult === 'function' ? fakeResult() : fakeResult),
+    eq: () => chain,
+    neq: () => chain,
+    field: () => chain,
+    and: () => chain,
+    gte: () => chain,
+    lte: () => chain,
   };
   return chain;
 }
@@ -378,6 +392,15 @@ describe('leaveSettings.updateLeaveBalance', () => {
         reason: 'Test',
       }),
     ).rejects.toThrow('Only admins of this organization');
+  });
+
+  it('rejects a non-admin updating a holiday', async () => {
+    mockGetAuthCaller.mockResolvedValue(employeeCaller);
+    mockGet.mockResolvedValue({ _id: 'hol_1', organizationId: ORG_ID });
+
+    await expect(
+      leaveSettings.updateHoliday.handler(makeCtx(null), { holidayId: 'hol_1' }),
+    ).rejects.toThrow(/only admins/i);
   });
 
   it('updates balance for same-org admin', async () => {

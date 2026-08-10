@@ -138,11 +138,17 @@ describe('addNote sentiment analysis', () => {
 });
 
 describe('getNotes visibility filtering', () => {
+  // q mimics the Convex expression builder so withIndex callbacks execute.
+  const q: any = { eq: (..._args: unknown[]) => q };
+
   function makeNotesCtx(notes: Record<string, unknown>[], viewer: any) {
     const get = jest.fn();
     const take = jest.fn().mockResolvedValue(notes);
     const order = jest.fn().mockReturnValue({ take });
-    const withIndex = jest.fn().mockReturnValue({ order });
+    const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+      if (cb) cb(q);
+      return { order };
+    });
     get.mockResolvedValue(viewer);
     return {
       ctx: {
@@ -262,6 +268,16 @@ describe('updateNote', () => {
     });
   });
 
+  it('re-analyzes sentiment as negative when content turns negative', async () => {
+    const { ctx, patch } = makeInsertCtx();
+    await updateNoteHandler(ctx, { noteId: 'note_1', content: 'Poor performance lately' });
+
+    expect(patch).toHaveBeenCalledWith('note_1', {
+      content: 'Poor performance lately',
+      sentiment: 'negative',
+    });
+  });
+
   it('updates tags without touching content', async () => {
     const { ctx, patch } = makeInsertCtx();
     await updateNoteHandler(ctx, { noteId: 'note_1', tags: ['a', 'b'] });
@@ -286,9 +302,14 @@ describe('deleteNote', () => {
 });
 
 describe('getNotesSummary', () => {
+  const q: any = { eq: (..._args: unknown[]) => q };
+
   function makeSummaryCtx(notes: Record<string, unknown>[]) {
     const take = jest.fn().mockResolvedValue(notes);
-    const withIndex = jest.fn().mockReturnValue({ take });
+    const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+      if (cb) cb(q);
+      return { take };
+    });
     return {
       ctx: { db: { query: jest.fn().mockReturnValue({ withIndex }) } },
     };

@@ -28,10 +28,20 @@ beforeEach(() => {
   });
 });
 
+// q mimics the Convex expression builder so filter callbacks execute —
+// covering the `q.eq(q.field(...), …)` predicate lines.
+const q: any = {
+  eq: (..._args: unknown[]) => q,
+  field: (name: string) => ({ __field: name }),
+};
+
 function makeChain(result: unknown) {
   const take = jest.fn().mockResolvedValue(result);
   const order = jest.fn().mockReturnValue({ take });
-  const filter = jest.fn().mockReturnValue({ order });
+  const filter = jest.fn((cb?: (q: any) => unknown) => {
+    if (cb) cb(q);
+    return { order };
+  });
   return { query: jest.fn().mockReturnValue({ filter }), take, order, filter };
 }
 

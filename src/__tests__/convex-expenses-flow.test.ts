@@ -145,10 +145,20 @@ function reportDoc(over: Record<string, unknown> = {}) {
 function makeCtx(rows: Record<string, unknown[]> = {}, docs: Record<string, unknown> = {}) {
   let currentTable = '';
   const chain: any = {
-    withIndex: jest.fn(() => chain),
+    // Invoke the index predicate so the `q.eq(...)` lines are hit.
+    withIndex: jest.fn((_name: string, cb?: (q: any) => any) => {
+      if (typeof cb === 'function') cb(chain);
+      return chain;
+    }),
     order: jest.fn(() => chain),
     take: jest.fn(async () => rows[currentTable] ?? []),
     first: jest.fn(async () => (rows[currentTable] ?? [])[0] ?? null),
+    eq: jest.fn(() => chain),
+    gte: jest.fn(() => chain),
+    lte: jest.fn(() => chain),
+    neq: jest.fn(() => chain),
+    gt: jest.fn(() => chain),
+    lt: jest.fn(() => chain),
   };
   return {
     db: {
@@ -437,6 +447,17 @@ describe('expenses mutation transitions', () => {
     );
   });
 
+  it('submitExpense flips a draft to submitted', async () => {
+    login('employee', EMPLOYEE);
+    const ctx = makeCtx({}, { [EXPENSE_ID]: expenseDoc({ status: 'draft' }) });
+
+    await fns.submitExpense(ctx, { expenseId: EXPENSE_ID });
+    expect(ctx.db.patch).toHaveBeenCalledWith(
+      EXPENSE_ID,
+      expect.objectContaining({ status: 'submitted', updatedAt: expect.any(Number) }),
+    );
+  });
+
   it('approveExpense refuses a non-submitted status', async () => {
     login('admin');
     const ctx = makeCtx({}, { [EXPENSE_ID]: expenseDoc({ status: 'draft' }) });
@@ -697,6 +718,17 @@ describe('expense report flow', () => {
 
     await expect(fns.submitExpenseReport(ctx, { reportId: REPORT_ID })).rejects.toThrow(
       /Only draft reports/,
+    );
+  });
+
+  it('submitExpenseReport flips a draft report to submitted', async () => {
+    login('employee', EMPLOYEE);
+    const ctx = makeCtx({}, { [REPORT_ID]: reportDoc({ status: 'draft' }) });
+
+    await fns.submitExpenseReport(ctx, { reportId: REPORT_ID });
+    expect(ctx.db.patch).toHaveBeenCalledWith(
+      REPORT_ID,
+      expect.objectContaining({ status: 'submitted', updatedAt: expect.any(Number) }),
     );
   });
 

@@ -718,6 +718,9 @@ export const createTicketChat = mutation({
     );
 
     // Add superadmin as owner (check if already exists)
+    // NOTE: the patch branches below are defensive — createTicketChat throws
+    // when ticket.chatId is already set, so the freshly created conversation
+    // can never have members yet (unreachable via the public API).
     const existingSuperadminMember = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>

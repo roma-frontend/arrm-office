@@ -25,6 +25,8 @@ const modules = {
   './lib/systemMessage.ts': () => import('../../convex/lib/systemMessage'),
 } as unknown as Record<string, () => Promise<unknown>>;
 
+const HOUR = 60 * 60 * 1000;
+
 type Ctx = Awaited<ReturnType<typeof seed>>;
 
 async function seed() {
@@ -725,5 +727,79 @@ describe('ticket chat lifecycle', () => {
       ctx.runQuery(api.tickets.getTicketChatStatus, { ticketId: ghostId }),
     );
     expect(missing).toBeNull();
+  });
+});
+
+describe('ticket defensive paths', () => {
+  it('getAllTickets filters by organization and sorts same-priority tickets newest-first', async () => {
+    const c = await seed();
+    const older = await createTicket(c, { title: 'Old', priority: 'low' });
+    const newer = await createTicket(c, { title: 'New', priority: 'low' });
+
+    const byOrg = await c.t.run((ctx) =>
+      ctx.runQuery(api.tickets.getAllTickets, { organizationId: c.organizationId }),
+    );
+    expect(byOrg.length).toBeGreaterThanOrEqual(2);
+
+    const low = await c.t.run((ctx) =>
+      ctx.runQuery(api.tickets.getAllTickets, { priority: 'low' }),
+    );
+    // Same priority → newest created first.
+    expect(low.map((t: { _id: Id<'supportTickets'> }) => t._id)).toEqual([newer, older]);
+  });
+
+  it('getTicketStats averages response times for responded tickets', async () => {
+    const c = await seed();
+    const id = await createTicket(c);
+    // Back-date the ticket so the first-response delta is > 0 even when the
+    // create + status-update mutations land in the same millisecond.
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(id, { createdAt: Date.now() - HOUR });
+    });
+    await c.t.run((ctx) =>
+      ctx.runMutation(api.tickets.updateTicketStatus, {
+        ticketId: id,
+        status: 'in_progress',
+        userId: c.superadminId,
+      }),
+    );
+
+    const stats = await c.t.run((ctx) => ctx.runQuery(api.tickets.getTicketStats, {}));
+    expect(stats.avgResponseTime).toBeGreaterThan(0);
+  });
+
+  it('createTicketChat throws for a missing ticket', async () => {
+    const c = await seed();
+    const ghostTicketId = await insertGhostTicket(c);
+
+    await expect(
+      c.t.run((ctx) =>
+        ctx.runMutation(api.tickets.createTicketChat, {
+          ticketId: ghostTicketId,
+          superadminId: c.superadminId,
+        }),
+      ),
+    ).rejects.toThrow(/ticket not found/i);
+  });
+
+  it('activateTicketChat refuses a non-superadmin', async () => {
+    const c = await seed();
+    const id = await createTicket(c);
+    await c.t.run((ctx) =>
+      ctx.runMutation(api.tickets.createTicketChat, {
+        ticketId: id,
+        superadminId: c.superadminId,
+      }),
+    );
+
+    await expect(
+      c.t.run((ctx) =>
+        ctx.runMutation(api.tickets.activateTicketChat, {
+          ticketId: id,
+          superadminId: c.employeeId,
+          message: 'Hi',
+        }),
+      ),
+    ).rejects.toThrow(/only superadmins can activate/i);
   });
 });

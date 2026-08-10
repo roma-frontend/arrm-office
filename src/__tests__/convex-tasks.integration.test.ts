@@ -380,6 +380,19 @@ describe('assignment helpers', () => {
     expect(names).toContain('Employee');
   });
 
+  it('getUsersForAssignment falls back to all users for a superadmin (no org)', async () => {
+    // The seed superadmin has no organizationId — the requester exists but the
+    // org-scoped branch is skipped, exercising the `query('users').take()` fallback.
+    const c = await seed();
+    const res = await c.t
+      .withIdentity({ email: 'super@acme.test' })
+      .query(api.tasks.getUsersForAssignment, {});
+    const names = res.map((u) => u.name);
+    expect(names).toContain('Employee');
+    expect(names).toContain('Foreign');
+    expect(names).not.toContain('Super');
+  });
+
   it('getSupervisors returns active supervisors and admins of the org', async () => {
     const c = await seed();
     await c.t.run(async (ctx) => {

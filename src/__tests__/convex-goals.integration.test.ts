@@ -727,6 +727,286 @@ describe('task-related queries', () => {
     expect(res[0]?.ownerName).toBe('Manager');
     expect(res[0]?.keyResults).toHaveLength(1);
   });
+
+  it('getObjectivesForTaskCreation sorts user objectives first', async () => {
+    const c = await seed();
+    const mine = await createObjective(c, {
+      title: 'Mine',
+      ownerId: c.employeeId,
+      keyResults: [krInput()],
+    });
+    const other = await createObjective(c, {
+      title: 'Other',
+      ownerId: c.managerId,
+    });
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getObjectivesForTaskCreation, {
+        organizationId: c.organizationId,
+        userId: c.employeeId,
+      }),
+    );
+    expect(res).toHaveLength(2);
+    // The employee's objective should come first.
+    expect(res[0]?.title).toBe('Mine');
+  });
+
+  it('getObjectiveTaskStats filters by periodYear', async () => {
+    const c = await seed();
+    const obj = await createObjective(c);
+    await c.t.run(async (ctx) => {
+      await ctx.db.insert('tasks', {
+        organizationId: c.organizationId,
+        objectiveId: obj,
+        title: 't1',
+        assignedTo: c.employeeId,
+        assignedBy: c.managerId,
+        status: 'completed',
+        priority: 'medium',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as never);
+    });
+    // Query with matching periodYear
+    const matching = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getObjectiveTaskStats, {
+        organizationId: c.organizationId,
+        periodYear: 2026,
+      }),
+    );
+    expect(matching.totalLinked).toBe(1);
+
+    // Query with non-matching periodYear
+    const empty = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getObjectiveTaskStats, {
+        organizationId: c.organizationId,
+        periodYear: 2025,
+      }),
+    );
+    expect(empty.totalLinked).toBe(0);
+  });
+});
+
+// ── getMyObjectives ──────────────────────────────────────────────────────────
+
+describe('goals.getMyObjectives', () => {
+  it('returns objectives owned by the user, enriched with KRs', async () => {
+    const c = await seed();
+    await createObjective(c, {
+      title: 'My goal',
+      ownerId: c.employeeId,
+      keyResults: [krInput()],
+    });
+    // Another objective owned by someone else
+    await createObjective(c, { title: 'Not mine', ownerId: c.managerId });
+
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getMyObjectives, {
+        organizationId: c.organizationId,
+        userId: c.employeeId,
+      }),
+    );
+    expect(res).toHaveLength(1);
+    expect(res[0]?.title).toBe('My goal');
+    expect(res[0]?.keyResultsCount).toBe(1);
+  });
+
+  it('returns empty when the user has no objectives', async () => {
+    const c = await seed();
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getMyObjectives, {
+        organizationId: c.organizationId,
+        userId: c.employeeId,
+      }),
+    );
+    expect(res).toEqual([]);
+  });
+});
+
+// ── getTeamProgress ──────────────────────────────────────────────────────────
+
+describe('goals.getTeamProgress', () => {
+  it('computes aggregated progress stats for the period', async () => {
+    const c = await seed();
+    const activeId = await createObjective(c, { title: 'Active' });
+    const completedId = await createObjective(c, { title: 'Completed' });
+    const cancelledId = await createObjective(c, { title: 'Canceled' });
+
+    // Patch status and progress directly (createObjective validates its args).
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(activeId, { progress: 80 });
+      await ctx.db.patch(completedId, { status: 'completed', progress: 100 });
+      await ctx.db.patch(cancelledId, { status: 'cancelled' });
+    });
+
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getTeamProgress, {
+        organizationId: c.organizationId,
+        periodYear: 2026,
+      }),
+    );
+    expect(res.total).toBe(3);
+    expect(res.active).toBe(2); // active + completed
+    expect(res.avgProgress).toBe(90); // (80 + 100) / 2
+    expect(res.onTrack).toBe(2);
+    expect(res.atRisk).toBe(0);
+    expect(res.behind).toBe(0);
+    expect(res.completed).toBe(1);
+  });
+
+  it('filters by periodType when provided', async () => {
+    const c = await seed();
+    await createObjective(c, { title: 'Q1 objective', periodType: 'Q1' });
+    await createObjective(c, { title: 'Q2 objective', periodType: 'Q2' });
+
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getTeamProgress, {
+        organizationId: c.organizationId,
+        periodYear: 2026,
+        periodType: 'Q2',
+      }),
+    );
+    expect(res.total).toBe(1);
+    expect(res.byLevel.individual).toBe(0);
+  });
+});
+
+// ── getCheckinHistory ────────────────────────────────────────────────────────
+
+describe('goals.getCheckinHistory', () => {
+  it('returns check-ins sorted newest first, enriched with user name', async () => {
+    const c = await seed();
+    const objId = await createObjective(c, { keyResults: [krInput()] });
+    const krs = await c.t.run(async (ctx) => {
+      return await ctx.db
+        .query('keyResults')
+        .withIndex('by_objective', (q) => q.eq('objectiveId', objId))
+        .take(10);
+    });
+    const krId = krs[0]!._id;
+
+    await c.t.run((ctx) =>
+      ctx.runMutation(api.goals.checkin, {
+        keyResultId: krId,
+        userId: c.employeeId,
+        newValue: 50,
+        confidence: 'medium',
+      }),
+    );
+    await c.t.run((ctx) =>
+      ctx.runMutation(api.goals.checkin, {
+        keyResultId: krId,
+        userId: c.employeeId,
+        newValue: 75,
+        confidence: 'high',
+      }),
+    );
+
+    const history = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getCheckinHistory, { keyResultId: krId }),
+    );
+    expect(history).toHaveLength(2);
+    expect(history[0]?.newValue).toBe(75);
+    expect(history[1]?.newValue).toBe(50);
+    expect(history[0]?.userName).toBe('Employee');
+  });
+
+  it('returns empty when no check-ins exist', async () => {
+    const c = await seed();
+    const objId = await createObjective(c, { keyResults: [krInput()] });
+    const krs = await c.t.run(async (ctx) => {
+      return await ctx.db
+        .query('keyResults')
+        .withIndex('by_objective', (q) => q.eq('objectiveId', objId))
+        .take(10);
+    });
+    const history = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getCheckinHistory, { keyResultId: krs[0]!._id }),
+    );
+    expect(history).toEqual([]);
+  });
+});
+
+// ── getRevieweeObjectivesWithReviews ─────────────────────────────────────────
+
+describe('goals.getRevieweeObjectivesWithReviews', () => {
+  it('returns active + completed objectives for the user, enriched', async () => {
+    const c = await seed();
+    const objId = await createObjective(c, {
+      title: 'Review goal',
+      ownerId: c.employeeId,
+      keyResults: [krInput()],
+    });
+    const cancelledId = await createObjective(c, {
+      title: 'Cancelled',
+      ownerId: c.employeeId,
+    });
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(objId, { progress: 60 });
+      await ctx.db.patch(cancelledId, { status: 'cancelled' });
+    });
+
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getRevieweeObjectivesWithReviews, {
+        organizationId: c.organizationId,
+        userId: c.employeeId,
+      }),
+    );
+    expect(res).toHaveLength(1);
+    expect(res[0]?.title).toBe('Review goal');
+    expect(res[0]?.keyResultsCount).toBe(1);
+    expect(res[0]?.latestReview).toBeNull();
+  });
+
+  it('filters by periodStart / periodEnd', async () => {
+    const c = await seed();
+    await createObjective(c, {
+      title: 'In range',
+      ownerId: c.employeeId,
+      periodStart: 1_800_000_000_000,
+      periodEnd: 1_800_000_000_000 + 90 * 86400_000,
+    });
+    await createObjective(c, {
+      title: 'Out of range',
+      ownerId: c.employeeId,
+      periodStart: 1_000_000_000_000,
+      periodEnd: 1_000_000_000_000 + 90 * 86400_000,
+    });
+
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getRevieweeObjectivesWithReviews, {
+        organizationId: c.organizationId,
+        userId: c.employeeId,
+        periodStart: 1_800_000_000_000,
+      }),
+    );
+    expect(res).toHaveLength(1);
+    expect(res[0]?.title).toBe('In range');
+  });
+
+  it('sorts active before completed, then by progress desc', async () => {
+    const c = await seed();
+    const completedId = await createObjective(c, {
+      title: 'Completed',
+      ownerId: c.employeeId,
+    });
+    const activeId = await createObjective(c, {
+      title: 'Active',
+      ownerId: c.employeeId,
+    });
+    await c.t.run(async (ctx) => {
+      await ctx.db.patch(completedId, { status: 'completed', progress: 100 });
+      await ctx.db.patch(activeId, { progress: 50 });
+    });
+
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.goals.getRevieweeObjectivesWithReviews, {
+        organizationId: c.organizationId,
+        userId: c.employeeId,
+      }),
+    );
+    expect(res[0]?.title).toBe('Active');
+    expect(res[1]?.title).toBe('Completed');
+  });
 });
 
 // ── weekly check-in reminders ────────────────────────────────────────────────

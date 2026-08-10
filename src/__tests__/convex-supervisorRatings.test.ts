@@ -126,7 +126,13 @@ function makeCtx() {
   const take = jest.fn().mockResolvedValue([]);
   const first = jest.fn().mockResolvedValue(null);
   const order = jest.fn().mockReturnValue({ take, first });
-  const withIndex = jest.fn().mockReturnValue({ order, take, first });
+  // q mimics the Convex expression builder so withIndex callbacks execute —
+  // covering the `q.eq(...)` predicate lines.
+  const q: any = { eq: (..._args: unknown[]) => q };
+  const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+    if (typeof cb === 'function') cb(q);
+    return { order, take, first };
+  });
   const query = jest.fn().mockReturnValue({ withIndex, order, take, first });
   const db = { get, insert, patch, delete: jest.fn(), query };
   return { ctx: { db }, get, insert, patch, query, withIndex, order, take, first };
@@ -150,8 +156,28 @@ function tableStub(rows: Record<string, { first?: unknown; take?: unknown }>) {
       take: jest.fn().mockResolvedValue(row.take ?? []),
       collect: jest.fn().mockResolvedValue(row.take ?? []),
     };
-    const chain = { ...terminals, order: () => terminals };
-    return { ...chain, withIndex: () => chain };
+    // Invoke index/filter predicates so the `q.eq(...)` builder lines are hit.
+    const chain = {
+      ...terminals,
+      order: () => terminals,
+      eq: () => chain,
+      neq: () => chain,
+      field: () => chain,
+      and: () => chain,
+      gte: () => chain,
+      lte: () => chain,
+    };
+    return {
+      ...chain,
+      withIndex: (_name: string, cb?: (q: any) => any) => {
+        if (typeof cb === 'function') cb(chain);
+        return chain;
+      },
+      filter: (cb?: (q: any) => any) => {
+        if (typeof cb === 'function') cb(chain);
+        return chain;
+      },
+    };
   };
 }
 
@@ -349,6 +375,39 @@ describe('createRating — success paths', () => {
     expect(insert).not.toHaveBeenCalledWith('pointTransactions', expect.anything());
   });
 
+  it('patches existing performance metrics instead of inserting', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, SUPERVISOR_ID));
+    const { ctx, get, insert, patch, query } = makeCtx();
+    get.mockResolvedValueOnce(employeeDoc()); // target
+    insert.mockImplementation(async (table: string) =>
+      table === 'userPoints' ? WALLET_ID : 'rating_1',
+    );
+    get.mockImplementation(async (id: string) =>
+      id === WALLET_ID
+        ? { _id: WALLET_ID, balance: 0, totalEarned: 0, totalSpent: 0, updatedAt: 0 }
+        : employeeDoc({ organizationId: ORG_A }),
+    );
+    query.mockImplementation(
+      tableStub({
+        performanceMetrics: {
+          // An existing metrics row → updatePerformanceMetrics takes the patch path.
+          first: { _id: 'perf_1', userId: EMPLOYEE_ID, kpiScore: 3 },
+        },
+        recognitionSettings: {},
+        userPoints: {},
+        supervisorRatings: { take: [ratingDoc()] },
+      }),
+    );
+
+    await handlers.createRating(ctx, ratingArgs());
+
+    expect(patch).toHaveBeenCalledWith(
+      'perf_1',
+      expect.objectContaining({ kpiScore: expect.any(Number), updatedBy: SUPERVISOR_ID }),
+    );
+    expect(insert).not.toHaveBeenCalledWith('performanceMetrics', expect.anything());
+  });
+
   it('defaults the rating period to the current month', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, SUPERVISOR_ID));
     const { ctx, get, insert } = makeCtx();
@@ -430,6 +489,22 @@ describe('ratings queries', () => {
     expect(result.totalRatings).toBe(2);
     expect(result.qualityOfWork).toBe(3);
     expect(result.overall).toBe(3.75);
+  });
+
+  it('getAverageRatings falls back to all ratings when none are recent', async () => {
+    const { ctx, take } = makeCtx();
+    // Every rating is older than the N-month cutoff → recentRatings is empty,
+    // so the handler falls back to the full list (branch `recentRatings.length > 0`).
+    take.mockResolvedValueOnce([
+      ratingDoc({ _id: 'old1', ratingPeriod: '2020-01', qualityOfWork: 4, overallRating: 4 }),
+      ratingDoc({ _id: 'old2', ratingPeriod: '2019-06', qualityOfWork: 2, overallRating: 2 }),
+    ]);
+
+    const result = (await handlers.getAverageRatings(ctx, { employeeId: EMPLOYEE_ID })) as any;
+
+    expect(result.totalRatings).toBe(2);
+    expect(result.qualityOfWork).toBe(3);
+    expect(result.overall).toBe(3);
   });
 
   it('getRatingsBySupervisor returns ratings with employee info', async () => {

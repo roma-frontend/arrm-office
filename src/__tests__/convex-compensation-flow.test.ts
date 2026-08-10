@@ -135,10 +135,18 @@ function entryDoc(over: Record<string, unknown> = {}) {
 function makeCtx(rows: Record<string, unknown[]> = {}, docs: Record<string, unknown> = {}) {
   let currentTable = '';
   const chain: any = {
-    withIndex: jest.fn(() => chain),
+    // Invoke the index predicate so the `q.eq(...)` lines are hit.
+    withIndex: jest.fn((_name: string, cb?: (q: any) => any) => {
+      if (typeof cb === 'function') cb(chain);
+      return chain;
+    }),
     order: jest.fn(() => chain),
     take: jest.fn(async () => rows[currentTable] ?? []),
     first: jest.fn(async () => (rows[currentTable] ?? [])[0] ?? null),
+    eq: jest.fn(() => chain),
+    neq: jest.fn(() => chain),
+    gte: jest.fn(() => chain),
+    lte: jest.fn(() => chain),
   };
   return {
     db: {
@@ -371,6 +379,15 @@ describe('compensation record transitions', () => {
       notes: 'N',
       status: 'pending_approval',
     });
+  });
+
+  it('updateCompensationRecord refuses a record without an organization', async () => {
+    login('admin');
+    const ctx = makeCtx({}, { [RECORD_ID]: recordDoc({ organizationId: undefined }) });
+
+    await expect(fns.updateCompensationRecord(ctx, { recordId: RECORD_ID })).rejects.toThrow(
+      /not authorized to manage this compensation record/i,
+    );
   });
 
   it('approveCompensationRecord refuses a non-pending record', async () => {

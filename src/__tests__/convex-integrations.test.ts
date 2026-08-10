@@ -718,3 +718,528 @@ describe('integrations.upsertEmployeeBatch', () => {
     expect(result.notes[0]).toMatch(/already belongs to another account/i);
   });
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+// syncIntegration (action) — HTTP calls via global.fetch
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe('integrations.syncIntegration', () => {
+  let fetchMock: jest.Mock;
+  let origFetch: typeof global.fetch;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    mockIsSuperadmin.mockReturnValue(false);
+    origFetch = global.fetch;
+    fetchMock = jest.fn();
+    global.fetch = fetchMock as any;
+  });
+
+  afterEach(() => {
+    global.fetch = origFetch;
+  });
+
+  const config = {
+    _id: 'cfg-1',
+    config: {
+      isEnabled: true,
+      apiUrl: 'https://api.luckycarrot.com',
+      apiKey: 'lc_key',
+      autoSyncEmployees: true,
+      employeesListKey: 'data',
+    },
+  };
+
+  const validArgs = { organizationId: ORG_ID as any, provider: 'lucky_carrot' as const };
+
+  it('returns an error when the caller is not authorized', async () => {
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest.fn().mockResolvedValue(null);
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result).toEqual({ success: false, error: 'Not authorized to sync this integration' });
+  });
+
+  it('returns an error when the integration is not configured', async () => {
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-admin' }) // assertCanSync
+      .mockResolvedValueOnce(null); // getIntegrationConfigInternal
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result).toEqual({
+      success: false,
+      error: 'Integration not configured or disabled',
+    });
+  });
+
+  it('returns an error when the integration is disabled', async () => {
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce({ _id: 'cfg-1', config: { isEnabled: false } });
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result).toEqual({
+      success: false,
+      error: 'Integration not configured or disabled',
+    });
+  });
+
+  it('handles a fetch network error during sync', async () => {
+    fetchMock.mockRejectedValue(new Error('net::ERR_CONNECTION_REFUSED'));
+
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce(config);
+    ctx.runMutation = jest.fn().mockResolvedValue({});
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Lucky Carrot.*network error/i);
+  });
+
+  it('handles a non-200 API response', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 401, text: async () => 'Unauthorized' });
+
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce(config);
+    ctx.runMutation = jest.fn().mockResolvedValue({});
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Lucky Carrot API error \(401\)/i);
+  });
+
+  it('handles an empty response body', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, text: async () => '' });
+
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce(config);
+    ctx.runMutation = jest.fn().mockResolvedValue({});
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Lucky Carrot.*empty response body/i);
+  });
+
+  it('handles a non-JSON response body', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, text: async () => 'not json' });
+
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce(config);
+    ctx.runMutation = jest.fn().mockResolvedValue({});
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/Lucky Carrot.*response was not JSON/i);
+  });
+
+  it('returns a skipped-sync result when autoSyncEmployees is false', async () => {
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce({
+        _id: 'cfg-1',
+        config: {
+          isEnabled: true,
+          apiUrl: 'https://api.luckycarrot.com',
+          apiKey: 'lc_key',
+          autoSyncEmployees: false,
+        },
+      });
+    ctx.runMutation = jest.fn().mockResolvedValue({});
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result.success).toBe(true);
+    expect(result.message).toMatch(/switched off/i);
+  });
+
+  it('completes a full sync successfully', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ data: [{ email: 'test@acme.test', name: 'Test User' }] }),
+    });
+
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce(config);
+    ctx.runMutation = jest
+      .fn()
+      .mockResolvedValueOnce(undefined) // setSyncState (syncing)
+      .mockResolvedValueOnce({ created: 1, updated: 0, skipped: 0, notes: [] }) // upsertEmployeeBatch
+      .mockResolvedValueOnce({ deactivated: 0 }) // deactivateMissingEmployees
+      .mockResolvedValueOnce(undefined) // logSync (success)
+      .mockResolvedValueOnce(undefined); // setSyncState (success)
+
+    const result = await integrations.syncIntegration.handler(ctx, validArgs);
+    expect(result.success).toBe(true);
+    expect(result.message).toMatch(/created/i);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ingestLuckyCarrotWebhook (internalAction) — webhook ingestion
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe('integrations.ingestLuckyCarrotWebhook', () => {
+  let origSubtle: any;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    // crypto.subtle is undefined in jsdom — provide a minimal mock so
+    // signWebhookPayload returns a deterministic 32-byte 0xAB signature.
+    origSubtle = (crypto as any).subtle;
+    (crypto as any).subtle = {
+      importKey: jest.fn().mockResolvedValue({} as any),
+      sign: jest.fn().mockResolvedValue(new Uint8Array(32).fill(0xab).buffer as ArrayBuffer),
+    };
+  });
+
+  afterEach(() => {
+    (crypto as any).subtle = origSubtle;
+  });
+
+  const now = Math.floor(Date.now() / 1000);
+  // 'ab' × 32 bytes → 64 hex chars
+  const expectedSig = 'ab'.repeat(32);
+
+  const webhookArgs = {
+    organizationIdRaw: 'org-123',
+    body: JSON.stringify({ data: [{ email: 'anna@acme.test', name: 'Anna' }] }),
+    signature: expectedSig,
+    timestamp: String(now),
+  };
+
+  function makeWebhookCtx() {
+    const ctx = makeCtx(null) as any;
+    ctx.db.normalizeId = jest.fn(() => ORG_ID);
+    ctx.runQuery = jest.fn();
+    ctx.runMutation = jest
+      .fn()
+      .mockResolvedValue({ created: 1, updated: 0, skipped: 0, notes: [] });
+    return ctx;
+  }
+
+  it('returns unauthorized when signature is missing', async () => {
+    const ctx = makeWebhookCtx();
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, {
+      ...webhookArgs,
+      signature: '',
+    });
+    expect(result).toEqual({ status: 'unauthorized' });
+  });
+
+  it('returns unauthorized when the timestamp is missing', async () => {
+    const ctx = makeWebhookCtx();
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, {
+      ...webhookArgs,
+      timestamp: '',
+    });
+    expect(result).toEqual({ status: 'unauthorized' });
+  });
+
+  it('returns unauthorized when the org is unknown', async () => {
+    const ctx = makeWebhookCtx();
+    ctx.runQuery.mockResolvedValue(null); // getWebhookAuth → null
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, webhookArgs);
+    expect(result).toEqual({ status: 'unauthorized' });
+  });
+
+  it('returns unauthorized when the timestamp is not a finite number', async () => {
+    const ctx = makeWebhookCtx();
+    ctx.runQuery.mockResolvedValue({
+      organizationId: ORG_ID,
+      secret: 's3cret',
+      isEnabled: true,
+    });
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, {
+      ...webhookArgs,
+      timestamp: 'not-a-number',
+    });
+    expect(result).toEqual({ status: 'unauthorized' });
+  });
+
+  it('returns unauthorized when the timestamp is stale', async () => {
+    const ctx = makeWebhookCtx();
+    ctx.runQuery.mockResolvedValue({
+      organizationId: ORG_ID,
+      secret: 's3cret',
+      isEnabled: true,
+    });
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, {
+      ...webhookArgs,
+      timestamp: '1000000000', // year 2001
+    });
+    expect(result).toEqual({ status: 'unauthorized' });
+  });
+
+  it('returns unauthorized when the signature does not match', async () => {
+    const ctx = makeWebhookCtx();
+    ctx.runQuery.mockResolvedValue({
+      organizationId: ORG_ID,
+      secret: 's3cret',
+      isEnabled: true,
+    });
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, {
+      ...webhookArgs,
+      signature: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    });
+    expect(result).toEqual({ status: 'unauthorized' });
+  });
+
+  it('returns disabled when the integration is disabled', async () => {
+    const ctx = makeWebhookCtx();
+    ctx.runQuery.mockResolvedValue({
+      organizationId: ORG_ID,
+      secret: 's3cret',
+      isEnabled: false,
+    });
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, webhookArgs);
+    expect(result).toEqual({ status: 'disabled' });
+  });
+
+  it('returns invalid when the body is not valid JSON', async () => {
+    const ctx = makeWebhookCtx();
+    ctx.runQuery.mockResolvedValue({
+      organizationId: ORG_ID,
+      secret: 's3cret',
+      isEnabled: true,
+    });
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, {
+      ...webhookArgs,
+      body: 'not-json',
+    });
+    expect(result.status).toBe('invalid');
+    expect(result.message).toMatch(/not valid JSON/i);
+  });
+
+  it('returns invalid when no employees have a usable email', async () => {
+    const ctx = makeWebhookCtx();
+    ctx.runQuery.mockResolvedValue({
+      organizationId: ORG_ID,
+      secret: 's3cret',
+      isEnabled: true,
+      employeesListKey: 'items',
+    });
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, {
+      ...webhookArgs,
+      body: JSON.stringify({ items: [{ name: 'No Email' }] }),
+    });
+    expect(result.status).toBe('invalid');
+    expect(result.message).toMatch(/none had a usable email/i);
+  });
+
+  it('processes a valid webhook successfully', async () => {
+    const ctx = makeWebhookCtx();
+    ctx.runQuery.mockResolvedValue({
+      organizationId: ORG_ID,
+      secret: 's3cret',
+      isEnabled: true,
+      employeesListKey: 'employees',
+      fieldMap: undefined,
+    });
+    const result = await integrations.ingestLuckyCarrotWebhook.handler(ctx, {
+      ...webhookArgs,
+      body: JSON.stringify({
+        employees: [{ email: 'anna@acme.test', name: 'Anna' }],
+      }),
+    });
+    expect(result.status).toBe('ok');
+    expect(result.created).toBeGreaterThanOrEqual(0);
+    expect(result.message).toMatch(/created/i);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// imidVerifyEmployee (action) — HTTP calls via global.fetch
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe('integrations.imidVerifyEmployee', () => {
+  let fetchMock: jest.Mock;
+  let origFetch: typeof global.fetch;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    origFetch = global.fetch;
+    fetchMock = jest.fn();
+    global.fetch = fetchMock as any;
+  });
+
+  afterEach(() => {
+    global.fetch = origFetch;
+  });
+
+  const validArgs = {
+    organizationId: ORG_ID as any,
+    userId: 'user-employee' as any,
+  };
+
+  const imidConfig = {
+    _id: 'cfg-imid',
+    config: {
+      isEnabled: true,
+      enableVerification: true,
+      imidAccessToken: 'tok-abc',
+      imidTokenExpiresAt: Date.now() + 3600_000,
+      userInfoPath: 'https://api.imid.am/v1/oauth/userinfo',
+    },
+  };
+
+  const employeeUser = {
+    name: 'Anna',
+    email: 'anna@acme.test',
+    imidSub: 'sub-123',
+  };
+
+  function makeImidCtx() {
+    const ctx = makeCtx(null) as any;
+    ctx.runQuery = jest.fn();
+    ctx.runMutation = jest.fn();
+    return ctx;
+  }
+
+  it('throws when the caller is not authorized', async () => {
+    const ctx = makeImidCtx();
+    ctx.runQuery.mockResolvedValue(null); // assertCanSync → null
+    await expect(integrations.imidVerifyEmployee.handler(ctx, validArgs)).rejects.toThrow(
+      /not authorized/i,
+    );
+  });
+
+  it('throws when imID is not enabled', async () => {
+    const ctx = makeImidCtx();
+    ctx.runQuery
+      .mockResolvedValueOnce({ userId: 'user-admin' }) // assertCanSync
+      .mockResolvedValueOnce({ _id: 'cfg-imid', config: { isEnabled: false } }); // config
+    await expect(integrations.imidVerifyEmployee.handler(ctx, validArgs)).rejects.toThrow(
+      /imID Verification is not enabled/i,
+    );
+  });
+
+  it('throws when no access token is cached', async () => {
+    const ctx = makeImidCtx();
+    ctx.runQuery.mockResolvedValueOnce({ userId: 'user-admin' }).mockResolvedValueOnce({
+      _id: 'cfg-imid',
+      config: { isEnabled: true, enableVerification: true },
+    });
+    await expect(integrations.imidVerifyEmployee.handler(ctx, validArgs)).rejects.toThrow(
+      /no cached access token/i,
+    );
+  });
+
+  it('throws when the cached token has expired', async () => {
+    const ctx = makeImidCtx();
+    ctx.runQuery.mockResolvedValueOnce({ userId: 'user-admin' }).mockResolvedValueOnce({
+      _id: 'cfg-imid',
+      config: {
+        isEnabled: true,
+        enableVerification: true,
+        imidAccessToken: 'tok-abc',
+        imidTokenExpiresAt: Date.now() - 1000,
+      },
+    });
+    await expect(integrations.imidVerifyEmployee.handler(ctx, validArgs)).rejects.toThrow(
+      /has expired/i,
+    );
+  });
+
+  it('throws when the user is not found', async () => {
+    const ctx = makeImidCtx();
+    ctx.runQuery
+      .mockResolvedValueOnce({ userId: 'user-admin' }) // assertCanSync
+      .mockResolvedValueOnce(imidConfig) // config
+      .mockResolvedValueOnce(null); // getUserForVerification → null
+    await expect(integrations.imidVerifyEmployee.handler(ctx, validArgs)).rejects.toThrow(
+      /user not found/i,
+    );
+  });
+
+  it('verifies a user by imID subject (sub match)', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ sub: 'sub-123', email: 'anna@acme.test' }),
+    });
+
+    const ctx = makeImidCtx();
+    ctx.runQuery
+      .mockResolvedValueOnce({ userId: 'user-admin' }) // assertCanSync
+      .mockResolvedValueOnce(imidConfig) // config
+      .mockResolvedValueOnce(employeeUser); // getUserForVerification
+
+    const result = await integrations.imidVerifyEmployee.handler(ctx, validArgs);
+    expect(result).toEqual({ verified: true, method: 'sub' });
+  });
+
+  it('returns not verified when the subject does not match', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ sub: 'sub-999', email: 'wrong@acme.test' }),
+    });
+
+    const ctx = makeImidCtx();
+    ctx.runQuery
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce(imidConfig)
+      .mockResolvedValueOnce(employeeUser);
+
+    const result = await integrations.imidVerifyEmployee.handler(ctx, validArgs);
+    expect(result).toEqual({ verified: false, method: 'sub' });
+  });
+
+  it('sends a phone verification when the user has no imID subject', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ request_id: 'req-xyz' }),
+    });
+
+    const ctx = makeImidCtx();
+    ctx.runQuery
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce(imidConfig)
+      .mockResolvedValueOnce({ name: 'Anna', email: 'anna@acme.test', imidSub: undefined });
+
+    const result = await integrations.imidVerifyEmployee.handler(ctx, {
+      ...validArgs,
+      phone: '+37499123456',
+    });
+    expect(result).toEqual({
+      verified: false,
+      method: 'phone',
+      requestId: 'req-xyz',
+      message: expect.stringContaining('+37499123456'),
+    });
+  });
+
+  it('throws when the user has no subject and no phone is provided', async () => {
+    const ctx = makeImidCtx();
+    ctx.runQuery
+      .mockResolvedValueOnce({ userId: 'user-admin' })
+      .mockResolvedValueOnce(imidConfig)
+      .mockResolvedValueOnce({ name: 'Anna', email: 'anna@acme.test', imidSub: undefined });
+
+    await expect(integrations.imidVerifyEmployee.handler(ctx, validArgs)).rejects.toThrow(
+      /no imID subject and no phone was provided/i,
+    );
+  });
+});

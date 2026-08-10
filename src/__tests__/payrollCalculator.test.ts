@@ -1,6 +1,8 @@
 import {
   calculatePayroll,
   computeGrossFromNet,
+  formatCurrency,
+  getEffectiveTaxRate,
   type TaxRuleOverride,
 } from '../../convex/lib/payrollCalculator';
 
@@ -211,5 +213,41 @@ describe('computeGrossFromNet — respects taxOverride', () => {
       taxOverride: override,
     });
     expect(Math.abs(forward.netSalary - target)).toBeLessThan(1);
+  });
+
+  it('short-circuits to the forward engine for a non-positive net', () => {
+    // fixedAddon (bonuses) may exceed the requested net → the base flips to 0.
+    const r = computeGrossFromNet({
+      country: 'armenia',
+      net: 0,
+      bonuses: 50_000,
+    });
+    expect(r.baseSalary).toBe(0);
+    expect(r.netSalary).toBeGreaterThanOrEqual(0);
+    expect(r.deductions).toBeDefined();
+  });
+});
+
+describe('formatCurrency', () => {
+  it('formats amounts using the country locale and currency', () => {
+    expect(formatCurrency(1_000_000, 'armenia')).toContain('֏');
+    expect(formatCurrency(1_000_000, 'russia')).toContain('₽');
+  });
+
+  it('keeps at most two fraction digits', () => {
+    // Locale-dependent separators (narrow nbsp, comma) — assert the digits only.
+    const arm = formatCurrency(1234.567, 'armenia').replace(/[^\d]/g, '');
+    expect(arm).toBe('1234.57'.replace(/[^\d]/g, ''));
+  });
+});
+
+describe('getEffectiveTaxRate', () => {
+  it('returns 0 for a zero gross', () => {
+    expect(getEffectiveTaxRate(0, { total: 1000, incomeTax: 0 } as never)).toBe(0);
+  });
+
+  it('returns the rounded percentage of deductions over gross', () => {
+    const deductions = { total: 250_000, incomeTax: 200_000 } as never;
+    expect(getEffectiveTaxRate(1_000_000, deductions)).toBe(25);
   });
 });

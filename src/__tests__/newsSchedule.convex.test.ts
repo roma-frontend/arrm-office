@@ -457,3 +457,190 @@ describe('news schedule — the editing list', () => {
     expect(list[0]!.startDate <= list[1]!.startDate).toBe(true);
   });
 });
+
+describe('news schedule — defensive paths', () => {
+  it('rejects non-calendar dates and over-long windows', async () => {
+    const ctx = await seed();
+
+    await expect(
+      ctx.asAdmin.mutation(api.newsSchedule.createScheduleEntry, {
+        organizationId: ctx.organizationId,
+        category: 'news',
+        title: { en: 'Bad' },
+        content: { en: 'x' },
+        startDate: 'not-a-date',
+        endDate: 'not-a-date',
+        repeat: 'none',
+      }),
+    ).rejects.toThrow(/calendar days/i);
+
+    await expect(
+      ctx.asAdmin.mutation(api.newsSchedule.createScheduleEntry, {
+        organizationId: ctx.organizationId,
+        category: 'news',
+        title: { en: 'Long' },
+        content: { en: 'x' },
+        startDate: TODAY,
+        endDate: addDays(TODAY, 61),
+        repeat: 'none',
+      }),
+    ).rejects.toThrow(/cannot span more than/i);
+  });
+
+  it('rejects a targeting employee or department that does not exist', async () => {
+    const ctx = await seed();
+
+    // Ghost ids validate as ids but resolve to nothing on read.
+    const ghostUserId = await ctx.t.run(async (dbCtx) => {
+      const id = await dbCtx.db.insert('users', {
+        organizationId: ctx.organizationId,
+        name: 'Ghost',
+        email: 'ghost@acme.test',
+        role: 'employee',
+        passwordHash: 'x',
+        employeeType: 'staff',
+        isActive: true,
+        isApproved: true,
+        travelAllowance: 0,
+        paidLeaveBalance: 0,
+        sickLeaveBalance: 0,
+        familyLeaveBalance: 0,
+        createdAt: Date.now(),
+      } as never);
+      await dbCtx.db.delete(id);
+      return id;
+    });
+    const ghostDeptId = await ctx.t.run(async (dbCtx) => {
+      const id = await dbCtx.db.insert('departments', {
+        organizationId: ctx.organizationId,
+        name: 'Ghost',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as never);
+      await dbCtx.db.delete(id);
+      return id;
+    });
+
+    const base = {
+      organizationId: ctx.organizationId,
+      category: 'news' as const,
+      title: { en: 'T' },
+      content: { en: 'x' },
+      startDate: addDays(TODAY, 5),
+      endDate: addDays(TODAY, 5),
+      repeat: 'none' as const,
+    };
+    await expect(
+      ctx.asAdmin.mutation(api.newsSchedule.createScheduleEntry, {
+        ...base,
+        employeeId: ghostUserId,
+      }),
+    ).rejects.toThrow(/employee not found/i);
+    await expect(
+      ctx.asAdmin.mutation(api.newsSchedule.createScheduleEntry, {
+        ...base,
+        targetDepartment: ghostDeptId,
+      }),
+    ).rejects.toThrow(/department not found/i);
+  });
+
+  it('resolves the employee name in the editing list', async () => {
+    const ctx = await seed();
+    await ctx.asAdmin.mutation(api.newsSchedule.createScheduleEntry, {
+      organizationId: ctx.organizationId,
+      category: 'birthday',
+      title: { en: 'Happy birthday' },
+      content: { en: 'Anna turns another year today.' },
+      startDate: TODAY,
+      endDate: TODAY,
+      repeat: 'yearly',
+      employeeId: ctx.employeeId,
+    });
+
+    const list = (await ctx.asAdmin.query(api.newsSchedule.listSchedule, {
+      organizationId: ctx.organizationId,
+    })) as Array<{ employeeId?: Id<'users'>; employeeName?: string }>;
+    expect(list).toHaveLength(1);
+    expect(list[0]?.employeeId).toBe(ctx.employeeId);
+    expect(list[0]?.employeeName).toBe('Anna');
+  });
+
+  it('publishes several entries dated today in one sweep', async () => {
+    const ctx = await seed();
+
+    await ctx.t.run(async (dbCtx) => {
+      for (const title of ['First', 'Second']) {
+        await dbCtx.db.insert('announcementSchedule', {
+          organizationId: ctx.organizationId,
+          createdBy: ctx.adminId,
+          category: 'news',
+          title: { en: title },
+          content: { en: 'x' },
+          startDate: TODAY,
+          endDate: TODAY,
+          repeat: 'none',
+          isPinned: false,
+          isUrgent: false,
+          isActive: true,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        } as never);
+      }
+    });
+
+    const result = (await ctx.t.mutation(internal.newsSchedule.publishDueEntries, {})) as {
+      published: number;
+    };
+    expect(result.published).toBe(2);
+  });
+
+  it('clears lastAnnouncementId on the schedule entry when its post expires', async () => {
+    const ctx = await seed();
+
+    const entryId = await ctx.t.run(async (dbCtx) => {
+      const entryId = await dbCtx.db.insert('announcementSchedule', {
+        organizationId: ctx.organizationId,
+        createdBy: ctx.adminId,
+        category: 'news',
+        title: { en: 'Expired' },
+        content: { en: 'x' },
+        startDate: TODAY,
+        endDate: TODAY,
+        repeat: 'none',
+        isPinned: false,
+        isUrgent: false,
+        isActive: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as never);
+      const announcementId = await dbCtx.db.insert('announcements', {
+        organizationId: ctx.organizationId,
+        authorId: ctx.adminId,
+        title: 'Expired',
+        content: 'x',
+        category: 'news',
+        isPinned: false,
+        isUrgent: false,
+        publishedAt: Date.now() - 172_800_000,
+        expiresAt: Date.now() - 1_000,
+        viewCount: 0,
+        reactionCount: 0,
+        commentCount: 0,
+        scheduleId: entryId,
+        createdAt: Date.now() - 172_800_000,
+      } as never);
+      await dbCtx.db.patch(entryId, { lastAnnouncementId: announcementId });
+      return entryId;
+    });
+
+    const result = (await ctx.t.mutation(internal.newsSchedule.expireAnnouncements, {})) as {
+      removed: number;
+    };
+    expect(result.removed).toBe(1);
+
+    await ctx.t.run(async (dbCtx) => {
+      const entry = await dbCtx.db.get(entryId);
+      expect(entry?.lastAnnouncementId).toBeUndefined();
+    });
+  });
+});

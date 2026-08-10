@@ -72,9 +72,19 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
+// q mimics the Convex expression builder so withIndex callbacks execute —
+// covering the `q.eq('organizationId', …)` predicate lines.
+const q: any = {
+  eq: (..._args: unknown[]) => q,
+  field: (name: string) => ({ __field: name }),
+};
+
 function makeUsersCtx(users: unknown[]) {
   const take = jest.fn().mockResolvedValue(users);
-  const withIndex = jest.fn().mockReturnValue({ take });
+  const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+    if (cb) cb(q);
+    return { take };
+  });
   const insert = jest.fn();
   const runMutation = jest.fn();
   return {
@@ -94,7 +104,10 @@ function makeUsersCtx(users: unknown[]) {
 
 function makeQueryCtx() {
   const take = jest.fn().mockResolvedValue([]);
-  const withIndex = jest.fn().mockReturnValue({ take });
+  const withIndex = jest.fn((_name: string, cb?: (q: any) => unknown) => {
+    if (cb) cb(q);
+    return { take };
+  });
   return {
     ctx: { db: { query: jest.fn().mockReturnValue({ withIndex, take }) } },
     take,

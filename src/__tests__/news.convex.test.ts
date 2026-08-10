@@ -607,3 +607,144 @@ describe('canSeeAnnouncement', () => {
     expect(canSeeAnnouncement({ ...base, targetRoles: ['driver'] }, viewer, true)).toBe(true);
   });
 });
+
+describe('news — defensive and rendering paths', () => {
+  it('rejects over-long content on create and over-long edits', async () => {
+    const c = await seed();
+    const { announcementId } = await publish(c);
+
+    await expect(publish(c, { content: 'x'.repeat(20_001) })).rejects.toThrow(/at most 20000/i);
+    await expect(
+      asAdmin(c).mutation(api.news.updateAnnouncement, { announcementId, title: 'x'.repeat(201) }),
+    ).rejects.toThrow(/at most 200/i);
+    await expect(
+      asAdmin(c).mutation(api.news.updateAnnouncement, {
+        announcementId,
+        content: 'x'.repeat(20_001),
+      }),
+    ).rejects.toThrow(/at most 20000/i);
+  });
+
+  it('refuses to retarget an announcement to a foreign department', async () => {
+    const c = await seed();
+    const { announcementId } = await publish(c);
+
+    await expect(
+      asAdmin(c).mutation(api.news.updateAnnouncement, {
+        announcementId,
+        targetDepartment: c.foreignDeptId,
+      }),
+    ).rejects.toThrow(/department not found/i);
+  });
+
+  it('refuses a non-author employee deleting someone else’s post', async () => {
+    const c = await seed();
+    const { announcementId } = await publish(c); // authored by admin
+
+    await expect(
+      asSales(c).mutation(api.news.deleteAnnouncement, { announcementId }),
+    ).rejects.toThrow(/not authorized to delete/i);
+  });
+
+  it('rejects a comment whose parent belongs to another announcement', async () => {
+    const c = await seed();
+    const first = await publish(c);
+    const second = await publish(c, { title: 'Second post' });
+    const parent = await asIt(c).mutation(api.news.addComment, {
+      announcementId: first.announcementId,
+      content: 'Parent',
+    });
+
+    await expect(
+      asIt(c).mutation(api.news.addComment, {
+        announcementId: second.announcementId,
+        content: 'Child',
+        parentCommentId: parent.commentId,
+      }),
+    ).rejects.toThrow(/parent comment not found/i);
+  });
+
+  it('deletes child comments together with a parent comment', async () => {
+    const c = await seed();
+    const { announcementId } = await publish(c);
+    const parent = await asSales(c).mutation(api.news.addComment, {
+      announcementId,
+      content: 'Parent',
+    });
+    const child = await asIt(c).mutation(api.news.addComment, {
+      announcementId,
+      content: 'Child',
+      parentCommentId: parent.commentId,
+    });
+
+    await asSales(c).mutation(api.news.deleteComment, { commentId: parent.commentId });
+
+    const remaining = await c.t.run(async (ctx) => {
+      const rows = await ctx.db.query('announcementComments').collect();
+      return rows.map((row) => row._id);
+    });
+    expect(remaining).not.toContain(parent.commentId);
+    expect(remaining).not.toContain(child.commentId);
+  });
+
+  it('recounts views that drifted from the stored counter', async () => {
+    const c = await seed();
+    const { announcementId } = await publish(c);
+    await asSales(c).mutation(api.news.incrementViewCount, { announcementId });
+
+    // Delete the view row so the counter is now stale.
+    await c.t.run(async (ctx) => {
+      const views = await ctx.db.query('announcementViews').collect();
+      for (const view of views) await ctx.db.delete(view._id);
+    });
+
+    const result = await asAdmin(c).mutation(api.news.resetAllViewCounts, {
+      organizationId: c.organizationId,
+    });
+    expect(result.totalReset).toBe(1);
+
+    const stored = await c.t.run(async (ctx) => ctx.db.get(announcementId));
+    expect(stored?.viewCount).toBe(0);
+  });
+
+  it('filters the feed by category and pins ahead of the rest', async () => {
+    const c = await seed();
+    await publish(c, { title: 'A news item', content: 'x', category: 'news' as const });
+    await publish(c, {
+      title: 'Pinned event',
+      content: 'y',
+      category: 'event' as const,
+      isPinned: true,
+    });
+
+    const newsOnly = await asSales(c).query(api.news.getNewsFeed, {
+      organizationId: c.organizationId,
+      category: 'news' as const,
+    });
+    expect(newsOnly).toHaveLength(1);
+    expect(newsOnly[0]?.title).toBe('A news item');
+
+    const all = await asSales(c).query(api.news.getNewsFeed, {
+      organizationId: c.organizationId,
+    });
+    expect(all[0]?.title).toBe('Pinned event');
+    expect(all[0]?.isPinned).toBe(true);
+  });
+
+  it('enriches feed and detail with comment authors and reaction names', async () => {
+    const c = await seed();
+    const { announcementId } = await publish(c);
+    await asIt(c).mutation(api.news.addComment, { announcementId, content: 'Nice!' });
+    await asIt(c).mutation(api.news.addReaction, { announcementId, emoji: '🎉' });
+
+    const feed = await asSales(c).query(api.news.getNewsFeed, {
+      organizationId: c.organizationId,
+    });
+    expect(feed[0]?.comments[0]?.authorName).toBe('Bagrat IT');
+    expect(feed[0]?.reactionsByEmoji[0]?.users[0]?.userName).toBe('Bagrat IT');
+
+    const detail = await asSales(c).query(api.news.getAnnouncement, { announcementId });
+    expect(detail?.comments[0]?.authorName).toBe('Bagrat IT');
+    expect(detail?.reactionsByEmoji[0]?.users[0]?.userName).toBe('Bagrat IT');
+  });
+});
