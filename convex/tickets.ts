@@ -30,11 +30,15 @@ export const createTicket = mutation({
     const now = Date.now();
 
     // Generate ticket number: SUP-YYYYMMDD-XXXX
+    // Parse the compact date back to an ISO date ("20260810" is not a valid
+    // Date input — it yields Invalid Date/NaN, which would silently match no
+    // tickets and make every ticket number end in -0001).
     const datePart = (new Date(now).toISOString().split('T')[0] || '').replace(/-/g, '');
+    const isoDay = `${datePart.slice(0, 4)}-${datePart.slice(4, 6)}-${datePart.slice(6, 8)}`;
     const ticketsToday = await ctx.db
       .query('supportTickets')
       .withIndex('by_created')
-      .filter((q) => q.gte(q.field('createdAt'), new Date(datePart).getTime()))
+      .filter((q) => q.gte(q.field('createdAt'), new Date(isoDay).getTime()))
       .take(SMALL_LIST_CAP);
     const seqNum = String(ticketsToday.length + 1).padStart(4, '0');
     const ticketNumber = `SUP-${datePart}-${seqNum}`;
