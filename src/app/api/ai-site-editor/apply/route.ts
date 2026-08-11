@@ -97,7 +97,7 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
       );
     }
 
-    const fullPath = path.join(process.cwd(), filePath);
+    const fullPath = path.join(/* turbopackIgnore: true */ process.cwd(), filePath);
     const backupDir = BACKUP_DIR();
     const timestamp = Date.now();
 
@@ -170,7 +170,7 @@ export const DELETE = withCsrfProtection(async (req: NextRequest) => {
       );
     }
 
-    const fullPath = path.join(process.cwd(), filePath);
+    const fullPath = path.join(/* turbopackIgnore: true */ process.cwd(), filePath);
 
     // Перед откатом — сохраняем текущее состояние как новый backup
     if (fs.existsSync(fullPath)) {

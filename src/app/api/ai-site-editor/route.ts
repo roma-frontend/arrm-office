@@ -99,7 +99,11 @@ function readFileSecure(filePath: string): string | null {
       return null;
     }
 
-    const fullPath = path.join(process.cwd(), filePath);
+    // turbopackIgnore: `filePath` is dynamic, so without this the file tracer
+    // gives up and bundles the entire project (12k+ files) into this function,
+    // which blows the serverless size limit. The path is already constrained by
+    // isPathAllowed above.
+    const fullPath = path.join(/* turbopackIgnore: true */ process.cwd(), filePath);
     if (!fs.existsSync(fullPath)) return null;
 
     return fs.readFileSync(fullPath, 'utf-8');
@@ -122,7 +126,7 @@ function writeFileSecure(
       return { success: false, error: msg };
     }
 
-    const fullPath = path.join(process.cwd(), filePath);
+    const fullPath = path.join(/* turbopackIgnore: true */ process.cwd(), filePath);
     const backupDir = path.join(process.cwd(), '.ai-editor-backups');
     const timestamp = Date.now();
 
@@ -423,7 +427,7 @@ function applyCSSPatch(
     if (!isPathAllowed(filePath)) {
       return { success: false, error: `Access denied: ${filePath}` };
     }
-    const fullPath = path.join(process.cwd(), filePath);
+    const fullPath = path.join(/* turbopackIgnore: true */ process.cwd(), filePath);
     if (!fs.existsSync(fullPath)) {
       return { success: false, error: `File not found: ${filePath}` };
     }
