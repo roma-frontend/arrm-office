@@ -31,38 +31,56 @@ interface TimelineViewProps {
 }
 
 // ── Config ──
-const STATUS_COLORS: Record<Status, { bar: string; text: string; bg: string; border: string }> = {
+// `labelKey` is spelled out per status because the i18n catalogue uses
+// `inProgress` while the status enum (and the database) uses `in_progress`.
+// Interpolating the raw value printed the key itself in the legend.
+const STATUS_COLORS: Record<
+  Status,
+  { bar: string; text: string; bg: string; border: string; labelKey: string }
+> = {
   pending: {
     bar: 'bg-(--text-muted)/40',
     text: 'text-(--text-muted)',
     bg: 'bg-(--background-subtle)',
     border: 'border-(--border)',
+    labelKey: 'tasks.status.pending',
   },
   in_progress: {
     bar: 'bg-blue-500',
     text: 'text-blue-500',
     bg: 'bg-blue-500/10',
     border: 'border-blue-500/30',
+    labelKey: 'tasks.status.inProgress',
   },
   review: {
     bar: 'bg-amber-500',
     text: 'text-amber-500',
     bg: 'bg-amber-500/10',
     border: 'border-amber-500/30',
+    labelKey: 'tasks.status.review',
   },
   completed: {
     bar: 'bg-emerald-500',
     text: 'text-emerald-500',
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/30',
+    labelKey: 'tasks.status.completed',
   },
   cancelled: {
     bar: 'bg-rose-400/50',
     text: 'text-rose-400',
     bg: 'bg-rose-500/10',
     border: 'border-rose-500/30',
+    labelKey: 'tasks.status.cancelled',
   },
 };
+
+/**
+ * Hover-tooltip width. Fixed on purpose: the tooltip lives inside the
+ * horizontally scrolling timeline, which clips its overflow, so the only way to
+ * guarantee it stays visible is to compute its position from a known width.
+ */
+const TOOLTIP_WIDTH = 260;
 
 const PRIORITY_DOT: Record<Priority, string> = {
   low: 'bg-(--text-muted)',
@@ -432,9 +450,26 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
               {taskBars.map(
                 (
                   { task, leftOffset, barWidth, isOverdue, completionPercent, isCancelled },
-                  _idx,
+                  idx,
                 ) => {
                   const _cfg = STATUS_COLORS[task.status];
+                  // The tooltip used to sit at `left-1/2` of the *row*, which spans
+                  // the whole (scrollable) timeline width — so it appeared in the
+                  // middle of the chart instead of over the bar, and the scroll
+                  // container clipped whatever stuck out. Anchor it on the bar and
+                  // clamp it into the content box instead.
+                  const contentWidth = Math.max(totalWidth, 600);
+                  const tooltipLeft = Math.max(
+                    0,
+                    Math.min(
+                      leftOffset + barWidth / 2 - TOOLTIP_WIDTH / 2,
+                      contentWidth - TOOLTIP_WIDTH,
+                    ),
+                  );
+                  // Above the bar, except on the first row of a multi-row chart:
+                  // the scroll container hides vertical overflow, so there is
+                  // nothing above row 0 to draw into.
+                  const tooltipBelow = idx === 0 && sortedTasks.length > 1;
                   return (
                     <div
                       key={task._id}
@@ -478,12 +513,17 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                       </div>
 
                       {/* Hover tooltip */}
-                      <div className="absolute -top-1 left-1/2 -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30">
-                        <div className="bg-(--card) border border-(--border) rounded-xl shadow-2xl p-3 whitespace-nowrap backdrop-blur-sm">
+                      <div
+                        className={`absolute opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-30 ${
+                          tooltipBelow ? 'top-full mt-1' : '-top-1 -translate-y-full'
+                        }`}
+                        style={{ left: tooltipLeft, width: TOOLTIP_WIDTH }}
+                      >
+                        <div className="bg-(--card) border border-(--border) rounded-xl shadow-2xl p-3 break-words backdrop-blur-sm">
                           <p className="text-sm font-bold text-(--text-primary)">
                             {localizedTaskTitle(t, task)}
                           </p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-(--text-muted)">
+                          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-(--text-muted)">
                             <span>{task.assignedToUser?.name ?? '—'}</span>
                             {task.deadline && (
                               <>
@@ -534,7 +574,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
         {(['pending', 'in_progress', 'review', 'completed', 'cancelled'] as Status[]).map((s) => (
           <div key={s} className="flex items-center gap-1.5">
             <div className={`w-3 h-3 rounded-sm ${STATUS_COLORS[s].bar}`} />
-            <span className="text-[10px] text-(--text-muted)">{t(`tasks.status.${s}`)}</span>
+            <span className="text-[10px] text-(--text-muted)">{t(STATUS_COLORS[s].labelKey)}</span>
           </div>
         ))}
         <div className="w-px h-3 bg-(--border)" />

@@ -172,9 +172,19 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   // Travel allowance is a per-organization policy (Payroll → Settings), not a
   // constant and not something derivable from the email address. When the target
   // org has no policy, or has it disabled, the preview below is hidden entirely.
+  //
+  // Both guards matter. The payroll settings query is supervisor-and-above only
+  // (convex/payroll/queries.ts), and this modal stays *mounted* while closed on
+  // /employees — so without them a plain employee merely visiting the page fires
+  // an admin-only query and gets "Insufficient permissions" thrown into the
+  // render tree.
+  const canReadPayrollSettings =
+    isSuperadmin || currentUser?.role === 'admin' || currentUser?.role === 'supervisor';
   const salarySettings = useQuery(
     api.payroll.queries.getSalarySettings,
-    targetOrgId ? { organizationId: targetOrgId as Id<'organizations'> } : 'skip',
+    open && canReadPayrollSettings && targetOrgId
+      ? { organizationId: targetOrgId as Id<'organizations'> }
+      : 'skip',
   );
   const travelAllowancePolicy = salarySettings?.travelAllowance;
   const allowance = resolveTravelAllowance(travelAllowancePolicy, type);

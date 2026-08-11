@@ -149,9 +149,17 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
   // Travel allowance is an organization policy (Payroll → Settings) that HR may
   // override for an individual employee. The policy amount is only needed to
   // tell the admin what leaving the field empty will pay.
+  //
+  // Supervisor-and-above only (convex/payroll/queries.ts): the modal is mounted
+  // while closed on the employee profile page, so an employee viewing a
+  // colleague must not fire an admin-only query and crash the render.
+  const canReadPayrollSettings =
+    isSuperadmin || user?.role === 'admin' || user?.role === 'supervisor';
   const salarySettings = useQuery(
     api.payroll.queries.getSalarySettings,
-    open && targetOrgId ? { organizationId: targetOrgId as Id<'organizations'> } : 'skip',
+    open && canReadPayrollSettings && targetOrgId
+      ? { organizationId: targetOrgId as Id<'organizations'> }
+      : 'skip',
   );
   const [passport, setPassport] = useState<PassportData>(EMPTY_PASSPORT);
   const [passportScan, setPassportScan] = useState<PassportScanFile | null>(null);
