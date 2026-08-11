@@ -49,6 +49,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "coverage:serve": "node scripts/coverage-dashboard.mjs",
     "perf": "npm run build && npm run start",
     "test:delete-employees": "tsx scripts/delete-test-employees.ts",
     "test:add-org": "tsx scripts/add-test-org-data.ts",
