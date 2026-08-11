@@ -580,7 +580,22 @@
     "timezoneCET": "Paris (CET)",
     "timezoneGST": "Dubai (GST)",
     "timezoneJST": "Tokyo (JST)",
-    "timezoneAEST": "Sydney (AEST)"
+    "timezoneAEST": "Sydney (AEST)",
+    "dangerZone": "Danger zone",
+    "freeze": "Freeze organization",
+    "freezeTitle": "Temporarily freeze the organization",
+    "freezeDesc": "Nobody in the organization will be able to log in or use any feature until you unfreeze it. All data is kept.",
+    "freezeReasonLabel": "Reason (will be shown to employees)",
+    "freezeReasonPlaceholder": "e.g. payment overdue — access suspended until the invoice is settled",
+    "frozenBanner": "Organization is frozen. Reason: {{reason}}",
+    "unfreeze": "Unfreeze organization",
+    "frozenToast": "Organization frozen",
+    "unfrozenToast": "Organization unfrozen",
+    "delete": "Delete organization",
+    "deleteTitle": "Delete organization permanently",
+    "deleteDesc": "All data — employees, tasks, payroll, chats, documents — will be permanently removed. This cannot be undone.",
+    "deleteConfirmLabel": "Type the organization slug to confirm",
+    "deleteToast": "Organization deletion started"
   },
   "joinRequests": {
     "title": "Join Requests",

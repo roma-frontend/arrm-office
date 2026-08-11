@@ -580,7 +580,22 @@
     "timezoneCET": "Paris (CET)",
     "timezoneGST": "Dubai (GST)",
     "timezoneJST": "Tokio (JST)",
-    "timezoneAEST": "Sydney (AEST)"
+    "timezoneAEST": "Sydney (AEST)",
+    "dangerZone": "Gefahrenzone",
+    "freeze": "Organisation einfrieren",
+    "freezeTitle": "Organisation vorübergehend einfrieren",
+    "freezeDesc": "Niemand in der Organisation kann sich anmelden oder Funktionen nutzen, bis Sie die Sperre aufheben. Alle Daten bleiben erhalten.",
+    "freezeReasonLabel": "Grund (wird den Mitarbeitern angezeigt)",
+    "freezeReasonPlaceholder": "z. B. Zahlung überfällig — Zugang bis zum Ausgleich gesperrt",
+    "frozenBanner": "Organisation ist eingefroren. Grund: {{reason}}",
+    "unfreeze": "Organisation auftauen",
+    "frozenToast": "Organisation eingefroren",
+    "unfrozenToast": "Organisation aufgetaut",
+    "delete": "Organisation löschen",
+    "deleteTitle": "Organisation endgültig löschen",
+    "deleteDesc": "Alle Daten — Mitarbeiter, Aufgaben, Gehälter, Chats, Dokumente — werden dauerhaft entfernt. Nicht rückgängig machbar.",
+    "deleteConfirmLabel": "Organisation-Slug zur Bestätigung eingeben",
+    "deleteToast": "Löschung der Organisation gestartet"
   },
   "joinRequests": {
     "title": "Beitrittsanfragen",
