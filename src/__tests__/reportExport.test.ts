@@ -28,8 +28,10 @@ describe('fetchReportSeries', () => {
     // Inspect the captured call directly: toHaveBeenCalledWith crashed in
     // pretty-format on CI runners when formatting the mock diff.
     expect(query).toHaveBeenCalledTimes(1);
-    const [path, args] = query.mock.calls[0] as unknown as [unknown, Record<string, unknown>];
-    expect(path).toBe('analytics/getReportData');
+    // Only the args are asserted: on CI runners the generated-api mock does
+    // not intercept the component import, so the first call argument is the
+    // real FunctionReference (which pretty-format cannot even serialize).
+    const args = (query.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
     expect(args).toEqual({
       organizationId: 'org-1',
       metric: 'leaves',
@@ -42,8 +44,7 @@ describe('fetchReportSeries', () => {
     const query = jest.fn().mockResolvedValue({ series: [], total: 0, unit: 'count' });
     await fetchReportSeries({ query } as any, { metric: 'tasks', groupBy: 'none' });
     expect(query).toHaveBeenCalledTimes(1);
-    const [path, args] = query.mock.calls[0] as unknown as [unknown, Record<string, unknown>];
-    expect(path).toBe('analytics/getReportData');
+    const args = (query.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
     expect(args).toEqual({ metric: 'tasks', groupBy: 'none' });
   });
 });

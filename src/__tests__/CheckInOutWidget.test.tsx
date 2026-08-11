@@ -194,7 +194,8 @@ describe('CheckInOutWidget', () => {
     expect(
       screen.getByText('8attendanceExtra.hoursShort 0attendanceExtra.minutesShort'),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/0attendanceExtra\.minutesShort/).length).toBeGreaterThan(0);
+    // The overtime line itself starts with a + (e.g. "+0h 30m …").
+    expect(screen.getByText(/\+0attendanceExtra\.hoursShort/)).toBeInTheDocument();
   });
 
   it('does not show late or early messages when flags are absent', () => {
