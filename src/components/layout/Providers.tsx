@@ -82,6 +82,11 @@ const MaintenanceBanner = dynamic(
   { ssr: false, loading: () => null },
 );
 
+const OrgFreezeGate = dynamic(
+  () => import('@/components/auth/OrgFreezeGate').then((m) => m.OrgFreezeGate),
+  { ssr: false, loading: () => null },
+);
+
 const IncomingCallProvider = dynamic(
   () => import('@/components/chat/IncomingCallProvider').then((m) => m.IncomingCallProvider),
   { ssr: false, loading: () => null },
@@ -220,6 +225,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             )}
             {/* Maintenance warning banner — below navbar, above content */}
             {user && <MaintenanceBanner />}
+            {/* Frozen-organization lock screen — blocks every feature */}
+            {user && <OrgFreezeGate />}
             {/* Status update banner — below maintenance banner */}
             <StatusUpdateBanner />
             {/* Real-time notification banner — below status banner, full width, persistent */}

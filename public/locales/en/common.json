@@ -2080,5 +2080,10 @@
   "ticket": {
     "chatCreated": "A support chat has been opened for ticket {{ticketNumber}}. It becomes visible to you as soon as the support assistant writes the first message.",
     "chatCreatedShort": "Support chat opened for ticket {{ticketNumber}}"
+  },
+  "freeze": {
+    "title": "Organization temporarily suspended",
+    "description": "Your organization has been temporarily deactivated by the platform administrator. Access will return once the organization is unfrozen.",
+    "logout": "Log out"
   }
 }

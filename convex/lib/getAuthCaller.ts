@@ -38,6 +38,13 @@ export async function getAuthCaller(
 
   if (!user || !user.isActive) return null;
 
+  // A frozen organization loses all access: every handler built on this
+  // helper sees the caller as unauthenticated until the superadmin unfreezes.
+  if (user.organizationId) {
+    const org = await ctx.db.get(user.organizationId);
+    if (org?.frozenAt) return null;
+  }
+
   return {
     _id: user._id,
     role: user.role as AuthenticatedCaller['role'],

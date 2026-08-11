@@ -132,6 +132,16 @@ export function SmartErrorMessage({ error, className = '' }: SmartErrorMessagePr
 export function parseAuthError(error: string): SmartError {
   const errorLower = error.toLowerCase();
 
+  // Organization frozen by the superadmin — the reason travels after the pipe.
+  if (errorLower.includes('org_frozen')) {
+    const reason = error.split('|')[1]?.trim();
+    return {
+      type: 'warning',
+      message: `🧊 Работа организации временно приостановлена${reason ? `: ${reason}` : ''}`,
+      suggestion: 'Обратитесь к администратору или в поддержку для уточнения деталей.',
+    };
+  }
+
   // Wrong password
   if (
     errorLower.includes('invalid credentials') ||

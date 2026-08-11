@@ -218,6 +218,7 @@ import type * as superadmin_accessTokens from "../superadmin/accessTokens.js";
 import type * as superadmin_emergency from "../superadmin/emergency.js";
 import type * as superadmin_impersonation from "../superadmin/impersonation.js";
 import type * as superadmin_index from "../superadmin/index.js";
+import type * as superadmin_organizations from "../superadmin/organizations.js";
 import type * as superadmin_search from "../superadmin/search.js";
 import type * as superadmin_user360 from "../superadmin/user360.js";
 import type * as supervisorRatings from "../supervisorRatings.js";
@@ -452,6 +453,7 @@ declare const fullApi: ApiFromModules<{
   "superadmin/emergency": typeof superadmin_emergency;
   "superadmin/impersonation": typeof superadmin_impersonation;
   "superadmin/index": typeof superadmin_index;
+  "superadmin/organizations": typeof superadmin_organizations;
   "superadmin/search": typeof superadmin_search;
   "superadmin/user360": typeof superadmin_user360;
   supervisorRatings: typeof supervisorRatings;

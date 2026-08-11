@@ -18,12 +18,31 @@ export const organizations = {
     currency: v.optional(v.string()),
     payrollCycle: v.optional(v.string()),
     overtimeMultiplier: v.optional(v.number()),
+    // Superadmin freeze: the org keeps its data but nobody inside it can log
+    // in or use any feature until unfrozen. The reason is shown to employees
+    // at login and on the in-app freeze screen.
+    frozenAt: v.optional(v.number()),
+    frozenBy: v.optional(v.id('users')),
+    frozenReason: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index('by_slug', ['slug'])
     .index('by_plan', ['plan'])
     .index('by_active', ['isActive']),
+
+  // Tombstone + progress tracker for a superadmin hard delete. The purge runs
+  // in batched internal mutations; this row makes it resumable and auditable.
+  orgDeletions: defineTable({
+    organizationId: v.id('organizations'),
+    organizationName: v.string(),
+    requestedBy: v.id('users'),
+    status: v.union(v.literal('in_progress'), v.literal('done')),
+    tableIndex: v.number(),
+    deletedDocs: v.number(),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+  }).index('by_org', ['organizationId']),
 
   organizationRequests: defineTable({
     requestedName: v.string(),

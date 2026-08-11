@@ -2080,5 +2080,10 @@
   "ticket": {
     "chatCreated": "Für Ticket {{ticketNumber}} wurde ein Support-Chat eröffnet. Sie sehen ihn, sobald der Support-Assistent die erste Nachricht schreibt.",
     "chatCreatedShort": "Support-Chat für Ticket {{ticketNumber}} eröffnet"
+  },
+  "freeze": {
+    "title": "Organisation vorübergehend gesperrt",
+    "description": "Ihre Organisation wurde vom Plattform-Administrator vorübergehend deaktiviert. Der Zugang kehrt zurück, sobald die Organisation aufgetaut wird.",
+    "logout": "Abmelden"
   }
 }

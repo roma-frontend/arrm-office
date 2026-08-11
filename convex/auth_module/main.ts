@@ -252,6 +252,9 @@ export const register = mutation({
         // Verify org exists and is active
         const org = await ctx.db.get(organizationId);
         if (!org || !org.isActive) throw new Error('Organization is inactive or not found');
+        if (org.frozenAt) {
+          throw new Error(`ORG_FROZEN|${org.frozenReason ?? ''}`);
+        }
 
         // Check employee limit
         const currentMembers = await ctx.db
@@ -492,6 +495,9 @@ export const login = mutation({
       const org = await ctx.db.get(user.organizationId);
       if (!org || !org.isActive) {
         throw new Error('Your organization account is inactive. Contact support.');
+      }
+      if (org.frozenAt) {
+        throw new Error(`ORG_FROZEN|${org.frozenReason ?? ''}`);
       }
 
       // Temporary superadmin access check — reject if expired/revoked
@@ -786,6 +792,7 @@ export const loginWebauthn = mutation({
 
     const org = await ctx.db.get(user.organizationId);
     if (!org || !org.isActive) throw new Error('Organization is inactive');
+    if (org.frozenAt) throw new Error(`ORG_FROZEN|${org.frozenReason ?? ''}`);
 
     // Replay attack prevention
     if (counter <= cred.counter) throw new Error('Invalid authenticator counter');
@@ -840,6 +847,7 @@ export const googleOAuthLogin = mutation({
       const org = await ctx.db.get(user.organizationId);
       if (!org || !org.isActive)
         throw new Error('Your organization account is inactive. Contact support.');
+      if (org.frozenAt) throw new Error(`ORG_FROZEN|${org.frozenReason ?? ''}`);
 
       // Update avatar if not set, and update session
       const patch: Record<string, string | number | undefined> = {

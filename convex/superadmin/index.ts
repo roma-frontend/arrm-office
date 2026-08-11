@@ -10,3 +10,10 @@ export {
 } from './impersonation';
 export { generateAccessToken, revokeAccessToken, listAccessTokens } from './accessTokens';
 export { globalSearch, quickSearch, searchUsersByPrefix } from './search';
+export {
+  getFreezeState,
+  freezeOrganization,
+  unfreezeOrganization,
+  secureDeleteOrganization,
+  purgeOrganizationData,
+} from './organizations';

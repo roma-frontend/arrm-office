@@ -36,6 +36,16 @@ export async function getUserWithRole(
   const user = await ctx.db.get(userId);
   if (!user) return null;
 
+  // Legacy handlers take a client-supplied userId and rely on this helper for
+  // authorization, so the freeze gate has to live here: a frozen organization
+  // must not reach any mutation through the rbac path either.
+  if (user.organizationId) {
+    const org = await ctx.db.get(user.organizationId);
+    if (org?.frozenAt) {
+      throw new Error('Organization is temporarily frozen. Contact support.');
+    }
+  }
+
   return {
     _id: user._id,
     role: user.role as Role,

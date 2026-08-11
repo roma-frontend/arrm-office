@@ -127,6 +127,25 @@ describe('requireRoleAtLeast', () => {
   });
 });
 
+describe('organization freeze gate', () => {
+  it('requireUser throws for a user in a frozen organization', async () => {
+    const get = jest.fn(async (id: string) =>
+      String(id).startsWith('org') ? { _id: id, frozenAt: 123 } : { ...USER },
+    );
+    const ctx = { db: { get } } as any;
+    await expect(requireUser(ctx, 'user_1' as any)).rejects.toThrow(/temporarily frozen/);
+  });
+
+  it('requireUser passes when the organization is not frozen', async () => {
+    const get = jest.fn(async (id: string) =>
+      String(id).startsWith('org') ? { _id: id } : { ...USER },
+    );
+    const ctx = { db: { get } } as any;
+    const result = await requireUser(ctx, 'user_1' as any);
+    expect(result.role).toBe('employee');
+  });
+});
+
 describe('requireOrgAdmin', () => {
   it('allows a superadmin in any org', async () => {
     const { ctx } = makeCtx({ ...USER, role: 'superadmin', organizationId: 'org-other' });
@@ -210,10 +229,13 @@ describe('canAccessUser', () => {
   });
 
   it('allows an admin to access same-org employees', async () => {
-    const get = jest
-      .fn()
-      .mockResolvedValueOnce({ ...USER, role: 'admin' })
-      .mockResolvedValueOnce({ ...USER, _id: 'user_2' });
+    // getUserWithRole also reads the caller's organization (freeze gate), so
+    // resolve by id instead of a fixed call sequence.
+    const requester = { ...USER, role: 'admin' };
+    const target = { ...USER, _id: 'user_2' };
+    const get = jest.fn(async (id: string) =>
+      String(id).startsWith('org') ? { _id: id } : id === 'user_1' ? requester : target,
+    );
     const ctx = { db: { get } } as any;
     expect(await canAccessUser(ctx, 'user_1' as any, 'user_2' as any)).toBe(true);
   });
@@ -237,10 +259,11 @@ describe('canAccessUser', () => {
   });
 
   it('allows a supervisor to access same-org employees', async () => {
-    const get = jest
-      .fn()
-      .mockResolvedValueOnce({ ...USER, role: 'supervisor' })
-      .mockResolvedValueOnce({ ...USER, _id: 'user_2' });
+    const requester = { ...USER, role: 'supervisor' };
+    const target = { ...USER, _id: 'user_2' };
+    const get = jest.fn(async (id: string) =>
+      String(id).startsWith('org') ? { _id: id } : id === 'user_1' ? requester : target,
+    );
     const ctx = { db: { get } } as any;
     expect(await canAccessUser(ctx, 'user_1' as any, 'user_2' as any)).toBe(true);
   });

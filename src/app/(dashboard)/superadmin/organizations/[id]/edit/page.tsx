@@ -7,9 +7,18 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Building2, Save, ArrowLeft } from 'lucide-react';
+import { Building2, Save, ArrowLeft, Snowflake, Trash2 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
@@ -33,6 +42,15 @@ export default function EditOrganizationPage() {
   );
 
   const updateOrg = useMutation(api.organizations.updateOrganization);
+  const freezeOrg = useMutation(api.superadmin.freezeOrganization);
+  const unfreezeOrg = useMutation(api.superadmin.unfreezeOrganization);
+  const deleteOrg = useMutation(api.superadmin.secureDeleteOrganization);
+
+  const [freezeOpen, setFreezeOpen] = useState(false);
+  const [freezeReason, setFreezeReason] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmSlug, setConfirmSlug] = useState('');
+  const [dangerBusy, setDangerBusy] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -362,6 +380,187 @@ export default function EditOrganizationPage() {
             </button>
           </div>
         </form>
+
+        {/* Danger zone — superadmin only: freeze or permanently delete */}
+        {isSuperadmin && (
+          <div
+            className="mt-6 space-y-4 rounded-xl border border-red-500/30 p-6 animate-fade-in"
+            style={{ background: 'var(--card)' }}
+          >
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {t('organization.dangerZone')}
+            </h2>
+
+            {organization.frozenAt && (
+              <p
+                className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                <Snowflake className="mr-1 inline h-4 w-4 text-blue-500" />
+                {t('organization.frozenBanner', { reason: organization.frozenReason ?? '' })}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {organization.frozenAt ? (
+                <button
+                  type="button"
+                  disabled={dangerBusy}
+                  onClick={async () => {
+                    setDangerBusy(true);
+                    try {
+                      await unfreezeOrg({ organizationId: orgId as Id<'organizations'> });
+                      toast.success(t('organization.unfrozenToast'));
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : 'Failed');
+                    } finally {
+                      setDangerBusy(false);
+                    }
+                  }}
+                  className="flex-1 rounded-lg border border-blue-500/40 px-4 py-2.5 font-semibold text-blue-500 transition-all hover:bg-blue-500/10 disabled:opacity-50"
+                >
+                  {t('organization.unfreeze')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={dangerBusy}
+                  onClick={() => {
+                    setFreezeReason('');
+                    setFreezeOpen(true);
+                  }}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-amber-500/40 px-4 py-2.5 font-semibold text-amber-500 transition-all hover:bg-amber-500/10 disabled:opacity-50"
+                >
+                  <Snowflake className="h-4 w-4" />
+                  {t('organization.freeze')}
+                </button>
+              )}
+
+              <button
+                type="button"
+                disabled={dangerBusy}
+                onClick={() => {
+                  setConfirmSlug('');
+                  setDeleteOpen(true);
+                }}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-2.5 font-semibold text-white transition-all hover:bg-red-600 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                {t('organization.delete')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Freeze dialog — reason is mandatory and shown to employees */}
+        <Dialog open={freezeOpen} onOpenChange={setFreezeOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('organization.freezeTitle')}</DialogTitle>
+              <DialogDescription>{t('organization.freezeDesc')}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-1">
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {t('organization.freezeReasonLabel')}
+              </label>
+              <Textarea
+                value={freezeReason}
+                onChange={(e) => setFreezeReason(e.target.value)}
+                placeholder={t('organization.freezeReasonPlaceholder')}
+              />
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                className="rounded-lg border px-4 py-2 text-sm"
+                style={{ borderColor: 'var(--border)' }}
+                onClick={() => setFreezeOpen(false)}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={dangerBusy || !freezeReason.trim()}
+                onClick={async () => {
+                  setDangerBusy(true);
+                  try {
+                    await freezeOrg({
+                      organizationId: orgId as Id<'organizations'>,
+                      reason: freezeReason,
+                    });
+                    toast.success(t('organization.frozenToast'));
+                    setFreezeOpen(false);
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : 'Failed');
+                  } finally {
+                    setDangerBusy(false);
+                  }
+                }}
+                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {t('organization.freeze')}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Hard delete dialog — slug confirmation */}
+        <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('organization.deleteTitle')}</DialogTitle>
+              <DialogDescription>{t('organization.deleteDesc')}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-1">
+              <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {t('organization.deleteConfirmLabel')}:{' '}
+                <span className="font-mono">{organization.slug}</span>
+              </label>
+              <input
+                type="text"
+                value={confirmSlug}
+                onChange={(e) => setConfirmSlug(e.target.value)}
+                className="w-full rounded-lg border px-4 py-2 outline-none"
+                style={{
+                  background: 'var(--input)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
+            <DialogFooter>
+              <button
+                type="button"
+                className="rounded-lg border px-4 py-2 text-sm"
+                style={{ borderColor: 'var(--border)' }}
+                onClick={() => setDeleteOpen(false)}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={dangerBusy || confirmSlug.trim() !== organization.slug}
+                onClick={async () => {
+                  setDangerBusy(true);
+                  try {
+                    await deleteOrg({
+                      organizationId: orgId as Id<'organizations'>,
+                      confirmSlug,
+                    });
+                    toast.success(t('organization.deleteToast'));
+                    router.push('/superadmin/organizations');
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : 'Failed');
+                    setDangerBusy(false);
+                  }
+                }}
+                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {t('organization.delete')}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
