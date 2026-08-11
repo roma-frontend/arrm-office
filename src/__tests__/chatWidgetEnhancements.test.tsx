@@ -340,16 +340,8 @@ describe('pinned messages (localStorage)', () => {
     expect(getPinnedMessages()).toEqual([]);
   });
 
-  it('returns an empty list when window is unavailable', () => {
-    const originalWindow = globalThis.window;
-    try {
-      delete (globalThis as any).window;
-      expect(typeof window).toBe('undefined');
-      expect(getPinnedMessages()).toEqual([]);
-    } finally {
-      (globalThis as any).window = originalWindow;
-    }
-  });
+  // Note: the `typeof window === 'undefined'` guard (line ~303) is unreachable
+  // in jsdom — window is a non-configurable global here — so it stays uncovered.
 
   it('adds a message and returns true', () => {
     expect(togglePinMessage('m1', 'hello')).toBe(true);
@@ -374,6 +366,8 @@ describe('pinned messages (localStorage)', () => {
   });
 
   it('is robust when localStorage is unavailable', () => {
+    // Only getItem is spied to throw: togglePinMessage does not guard its own
+    // setItem call, so spying setItem would legitimately make it throw.
     const getItem = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('denied');
     });

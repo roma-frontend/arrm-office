@@ -257,18 +257,22 @@ describe('QRCodeModal', () => {
     await waitFor(() => expect(document.querySelector('img')).not.toBeNull());
     const clickSpy = jest.fn();
     const origCreateElement = document.createElement.bind(document);
-    jest.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+    const createSpy = jest.spyOn(document, 'createElement').mockImplementation((tag: string) => {
       const el = origCreateElement(tag);
       if (tag === 'a') {
         (el as HTMLAnchorElement).click = clickSpy;
       }
       return el;
     });
-    fireEvent.click(screen.getByText('Download'));
-    expect(clickSpy).toHaveBeenCalled();
-    expect(mockToast.success).toHaveBeenCalledWith('QR code downloaded');
-    const link = (document.createElement as jest.Mock).mock.results.at(-1)?.value;
-    expect(link.download).toBe('macbook_pro_14_qr.png');
+    try {
+      fireEvent.click(screen.getByText('Download'));
+      expect(clickSpy).toHaveBeenCalled();
+      expect(mockToast.success).toHaveBeenCalledWith('QR code downloaded');
+      const link = createSpy.mock.results.at(-1)?.value;
+      expect(link.download).toBe('macbook_pro_14_qr.png');
+    } finally {
+      createSpy.mockRestore();
+    }
   });
 
   it('prints the sticker in a new window with the generated HTML', async () => {
