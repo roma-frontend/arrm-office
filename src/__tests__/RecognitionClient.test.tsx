@@ -311,6 +311,7 @@ describe('RecognitionClient — gate & header', () => {
   });
 
   it('falls back to zero for the balance and allowance when points are undefined', () => {
+    // null (not undefined) so the destructuring default does not kick in
     seed({ points: null });
     renderPage();
     expect(statValue('recognition.points.balance')).toBe('0');
@@ -549,6 +550,37 @@ describe('RecognitionClient — SendKudosModal', () => {
     fireEvent.click(within(dialog).getByText('common.next'));
     expect(within(dialog).getByText('Cara Chen')).toBeInTheDocument();
     expect(within(dialog).getByText('recognition.category.innovation')).toBeInTheDocument();
+  });
+
+  it('disables the submit button when the allowance cannot afford a kudo', () => {
+    queryResults['getUserPoints'] = { allowance: 1, allowanceTotal: 10 };
+    const dialog = openModal();
+    fireEvent.click(within(dialog).getByText('Bob Builder'));
+    fireEvent.click(within(dialog).getByText('common.next'));
+    fireEvent.click(within(dialog).getByText('recognition.category.teamwork'));
+    fireEvent.click(within(dialog).getByText('common.next'));
+    fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'hi' } });
+    const submit = within(dialog).getByRole('button', { name: 'recognition.sendKudos' });
+    expect(submit).toBeDisabled();
+  });
+
+  it('submits with the default public setting (isPublic true)', async () => {
+    const dialog = openModal();
+    fireEvent.click(within(dialog).getByText('Bob Builder'));
+    fireEvent.click(within(dialog).getByText('common.next'));
+    fireEvent.click(within(dialog).getByText('recognition.category.teamwork'));
+    fireEvent.click(within(dialog).getByText('common.next'));
+    fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'hi' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'recognition.sendKudos' }));
+    await waitFor(() =>
+      expect(mockMutations['sendKudos']).toHaveBeenCalledWith({
+        receiverId: 'u2',
+        category: 'teamwork',
+        message: 'hi',
+        isPublic: true,
+      }),
+    );
+    expect(toast.success).toHaveBeenCalledWith('recognition.kudosSent');
   });
 
   it('shows an error toast when sending fails with a plain Error', async () => {
