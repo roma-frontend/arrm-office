@@ -60,7 +60,6 @@ describe('I18nProvider', () => {
   });
 
   it('uses en as the fallback when the current language is empty', () => {
-    mockLanguage = '';
     mockI18n = { language: '', changeLanguage: jest.fn().mockResolvedValue(undefined) };
     render(<I18nProvider>{CHILD}</I18nProvider>);
     expect(localStorage.getItem('i18nextLng')).toBe('en');
