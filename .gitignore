@@ -76,6 +76,7 @@ scripts/*
 !scripts/ratchet-coverage.mjs
 # Security tooling: lists public Convex functions with no authorization check.
 !scripts/audit-convex-auth.mjs
+!scripts/coverage-dashboard.mjs
 # Generates convex/lib/localeCatalog.ts from public/locales — npm run
 # build:convex-locales, and `-- --check` in CI to catch a stale catalog.
 !scripts/build-convex-locales.mjs
