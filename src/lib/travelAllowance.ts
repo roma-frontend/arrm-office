@@ -50,6 +50,30 @@ export function resolveTravelAllowance(
   return employeeType === 'contractor' ? policy.contractorAmount : policy.staffAmount;
 }
 
+/**
+ * Effective allowance for one employee.
+ *
+ * A per-employee `override` set by HR wins over the organization policy — including
+ * when the policy is disabled, because an explicit per-person amount is a deliberate
+ * decision about that person and not something the org-wide toggle should erase.
+ * `undefined` means "follow the policy", which is what every employee does by default.
+ */
+export function resolveTravelAllowanceWithOverride(
+  policy: TravelAllowancePolicy | undefined,
+  employeeType: TravelAllowanceEmployeeType | undefined,
+  override: number | undefined,
+): number {
+  if (override !== undefined) return override;
+  return resolveTravelAllowance(policy, employeeType);
+}
+
+/** Reject a malformed per-employee override before it reaches the database. */
+export function validateTravelAllowanceOverride(amount: number): void {
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error('Travel allowance must be a non-negative number');
+  }
+}
+
 /** Reject malformed policies before they reach the database. */
 export function validateTravelAllowancePolicy(policy: TravelAllowancePolicy): void {
   for (const [label, amount] of [

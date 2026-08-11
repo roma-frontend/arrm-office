@@ -65,6 +65,9 @@ jest.mock('../../convex/_generated/api', () => ({
       getSalary: { _name: 'getSalary' },
       getEmployeeProfile: { _name: 'getEmployeeProfile' },
     },
+    payroll: {
+      queries: { getSalarySettings: { _name: 'getSalarySettings' } },
+    },
     organizations: { getAllOrganizations: { _name: 'getAllOrganizations' } },
   },
 }));
@@ -244,6 +247,9 @@ beforeEach(() => {
     getSalary: SALARY,
     getEmployeeProfile: PROFILE,
     getAllOrganizations: ORGS,
+    getSalarySettings: {
+      travelAllowance: { enabled: true, staffAmount: 20000, contractorAmount: 25000 },
+    },
   };
   Object.keys(mutationCalls).forEach((k) => delete mutationCalls[k]);
   Object.keys(mutationImpl).forEach((k) => delete mutationImpl[k]);
@@ -603,7 +609,8 @@ describe('save flow', () => {
     const emptyNumberInputs = screen
       .getAllByRole('spinbutton')
       .filter((i) => (i as HTMLInputElement).value === '');
-    expect(emptyNumberInputs.length).toBe(3);
+    // baseSalary, bonuses, overtimeHours + the travel-allowance override.
+    expect(emptyNumberInputs.length).toBe(4);
   });
 
   it('hydrates a partial passport profile with empty fallbacks', () => {

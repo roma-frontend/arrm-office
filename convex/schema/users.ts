@@ -47,11 +47,16 @@ export const users = {
     isApproved: v.boolean(),
     approvedBy: v.optional(v.id('users')),
     approvedAt: v.optional(v.number()),
-    // Denormalized copy of the org's travel allowance policy applied to this
-    // employee. Optional: organizations without a travel allowance policy leave
-    // it unset. Never write a literal here — resolve it from salarySettings via
-    // convex/lib/travelAllowance.ts.
+    // Effective monthly travel allowance for this employee. Denormalized:
+    // `travelAllowanceOverride` when HR set one, otherwise the org policy
+    // amount. Optional: organizations without a policy leave it unset. Never
+    // write a literal here — resolve it via convex/lib/travelAllowance.ts.
     travelAllowance: v.optional(v.number()),
+    // Per-employee deviation from the organization's policy, set by HR in the
+    // edit-employee dialog. Present ⇒ it wins over the policy amount (even when
+    // the policy is disabled) and survives every later edit of the employee.
+    // Absent ⇒ this employee follows the organization policy.
+    travelAllowanceOverride: v.optional(v.number()),
     paidLeaveBalance: v.number(),
     sickLeaveBalance: v.number(),
     familyLeaveBalance: v.number(),

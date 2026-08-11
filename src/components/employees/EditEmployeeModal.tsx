@@ -7,6 +7,8 @@ import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { resolveTravelAllowance } from '@/lib/travelAllowance';
+import { formatCurrency } from '@/lib/types';
 import {
   Save,
   User,
@@ -66,6 +68,12 @@ export interface Employee {
   isActive: boolean;
   organizationId?: string;
   travelAllowance: number;
+  /**
+   * HR's per-employee deviation from the org travel-allowance policy. Absent
+   * means this employee follows the policy — the edit dialog shows the field
+   * empty and the placeholder tells the admin what the policy pays.
+   */
+  travelAllowanceOverride?: number;
   paidLeaveBalance: number;
   sickLeaveBalance: number;
   familyLeaveBalance: number;
@@ -108,7 +116,7 @@ function toLocalDateString(timestamp: number): string {
 }
 
 export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuthStore();
 
   const [step, setStep] = useState(0);
@@ -138,6 +146,13 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     api.employeeProfiles.getEmployeeProfile,
     open ? { userId: employee._id as Id<'users'> } : 'skip',
   );
+  // Travel allowance is an organization policy (Payroll → Settings) that HR may
+  // override for an individual employee. The policy amount is only needed to
+  // tell the admin what leaving the field empty will pay.
+  const salarySettings = useQuery(
+    api.payroll.queries.getSalarySettings,
+    open && targetOrgId ? { organizationId: targetOrgId as Id<'organizations'> } : 'skip',
+  );
   const [passport, setPassport] = useState<PassportData>(EMPTY_PASSPORT);
   const [passportScan, setPassportScan] = useState<PassportScanFile | null>(null);
   const organizations = useQuery(
@@ -161,6 +176,12 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     bonuses: 0,
     overtimeHours: 0,
     salaryCurrency: 'AMD',
+    // Kept as a string so "" can mean "no individual amount — follow the policy",
+    // which 0 cannot (0 is a valid deliberate override).
+    travelAllowance:
+      employee.travelAllowanceOverride !== undefined
+        ? String(employee.travelAllowanceOverride)
+        : '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -173,6 +194,18 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     departments?.find((d) => d._id === form.departmentId)?.name ?? employee.department ?? '';
   const positionName =
     positions?.find((p) => p._id === form.positionId)?.title ?? employee.position ?? '';
+
+  // The amount the organization policy pays this employee type. Only used to
+  // label the input: an empty field means "pay exactly this".
+  const travelAllowancePolicy = salarySettings?.travelAllowance;
+  const policyTravelAllowance = resolveTravelAllowance(travelAllowancePolicy, form.employeeType);
+  /** What this employee will actually be paid once saved — shown on the review step. */
+  const effectiveTravelAllowance = (() => {
+    const raw = form.travelAllowance.trim();
+    if (raw === '') return policyTravelAllowance;
+    const amount = Number(raw);
+    return Number.isFinite(amount) && amount >= 0 ? amount : policyTravelAllowance;
+  })();
 
   const canEditRole = user?.role === 'admin' || user?.role === 'superadmin';
   const currentUser = useAuthStore((s) => s.user);
@@ -203,6 +236,10 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         bonuses: 0,
         overtimeHours: 0,
         salaryCurrency: 'AMD',
+        travelAllowance:
+          employee.travelAllowanceOverride !== undefined
+            ? String(employee.travelAllowanceOverride)
+            : '',
       });
       setErrors({});
     }
@@ -270,12 +307,31 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
     }
   }, [targetOrgId, isSuperadmin, form.supervisorId, supervisors]);
 
+  /**
+   * "" means "no individual amount — follow the organization policy". Anything
+   * else must parse to a non-negative number. Returned as a message rather than
+   * a boolean so the final save can refuse it too: the review step is the last
+   * one, so relying on validateStep alone would let a bad value reach the server.
+   */
+  const travelAllowanceError = (): string | null => {
+    const raw = form.travelAllowance.trim();
+    if (raw === '') return null;
+    const amount = Number(raw);
+    if (!Number.isFinite(amount) || amount < 0) return t('employees.travelAllowanceInvalid');
+    return null;
+  };
+
   const validateStep = (currentStep: number): boolean => {
     const errs: Record<string, string> = {};
 
     if (isSuperadmin && currentStep === 0) {
       if (!selectedOrgId)
         errs.organization = t('employees.organization') + ' ' + t('errors.required').toLowerCase();
+    }
+
+    if (currentStep === (isSuperadmin ? 3 : 2)) {
+      const allowanceError = travelAllowanceError();
+      if (allowanceError) errs.travelAllowance = allowanceError;
     }
 
     if (currentStep === (isSuperadmin ? 1 : 0)) {
@@ -396,6 +452,14 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
 
   const handleSave = async () => {
     if (!validateStep(step)) return;
+    // The allowance lives on an earlier step than the save button, so it has to
+    // be re-checked here rather than trusting the current step's validation.
+    const allowanceError = travelAllowanceError();
+    if (allowanceError) {
+      setErrors((p) => ({ ...p, travelAllowance: allowanceError }));
+      toast.error(allowanceError);
+      return;
+    }
     setLoading(true);
     try {
       if (!user?.id) {
@@ -417,6 +481,10 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         paidLeaveBalance: form.paidLeaveBalance,
         sickLeaveBalance: form.sickLeaveBalance,
         familyLeaveBalance: form.familyLeaveBalance,
+        // null clears any individual amount and puts the employee back on the
+        // organization policy; a number pins them to that amount.
+        travelAllowance:
+          form.travelAllowance.trim() === '' ? null : Number(form.travelAllowance.trim()),
         createdAt: form.registrationDate
           ? new Date(form.registrationDate + 'T00:00:00').getTime()
           : undefined,
@@ -939,6 +1007,43 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Travel allowance — org policy by default, editable per employee */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t('employees.travelAllowance')}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="any"
+                    value={form.travelAllowance}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setForm((p) => ({ ...p, travelAllowance: value }));
+                      setErrors((p) => ({ ...p, travelAllowance: '' }));
+                    }}
+                    placeholder={
+                      travelAllowancePolicy?.enabled ? String(policyTravelAllowance) : '0'
+                    }
+                    className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
+                      errors.travelAllowance ? 'border-red-500' : ''
+                    }`}
+                    style={{
+                      background: 'var(--input)',
+                      borderColor: errors.travelAllowance ? undefined : 'var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                  />
+                  <p className="text-xs text-(--text-muted)">
+                    {travelAllowancePolicy?.enabled
+                      ? t('employees.travelAllowanceHint', {
+                          amount: formatCurrency(policyTravelAllowance, i18n.language),
+                        })
+                      : t('employees.travelAllowanceHintNoPolicy')}
+                  </p>
+                  {errors.travelAllowance && (
+                    <p className="text-xs text-red-500">{errors.travelAllowance}</p>
+                  )}
+                </div>
               </motion.div>
             )}
 
@@ -1012,6 +1117,10 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                     { label: t('labels.department'), value: departmentName || '—' },
                     { label: t('labels.position'), value: positionName || '—' },
                     { label: t('labels.role'), value: t(`roles.${form.role}`) },
+                    {
+                      label: t('employees.travelAllowance'),
+                      value: formatCurrency(effectiveTravelAllowance, i18n.language),
+                    },
                     ...(isSuperadmin
                       ? [
                           {

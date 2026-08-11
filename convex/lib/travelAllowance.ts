@@ -14,8 +14,10 @@
  * re-exported below so backend callers have a single import.
  *
  * NOTE: the resolved amount is only a *default* denormalized onto the user record.
- * Per-employee deviations belong in `compensationRecords` (`type: 'allowance'`),
- * which already models effective dates and an approval workflow.
+ * HR can deviate per employee via `users.travelAllowanceOverride` (edit-employee
+ * dialog → Salary step); {@link resolveTravelAllowanceForUser} applies it. Changes
+ * that need effective dates and an approval trail belong in `compensationRecords`
+ * (`type: 'allowance'`) instead.
  */
 
 import type { Id } from '../_generated/dataModel';
@@ -23,6 +25,7 @@ import type { QueryCtx, MutationCtx } from '../_generated/server';
 import {
   DEFAULT_TRAVEL_ALLOWANCE_POLICY,
   resolveTravelAllowance,
+  resolveTravelAllowanceWithOverride,
   type TravelAllowanceEmployeeType,
   type TravelAllowancePolicy,
 } from '../../src/lib/travelAllowance';
@@ -31,7 +34,9 @@ export {
   DEFAULT_TRAVEL_ALLOWANCE_POLICY,
   LEGACY_TRAVEL_ALLOWANCE_POLICY,
   resolveTravelAllowance,
+  resolveTravelAllowanceWithOverride,
   validateTravelAllowancePolicy,
+  validateTravelAllowanceOverride,
 } from '../../src/lib/travelAllowance';
 export type {
   TravelAllowancePolicy,
@@ -64,4 +69,20 @@ export async function resolveTravelAllowanceForOrg(
 ): Promise<number> {
   const policy = await getTravelAllowancePolicy(ctx, organizationId);
   return resolveTravelAllowance(policy, employeeType);
+}
+
+/**
+ * Effective amount for one employee: their HR-set override when present, the
+ * organization policy otherwise. Use this instead of
+ * {@link resolveTravelAllowanceForOrg} whenever an existing employee is being
+ * updated — the org variant would silently discard the override.
+ */
+export async function resolveTravelAllowanceForUser(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<'organizations'> | undefined,
+  employeeType: TravelAllowanceEmployeeType | undefined,
+  override: number | undefined,
+): Promise<number> {
+  const policy = await getTravelAllowancePolicy(ctx, organizationId);
+  return resolveTravelAllowanceWithOverride(policy, employeeType, override);
 }

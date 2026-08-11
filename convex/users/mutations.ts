@@ -1,5 +1,6 @@
-import { v } from 'convex/values';
+import { v, ConvexError } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { internal } from '../_generated/api';
 import { mutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { requireRole, requireOrgAdmin, requireUser } from '../lib/rbac';
@@ -8,7 +9,11 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
 import { patchProfile } from '../lib/userProfile';
 import { getStartingLeaveBalances } from '../lib/leaveBalances';
-import { resolveTravelAllowanceForOrg } from '../lib/travelAllowance';
+import {
+  resolveTravelAllowanceForOrg,
+  resolveTravelAllowanceForUser,
+  validateTravelAllowanceOverride,
+} from '../lib/travelAllowance';
 import { resolveDepartmentByName, resolvePositionByTitle } from '../lib/orgUnits';
 import type { MutationCtx } from '../_generated/server';
 
@@ -217,6 +222,13 @@ export const createUser = mutation({
       createdAt: args.createdAt ?? Date.now(),
     });
 
+    // A hire starts probation; the scheduled mutation is defensive (skips
+    // founders, duplicates, inactive users) and never blocks the hire itself.
+    await ctx.scheduler.runAfter(0, internal.probation.autoStartProbation, {
+      employeeId: userId,
+      createdBy: adminId,
+    });
+
     // Atomically persist salary / passport into employeeProfiles when provided.
     const hasSalary =
       args.baseSalary !== undefined ||
@@ -336,12 +348,20 @@ export const updateUser = mutation({
     paidLeaveBalance: v.optional(v.number()),
     sickLeaveBalance: v.optional(v.number()),
     familyLeaveBalance: v.optional(v.number()),
+    // Per-employee travel allowance, editable by HR:
+    //   a number → this employee gets exactly that amount, regardless of the
+    //              organization policy, and keeps it through later edits;
+    //   null     → drop the deviation and follow the organization policy again;
+    //   omitted  → leave whatever is already set untouched.
+    // The three cases need to be distinguishable, which a bare
+    // `v.optional(v.number())` cannot do — hence the explicit null.
+    travelAllowance: v.optional(v.union(v.number(), v.null())),
     // Registration / join date (ms epoch) — editable so admins can backdate
     // employees that have been working before the account was created.
     createdAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { adminId, userId, ...updates } = args;
+    const { adminId, userId, travelAllowance: travelAllowanceInput, ...updates } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
     const isSuperadmin = isSuperadminEmail(caller.email);
@@ -354,11 +374,32 @@ export const updateUser = mutation({
       await requireOrgAdmin(ctx, adminId, user.organizationId as Id<'organizations'>);
     }
 
+    // Travel allowance: an HR-set override sticks until it is explicitly cleared,
+    // so an unrelated edit (a phone number, a new supervisor) can never reset a
+    // negotiated amount back to the organization default.
+    let travelAllowanceOverride = user.travelAllowanceOverride;
+    if (travelAllowanceInput === null) {
+      travelAllowanceOverride = undefined;
+    } else if (travelAllowanceInput !== undefined) {
+      // ConvexError: production replaces a plain Error's message with
+      // "Server Error", and HR needs to see why the amount was refused.
+      try {
+        validateTravelAllowanceOverride(travelAllowanceInput);
+      } catch (e) {
+        throw new ConvexError({
+          code: 'INVALID_TRAVEL_ALLOWANCE',
+          message: e instanceof Error ? e.message : 'Invalid travel allowance',
+        });
+      }
+      travelAllowanceOverride = travelAllowanceInput;
+    }
+
     const employeeType = updates.employeeType ?? user.employeeType;
-    const travelAllowance = await resolveTravelAllowanceForOrg(
+    const travelAllowance = await resolveTravelAllowanceForUser(
       ctx,
       user.organizationId as Id<'organizations'>,
       employeeType,
+      travelAllowanceOverride,
     );
 
     // Same rule as createUser: an *Id wins over the free-text value and its
@@ -377,7 +418,7 @@ export const updateUser = mutation({
     if (positionName !== undefined) updates.position = positionName;
 
     // Dual-write: patch users table (backward compat) + sync profile fields to userProfiles
-    await ctx.db.patch(userId, { ...updates, travelAllowance });
+    await ctx.db.patch(userId, { ...updates, travelAllowance, travelAllowanceOverride });
     const profileFields: Record<string, unknown> = {};
     if (updates.employeeType !== undefined) profileFields.employeeType = updates.employeeType;
     if (updates.department !== undefined) profileFields.department = updates.department;
@@ -410,7 +451,12 @@ export const updateUser = mutation({
       action: 'user_updated',
       target: userId,
       details: JSON.stringify({
-        updatedFields: Object.keys(updates),
+        updatedFields: [
+          ...Object.keys(updates),
+          // travelAllowance is destructured out of `updates`; record it here so
+          // an allowance change is never invisible in the audit trail.
+          ...(travelAllowanceInput !== undefined ? ['travelAllowance'] : []),
+        ],
         name: updates.name || user.name,
         role: updates.role || user.role,
       }),
@@ -541,6 +587,13 @@ export const approveUser = mutation({
       isApproved: true,
       approvedBy: adminId,
       approvedAt: Date.now(),
+    });
+
+    // Approval is the hire decision for self-registered employees — the
+    // probation clock starts here.
+    await ctx.scheduler.runAfter(0, internal.probation.autoStartProbation, {
+      employeeId: userId,
+      createdBy: adminId,
     });
 
     const approverName = callerUser?.name ?? 'admin';
