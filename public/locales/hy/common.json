@@ -1405,7 +1405,13 @@
       "suspensionExpired": "Ձեր ժամանակավոր կասեցումը ավարտվեց։ Այժմ կրկին կարող եք մտնել։",
       "faceIdBlocked": "Ձեր Face ID-ն արգելափակվեց չափազանց շատ անհաջող փորձերի պատճառով։ Օգտագործեք էլ. փոստով և գաղտնաբառով մուտքը։",
       "faceIdUnlockedBy": "{{adminName}}-ը ապաարգելափակեց ձեր Face ID-ն։ Կարող եք կրկին փորձել։",
-      "faceIdAutoUnlocked": "Ձեր Face ID-ն ավտոմատ ապաարգելափակվեց գաղտնաբառով հաջող մուտքից հետո։"
+      "faceIdAutoUnlocked": "Ձեր Face ID-ն ավտոմատ ապաարգելափակվեց գաղտնաբառով հաջող մուտքից հետո։",
+      "probationStarted": "{{employeeName}}-ի համար սկսվել է {{days}} օր տևողությամբ փորձաշրջան։ Սահմանեք նպատակներ և պլանավորեք հանդիպումներ։",
+      "probationEndingSoon": "{{employeeName}}-ի փորձաշրջանն ավարտվում է {{days}} օրից։ Գնահատեք արդյունքները և անհրաժեշտության դեպքում երկարաձգեք։",
+      "probationExtended": "{{employeeName}}-ի փորձաշրջանը երկարաձգվել է {{days}} օրով։",
+      "probationPassed": "{{employeeName}}-ը հաջողությամբ անցել է փորձաշրջանը։",
+      "probationPassedAuto": "{{employeeName}}-ը փորձաշրջանն անցել է ավտոմատ՝ աշխատանքը ավարտի ամսաթվից հետո շարունակվելու պատճառով։",
+      "probationFailed": "{{employeeName}}-ը չի անցել փորձաշրջանը։"
     },
     "titles": {
       "movementFormReady": "📄 Տեղափոխման ակտը պատրաստ է ստորագրման",
@@ -1501,7 +1507,12 @@
       "suspensionExpired": "✅ Կասեցումը ավարտվեց",
       "faceIdBlocked": "🚫 Face ID-ն արգելափակվեց",
       "faceIdUnlocked": "✅ Face ID-ն ապաարգելափակվեց",
-      "faceIdAutoUnlocked": "✅ Face ID-ն ավտոմատ ապաարգելափակվեց"
+      "faceIdAutoUnlocked": "✅ Face ID-ն ավտոմատ ապաարգելափակվեց",
+      "probationStarted": "📋 Փորձաշրջանը սկսվել է",
+      "probationEndingSoon": "⏰ Փորձաշրջանը մոտենում է ավարտին",
+      "probationExtended": "⏳ Փորձաշրջանը երկարաձգվել է",
+      "probationPassed": "✅ Փորձաշրջանը հաջողությամբ անցել է",
+      "probationFailed": "⛔ Փորձաշրջանը չի անցել"
     }
   },
   "aiChat": {

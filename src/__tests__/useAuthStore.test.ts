@@ -5,7 +5,17 @@
  * The persist middleware is configured with skipHydration: false, so we test
  * the store directly via getState / setState.
  */
-import { useAuthStore, type User } from '@/store/useAuthStore';
+import { renderHook, act } from '@testing-library/react';
+import {
+  useAuthStore,
+  useAuthStoreShallow,
+  useAuthUser,
+  useAuthIsAuthenticated,
+  useAuthNeedsOnboarding,
+  useAuthLogout,
+  useAuthValidate,
+  type User,
+} from '@/store/useAuthStore';
 
 const mockUser: User = {
   id: 'user-1',
@@ -196,5 +206,118 @@ describe('useAuthStore — selectors', () => {
 
   it('useAuthValidate returns the validateAndCleanup function', () => {
     expect(typeof useAuthStore.getState().validateAndCleanup).toBe('function');
+  });
+});
+
+describe('useAuthStore — selector hooks (renderHook)', () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      needsOnboarding: false,
+    });
+  });
+
+  it('useAuthUser returns the current user', () => {
+    const { result } = renderHook(() => useAuthUser());
+    expect(result.current).toBeNull();
+
+    act(() => useAuthStore.getState().login(mockUser));
+    expect(result.current).toEqual(mockUser);
+  });
+
+  it('useAuthIsAuthenticated tracks the auth flag', () => {
+    const { result } = renderHook(() => useAuthIsAuthenticated());
+    expect(result.current).toBe(false);
+
+    act(() => useAuthStore.getState().login(mockUser));
+    expect(result.current).toBe(true);
+
+    act(() => useAuthStore.getState().logout());
+    expect(result.current).toBe(false);
+  });
+
+  it('useAuthNeedsOnboarding reflects missing org / approval', () => {
+    const { result } = renderHook(() => useAuthNeedsOnboarding());
+    expect(result.current).toBe(false);
+
+    act(() => useAuthStore.getState().login({ ...mockUser, organizationId: undefined }));
+    expect(result.current).toBe(true);
+
+    act(() => useAuthStore.getState().login(mockUser));
+    expect(result.current).toBe(false);
+  });
+
+  it('useAuthLogout exposes a working logout action', () => {
+    act(() => useAuthStore.getState().login(mockUser));
+    const { result } = renderHook(() => useAuthLogout());
+
+    act(() => result.current());
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
+  });
+
+  it('useAuthValidate exposes validateAndCleanup', () => {
+    act(() => useAuthStore.getState().login(mockUser));
+    const { result } = renderHook(() => useAuthValidate());
+
+    act(() => result.current());
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it('useAuthStoreShallow returns a memoized snapshot of the auth state', () => {
+    const { result } = renderHook(() => useAuthStoreShallow());
+    expect(result.current).toEqual({
+      user: null,
+      isAuthenticated: false,
+      needsOnboarding: false,
+    });
+
+    const first = result.current;
+    // Unrelated state changes must not re-create the snapshot.
+    act(() => useAuthStore.setState({ needsOnboarding: false }));
+    expect(result.current).toBe(first);
+
+    act(() => useAuthStore.getState().login(mockUser));
+    expect(result.current).toEqual({
+      user: mockUser,
+      isAuthenticated: true,
+      needsOnboarding: false,
+    });
+  });
+
+  it('useAuthStoreShallow re-renders only when selected fields change', () => {
+    const { result } = renderHook(() => useAuthStoreShallow());
+    act(() => useAuthStore.getState().login({ ...mockUser, isApproved: false }));
+    expect(result.current.needsOnboarding).toBe(true);
+    expect(result.current.user).toEqual({ ...mockUser, isApproved: false });
+  });
+});
+
+describe('useAuthStore — setUser / checkOnboarding edge cases', () => {
+  beforeEach(() => {
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      needsOnboarding: false,
+    });
+  });
+
+  it('setUser marks onboarding required when the user is not approved', () => {
+    useAuthStore.getState().setUser({ ...mockUser, isApproved: false });
+    expect(useAuthStore.getState().needsOnboarding).toBe(true);
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  });
+
+  it('checkOnboarding returns true when there is no user at all', () => {
+    useAuthStore.getState().checkOnboarding();
+    expect(useAuthStore.getState().needsOnboarding).toBe(true);
+  });
+
+  it('setUser recomputes onboarding on every call', () => {
+    useAuthStore.getState().setUser(mockUser);
+    expect(useAuthStore.getState().needsOnboarding).toBe(false);
+    useAuthStore.getState().setUser({ ...mockUser, organizationId: undefined });
+    expect(useAuthStore.getState().needsOnboarding).toBe(true);
   });
 });

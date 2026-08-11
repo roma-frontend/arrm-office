@@ -1405,7 +1405,13 @@
       "suspensionExpired": "Your temporary suspension has ended. You can now log in again.",
       "faceIdBlocked": "Your Face ID has been blocked due to too many failed attempts. Please use email/password login.",
       "faceIdUnlockedBy": "Your Face ID has been unlocked by {{adminName}}. You can try again.",
-      "faceIdAutoUnlocked": "Your Face ID has been automatically unlocked after a successful password login."
+      "faceIdAutoUnlocked": "Your Face ID has been automatically unlocked after a successful password login.",
+      "probationStarted": "{{employeeName}} started a {{days}}-day probation period. Review goals and schedule check-ins.",
+      "probationEndingSoon": "{{employeeName}}'s probation ends in {{days}} day(s). Review the outcome and extend if needed.",
+      "probationExtended": "{{employeeName}}'s probation was extended by {{days}} day(s).",
+      "probationPassed": "{{employeeName}} has passed the probation period.",
+      "probationPassedAuto": "{{employeeName}} has passed the probation period automatically — employment continued past the end date.",
+      "probationFailed": "{{employeeName}} has not passed the probation period."
     },
     "titles": {
       "movementFormReady": "📄 Movement Form Ready for Signing",
@@ -1501,7 +1507,12 @@
       "suspensionExpired": "✅ Suspension Expired",
       "faceIdBlocked": "🚫 Face ID Blocked",
       "faceIdUnlocked": "✅ Face ID Unlocked",
-      "faceIdAutoUnlocked": "✅ Face ID Automatically Unlocked"
+      "faceIdAutoUnlocked": "✅ Face ID Automatically Unlocked",
+      "probationStarted": "📋 Probation period started",
+      "probationEndingSoon": "⏰ Probation ending soon",
+      "probationExtended": "⏳ Probation extended",
+      "probationPassed": "✅ Probation passed",
+      "probationFailed": "⛔ Probation not passed"
     }
   },
   "aiChat": {

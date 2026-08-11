@@ -45,6 +45,7 @@ import HiringPacketPanel from './HiringPacketPanel';
 import EditExtendedProfileModal from './EditExtendedProfileModal';
 import EmployeeProfileHero from './EmployeeProfileHero';
 import SettlementPreviewDialog from '@/components/settlement/SettlementPreviewDialog';
+import ProbationCard from './ProbationCard';
 
 interface EmployeeProfileDetailProps {
   employeeId: Id<'users'>;
@@ -243,6 +244,11 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           canEdit={canEdit}
         />
       )}
+
+      {/* Probation period (HR-managed: extend / pass / fail) */}
+      <React.Suspense fallback={null}>
+        <ProbationCard employeeId={employeeId} />
+      </React.Suspense>
 
       {/* Extended Profile Section */}
       <ExtendedProfileSection

@@ -64,6 +64,15 @@ crons.daily(
   internal.offboarding.sendOffboardingReminders,
 );
 
+// Probation periods get one heads-up per threshold (20/15/10/5 days left) so
+// HR can review and extend from the notification link; a period whose end date
+// passes without a decision auto-passes on the next sweep.
+crons.daily(
+  'probation-deadline-reminders',
+  { hourUTC: 9, minuteUTC: 30 },
+  internal.probation.sendProbationReminders,
+);
+
 // Reward vouchers lapse on their own date; without a sweep an unused one sits
 // "issued" forever, keeps its pool code locked and inflates the outstanding
 // figures the reward budget is judged on. Points are deliberately not refunded.

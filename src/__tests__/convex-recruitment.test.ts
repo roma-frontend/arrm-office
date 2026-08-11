@@ -31,6 +31,11 @@ jest.mock('../../convex/_generated/api', () => ({
       startOnboarding: { _name: 'startOnboarding' },
     },
   },
+  internal: {
+    probation: {
+      autoStartProbation: { _name: 'autoStartProbation' },
+    },
+  },
 }));
 
 jest.mock('../../convex/lib/orgAccess', () => ({

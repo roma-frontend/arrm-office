@@ -1,4 +1,5 @@
 import { v } from 'convex/values';
+import { internal } from '../_generated/api';
 import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin } from '../lib/auth';
@@ -720,6 +721,12 @@ export const approveJoinRequest = mutation({
         createdAt: Date.now(),
       });
     }
+
+    // Approved joiners are hires: start their probation clock.
+    await ctx.scheduler.runAfter(0, internal.probation.autoStartProbation, {
+      employeeId: userId,
+      createdBy: args.adminId,
+    });
 
     // Update invite record
     await ctx.db.patch(args.inviteId, {

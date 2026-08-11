@@ -6,6 +6,7 @@ import type { MutationCtx } from './_generated/server';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
+import { resolveServiceAssignee, type ServiceKind } from './lib/resolveServiceAssignee';
 import {
   assertOrgScope,
   assertOrgStaff,
@@ -27,7 +28,7 @@ const DEFAULT_ONBOARDING_TASKS = [
   {
     key: 'default_paperwork',
     title: 'Sign employment paperwork',
-    assigneeType: 'new_hire' as const,
+    assigneeType: 'hr' as const,
     category: 'documentation' as const,
     dayOffset: 0,
   },
@@ -98,7 +99,7 @@ type TaskBlueprint = {
   dayOffset: number;
 };
 
-// ─── Helpers ─────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────
 function computeProgress(tasks: { status: string }[]): number {
   if (tasks.length === 0) return 0;
   const done = tasks.filter((t) => t.status === 'completed' || t.status === 'skipped').length;
@@ -565,13 +566,23 @@ export const startOnboarding = mutation({
       }
     }
 
+    // HR/IT steps belong to the owning department, never to the new hire.
+    // Resolve each function once; when the org has nobody for it, the programme
+    // creator (the staff member running the hire) carries the task.
+    const serviceAssignees: Record<ServiceKind, Id<'users'>> = {
+      hr: (await resolveServiceAssignee(ctx, orgId, 'hr', args.employeeId)) ?? createdBy,
+      it: (await resolveServiceAssignee(ctx, orgId, 'it', args.employeeId)) ?? createdBy,
+    };
+
     for (let i = 0; i < blueprints.length; i++) {
       const t = blueprints[i]!;
-      // Resolve assigneeId based on type
-      let assigneeId: Id<'users'> | undefined;
+      // Resolve assigneeId based on type — every branch lands on a real owner,
+      // a buddy-less intro falls to the manager instead of the new hire.
+      let assigneeId: Id<'users'>;
       if (t.assigneeType === 'new_hire') assigneeId = args.employeeId;
-      else if (t.assigneeType === 'buddy' && args.buddyId) assigneeId = args.buddyId;
+      else if (t.assigneeType === 'buddy') assigneeId = args.buddyId ?? args.managerId;
       else if (t.assigneeType === 'manager') assigneeId = args.managerId;
+      else assigneeId = serviceAssignees[t.assigneeType];
 
       const dueDate = args.startDate + t.dayOffset * 86400000;
 
@@ -584,7 +595,7 @@ export const startOnboarding = mutation({
         // has no key: its wording is the organization's own and is left alone.
         titleKey: usedTemplate ? undefined : `onboarding.defaultTasks.${t.key}`,
         description: t.description || undefined,
-        assignedTo: assigneeId || args.employeeId,
+        assignedTo: assigneeId,
         assignedBy: createdBy,
         status: 'pending',
         priority: t.category === 'documentation' || t.category === 'equipment' ? 'high' : 'medium',
@@ -715,6 +726,76 @@ export const addTask = mutation({
       status: 'pending',
       order: tasks.length,
     });
+  },
+});
+
+/**
+ * One-off repair for programmes created before HR/IT steps were routed to the
+ * owning department: re-assigns hr/it/buddy tasks that still sit on the new
+ * hire's board (or had no assignee) to the resolved department owner.
+ * Manually re-assigned tasks and closed ones are left untouched.
+ */
+export const repairOnboardingAssignments = mutation({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, args) => {
+    const scope = await assertOrgStaff(ctx, args.organizationId);
+    const orgId = scope.organizationId ?? args.organizationId;
+
+    const programs = await ctx.db
+      .query('onboardingPrograms')
+      .withIndex('by_org_status', (q) => q.eq('organizationId', orgId).eq('status', 'active'))
+      .take(DEFAULT_LIST_CAP);
+
+    const serviceCache: Partial<Record<ServiceKind, Id<'users'> | null>> = {};
+    let repaired = 0;
+
+    for (const program of programs) {
+      const programTasks = await ctx.db
+        .query('onboardingTasks')
+        .withIndex('by_program', (q) => q.eq('programId', program._id))
+        .take(DEFAULT_LIST_CAP);
+
+      for (const task of programTasks) {
+        if (task.status === 'completed' || task.status === 'skipped') continue;
+        if (task.assigneeType === 'new_hire' || task.assigneeType === 'manager') continue;
+        // A human already moved this task somewhere intentional — keep it.
+        if (task.assigneeId && task.assigneeId !== program.employeeId) continue;
+        if (task.taskId) {
+          const mirror = await ctx.db.get(task.taskId);
+          if (!mirror || mirror.status === 'cancelled' || mirror.status === 'completed') {
+            continue;
+          }
+        }
+
+        let desired: Id<'users'> | null;
+        if (task.assigneeType === 'buddy') {
+          desired = program.buddyId ?? program.managerId;
+        } else {
+          const kind: ServiceKind = task.assigneeType;
+          if (!(kind in serviceCache)) {
+            serviceCache[kind] = await resolveServiceAssignee(ctx, orgId, kind, program.employeeId);
+          }
+          desired = serviceCache[kind] ?? scope.caller._id;
+        }
+        if (!desired || desired === task.assigneeId) continue;
+
+        await ctx.db.patch(task._id, { assigneeId: desired });
+        if (task.taskId) {
+          await ctx.db.patch(task.taskId, { assignedTo: desired, updatedAt: Date.now() });
+        }
+        repaired++;
+      }
+    }
+
+    await ctx.db.insert('auditLogs', {
+      organizationId: orgId,
+      userId: scope.caller._id,
+      action: 'onboarding_assignments_repaired',
+      details: JSON.stringify({ repaired }),
+      createdAt: Date.now(),
+    });
+
+    return repaired;
   },
 });
 

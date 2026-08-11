@@ -1,5 +1,6 @@
 import { v, ConvexError } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { internal } from '../_generated/api';
 import { mutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { requireRole, requireOrgAdmin, requireUser } from '../lib/rbac';
@@ -219,6 +220,13 @@ export const createUser = mutation({
       travelAllowance,
       ...balances,
       createdAt: args.createdAt ?? Date.now(),
+    });
+
+    // A hire starts probation; the scheduled mutation is defensive (skips
+    // founders, duplicates, inactive users) and never blocks the hire itself.
+    await ctx.scheduler.runAfter(0, internal.probation.autoStartProbation, {
+      employeeId: userId,
+      createdBy: adminId,
     });
 
     // Atomically persist salary / passport into employeeProfiles when provided.
@@ -579,6 +587,13 @@ export const approveUser = mutation({
       isApproved: true,
       approvedBy: adminId,
       approvedAt: Date.now(),
+    });
+
+    // Approval is the hire decision for self-registered employees — the
+    // probation clock starts here.
+    await ctx.scheduler.runAfter(0, internal.probation.autoStartProbation, {
+      employeeId: userId,
+      createdBy: adminId,
     });
 
     const approverName = callerUser?.name ?? 'admin';

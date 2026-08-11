@@ -51,6 +51,7 @@ import { integrations } from './integrations';
 import { meetingRooms } from './meetingRooms';
 import { hiringPackets } from './hiringPackets';
 import { documentBuilder } from './documentBuilder';
+import { probation } from './probation';
 
 export default defineSchema({
   ...organizations,
@@ -105,6 +106,7 @@ export default defineSchema({
   ...meetingRooms,
   ...hiringPackets,
   ...documentBuilder,
+  ...probation,
 });
 
 export {
@@ -160,4 +162,5 @@ export {
   meetingRooms,
   hiringPackets,
   documentBuilder,
+  probation,
 };

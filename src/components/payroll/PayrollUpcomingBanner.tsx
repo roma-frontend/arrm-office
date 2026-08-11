@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { motion } from '@/lib/cssMotion';
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/convex/_generated/api';
@@ -181,6 +181,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
   const { t } = useTranslation();
   const selectedOrgId = useSelectedOrganization();
   const { user } = useAuthStore();
+  const { isAuthenticated } = useConvexAuth();
   const orgId = (selectedOrgId ?? user?.organizationId ?? undefined) as
     | Id<'organizations'>
     | undefined;
@@ -190,15 +191,17 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
 
   const _useQuery = useQuery as unknown as (...args: unknown[]) => unknown;
 
-  // Admins see full data; employees see date-only upcoming periods
+  // Admins see full data; employees see date-only upcoming periods.
+  // Gate on Convex auth: the local store hydrates before the Convex token is
+  // minted, so querying earlier fires unauthenticated and logs a server error.
   const adminData = _useQuery(
     api.payroll.queries.getUpcomingPayPeriods as unknown as never,
-    orgId && isAdmin ? { organizationId: orgId } : 'skip',
+    orgId && isAdmin && isAuthenticated ? { organizationId: orgId } : 'skip',
   ) as UpcomingPayPeriods | undefined;
 
   const employeePeriods = _useQuery(
     api.payroll.queries.getMyUpcomingPayPeriods as unknown as never,
-    user?.id && isEmployee && compact ? {} : 'skip',
+    user?.id && isEmployee && compact && isAuthenticated ? {} : 'skip',
   ) as
     | Array<{ period: string; daysRemaining: number; urgency: 'critical' | 'warning' | 'info' }>
     | undefined;

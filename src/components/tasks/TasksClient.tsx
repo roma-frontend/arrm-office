@@ -712,11 +712,13 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     });
   }, [rawTasksWithOptimistic, filterPriority, filterStatus, search, filterEmployee, filterProject]);
 
-  // Stats
+  // Stats — cancelled tasks are closed history: the kanban has no column for
+  // them and overdue ignores them, so "total" counts active work only and the
+  // cards always add up to what the board shows.
   const stats = useMemo(() => {
     const all = rawTasksWithOptimistic ?? [];
     return {
-      total: all.length,
+      total: all.filter((t) => t.status !== 'cancelled').length,
       pending: all.filter((t) => t.status === 'pending').length,
       inProgress: all.filter((t) => t.status === 'in_progress').length,
       review: all.filter((t) => t.status === 'review').length,

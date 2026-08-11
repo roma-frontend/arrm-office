@@ -6,6 +6,7 @@
  */
 
 import { v } from 'convex/values';
+import { internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
@@ -221,6 +222,12 @@ export const approveJoinRequest = mutation({
       isApproved: true,
       approvedAt: Date.now(),
       approvedBy: reviewerId,
+    });
+
+    // Approval is the hire decision — start the probation clock.
+    await ctx.scheduler.runAfter(0, internal.probation.autoStartProbation, {
+      employeeId: userId,
+      createdBy: reviewerId,
     });
 
     // Update invite status

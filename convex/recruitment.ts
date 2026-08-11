@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { query, mutation, type MutationCtx, type QueryCtx } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
-import { api } from './_generated/api';
+import { api, internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
@@ -1270,6 +1270,13 @@ export const hireCandidate = mutation({
 
       // Only trigger onboarding if we have a valid employee user ID
       if (employeeId) {
+        // A hire starts probation alongside onboarding; the scheduled mutation
+        // is defensive and never blocks the hire itself.
+        await ctx.scheduler.runAfter(0, internal.probation.autoStartProbation, {
+          employeeId,
+          createdBy: userId,
+        });
+
         // Find a matching template by department
         const templates = await ctx.db
           .query('onboardingTemplates')

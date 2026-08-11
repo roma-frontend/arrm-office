@@ -515,8 +515,11 @@ export const getMyPayslips = query({
 export const getMyUpcomingPayPeriods = query({
   args: {},
   handler: async (ctx) => {
-    const requesterId = await callerId(ctx);
-    const user = await ctx.db.get(requesterId);
+    // Graceful (no throw): this query only returns calendar dates, and the
+    // client may fire it before the Convex auth token is minted on load.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const user = await ctx.db.get(caller._id);
     if (!user) return [];
 
     const orgId = user.organizationId;

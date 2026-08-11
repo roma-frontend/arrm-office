@@ -62,6 +62,11 @@ export const NOTIFICATION_TYPES = [
   'room_booked',
   'room_booking_cancelled',
   'announcement_published',
+  'probation_started',
+  'probation_ending_soon',
+  'probation_extended',
+  'probation_passed',
+  'probation_failed',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

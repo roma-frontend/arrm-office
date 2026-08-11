@@ -350,6 +350,104 @@ describe('onboarding.startOnboarding — template-driven checklists', () => {
   });
 });
 
+describe('onboarding.startOnboarding — department routing', () => {
+  it('routes HR/IT steps to the owning department, never to the new hire', async () => {
+    const c = await seed();
+
+    // An IT department with one member — equipment/access steps must land there.
+    const itMemberId = await c.t.run(async (ctx) => {
+      const deptId = await ctx.db.insert('departments', {
+        organizationId: c.organizationId,
+        name: 'IT',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      return await ctx.db.insert('users', {
+        organizationId: c.organizationId,
+        name: 'IT Specialist',
+        email: 'it@acme.test',
+        passwordHash: 'x',
+        role: 'employee',
+        employeeType: 'staff',
+        isActive: true,
+        isApproved: true,
+        departmentId: deptId,
+        travelAllowance: 0,
+        paidLeaveBalance: 0,
+        sickLeaveBalance: 0,
+        familyLeaveBalance: 0,
+        createdAt: Date.now(),
+      });
+    });
+
+    const programId = await startDefaultProgram(c);
+    const program = await asAdmin(c).query(api.onboarding.getProgram, { programId });
+    const tasks = program!.tasks;
+
+    const itTasks = tasks.filter((t) => t.assigneeType === 'it');
+    expect(itTasks.length).toBeGreaterThan(0);
+    expect(itTasks.every((t) => t.assigneeId === itMemberId)).toBe(true);
+
+    // No HR department in the seed org — HR steps fall back to the org admin,
+    // still never to the new hire.
+    const hrTasks = tasks.filter((t) => t.assigneeType === 'hr');
+    expect(hrTasks.length).toBeGreaterThan(0);
+    expect(hrTasks.every((t) => t.assigneeId === c.adminId)).toBe(true);
+
+    // Everything on the new hire's board is genuinely their own step.
+    const hireTasks = tasks.filter((t) => t.assigneeId === c.employeeId);
+    expect(hireTasks.length).toBeGreaterThan(0);
+    expect(hireTasks.every((t) => t.assigneeType === 'new_hire')).toBe(true);
+
+    // Mirrored rows on the shared board carry the same assignees.
+    const mirrors = await c.t.run(async (ctx) => {
+      const rows = await ctx.db.query('tasks').collect();
+      return rows.filter((task) => task.title.startsWith('[Onboarding]'));
+    });
+    const itMirror = mirrors.find((m) => m.tags?.includes('it'));
+    expect(itMirror?.assignedTo).toBe(itMemberId);
+    const hrMirror = mirrors.find((m) => m.tags?.includes('hr'));
+    expect(hrMirror?.assignedTo).toBe(c.adminId);
+  });
+
+  it('gives buddy steps to the manager when no buddy was picked', async () => {
+    const c = await seed();
+    const programId = await startDefaultProgram(c, { buddyId: undefined });
+
+    const program = await asAdmin(c).query(api.onboarding.getProgram, { programId });
+    const buddyTasks = program!.tasks.filter((t) => t.assigneeType === 'buddy');
+    expect(buddyTasks.length).toBeGreaterThan(0);
+    expect(buddyTasks.every((t) => t.assigneeId === c.managerId)).toBe(true);
+  });
+
+  it('repairOnboardingAssignments moves misrouted steps off the new hire', async () => {
+    const c = await seed();
+    const programId = await startDefaultProgram(c);
+
+    // Simulate a legacy program: park an IT step on the new hire's board.
+    const itTask = await c.t.run(async (ctx) => {
+      const rows = await ctx.db.query('onboardingTasks').collect();
+      const row = rows.find((t) => t.assigneeType === 'it')!;
+      await ctx.db.patch(row._id, { assigneeId: c.employeeId });
+      await ctx.db.patch(row.taskId!, { assignedTo: c.employeeId });
+      return row;
+    });
+
+    const repaired = await asAdmin(c).mutation(api.onboarding.repairOnboardingAssignments, {
+      organizationId: c.organizationId,
+    });
+    expect(repaired).toBeGreaterThan(0);
+
+    const after = await c.t.run(async (ctx) => {
+      const row = await ctx.db.get(itTask._id);
+      const mirror = await ctx.db.get(itTask.taskId!);
+      return { row, mirror };
+    });
+    expect(after.row?.assigneeId).toBe(c.adminId);
+    expect(after.mirror?.assignedTo).toBe(c.adminId);
+  });
+});
+
 describe('onboarding task management', () => {
   it('lets staff add a custom step; refuses a foreign assignee', async () => {
     const c = await seed();
@@ -591,7 +689,9 @@ describe('onboarding cron internals', () => {
     const programId = await startDefaultProgram(c);
     const taskId = await c.t.run(async (ctx) => {
       const tasks = await ctx.db.query('onboardingTasks').collect();
-      const pending = tasks.find((t) => t.status === 'pending')!;
+      // HR/IT steps now route to those departments — pin the due date on a
+      // new_hire step so the notification targets the employee.
+      const pending = tasks.find((t) => t.status === 'pending' && t.assigneeType === 'new_hire')!;
       await ctx.db.patch(pending._id, { dueDate });
       return pending._id;
     });

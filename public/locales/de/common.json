@@ -1405,7 +1405,13 @@
       "suspensionExpired": "Ihre vorübergehende Sperre ist beendet. Sie können sich jetzt wieder anmelden.",
       "faceIdBlocked": "Ihr Face ID wurde wegen zu vieler Fehlversuche gesperrt. Bitte melden Sie sich mit E-Mail und Passwort an.",
       "faceIdUnlockedBy": "{{adminName}} hat Ihr Face ID entsperrt. Sie können es erneut versuchen.",
-      "faceIdAutoUnlocked": "Ihr Face ID wurde nach einer erfolgreichen Passwort-Anmeldung automatisch entsperrt."
+      "faceIdAutoUnlocked": "Ihr Face ID wurde nach einer erfolgreichen Passwort-Anmeldung automatisch entsperrt.",
+      "probationStarted": "{{employeeName}} hat eine {{days}}-tägige Probezeit begonnen. Ziele vereinbaren und Check-ins planen.",
+      "probationEndingSoon": "Die Probezeit von {{employeeName}} endet in {{days}} Tag(en). Ergebnis prüfen und bei Bedarf verlängern.",
+      "probationExtended": "Die Probezeit von {{employeeName}} wurde um {{days}} Tag(e) verlängert.",
+      "probationPassed": "{{employeeName}} hat die Probezeit bestanden.",
+      "probationPassedAuto": "{{employeeName}} hat die Probezeit automatisch bestanden – das Arbeitsverhältnis wurde über das Enddatum hinaus fortgesetzt.",
+      "probationFailed": "{{employeeName}} hat die Probezeit nicht bestanden."
     },
     "titles": {
       "movementFormReady": "📄 Übergabeprotokoll zur Unterschrift bereit",
@@ -1501,7 +1507,12 @@
       "suspensionExpired": "✅ Sperre abgelaufen",
       "faceIdBlocked": "🚫 Face ID gesperrt",
       "faceIdUnlocked": "✅ Face ID entsperrt",
-      "faceIdAutoUnlocked": "✅ Face ID automatisch entsperrt"
+      "faceIdAutoUnlocked": "✅ Face ID automatisch entsperrt",
+      "probationStarted": "📋 Probezeit begonnen",
+      "probationEndingSoon": "⏰ Probezeit endet bald",
+      "probationExtended": "⏳ Probezeit verlängert",
+      "probationPassed": "✅ Probezeit bestanden",
+      "probationFailed": "⛔ Probezeit nicht bestanden"
     }
   },
   "aiChat": {

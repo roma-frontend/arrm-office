@@ -62,7 +62,20 @@ jest.mock('../../convex/_generated/api', () => ({
     },
     timeTracking: { getMonthlyStats: { _name: 'getMonthlyStats' } },
     settlement: { getSettlementPreview: { _name: 'getSettlementPreview' } },
+    probation: {
+      getProbationForEmployee: { _name: 'getProbationForEmployee' },
+      startProbation: { _name: 'probationStart' },
+      extendProbation: { _name: 'probationExtend' },
+      completeProbation: { _name: 'probationComplete' },
+    },
   },
+}));
+
+// ── next/navigation mock (ProbationCard reads ?probation=extend) ────────────
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn() }),
+  usePathname: () => '/employees/e-1',
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // ── Auth store mock ──────────────────────────────────────────────────────────

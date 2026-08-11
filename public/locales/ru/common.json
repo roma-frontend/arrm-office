@@ -1423,7 +1423,13 @@
       "suspensionExpired": "Ваша временная приостановка закончилась. Теперь вы снова можете войти.",
       "faceIdBlocked": "Ваш Face ID заблокирован из-за слишком многих неудачных попыток. Используйте вход по email и паролю.",
       "faceIdUnlockedBy": "{{adminName}} разблокировал ваш Face ID. Можете попробовать снова.",
-      "faceIdAutoUnlocked": "Ваш Face ID разблокирован автоматически после успешного входа по паролю."
+      "faceIdAutoUnlocked": "Ваш Face ID разблокирован автоматически после успешного входа по паролю.",
+      "probationStarted": "У {{employeeName}} начался испытательный срок ({{days}} дн.). Поставьте цели и запланируйте встречи.",
+      "probationEndingSoon": "Испытательный срок {{employeeName}} заканчивается через {{days}} дн. Оцените результаты и при необходимости продлите.",
+      "probationExtended": "Испытательный срок {{employeeName}} продлён на {{days}} дн.",
+      "probationPassed": "{{employeeName}} успешно прошёл(ла) испытательный срок.",
+      "probationPassedAuto": "{{employeeName}} прошёл(ла) испытательный срок автоматически — работа продолжилась после окончания срока.",
+      "probationFailed": "{{employeeName}} не прошёл(ла) испытательный срок."
     },
     "titles": {
       "movementFormReady": "📄 Акт перемещения готов к подписанию",
@@ -1519,7 +1525,12 @@
       "suspensionExpired": "✅ Приостановка истекла",
       "faceIdBlocked": "🚫 Face ID заблокирован",
       "faceIdUnlocked": "✅ Face ID разблокирован",
-      "faceIdAutoUnlocked": "✅ Face ID разблокирован автоматически"
+      "faceIdAutoUnlocked": "✅ Face ID разблокирован автоматически",
+      "probationStarted": "📋 Начался испытательный срок",
+      "probationEndingSoon": "⏰ Истекает испытательный срок",
+      "probationExtended": "⏳ Испытательный срок продлён",
+      "probationPassed": "✅ Испытательный срок пройден",
+      "probationFailed": "⛔ Испытательный срок не пройден"
     }
   },
   "aiChat": {

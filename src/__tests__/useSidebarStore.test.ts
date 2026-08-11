@@ -1,7 +1,16 @@
 /**
  * Tests for useSidebarStore — sidebar collapse/mobile state.
  */
-import { useSidebarStore } from '@/store/useSidebarStore';
+import { renderHook, act } from '@testing-library/react';
+import {
+  useSidebarStore,
+  useSidebarCollapsed,
+  useSidebarMobileOpen,
+  useSidebarToggle,
+  useSidebarSetCollapsed,
+  useSidebarSetMobileOpen,
+  useSidebarStoreShallow,
+} from '@/store/useSidebarStore';
 
 describe('useSidebarStore', () => {
   beforeEach(() => {
@@ -112,5 +121,69 @@ describe('useSidebarStore — selectors', () => {
     useSidebarStore.getState().setMobileOpen(true);
     useSidebarStore.getState().setMobileOpen(false);
     expect(useSidebarStore.getState().mobileOpen).toBe(false);
+  });
+});
+
+describe('useSidebarStore — selector hooks (renderHook)', () => {
+  beforeEach(() => {
+    useSidebarStore.setState({ collapsed: false, mobileOpen: false });
+  });
+
+  it('useSidebarCollapsed reflects the collapsed state', () => {
+    const { result } = renderHook(() => useSidebarCollapsed());
+    expect(result.current).toBe(false);
+
+    act(() => useSidebarStore.getState().toggle());
+    expect(result.current).toBe(true);
+  });
+
+  it('useSidebarMobileOpen reflects the mobile menu state', () => {
+    const { result } = renderHook(() => useSidebarMobileOpen());
+    expect(result.current).toBe(false);
+
+    act(() => useSidebarStore.getState().setMobileOpen(true));
+    expect(result.current).toBe(true);
+  });
+
+  it('useSidebarToggle returns a toggle function that works', () => {
+    const { result } = renderHook(() => useSidebarToggle());
+    act(() => result.current());
+    expect(useSidebarStore.getState().collapsed).toBe(true);
+  });
+
+  it('useSidebarSetCollapsed returns a setter that works', () => {
+    const { result } = renderHook(() => useSidebarSetCollapsed());
+    act(() => result.current(true));
+    expect(useSidebarStore.getState().collapsed).toBe(true);
+  });
+
+  it('useSidebarSetMobileOpen returns a setter that works', () => {
+    const { result } = renderHook(() => useSidebarSetMobileOpen());
+    act(() => result.current(true));
+    expect(useSidebarStore.getState().mobileOpen).toBe(true);
+  });
+
+  it('useSidebarStoreShallow returns a snapshot with all fields and actions', () => {
+    const { result } = renderHook(() => useSidebarStoreShallow());
+    const snapshot = result.current;
+    expect(snapshot.collapsed).toBe(false);
+    expect(snapshot.mobileOpen).toBe(false);
+    expect(typeof snapshot.toggle).toBe('function');
+    expect(typeof snapshot.setCollapsed).toBe('function');
+    expect(typeof snapshot.setMobileOpen).toBe('function');
+
+    act(() => snapshot.toggle());
+    expect(useSidebarStore.getState().collapsed).toBe(true);
+  });
+
+  it('useSidebarStoreShallow preserves the snapshot reference for unrelated updates', () => {
+    const { result } = renderHook(() => useSidebarStoreShallow());
+    const first = result.current;
+    // Same value → shallow-equal selector output → no re-render, same reference.
+    act(() => useSidebarStore.getState().setCollapsed(false));
+    expect(result.current).toBe(first);
+
+    act(() => useSidebarStore.getState().setCollapsed(true));
+    expect(result.current.collapsed).toBe(true);
   });
 });
