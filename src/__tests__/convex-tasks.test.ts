@@ -671,6 +671,7 @@ describe('getSupervisors', () => {
 
 describe('addAttachment / removeAttachment', () => {
   it('appends the attachment to the task', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
     const { ctx, get, patch, insert } = makeCtx();
     get.mockResolvedValueOnce(taskDoc({ attachments: [{ url: 'a1' }] }));
 
@@ -680,24 +681,42 @@ describe('addAttachment / removeAttachment', () => {
       name: 'file.pdf',
       type: 'application/pdf',
       size: 123,
-      uploadedBy: USER_ID,
+      uploadedBy: ADMIN_ID,
     });
 
     expect(patch).toHaveBeenCalledWith(
       TASK_ID,
       expect.objectContaining({
         attachments: expect.arrayContaining([
-          expect.objectContaining({ url: 'a2', name: 'file.pdf' }),
+          expect.objectContaining({ url: 'a2', name: 'file.pdf', uploadedBy: ADMIN_ID }),
         ]),
       }),
     );
     expect(insert).toHaveBeenCalledWith(
       'auditLogs',
-      expect.objectContaining({ action: 'task_attachment_added' }),
+      expect.objectContaining({ action: 'task_attachment_added', userId: ADMIN_ID }),
     );
   });
 
+  it('rejects a caller trying to file an attachment under someone else', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get } = makeCtx();
+    get.mockResolvedValueOnce(taskDoc());
+
+    await expect(
+      handlers.addAttachment(ctx, {
+        taskId: TASK_ID,
+        url: 'a',
+        name: 'n',
+        type: 't',
+        size: 1,
+        uploadedBy: USER_ID,
+      }),
+    ).rejects.toThrow('can only be filed under the person uploading it');
+  });
+
   it('throws when the task does not exist', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(null);
 
@@ -714,6 +733,7 @@ describe('addAttachment / removeAttachment', () => {
   });
 
   it('removes the matching attachment and audits', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
     const { ctx, get, patch, insert } = makeCtx();
     get.mockResolvedValueOnce(
       taskDoc({ attachments: [{ url: 'a1' }, { url: 'a2' }], assignedBy: ADMIN_ID }),
@@ -725,18 +745,22 @@ describe('addAttachment / removeAttachment', () => {
     expect(patchCall[1].attachments).toEqual([{ url: 'a2' }]);
     expect(insert).toHaveBeenCalledWith(
       'auditLogs',
-      expect.objectContaining({ action: 'task_attachment_removed' }),
+      expect.objectContaining({ action: 'task_attachment_removed', userId: ADMIN_ID }),
     );
   });
 
-  it('skips the audit log for legacy tasks without an org', async () => {
+  it('records the removal against the caller even for legacy tasks without an org', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
     const { ctx, get, patch, insert } = makeCtx();
     get.mockResolvedValueOnce(taskDoc({ organizationId: undefined, attachments: [{ url: 'a1' }] }));
 
     await handlers.removeAttachment(ctx, { taskId: TASK_ID, url: 'a1' });
 
     expect(patch).toHaveBeenCalled();
-    expect(insert).not.toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({ action: 'task_attachment_removed', organizationId: undefined }),
+    );
   });
 });
 

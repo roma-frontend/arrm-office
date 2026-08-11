@@ -38,6 +38,7 @@ import {
   Crosshair,
   Briefcase,
   Contact,
+  Repeat,
   Rocket,
   UserMinus,
   Network,
@@ -139,6 +140,12 @@ const navItems: NavEntry[] = [
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
     children: [
       { href: '/tasks', labelKey: 'nav.tasks', icon: CheckSquare },
+      {
+        href: '/tasks/recurring',
+        labelKey: 'nav.recurringTasks',
+        icon: Repeat,
+        roles: ['superadmin', 'admin', 'supervisor', 'employee'],
+      },
       {
         href: '/projects',
         labelKey: 'nav.projects',

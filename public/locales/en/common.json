@@ -194,6 +194,7 @@
     "calendar": "Calendar",
     "rooms": "Meeting Rooms",
     "tasks": "Tasks",
+    "recurringTasks": "Recurring Tasks",
     "chat": "Team Chat",
     "drivers": "Drivers",
     "payroll": "Payroll",

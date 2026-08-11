@@ -80,4 +80,15 @@ crons.interval('news-schedule-publish', { hours: 1 }, internal.newsSchedule.publ
 // follows the publishing pass.
 crons.interval('news-schedule-expiry', { hours: 1 }, internal.newsSchedule.expireAnnouncements);
 
+// Recurring task series produce their occurrence on each day the rule lands on.
+// Hourly for the same reasons as the news sweep: a series created for today
+// should appear within the hour, and a pass lost to a deploy is caught up on the
+// next one. The mutation is idempotent per day, so overlapping runs cannot
+// produce the same task twice.
+crons.interval(
+  'recurring-tasks-generate',
+  { hours: 1 },
+  internal.recurringTasks.generateDueRecurringTasks,
+);
+
 export default crons;

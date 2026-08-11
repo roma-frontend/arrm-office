@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
-import { mutation, query, type QueryCtx } from './_generated/server';
+import { ConvexError } from 'convex/values';
+import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
@@ -658,6 +659,41 @@ export const getSupervisors = query({
 });
 
 // ── Get task comments ──────────────────────────────────────────────────────
+/**
+ * May this caller attach files to, or detach files from, this task?
+ *
+ * Attaching is part of doing the work, not of managing it: the assignee has to be
+ * able to hand in a document, a photo of a signed form, a report. So the circle is
+ * the assignee, whoever assigned it, the assignee's supervisor, and org admins.
+ *
+ * @returns the reason to refuse, or `null` when allowed.
+ */
+async function attachmentRefusal(
+  ctx: MutationCtx,
+  task: Doc<'tasks'>,
+  caller: { _id: Id<'users'>; role: string; organizationId?: Id<'organizations'> },
+): Promise<string | null> {
+  if (isSuperadmin(caller)) return null;
+
+  // A task with no organization predates org scoping; fall back to the direct
+  // relationships rather than letting anyone in.
+  if (task.organizationId && caller.organizationId !== task.organizationId) {
+    return 'Access denied: cross-organization operation';
+  }
+
+  if (task.assignedTo === caller._id) return null;
+  if (task.assignedBy === caller._id) return null;
+  if (caller.role === 'admin') return null;
+
+  if (caller.role === 'supervisor') {
+    const assignee = await ctx.db.get(task.assignedTo);
+    if (assignee?.supervisorId === caller._id) return null;
+    return 'Only the supervisor of this employee can change its attachments';
+  }
+
+  return 'Only the assignee, the person who assigned the task, or a manager can change its attachments';
+}
+
 // ── Add Attachment ─────────────────────────────────────────────────────────
 export const addAttachment = mutation({
   args: {
@@ -666,36 +702,65 @@ export const addAttachment = mutation({
     name: v.string(),
     type: v.string(),
     size: v.number(),
-    uploadedBy: v.id('users'),
+    /**
+     * Kept for the existing call-sites, but it is not trusted: the uploader is
+     * the verified caller. Passing somebody else's id is refused outright rather
+     * than silently ignored, so a stale caller is not left thinking it worked.
+     */
+    uploadedBy: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    // This mutation had no auth check at all: any caller could bolt a file onto
+    // any task in any organization and attribute it to anyone.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) {
+      throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    }
+    if (args.uploadedBy && args.uploadedBy !== caller._id) {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'An attachment can only be filed under the person uploading it',
+      });
+    }
+
     const task = await ctx.db.get(args.taskId);
-    if (!task) throw new Error('Task not found');
+    if (!task) {
+      throw new ConvexError({ code: 'NOT_FOUND', message: 'Task not found' });
+    }
+
+    const refusal = await attachmentRefusal(ctx, task, caller);
+    if (refusal) {
+      throw new ConvexError({ code: 'FORBIDDEN', message: refusal });
+    }
+
+    const now = Date.now();
     const attachments = task.attachments ?? [];
     await ctx.db.patch(args.taskId, {
       attachments: [
         ...attachments,
         {
           url: args.url,
-          name: args.name,
+          name: sanitizeTitle(args.name),
           type: args.type,
           size: args.size,
-          uploadedBy: args.uploadedBy,
-          uploadedAt: Date.now(),
+          uploadedBy: caller._id,
+          uploadedAt: now,
         },
       ],
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
 
     // Audit log: attachment added
     await ctx.db.insert('auditLogs', {
-      organizationId: task?.organizationId,
-      userId: args.uploadedBy,
+      organizationId: task.organizationId,
+      userId: caller._id,
       action: 'task_attachment_added',
       target: args.taskId,
       details: JSON.stringify({ name: args.name, type: args.type, size: args.size }),
-      createdAt: Date.now(),
+      createdAt: now,
     });
+
+    return { success: true };
   },
 });
 
@@ -706,22 +771,59 @@ export const removeAttachment = mutation({
     url: v.string(),
   },
   handler: async (ctx, args) => {
-    const task = await ctx.db.get(args.taskId);
-    if (!task) throw new Error('Task not found');
-    const attachments = (task.attachments ?? []).filter((a: { url: string }) => a.url !== args.url);
-    await ctx.db.patch(args.taskId, { attachments, updatedAt: Date.now() });
+    const caller = await getAuthCaller(ctx);
+    if (!caller) {
+      throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    }
 
-    // Audit log: attachment removed
-    if (task.organizationId && task.assignedBy) {
-      await ctx.db.insert('auditLogs', {
-        organizationId: task.organizationId,
-        userId: task.assignedBy,
-        action: 'task_attachment_removed',
-        target: args.taskId,
-        details: JSON.stringify({ url: args.url }),
-        createdAt: Date.now(),
+    const task = await ctx.db.get(args.taskId);
+    if (!task) {
+      throw new ConvexError({ code: 'NOT_FOUND', message: 'Task not found' });
+    }
+
+    const refusal = await attachmentRefusal(ctx, task, caller);
+    if (refusal) {
+      throw new ConvexError({ code: 'FORBIDDEN', message: refusal });
+    }
+
+    const existing = task.attachments ?? [];
+    const target = existing.find((a: { url: string }) => a.url === args.url);
+    if (!target) {
+      throw new ConvexError({ code: 'NOT_FOUND', message: 'Attachment not found on this task' });
+    }
+
+    // An employee may take back what they uploaded, but not remove the brief a
+    // manager attached. Managers and the person who assigned the task may remove
+    // anything.
+    const isManager =
+      caller.role === 'admin' ||
+      caller.role === 'supervisor' ||
+      isSuperadmin(caller) ||
+      task.assignedBy === caller._id;
+    if (!isManager && target.uploadedBy !== caller._id) {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'You can only remove files you uploaded yourself',
       });
     }
+
+    const now = Date.now();
+    const attachments = existing.filter((a: { url: string }) => a.url !== args.url);
+    await ctx.db.patch(args.taskId, { attachments, updatedAt: now });
+
+    // Audit log: attachment removed. Recorded against the person who actually
+    // removed it — this used to be attributed to the task's assigner regardless
+    // of who acted, and was skipped entirely for tasks with no organization.
+    await ctx.db.insert('auditLogs', {
+      organizationId: task.organizationId,
+      userId: caller._id,
+      action: 'task_attachment_removed',
+      target: args.taskId,
+      details: JSON.stringify({ url: args.url, name: target.name }),
+      createdAt: now,
+    });
+
+    return { success: true };
   },
 });
 

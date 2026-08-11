@@ -144,7 +144,13 @@
     "confirmDeleteTitle": "Anhang löschen?",
     "confirmDeleteSubtitle": "Diese Aktion kann nicht rückgängig gemacht werden",
     "confirmDeleteWarning": "Die Datei wird dauerhaft gelöscht",
-    "deleteFile": "Datei löschen"
+    "deleteFile": "Datei löschen",
+    "uploading": "Wird hochgeladen…",
+    "uploaded": "Datei angehängt",
+    "uploadFailed": "Datei konnte nicht angehängt werden",
+    "removed": "Datei entfernt",
+    "removeFailed": "Datei konnte nicht entfernt werden",
+    "tooLarge": "„{{name}}“ ist größer als {{max}} MB"
   },
   "taskWizard": {
     "submit": "Aufgabe erstellen",
@@ -170,11 +176,64 @@
         "description": "Wer soll diese Aufgabe erledigen?",
         "assigneeLabel": "Zuständiger",
         "assigneePlaceholder": "Mitarbeiter auswählen"
+      },
+      "repeat": {
+        "title": "Wiederholung",
+        "description": "Soll diese Aufgabe nach einem Zeitplan wiederkehren?",
+        "frequencyLabel": "Wiederholen",
+        "frequencyPlaceholder": "Häufigkeit auswählen",
+        "frequencyHint": "Eine wiederkehrende Aufgabe wird an jedem ihrer Tage neu erstellt. Die Frist oben gilt nicht — legen Sie stattdessen den Zeitraum unten fest.",
+        "frequency": {
+          "none": "Nicht wiederholen",
+          "weekly": "Jede Woche",
+          "monthly": "Jeden Monat"
+        },
+        "weekdaysLabel": "An welchen Tagen",
+        "weekdaysHint": "Einen oder mehrere wählen. An jedem davon wird eine Aufgabe erstellt.",
+        "dayOfMonthLabel": "Tag des Monats",
+        "dayOfMonthHint": "1–31. In zu kurzen Monaten wird der letzte Tag verwendet.",
+        "startDateLabel": "Beginnt am",
+        "startDateHint": "Vor diesem Datum wird nichts erstellt. Standard ist heute.",
+        "endDateLabel": "Endet am",
+        "endDateHint": "Optional. Leer lassen, damit es bis zum Pausieren wiederkehrt.",
+        "offsetLabel": "Tage zur Erledigung",
+        "offsetHint": "0 bedeutet fällig am Tag des Erscheinens; 6 bei einer wöchentlichen Aufgabe bedeutet fällig zum Wochenende."
       }
     },
     "toast": {
       "success": "Aufgabe erfolgreich erstellt!",
       "error": "Fehler beim Erstellen der Aufgabe"
+    }
+  },
+  "recurringTasks": {
+    "title": "Wiederkehrende Aufgaben",
+    "subtitle": "Regeln, die nach Zeitplan Aufgaben erstellen",
+    "newSeries": "Neue Serie",
+    "empty": "Noch keine wiederkehrenden Aufgaben",
+    "emptyHint": "Setzen Sie beim Erstellen einer Aufgabe „Wiederholung“ — die Serie erscheint dann hier.",
+    "activeSection": "Aktiv ({{count}})",
+    "activeSectionHint": "Erstellen an jedem ihrer Tage eine Aufgabe.",
+    "pausedSection": "Pausiert ({{count}})",
+    "pausedSectionHint": "Solange eine Serie pausiert ist, wird nichts erstellt. Bereits erstellte Aufgaben bleiben unberührt.",
+    "noneActive": "Alle Serien sind pausiert.",
+    "pausedBadge": "Pausiert",
+    "pause": "Pausieren",
+    "resume": "Fortsetzen",
+    "delete": "Serie löschen",
+    "confirmDelete": "Löschen",
+    "paused": "Serie pausiert",
+    "resumed": "Serie fortgesetzt",
+    "deleted": "Serie gelöscht. {{count}} davon erstellte Aufgabe(n) wurden behalten.",
+    "actionFailed": "Serie konnte nicht geändert werden",
+    "created": "Wiederkehrende Aufgabe erstellt",
+    "createdWithNext": "Wiederkehrende Aufgabe erstellt. Nächste: {{date}}",
+    "attachmentsNotSupported": "Anhänge wurden nicht gespeichert: eine wiederkehrende Aufgabe kann keine Dateien tragen. Fügen Sie sie jeder Aufgabe einzeln hinzu.",
+    "nextRun": "Nächste: {{date}}",
+    "generatedCount": "{{count}} erstellt",
+    "until": "bis {{date}}",
+    "rule": {
+      "weekly": "Jede Woche am {{days}}",
+      "monthly": "Monatlich am {{day}}."
     }
   },
   "task": {

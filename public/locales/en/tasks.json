@@ -144,7 +144,13 @@
     "confirmDeleteTitle": "Delete Attachment",
     "confirmDeleteSubtitle": "This action cannot be undone",
     "confirmDeleteWarning": "This file will be permanently removed",
-    "deleteFile": "Delete File"
+    "deleteFile": "Delete File",
+    "uploading": "Uploading…",
+    "uploaded": "File attached",
+    "uploadFailed": "Could not attach the file",
+    "removed": "File removed",
+    "removeFailed": "Could not remove the file",
+    "tooLarge": "\"{{name}}\" is larger than {{max}} MB"
   },
   "taskWizard": {
     "submit": "Create Task",
@@ -170,11 +176,64 @@
         "description": "Who should complete this task?",
         "assigneeLabel": "Assignee",
         "assigneePlaceholder": "Select employee"
+      },
+      "repeat": {
+        "title": "Repeat",
+        "description": "Should this task come back on a schedule?",
+        "frequencyLabel": "Repeat",
+        "frequencyPlaceholder": "Select a frequency",
+        "frequencyHint": "A repeating task is created fresh on each of its days. The deadline above does not apply — use the window below instead.",
+        "frequency": {
+          "none": "Does not repeat",
+          "weekly": "Every week",
+          "monthly": "Every month"
+        },
+        "weekdaysLabel": "On which days",
+        "weekdaysHint": "Pick one or more. A task is created on each of them.",
+        "dayOfMonthLabel": "Day of the month",
+        "dayOfMonthHint": "1–31. Months that are too short use their last day.",
+        "startDateLabel": "Starts on",
+        "startDateHint": "Nothing is created before this date. Defaults to today.",
+        "endDateLabel": "Ends on",
+        "endDateHint": "Optional. Leave empty to keep repeating until you pause it.",
+        "offsetLabel": "Days to complete",
+        "offsetHint": "0 means due the same day it appears; 6 on a weekly task means due by the end of the week."
       }
     },
     "toast": {
       "success": "Task created successfully!",
       "error": "Failed to create task"
+    }
+  },
+  "recurringTasks": {
+    "title": "Recurring tasks",
+    "subtitle": "Rules that keep creating work on a schedule",
+    "newSeries": "New series",
+    "empty": "No recurring tasks yet",
+    "emptyHint": "Set \"Repeat\" while creating a task and the series will appear here.",
+    "activeSection": "Active ({{count}})",
+    "activeSectionHint": "These create a task on each of their days.",
+    "pausedSection": "Paused ({{count}})",
+    "pausedSectionHint": "Nothing is created while a series is paused. Tasks it already created are untouched.",
+    "noneActive": "Every series is paused.",
+    "pausedBadge": "Paused",
+    "pause": "Pause",
+    "resume": "Resume",
+    "delete": "Delete series",
+    "confirmDelete": "Delete",
+    "paused": "Series paused",
+    "resumed": "Series resumed",
+    "deleted": "Series deleted. {{count}} task(s) it created were kept.",
+    "actionFailed": "Could not update the series",
+    "created": "Recurring task created",
+    "createdWithNext": "Recurring task created. Next one: {{date}}",
+    "attachmentsNotSupported": "Attachments were not saved: a repeating task cannot carry files. Add them to each task instead.",
+    "nextRun": "Next: {{date}}",
+    "generatedCount": "{{count}} created so far",
+    "until": "until {{date}}",
+    "rule": {
+      "weekly": "Every week on {{days}}",
+      "monthly": "Monthly on day {{day}}"
     }
   },
   "task": {

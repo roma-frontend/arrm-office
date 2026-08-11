@@ -6,6 +6,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
+import { TaskAttachmentsCard, type TaskAttachment } from '@/components/tasks/TaskAttachmentsCard';
 import { useState } from 'react';
 import { useNow } from '@/hooks/useNow';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -37,7 +38,6 @@ import {
   Trash2,
   Pencil,
   Tag,
-  Paperclip,
   MessageSquare,
   Target,
   ChevronRight,
@@ -373,33 +373,18 @@ export default function TaskDetailClient() {
         </Card>
       )}
 
-      {task.attachments && task.attachments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Paperclip className="h-5 w-5" />
-              {t('tasksClient.attachments')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {task.attachments.map((attachment, index: number) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{attachment.name}</span>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    {t('tasksClient.download')}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {taskId && (
+        <TaskAttachmentsCard
+          taskId={taskId}
+          attachments={(task.attachments ?? []) as TaskAttachment[]}
+          currentUserId={user?.id as Id<'users'> | undefined}
+          currentUserRole={user?.role}
+          assignedTo={task.assignedTo}
+          assignedBy={task.assignedBy}
+          assigneeSupervisorId={
+            (task.assignedToUser as { supervisorId?: Id<'users'> } | null | undefined)?.supervisorId
+          }
+        />
       )}
 
       {/* Linked Project Card — clickable → project page */}
