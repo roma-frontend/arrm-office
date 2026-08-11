@@ -25,7 +25,12 @@ describe('fetchReportSeries', () => {
     });
 
     expect(result).toEqual({ series: [], total: 0, unit: 'count' });
-    expect(query).toHaveBeenCalledWith('analytics/getReportData', {
+    // Inspect the captured call directly: toHaveBeenCalledWith crashed in
+    // pretty-format on CI runners when formatting the mock diff.
+    expect(query).toHaveBeenCalledTimes(1);
+    const [path, args] = query.mock.calls[0] as unknown as [unknown, Record<string, unknown>];
+    expect(path).toBe('analytics/getReportData');
+    expect(args).toEqual({
       organizationId: 'org-1',
       metric: 'leaves',
       groupBy: 'department',
@@ -36,10 +41,10 @@ describe('fetchReportSeries', () => {
   it('omits organizationId and rangeDays when not provided', async () => {
     const query = jest.fn().mockResolvedValue({ series: [], total: 0, unit: 'count' });
     await fetchReportSeries({ query } as any, { metric: 'tasks', groupBy: 'none' });
-    expect(query).toHaveBeenCalledWith('analytics/getReportData', {
-      metric: 'tasks',
-      groupBy: 'none',
-    });
+    expect(query).toHaveBeenCalledTimes(1);
+    const [path, args] = query.mock.calls[0] as unknown as [unknown, Record<string, unknown>];
+    expect(path).toBe('analytics/getReportData');
+    expect(args).toEqual({ metric: 'tasks', groupBy: 'none' });
   });
 });
 

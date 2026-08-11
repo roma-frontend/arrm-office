@@ -892,6 +892,18 @@ describe('goals.getCheckinHistory', () => {
         confidence: 'medium',
       }),
     );
+    // Fast CI runners can land both check-ins in the same millisecond, which
+    // makes the createdAt-desc sort a tie. Age the first one so the expected
+    // order is deterministic.
+    await c.t.run(async (ctx) => {
+      const rows = await ctx.db
+        .query('goalCheckins')
+        .withIndex('by_kr', (q) => q.eq('keyResultId', krId))
+        .collect();
+      for (const row of rows) {
+        await ctx.db.patch(row._id, { createdAt: Date.now() - 60000 });
+      }
+    });
     await c.t.run((ctx) =>
       ctx.runMutation(api.goals.checkin, {
         keyResultId: krId,
