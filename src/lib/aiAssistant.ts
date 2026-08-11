@@ -6,7 +6,14 @@
  * can answer any question about the system with expert-level accuracy.
  */
 
-export type UserRole = 'superadmin' | 'admin' | 'supervisor' | 'employee';
+/**
+ * Roles the assistant knows about. This must stay in sync with the canonical
+ * union in `convex/schema/users.ts` and `src/lib/jwt.ts` — `driver` was missing
+ * here, and the omission was silent and total: a driver got no capabilities, no
+ * role block in the system prompt, no knowledge-base documents (no doc lists
+ * `driver`), and fell back to the employee navigation allow-list.
+ */
+export type UserRole = 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
 
 export interface UserContext {
   userId: string;
@@ -38,7 +45,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'view_calendar',
     name: 'View Calendar',
     description: 'Open and view the team calendar with all approved leaves',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'calendar',
       'календарь',
@@ -55,7 +62,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'view_my_leaves',
     name: 'View My Leaves',
     description: 'Check personal leave requests and balances',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'my leaves',
       'мои отпуска',
@@ -72,7 +79,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'book_leave',
     name: 'Book Leave',
     description: 'Request a new leave/vacation through the AI assistant',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'book leave',
       'забронировать отпуск',
@@ -94,7 +101,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'view_tasks',
     name: 'View My Tasks',
     description: 'Check assigned tasks with priorities and deadlines',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'tasks',
       'задачи',
@@ -112,7 +119,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'view_profile',
     name: 'View Profile',
     description: 'Open user profile settings',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: ['profile', 'профиль', 'мой профиль', 'my profile'],
     action: '/profile',
   },
@@ -164,7 +171,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'request_driver',
     name: 'Request Driver',
     description: 'Book a driver for a business trip or airport transfer',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'driver',
       'водитель',
@@ -184,7 +191,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'check_driver_availability',
     name: 'Check Driver Availability',
     description: 'Check if a driver is available at a specific time',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'driver available',
       'водитель свободен',
@@ -200,7 +207,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'view_driver_calendar',
     name: 'View Driver Calendar',
     description: 'View driver calendar and schedule (requires access permission)',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'driver calendar',
       'календарь водителя',
@@ -215,7 +222,7 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'my_driver_requests',
     name: 'My Driver Requests',
     description: 'View status of your driver booking requests',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'my driver requests',
       'мои заявки на водителя',
@@ -228,12 +235,33 @@ export const AI_CAPABILITIES: AICapability[] = [
     id: 'driver_access_request',
     name: 'Request Driver Calendar Access',
     description: 'Request permission to view a driver calendar',
-    requiredRole: ['employee', 'supervisor', 'admin', 'superadmin'],
+    requiredRole: ['employee', 'driver', 'supervisor', 'admin', 'superadmin'],
     keywords: [
       'driver access',
       'доступ к водителю',
       'calendar permission',
       'разрешение на календарь',
+    ],
+    action: '/drivers',
+  },
+  {
+    // Driver-only: the other driver capabilities above are for the person
+    // *booking* a car; this one is the on-duty queue the driver works from.
+    id: 'my_trips',
+    name: 'My Trips',
+    description: 'View, accept or decline the trip requests assigned to you',
+    requiredRole: ['driver'],
+    keywords: [
+      'my trips',
+      'мои поездки',
+      'мои рейсы',
+      'мои заявки',
+      'trip requests',
+      'заявки на поездку',
+      'my schedule',
+      'моё расписание',
+      'мой график',
+      'իմ ուղևորությունները',
     ],
     action: '/drivers',
   },
@@ -1174,6 +1202,43 @@ You can help with personal data and self-service:
 SCOPE: You can ONLY access your own data. Cannot view other employees' details beyond basic availability.
 `;
       break;
+
+    case 'driver':
+      prompt += `
+═══════════════════════════════════════════════════════════════
+🔵 DRIVER MODE — SELF SERVICE + TRIP DUTY
+═══════════════════════════════════════════════════════════════
+
+A driver is an employee with a vehicle duty on top of normal self-service. You
+help with both.
+
+🚗 **Trips & Driver Duty** (/drivers)
+- View incoming trip requests: pickup, destination, purpose, requested time
+- Accept or decline a request, and see the day's assigned trips
+- Own driver calendar — the schedule other people book against
+- Availability status: available / on a trip / off duty
+- After a trip: mark it completed; the requester can then rate it
+
+📋 **Leave Management** (/leaves)
+- View leave balances: Paid (20d/year), Sick (10d), Family (5d), Unpaid (30d), Doctor
+- Book new leave requests (goes to admin/supervisor for approval)
+- Cancel own pending requests
+- Booked leave makes you unavailable for trips over those dates
+
+⏰ **Attendance** (/attendance)
+- Own check-in/check-out history, worked hours, late arrivals
+
+✅ **Tasks** (/tasks) — assigned tasks, priorities, deadlines
+📅 **Calendar** (/calendar) — team leave calendar, who is away
+📄 **Documents** (/documents) — policies and forms, acknowledge mandatory ones
+📚 **Learning Center** (/learning) — courses and certificates
+👤 **Profile** (/profile) — profile details and presence status
+
+SCOPE: Your own data plus the trips assigned to you. You cannot see other
+employees' personal details, other drivers' trip histories, payroll, analytics or
+any admin section.
+`;
+      break;
   }
 
   // ── Platform-wide knowledge (all roles) ──────────────────────
@@ -1526,6 +1591,17 @@ export function getRoleSuggestions(role: UserRole, t: (key: string) => string): 
       'aiChat.suggestions.superadmin.3',
       'aiChat.suggestions.superadmin.4',
       'aiChat.suggestions.superadmin.5',
+    ],
+    // Drivers get the employee prompts: their extra duty (trips) is covered by
+    // the driver block in the system prompt, and there is no separate set of
+    // localized suggestion strings for it.
+    driver: [
+      'aiChat.suggestions.employee.0',
+      'aiChat.suggestions.employee.1',
+      'aiChat.suggestions.employee.2',
+      'aiChat.suggestions.employee.3',
+      'aiChat.suggestions.employee.4',
+      'aiChat.suggestions.employee.5',
     ],
   };
 

@@ -20,11 +20,16 @@ import {
   Maximize2,
   Database,
   Pin,
+  Brain,
+  Square,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Button } from '@/components/ui/button';
 import { formatMessageContent } from '@/components/ai/MarkdownTable';
 import { type UserRole } from '@/lib/aiAssistant';
+import { MemoryPanel } from './MemoryPanel';
+import { SourcesChips, GeneratedImageCard, WebSearchCard, ArtifactCanvas } from './AssistantExtras';
+import { QUICK_ACTIONS, quickActionPrompt, type QuickAction } from '@/lib/ai/commands';
 import type {
   Message,
   AnyAction,
@@ -67,10 +72,19 @@ interface ChatWidgetWindowProps {
   sendMessage: (text: string, setIsOpen: (v: boolean) => void) => Promise<void>;
   handleAction: (messageId: string, action: AnyAction, actionIndex: number) => Promise<void>;
   startVoiceInput: () => void;
+  stopGeneration: () => void;
   router: ReturnType<typeof useRouter>;
   t: TFunction;
   i18n: I18nInstance;
 }
+
+const QUICK_ACTION_ICONS: Record<QuickAction, string> = {
+  shorter: '✂️',
+  longer: '📝',
+  simplify: '💡',
+  translate: '🌐',
+  continue: '⏩',
+};
 
 export function ChatWidgetWindow({
   isOpen,
@@ -90,18 +104,25 @@ export function ChatWidgetWindow({
   sendMessage,
   handleAction,
   startVoiceInput,
+  stopGeneration,
   router,
   t,
   i18n,
 }: ChatWidgetWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const [memoryOpen, setMemoryOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(
     () => new Set(getPinnedMessages().map((p) => p.id)),
   );
   const [showPinned, setShowPinned] = useState(false);
   const slashCommands = filterSlashCommands(input, t);
   const contextSuggestions = getContextSuggestions(pathname || '', t);
+
+  const assistantLocale = (
+    i18n.language === 'ru' || i18n.language === 'hy' ? i18n.language : 'en'
+  ) as 'en' | 'ru' | 'hy';
+  const lastAssistantId = [...messages].reverse().find((m) => m.role === 'assistant')?.id;
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -165,6 +186,14 @@ export function ChatWidgetWindow({
                 </p>
               </div>
               <div className="flex items-center gap-1 ml-auto">
+                <button
+                  onClick={() => setMemoryOpen(true)}
+                  className="p-1.5 rounded-lg hover:bg-(--background-subtle) transition-colors"
+                  aria-label={t('aiChat.memory.title', { defaultValue: 'Assistant memory' })}
+                  title={t('aiChat.memory.title', { defaultValue: 'Assistant memory' })}
+                >
+                  <Brain className="w-4 h-4 text-(--text-muted)" />
+                </button>
                 <button
                   onClick={() => setShowPinned(!showPinned)}
                   className={`p-1.5 rounded-lg hover:bg-(--background-subtle) transition-colors ${showPinned ? 'text-[#2563eb]' : ''}`}
@@ -294,6 +323,17 @@ export function ChatWidgetWindow({
                           return formatMessageContent(m.content);
                         })()}
                       </div>
+
+                      {/* RAG sources, generated image, web search, artifacts */}
+                      {!isUser && m.sources && m.sources.length > 0 && (
+                        <SourcesChips sources={m.sources} />
+                      )}
+                      {!isUser && m.imagePrompt && <GeneratedImageCard prompt={m.imagePrompt} />}
+                      {!isUser && m.webSearchQuery && <WebSearchCard query={m.webSearchQuery} />}
+                      {!isUser &&
+                        m.artifacts?.map((artifact, ai) => (
+                          <ArtifactCanvas key={`${m.id}-artifact-${ai}`} artifact={artifact} />
+                        ))}
 
                       {/* Reactions, copy, TTS, pin for AI messages */}
                       {!isUser && (
@@ -563,6 +603,25 @@ export function ChatWidgetWindow({
                           ))}
                         </motion.div>
                       )}
+
+                      {/* Quick actions on the last assistant answer */}
+                      {!isUser && m.id === lastAssistantId && !isLoading && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {QUICK_ACTIONS.map((qa) => (
+                            <button
+                              key={qa}
+                              onClick={() =>
+                                sendMessage(quickActionPrompt(qa, assistantLocale), setIsOpen)
+                              }
+                              title={t(`aiChat.quick.${qa}`, { defaultValue: qa })}
+                              className="px-1.5 py-0.5 rounded-md border border-(--border) hover:bg-(--background-subtle) text-[10px] text-(--text-muted) transition-colors"
+                            >
+                              {QUICK_ACTION_ICONS[qa]}{' '}
+                              {t(`aiChat.quick.${qa}`, { defaultValue: qa })}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -570,7 +629,7 @@ export function ChatWidgetWindow({
 
               {/* Loading indicator with stages */}
               {isLoading && (
-                <div className="flex justify-start">
+                <div className="flex justify-start items-end gap-2">
                   <div className="bg-(--background-subtle) px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2">
                     <div className="flex gap-1">
                       <span
@@ -588,6 +647,14 @@ export function ChatWidgetWindow({
                     </div>
                     <TypingStages />
                   </div>
+                  <button
+                    onClick={stopGeneration}
+                    className="p-2 rounded-lg border border-(--border) bg-(--card) hover:bg-(--background-subtle) text-(--text-muted) transition-colors"
+                    aria-label={t('aiChat.stop', { defaultValue: 'Stop' })}
+                    title={t('aiChat.stop', { defaultValue: 'Stop' })}
+                  >
+                    <Square className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
 
@@ -682,6 +749,7 @@ export function ChatWidgetWindow({
               </div>
             </form>
           </motion.div>
+          <MemoryPanel userId={user?.id} open={memoryOpen} onClose={() => setMemoryOpen(false)} />
         </>
       )}
     </AnimatePresence>

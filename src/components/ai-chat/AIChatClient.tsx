@@ -32,6 +32,15 @@ import {
   ChevronRight,
   Check,
   X,
+  Brain,
+  Share2,
+  Download,
+  Pin,
+  Search,
+  ThumbsUp,
+  ThumbsDown,
+  RefreshCw,
+  Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -40,6 +49,25 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { MarkdownMessage } from '@/components/MarkdownMessage';
 import { logger } from '@/lib/logger';
+import { parseAssistantTags, stripControlTags, stripPartialTail } from '@/lib/ai/tags';
+import { canNavigate } from '@/lib/ai/assistantRoutes';
+import { MemoryPanel } from '@/components/ai/MemoryPanel';
+import {
+  SourcesChips,
+  GeneratedImageCard,
+  WebSearchCard,
+  ArtifactCanvas,
+} from '@/components/ai/AssistantExtras';
+import {
+  QUICK_ACTIONS,
+  quickActionPrompt,
+  buildSlashCommands,
+  parseSlashQuery,
+  filterCommands,
+  type QuickAction,
+  type SlashCommand,
+} from '@/lib/ai/commands';
+import type { MessageArtifact, WebSearchResult } from '@/components/ai/chatWidgetTypes';
 
 type CsrfPair = { token: string; signature: string };
 
@@ -52,6 +80,12 @@ type Message = {
   actions?: AnyAction[];
   suggestions?: string[];
   isNew?: boolean;
+  sources?: string[];
+  imagePrompt?: string;
+  webSearchQuery?: string;
+  webSearchResults?: WebSearchResult[];
+  artifacts?: MessageArtifact[];
+  feedback?: 'up' | 'down';
 };
 
 type AnyAction = {
@@ -63,6 +97,7 @@ type Conversation = {
   _id: string;
   title: string;
   date: Date;
+  pinned?: boolean;
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -145,8 +180,67 @@ function detectLanguage(text: string): 'en' | 'ru' | 'hy' {
   return 'en';
 }
 
+// Human labels for slash-command navigation entries (kept out of i18n: the
+// list mirrors assistantRoutes and changes rarely).
+const SLASH_ROUTE_LABELS: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/calendar': 'Calendar',
+  '/leaves': 'Leaves',
+  '/tasks': 'Tasks',
+  '/attendance': 'Attendance',
+  '/profile': 'Profile',
+  '/settings': 'Settings',
+  '/documents': 'Documents',
+  '/messenger': 'Messenger',
+  '/learning': 'Learning',
+  '/recognition': 'Recognition',
+  '/goals': 'Goals',
+  '/surveys': 'Surveys',
+  '/corporate': 'Corporate policies',
+  '/help-desk': 'Help desk',
+  '/events': 'Events',
+  '/employees': 'Employees',
+  '/analytics': 'Analytics',
+  '/reports': 'Reports',
+  '/performance': 'Performance',
+  '/approvals': 'Approvals',
+  '/team': 'Team',
+  '/admin': 'Admin',
+  '/recruitment': 'Recruitment',
+  '/onboarding': 'Onboarding',
+  '/offboarding': 'Offboarding',
+  '/payroll': 'Payroll',
+  '/expenses': 'Expenses',
+  '/assets': 'Assets',
+  '/meeting-rooms': 'Meeting rooms',
+  '/projects': 'Projects',
+  '/org-chart': 'Org chart',
+  '/news': 'News',
+  '/signatures': 'Signatures',
+  '/document-builder': 'Document builder',
+  '/integrations': 'Integrations',
+  '/security': 'Security',
+  '/audit': 'Audit log',
+  '/ai-governance': 'AI governance',
+  '/superadmin': 'Superadmin',
+  '/superadmin/organizations': 'Organizations',
+  '/superadmin/backups': 'Backups',
+  '/superadmin/billing': 'Billing',
+  '/superadmin/security': 'Platform security',
+  '/superadmin/impersonate': 'Impersonate',
+  '/ai-site-editor': 'AI site editor',
+};
+
+const QUICK_ACTION_ICONS: Record<QuickAction, string> = {
+  shorter: '✂️',
+  longer: '📝',
+  simplify: '💡',
+  translate: '🌐',
+  continue: '⏩',
+};
+
 export default function AIChatPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
   const userId = user?.id as Id<'users'> | undefined;
@@ -176,7 +270,18 @@ export default function AIChatPage() {
   const [editingTitle, setEditingTitle] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<AgentType>('general');
   const [lastDetectedAgent, setLastDetectedAgent] = useState<AgentType>('general');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [memoryOpen, setMemoryOpen] = useState(false);
   const _isListening = false;
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  /** Stop the in-flight stream; the partial answer is kept. */
+  const stopGeneration = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
 
   // Update sidebar state when screen size changes
   useEffect(() => {
@@ -211,7 +316,9 @@ export default function AIChatPage() {
   const updateConversationTitle = useMutation(api.aiChatMutations.updateConversationTitle);
   const deleteConversation = useMutation(api.aiChatMutations.deleteConversation);
   const addMessage = useMutation(api.aiChatMutations.addMessage);
-  const autoRenameConversation = useMutation(api.aiChatMutations.autoRenameConversation);
+  const togglePinConversation = useMutation(api.aiChatMutations.togglePinConversation);
+  const setMessageFeedback = useMutation(api.aiChatMutations.setMessageFeedback);
+  const createShare = useMutation(api.aiChatMutations.createShare);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -251,6 +358,7 @@ export default function AIChatPage() {
         _id: c._id,
         title: c.title,
         date: new Date(c.createdAt),
+        pinned: c.pinned,
       }));
       setConversations(convs);
 
@@ -260,6 +368,28 @@ export default function AIChatPage() {
       }
     }
   }, [savedConversations, activeConversationId]);
+
+  // Pinned first, then newest; filtered by the sidebar search box.
+  const visibleConversations = conversations
+    .filter((c) => !searchQuery.trim() || c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      return b.date.getTime() - a.date.getTime();
+    });
+
+  const handleTogglePin = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const result = await togglePinConversation({
+        conversationId: conversationId as Id<'aiConversations'>,
+      });
+      setConversations((prev) =>
+        prev.map((c) => (c._id === conversationId ? { ...c, pinned: result.pinned } : c)),
+      );
+    } catch (error) {
+      logger.error('[Pin conversation error]:', error);
+    }
+  };
 
   // Load messages when conversation selected
   useEffect(() => {
@@ -399,8 +529,9 @@ export default function AIChatPage() {
   // ═══════════════════════════════════════════════════════════════
   // Send message - FULL LOGIC from ChatWidget
   // ═══════════════════════════════════════════════════════════════
-  const handleSend = async () => {
-    if (!input.trim() || !userId || isLoading) return;
+  const handleSend = async (textOverride?: string) => {
+    const messageText = textOverride ?? input;
+    if (!messageText.trim() || !userId || isLoading) return;
 
     // ✅ CSRF check FIRST (до optimistic UI и до Convex)
     if (!csrf) {
@@ -408,8 +539,8 @@ export default function AIChatPage() {
       return;
     }
 
-    const lang = detectLanguage(input);
-    const userMessageContent = input.trim();
+    const lang = detectLanguage(messageText);
+    const userMessageContent = messageText.trim();
 
     // If no active conversation, create one
     let currentConvId = activeConversationId;
@@ -445,6 +576,8 @@ export default function AIChatPage() {
       isNew: true,
     };
 
+    const isFirstMessage = messages.length === 0;
+
     // Add to UI immediately (optimistic update)
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
@@ -479,11 +612,19 @@ export default function AIChatPage() {
       }
 
       const payload = {
-        messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
+        // Blank turns are dropped: OpenAI-compatible providers reject an
+        // `assistant` message with empty content, so one blank answer used to
+        // make every following request fail as well.
+        messages: [...messages, userMessage]
+          .filter((m) => m.content.trim().length > 0)
+          .map((m) => ({ role: m.role, content: m.content })),
         userId,
         lang,
         agent: effectiveAgent,
       };
+
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       let res = await fetch('/api/chat', {
         method: 'POST',
@@ -493,6 +634,7 @@ export default function AIChatPage() {
           'X-CSRF-Token-Signature': csrf.signature,
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
       // ✅ retry 1 раз при 403 (обновим CSRF и повторим)
@@ -511,6 +653,7 @@ export default function AIChatPage() {
                 'X-CSRF-Token-Signature': nextCsrf.signature,
               },
               body: JSON.stringify(payload),
+              signal: controller.signal,
             });
           }
         } catch (e) {
@@ -547,20 +690,38 @@ export default function AIChatPage() {
           const { done, value } = await reader.read();
           if (done) break;
           fullContent += decoder.decode(value, { stream: true });
-          const { cleanContent } = parseActions(fullContent);
+          // Hide control tags mid-stream (including partial ones at the tail).
+          const display = stripControlTags(
+            parseActions(stripPartialTail(fullContent)).cleanContent,
+          );
           setMessages((prev) =>
-            prev.map((m) => (m.id === assistantId ? { ...m, content: cleanContent } : m)),
+            prev.map((m) => (m.id === assistantId ? { ...m, content: display } : m)),
           );
         }
       }
 
       const { cleanContent, actions } = parseActions(fullContent);
-      const suggestions = getFollowUpSuggestions(cleanContent, user?.role || 'employee', t);
+      const parsed = parseAssistantTags(cleanContent);
 
-      // Check for navigation tags in response
-      const navMatch = fullContent.match(/<NAVIGATE>(.*?)<\/NAVIGATE>/);
-      if (navMatch && navMatch[1]) {
-        const route = navMatch[1] as string;
+      // A 200 with no usable text is still a failure. Without this the blank
+      // bubble was both the only symptom and, once persisted, a poison pill for
+      // every later turn of the conversation.
+      if (!parsed.cleanContent.trim() && actions.length === 0 && !parsed.artifacts.length) {
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        toast.error(t('aiChat.emptyReply', { defaultValue: 'No reply received. Please retry.' }));
+        return;
+      }
+
+      const suggestions = parsed.suggestions.length
+        ? parsed.suggestions
+        : getFollowUpSuggestions(parsed.cleanContent, user?.role || 'employee', t);
+
+      // Check for navigation tags in response (role allow-list enforced)
+      if (
+        parsed.navigateTo &&
+        canNavigate((user?.role as UserRole) || 'employee', parsed.navigateTo)
+      ) {
+        const route = parsed.navigateTo;
         setTimeout(() => {
           router.push(route);
         }, 800);
@@ -571,27 +732,43 @@ export default function AIChatPage() {
         await addMessage({
           conversationId: currentConvId as Id<'aiConversations'>,
           role: 'assistant',
-          content: cleanContent.replace(/<NAVIGATE>.*?<\/NAVIGATE>/g, '').trim(),
+          content: parsed.cleanContent,
         });
       } catch (error) {
         logger.error('[Save AI message error]:', error);
       }
 
-      // Auto-rename if first message
-      if (savedMessages && savedMessages.length === 0 && currentConvId) {
-        try {
-          await autoRenameConversation({
-            conversationId: currentConvId as Id<'aiConversations'>,
-            firstMessage: userMessage.content,
-          });
-          setConversations((prev) =>
-            prev.map((c) =>
-              c._id === currentConvId ? { ...c, title: userMessage.content.slice(0, 50) } : c,
-            ),
-          );
-        } catch (error) {
-          logger.error('[Auto-rename error]:', error);
-        }
+      // Smart title for the first message of a conversation
+      if (isFirstMessage && currentConvId) {
+        const convIdAtRename = currentConvId;
+        void (async () => {
+          try {
+            const titleRes = await fetch('/api/chat/smart-title', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(csrf
+                  ? {
+                      'X-CSRF-Token': csrf.token,
+                      'X-CSRF-Token-Signature': csrf.signature,
+                    }
+                  : {}),
+              },
+              body: JSON.stringify({ message: userMessage.content, lang }),
+            });
+            const data = (await titleRes.json().catch(() => ({}))) as { title?: string };
+            const title = data.title || userMessage.content.slice(0, 50);
+            await updateConversationTitle({
+              conversationId: convIdAtRename as Id<'aiConversations'>,
+              title,
+            });
+            setConversations((prev) =>
+              prev.map((c) => (c._id === convIdAtRename ? { ...c, title } : c)),
+            );
+          } catch (error) {
+            logger.error('[Smart title error]:', error);
+          }
+        })();
       }
 
       setMessages((prev) =>
@@ -599,14 +776,27 @@ export default function AIChatPage() {
           m.id === assistantId
             ? {
                 ...m,
-                content: cleanContent.replace(/<NAVIGATE>.*?<\/NAVIGATE>/g, '').trim(),
+                content: parsed.cleanContent,
                 actions,
                 suggestions,
+                sources: parsed.sources,
+                imagePrompt: parsed.imagePrompt || undefined,
+                webSearchQuery: parsed.webSearchQuery || undefined,
+                artifacts: parsed.artifacts,
               }
             : m,
         ),
       );
     } catch (error) {
+      // Drop the placeholder if nothing streamed into it, so an empty assistant
+      // turn never survives into the next request's history.
+      setMessages((prev) =>
+        prev.filter((m) => m.role !== 'assistant' || m.content.trim().length > 0 || !m.isNew),
+      );
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // Stopped by the user — keep the partial answer.
+        return;
+      }
       logger.error('[AI Chat Page] Error:', error);
       toast.error(t('aiChat.error') || 'Failed to get response');
 
@@ -621,21 +811,127 @@ export default function AIChatPage() {
         },
       ]);
     } finally {
+      abortRef.current = null;
       setIsLoading(false);
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
   };
 
+  /** Re-run the last user message (regenerate the last answer). */
+  const handleRegenerate = () => {
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    if (!lastUser || isLoading) return;
+    setMessages((prev) => {
+      const lastAssistantIndex = prev.map((m) => m.role).lastIndexOf('assistant');
+      return lastAssistantIndex >= 0 ? prev.slice(0, lastAssistantIndex) : prev;
+    });
+    void handleSend(lastUser.content);
+  };
+
+  const handleQuickAction = (qa: QuickAction) => {
+    void handleSend(quickActionPrompt(qa, assistantLocale));
+  };
+
+  const handleFeedback = async (message: Message, rating: 'up' | 'down') => {
+    if (!userId || !activeConversationId) return;
+    const next = message.feedback === rating ? undefined : rating;
+    setMessages((prev) => prev.map((m) => (m.id === message.id ? { ...m, feedback: next } : m)));
+    if (!next) return;
+    try {
+      await setMessageFeedback({
+        conversationId: activeConversationId as Id<'aiConversations'>,
+        messageId: message.id,
+        userId: userId as Id<'users'>,
+        rating: next,
+      });
+    } catch (error) {
+      logger.error('[Feedback error]:', error);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!activeConversationId || !userId) return;
+    try {
+      const { token } = await createShare({
+        conversationId: activeConversationId as Id<'aiConversations'>,
+        createdBy: userId as Id<'users'>,
+      });
+      const url = `${window.location.origin}/shared-ai-chat/${token}`;
+      await navigator.clipboard.writeText(url);
+      toast.success(t('aiChat.shareCopied', { defaultValue: 'Share link copied to clipboard' }));
+    } catch (error) {
+      logger.error('[Share error]:', error);
+      toast.error(t('aiChat.shareError', { defaultValue: 'Failed to create share link' }));
+    }
+  };
+
+  const handleExport = (format: 'md' | 'json') => {
+    if (!messages.length) return;
+    const title = conversations.find((c) => c._id === activeConversationId)?.title || 'chat';
+    let blob: Blob;
+    if (format === 'json') {
+      blob = new Blob([JSON.stringify(messages, null, 2)], { type: 'application/json' });
+    } else {
+      const md = messages
+        .map((m) => `## ${m.role === 'user' ? '👤 User' : '🤖 Assistant'}\n\n${m.content}`)
+        .join('\n\n---\n\n');
+      blob = new Blob([`# ${title}\n\n${md}`], { type: 'text/markdown' });
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${title.slice(0, 40)}.${format}`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
   const handleSuggestion = (suggestion: string) => {
     const clean = suggestion.replace(/^[\p{Emoji}\s]+/u, '').trim();
     setInput(clean);
-    setTimeout(() => handleSend(), 50);
+    setTimeout(() => void handleSend(), 50);
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success(t('aiChat.copied') || 'Copied!');
   };
+
+  const assistantLocale = (['ru', 'hy'].includes(i18n.language) ? i18n.language : 'en') as
+    | 'en'
+    | 'ru'
+    | 'hy';
+
+  // ── Slash commands in the composer ────────────────────────────────
+  const slashQuery = parseSlashQuery(input);
+  const slashCommands: SlashCommand[] = slashQuery.active
+    ? filterCommands(
+        buildSlashCommands((user?.role as UserRole) || 'employee', {
+          routes: SLASH_ROUTE_LABELS,
+          newChat: t('aiChat.newChat') || 'New chat',
+          clearChat: t('aiChat.clearChat', { defaultValue: 'Clear chat' }),
+          memory: t('aiChat.memory.title', { defaultValue: 'Assistant memory' }),
+          openVerb: t('aiChat.openVerb', { defaultValue: 'Open' }),
+        }),
+        slashQuery.query,
+      ).slice(0, 8)
+    : [];
+
+  const handleSlashCommand = (cmd: SlashCommand) => {
+    if (cmd.kind === 'navigate' && cmd.value) {
+      router.push(cmd.value);
+      setInput('');
+    } else if (cmd.kind === 'new') {
+      void handleNewConversation();
+      setInput('');
+    } else if (cmd.kind === 'clear') {
+      setMessages([]);
+      setInput('');
+    } else if (cmd.kind === 'memory') {
+      setMemoryOpen(true);
+      setInput('');
+    }
+  };
+
+  const lastAssistantMessage = [...messages].reverse().find((m) => m.role === 'assistant');
 
   const roleBasedSuggestions = getRoleSuggestions((user?.role as UserRole) || 'employee', t);
 
@@ -758,9 +1054,21 @@ export default function AIChatPage() {
             </Button>
           )}
 
+          {/* Conversation search */}
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-(--text-muted)" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('aiChat.searchChats', { defaultValue: 'Search chats…' })}
+              className="w-full bg-(--background) border border-(--border) rounded-lg py-2 pl-9 pr-3 text-xs text-(--text-primary) outline-none focus:border-(--primary)"
+            />
+          </div>
+
           <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
             <AnimatePresence>
-              {conversations.length === 0 ? (
+              {visibleConversations.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -769,7 +1077,7 @@ export default function AIChatPage() {
                   {t('aiChat.noConversations') || 'No conversations yet'}
                 </motion.div>
               ) : (
-                conversations.map((conv) => (
+                visibleConversations.map((conv) => (
                   <div
                     key={conv._id}
                     className={`group relative flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-all ${
@@ -817,10 +1125,19 @@ export default function AIChatPage() {
                     ) : (
                       <>
                         <span className="flex-1 text-sm truncate block" title={conv.title}>
+                          {conv.pinned && <Pin className="w-3 h-3 inline mr-1 text-(--primary)" />}
                           {conv.title}
                         </span>
 
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-6 w-6 p-0 ${conv.pinned ? 'text-(--primary)' : ''}`}
+                            onClick={(e) => handleTogglePin(conv._id, e)}
+                          >
+                            <Pin className="w-3 h-3" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -894,6 +1211,35 @@ export default function AIChatPage() {
               onSelect={setSelectedAgent}
               disabled={isLoading}
             />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0"
+              onClick={() => setMemoryOpen(true)}
+              title={t('aiChat.memory.title', { defaultValue: 'Assistant memory' })}
+            >
+              <Brain className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0"
+              onClick={handleShare}
+              disabled={!messages.length}
+              title={t('aiChat.share', { defaultValue: 'Share conversation' })}
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0"
+              onClick={() => handleExport('md')}
+              disabled={!messages.length}
+              title={t('aiChat.export', { defaultValue: 'Export as Markdown' })}
+            >
+              <Download className="w-4 h-4" />
+            </Button>
             <Badge variant="secondary" className="gap-1 shrink-0">
               <Zap className="w-3 h-3" />
               {t('aiChat.aiPowered')}
@@ -977,6 +1323,21 @@ export default function AIChatPage() {
                       <MarkdownMessage content={message.content} isUser={message.role === 'user'} />
                     </Card>
 
+                    {/* RAG sources, generated image, web search, artifacts */}
+                    {message.role === 'assistant' &&
+                      message.sources &&
+                      message.sources.length > 0 && <SourcesChips sources={message.sources} />}
+                    {message.role === 'assistant' && message.imagePrompt && (
+                      <GeneratedImageCard prompt={message.imagePrompt} />
+                    )}
+                    {message.role === 'assistant' && message.webSearchQuery && (
+                      <WebSearchCard query={message.webSearchQuery} />
+                    )}
+                    {message.role === 'assistant' &&
+                      message.artifacts?.map((artifact, ai) => (
+                        <ArtifactCanvas key={`${message.id}-artifact-${ai}`} artifact={artifact} />
+                      ))}
+
                     <div
                       className={`flex items-center gap-2 mt-1 ${message.role === 'user' ? 'justify-end' : ''}`}
                     >
@@ -990,16 +1351,63 @@ export default function AIChatPage() {
                       </span>
 
                       {message.role === 'assistant' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={() => copyToClipboard(message.content)}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => copyToClipboard(message.content)}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-6 w-6 p-0 ${message.feedback === 'up' ? 'text-green-500' : ''}`}
+                            onClick={() => handleFeedback(message, 'up')}
+                          >
+                            <ThumbsUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-6 w-6 p-0 ${message.feedback === 'down' ? 'text-red-500' : ''}`}
+                            onClick={() => handleFeedback(message, 'down')}
+                          >
+                            <ThumbsDown className="w-3 h-3" />
+                          </Button>
+                          {lastAssistantMessage?.id === message.id && !isLoading && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={handleRegenerate}
+                              title={t('aiChat.regenerate', { defaultValue: 'Regenerate' })}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </>
                       )}
                     </div>
+
+                    {/* Quick actions on the last assistant answer */}
+                    {message.role === 'assistant' &&
+                      lastAssistantMessage?.id === message.id &&
+                      !isLoading && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {QUICK_ACTIONS.map((qa) => (
+                            <button
+                              key={qa}
+                              onClick={() => handleQuickAction(qa)}
+                              className="text-[11px] px-2 py-1 rounded-md border border-(--border) hover:bg-(--background-subtle) text-(--text-muted) transition-colors"
+                            >
+                              {QUICK_ACTION_ICONS[qa]}{' '}
+                              {t(`aiChat.quick.${qa}`, { defaultValue: qa })}
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                     {/* Follow-up suggestions */}
                     {message.role === 'assistant' &&
@@ -1048,6 +1456,15 @@ export default function AIChatPage() {
                       />
                     </div>
                   </Card>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={stopGeneration}
+                    className="h-7 px-2 text-xs text-(--text-muted)"
+                  >
+                    <Square className="w-3 h-3 mr-1" />
+                    {t('aiChat.stop', { defaultValue: 'Stop' })}
+                  </Button>
                 </motion.div>
               )}
 
@@ -1059,6 +1476,28 @@ export default function AIChatPage() {
         {/* Input */}
         <div className="p-4 border-t border-(--border) bg-(--card)/50 backdrop-blur shrink-0">
           <div className="relative max-w-4xl h-14 mx-auto">
+            {/* Slash command palette */}
+            {slashCommands.length > 0 && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 rounded-xl border border-(--border) bg-(--card) shadow-lg overflow-hidden max-h-64 overflow-y-auto z-50">
+                {slashCommands.map((cmd) => (
+                  <button
+                    key={cmd.id}
+                    onClick={() => handleSlashCommand(cmd)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-(--background-subtle) transition-colors"
+                  >
+                    <span className="text-xs font-medium text-(--primary)">
+                      {cmd.kind === 'navigate' ? cmd.value : `/${cmd.id}`}
+                    </span>
+                    <span className="flex-1 text-xs text-(--text-primary) truncate">
+                      {cmd.label}
+                    </span>
+                    {cmd.hint && (
+                      <span className="text-[10px] text-(--text-muted) truncate">{cmd.hint}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea
               ref={textareaRef}
               value={input}
@@ -1066,19 +1505,19 @@ export default function AIChatPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleSend();
+                  void handleSend();
                 }
               }}
               placeholder={
                 _isListening
                   ? t('chatWidget.listening')
-                  : t('aiChat.inputPlaceholder') || 'Ask anything...'
+                  : t('aiChat.inputPlaceholder') || 'Ask anything… (type / for commands)'
               }
               className="flex-1 resize-none bg-(--background) border border-(--border) rounded-xl py-4 pl-4 pr-14 text-sm text-(--text-primary) outline-none focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 min-h-14 max-h-50 w-full"
               rows={1}
             />
             <Button
-              onClick={handleSend}
+              onClick={() => void handleSend()}
               disabled={!input.trim() || isLoading}
               className="absolute! right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg p-0"
               size="sm"
@@ -1092,6 +1531,9 @@ export default function AIChatPage() {
           </p>
         </div>
       </main>
+
+      {/* Memory manager */}
+      <MemoryPanel userId={userId} open={memoryOpen} onClose={() => setMemoryOpen(false)} />
 
       {/* Scroll button */}
       <AnimatePresence>

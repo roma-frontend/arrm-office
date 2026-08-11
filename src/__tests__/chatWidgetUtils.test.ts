@@ -58,6 +58,28 @@ describe('parseActions', () => {
     const { cleanContent } = parseActions(content);
     expect(cleanContent).toBe('spaced out');
   });
+
+  it('keeps the markdown structure of an answer that carries an action', () => {
+    // Collapsing all whitespace used to turn a table into one run-on line, so
+    // every reply that proposed an action lost its formatting.
+    const content = [
+      '### Leave balance',
+      '',
+      '| Type | Days |',
+      '| --- | --- |',
+      '| Paid | 12 |',
+      '',
+      '1. Open `/leaves`',
+      '   - pick the dates',
+      '',
+      '<ACTION>{"type":"BOOK_LEAVE"}</ACTION>',
+    ].join('\n');
+    const { cleanContent, actions } = parseActions(content);
+    expect(actions).toEqual([{ type: 'BOOK_LEAVE' }]);
+    expect(cleanContent).toBe(
+      '### Leave balance\n\n| Type | Days |\n| --- | --- |\n| Paid | 12 |\n\n1. Open `/leaves`\n   - pick the dates',
+    );
+  });
 });
 
 describe('getFollowUpSuggestions', () => {

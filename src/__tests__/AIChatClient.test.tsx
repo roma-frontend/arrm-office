@@ -29,6 +29,9 @@ const mutationImpl: Record<string, (...args: any[]) => Promise<unknown>> = {
   deleteConversation: async () => undefined,
   addMessage: async () => undefined,
   autoRenameConversation: async () => undefined,
+  togglePinConversation: async () => ({ success: true, pinned: true }),
+  setMessageFeedback: async () => ({ success: true }),
+  createShare: async () => ({ token: 'share-token', created: true }),
 };
 let chatResponder: (() => Promise<any>) | null = null;
 let lastChatPayload: any = null;
@@ -101,6 +104,12 @@ jest.mock('@/convex/_generated/api', () => ({
       deleteConversation: { _name: 'deleteConversation' },
       addMessage: { _name: 'addMessage' },
       autoRenameConversation: { _name: 'autoRenameConversation' },
+      togglePinConversation: { _name: 'togglePinConversation' },
+      setMessageFeedback: { _name: 'setMessageFeedback' },
+      createShare: { _name: 'createShare' },
+    },
+    aiMemory: {
+      listMemories: { _name: 'listMemories' },
     },
   },
 }));
@@ -144,6 +153,17 @@ jest.mock('@/components/ai/AgentSelector', () => ({
 
 jest.mock('@/components/MarkdownMessage', () => ({
   MarkdownMessage: ({ content }: any) => <span data-testid="markdown">{content}</span>,
+}));
+
+jest.mock('@/components/ai/MemoryPanel', () => ({
+  MemoryPanel: ({ open }: any) => (open ? <div data-testid="memory-panel" /> : null),
+}));
+
+jest.mock('@/components/ai/AssistantExtras', () => ({
+  SourcesChips: ({ sources }: any) => <div data-testid="sources-chips">{sources.join('|')}</div>,
+  GeneratedImageCard: ({ prompt }: any) => <div data-testid="image-card">{prompt}</div>,
+  WebSearchCard: ({ query }: any) => <div data-testid="websearch-card">{query}</div>,
+  ArtifactCanvas: ({ artifact }: any) => <div data-testid="artifact-canvas">{artifact.type}</div>,
 }));
 
 jest.mock('@/components/ui/button', () => ({
@@ -192,6 +212,15 @@ jest.mock('lucide-react', () => {
     'ChevronRight',
     'Check',
     'X',
+    'Brain',
+    'Share2',
+    'Download',
+    'Pin',
+    'Search',
+    'ThumbsUp',
+    'ThumbsDown',
+    'RefreshCw',
+    'Square',
   ];
   const mocks: Record<string, any> = {};
   for (const name of iconNames) {
@@ -206,7 +235,15 @@ jest.mock('lucide-react', () => {
 
 // ── Global fetch: CSRF endpoint + streaming /api/chat ────────────────────────
 const mockFetch = jest.fn((url: string, opts?: any) => {
-  if (String(url).includes('/api/chat')) {
+  const urlStr = String(url);
+  if (urlStr.includes('/api/chat/smart-title')) {
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: async () => ({ title: 'Smart title' }),
+    });
+  }
+  if (urlStr.endsWith('/api/chat')) {
     chatCallCount++;
     if (opts?.body) lastChatPayload = JSON.parse(opts.body);
     if (chatResponder) return chatResponder();
@@ -827,10 +864,11 @@ describe('AIChatPage — sending messages', () => {
     await waitFor(() => expect(mutationCalls.createConversation).toHaveLength(1));
     expect(mutationCalls.createConversation[0]!.args[0].title).toBe('Check my balance');
 
-    await waitFor(() => expect(mutationCalls.autoRenameConversation).toHaveLength(1));
-    expect(mutationCalls.autoRenameConversation[0]!.args[0]).toEqual({
+    // Smart title: /api/chat/smart-title → updateConversationTitle
+    await waitFor(() => expect(mutationCalls.updateConversationTitle).toHaveLength(1));
+    expect(mutationCalls.updateConversationTitle[0]!.args[0]).toEqual({
       conversationId: 'conv-new',
-      firstMessage: 'Check my balance',
+      title: 'Smart title',
     });
   });
 
@@ -838,8 +876,8 @@ describe('AIChatPage — sending messages', () => {
     paginatedResults = [];
     queryResults.getMessages = [];
     chatResponder = () => okStream(['renamed!']);
-    const orig = mutationImpl.autoRenameConversation!;
-    mutationImpl.autoRenameConversation = async () => {
+    const orig = mutationImpl.updateConversationTitle!;
+    mutationImpl.updateConversationTitle = async () => {
       throw new Error('rename boom');
     };
     render(<AIChatPage />);
@@ -847,9 +885,9 @@ describe('AIChatPage — sending messages', () => {
 
     typeAndSend('Check my balance');
     await waitFor(() =>
-      expect(logger.error).toHaveBeenCalledWith('[Auto-rename error]:', expect.anything()),
+      expect(logger.error).toHaveBeenCalledWith('[Smart title error]:', expect.anything()),
     );
-    mutationImpl.autoRenameConversation = orig;
+    mutationImpl.updateConversationTitle = orig;
   });
 
   it('uses the manually selected agent for routing', async () => {

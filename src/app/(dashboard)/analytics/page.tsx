@@ -55,6 +55,17 @@ const LeaveHeatmap = dynamic(
     })),
   { ssr: false, loading: () => <ChartSkeleton /> },
 );
+const AttritionRiskPanel = dynamic(
+  () =>
+    import('@/components/analytics/AttritionRiskPanel').then((mod) => ({
+      default: (props: { organizationId: Id<'organizations'> | undefined }) => (
+        <WidgetErrorBoundary name="AttritionRiskPanel">
+          <mod.AttritionRiskPanel {...props} />
+        </WidgetErrorBoundary>
+      ),
+    })),
+  { ssr: false, loading: () => <ChartSkeleton /> },
+);
 import { Users, Clock, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { PlanGate } from '@/components/subscription/PlanGate';
@@ -221,6 +232,9 @@ export default function AnalyticsPage() {
 
         {/* Heatmap */}
         <LeaveHeatmap leaves={allLeaves} />
+
+        {/* AI Attrition Risk */}
+        <AttritionRiskPanel organizationId={orgIdToQuery as Id<'organizations'> | undefined} />
       </div>
     </PlanGate>
   );

@@ -12,6 +12,9 @@ import type {
   SpeechRecognitionEvent,
 } from './chatWidgetTypes';
 import { parseActions, getFollowUpSuggestions } from './chatWidgetUtils';
+import { parseAssistantTags, stripControlTags, stripPartialTail } from '@/lib/ai/tags';
+import { canNavigate } from '@/lib/ai/assistantRoutes';
+import type { UserRole } from '@/lib/aiAssistant';
 
 export function useChatWidgetAI() {
   const { t, i18n } = useTranslation();
@@ -28,6 +31,14 @@ export function useChatWidgetAI() {
   const voiceRecogRef = useRef<SpeechRecognition | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const csrfRef = useRef<{ token: string; signature: string } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  /** Stop the in-flight stream; the partial answer is kept. */
+  const stopGeneration = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsLoading(false);
+  }, []);
 
   // Fetch CSRF token on mount
   useEffect(() => {
@@ -568,12 +579,18 @@ export function useChatWidgetAI() {
     setIsLoading(true);
     setError(null);
 
+    // Hoisted so the error paths below can drop the placeholder bubble.
+    let assistantId: string | null = null;
+
     try {
       logger.log('🤖 [ChatWidget] Sending message to AI:', {
         userId: user?.id,
         organizationId: user?.organizationId,
         message: text,
       });
+
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -587,10 +604,17 @@ export function useChatWidgetAI() {
             : {}),
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({ role: m.role, content: m.content })),
+          // Blank turns are dropped: OpenAI-compatible providers reject an
+          // `assistant` message with empty content, so a single blank bubble
+          // used to make every following request fail too — which is why the
+          // "elaborate" action kept coming back empty.
+          messages: [...messages, userMessage]
+            .filter((m) => m.content.trim().length > 0)
+            .map((m) => ({ role: m.role, content: m.content })),
           userId: user?.id,
           lang,
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -604,36 +628,63 @@ export function useChatWidgetAI() {
       const decoder = new TextDecoder();
       let fullContent = '';
 
-      const assistantId = (Date.now() + 1).toString();
-      setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', content: '' }]);
+      const assistantMessageId = (Date.now() + 1).toString();
+      assistantId = assistantMessageId;
+      setMessages((prev) => [...prev, { id: assistantMessageId, role: 'assistant', content: '' }]);
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           fullContent += decoder.decode(value, { stream: true });
-          const { cleanContent } = parseActions(fullContent);
+          // Hide control tags mid-stream (including partial ones at the tail).
+          const display = stripControlTags(
+            parseActions(stripPartialTail(fullContent)).cleanContent,
+          );
           setMessages((prev) =>
-            prev.map((m) => (m.id === assistantId ? { ...m, content: cleanContent } : m)),
+            prev.map((m) => (m.id === assistantMessageId ? { ...m, content: display } : m)),
           );
         }
       }
 
       const { cleanContent, actions } = parseActions(fullContent);
-      const suggestions = getFollowUpSuggestions(cleanContent, user?.role || 'employee', t);
+      const parsed = parseAssistantTags(cleanContent);
+
+      // A 200 with no usable text is still a failure. Surfacing it beats leaving
+      // the blank bubble that used to be the only symptom.
+      if (!parsed.cleanContent.trim() && actions.length === 0 && !parsed.artifacts.length) {
+        setMessages((prev) => prev.filter((m) => m.id !== assistantMessageId));
+        assistantId = null;
+        setError(t('chatWidget.emptyReply', { defaultValue: 'No reply received. Please retry.' }));
+        return;
+      }
+
+      const suggestions = parsed.suggestions.length
+        ? parsed.suggestions
+        : getFollowUpSuggestions(parsed.cleanContent, user?.role || 'employee', t);
 
       // Auto-expand to fullscreen if response contains tables or large data
-      const hasTable = /\|.*\|.*\|/m.test(cleanContent) || cleanContent.split('\n').length > 20;
+      const hasTable =
+        /\|.*\|.*\|/m.test(parsed.cleanContent) || parsed.cleanContent.split('\n').length > 20;
       if (hasTable) {
-        // Persist messages for fullscreen page to pick up
+        // Persist messages for fullscreen page to pick up. `userMessage` has to
+        // be included explicitly: `messages` is the closure value from before it
+        // was appended, so the handoff used to arrive at /ai-chat without the
+        // question that produced the answer — and every follow-up reasoned over
+        // a history with a hole in it.
         const allMessages = [
           ...messages,
+          userMessage,
           {
             id: (Date.now() + 1).toString(),
             role: 'assistant' as const,
-            content: cleanContent,
+            content: parsed.cleanContent,
             actions,
             suggestions,
+            sources: parsed.sources,
+            imagePrompt: parsed.imagePrompt || undefined,
+            webSearchQuery: parsed.webSearchQuery || undefined,
+            artifacts: parsed.artifacts,
           },
         ];
         try {
@@ -644,38 +695,58 @@ export function useChatWidgetAI() {
       }
 
       logger.log('🤖 [AI Response] Full content:', fullContent);
-      logger.log('🤖 [AI Response] Clean content:', cleanContent);
+      logger.log('🤖 [AI Response] Clean content:', parsed.cleanContent);
       logger.log('🤖 [AI Response] Actions:', actions);
 
       const navMatch = fullContent.match(/<NAVIGATE>(.*?)<\/NAVIGATE>/);
       if (navMatch && navMatch[1]) {
         const route = navMatch[1];
-        logger.log('🎯 [AI Navigation] Route:', route);
-        logger.log('🎯 [AI Navigation] Full match:', navMatch[0]);
-        setTimeout(() => {
-          router.push(route);
-          setIsOpen(false);
-        }, 800);
+        // Only navigate within the role's allow-list.
+        if (canNavigate((user?.role as UserRole) || 'employee', route)) {
+          logger.log('🎯 [AI Navigation] Route:', route);
+          setTimeout(() => {
+            router.push(route);
+            setIsOpen(false);
+          }, 800);
+        }
       }
 
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === assistantId
+          m.id === assistantMessageId
             ? {
                 ...m,
-                content: cleanContent.replace(/<NAVIGATE>.*?<\/NAVIGATE>/g, '').trim(),
+                content: parsed.cleanContent,
                 actions,
                 bookingStates: Object.fromEntries(
                   actions.map((_, i) => [i, { status: 'pending' as const }]),
                 ),
                 suggestions,
+                sources: parsed.sources,
+                imagePrompt: parsed.imagePrompt || undefined,
+                webSearchQuery: parsed.webSearchQuery || undefined,
+                artifacts: parsed.artifacts,
               }
             : m,
         ),
       );
     } catch (err) {
+      // Either way the placeholder bubble must go if nothing was streamed into
+      // it: an empty assistant turn left in the list is both a blank bubble and
+      // a poison pill for the next request's history.
+      const placeholderId = assistantId;
+      if (placeholderId) {
+        setMessages((prev) =>
+          prev.filter((m) => m.id !== placeholderId || m.content.trim().length > 0),
+        );
+      }
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        // Stopped by the user — keep whatever had already streamed in.
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
+      abortRef.current = null;
       setIsLoading(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -695,6 +766,7 @@ export function useChatWidgetAI() {
     sendMessage,
     handleAction,
     startVoiceInput,
+    stopGeneration,
     t,
     i18n,
     router,

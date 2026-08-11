@@ -3430,5 +3430,60 @@
     "generated": "Beschreibung erstellt!",
     "error": "Generierung fehlgeschlagen",
     "titleRequired": "Bitte geben Sie zuerst eine Stellenbezeichnung ein"
+  },
+  "interviewPrep": {
+    "title": "Interview-Vorbereitung",
+    "candidate": "Kandidat",
+    "vacancy": "Stelle",
+    "resumeAttached": "Lebenslauf verfügbar — Fragen werden personalisiert",
+    "hint": "Die KI erstellt Interviewfragen, Bewertungskriterien und Warnsignale basierend auf Stelle und Kandidatenprofil.",
+    "generate": "Vorbereitung generieren",
+    "generated": "Interview-Vorbereitung erstellt",
+    "error": "Vorbereitung konnte nicht erstellt werden",
+    "questions": "Fragen",
+    "criteria": "Bewertungskriterien",
+    "redFlags": "Warnsignale",
+    "opening": "Einstieg",
+    "copy": "Kopieren",
+    "regenerate": "Neu generieren",
+    "prep": "KI-Vorbereitung",
+    "category": {
+      "general": "Allgemein",
+      "technical": "Fachlich",
+      "behavioral": "Verhalten",
+      "culture": "Kulturfit"
+    }
+  },
+  "attrition": {
+    "title": "Fluktuationsrisiko",
+    "subtitle": "Prädiktive Analyse: Anwesenheit, Urlaubsmuster, Leistungstrends",
+    "noData": "Noch nicht genügend Daten für die Risikoanalyse.",
+    "highRisk": "Hohes Risiko",
+    "mediumRisk": "Mittleres Risiko",
+    "lowRisk": "Niedriges Risiko",
+    "allGood": "Derzeit keine Mitarbeiter mit erhöhtem Risiko.",
+    "needsAttention": "Braucht Aufmerksamkeit",
+    "recommended": "Empfohlene Maßnahmen",
+    "factor": {
+      "highTardiness": "Häufige Verspätungen (>20% der Tage)",
+      "moderateTardiness": "Wiederkehrende Verspätungen (>10% der Tage)",
+      "highAbsence": "Hohe Abwesenheitsquote (>10% der Tage)",
+      "frequentEarlyLeave": "Häufiges frühes Gehen",
+      "burnoutNoLeave": "Seit über 6 Monaten kein Urlaub (Burnout-Risiko)",
+      "sickLeaveSpike": "3+ Krankenstände in 60 Tagen",
+      "recentUnpaidLeave": "Kürzlich unbezahlter Urlaub",
+      "lowKpi": "KPI sehr niedrig (≤2/5)",
+      "moderateKpi": "KPI unter Erwartungen (≤3/5)",
+      "lowDeadlineAdherence": "Termintreue unter 60%",
+      "ratingDecline": "Führungskräfte-Bewertung gesunken",
+      "negativeNotes": "Aktuelle negative Notizen"
+    },
+    "adviceFlexibleSchedule": "Flexible Arbeitszeiten besprechen",
+    "adviceOneOnOne": "1:1-Gespräch vereinbaren",
+    "adviceWorkloadReview": "Arbeitslast überprüfen",
+    "adviceEncourageLeave": "Urlaub empfehlen",
+    "adviceWellbeingCheck": "Wohlbefinden ansprechen",
+    "adviceGoalsReview": "Ziele neu ausrichten",
+    "adviceFeedbackSession": "Feedback-Gespräch führen"
   }
 }

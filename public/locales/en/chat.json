@@ -124,8 +124,8 @@
     "call": {
       "missed": "Missed",
       "declined": "Declined",
-      "ringing": "Ringing\u2026",
-      "connecting": "Connecting\u2026",
+      "ringing": "Ringing…",
+      "connecting": "Connecting…",
       "ended": "Call ended",
       "retry": "Try again",
       "closeCall": "Close call",
@@ -137,8 +137,8 @@
       "muteSpeaker": "Mute speaker",
       "videoCall": "Video call",
       "audioCall": "Audio call",
-      "incomingVideo": "Incoming video call\u2026",
-      "incomingAudio": "Incoming audio call\u2026",
+      "incomingVideo": "Incoming video call…",
+      "incomingAudio": "Incoming audio call…",
       "decline": "Decline",
       "accept": "Accept",
       "mediaErrorFinal": "Could not access camera/microphone after multiple attempts. Close all other browsers/apps and try again.",
@@ -154,7 +154,7 @@
       "repliesCount": "{{count}} reply",
       "repliesCount_other": "{{count}} replies",
       "you": "You",
-      "replyPlaceholder": "Reply in thread\u2026"
+      "replyPlaceholder": "Reply in thread…"
     },
     "voice": {
       "cancelRecording": "Cancel recording",
@@ -256,6 +256,7 @@
     "pendingApprovals": "Pending approvals",
     "placeholder": "Type a message...",
     "showBalance": "Show balance",
+    "emptyReply": "No reply received. Please retry — if this conversation is long, start a new chat.",
     "stopListening": "Stop listening",
     "teamStats": "Team statistics",
     "updateLeave": "Update leave",
@@ -532,7 +533,34 @@
         "Platform statistics",
         "All users"
       ]
-    }
+    },
+    "stop": "Stop",
+    "regenerate": "Regenerate",
+    "searchChats": "Search chats…",
+    "clearChat": "Clear chat",
+    "openVerb": "Open",
+    "share": "Share conversation",
+    "shareCopied": "Share link copied to clipboard",
+    "shareError": "Failed to create share link",
+    "export": "Export as Markdown",
+    "memory": {
+      "title": "Assistant memory",
+      "description": "Facts the assistant remembered from your conversations. They personalize future answers.",
+      "empty": "No memories yet. Chat with the assistant — it will remember useful facts.",
+      "deleted": "Memory deleted",
+      "cleared": "All memories cleared",
+      "error": "Failed to update memory",
+      "clearAll": "Clear all memories",
+      "confirmClear": "Click again to confirm"
+    },
+    "quick": {
+      "shorter": "Shorter",
+      "longer": "Longer",
+      "simplify": "Simpler",
+      "translate": "Translate",
+      "continue": "Continue"
+    },
+    "emptyReply": "No reply received. Please retry — if this conversation is long, start a new chat."
   },
   "aiFeatures": {
     "ai": "AI",

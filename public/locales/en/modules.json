@@ -3430,5 +3430,60 @@
     "generated": "Description generated!",
     "error": "Failed to generate description",
     "titleRequired": "Please enter a job title first"
+  },
+  "interviewPrep": {
+    "title": "Interview Prep",
+    "candidate": "Candidate",
+    "vacancy": "Vacancy",
+    "resumeAttached": "Resume available — questions will be personalized",
+    "hint": "AI will prepare interview questions, evaluation criteria and red flags based on the vacancy and candidate profile.",
+    "generate": "Generate interview prep",
+    "generated": "Interview prep generated",
+    "error": "Failed to generate interview prep",
+    "questions": "Questions",
+    "criteria": "Scorecard criteria",
+    "redFlags": "Red flags",
+    "opening": "Opening",
+    "copy": "Copy to clipboard",
+    "regenerate": "Regenerate",
+    "prep": "AI Prep",
+    "category": {
+      "general": "General",
+      "technical": "Technical",
+      "behavioral": "Behavioral",
+      "culture": "Culture fit"
+    }
+  },
+  "attrition": {
+    "title": "Attrition Risk",
+    "subtitle": "Predictive flight-risk analysis: attendance, leave patterns, performance trends",
+    "noData": "Not enough data to analyze attrition risk yet.",
+    "highRisk": "High risk",
+    "mediumRisk": "Medium risk",
+    "lowRisk": "Low risk",
+    "allGood": "No employees at elevated risk right now.",
+    "needsAttention": "Needs attention",
+    "recommended": "Recommended actions",
+    "factor": {
+      "highTardiness": "Frequent late arrivals (>20% of days)",
+      "moderateTardiness": "Recurring late arrivals (>10% of days)",
+      "highAbsence": "High absence rate (>10% of days)",
+      "frequentEarlyLeave": "Frequent early departures",
+      "burnoutNoLeave": "No vacation for over 6 months (burnout risk)",
+      "sickLeaveSpike": "3+ sick leaves in the last 60 days",
+      "recentUnpaidLeave": "Recent unpaid leave request",
+      "lowKpi": "KPI score critically low (≤2/5)",
+      "moderateKpi": "KPI score below expectations (≤3/5)",
+      "lowDeadlineAdherence": "Deadline adherence below 60%",
+      "ratingDecline": "Supervisor rating declined vs previous period",
+      "negativeNotes": "Recent negative manager notes"
+    },
+    "adviceFlexibleSchedule": "Discuss a flexible schedule or remote days",
+    "adviceOneOnOne": "Schedule a private 1:1 to understand the situation",
+    "adviceWorkloadReview": "Review workload and task distribution",
+    "adviceEncourageLeave": "Encourage the employee to take a vacation",
+    "adviceWellbeingCheck": "Check in on wellbeing and offer support",
+    "adviceGoalsReview": "Revisit goals and provide coaching",
+    "adviceFeedbackSession": "Hold a feedback session and agree on improvement steps"
   }
 }

@@ -664,3 +664,213 @@ describe('TeamClient — edge cases', () => {
     expect(screen.queryByText('All departments')).not.toBeInTheDocument();
   });
 });
+
+describe('TeamClient — defensive branches', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUser = { id: 'u1', role: 'admin', organizationId: 'org-1', organizationName: 'Globex' };
+    mockOrgId = 'org-1';
+    mockLanguage = 'en';
+    window.localStorage.clear();
+  });
+
+  it('falls back for unknown roles, leading-space names and rare presence statuses', () => {
+    seed({
+      users: [
+        // 'manager' is not in ROLE_COLOR / ROLE_ICON → default tint + User icon
+        {
+          _id: 'u1',
+          name: 'Ada Lovelace',
+          email: 'ada@x.com',
+          role: 'manager',
+          department: 'Eng',
+          isActive: true,
+        },
+        // leading space yields an empty split part → initials '' fallback
+        { _id: 'u2', name: ' Bo Unique', email: 'bo@x.com', role: 'employee', isActive: true },
+        // rare presence statuses render their own dots
+        {
+          _id: 'u3',
+          name: 'Carl Busy',
+          email: 'carl@x.com',
+          role: 'employee',
+          presenceStatus: 'busy',
+          isActive: true,
+        },
+        {
+          _id: 'u4',
+          name: 'Ivy Call',
+          email: 'ivy@x.com',
+          role: 'employee',
+          presenceStatus: 'in_call',
+          isActive: true,
+        },
+      ],
+      away: [],
+      birthdays: [],
+    });
+    renderPage();
+    expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
+    expect(screen.getByText('Bo Unique')).toBeInTheDocument();
+    expect(screen.getAllByText('manager').length).toBeGreaterThan(0);
+    expect(screen.getByText('Carl Busy')).toBeInTheDocument();
+    expect(screen.getByText('Ivy Call')).toBeInTheDocument();
+  });
+
+  it('dedupes away entries and birthdays by user', () => {
+    seed({
+      users: [activeMembers[0]],
+      away: [
+        {
+          _id: 'a1',
+          userId: 'u1',
+          name: 'Alice Wonder',
+          type: 'v',
+          startDate: '2026-08-10',
+          endDate: '2026-08-12',
+          isOutToday: false,
+        },
+        {
+          _id: 'a2',
+          userId: 'u1',
+          name: 'Alice Wonder',
+          type: 'v',
+          startDate: '2026-08-20',
+          endDate: '2026-08-22',
+          isOutToday: false,
+        },
+      ],
+      birthdaysData: [
+        { _id: 'u1', name: 'Alice Wonder', day: 1, month: 1, daysUntil: 5, isToday: false },
+        { _id: 'u1', name: 'Alice Wonder', day: 2, month: 2, daysUntil: 9, isToday: false },
+      ],
+    });
+    renderPage();
+    expect(screen.getAllByText('Alice Wonder').length).toBeGreaterThan(0);
+  });
+
+  it('filters by department when some members lack one', () => {
+    seed({
+      users: [
+        {
+          _id: 'u1',
+          name: 'Alice Wonder',
+          email: 'a@x.com',
+          role: 'employee',
+          department: 'Engineering',
+          isActive: true,
+        },
+        {
+          _id: 'u2',
+          name: 'Bob Builder',
+          email: 'b@x.com',
+          role: 'employee',
+          department: 'Design',
+          isActive: true,
+        },
+        { _id: 'u3', name: 'Cara Chen', email: 'c@x.com', role: 'employee', isActive: true },
+      ],
+      away: [],
+      birthdays: [],
+    });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /Engineering/ }));
+    expect(screen.getByText('1 of 3 shown')).toBeInTheDocument();
+    // Alice also appears in the birthdays rail, so match any occurrence
+    expect(screen.getAllByText('Alice Wonder').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Bob Builder')).not.toBeInTheDocument();
+  });
+
+  it('ignores "/" while a textarea is focused', () => {
+    renderPage();
+    const ta = document.createElement('textarea');
+    document.body.appendChild(ta);
+    ta.focus();
+    const event = new KeyboardEvent('keydown', { key: '/', bubbles: true });
+    const preventSpy = jest.spyOn(event, 'preventDefault');
+    ta.dispatchEvent(event);
+    expect(preventSpy).not.toHaveBeenCalled();
+    ta.remove();
+  });
+
+  it('ignores "/" inside a contenteditable region', () => {
+    // jsdom does not implement isContentEditable, so define it on the prototype
+    Object.defineProperty(HTMLElement.prototype, 'isContentEditable', {
+      get: () => true,
+      configurable: true,
+    });
+    renderPage();
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    const event = new KeyboardEvent('keydown', { key: '/', bubbles: true });
+    const preventSpy = jest.spyOn(event, 'preventDefault');
+    div.dispatchEvent(event);
+    expect(preventSpy).not.toHaveBeenCalled();
+    div.remove();
+    delete (HTMLElement.prototype as { isContentEditable?: unknown }).isContentEditable;
+  });
+
+  it('focuses the search when the "/" event has no target', () => {
+    renderPage();
+    const search = screen.getByPlaceholderText('Search by name, role, department…');
+    const event = new KeyboardEvent('keydown', { key: '/' });
+    Object.defineProperty(event, 'target', { value: null });
+    window.dispatchEvent(event);
+    expect(search).toHaveFocus();
+  });
+
+  it('renders the loading skeleton in the list layout', () => {
+    window.localStorage.setItem('team.viewMode', 'list');
+    mockQueries['users.queries.getAllUsers'] = undefined;
+    mockQueries['dashboard.getUpcomingBirthdays'] = undefined;
+    mockQueries['dashboard.getOutOfOffice'] = undefined;
+    mockQueries['dashboard.getReportingLine'] = undefined;
+    renderPage();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
+
+  it('sorts by newest with missing createdAt and by department with missing departments', () => {
+    seed({
+      users: activeMembers.map((m) => ({ ...m, createdAt: undefined, department: undefined })),
+    });
+    renderPage();
+    fireEvent.change(screen.getByLabelText('Sort'), { target: { value: 'newest' } });
+    expect(screen.getByText('7 of 7 shown')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Sort'), { target: { value: 'department' } });
+    expect(screen.getByText('7 of 7 shown')).toBeInTheDocument();
+  });
+
+  it('caps the stagger delay beyond the first twelve members', () => {
+    const many = Array.from({ length: 13 }, (_, i) => ({
+      _id: `u${i}`,
+      name: `Person ${i}`,
+      email: `p${i}@x.com`,
+      role: 'employee',
+      isActive: true,
+    }));
+    seed({ users: many });
+    renderPage();
+    expect(screen.getByText('Person 12')).toBeInTheDocument();
+    // avatar rail overflow: 13 - 6
+    expect(screen.getByText('+7')).toBeInTheDocument();
+  });
+
+  it('tolerates localStorage write failures when switching views', () => {
+    const setSpy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    renderPage();
+    fireEvent.click(screen.getByLabelText('List'));
+    expect(screen.getByLabelText('List')).toHaveAttribute('aria-pressed', 'true');
+    expect(setSpy).toHaveBeenCalled();
+    setSpy.mockRestore();
+  });
+
+  it('tolerates localStorage read failures on mount', () => {
+    jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    renderPage();
+    expect(screen.getByLabelText('Grid')).toHaveAttribute('aria-pressed', 'true');
+  });
+});

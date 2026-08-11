@@ -7,6 +7,13 @@ import { v } from 'convex/values';
 import { SMALL_LIST_CAP } from './lib/limits';
 import { getAuthCaller } from './lib/getAuthCaller';
 
+/** Generate a URL-safe random token (share links). */
+function randomToken(bytes = 24): string {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export const createConversation = mutation({
   args: {
     userId: v.id('users'),
@@ -51,6 +58,20 @@ export const deleteConversation = mutation({
     for (const message of messages) {
       await ctx.db.delete(message._id);
     }
+
+    // Delete attached feedback and share links
+    const feedback = await ctx.db
+      .query('aiFeedback')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
+      .take(SMALL_LIST_CAP);
+    for (const row of feedback) {
+      await ctx.db.delete(row._id);
+    }
+    const share = await ctx.db
+      .query('aiShares')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
+      .unique();
+    if (share) await ctx.db.delete(share._id);
 
     // Delete conversation
     await ctx.db.delete(args.conversationId);
@@ -180,5 +201,88 @@ export const createTask = mutation({
     });
 
     return { taskId, success: true };
+  },
+});
+
+export const togglePinConversation = mutation({
+  args: { conversationId: v.id('aiConversations') },
+  handler: async (ctx, args) => {
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) return { success: false, pinned: false };
+    const pinned = !conversation.pinned;
+    await ctx.db.patch(args.conversationId, { pinned });
+    return { success: true, pinned };
+  },
+});
+
+/** Upsert thumbs up/down feedback for one assistant message. */
+export const setMessageFeedback = mutation({
+  args: {
+    conversationId: v.id('aiConversations'),
+    messageId: v.optional(v.string()),
+    userId: v.id('users'),
+    rating: v.union(v.literal('up'), v.literal('down')),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query('aiFeedback')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
+      .take(SMALL_LIST_CAP);
+    const match = existing.find(
+      (f) => f.userId === args.userId && (f.messageId || '') === (args.messageId || ''),
+    );
+    if (match) {
+      await ctx.db.patch(match._id, {
+        rating: args.rating,
+        reason: args.reason,
+        createdAt: Date.now(),
+      });
+      return { success: true, feedbackId: match._id };
+    }
+    const feedbackId = await ctx.db.insert('aiFeedback', {
+      conversationId: args.conversationId,
+      messageId: args.messageId,
+      userId: args.userId,
+      rating: args.rating,
+      reason: args.reason,
+      createdAt: Date.now(),
+    });
+    return { success: true, feedbackId };
+  },
+});
+
+/** Create (or return the existing) public share link for a conversation. */
+export const createShare = mutation({
+  args: {
+    conversationId: v.id('aiConversations'),
+    createdBy: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query('aiShares')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
+      .unique();
+    if (existing) return { token: existing.token, created: false };
+    const token = randomToken();
+    await ctx.db.insert('aiShares', {
+      conversationId: args.conversationId,
+      token,
+      createdBy: args.createdBy,
+      createdAt: Date.now(),
+    });
+    return { token, created: true };
+  },
+});
+
+export const deleteShare = mutation({
+  args: { conversationId: v.id('aiConversations') },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query('aiShares')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
+      .unique();
+    if (existing) await ctx.db.delete(existing._id);
+    return { success: true };
   },
 });

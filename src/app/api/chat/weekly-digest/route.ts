@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../../../convex/_generated/api';
 import type { Id } from '../../../../../convex/_generated/dataModel';
-import { groq } from '@ai-sdk/groq';
-import { generateText } from 'ai';
+import { generateWithFallback } from '@/lib/ai/gemini';
 import { getServerConvexAuth } from '@/lib/server-convex-auth';
 import { logger } from '@/lib/logger';
 
@@ -98,9 +97,9 @@ TODAY'S ATTENDANCE:
 - Attendance rate: ${attendanceSummary.attendanceRate}%
 `;
 
-    const { text } = await generateText({
-      model: groq('llama-3.3-70b-versatile'),
-      prompt: `You are an HR AI assistant. Generate a concise, professional weekly HR digest for the admin.
+    const text = await generateWithFallback({
+      system: 'You are an HR AI assistant.',
+      prompt: `Generate a concise, professional weekly HR digest for the admin.
 Use emojis to make it visually organized. Format it nicely with sections.
 Keep it under 400 words. Include:
 1. 📋 Quick Summary
@@ -111,6 +110,8 @@ Keep it under 400 words. Include:
 
 Data:
 ${context}`,
+      temperature: 0.6,
+      maxTokens: 2500,
     });
 
     return NextResponse.json({

@@ -51,7 +51,7 @@ describe('AI_CAPABILITIES', () => {
   });
 
   it('all roles in requiredRole are valid', () => {
-    const validRoles = ['employee', 'supervisor', 'admin', 'superadmin'];
+    const validRoles = ['employee', 'driver', 'supervisor', 'admin', 'superadmin'];
     AI_CAPABILITIES.forEach((cap) => {
       cap.requiredRole.forEach((role) => {
         expect(validRoles).toContain(role);

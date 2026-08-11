@@ -65,6 +65,8 @@ jest.mock('lucide-react', () => {
     'Maximize2',
     'Database',
     'Pin',
+    'Brain',
+    'Square',
   ];
   const mocks: Record<string, any> = {};
   for (const name of names) {
@@ -72,6 +74,17 @@ jest.mock('lucide-react', () => {
   }
   return mocks;
 });
+
+// ── Assistant extras & memory (new AI features) ─────────────────────────────
+jest.mock('@/components/ai/MemoryPanel', () => ({
+  MemoryPanel: ({ open }: any) => (open ? <div data-testid="memory-panel" /> : null),
+}));
+jest.mock('@/components/ai/AssistantExtras', () => ({
+  SourcesChips: ({ sources }: any) => <div data-testid="sources-chips">{sources.join('|')}</div>,
+  GeneratedImageCard: ({ prompt }: any) => <div data-testid="image-card">{prompt}</div>,
+  WebSearchCard: ({ query }: any) => <div data-testid="websearch-card">{query}</div>,
+  ArtifactCanvas: ({ artifact }: any) => <div data-testid="artifact-canvas">{artifact.type}</div>,
+}));
 
 // ── UI primitives ────────────────────────────────────────────────────────────
 jest.mock('@/components/ui/ShieldLoader', () => ({
@@ -163,6 +176,7 @@ function renderWindow(props: Record<string, any> = {}) {
     sendMessage: jest.fn().mockResolvedValue(undefined),
     handleAction: jest.fn().mockResolvedValue(undefined),
     startVoiceInput: jest.fn(),
+    stopGeneration: jest.fn(),
     router: mockRouter,
     t: (key: string, fallback?: any) => (typeof fallback === 'object' ? key : (fallback ?? key)),
     i18n: { language: 'en' },

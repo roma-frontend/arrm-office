@@ -18,9 +18,16 @@ export function parseActions(content: string): { cleanContent: string; actions: 
     }
   }
 
+  // Runs of spaces left where a tag used to sit are collapsed, but only mid-line
+  // and never across newlines. This used to be `\s{2,}` → ' ', which flattened
+  // every newline in the reply — so any answer carrying an <ACTION> tag lost all
+  // of its markdown structure (tables, lists, headings) and arrived as one
+  // run-on paragraph. Leading whitespace is left alone so nested list
+  // indentation survives.
   const cleanContent = content
     .replace(/<ACTION>[\s\S]*?<\/ACTION>/g, '')
-    .replace(/\s{2,}/g, ' ')
+    .replace(/([^\n \t])[ \t]{2,}/g, '$1 ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
   return { cleanContent, actions };
 }

@@ -48,6 +48,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useAuthUser } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { InterviewPrepDialog } from '@/components/recruitment/InterviewPrepDialog';
 
 // ============ PIPELINE STAGES ============
 
@@ -619,6 +620,11 @@ function CandidateDetailDialog({
 
   const deleteCandidateMut = useMutation(api.recruitment.deleteCandidate);
 
+  const [prepType, setPrepType] = useState<
+    'phone' | 'video' | 'onsite' | 'technical' | 'hr' | undefined
+  >(undefined);
+  const [showPrep, setShowPrep] = useState(false);
+
   const handleDelete = async () => {
     try {
       await deleteCandidateMut({ applicationId });
@@ -841,34 +847,51 @@ function CandidateDetailDialog({
         )}
 
         {/* Interviews */}
-        {interviews.length > 0 && (
-          <div>
-            <p className="text-sm font-semibold mb-2">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold">
               {t('recruitment.interviews', 'Interviews')} ({interviews.length})
             </p>
-            {interviews.map((iv) => (
-              <div key={iv._id} className="flex items-center gap-2 text-xs p-2 border rounded mb-1">
-                <Calendar className="h-3 w-3 text-muted-foreground" />
-                <span>{new Date(iv.scheduledAt).toLocaleString()}</span>
-                <Badge variant="outline" className="text-xs">
-                  {String(t(`recruitment.interviewType.${iv.type}`, iv.type))}
-                </Badge>
-                <span className="text-muted-foreground">{iv.interviewerName}</span>
-                <Badge
-                  className={
-                    iv.status === 'completed'
-                      ? 'bg-green-100 text-green-800'
-                      : iv.status === 'cancelled'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-blue-100 text-blue-800'
-                  }
-                >
-                  {iv.status}
-                </Badge>
-              </div>
-            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-xs gap-1"
+              onClick={() => {
+                setPrepType(interviews[0]?.type);
+                setShowPrep(true);
+              }}
+            >
+              <Sparkles className="h-3 w-3 text-purple-500" />
+              {t('interviewPrep.prep', 'AI Prep')}
+            </Button>
           </div>
-        )}
+          {interviews.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t('recruitment.noInterviews', 'No upcoming interviews')}
+            </p>
+          )}
+          {interviews.map((iv) => (
+            <div key={iv._id} className="flex items-center gap-2 text-xs p-2 border rounded mb-1">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <span>{new Date(iv.scheduledAt).toLocaleString()}</span>
+              <Badge variant="outline" className="text-xs">
+                {String(t(`recruitment.interviewType.${iv.type}`, iv.type))}
+              </Badge>
+              <span className="text-muted-foreground">{iv.interviewerName}</span>
+              <Badge
+                className={
+                  iv.status === 'completed'
+                    ? 'bg-green-100 text-green-800'
+                    : iv.status === 'cancelled'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-blue-100 text-blue-800'
+                }
+              >
+                {iv.status}
+              </Badge>
+            </div>
+          ))}
+        </div>
 
         {/* Timeline */}
         {events.length > 0 && (
@@ -896,6 +919,17 @@ function CandidateDetailDialog({
           </div>
         )}
       </div>
+
+      {/* Nested AI Interview Prep dialog */}
+      <Dialog open={showPrep} onOpenChange={setShowPrep}>
+        {showPrep && (
+          <InterviewPrepDialog
+            applicationId={applicationId}
+            interviewType={prepType}
+            onClose={() => setShowPrep(false)}
+          />
+        )}
+      </Dialog>
     </DialogContent>
   );
 }
@@ -1016,6 +1050,10 @@ export default function RecruitmentClient() {
   const [deleteConfirm, setDeleteConfirm] = useState<{
     type: 'vacancy' | 'candidate';
     id: string;
+  } | null>(null);
+  const [prepFor, setPrepFor] = useState<{
+    applicationId: Id<'applications'>;
+    interviewType?: 'phone' | 'video' | 'onsite' | 'technical' | 'hr';
   } | null>(null);
 
   const isAdmin = userRole === 'admin' || userRole === 'superadmin' || userRole === 'supervisor';
@@ -1387,6 +1425,17 @@ export default function RecruitmentClient() {
                         {new Date(iv.scheduledAt).toLocaleString()}
                       </span>
                       <span>{iv.duration}min</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1"
+                        onClick={() =>
+                          setPrepFor({ applicationId: iv.applicationId, interviewType: iv.type })
+                        }
+                      >
+                        <Sparkles className="h-3 w-3 text-purple-500" />
+                        {t('interviewPrep.prep', 'Prep')}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -1459,6 +1508,17 @@ export default function RecruitmentClient() {
       <Dialog open={!!editVacancyId} onOpenChange={() => setEditVacancyId(null)}>
         {editVacancyId && (
           <EditVacancyDialog vacancyId={editVacancyId} onClose={() => setEditVacancyId(null)} />
+        )}
+      </Dialog>
+
+      {/* AI Interview Prep Dialog */}
+      <Dialog open={!!prepFor} onOpenChange={() => setPrepFor(null)}>
+        {prepFor && (
+          <InterviewPrepDialog
+            applicationId={prepFor.applicationId}
+            interviewType={prepFor.interviewType}
+            onClose={() => setPrepFor(null)}
+          />
         )}
       </Dialog>
     </div>

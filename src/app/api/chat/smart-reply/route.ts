@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withCsrfProtection } from '@/lib/csrf-middleware';
+import { generateWithFallback } from '@/lib/ai/gemini';
 import { logger } from '@/lib/logger';
 
 export const POST = withCsrfProtection(async (req: NextRequest) => {
@@ -21,31 +22,12 @@ Rules:
 
     const userPrompt = `Message to reply to: "${message}"${context ? `\nRecent context: ${context}` : ''}`;
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 150,
-      }),
+    const text = await generateWithFallback({
+      system: systemPrompt,
+      prompt: userPrompt,
+      temperature: 0.7,
+      maxTokens: 800,
     });
-
-    if (!groqRes.ok) {
-      throw new Error(`Groq API error: ${groqRes.status}`);
-    }
-
-    const data = (await groqRes.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const text = data.choices?.[0]?.message?.content ?? '[]';
 
     // Parse JSON array from response
     const match = text.match(/\[[\s\S]*\]/);

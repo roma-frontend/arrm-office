@@ -70,6 +70,42 @@ export const getMessages = query({
   },
 });
 
+/**
+ * Public read-only view of a conversation via an unguessable share token.
+ * Intentionally unauthenticated: the token IS the access control.
+ */
+export const getSharedConversation = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const share = await ctx.db
+      .query('aiShares')
+      .withIndex('by_token', (q) => q.eq('token', args.token))
+      .unique();
+    if (!share) return null;
+
+    const conversation = await ctx.db.get(share.conversationId);
+    if (!conversation) return null;
+
+    const owner = await ctx.db.get(conversation.userId);
+    const messages = await ctx.db
+      .query('aiMessages')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', conversation._id))
+      .order('asc')
+      .take(DEFAULT_LIST_CAP);
+
+    return {
+      title: conversation.title,
+      sharedAt: share.createdAt,
+      sharedBy: owner?.name || 'Unknown',
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        createdAt: m.createdAt,
+      })),
+    };
+  },
+});
+
 export const getFullContext = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {

@@ -256,6 +256,7 @@
     "pendingApprovals": "Ausstehende Genehmigungen",
     "placeholder": "Nachricht eingeben...",
     "showBalance": "Kontostand anzeigen",
+    "emptyReply": "Keine Antwort erhalten. Bitte erneut versuchen — bei langen Unterhaltungen einen neuen Chat starten.",
     "stopListening": "Aufhören zuzuhören",
     "teamStats": "Teamstatistiken",
     "updateLeave": "Urlaub aktualisieren",
@@ -532,7 +533,34 @@
         "Plattformstatistik",
         "Alle Benutzer"
       ]
-    }
+    },
+    "stop": "Stopp",
+    "regenerate": "Neu generieren",
+    "searchChats": "Chats durchsuchen…",
+    "clearChat": "Chat leeren",
+    "openVerb": "Öffnen",
+    "share": "Unterhaltung teilen",
+    "shareCopied": "Link in die Zwischenablage kopiert",
+    "shareError": "Link konnte nicht erstellt werden",
+    "export": "Als Markdown exportieren",
+    "memory": {
+      "title": "Assistenten-Gedächtnis",
+      "description": "Fakten, die sich der Assistent aus Ihren Gesprächen gemerkt hat. Sie personalisieren zukünftige Antworten.",
+      "empty": "Noch leer. Unterhalten Sie sich mit dem Assistenten — er merkt sich nützliche Fakten.",
+      "deleted": "Erinnerung gelöscht",
+      "cleared": "Alle Erinnerungen gelöscht",
+      "error": "Gedächtnis konnte nicht aktualisiert werden",
+      "clearAll": "Gesamtes Gedächtnis löschen",
+      "confirmClear": "Zum Bestätigen erneut klicken"
+    },
+    "quick": {
+      "shorter": "Kürzer",
+      "longer": "Ausführlicher",
+      "simplify": "Einfacher",
+      "translate": "Übersetzen",
+      "continue": "Weiter"
+    },
+    "emptyReply": "Keine Antwort erhalten. Bitte erneut versuchen — bei langen Unterhaltungen einen neuen Chat starten."
   },
   "aiFeatures": {
     "ai": "KI",

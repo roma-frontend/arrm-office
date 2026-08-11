@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { generateWithFallback, hasGemini } from '@/lib/ai/gemini';
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -271,6 +272,23 @@ async function getAIResponse(
   language: string,
   userName: string,
 ): Promise<string> {
+  const userPrompt = `User "${userName}" (language: ${language}) asks: ${userMessage}`;
+
+  // Gemini (primary) → Groq fallback via the shared helper.
+  if (hasGemini() || process.env.GROQ_API_KEY) {
+    try {
+      const text = await generateWithFallback({
+        system: BOT_CONTEXT,
+        prompt: userPrompt,
+        temperature: 0.6,
+        maxTokens: 500,
+      });
+      if (text.trim()) return text.trim();
+    } catch {
+      // fall through to OpenRouter
+    }
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return language === 'ru'
@@ -289,10 +307,7 @@ async function getAIResponse(
         model: 'meta-llama/llama-3.3-70b-instruct',
         messages: [
           { role: 'system', content: BOT_CONTEXT },
-          {
-            role: 'user',
-            content: `User "${userName}" (language: ${language}) asks: ${userMessage}`,
-          },
+          { role: 'user', content: userPrompt },
         ],
         temperature: 0.6,
         max_tokens: 500,

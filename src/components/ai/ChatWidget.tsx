@@ -27,6 +27,7 @@ export function ChatWidget() {
     sendMessage,
     handleAction,
     startVoiceInput,
+    stopGeneration,
     t,
     i18n,
     router,
@@ -64,6 +65,7 @@ export function ChatWidget() {
         sendMessage={sendMessage}
         handleAction={handleAction}
         startVoiceInput={startVoiceInput}
+        stopGeneration={stopGeneration}
         router={router}
         t={t}
         i18n={i18n}

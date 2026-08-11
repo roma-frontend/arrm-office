@@ -54,6 +54,18 @@ export interface BookingState {
   alternativeDates?: string[];
 }
 
+export interface WebSearchResult {
+  title: string;
+  snippet: string;
+  url: string;
+  source: string;
+}
+
+export interface MessageArtifact {
+  type: 'html' | 'react' | 'code' | 'markdown';
+  content: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -61,6 +73,16 @@ export interface Message {
   actions?: AnyAction[];
   bookingStates?: Record<number, BookingState>;
   suggestions?: string[];
+  /** RAG citation labels (<SOURCES> tag). */
+  sources?: string[];
+  /** Generated image (<IMAGE> tag) — prompt + resolved URL. */
+  imagePrompt?: string;
+  imageUrl?: string;
+  /** Web search (<WEB_SEARCH> tag) — query + resolved results. */
+  webSearchQuery?: string;
+  webSearchResults?: WebSearchResult[];
+  /** Renderable artifacts (<ARTIFACT> tag). */
+  artifacts?: MessageArtifact[];
 }
 
 export interface BookLeaveAction {
