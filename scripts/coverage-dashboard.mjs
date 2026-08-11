@@ -57,18 +57,25 @@ function loadSummary() {
     const files = Object.entries(raw)
       .filter(([k]) => k !== 'total')
       .map(([k, v]) => {
-        const parts = k.replace(/\\/g, '/').split('/');
+        // Normalize Windows backslashes first — section matching and dir
+        // truncation must see forward slashes or every file lands in 'other'.
+        const norm = k.replace(/\\/g, '/');
+        const parts = norm.split('/');
         const name = parts[parts.length - 1];
-        const dir = parts.slice(0, -1).join('/').replace(/^.*?\/src/, 'src').replace(/^.*?\/convex/, 'convex');
-        const section = k.includes('convex/')
+        const dir = parts
+          .slice(0, -1)
+          .join('/')
+          .replace(/^.*?\/src/, 'src')
+          .replace(/^.*?\/convex/, 'convex');
+        const section = norm.includes('convex/')
           ? 'convex'
-          : k.includes('src/__tests__')
+          : norm.includes('src/__tests__')
             ? 'tests'
-            : k.includes('src/components')
+            : norm.includes('src/components')
               ? 'components'
-              : k.includes('src/app')
+              : norm.includes('src/app')
                 ? 'app'
-                : k.includes('src/lib')
+                : norm.includes('src/lib')
                   ? 'lib'
                   : 'other';
         return {
@@ -403,11 +410,6 @@ function renderChips() {
   wrap.appendChild(rerun);
 }
 
-function renderCards() {
-  const card = document.getElementById('cards');
-  if (!card) return;
-}
-
 function renderRows() {
   const tbody = document.getElementById('rows');
   tbody.innerHTML = '';
@@ -579,6 +581,17 @@ const server = createServer((req, res) => {
   res.end('Not found');
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      `\n  ❌ Port ${PORT} is already in use — is another coverage dashboard running?\n     Kill it or start with PORT=<other>:  PORT=8789 npm run coverage:serve\n`,
+    );
+  } else {
+    console.error(err);
+  }
+  process.exit(1);
+});
+
 server.listen(PORT, () => {
   console.log(`\n  📊 Coverage dashboard:  http://localhost:${PORT}/watch\n`);
   loadSummary();
@@ -587,6 +600,16 @@ server.listen(PORT, () => {
 });
 
 process.on('SIGINT', () => {
-  if (child) child.kill();
-  process.exit(0);
+  if (child && child.pid) {
+    if (process.platform === 'win32') {
+      // shell:true wraps jest in cmd.exe — kill the whole tree.
+      spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+    } else {
+      child.kill('SIGTERM');
+    }
+  }
+  setTimeout(() => process.exit(0), 200);
 });
