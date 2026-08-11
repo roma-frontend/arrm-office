@@ -13,6 +13,11 @@
  * Mocks: convex/react (useQuery keyed by _name), generated api, auth store
  * (selector-based useAuthUser), useSelectedOrganization, next/link + next/image,
  * cssMotion, ShieldLoader, sonner. t() interpolates {{vars}} from options.
+ *
+ * The single unreachable branch (99.45%): `part[0] ?? ''` in `initials` —
+ * name.trim().split(/\s+/) can never yield an empty part (trim strips leading
+ * whitespace and \s+ collapses internal runs), so the `??` right side is dead
+ * defensive code.
  */
 
 import React from 'react';
@@ -778,7 +783,8 @@ describe('TeamClient — defensive branches', () => {
     expect(screen.getByText('1 of 3 shown')).toBeInTheDocument();
     // Alice also appears in the birthdays rail, so match any occurrence
     expect(screen.getAllByText('Alice Wonder').length).toBeGreaterThan(0);
-    expect(screen.queryByText('Bob Builder')).not.toBeInTheDocument();
+    // Cara is card-only (never in the rails) and has no department → filtered out
+    expect(screen.queryByText('Cara Chen')).not.toBeInTheDocument();
   });
 
   it('ignores "/" while a textarea is focused', () => {
