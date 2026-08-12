@@ -539,6 +539,8 @@
     "viewProfile": "Просмотреть профиль",
     "contactInfo": "Контактная информация",
     "directReports": "Подчинённые",
+    "levels": "уровней",
+    "generated": "Сформировано",
     "noDirectReports": "Нет подчинённых",
     "searchOrgChart": "Поиск по оргструктуре...",
     "expandAll": "Развернуть все",

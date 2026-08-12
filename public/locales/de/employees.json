@@ -539,6 +539,8 @@
     "viewProfile": "Profil anzeigen",
     "contactInfo": "Kontaktinformationen",
     "directReports": "Direkte Berichte",
+    "levels": "Ebenen",
+    "generated": "Erstellt",
     "noDirectReports": "Keine direkten Berichte",
     "searchOrgChart": "Organisationsstruktur durchsuchen...",
     "expandAll": "Alle erweitern",

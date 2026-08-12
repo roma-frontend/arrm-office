@@ -47,6 +47,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Plus, Search, Network, Users, Building2, Folder, Download, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { buildOrgChartSvg } from '@/lib/orgchart/exportSvg';
 
 // ─── Types ────────────────────────────────────────────────────
 type OrgNodeType = 'person' | 'department' | 'group';
@@ -200,7 +201,7 @@ const nodeTypes = Object.freeze({
 
 // ─── Main Component ───────────────────────────────────────────
 export default function OrgChartClient() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuthStore();
   const selectedOrgId = useSelectedOrganization();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
@@ -538,18 +539,44 @@ export default function OrgChartClient() {
     }
   };
 
+  // The old export serialized the `.react-flow` *div* and called it SVG: the
+  // cards are HTML styled by Tailwind, so the file opened as bare serif text
+  // with no boxes and no connectors, plus the canvas dots, the React Flow
+  // attribution and a toolbar icon. It is now drawn from the chart data.
   const handleExportSVG = () => {
-    const svgElement = document.querySelector('.react-flow');
-    if (svgElement) {
-      const svgData = new XMLSerializer().serializeToString(svgElement);
-      const blob = new Blob([svgData], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'org-chart.svg';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+    const svg = buildOrgChartSvg({
+      // `nodes`, not `filteredNodes`: a search term narrows the view, it should
+      // not silently cut people out of an exported chart.
+      nodes: nodes.map((node) => ({
+        id: node.id,
+        name: node.data.name,
+        type: node.data.type,
+        title: node.data.title,
+        department: node.data.user?.department,
+        email: node.data.user?.email,
+      })),
+      edges: edges.map((edge) => ({ source: edge.source, target: edge.target })),
+      labels: {
+        title: t('orgChart.title', 'Organization Chart'),
+        nodes: t('common.nodes', 'nodes'),
+        levels: t('orgChart.levels', 'levels'),
+        directReports: t('orgChart.directReports', 'Direct Reports'),
+        person: t('orgChart.person', 'Person'),
+        department: t('orgChart.department', 'Department'),
+        group: t('orgChart.group', 'Group'),
+        generated: t('orgChart.generated', 'Generated'),
+        empty: t('orgChart.noData', 'No organization chart data yet'),
+      },
+      locale: i18n.language,
+    });
+
+    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `org-chart-${new Date().toISOString().slice(0, 10)}.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // No organization selected — show empty state

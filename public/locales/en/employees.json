@@ -539,6 +539,8 @@
     "viewProfile": "View Profile",
     "contactInfo": "Contact Info",
     "directReports": "Direct Reports",
+    "levels": "levels",
+    "generated": "Generated",
     "noDirectReports": "No direct reports",
     "searchOrgChart": "Search org chart...",
     "expandAll": "Expand All",
