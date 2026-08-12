@@ -411,6 +411,47 @@ export function MotionSpan({
   );
 }
 
+/**
+ * MotionForm - Renders as an actual <form> element.
+ *
+ * Must not fall back to MotionDiv: a <div> never fires submit events, so
+ * `onSubmit` would silently never run and nested `type="submit"` buttons
+ * would have no form owner and do nothing when clicked.
+ */
+export function MotionForm({
+  children,
+  className = '',
+  whileHover,
+  whileTap,
+  layout,
+  // Framer-motion-specific props are stripped here so React never tries to
+  // write them to the DOM.
+  initial: _initial,
+  animate: _animate,
+  exit: _exit,
+  transition: _transition,
+  variants: _variants,
+  onAnimationComplete: _onAnimationComplete,
+  type: _type,
+  disabled: _disabled,
+  fill: _fill,
+  rx: _rx,
+  ...restProps
+}: MotionProps) {
+  const hoverClass = whileHover?.scale ? 'hover:scale-110 transition-transform' : '';
+  const tapClass = whileTap?.scale ? 'active:scale-90 transition-transform' : '';
+  const layoutClass = layout ? 'transition-all duration-300' : '';
+
+  return (
+    <form
+      className={`${className} ${hoverClass} ${tapClass} ${layoutClass}`.trim()}
+      {...(restProps as React.FormHTMLAttributes<HTMLFormElement>)}
+    >
+      {children}
+    </form>
+  );
+}
+
 // Re-export common motion components as MotionDiv
 export const motion = {
   div: MotionDiv,
@@ -424,7 +465,7 @@ export const motion = {
   article: MotionDiv,
   nav: MotionDiv,
   footer: MotionDiv,
-  form: MotionDiv,
+  form: MotionForm,
   input: MotionDiv,
   li: MotionDiv,
   ul: MotionDiv,

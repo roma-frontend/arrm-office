@@ -63,13 +63,13 @@ module.exports = {
   coverageThreshold: {
     // Coverage floor — ratchet up as coverage improves.
     // Auto-ratchet via: node scripts/ratchet-coverage.mjs
-    // Manually pinned to the current actuals (64.42 / 54.32 / 58.50 / 65.10)
-    // on 2026-08-11 — no 1pp buffer.
+    // Manually pinned to the current actuals (69.55 / 61.51 / 63.82 / 70.53)
+    // on 2026-08-12 — no 1pp buffer.
     global: {
-      branches: 54,
-      functions: 58,
-      lines: 65,
-      statements: 64,
+      branches: 61,
+      functions: 63,
+      lines: 70,
+      statements: 69,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],

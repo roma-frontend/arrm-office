@@ -94,6 +94,7 @@ jest.mock('@/convex/_generated/api', () => ({
     chat: { queries: { getTotalUnread: { _name: 'getTotalUnread' } } },
     signatures: { getMyPendingSignatures: { _name: 'getMyPendingSignatures' } },
     news: { getNewsStats: { _name: 'getNewsStats' } },
+    users: { queries: { getPendingApprovalUsers: { _name: 'getPendingApprovalUsers' } } },
   },
 }));
 

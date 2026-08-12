@@ -33,6 +33,16 @@ import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
+async function getCsrfPair(): Promise<{ token: string; signature: string } | null> {
+  try {
+    const r = await fetch('/api/csrf-token', { method: 'GET' });
+    if (!r.ok) return null;
+    return (await r.json()) as { token: string; signature: string };
+  } catch {
+    return null;
+  }
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AppliedFile {
@@ -161,9 +171,13 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
     ]);
 
     try {
+      const csrf = await getCsrfPair();
       const response = await fetch('/api/ai-site-editor', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrf ? { 'X-CSRF-Token': csrf.token, 'X-CSRF-Token-Signature': csrf.signature } : {}),
+        },
         body: JSON.stringify({
           message: currentInput,
           userId,
@@ -252,9 +266,13 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
     setRollingBack(key);
 
     try {
+      const csrf = await getCsrfPair();
       const res = await fetch('/api/ai-site-editor/apply', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrf ? { 'X-CSRF-Token': csrf.token, 'X-CSRF-Token-Signature': csrf.signature } : {}),
+        },
         body: JSON.stringify({ filePath, timestamp }),
       });
 

@@ -66,6 +66,13 @@ const RU_FALLBACK: Record<string, string> = {
   'auth.passwordValidation.strength.good': 'Хороший',
   'auth.passwordValidation.strength.strong': 'Надежный',
   'auth.passwordValidation.strength.excellent': 'Превосходный',
+  'auth.emailValidation.empty': 'Введите email адрес',
+  'auth.emailValidation.invalidFormat': 'Неверный формат email',
+  'auth.emailValidation.example': 'Пример: user@example.com',
+  'auth.emailValidation.didYouMean': 'Возможно, вы имели в виду {{domain}}?',
+  'auth.emailValidation.missingTld': 'Отсутствует доменная зона (.com, .ru, и т.д.)',
+  'auth.emailValidation.valid': 'Email корректен ✓',
+  'auth.emailValidation.useSuggestion': 'Использовать предложение?',
 };
 
 function makeTranslate(t?: Translator) {
@@ -282,13 +289,22 @@ export interface EmailValidationResult {
   suggestion?: string;
 }
 
-export function validateEmail(email: string): EmailValidationResult {
+/**
+ * Validate an email address with smart typo suggestions.
+ *
+ * @param email The address to validate.
+ * @param t     Optional i18next `t` function. When provided, all user-facing
+ *              strings are translated; otherwise Russian fallbacks are used.
+ */
+export function validateEmail(email: string, t?: Translator): EmailValidationResult {
+  const tr = makeTranslate(t);
+
   if (!email) {
     return {
       isValid: false,
       feedback: {
         type: 'info',
-        message: 'Введите email адрес',
+        message: tr('auth.emailValidation.empty'),
       },
     };
   }
@@ -301,9 +317,9 @@ export function validateEmail(email: string): EmailValidationResult {
       isValid: false,
       feedback: {
         type: 'error',
-        message: 'Неверный формат email',
+        message: tr('auth.emailValidation.invalidFormat'),
       },
-      suggestion: 'Пример: user@example.com',
+      suggestion: tr('auth.emailValidation.example'),
     };
   }
 
@@ -325,7 +341,10 @@ export function validateEmail(email: string): EmailValidationResult {
       isValid: false,
       feedback: {
         type: 'warning',
-        message: `Возможно, вы имели в виду ${typoCorrections[domain]}?`,
+        message: tr('auth.emailValidation.didYouMean').replace(
+          '{{domain}}',
+          typoCorrections[domain],
+        ),
       },
       suggestion: email.replace(domain, typoCorrections[domain]),
     };
@@ -337,7 +356,7 @@ export function validateEmail(email: string): EmailValidationResult {
       isValid: false,
       feedback: {
         type: 'error',
-        message: 'Отсутствует доменная зона (.com, .ru, и т.д.)',
+        message: tr('auth.emailValidation.missingTld'),
       },
       suggestion: `${email}.com`,
     };
@@ -347,7 +366,7 @@ export function validateEmail(email: string): EmailValidationResult {
     isValid: true,
     feedback: {
       type: 'success',
-      message: 'Email корректен ✓',
+      message: tr('auth.emailValidation.valid'),
     },
   };
 }

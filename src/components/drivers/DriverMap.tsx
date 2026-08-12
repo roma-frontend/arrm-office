@@ -433,7 +433,7 @@ export function DriverMap({
       const address = await reverseGeocode(lat, lng);
       cb({ lat, lng, address }, !pickupCoordsRef.current ? 'pickup' : 'dropoff');
     });
-  }, [pickupCoords, interactive, reverseGeocode]);
+  }, [pickupCoords, interactive]);
 
   return (
     <div

@@ -199,9 +199,17 @@ describe('SiteEditorChat', () => {
       getCurrentMonthUsage: USAGE,
       getHistory: HISTORY,
     };
-    // URL-dispatched fetch: /api/ai-site-editor/apply returns backups on mount,
+    // URL-dispatched fetch: /api/csrf-token supplies the CSRF pair (the
+    // component now fetches it before every POST/DELETE),
+    // /api/ai-site-editor/apply returns backups on mount, and
     // /api/ai-site-editor returns assistant text without file changes by default.
     global.fetch = jest.fn((url: string) => {
+      if (url === '/api/csrf-token') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ token: 't', signature: 's' }),
+        });
+      }
       if (url === '/api/ai-site-editor/apply') {
         return Promise.resolve({ ok: true, json: async () => ({ backups: [] }) });
       }
@@ -493,9 +501,112 @@ describe('SiteEditorChat', () => {
     );
   });
 
+  it('falls back to a generic error text when the API omits the message', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === '/api/csrf-token') {
+        return Promise.resolve({ ok: true, json: async () => ({ token: 't', signature: 's' }) });
+      }
+      if (url === '/api/ai-site-editor/apply') {
+        return Promise.resolve({ ok: true, json: async () => ({ backups: [] }) });
+      }
+      return Promise.resolve({ ok: false, json: async () => ({ limitReached: true }) });
+    }) as unknown as typeof fetch;
+    render(<SiteEditorChat {...PROPS} />);
+    sendMessage('One more');
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'Server error',
+        expect.objectContaining({ action: expect.any(Object) }),
+      );
+    });
+    // The in-chat system message falls back to an empty error text.
+    expect(screen.getByText(/⚠️/)).toBeInTheDocument();
+  });
+
+  it('renders an empty assistant message when the response lacks text', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === '/api/csrf-token') {
+        return Promise.resolve({ ok: true, json: async () => ({ token: 't', signature: 's' }) });
+      }
+      if (url === '/api/ai-site-editor/apply') {
+        return Promise.resolve({ ok: true, json: async () => ({ backups: [] }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    }) as unknown as typeof fetch;
+    render(<SiteEditorChat {...PROPS} />);
+    sendMessage('Empty reply');
+
+    // No file changes → info toast; the empty text renders without crashing.
+    await waitFor(() =>
+      expect(toast.info).toHaveBeenCalledWith(
+        expect.stringContaining('не были изменены'),
+        expect.objectContaining({ duration: 3000 }),
+      ),
+    );
+    expect(screen.queryByText(/AI читает код/)).toBeNull();
+  });
+
+  it('keeps the backups list empty when the backups response is not ok', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === '/api/csrf-token') {
+        return Promise.resolve({ ok: true, json: async () => ({ token: 't', signature: 's' }) });
+      }
+      if (url === '/api/ai-site-editor/apply') {
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ response: 'x' }) });
+    }) as unknown as typeof fetch;
+    render(<SiteEditorChat {...PROPS} />);
+    // The backups fetch failed → no history panel heading.
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/ai-site-editor/apply'));
+    expect(screen.queryByText(/История изменений/)).toBeNull();
+  });
+
+  it('keeps the backups list empty when the response omits the backups field', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === '/api/csrf-token') {
+        return Promise.resolve({ ok: true, json: async () => ({ token: 't', signature: 's' }) });
+      }
+      if (url === '/api/ai-site-editor/apply') {
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ response: 'x' }) });
+    }) as unknown as typeof fetch;
+    render(<SiteEditorChat {...PROPS} />);
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/ai-site-editor/apply'));
+    expect(screen.queryByText(/История изменений/)).toBeNull();
+  });
+
+  it('rolls back without CSRF headers and falls back to the generic error', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string, init?: any) => {
+      if (url === '/api/csrf-token') {
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }
+      if (url === '/api/ai-site-editor/apply' && init?.method === 'DELETE') {
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ backups: BACKUPS }) });
+    }) as unknown as typeof fetch;
+    render(<SiteEditorChat {...PROPS} />);
+    await waitFor(() => expect(screen.getByText('Показать')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Показать'));
+    fireEvent.click(screen.getAllByText('Откат')[0]);
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith('Ошибка отката: Неизвестная ошибка'),
+    );
+  });
+
   it('renders the thinking placeholder while waiting for the reply', async () => {
     let resolveFetch: (v: any) => void = () => {};
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === '/api/csrf-token') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ token: 't', signature: 's' }),
+        });
+      }
       if (url === '/api/ai-site-editor/apply') {
         return Promise.resolve({ ok: true, json: async () => ({ backups: [] }) });
       }
@@ -565,6 +676,12 @@ describe('SiteEditorChat', () => {
     let idx = 0;
     const types = ['layout', 'logic', 'full_control', 'content', 'weird'];
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === '/api/csrf-token') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ token: 't', signature: 's' }),
+        });
+      }
       if (url === '/api/ai-site-editor/apply') {
         return Promise.resolve({ ok: true, json: async () => ({ backups: [] }) });
       }

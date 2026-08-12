@@ -467,6 +467,13 @@ export function Sidebar() {
       : 'skip',
   );
 
+  // Pending join approvals. The query throws for anyone who isn't an org admin,
+  // so it stays skipped unless the same roles that can see the nav item are set.
+  const pendingApprovalUsers = useQuery(
+    api.users.queries.getPendingApprovalUsers,
+    mounted && user?.id && (user.role === 'admin' || user.role === 'superadmin') ? {} : 'skip',
+  );
+
   // Unread announcements. The feed is a broadcast surface, so an unopened notice
   // has to advertise itself in the nav the way an unread chat does — otherwise a
   // dated post can come and go inside its day without anyone noticing.
@@ -485,6 +492,8 @@ export function Sidebar() {
   ).length;
 
   const signatureBadgeCount = (pendingSignaturesCount ?? []).length;
+
+  const approvalBadgeCount = (pendingApprovalUsers ?? []).length;
 
   // Update browser tab title with unread chat count
   React.useEffect(() => {
@@ -716,12 +725,14 @@ export function Sidebar() {
               const showChatBadge = item.href === '/chat' && chatBadgeCount > 0;
               const showSignatureBadge = item.href === '/performance' && signatureBadgeCount > 0;
               const showNewsBadge = item.href === '/news' && newsBadgeCount > 0;
+              const showApprovalBadge = item.href === '/approvals' && approvalBadgeCount > 0;
               const showBadge =
                 showTaskBadge ||
                 showLeaveBadge ||
                 showChatBadge ||
                 showSignatureBadge ||
-                showNewsBadge;
+                showNewsBadge ||
+                showApprovalBadge;
               const badgeCount =
                 item.href === '/leaves'
                   ? leaveBadgeCount
@@ -733,7 +744,13 @@ export function Sidebar() {
                         ? signatureBadgeCount
                         : item.href === '/news'
                           ? newsBadgeCount
-                          : 0;
+                          : item.href === '/approvals'
+                            ? approvalBadgeCount
+                            : 0;
+              // Surfaces where a new item needs to actively catch the eye blink;
+              // the rest settle for a steady pulse.
+              const badgeBlinks =
+                item.href === '/chat' || item.href === '/news' || item.href === '/approvals';
               const hasChildren = item.children && item.children.length > 0;
 
               return (
@@ -791,7 +808,7 @@ export function Sidebar() {
                             <span
                               className={cn(
                                 'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
-                                item.href === '/chat' || item.href === '/news'
+                                badgeBlinks
                                   ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
                                   : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
                               )}
@@ -855,7 +872,7 @@ export function Sidebar() {
                             <span
                               className={cn(
                                 'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
-                                item.href === '/chat' || item.href === '/news'
+                                badgeBlinks
                                   ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
                                   : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
                               )}
@@ -924,7 +941,7 @@ export function Sidebar() {
                           <span
                             className={cn(
                               'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
-                              item.href === '/chat' || item.href === '/news'
+                              badgeBlinks
                                 ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
                                 : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
                             )}

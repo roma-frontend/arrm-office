@@ -11,6 +11,7 @@ import {
   MotionDiv,
   MotionButton,
   MotionSpan,
+  MotionForm,
   AnimatePresence,
   motion,
   default as motionDefault,
@@ -417,6 +418,43 @@ describe('MotionSpan', () => {
   });
 });
 
+describe('MotionForm', () => {
+  it('renders as a form element', () => {
+    render(<MotionForm>Form Body</MotionForm>);
+    expect(screen.getByText('Form Body').tagName).toBe('FORM');
+  });
+
+  it('fires onSubmit when a nested submit button is clicked', () => {
+    // Regression: motion.form used to alias MotionDiv, so onSubmit never fired
+    // and "Request to Join" on /register did nothing.
+    const handleSubmit = jest.fn((e: React.FormEvent) => e.preventDefault());
+    render(
+      <MotionForm onSubmit={handleSubmit}>
+        <button type="submit">Request to Join</button>
+      </MotionForm>,
+    );
+    fireEvent.click(screen.getByText('Request to Join'));
+    expect(handleSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies className', () => {
+    render(<MotionForm className="form-class">Styled</MotionForm>);
+    expect(screen.getByText('Styled').className).toContain('form-class');
+  });
+
+  it('strips framer-motion props from the form element', () => {
+    render(
+      <MotionForm initial="hidden" animate="visible" variants={{}} type="submit" disabled>
+        StrippedForm
+      </MotionForm>,
+    );
+    const form = screen.getByText('StrippedForm');
+    expect(form.getAttribute('type')).toBeNull();
+    expect(form.getAttribute('disabled')).toBeNull();
+    expect(form.getAttribute('initial')).toBeNull();
+  });
+});
+
 describe('AnimatePresence', () => {
   it('renders children', () => {
     render(
@@ -476,6 +514,11 @@ describe('motion export object', () => {
     expect(motion.span).toBe(MotionSpan);
   });
 
+  it('exports motion.form as MotionForm, not MotionDiv', () => {
+    expect(motion.form).toBe(MotionForm);
+    expect(motion.form).not.toBe(MotionDiv);
+  });
+
   it('exports all common HTML tags', () => {
     const tags = [
       'p',
@@ -486,7 +529,7 @@ describe('motion export object', () => {
       'article',
       'nav',
       'footer',
-      'form',
+      // 'form' maps to MotionForm (dedicated <form> element, tested above).
       'input',
       'li',
       'ul',

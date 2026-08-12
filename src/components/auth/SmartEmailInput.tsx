@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { Mail, Check, AlertCircle, Sparkles } from 'lucide-react';
 import { validateEmail, type EmailValidationResult } from '@/lib/passwordValidation';
@@ -19,13 +20,16 @@ interface SmartEmailInputProps {
 export function SmartEmailInput({
   value,
   onChange,
-  label = 'Email',
+  label,
   placeholder = 'your@email.com',
   required = true,
   autoFocus = false,
 }: SmartEmailInputProps) {
+  const { t } = useTranslation();
   const [validation, setValidation] = useState<EmailValidationResult | null>(null);
   const [showSuggestion, setShowSuggestion] = useState(false);
+  // Fall back to the localized "Email" label if the caller didn't supply one.
+  const resolvedLabel = label ?? t('auth.emailAddress', 'Email');
 
   useEffect(() => {
     if (!value) {
@@ -37,13 +41,13 @@ export function SmartEmailInput({
 
     // Debounce validation
     const timer = setTimeout(() => {
-      const result = validateEmail(value);
+      const result = validateEmail(value, t);
       setValidation(result);
       setShowSuggestion(!!result.suggestion);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [value]);
+  }, [value, t]);
 
   const handleSuggestionClick = () => {
     if (validation?.suggestion) {
@@ -58,7 +62,7 @@ export function SmartEmailInput({
         htmlFor="email"
         className="flex items-center gap-1 whitespace-nowrap text-sm font-medium text-(--text-primary)"
       >
-        {label}
+        {resolvedLabel}
         {required && <span className="text-red-500">*</span>}
       </Label>
 
@@ -139,7 +143,9 @@ export function SmartEmailInput({
           >
             <Sparkles className="w-4 h-4 shrink-0 group-hover:rotate-12 transition-transform" />
             <div className="flex-1 text-left">
-              <p className="text-xs font-medium">Использовать предложение?</p>
+              <p className="text-xs font-medium">
+                {t('auth.emailValidation.useSuggestion', 'Использовать предложение?')}
+              </p>
               <p className="text-sm font-semibold mt-0.5">{validation.suggestion}</p>
             </div>
             <Check className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
