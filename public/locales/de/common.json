@@ -905,9 +905,9 @@
     "processing": "Verarbeitung...",
     "backToPlans": "Zurück zu den Plänen",
     "approvalActions": "Genehmigungsaktionen",
-    "approvalDescription": "Genehmigungsbeschreibung",
+    "approvalDescription": "Genehmigen Sie die Anfrage, um diesem Benutzer Zugriff auf den Arbeitsbereich zu gewähren, oder lehnen Sie sie ab, um die Registrierung zu entfernen.",
     "approve": "Genehmigen",
-    "confirmRejectUser": "Benutzer ablehnen bestätigen",
+    "confirmRejectUser": "Möchten Sie {{name}} wirklich ablehnen?",
     "contactInformation": "Kontaktinformationen",
     "employmentDetails": "Beschäftigungsdetails",
     "failedToApproveUser": "Fehler beim Genehmigen des Benutzers",
@@ -918,8 +918,8 @@
     "reject": "Ablehnen",
     "status": "Status",
     "userApprovalDetails": "Details zur Benutzergenehmigung",
-    "userApproved": "Benutzer genehmigt",
-    "userRejected": "Benutzer abgelehnt",
+    "userApproved": "{{name}} wurde genehmigt",
+    "userRejected": "{{name}} wurde abgelehnt",
     "days": "Tage",
     "adminAccessRequired": "Für die Anzeige dieser Seite sind Administratorrechte erforderlich.",
     "deleting": "Löschen…",
@@ -2080,6 +2080,12 @@
   "ticket": {
     "chatCreated": "Für Ticket {{ticketNumber}} wurde ein Support-Chat eröffnet. Sie sehen ihn, sobald der Support-Assistent die erste Nachricht schreibt.",
     "chatCreatedShort": "Support-Chat für Ticket {{ticketNumber}} eröffnet"
+  },
+  "chatSystem": {
+    "someone": "Jemand",
+    "groupCreated": "Gruppe „{{name}}“ wurde erstellt",
+    "memberAdded": "{{name}} wurde zur Gruppe hinzugefügt",
+    "memberLeft": "{{name}} hat die Gruppe verlassen"
   },
   "freeze": {
     "title": "Organisation vorübergehend gesperrt",

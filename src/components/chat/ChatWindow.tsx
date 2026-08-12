@@ -838,7 +838,8 @@ export const ChatWindow = React.memo(function ChatWindow({
             />
             {searchResults && searchResults.length > 0 && (
               <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                {searchResults.length} result{searchResults.length > 1 ? 's' : ''}
+                {searchResults.length}{' '}
+                {searchResults.length > 1 ? t('chat.searchResultsPlural') : t('chat.searchResults')}
               </p>
             )}
           </div>
@@ -996,7 +997,7 @@ export const ChatWindow = React.memo(function ChatWindow({
             onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
             className="absolute bottom-20 right-4 w-10 h-10 rounded-full shadow-lg flex items-center justify-center animate-fade-in z-30"
             style={{ background: 'var(--primary)', color: 'white' }}
-            title="Scroll to bottom"
+            title={t('chat.scrollToBottom')}
           >
             <ChevronDown className="w-5 h-5" />
           </button>

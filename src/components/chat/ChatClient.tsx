@@ -303,10 +303,10 @@ export default function ChatClient({
           <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
           <div>
             <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-              No connection
+              {t('chat.noConnection')}
             </p>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Messages will be sent when you're back online
+              {t('chat.noConnectionHint')}
             </p>
           </div>
         </div>
@@ -406,7 +406,7 @@ export default function ChatClient({
               onClick={() => setListCollapsed(false)}
               className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-16 items-center justify-center rounded-r-lg bg-(--sidebar-bg) border border-l-0 border-(--border) text-(--text-muted) hover:text-primary hover:scale-105 transition-all"
               style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)' }}
-              aria-label="Open sidebar"
+              aria-label={t('chat.openSidebar')}
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path

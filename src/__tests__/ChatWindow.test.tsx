@@ -545,7 +545,15 @@ describe('ChatWindow', () => {
     fireEvent.change(screen.getByPlaceholderText('chat.searchInConversation'), {
       target: { value: 'hello' },
     });
-    await waitFor(() => expect(screen.getByText(/1 result/)).toBeInTheDocument());
+    // Component now renders `{count} {t('chat.searchResults')}` (text split
+    // across nodes), so match on the paragraph's full text.
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          (_, el) => el?.tagName === 'P' && /^1 chat\.searchResults$/.test(el?.textContent ?? ''),
+        ),
+      ).toBeInTheDocument(),
+    );
   });
 
   it('shows the pinned messages banner', () => {
@@ -916,8 +924,8 @@ describe('ChatWindow', () => {
     Object.defineProperty(parent, 'clientHeight', { configurable: true, value: 400 });
     fireEvent.scroll(parent);
 
-    expect(screen.getByTitle('Scroll to bottom')).toBeInTheDocument();
-    fireEvent.click(screen.getByTitle('Scroll to bottom'));
+    expect(screen.getByTitle('chat.scrollToBottom')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('chat.scrollToBottom'));
     expect((HTMLElement.prototype as any).scrollIntoView).toHaveBeenCalled();
   });
 

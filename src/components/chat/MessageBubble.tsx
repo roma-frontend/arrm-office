@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { enUS, ru, hy } from 'date-fns/locale';
+import { getDateFnsLocale } from '@/lib/date-format';
 import { useTranslation } from 'react-i18next';
 import { SmartReply } from './SmartReply';
 import { LinkPreview, extractUrl } from './LinkPreview';
@@ -36,13 +36,14 @@ import { useOptimisticReaction } from '@/hooks/useOptimisticActions';
 import { logger } from '@/lib/logger';
 
 // ── i18n labels for delivered / seen ──────────────────────────────────────────
-type Lang = 'en' | 'ru' | 'hy';
+type Lang = 'en' | 'ru' | 'hy' | 'de';
 
 function _getLang(): Lang {
   if (typeof window === 'undefined') return 'en';
   const l = document.documentElement.lang || navigator.language || 'en';
   if (l.startsWith('ru')) return 'ru';
   if (l.startsWith('hy') || l.startsWith('am')) return 'hy';
+  if (l.startsWith('de')) return 'de';
   return 'en';
 }
 
@@ -50,6 +51,7 @@ const RECEIPT_LABELS: Record<Lang, { delivered: string; seen: string }> = {
   en: { delivered: 'Delivered', seen: 'Seen' },
   ru: { delivered: 'Доставлено', seen: 'Просмотрено' },
   hy: { delivered: 'Հասցված է', seen: 'Դիտված է' },
+  de: { delivered: 'Zugestellt', seen: 'Gelesen' },
 };
 
 // ── UI labels by language ─────────────────────────────────────────────────────
@@ -148,12 +150,36 @@ const UI_LABELS: Record<
     me: 'Ես',
     unknown: 'Անհայտ',
   },
+  de: {
+    deleted: 'Diese Nachricht wurde gelöscht',
+    pollClosed: 'Umfrage geschlossen',
+    votes: 'Stimmen',
+    closePoll: 'Umfrage schließen',
+    copy: 'Kopieren',
+    pin: 'Anpinnen',
+    unpin: 'Loslösen',
+    edit: 'Bearbeiten',
+    deleteForMe: 'Für mich löschen',
+    deleteForEveryone: 'Für alle löschen',
+    deleteMsg: 'Nachricht löschen',
+    deleteDesc: 'Wählen Sie, wie diese Nachricht gelöscht werden soll.',
+    canOnlyDelete: '⏱ Für alle löschen ist nur innerhalb von 5 Minuten möglich',
+    cancel: 'Abbrechen',
+    missed: 'Verpasst',
+    declined: 'Abgelehnt',
+    download: 'Herunterladen',
+    reply: 'Antworten',
+    preview: 'Vorschau',
+    me: 'Ich',
+    unknown: 'Unbekannt',
+  },
 };
 
 function getLabelLang(lang?: string): Lang {
   if (!lang) return 'en';
   if (lang.startsWith('ru')) return 'ru';
   if (lang.startsWith('hy') || lang.startsWith('am')) return 'hy';
+  if (lang.startsWith('de')) return 'de';
   return 'en';
 }
 
@@ -284,6 +310,7 @@ const RECEIPT_LABELS_SENT: Record<Lang, string> = {
   en: 'Sent',
   ru: 'Отправлено',
   hy: 'Ուղարկված է',
+  de: 'Gesendet',
 };
 
 function ReadReceipt({
@@ -297,12 +324,7 @@ function ReadReceipt({
   lang?: string;
 }) {
   if (!isOwn) return null;
-  const effectiveLang: Lang = lang.startsWith('ru')
-    ? 'ru'
-    : lang.startsWith('hy') || lang.startsWith('am')
-      ? 'hy'
-      : 'en';
-  const labels = RECEIPT_LABELS[effectiveLang];
+  const labels = RECEIPT_LABELS[getLabelLang(lang)];
   const entries = readBy ?? [];
 
   // seen = readAt > 0 means recipient actually opened the conversation
@@ -339,7 +361,7 @@ function ReadReceipt({
       style={{ color: 'var(--text-disabled)' }}
     >
       <Check className="w-3 h-3" />
-      {RECEIPT_LABELS_SENT[effectiveLang]}
+      {RECEIPT_LABELS_SENT[getLabelLang(lang)]}
     </span>
   );
 }
@@ -358,7 +380,11 @@ function systemMessageText(
 ): string {
   const token = decodeSystemMessage(content);
   if (!token) return content;
-  const translated = t(token.key, token.params);
+  // A deleted or unreadable actor leaves `name` empty; naming them "someone" in
+  // the reader's language beats interpolating a blank into the sentence.
+  const params =
+    token.params.name === '' ? { ...token.params, name: t('chatSystem.someone') } : token.params;
+  const translated = t(token.key, params);
   // i18next echoes the key back when it cannot resolve it; a raw key on screen is
   // worse than no notice, so drop it.
   return translated === token.key ? '' : translated;
@@ -380,7 +406,7 @@ export const MessageBubble = React.memo(function MessageBubble({
 }: Props) {
   const L = UI_LABELS[getLabelLang(lang)];
   const { t } = useTranslation();
-  const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
+  const dateFnsLocale = getDateFnsLocale(lang);
   const [showActions, setShowActions] = useState(false);
   const [_actionBarBelow, setActionBarBelow] = useState(false);
   const [actionBarPos, setActionBarPos] = useState<{ top: number; left: number } | null>(null);

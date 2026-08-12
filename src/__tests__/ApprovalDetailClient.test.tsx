@@ -25,8 +25,9 @@ import { enUS, ru, hy } from 'date-fns/locale';
 let mockLanguage = 'en';
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: any) =>
-      typeof fallback === 'string' ? fallback : (fallback ?? key),
+    // Second arg is either a string fallback (roles/employeeTypes lookups) or an
+    // interpolation options object (name-bearing toasts) — only echo the former.
+    t: (key: string, fallback?: any) => (typeof fallback === 'string' ? fallback : key),
     i18n: { language: mockLanguage },
   }),
 }));

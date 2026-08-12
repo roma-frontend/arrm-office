@@ -82,7 +82,7 @@ export default function ApprovalDetailClient() {
     setIsApproving(true);
     try {
       await approveUser({ userId, adminId: currentUser._id });
-      toast.success(t('ui.userApproved'));
+      toast.success(t('ui.userApproved', { name: pendingUser?.name ?? '' }));
       router.push('/approvals');
     } catch {
       toast.error(t('ui.failedToApproveUser'));
@@ -96,7 +96,7 @@ export default function ApprovalDetailClient() {
     setIsRejecting(true);
     try {
       await rejectUser({ userId, adminId: currentUser._id });
-      toast.success(t('ui.userRejected'));
+      toast.success(t('ui.userRejected', { name: pendingUser?.name ?? '' }));
       router.push('/approvals');
     } catch {
       toast.error(t('ui.failedToRejectUser'));
@@ -181,7 +181,7 @@ export default function ApprovalDetailClient() {
               </div>
               {pendingUser.phone && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t('employeeInfo.phone')}</span>
+                  <span className="text-sm text-muted-foreground">{t('labels.phone')}</span>
                   <div className="flex items-center gap-1">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">{pendingUser.phone}</span>
@@ -228,11 +228,13 @@ export default function ApprovalDetailClient() {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
-                <span>{pendingUser.employeeType}</span>
+                <span>
+                  {t(`employeeTypes.${pendingUser.employeeType}`, pendingUser.employeeType)}
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span>{pendingUser.role}</span>
+                <span>{t(`roles.${pendingUser.role}`, pendingUser.role)}</span>
               </div>
             </div>
           </div>

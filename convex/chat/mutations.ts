@@ -5,6 +5,7 @@ import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { sanitizeText } from '../lib/sanitize';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { notify } from '../lib/notify';
+import { encodeSystemMessage } from '../lib/systemMessage';
 
 /**
  * Convert emoji to ASCII-safe key format using Unicode code points
@@ -159,13 +160,14 @@ export const createGroup = mutation({
       });
     }
 
-    // System message
+    // System message. Stored as a token so every member reads it in their own
+    // language rather than the creator's.
     await ctx.db.insert('chatMessages', {
       conversationId: convId,
       organizationId: args.organizationId,
       senderId: args.createdBy,
       type: 'system',
-      content: `Group "${args.name}" was created`,
+      content: encodeSystemMessage('chatSystem.groupCreated', { name: args.name }),
       createdAt: now,
     });
 
@@ -266,7 +268,7 @@ export const addMember = mutation({
       organizationId: args.organizationId,
       senderId: requesterId,
       type: 'system',
-      content: `${user?.name ?? 'Someone'} was added to the group`,
+      content: encodeSystemMessage('chatSystem.memberAdded', { name: user?.name ?? '' }),
       createdAt: now,
     });
 
@@ -306,7 +308,7 @@ export const leaveConversation = mutation({
         organizationId: conv.organizationId as Id<'organizations'>,
         senderId: args.userId,
         type: 'system',
-        content: `${user?.name ?? 'Someone'} left the group`,
+        content: encodeSystemMessage('chatSystem.memberLeft', { name: user?.name ?? '' }),
         createdAt: Date.now(),
       });
 

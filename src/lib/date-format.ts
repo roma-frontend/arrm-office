@@ -32,6 +32,17 @@ export function getLocaleString(lang: SupportedLocale | string | undefined): str
 }
 
 /**
+ * date-fns locale object for a language code, for callers that pass `locale:`
+ * to date-fns directly instead of going through the helpers below.
+ * Accepts region-tagged codes ('de-DE') as well as bare ones ('de').
+ */
+export function getDateFnsLocale(lang: SupportedLocale | string | undefined): typeof enUS {
+  const base = lang?.split('-')[0];
+  if (!base) return enUS;
+  return DATE_FNS_LOCALE_MAP[base] ?? enUS;
+}
+
+/**
  * Format a date using date-fns (works reliably for all locales including Armenian)
  */
 export function formatDate(

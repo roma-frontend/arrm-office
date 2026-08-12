@@ -6,6 +6,7 @@ import { internalMutation } from './_generated/server';
 import { XLARGE_LIST_CAP } from './lib/limits';
 import { backfillAssetActContent } from '../src/lib/assetActContent';
 import { LEGACY_TRAVEL_ALLOWANCE_POLICY } from './lib/travelAllowance';
+import { encodeSystemMessage } from './lib/systemMessage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fix duplicate users — merge users with same email
@@ -341,5 +342,83 @@ export const backfillTravelAllowancePolicy = internalMutation({
     }
 
     return { updated, created, skipped, totalOrganizations: organizations.length };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Localize chat system messages stored as English prose
+// ─────────────────────────────────────────────────────────────────────────────
+// Group notices used to be rendered into English on the server and stored that
+// way, so every reader saw English regardless of their language. They are tokens
+// now (see convex/lib/systemMessage.ts), but rows written before that change
+// still hold prose. This rewrites those rows into tokens so existing groups read
+// in each member's own language too.
+//
+// Names are recovered from the sentence itself rather than from the sender: the
+// actor of "X was added to the group" is the added user, not the admin who is
+// stored as senderId. A name containing " was added to the group" would parse
+// wrong, but the alternative — leaving the row English — is worse.
+const LEGACY_SYSTEM_MESSAGE_PATTERNS: Array<{ re: RegExp; key: string; param: string }> = [
+  { re: /^(.+) was added to the group$/, key: 'chatSystem.memberAdded', param: 'name' },
+  { re: /^(.+) left the group$/, key: 'chatSystem.memberLeft', param: 'name' },
+  { re: /^Group "(.+)" was created$/, key: 'chatSystem.groupCreated', param: 'name' },
+];
+
+/** Token for a legacy English body, or null when it is not one we rewrite. */
+function tokenizeLegacySystemMessage(content: string): string | null {
+  for (const { re, key, param } of LEGACY_SYSTEM_MESSAGE_PATTERNS) {
+    const captured = re.exec(content)?.[1];
+    if (captured === undefined) continue;
+    // "Someone" was the old placeholder for an unresolvable user; store it as an
+    // empty name so the client substitutes its own localized placeholder.
+    const value = captured === 'Someone' ? '' : captured;
+    return encodeSystemMessage(key, { [param]: value });
+  }
+  return null;
+}
+
+export const localizeChatSystemMessages = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const messages = await ctx.db.query('chatMessages').take(XLARGE_LIST_CAP);
+
+    let migrated = 0;
+    let skipped = 0;
+
+    for (const message of messages) {
+      if (message.type !== 'system') {
+        skipped++;
+        continue;
+      }
+      const token = tokenizeLegacySystemMessage(message.content);
+      if (!token) {
+        skipped++;
+        continue;
+      }
+      await ctx.db.patch(message._id, { content: token });
+      migrated++;
+    }
+
+    // The conversation list shows lastMessageText verbatim, so a stale English
+    // copy there would survive the message rewrite and keep showing through.
+    const conversations = await ctx.db.query('chatConversations').take(XLARGE_LIST_CAP);
+    let previewsMigrated = 0;
+
+    for (const conversation of conversations) {
+      const text = conversation.lastMessageText;
+      if (!text) continue;
+      const token = tokenizeLegacySystemMessage(text);
+      if (!token) continue;
+      await ctx.db.patch(conversation._id, { lastMessageText: token });
+      previewsMigrated++;
+    }
+
+    return {
+      migrated,
+      skipped,
+      previewsMigrated,
+      totalMessagesScanned: messages.length,
+      totalConversationsScanned: conversations.length,
+    };
   },
 });

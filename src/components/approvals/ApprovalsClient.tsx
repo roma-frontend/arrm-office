@@ -154,14 +154,14 @@ export default function ApprovalsClient() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm">
                   <div>
                     <p className="text-(--text-muted) text-[10px] sm:text-xs">{t('labels.role')}</p>
-                    <p className="text-(--text-primary) font-medium capitalize">
-                      {pendingUser.role}
+                    <p className="text-(--text-primary) font-medium">
+                      {t(`roles.${pendingUser.role}`, pendingUser.role)}
                     </p>
                   </div>
                   <div>
                     <p className="text-(--text-muted) text-[10px] sm:text-xs">{t('labels.type')}</p>
-                    <p className="text-(--text-primary) font-medium capitalize">
-                      {pendingUser.employeeType}
+                    <p className="text-(--text-primary) font-medium">
+                      {t(`employeeTypes.${pendingUser.employeeType}`, pendingUser.employeeType)}
                     </p>
                   </div>
                   <div>
@@ -179,7 +179,7 @@ export default function ApprovalsClient() {
                   </div>
                   <div>
                     <p className="text-(--text-muted) text-[10px] sm:text-xs">
-                      {t('employeeInfo.phone')}
+                      {t('labels.phone')}
                     </p>
                     <p className="text-(--text-primary) font-medium">{pendingUser.phone ?? '—'}</p>
                   </div>

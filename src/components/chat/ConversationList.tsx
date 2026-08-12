@@ -29,7 +29,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { ru, hy, enUS } from 'date-fns/locale';
+import { getDateFnsLocale } from '@/lib/date-format';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -141,7 +141,7 @@ export const ConversationList = React.memo(function ConversationList({
 }: Props) {
   const { t } = useTranslation();
   const currentLang = i18n.language || 'en';
-  const dateFnsLocale = currentLang === 'ru' ? ru : currentLang === 'hy' ? hy : enUS;
+  const dateFnsLocale = getDateFnsLocale(currentLang);
   const [search, setSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<FilterType[]>(getStoredFilters);
   const [loadingOpId, setLoadingOpId] = useState<string | null>(null);
@@ -524,7 +524,13 @@ export const ConversationList = React.memo(function ConversationList({
           const lastToken = rawLastText ? decodeSystemMessage(rawLastText) : null;
 
           // Remove sender prefix for System Announcements (in case it's still there)
-          let displayLastText = lastToken ? t(lastToken.key, lastToken.params) : rawLastText;
+          let displayLastText = lastToken
+            ? t(lastToken.key, {
+                ...lastToken.params,
+                // A deleted actor leaves `name` empty; name them in the reader's language.
+                ...(lastToken.params.name === '' ? { name: t('chatSystem.someone') } : {}),
+              })
+            : rawLastText;
           if (isSystemAnnouncements && displayLastText) {
             const match = displayLastText.match(/^[^:]*:\s*/);
             if (match) {
