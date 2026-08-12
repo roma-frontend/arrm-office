@@ -376,6 +376,21 @@ function localizedSegment(
   return { ...segment, text: { ...segment.text, [locale]: resolveTokens(raw, data, locale) } };
 }
 
+/**
+ * The printable signature grid for a set of parties.
+ *
+ * Exported because a hand-edited body comes back from Word without a grid (the
+ * editable export strips it on purpose) and has to be given the same one the
+ * builder would have produced — same roles, same labels, same party ids, so the
+ * signatures still land in the right boxes.
+ */
+export function buildSignatureGrid(
+  parties: DocumentPartyInput[],
+  labels: DocumentLabels,
+): DocumentBlock | null {
+  return signatureBlock(parties, labels);
+}
+
 function signatureBlock(
   parties: DocumentPartyInput[],
   labels: DocumentLabels,

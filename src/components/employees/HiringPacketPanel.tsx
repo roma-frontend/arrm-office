@@ -71,6 +71,7 @@ import {
   PRIMARY_LOCALE,
   applySignaturesToBlocks,
   buildBilingualBlocks,
+  collectSignaturesInOrder,
   encodeHiringPacketContent,
   hiringPacketFileName,
   hiringPacketTitle,
@@ -379,15 +380,10 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
       const signatureDoc = await convex.query(api.signatures.getDocument, {
         documentId: row.signatureDocumentId,
       });
-      return (signatureDoc?.requests ?? [])
-        .slice()
-        .sort((a, b) => a.order - b.order)
-        .filter((r) => r.status === 'signed')
-        .map((r) => ({
-          signerName: r.signerName,
-          signatureData: r.signatureData,
-          signedAt: r.signedAt,
-        }));
+      // Keeps an empty slot for anyone who has not signed yet. Dropping them —
+      // as this used to — shifts a lone countersignature into the employee's
+      // box, because the grid pairs signatures with parties by position.
+      return collectSignaturesInOrder(signatureDoc?.requests);
     },
     [convex],
   );

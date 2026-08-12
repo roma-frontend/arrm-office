@@ -24,6 +24,7 @@ import type { SupportedLocale } from './date-format';
 import {
   LOCALE_CAPTIONS,
   applySignaturesToBlocks as applySignatures,
+  collectSignaturesInOrder as collectSignatures,
   parseTemplateBodyToBlocks as parseBody,
   type CollectedSignature as EngineSignature,
 } from './bilingualDocument';
@@ -196,6 +197,25 @@ export const applySignaturesToBlocks: (
   signatures: CollectedSignature[],
   formatSignedDate: (timestamp: number) => string,
 ) => DocumentBlock[] = applySignatures;
+
+/**
+ * Collect a signature document's signatures in signing order, one slot per
+ * request. Re-exported from the shared engine so a packet download and an act
+ * download build the same list; matching is positional here, so the empty slots
+ * it keeps for unsigned requests are what stops a countersignature from landing
+ * in the employee's box.
+ */
+export const collectSignaturesInOrder: (
+  requests:
+    | ReadonlyArray<{
+        status: string;
+        order: number;
+        signerName?: string;
+        signatureData?: string;
+        signedAt?: number;
+      }>
+    | undefined,
+) => CollectedSignature[] = collectSignatures;
 
 /** Filesystem-safe download name, e.g. `employment-contract_Anna_Petrosyan.docx`. */ export function hiringPacketFileName(
   templateId: string,

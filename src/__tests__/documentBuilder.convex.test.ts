@@ -911,6 +911,39 @@ describe('issuedDocuments.sendForSignature', () => {
     expect(state.notified).toContain(c.employeeId);
   });
 
+  it('still files a countersigner request when the countersigner is the recipient', async () => {
+    // The document prints two signature boxes. Skipping the second request —
+    // which is what happened while the ids were compared — left the issuer's box
+    // with a name and a blank signature line that nothing could ever fill.
+    const c = await seed();
+    const blueprintId = await createPublished(c);
+    const issuedId = await issueTo(c, blueprintId);
+
+    const result = await asAdmin(c).mutation(api.issuedDocuments.sendForSignature, {
+      issuedDocumentId: issuedId,
+      content,
+      title: 'Reference',
+      accent: 'blue',
+      orgName: 'Acme',
+      countersignerId: c.employeeId,
+    });
+
+    const signers = await c.t.run(async (ctx) => {
+      const requests = await ctx.db
+        .query('signatureRequests')
+        .filter((q) => q.eq(q.field('documentId'), result.signatureDocumentId))
+        .collect();
+      return requests
+        .map((r) => ({ userId: r.signerId, order: r.order }))
+        .sort((a, b) => a.order - b.order);
+    });
+
+    expect(signers).toEqual([
+      { userId: c.employeeId, order: 1 },
+      { userId: c.employeeId, order: 2 },
+    ]);
+  });
+
   it('refuses to edit, re-send, cancel or delete a frozen document', async () => {
     const c = await seed();
     const blueprintId = await createPublished(c);

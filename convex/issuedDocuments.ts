@@ -526,6 +526,13 @@ export const sendForSignature = mutation({
 
     // The recipient signs first; the organization countersigns afterwards, so a
     // countersignature is never applied to something the recipient refused.
+    //
+    // The countersigner gets their own request even when they are the same
+    // person as the recipient. The document prints two signature boxes, and
+    // skipping the second request — as this used to when the ids matched — left
+    // the issuer's box with a name, a position and a blank signature line that
+    // nothing could ever fill. `convex/assets.ts` files both parties the same
+    // way for exactly this reason.
     const signers: Array<{ userId: Id<'users'>; name: string; email: string; order: number }> = [
       {
         userId: row.recipientId,
@@ -535,7 +542,7 @@ export const sendForSignature = mutation({
       },
     ];
 
-    if (args.countersignerId && args.countersignerId !== row.recipientId) {
+    if (args.countersignerId) {
       const countersigner = await ctx.db.get(args.countersignerId);
       if (!countersigner) throw new Error('Countersigner not found');
       if (countersigner.organizationId !== row.organizationId) {

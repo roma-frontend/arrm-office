@@ -13,6 +13,7 @@ import {
   applySignaturesToBlocks,
   auditSegments,
   blockToText,
+  buildSignatureGrid,
   collectSignaturesInOrder,
   buildDocumentBlocks,
   createSegment,
@@ -349,6 +350,29 @@ describe('collectSignaturesInOrder', () => {
   it('returns nothing for a document with no requests', () => {
     expect(collectSignaturesInOrder(undefined)).toEqual([]);
     expect(collectSignaturesInOrder([])).toEqual([]);
+  });
+});
+
+describe('buildSignatureGrid', () => {
+  it('carries the party ids and labels a re-attached grid needs', () => {
+    // A body edited in Word comes back without a grid, so one has to be rebuilt
+    // that matches what the builder would have produced.
+    const grid = buildSignatureGrid(
+      [
+        { id: 'recipient', name: 'Anna', role: 'Signature' },
+        { id: 'issuer', name: 'Boss', position: 'CEO' },
+      ],
+      labels,
+    );
+    if (grid?.type !== 'signatures') throw new Error('unreachable');
+    expect(grid.parties[0]).toMatchObject({ id: 'recipient', name: 'Anna', role: 'Signature' });
+    expect(grid.parties[1]).toMatchObject({ id: 'issuer', position: 'CEO' });
+    // The role falls back to the signature label when the party gives none.
+    expect(grid.parties[1]?.role).toBe(labels.signature);
+  });
+
+  it('returns null when there are no parties', () => {
+    expect(buildSignatureGrid([], labels)).toBeNull();
   });
 });
 

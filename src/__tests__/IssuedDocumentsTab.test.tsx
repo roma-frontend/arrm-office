@@ -49,6 +49,7 @@ jest.mock('@/convex/_generated/api', () => ({
       getRenderSource: { _name: 'getRenderSource' },
     },
     documentLibrary: { getEmployeeMergeData: { _name: 'getEmployeeMergeData' } },
+    signatures: { getDocument: { _name: 'getDocument' } },
   },
 }));
 
@@ -84,6 +85,8 @@ jest.mock('@/hooks/useDocumentLabels', () => ({
 }));
 
 let mockBuildBlocks: any[] = [{ type: 'paragraph', text: 'built' }];
+/** Signatures handed to the grid, per call, so tests can assert the pairing. */
+let appliedSignatures: any[][] = [];
 jest.mock('@/lib/bilingualDocument', () => ({
   LOCALE_CAPTIONS: { en: 'English', ru: 'Russian', hy: 'Armenian', de: 'German' },
   isBilingualPair: (l: any) => Boolean(l.primary && l.secondary),
@@ -93,6 +96,20 @@ jest.mock('@/lib/bilingualDocument', () => ({
     JSON.stringify({ version: opts.version, title: opts.title, edited: opts.edited }),
   buildDocumentBlocks: () => mockBuildBlocks,
   parseTemplateBodyToBlocks: (body: string) => (body ? [{ type: 'paragraph', text: body }] : []),
+  buildSignatureGrid: (parties: any[]) => (parties.length ? { type: 'signatures', parties } : null),
+  collectSignaturesInOrder: (requests: any[] | undefined) =>
+    (requests ?? [])
+      .slice()
+      .sort((a: any, b: any) => a.order - b.order)
+      .map((r: any) =>
+        r.status === 'signed'
+          ? { signerName: r.signerName, signatureData: r.signatureData, signedAt: r.signedAt }
+          : {},
+      ),
+  applySignaturesToBlocks: (blocks: any, signatures: any[]) => {
+    appliedSignatures.push(signatures);
+    return blocks;
+  },
 }));
 
 jest.mock('@/lib/exportDocument', () => ({
@@ -119,8 +136,12 @@ jest.mock('@/actions/cloudinary', () => ({
   uploadDocument: jest.fn().mockResolvedValue({ url: 'https://cdn.test/x.docx' }),
 }));
 
+let previewedDoc: any = null;
 jest.mock('@/components/documents/DocumentBlocksPreview', () => ({
-  DocumentPreview: ({ doc }: any) => <div data-testid="document-preview">{doc.title}</div>,
+  DocumentPreview: ({ doc }: any) => {
+    previewedDoc = doc;
+    return <div data-testid="document-preview">{doc.title}</div>;
+  },
 }));
 
 jest.mock('@/components/ui/button', () => ({
@@ -266,7 +287,10 @@ const seed = () => {
   convexQueryResults = {
     getEmployeeMergeData: mergeData,
     getRenderSource: renderSource,
+    getDocument: null,
   };
+  appliedSignatures = [];
+  previewedDoc = null;
   mutationCalls.length = 0;
   Object.keys(mutationImpls).forEach((key) => delete mutationImpls[key]);
   mutationImpls.ensureDocumentNumber = jest.fn().mockResolvedValue({ documentNumber: 'N-9' });
@@ -373,6 +397,60 @@ describe('IssuedDocumentsTab', () => {
     await waitFor(() => expect(screen.getByTestId('document-preview')).toBeInTheDocument());
     expect(screen.getAllByText('Offer Letter').length).toBeGreaterThan(0);
     expect(screen.getByText(/ACME/)).toBeInTheDocument();
+  });
+
+  // A sent document keeps its signatures on the signature document, so they have
+  // to be fetched and laid onto the grid. This path did not read them at all,
+  // which left both signature boxes empty after everyone had signed.
+  it('fills every party from the signature requests of a sent document', async () => {
+    convexQueryResults.getDocument = {
+      requests: [
+        {
+          status: 'signed',
+          order: 2,
+          signerName: 'Alice',
+          signatureData: 'data:issuer',
+          signedAt: 2000,
+        },
+        {
+          status: 'signed',
+          order: 1,
+          signerName: 'Bob',
+          signatureData: 'data:recipient',
+          signedAt: 1000,
+        },
+      ],
+    };
+    renderTab([{ ...sentRow, signatureDocumentId: 'sig-1' }]);
+
+    fireEvent.click(screen.getByTitle('Preview'));
+
+    await waitFor(() => expect(appliedSignatures.length).toBeGreaterThan(0));
+    expect(appliedSignatures[0]).toEqual([
+      { signerName: 'Bob', signatureData: 'data:recipient', signedAt: 1000 },
+      { signerName: 'Alice', signatureData: 'data:issuer', signedAt: 2000 },
+    ]);
+  });
+
+  it('does not ask for signatures on a document that was never sent', async () => {
+    renderTab([draftRow]);
+    fireEvent.click(screen.getByTitle('Preview'));
+    await waitFor(() => expect(screen.getByTestId('document-preview')).toBeInTheDocument());
+    // The grid stays untouched, so the frozen copy taken on send has no
+    // signature baked into it.
+    expect(appliedSignatures[0]).toEqual([]);
+  });
+
+  it('re-attaches a signature grid to a body edited in Word', async () => {
+    // The editable export strips the grid on purpose; without putting one back
+    // an edited document has nowhere to hold either signature.
+    renderTab([editedRow]);
+    fireEvent.click(screen.getByTitle('Preview'));
+    await waitFor(() => expect(screen.getByTestId('document-preview')).toBeInTheDocument());
+
+    expect(dialogProps).toBeDefined();
+    const grid = ((previewedDoc?.body as any[]) ?? []).find((b: any) => b.type === 'signatures');
+    expect(grid?.parties.map((p: any) => p.id)).toEqual(['recipient', 'issuer']);
   });
 
   it('shows the source docx name on the row', () => {

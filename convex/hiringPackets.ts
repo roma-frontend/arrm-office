@@ -421,6 +421,11 @@ export const sendForSignature = mutation({
 
     // The employee always signs first; the employer countersigns afterwards, so
     // the countersignature is never applied to something the employee refused.
+    //
+    // The countersigner gets their own request even when they are the same person
+    // as the employee: the packet prints two signature boxes, and skipping the
+    // second request left the employer's box with a blank signature line that
+    // nothing could fill.
     const signers: Array<{
       userId: Id<'users'>;
       name: string;
@@ -435,7 +440,7 @@ export const sendForSignature = mutation({
       },
     ];
 
-    if (args.countersignerId && args.countersignerId !== row.userId) {
+    if (args.countersignerId) {
       const countersigner = await ctx.db.get(args.countersignerId);
       if (!countersigner) throw new Error('Countersigner not found');
       if (countersigner.organizationId !== target.organizationId) {

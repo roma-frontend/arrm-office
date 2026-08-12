@@ -51,7 +51,10 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { uploadDocument } from '@/actions/cloudinary';
 import {
   LOCALE_CAPTIONS,
+  applySignaturesToBlocks,
   buildDocumentBlocks,
+  buildSignatureGrid,
+  collectSignaturesInOrder,
   documentFileName,
   documentTitle,
   encodeDocumentContent,
@@ -70,7 +73,7 @@ import {
 import { DocxImportError, parseEditableDocx } from '@/lib/docxRoundTrip';
 import { getCatalogTemplate, localizedContent, type AccentColor } from '@/lib/documentCatalog';
 import type { MergeSourceData } from '@/lib/documentTokens';
-import type { SupportedLocale } from '@/lib/date-format';
+import { formatDate, type SupportedLocale } from '@/lib/date-format';
 
 type IssuedRow = {
   _id: Id<'issuedDocuments'>;
@@ -90,6 +93,7 @@ type IssuedRow = {
   bodyOverride?: string;
   sourceDocxName?: string;
   documentNumber?: string;
+  signatureDocumentId?: Id<'signatureDocuments'>;
   createdAt: number;
 };
 
@@ -160,9 +164,15 @@ export default function IssuedDocumentsTab({
         secondary: row.secondaryLocale,
       };
 
-      const [mergeData, renderSource] = await Promise.all([
+      const [mergeData, renderSource, signatureDoc] = await Promise.all([
         convex.query(api.documentLibrary.getEmployeeMergeData, { userId: row.recipientId }),
         convex.query(api.issuedDocuments.getRenderSource, { issuedDocumentId: row._id }),
+        // The signatures live on the signature document, not on the issued row.
+        // Without fetching them the copy previewed or downloaded here had empty
+        // signature boxes even after every party had signed.
+        row.signatureDocumentId
+          ? convex.query(api.signatures.getDocument, { documentId: row.signatureDocumentId })
+          : Promise.resolve(null),
       ]);
       if (!mergeData || !renderSource) return null;
 
@@ -214,33 +224,51 @@ export default function IssuedDocumentsTab({
       }
 
       const recipientName = data.employee?.name ?? row.recipientName;
-      const blocks: DocumentBlock[] = row.bodyOverride
-        ? (JSON.parse(row.bodyOverride) as DocumentBlock[])
-        : buildDocumentBlocks({
-            segments,
-            locales,
-            labels,
-            data,
-            omitSignatures: opts.omitSignatures || !signature,
-            parties: signature
-              ? [
-                  { id: 'recipient', name: recipientName, role: labels.signature },
-                  {
-                    id: 'issuer',
-                    name: currentUser?.name ?? '',
-                    position: currentUser?.position,
-                    role: currentUser?.position || labels.position,
-                  },
-                ]
-              : [],
-          });
+      const parties = signature
+        ? [
+            { id: 'recipient', name: recipientName, role: labels.signature },
+            {
+              id: 'issuer',
+              name: currentUser?.name ?? '',
+              position: currentUser?.position,
+              role: currentUser?.position || labels.position,
+            },
+          ]
+        : [];
+      let blocks: DocumentBlock[];
+      if (row.bodyOverride) {
+        blocks = JSON.parse(row.bodyOverride) as DocumentBlock[];
+        // The editable Word export strips the grid on purpose, so a hand-edited
+        // body comes back without one and would have nowhere to hold either
+        // signature. Re-attach it — filtering first so a legacy override that
+        // does carry one never renders two.
+        blocks = blocks.filter((block) => block.type !== 'signatures');
+        const grid = opts.omitSignatures ? null : buildSignatureGrid(parties, labels);
+        if (grid) blocks = [...blocks, grid];
+      } else {
+        blocks = buildDocumentBlocks({
+          segments,
+          locales,
+          labels,
+          data,
+          omitSignatures: opts.omitSignatures || !signature,
+          parties,
+        });
+      }
 
       const title = documentTitle(titles, locales, data) || row.title;
 
       return {
         title,
         documentNumber: opts.documentNumber ?? row.documentNumber,
-        body: blocks,
+        // Each party's own box is filled from its own signature request, in
+        // signing order — recipient first, countersigner second.
+        body: applySignaturesToBlocks(
+          blocks,
+          collectSignaturesInOrder(signatureDoc?.requests),
+          (ts) =>
+            formatDate(ts, locales.primary, { year: 'numeric', month: 'long', day: 'numeric' }),
+        ),
         accent,
         signature: false, // the grid is part of `blocks` already
         orgName,

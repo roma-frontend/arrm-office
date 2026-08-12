@@ -110,6 +110,15 @@ jest.mock('@/lib/hiringPacketDocument', () => ({
     return blocks;
   },
   buildBilingualBlocks: () => [{ type: 'paragraph', text: 'built' }],
+  collectSignaturesInOrder: (requests: any[] | undefined) =>
+    (requests ?? [])
+      .slice()
+      .sort((a: any, b: any) => a.order - b.order)
+      .map((r: any) =>
+        r.status === 'signed'
+          ? { signerName: r.signerName, signatureData: r.signatureData, signedAt: r.signedAt }
+          : {},
+      ),
   encodeHiringPacketContent: (payload: any) => `__HP__${JSON.stringify(payload)}`,
   hiringPacketFileName: (id: string, name: string, ext: string) => `${id}_${name}.${ext}`,
   hiringPacketTitle: () => 'Contract / Договор',
