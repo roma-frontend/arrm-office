@@ -57,7 +57,19 @@
     "notFoundHint": "Այս հայտը գոյություն չունի կամ դուք մուտք չունեք դրան։",
     "backToLeaves": "Վերադառնալ հայտերին",
     "type": "Տեսակ",
-    "myLeaves": "Իմ արձակուրդները"
+    "myLeaves": "Իմ արձակուրդները",
+    "cancellationRequested": "Չեղարկում է պահանջվել",
+    "requestCancellation": "Պահանջել չեղարկում",
+    "cancelRequestedSuccess": "Չեղարկման հայտն ուղարկվել է HR",
+    "cancelRequestFailed": "Չհաջողվեց ուղարկել չեղարկման հայտը",
+    "cancelApprovedSuccess": "Չեղարկումը հաստատված է",
+    "cancelRejectedSuccess": "Չեղարկման հայտը մերժվել է",
+    "cancelApproveFailed": "Չհաջողվեց հաստատել չեղարկումը",
+    "cancelRejectFailed": "Չհաջողվեց մերժել չեղարկումը",
+    "cancelPendingHint": "Չեղարկման հայտը սպասում է HR-ի հաստատմանը",
+    "approveCancellation": "Հաստատել չեղարկումը",
+    "rejectCancellation": "Մերժել չեղարկումը",
+    "reviewNotAllowedHint": "Այս հայտի որոշումը կայացնում է աշխատակցի ղեկավարը՝ ըստ ենթակայության գծի, կամ HR-ը։"
   },
   "leaveTypes": {
     "paid": "Վճարովի արձակուրդ",
@@ -135,7 +147,8 @@
   "leaveStatus": {
     "approved": "Հաստատված",
     "pending": "Սպասման մեջ",
-    "rejected": "Մերժված"
+    "rejected": "Մերժված",
+    "cancelRequested": "Չեղարկում է պահանջվել"
   },
   "leaveWizard": {
     "title": "Արձակուրդի հայտ",

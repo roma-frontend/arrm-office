@@ -37,12 +37,24 @@ jest.mock('../../convex/lib/notify', () => ({
   notify: jest.fn(),
 }));
 
+// The reporting-line approval refactor routes reviews through leaves/approval.
+// These unit tests stub the gate and exercise the mutation flows around it.
+jest.mock('../../convex/leaves/approval', () => ({
+  assertMayReview: jest.fn(),
+  resolveApprovalRoute: jest.fn(),
+  reviewRefusal: jest.fn(),
+  HEAD_AUTO_APPROVAL_NOTE: 'Auto-approved: head policy',
+}));
+
 // ── Module under test ────────────────────────────────────────────────────────
 let mockGetAuthCaller: jest.Mock;
 let mockIsSuperadmin: jest.Mock;
 let mockIsSuperadminEmail: jest.Mock;
 let mockPatchProfile: jest.Mock;
 let mockNotify: jest.Mock;
+let mockAssertMayReview: jest.Mock;
+let mockReviewRefusal: jest.Mock;
+let mockResolveApprovalRoute: jest.Mock;
 
 type Handler = (ctx: any, args: any) => Promise<unknown>;
 const handlers: Record<string, Handler> = {};
@@ -54,11 +66,24 @@ beforeEach(() => {
   mockIsSuperadminEmail = jest.requireMock('../../convex/lib/auth').isSuperadminEmail;
   mockPatchProfile = jest.requireMock('../../convex/lib/userProfile').patchProfile;
   mockNotify = jest.requireMock('../../convex/lib/notify').notify;
+  mockAssertMayReview = jest.requireMock('../../convex/leaves/approval').assertMayReview;
+  mockReviewRefusal = jest.requireMock('../../convex/leaves/approval').reviewRefusal;
+  mockResolveApprovalRoute = jest.requireMock('../../convex/leaves/approval').resolveApprovalRoute;
   mockGetAuthCaller.mockReset();
   mockIsSuperadmin.mockReset();
   mockIsSuperadminEmail.mockReset();
   mockPatchProfile.mockReset();
   mockNotify.mockReset();
+  mockAssertMayReview.mockReset();
+  mockReviewRefusal.mockReset();
+  mockResolveApprovalRoute.mockReset();
+  mockAssertMayReview.mockResolvedValue(undefined);
+  mockReviewRefusal.mockResolvedValue(null);
+  mockResolveApprovalRoute.mockResolvedValue({
+    autoApprove: false,
+    reason: 'chain',
+    notifyIds: [ADMIN_ID],
+  });
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('../../convex/leaves/mutations');
@@ -232,6 +257,7 @@ describe('approveLeave balance branches', () => {
 describe('rejectLeave extra branches', () => {
   it('rejects a cross-organization reviewer', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_B));
+    mockAssertMayReview.mockRejectedValue(new Error('Access denied: cross-organization operation'));
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(leaveDoc()).mockResolvedValueOnce(makeCaller('admin', ORG_B));
 
@@ -266,12 +292,12 @@ describe('deleteLeave extra branches', () => {
       ['maternity', 'maternityLeaveBalance'],
       ['paternity', 'paidLeaveBalance'],
     ] as const) {
-      // The caller must be the leave owner (USER_ID) to delete it.
-      mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+      // Only HR may delete — employees route cancellations through the queue.
+      mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
       const { ctx, get } = makeCtx();
       get
         .mockResolvedValueOnce(leaveDoc({ type, status: 'approved' }))
-        .mockResolvedValueOnce(makeCaller('employee', ORG_A, USER_ID)) // requester lookup
+        .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID)) // requester lookup
         .mockResolvedValueOnce(userDoc()); // owner balance lookup
 
       await handlers.deleteLeave(ctx, { leaveId: LEAVE_ID });
@@ -312,6 +338,55 @@ describe('deleteLeave extra branches', () => {
         userId: USER_ID,
         type: 'leave_request',
         titleKey: 'notifications.titles.leaveDeleted',
+      }),
+    );
+  });
+
+  it('restores the balance when HR deletes a cancel_requested leave that was approved', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get } = makeCtx();
+    get
+      .mockResolvedValueOnce(
+        leaveDoc({ status: 'cancel_requested', previousStatus: 'approved', days: 3 }),
+      )
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID)) // requester = admin
+      .mockResolvedValueOnce(userDoc({ paidLeaveBalance: 21 })); // owner
+
+    await handlers.deleteLeave(ctx, { leaveId: LEAVE_ID });
+
+    expect(mockPatchProfile).toHaveBeenCalledWith(
+      ctx,
+      USER_ID,
+      expect.objectContaining({ paidLeaveBalance: 24 }),
+    );
+  });
+
+  it('does not restore the balance for a cancel_requested leave that was never approved', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'cancel_requested', previousStatus: 'pending' }))
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID));
+
+    await handlers.deleteLeave(ctx, { leaveId: LEAVE_ID });
+
+    expect(mockPatchProfile).not.toHaveBeenCalled();
+  });
+
+  it('notifies the owner with the cancellation-approved message when HR approves a cancellation', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'cancel_requested', previousStatus: 'approved' }))
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID));
+
+    await handlers.deleteLeave(ctx, { leaveId: LEAVE_ID });
+
+    expect(mockNotify).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({
+        userId: USER_ID,
+        titleKey: 'notifications.titles.leaveCancellationApproved',
       }),
     );
   });
@@ -482,14 +557,23 @@ describe('bulkApproveLeaves extra branches', () => {
 
 // ── bulkRejectLeaves: guard, status, cross-org, SLA, error ───────────────────
 describe('bulkRejectLeaves extra branches', () => {
-  it('rejects non-admin callers', async () => {
+  it('collects a per-row refusal for non-admin callers', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('employee'));
-    const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(makeCaller('employee'));
+    mockReviewRefusal.mockResolvedValue('You do not have permission to review leave requests');
+    const { ctx, get, insert } = makeCtx();
+    get.mockImplementation((id: string) => {
+      if (id === LEAVE_ID) return Promise.resolve(leaveDoc());
+      return Promise.resolve(makeCaller('employee'));
+    });
 
-    await expect(
-      handlers.bulkRejectLeaves(ctx, { leaveIds: [LEAVE_ID], comment: 'no' }),
-    ).rejects.toThrow('Only admins and supervisors can bulk reject leaves');
+    const res = (await handlers.bulkRejectLeaves(ctx, {
+      leaveIds: [LEAVE_ID],
+      comment: 'no',
+    })) as any;
+
+    expect(res.rejected).toEqual([]);
+    expect(res.errors[0]).toContain('You do not have permission to review leave requests');
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it('collects non-pending and cross-org errors', async () => {
@@ -558,25 +642,207 @@ describe('bulkRejectLeaves extra branches', () => {
   });
 });
 
-// ── secureApproveLeave / secureRejectLeave: cross-org ────────────────────────
-describe('secure mutations cross-org guards', () => {
-  it('secureApproveLeave denies a cross-organization admin', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_B));
-    const { ctx, get, patch } = makeCtx();
-    get.mockResolvedValueOnce(leaveDoc());
+// ── secureApproveLeave / secureRejectLeave: removed ─────────────────────────
+// The reporting-line approval refactor deleted these mutations — they checked
+// only the organization, so any employee could review any request in their org.
+// approveLeave / rejectLeave now go through leaves/approval.reviewRefusal.
 
-    await expect(handlers.secureApproveLeave(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
-      'Access denied: cross-organization operation',
+// ── requestLeaveCancellation: employee → HR queue ────────────────────────────
+describe('requestLeaveCancellation', () => {
+  it('asks HR to cancel an approved leave, notifies admins and audits', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    const { ctx, get, patch, insert, chains } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'approved' })) // leave
+      .mockResolvedValueOnce(userDoc({ _id: USER_ID, name: 'Anna' })); // requester = owner
+    const adminsCh = chain(chains, 'users');
+    adminsCh.take.mockResolvedValue([makeCaller('admin', ORG_A, ADMIN_ID, 'Boss')]);
+
+    const result = await handlers.requestLeaveCancellation(ctx, {
+      leaveId: LEAVE_ID,
+      comment: 'plans changed',
+    });
+
+    expect(result).toBe(LEAVE_ID);
+    expect(patch).toHaveBeenCalledWith(
+      LEAVE_ID,
+      expect.objectContaining({
+        status: 'cancel_requested',
+        previousStatus: 'approved',
+        cancelRequestedAt: expect.any(Number),
+        isRead: false,
+      }),
+    );
+    expect(mockNotify).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({
+        userId: ADMIN_ID,
+        titleKey: 'notifications.titles.leaveCancelRequested',
+      }),
+    );
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({ action: 'leave_cancel_requested', userId: USER_ID }),
+    );
+  });
+
+  it('notifies supervisors as well as admins', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    const { ctx, get, chains } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'approved' }))
+      .mockResolvedValueOnce(userDoc({ _id: USER_ID, name: 'Anna' }));
+    const usersCh = chain(chains, 'users');
+    usersCh.take
+      .mockResolvedValueOnce([makeCaller('admin', ORG_A, ADMIN_ID)]) // admin query
+      .mockResolvedValueOnce([makeCaller('supervisor', ORG_A, 'user_sup')]); // supervisor query
+
+    await handlers.requestLeaveCancellation(ctx, { leaveId: LEAVE_ID });
+
+    expect(mockNotify).toHaveBeenCalledWith(ctx, expect.objectContaining({ userId: ADMIN_ID }));
+    expect(mockNotify).toHaveBeenCalledWith(ctx, expect.objectContaining({ userId: 'user_sup' }));
+  });
+
+  it('lets the owner cancel a pending request too', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    const { ctx, get, patch, chains } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'pending' }))
+      .mockResolvedValueOnce(userDoc({ _id: USER_ID, name: 'Anna' }));
+    const adminsCh = chain(chains, 'users');
+    adminsCh.take.mockResolvedValue([]);
+
+    await handlers.requestLeaveCancellation(ctx, { leaveId: LEAVE_ID });
+
+    expect(patch).toHaveBeenCalledWith(
+      LEAVE_ID,
+      expect.objectContaining({ status: 'cancel_requested', previousStatus: 'pending' }),
+    );
+  });
+
+  it('denies a non-owner', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, 'user_other'));
+    const { ctx, get, patch } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc())
+      .mockResolvedValueOnce(makeCaller('employee', ORG_A, 'user_other'));
+
+    await expect(handlers.requestLeaveCancellation(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'You can only request cancellation of your own leave requests',
     );
     expect(patch).not.toHaveBeenCalled();
   });
 
-  it('secureRejectLeave denies a cross-organization admin', async () => {
+  it('refuses to cancel a rejected leave', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    const { ctx, get, patch } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'rejected' }))
+      .mockResolvedValueOnce(userDoc({ _id: USER_ID }));
+
+    await expect(handlers.requestLeaveCancellation(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'Only pending or approved leaves can be cancelled',
+    );
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('denies a cross-organization requester', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_B, USER_ID));
+    const { ctx, get, patch } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc())
+      .mockResolvedValueOnce(makeCaller('employee', ORG_B, USER_ID));
+
+    await expect(handlers.requestLeaveCancellation(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'Access denied: cross-organization operation',
+    );
+    expect(patch).not.toHaveBeenCalled();
+  });
+});
+
+// ── rejectLeaveCancellation: HR declines the request ─────────────────────────
+describe('rejectLeaveCancellation', () => {
+  it('restores the previous status and notifies the owner', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get, patch, insert } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'cancel_requested', previousStatus: 'approved' }))
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID, 'Boss'));
+
+    const result = await handlers.rejectLeaveCancellation(ctx, {
+      leaveId: LEAVE_ID,
+      comment: 'no',
+    });
+
+    expect(result).toBe(LEAVE_ID);
+    expect(patch).toHaveBeenCalledWith(
+      LEAVE_ID,
+      expect.objectContaining({
+        status: 'approved',
+        previousStatus: undefined,
+        cancelRequestedAt: undefined,
+      }),
+    );
+    expect(mockNotify).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({
+        userId: USER_ID,
+        titleKey: 'notifications.titles.leaveCancellationRejected',
+        messageKey: 'notifications.messages.leaveCancellationRejectedWithReason',
+      }),
+    );
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({ action: 'leave_cancel_rejected', userId: ADMIN_ID }),
+    );
+  });
+
+  it('falls back to approved when previousStatus is missing', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('supervisor', ORG_A, ADMIN_ID));
+    const { ctx, get, patch } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'cancel_requested' }))
+      .mockResolvedValueOnce(makeCaller('supervisor', ORG_A, ADMIN_ID, 'Boss'));
+
+    await handlers.rejectLeaveCancellation(ctx, { leaveId: LEAVE_ID });
+
+    expect(patch).toHaveBeenCalledWith(LEAVE_ID, expect.objectContaining({ status: 'approved' }));
+  });
+
+  it('denies non-admin callers', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    const { ctx, get, patch } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'cancel_requested' }))
+      .mockResolvedValueOnce(makeCaller('employee', ORG_A, USER_ID));
+
+    await expect(handlers.rejectLeaveCancellation(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'Only admins and supervisors can reject cancellation requests',
+    );
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('throws when the leave has no pending cancellation request', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get, patch } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'approved' }))
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID));
+
+    await expect(handlers.rejectLeaveCancellation(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'Leave has no pending cancellation request',
+    );
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('denies a cross-organization reviewer', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_B));
     const { ctx, get, patch } = makeCtx();
-    get.mockResolvedValueOnce(leaveDoc());
+    get
+      .mockResolvedValueOnce(leaveDoc({ status: 'cancel_requested' }))
+      .mockResolvedValueOnce(makeCaller('admin', ORG_B));
 
-    await expect(handlers.secureRejectLeave(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+    await expect(handlers.rejectLeaveCancellation(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
       'Access denied: cross-organization operation',
     );
     expect(patch).not.toHaveBeenCalled();

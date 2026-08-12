@@ -57,7 +57,19 @@
     "notFoundHint": "Эта заявка не существует или у вас нет доступа к ней.",
     "backToLeaves": "К заявкам",
     "type": "Тип",
-    "myLeaves": "Мои отпуска"
+    "myLeaves": "Мои отпуска",
+    "cancellationRequested": "Запрошена отмена",
+    "requestCancellation": "Запросить отмену",
+    "cancelRequestedSuccess": "Запрос на отмену отправлен в HR",
+    "cancelRequestFailed": "Не удалось отправить запрос на отмену",
+    "cancelApprovedSuccess": "Отмена одобрена",
+    "cancelRejectedSuccess": "Запрос на отмену отклонён",
+    "cancelApproveFailed": "Не удалось одобрить отмену",
+    "cancelRejectFailed": "Не удалось отклонить отмену",
+    "cancelPendingHint": "Запрос на отмену ожидает решения HR",
+    "approveCancellation": "Одобрить отмену",
+    "rejectCancellation": "Отклонить отмену",
+    "reviewNotAllowedHint": "Решение по этой заявке принимает руководитель сотрудника по линии подчинения или HR."
   },
   "leaveTypes": {
     "paid": "Оплачиваемый отпуск",
@@ -135,7 +147,8 @@
   "leaveStatus": {
     "approved": "Утверждено",
     "pending": "В ожидании",
-    "rejected": "Отклонено"
+    "rejected": "Отклонено",
+    "cancelRequested": "Запрошена отмена"
   },
   "leaveWizard": {
     "title": "Заявка на отпуск",

@@ -395,28 +395,14 @@ export const addComment = mutation({
 });
 
 // ── Assign Supervisor to Employee ──────────────────────────────────────────
-export const assignSupervisor = mutation({
-  args: {
-    employeeId: v.id('users'),
-    supervisorId: v.optional(v.id('users')),
-  },
-  handler: async (ctx, args) => {
-    const empForSupervisor = await ctx.db.get(args.employeeId);
-    await ctx.db.patch(args.employeeId, {
-      supervisorId: args.supervisorId,
-    });
-
-    // Audit log: supervisor assigned
-    await ctx.db.insert('auditLogs', {
-      organizationId: empForSupervisor?.organizationId,
-      userId: args.supervisorId || args.employeeId,
-      action: 'task_supervisor_assigned',
-      target: args.employeeId,
-      details: JSON.stringify({ employeeId: args.employeeId, supervisorId: args.supervisorId }),
-      createdAt: Date.now(),
-    });
-  },
-});
+// REMOVED. This mutation had no `getAuthCaller`, no role check, no org check and
+// no cycle guard: any authenticated client could set anyone's supervisor to
+// anyone, in any organization, and could create a reporting cycle that broke the
+// chart and approval routing for everyone in it.
+//
+// Use `reporting.assignManager` instead — it authenticates the caller, verifies
+// the org, rejects cycles and dual-writes both stores through
+// `lib/reportingLine.writeSupervisorId`.
 
 // ── Get Tasks for Employee ─────────────────────────────────────────────────
 // OPTIMIZED: Batch loading eliminates N+1 queries
@@ -615,48 +601,12 @@ export const getUsersForAssignment = query({
 });
 
 // ── Get supervisors list ───────────────────────────────────────────────────
-export const getSupervisors = query({
-  args: {},
-  handler: async (ctx, _args) => {
-    const requester = await getAuthCaller(ctx);
-    let supervisors = await ctx.db
-      .query('users')
-      .withIndex('by_role', (q) => q.eq('role', 'supervisor'))
-      .take(DEFAULT_LIST_CAP);
-    let admins = await ctx.db
-      .query('users')
-      .withIndex('by_role', (q) => q.eq('role', 'admin'))
-      .take(DEFAULT_LIST_CAP);
-
-    // Filter by organization
-    if (requester && requester.organizationId) {
-      supervisors = supervisors.filter(
-        (u: Doc<'users'>) => u.organizationId === requester.organizationId,
-      );
-      admins = admins.filter((u: Doc<'users'>) => u.organizationId === requester.organizationId);
-    }
-
-    const activeSupervisors = [...supervisors, ...admins].filter(
-      (u: Doc<'users'>) => u.isActive && u.isApproved,
-    );
-
-    const supProfiles = await Promise.all(
-      activeSupervisors.map((u: Doc<'users'>) => getProfile(ctx, u._id)),
-    );
-
-    return activeSupervisors.map((u: Doc<'users'>, i: number) => {
-      const profile = supProfiles[i];
-      return {
-        _id: u._id,
-        name: u.name,
-        role: u.role,
-        position: profile?.position ?? u.position,
-        department: profile?.department ?? u.department,
-        avatarUrl: profile?.avatarUrl ?? u.avatarUrl ?? u.faceImageUrl,
-      };
-    });
-  },
-});
+// REMOVED. It queried `by_role` globally and only filtered by organization when
+// a caller was authenticated, so an unauthenticated call returned every
+// supervisor and admin of every tenant. It was also role-filtered, which the
+// reporting-line model rejects: any active colleague can be someone's manager.
+//
+// Use `reporting.getPotentialManagers` — org-scoped, auth-checked, searchable.
 
 // ── Get task comments ──────────────────────────────────────────────────────
 /**

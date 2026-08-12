@@ -5,7 +5,9 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
@@ -55,14 +57,17 @@ export default function LeaveEditClient() {
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Пока из черновика восстановлены данные, гидрация из запроса не должна
+  // затирать их: запрос резолвится после restore (тот выполняется в макротаске).
+  const restoredDraftRef = useRef(false);
+
   useEffect(() => {
-    if (leave) {
-      setType(leave.type as LeaveType);
-      setStartDate(leave.startDate);
-      setEndDate(leave.endDate);
-      setReason(leave.reason);
-      setComment(leave.comment || '');
-    }
+    if (restoredDraftRef.current || !leave) return;
+    setType(leave.type as LeaveType);
+    setStartDate(leave.startDate);
+    setEndDate(leave.endDate);
+    setReason(leave.reason);
+    setComment(leave.comment || '');
   }, [leave]);
 
   const steps = [
@@ -123,6 +128,7 @@ export default function LeaveEditClient() {
       });
 
       toast.success(t('leave.updatedSuccess', 'Leave request updated successfully'));
+      clearDraft();
       router.push(`/leaves/${leaveId}`);
     } catch (error: unknown) {
       toast.error(
@@ -134,6 +140,60 @@ export default function LeaveEditClient() {
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
+
+  // ── Черновик: правки переживают случайный уход со страницы ────────────────
+  const draftData = useMemo(
+    () => ({ type, startDate, endDate, reason, comment }),
+    [type, startDate, endDate, reason, comment],
+  );
+
+  // «Нетронутая форма» — это данные отпуска с сервера, приходящие асинхронно.
+  const draftDefaults = useMemo(
+    () => ({
+      type: (leave?.type ?? 'paid') as LeaveType,
+      startDate: leave?.startDate ?? '',
+      endDate: leave?.endDate ?? '',
+      reason: leave?.reason ?? '',
+      comment: leave?.comment ?? '',
+    }),
+    [leave],
+  );
+
+  const handleRestoreDraft = useCallback(
+    (d: typeof draftData, savedStep: number) => {
+      restoredDraftRef.current = true;
+      if (d.type) setType(d.type);
+      if (d.startDate !== undefined) setStartDate(d.startDate);
+      if (d.endDate !== undefined) setEndDate(d.endDate);
+      if (d.reason !== undefined) setReason(d.reason);
+      if (d.comment !== undefined) setComment(d.comment);
+      setCurrentStep(Math.min(Math.max(savedStep, 0), steps.length - 1));
+    },
+    [steps.length],
+  );
+
+  const draft = useWizardDraft({
+    key: `edit-leave:${leaveId}`,
+    enabled: true,
+    data: draftData,
+    step: currentStep,
+    defaults: draftDefaults,
+    onRestore: handleRestoreDraft,
+  });
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    restoredDraftRef.current = false;
+    if (leave) {
+      setType(leave.type as LeaveType);
+      setStartDate(leave.startDate);
+      setEndDate(leave.endDate);
+      setReason(leave.reason);
+      setComment(leave.comment || '');
+    }
+    setCurrentStep(0);
+  }, [clearDraft, leave]);
 
   if (leave === undefined) {
     return (
@@ -252,6 +312,12 @@ export default function LeaveEditClient() {
 
           {/* Step Content */}
           <div className="px-5 py-4 min-h-[300px]">
+            <WizardDraftNotice
+              show={draft.restored}
+              step={draft.restoredStep}
+              onReset={handleStartOver}
+            />
+
             {/* Step 1: Leave Type */}
             {currentStep === 0 && (
               <div className="space-y-3">

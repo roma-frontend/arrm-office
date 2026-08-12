@@ -1429,7 +1429,11 @@
       "probationExtended": "Испытательный срок {{employeeName}} продлён на {{days}} дн.",
       "probationPassed": "{{employeeName}} успешно прошёл(ла) испытательный срок.",
       "probationPassedAuto": "{{employeeName}} прошёл(ла) испытательный срок автоматически — работа продолжилась после окончания срока.",
-      "probationFailed": "{{employeeName}} не прошёл(ла) испытательный срок."
+      "probationFailed": "{{employeeName}} не прошёл(ла) испытательный срок.",
+      "leaveCancelRequested": "{{userName}} запросил отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}})",
+      "leaveCancellationApproved": "Ваша отмена $t(leaveTypes.{{type}}) ({{start}} → {{end}}) одобрена.",
+      "leaveCancellationRejected": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}).",
+      "leaveCancellationRejectedWithReason": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}). Причина: {{comment}}"
     },
     "titles": {
       "movementFormReady": "📄 Акт перемещения готов к подписанию",
@@ -1530,7 +1534,10 @@
       "probationEndingSoon": "⏰ Истекает испытательный срок",
       "probationExtended": "⏳ Испытательный срок продлён",
       "probationPassed": "✅ Испытательный срок пройден",
-      "probationFailed": "⛔ Испытательный срок не пройден"
+      "probationFailed": "⛔ Испытательный срок не пройден",
+      "leaveCancelRequested": "Запрошена отмена отпуска",
+      "leaveCancellationApproved": "Отмена одобрена",
+      "leaveCancellationRejected": "Отмена отклонена"
     }
   },
   "aiChat": {
@@ -1585,7 +1592,8 @@
     "driverSubmitted": "✅ Заявка на водителя отправлена!",
     "conflictWarning": "⚠️ Примечание: {{warnings}}",
     "conflictDetected": "🚨 **Конфликт для заявки на отпуск ({{type}}, {{start}} → {{end}})**:",
-    "conflictAdvice": "Рассмотрите другие даты или обсудите с руководителем."
+    "conflictAdvice": "Рассмотрите другие даты или обсудите с руководителем.",
+    "leaveCancelRequested": "↩️ Запрошена отмена вашего отпуска ({{type}}, {{start}} → {{end}}). HR рассмотрит запрос."
   },
   "leaveTypes": {
     "paid": "Оплачиваемый отпуск",

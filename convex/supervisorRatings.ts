@@ -1,11 +1,71 @@
 import { v } from 'convex/values';
-import { mutation, query, type MutationCtx } from './_generated/server';
+import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import type { Id, Doc } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { creditBalance, resolveRecognitionSettings } from './lib/points';
+import { hasCapability, hasOrgWideReach } from './lib/capabilities';
+import { getOrgHeadId, isAncestorOf, resolveSupervisorId } from './lib/reportingLine';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Who rates whom
+// ─────────────────────────────────────────────────────────────────────────────
+// The old rule was rank-shaped and had three holes: the rating queue listed the
+// whole organization regardless of who managed whom, `role === 'admin'` made
+// somebody unrateable by anyone (so a CEO could not rate their own HR admin —
+// equal rank again), and the authorization check let `caller._id === employeeId`
+// through, so anyone could rate themselves 5/5 and collect the review points
+// that buy real vouchers.
+//
+// Now: a manager rates their own subtree, HR/admins rate anyone in the
+// organization, the head of the organization is rated by nobody, and nobody
+// rates themselves.
+
+/**
+ * @returns the reason to refuse, or `null` when allowed. Mirrors
+ * `leaves/approval.reviewRefusal`.
+ */
+async function ratingRefusal(
+  ctx: QueryCtx | MutationCtx,
+  rater: { _id: Id<'users'>; role: string; email?: string; organizationId?: Id<'organizations'> },
+  target: Doc<'users'>,
+): Promise<string | null> {
+  if (rater._id === target._id) {
+    return 'You cannot rate yourself';
+  }
+  if (isSuperadmin(rater)) return null;
+
+  if (!rater.organizationId || rater.organizationId !== target.organizationId) {
+    return 'Access denied: cross-organization operation';
+  }
+  if (target.role === 'superadmin') {
+    // The platform operator is not an org member, so there is nobody inside the
+    // organization whose judgement applies to them.
+    return 'The platform superadmin is not rated';
+  }
+  if (!target.isActive) return 'Cannot rate inactive employees';
+
+  const headId = await getOrgHeadId(ctx, target.organizationId);
+  if (headId && headId === target._id) {
+    // The head answers to the board, not to anybody inside the app.
+    return 'The head of the organization is not rated';
+  }
+
+  // `getAuthCaller` already carries the role, so the capability decision needs
+  // no second read of the caller's own document.
+  if (!hasCapability(rater, 'ratings.manage')) {
+    return 'Not authorized to rate this employee';
+  }
+  // HR / admins rate anyone in the organization — that is what makes "HR rates
+  // everyone except the CEO" true no matter who sits above HR in the line.
+  if (hasOrgWideReach(rater)) return null;
+
+  return (await isAncestorOf(ctx, rater._id, target._id))
+    ? null
+    : "Only a manager in this employee's reporting line, or HR, may rate them";
+}
 
 // ── Create/Update Supervisor Rating ──────────────────────────────────────
 export const createRating = mutation({
@@ -24,33 +84,15 @@ export const createRating = mutation({
     ratingPeriod: v.optional(v.string()), // e.g., "2026-02"
   },
   handler: async (ctx, args) => {
-    // RBAC: only same-org admins/supervisors, superadmin, or the employee
-    // themself may rate; the rating must be attributed to the caller (no
-    // spoofing another supervisor's id). Matches updateExtendedProfile /
-    // recordTaxIdVerification.
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 
     const target = await ctx.db.get(args.employeeId);
     if (!target) throw new Error('User not found');
-    const isOrgStaff =
-      (caller.role === 'admin' || caller.role === 'supervisor') &&
-      caller.organizationId === target.organizationId;
-    if (!isSuperadmin(caller) && !isOrgStaff && caller._id !== args.employeeId) {
-      throw new Error('Not authorized to rate this employee');
-    }
-    // Admins/superadmins are not rateable by non-superadmins — matches
-    // getEmployeesNeedingRating, which excludes those roles from the rating
-    // list for every viewer (admins are rated by nobody through the standard
-    // flow).
-    if (!isSuperadmin(caller) && (target.role === 'admin' || target.role === 'superadmin')) {
-      throw new Error('Admins and superadmins cannot be rated');
-    }
-    // Inactive employees are not rateable by non-superadmins — matches
-    // getEmployeesNeedingRating, which only lists active employees.
-    if (!isSuperadmin(caller) && !target.isActive) {
-      throw new Error('Cannot rate inactive employees');
-    }
+
+    const refusal = await ratingRefusal(ctx, caller, target);
+    if (refusal) throw new Error(refusal);
+
     if (args.supervisorId !== caller._id) {
       throw new Error('supervisorId must match the authenticated user');
     }
@@ -141,6 +183,28 @@ export const getEmployeeRatings = query({
     );
 
     return withSupervisors;
+  },
+});
+
+// ── May I rate this employee? ────────────────────────────────────────────
+// Mirrors `getReviewEligibility` for leave. The profile page used to decide
+// this locally with `employee.role !== 'admin'`, which is exactly the rank rule
+// the reporting line replaced: it hid the Rate button on HR's own profile, so
+// the CEO could never rate their HR admin. Asking the server keeps the button
+// and `createRating` on one rule.
+export const getRatingEligibility = query({
+  args: {
+    employeeId: v.id('users'),
+  },
+  handler: async (ctx, { employeeId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { allowed: false, reason: 'Not authenticated' };
+
+    const target = await ctx.db.get(employeeId);
+    if (!target) return { allowed: false, reason: 'User not found' };
+
+    const refusal = await ratingRefusal(ctx, caller, target);
+    return { allowed: refusal === null, reason: refusal };
   },
 });
 
@@ -324,26 +388,20 @@ async function updatePerformanceMetrics(
 export const getEmployeesNeedingRating = query({
   args: {},
   handler: async (ctx) => {
-    // Auth + org scoping: the list is resolved from the authenticated caller's
-    // own organization — a client-supplied supervisorId is never trusted
-    // (previously the query scoped by an arbitrary passed id, letting anyone
-    // enumerate another org's employees). Returns [] gracefully when
-    // unauthenticated, matching the query convention (see getDocumentById).
+    // The queue is now the set of people this caller may actually rate, which is
+    // not the same as "everyone in the organization": a manager sees their own
+    // subtree, HR/admins see the whole organization, the head of the
+    // organization is in nobody's queue, and nobody is in their own.
     const caller = await getAuthCaller(ctx);
     if (!caller) return [];
 
     const userIsSuperadmin = isSuperadmin(caller);
-
-    // The "who needs rating" list is a management view — matches the
-    // attendance page's admin/supervisor-only gate, so employees/drivers get
-    // an empty list rather than their org's review pipeline.
-    if (!userIsSuperadmin && caller.role !== 'admin' && caller.role !== 'supervisor') {
+    if (!userIsSuperadmin && !hasCapability(caller, 'ratings.manage')) {
       return [];
     }
 
     const currentPeriod = new Date().toISOString().slice(0, 7);
 
-    // Get active employees scoped to the caller's org
     let allUsers;
     if (!userIsSuperadmin) {
       if (!caller.organizationId) {
@@ -357,14 +415,41 @@ export const getEmployeesNeedingRating = query({
       allUsers = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
     }
 
-    // Exclude superadmins and admins from rating list
-    const activeEmployees = allUsers.filter(
-      (u) => u.isActive && u.role !== 'admin' && u.role !== 'superadmin',
-    );
+    const headId = await getOrgHeadId(ctx, caller.organizationId);
+    const orgWide = userIsSuperadmin || hasOrgWideReach(caller);
+
+    // For a manager, walk the line down once instead of asking `isAncestorOf`
+    // per person: build parent → children from the canonical field and collect
+    // the caller's subtree.
+    const subtree = new Set<string>();
+    if (!orgWide) {
+      const childrenOf = new Map<string, Id<'users'>[]>();
+      for (const u of allUsers) {
+        const managerId = await resolveSupervisorId(ctx, u);
+        if (!managerId) continue;
+        const siblings = childrenOf.get(managerId) ?? [];
+        siblings.push(u._id);
+        childrenOf.set(managerId, siblings);
+      }
+      const queue: Id<'users'>[] = [...(childrenOf.get(caller._id) ?? [])];
+      while (queue.length > 0) {
+        const next = queue.shift()!;
+        if (subtree.has(next)) continue;
+        subtree.add(next);
+        queue.push(...(childrenOf.get(next) ?? []));
+      }
+    }
+
+    const rateable = allUsers.filter((u) => {
+      if (!u.isActive || u.role === 'superadmin') return false;
+      if (u._id === caller._id) return false;
+      if (headId && u._id === headId) return false;
+      return orgWide || subtree.has(u._id);
+    });
 
     // Check which ones don't have a rating this month
     const needsRating = await Promise.all(
-      activeEmployees.map(async (employee) => {
+      rateable.map(async (employee) => {
         const rating = await ctx.db
           .query('supervisorRatings')
           .withIndex('by_employee', (q) => q.eq('employeeId', employee._id))

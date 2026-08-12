@@ -36,12 +36,26 @@ jest.mock('../../convex/lib/notify', () => ({
   notify: jest.fn(),
 }));
 
+// The reporting-line approval refactor routes reviews through leaves/approval
+// (assertMayReview / reviewRefusal / resolveApprovalRoute). These unit tests
+// stub that gate and assert the mutation flows around it; the gate itself is
+// covered by convex-leaves.integration.test.ts.
+jest.mock('../../convex/leaves/approval', () => ({
+  assertMayReview: jest.fn(),
+  resolveApprovalRoute: jest.fn(),
+  reviewRefusal: jest.fn(),
+  HEAD_AUTO_APPROVAL_NOTE: 'Auto-approved: head policy',
+}));
+
 // ── Module under test ────────────────────────────────────────────────────────
 let mockGetAuthCaller: jest.Mock;
 let mockIsSuperadmin: jest.Mock;
 let mockIsSuperadminEmail: jest.Mock;
 let mockPatchProfile: jest.Mock;
 let mockNotify: jest.Mock;
+let mockAssertMayReview: jest.Mock;
+let mockReviewRefusal: jest.Mock;
+let mockResolveApprovalRoute: jest.Mock;
 
 type Handler = (ctx: any, args: any) => Promise<unknown>;
 const handlers: Record<string, Handler> = {};
@@ -53,11 +67,26 @@ beforeEach(() => {
   mockIsSuperadminEmail = jest.requireMock('../../convex/lib/auth').isSuperadminEmail;
   mockPatchProfile = jest.requireMock('../../convex/lib/userProfile').patchProfile;
   mockNotify = jest.requireMock('../../convex/lib/notify').notify;
+  mockAssertMayReview = jest.requireMock('../../convex/leaves/approval').assertMayReview;
+  mockReviewRefusal = jest.requireMock('../../convex/leaves/approval').reviewRefusal;
+  mockResolveApprovalRoute = jest.requireMock('../../convex/leaves/approval').resolveApprovalRoute;
   mockGetAuthCaller.mockReset();
   mockIsSuperadmin.mockReset();
   mockIsSuperadminEmail.mockReset();
   mockPatchProfile.mockReset();
   mockNotify.mockReset();
+  mockAssertMayReview.mockReset();
+  mockReviewRefusal.mockReset();
+  mockResolveApprovalRoute.mockReset();
+  // Defaults: any caller may review, nothing is refused, requests route to the
+  // org admin (mirrors the pre-refactor admin fan-out for these unit tests).
+  mockAssertMayReview.mockResolvedValue(undefined);
+  mockReviewRefusal.mockResolvedValue(null);
+  mockResolveApprovalRoute.mockResolvedValue({
+    autoApprove: false,
+    reason: 'chain',
+    notifyIds: [ADMIN_ID],
+  });
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('../../convex/leaves/mutations');
@@ -151,6 +180,7 @@ function makeCtx() {
 // ── createLeave ──────────────────────────────────────────────────────────────
 describe('createLeave', () => {
   it('throws when the user does not exist', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A));
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(null);
 
@@ -167,6 +197,7 @@ describe('createLeave', () => {
   });
 
   it('throws for unapproved accounts', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A));
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(userDoc({ isApproved: false }));
 
@@ -183,6 +214,7 @@ describe('createLeave', () => {
   });
 
   it('throws for users without an organization', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A));
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(userDoc({ organizationId: undefined }));
 
@@ -199,14 +231,9 @@ describe('createLeave', () => {
   });
 
   it('creates the request, notifies the employee and all org admins, and audits', async () => {
-    const { ctx, get, insert, db } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A));
+    const { ctx, get, insert } = makeCtx();
     get.mockResolvedValueOnce(userDoc({ name: 'Anna' }));
-    const adminsCh = makeChain();
-    adminsCh.take.mockResolvedValue([
-      userDoc({ _id: ADMIN_ID, role: 'admin', name: 'Boss' }),
-      userDoc({ _id: USER_ID, role: 'employee' }), // skipped (self)
-    ]);
-    db.query.mockImplementation(() => adminsCh.root);
 
     const id = await handlers.createLeave(ctx, {
       userId: USER_ID,
@@ -277,6 +304,7 @@ describe('approveLeave', () => {
 
   it('rejects a cross-organization reviewer', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_B, ADMIN_ID));
+    mockAssertMayReview.mockRejectedValue(new Error('Access denied: cross-organization operation'));
     const { ctx, get } = makeCtx();
     get
       .mockResolvedValueOnce(leaveDoc())
@@ -289,11 +317,14 @@ describe('approveLeave', () => {
 
   it('rejects a non-admin reviewer', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('employee'));
+    mockAssertMayReview.mockRejectedValue(
+      new Error('You do not have permission to review leave requests'),
+    );
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(leaveDoc()).mockResolvedValueOnce(userDoc());
 
     await expect(handlers.approveLeave(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
-      'Only admins and supervisors can approve leaves',
+      'You do not have permission to review leave requests',
     );
   });
 
@@ -400,11 +431,14 @@ describe('rejectLeave', () => {
 
   it('throws for a non-admin reviewer', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('driver', ORG_A, 'user_driver'));
+    mockAssertMayReview.mockRejectedValue(
+      new Error('You do not have permission to review leave requests'),
+    );
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(leaveDoc()).mockResolvedValueOnce(userDoc({ role: 'driver' }));
 
     await expect(handlers.rejectLeave(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
-      'Only admins and supervisors can reject leaves',
+      'You do not have permission to review leave requests',
     );
   });
 });
@@ -478,13 +512,13 @@ describe('updateLeave', () => {
 
 // ── deleteLeave / forceDeleteLeave ───────────────────────────────────────────
 describe('deleteLeave', () => {
-  it('restores the balance when deleting an approved paid leave', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A));
+  it('restores the balance when an admin deletes an approved paid leave', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
     const { ctx, get, patch, remove, insert } = makeCtx();
     get
-      .mockResolvedValueOnce(leaveDoc({ status: 'approved', days: 3 }))
-      .mockResolvedValueOnce(userDoc());
-    get.mockResolvedValueOnce(userDoc({ paidLeaveBalance: 21 })); // leave owner
+      .mockResolvedValueOnce(leaveDoc({ status: 'approved', days: 3 })) // leave
+      .mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'admin' })) // requester = admin
+      .mockResolvedValueOnce(userDoc({ paidLeaveBalance: 21 })); // leave owner
 
     const result = await handlers.deleteLeave(ctx, { leaveId: LEAVE_ID });
 
@@ -501,15 +535,13 @@ describe('deleteLeave', () => {
     );
   });
 
-  it('denies a non-owner deleting a foreign request', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, 'user_other'));
+  it('denies an employee — even the owner — from deleting (cancellation goes to HR)', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A));
     const { ctx, get, remove } = makeCtx();
-    get
-      .mockResolvedValueOnce(leaveDoc({ userId: USER_ID }))
-      .mockResolvedValueOnce(userDoc({ _id: 'user_other' }));
+    get.mockResolvedValueOnce(leaveDoc()).mockResolvedValueOnce(userDoc());
 
     await expect(handlers.deleteLeave(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
-      'You can only delete your own leave requests',
+      'Only admins and supervisors can delete leave requests',
     );
     expect(remove).not.toHaveBeenCalled();
   });
@@ -652,14 +684,20 @@ describe('bulkApproveLeaves', () => {
     );
   });
 
-  it('rejects non-admin callers', async () => {
+  it('collects a per-row refusal for non-admin callers', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('employee'));
-    const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(userDoc());
+    mockReviewRefusal.mockResolvedValue('You do not have permission to review leave requests');
+    const { ctx, get, patch } = makeCtx();
+    get.mockImplementation((id: string) => {
+      if (id === LEAVE_ID) return Promise.resolve(leaveDoc());
+      return Promise.resolve(userDoc());
+    });
 
-    await expect(handlers.bulkApproveLeaves(ctx, { leaveIds: [LEAVE_ID] })).rejects.toThrow(
-      'Only admins and supervisors can bulk approve leaves',
-    );
+    const result = (await handlers.bulkApproveLeaves(ctx, { leaveIds: [LEAVE_ID] })) as any;
+
+    expect(result.approved).toEqual([]);
+    expect(result.errors[0]).toContain('You do not have permission to review leave requests');
+    expect(patch).not.toHaveBeenCalled();
   });
 });
 
@@ -692,61 +730,7 @@ describe('bulkRejectLeaves', () => {
 });
 
 // ── Secured approve/reject ───────────────────────────────────────────────────
-describe('secureApproveLeave / secureRejectLeave', () => {
-  it('secureApproveLeave approves with the caller as reviewer', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
-    const { ctx, get, patch, insert } = makeCtx();
-    get.mockResolvedValueOnce(leaveDoc());
-
-    const result = await handlers.secureApproveLeave(ctx, { leaveId: LEAVE_ID });
-
-    expect(result).toBe(LEAVE_ID);
-    expect(patch).toHaveBeenCalledWith(
-      LEAVE_ID,
-      expect.objectContaining({ status: 'approved', reviewedBy: ADMIN_ID }),
-    );
-    expect(insert).toHaveBeenCalledWith(
-      'auditLogs',
-      expect.objectContaining({ action: 'leave_approved', userId: ADMIN_ID }),
-    );
-  });
-
-  it('secureApproveLeave denies cross-organization callers', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_B, ADMIN_ID));
-    const { ctx, get, patch } = makeCtx();
-    get.mockResolvedValueOnce(leaveDoc());
-
-    await expect(handlers.secureApproveLeave(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
-      'Access denied: cross-organization operation',
-    );
-    expect(patch).not.toHaveBeenCalled();
-  });
-
-  it('secureRejectLeave rejects with a comment', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('superadmin', undefined, ADMIN_ID));
-    const { ctx, get, patch, insert } = makeCtx();
-    get.mockResolvedValueOnce(leaveDoc({ organizationId: ORG_B }));
-
-    const result = await handlers.secureRejectLeave(ctx, { leaveId: LEAVE_ID, comment: 'sorry' });
-
-    expect(result).toBe(LEAVE_ID);
-    expect(patch).toHaveBeenCalledWith(
-      LEAVE_ID,
-      expect.objectContaining({ status: 'rejected', reviewComment: 'sorry' }),
-    );
-    expect(insert).toHaveBeenCalledWith(
-      'auditLogs',
-      expect.objectContaining({ action: 'leave_rejected' }),
-    );
-  });
-
-  it('secureRejectLeave throws when the leave is not pending', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
-    const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(leaveDoc({ status: 'rejected' }));
-
-    await expect(handlers.secureRejectLeave(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
-      'Leave is not pending',
-    );
-  });
-});
+// secureApproveLeave / secureRejectLeave were removed by the reporting-line
+// approval refactor (they only checked the organization, so any employee could
+// review any request in their org, including their own). approveLeave and
+// rejectLeave now go through leaves/approval.reviewRefusal instead.

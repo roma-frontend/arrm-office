@@ -248,13 +248,30 @@ export default function OrgChartClient() {
       : 'skip',
   );
 
+  // The declared root of the reporting line, and the people who are not attached
+  // to it. Both are what makes the chart a tree instead of a forest.
+  const orgHead = useQuery(
+    api.reporting.getOrganizationHead,
+    orgIdToQuery && user?.id ? { organizationId: orgIdToQuery as Id<'organizations'> } : 'skip',
+  );
+
+  const unassignedUsers = useQuery(
+    api.reporting.getUnassignedUsers,
+    orgIdToQuery && user?.id ? { organizationId: orgIdToQuery as Id<'organizations'> } : 'skip',
+  );
+
+  const headCandidates = useQuery(
+    api.reporting.getPotentialManagers,
+    orgIdToQuery && user?.id ? { organizationId: orgIdToQuery as Id<'organizations'> } : 'skip',
+  );
+
   // Mutations
   const generateOrgChart = useMutation(api.orgchart.generateOrgChartFromUsers);
   const createNode = useMutation(api.orgchart.createNode);
   const updateNode = useMutation(api.orgchart.updateNode);
   const deleteNode = useMutation(api.orgchart.deleteNode);
   const saveLayout = useMutation(api.orgchart.saveLayout);
-  const fixDepartments = useMutation(api.orgchart.fixOrgChartDepartments);
+  const setOrganizationHead = useMutation(api.reporting.setOrganizationHead);
 
   // Build React Flow nodes and edges from tree data with proper tree layout
   const buildFlowElements = useCallback(
@@ -436,8 +453,12 @@ export default function OrgChartClient() {
       setShowEditDialog(false);
       setSelectedNode(null);
       setNodeForm({ name: '', title: '', type: 'person', parentId: '', userId: '' });
-    } catch {
-      toast.error(t('orgChart.updateError', 'Failed to update node'));
+    } catch (e) {
+      // Re-parenting a person writes the reporting line, which refuses cycles,
+      // inactive managers and cross-org moves. The reason is the useful part.
+      toast.error(
+        e instanceof Error ? e.message : t('orgChart.updateError', 'Failed to update node'),
+      );
     }
   };
 
@@ -501,30 +522,19 @@ export default function OrgChartClient() {
     }
   };
 
-  const handleFixDepartments = async () => {
-    if (!orgIdToQuery || !user?.id) return;
-
+  const handleSetHead = async (value: string) => {
+    if (!orgIdToQuery) return;
     try {
-      const result = await fixDepartments({
+      await setOrganizationHead({
         organizationId: orgIdToQuery as Id<'organizations'>,
+        ...(value === '__none__' ? {} : { userId: value as Id<'users'> }),
       });
-
-      if (result.fixedCount > 0) {
-        toast.success(
-          t('orgChart.fixDepartmentsSuccess', 'Fixed {{count}} departments', {
-            count: result.fixedCount,
-          }),
-        );
-      } else {
-        toast.info(
-          t('orgChart.fixDepartmentsNoChanges', 'No changes needed. Debug: {{debug}}', {
-            debug: JSON.stringify(result.debug || []),
-          }),
-        );
-      }
+      toast.success(t('orgChart.headSaved', 'Head of the organization updated'));
     } catch (e) {
-      toast.error(t('orgChart.fixDepartmentsError', 'Failed to fix departments'));
-      logger.error('Fix departments error:', e);
+      // The mutation refuses a head who reports to someone, is inactive, belongs
+      // to another organization, or is the platform superadmin — show which.
+      toast.error(e instanceof Error ? e.message : t('orgChart.headSaveError', 'Failed to save'));
+      logger.error('Set organization head error:', e);
     }
   };
 
@@ -596,11 +606,6 @@ export default function OrgChartClient() {
                   {t('orgChart.addNode', 'Add Node')}
                 </Button>
 
-                <Button variant="outline" size="sm" onClick={handleFixDepartments}>
-                  <Users className="h-4 w-4 mr-2" />
-                  {t('orgChart.fixDepartments', 'Fix Departments')}
-                </Button>
-
                 <Button variant="outline" size="sm" onClick={handleGenerateOrgChart}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   {t('orgChart.generateFromUsers', 'Generate from Employee Data')}
@@ -610,6 +615,77 @@ export default function OrgChartClient() {
           </div>
         </div>
       </div>
+
+      {/* Head of the organization + people outside the hierarchy */}
+      {isAdmin && (
+        <Card className="mb-6 bg-card text-card-foreground">
+          <CardContent className="pt-6">
+            <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+              <div className="lg:w-80">
+                <label className="text-sm font-medium text-(--text-primary)">
+                  {t('orgChart.head', 'Head of the organization')}
+                </label>
+                <p className="text-xs text-(--text-muted) mt-0.5 mb-2">
+                  {t(
+                    'orgChart.headHint',
+                    'The root of the chart and the last step of every approval chain. They must not report to anyone.',
+                  )}
+                </p>
+                <Select value={orgHead?._id ?? '__none__'} onValueChange={handleSetHead}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('common.none', 'None')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{t('common.none', 'None')}</SelectItem>
+                    {headCandidates?.map((candidate) => (
+                      <SelectItem key={candidate._id} value={candidate._id}>
+                        {candidate.name}
+                        {candidate.position ? ` — ${candidate.position}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1">
+                <p className="text-sm font-medium text-(--text-primary)">
+                  {t('orgChart.unassigned', 'Not placed in the hierarchy')}
+                </p>
+                {unassignedUsers === undefined ? (
+                  <p className="text-xs text-(--text-muted) mt-1">{t('commonUI.loading')}...</p>
+                ) : unassignedUsers.length === 0 ? (
+                  <p className="text-xs text-(--text-muted) mt-1">
+                    {t('orgChart.unassignedNone', 'Everyone reports to someone.')}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-xs text-(--text-muted) mt-0.5 mb-2">
+                      {t(
+                        'orgChart.unassignedHint',
+                        'These people have no manager, so they render as separate roots. Assign a manager to place them.',
+                      )}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {unassignedUsers.map((u) => (
+                        <Badge
+                          key={u._id}
+                          variant="outline"
+                          className="flex items-center gap-1 text-foreground"
+                        >
+                          {u.name}
+                          {u.position ? (
+                            <span className="text-(--text-muted)">· {u.position}</span>
+                          ) : null}
+                        </Badge>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search and Filters */}
       <Card className="mb-6 bg-card text-card-foreground">
@@ -821,6 +897,12 @@ export default function OrgChartClient() {
             </div>
             <div>
               <label className="text-sm font-medium">{t('orgChart.parent', 'Parent')}</label>
+              <p className="text-xs text-(--text-muted) mt-0.5 mb-1.5">
+                {t(
+                  'orgChart.parentIsManager',
+                  'For a person this is their manager: saving it changes the reporting line, not just the chart.',
+                )}
+              </p>
               <Select
                 value={nodeForm.parentId || '__none__'}
                 onValueChange={(value) =>

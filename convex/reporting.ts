@@ -3,8 +3,15 @@ import { query, mutation } from './_generated/server';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 import { getProfile } from './lib/userProfile';
-import type { Doc, Id } from './_generated/dataModel';
+import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
+import {
+  assertAssignable,
+  resolveSupervisorId,
+  writeSupervisorId,
+  getOrgHeadId,
+} from './lib/reportingLine';
+import { requireCapability } from './lib/capabilities';
 
 // ── Reporting Line ───────────────────────────────────────────────────────────
 // Returns the chain of command: employee → supervisor → their supervisor → …
@@ -43,7 +50,7 @@ export const getReportingLine = query({
     }> = [];
 
     const seen = new Set<string>();
-    let currentId: Id<'users'> | undefined = targetUser.supervisorId ?? undefined;
+    let currentId: Id<'users'> | undefined = await resolveSupervisorId(ctx, targetUser);
 
     for (let hops = 0; hops < 10 && currentId; hops++) {
       if (seen.has(currentId)) break;
@@ -63,7 +70,7 @@ export const getReportingLine = query({
         email: sup.email,
       });
 
-      currentId = profile?.supervisorId ?? sup.supervisorId ?? undefined;
+      currentId = await resolveSupervisorId(ctx, sup);
     }
 
     // ── Walk down the chain (direct reports) ────────────────────────────
@@ -100,7 +107,7 @@ export const getReportingLine = query({
       avatarUrl: targetUser.avatarUrl ?? subjectProfile?.avatarUrl,
       email: targetUser.email,
       employeeType: targetUser.employeeType,
-      supervisorId: targetUser.supervisorId,
+      supervisorId: await resolveSupervisorId(ctx, targetUser),
     };
 
     return {
@@ -152,13 +159,23 @@ export const getPotentialManagers = query({
       );
     }
 
-    // Sort: admins first, then supervisors, then employees
-    const roleOrder = { admin: 0, supervisor: 1, employee: 2, driver: 3 } as const;
-    candidates.sort(
-      (a, b) =>
-        (roleOrder[a.role as keyof typeof roleOrder] ?? 99) -
-        (roleOrder[b.role as keyof typeof roleOrder] ?? 99),
-    );
+    // Order: the head of the organization first, then by position rank (0 = top),
+    // then alphabetically. Ranking by *role* was the old behaviour and it is
+    // exactly the conflation this model removes — an `admin` is not thereby
+    // senior to a `supervisor`, and seniority is not a permission.
+    const positions = await ctx.db
+      .query('positions')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .take(XLARGE_LIST_CAP);
+    const rankByPosition = new Map(positions.map((p) => [p._id as string, p.rank]));
+    const headId = await getOrgHeadId(ctx, organizationId);
+
+    const rankOf = (u: (typeof candidates)[number]): number => {
+      if (headId && u._id === headId) return -1;
+      const rank = u.positionId ? rankByPosition.get(u.positionId) : undefined;
+      return rank ?? Number.MAX_SAFE_INTEGER;
+    };
+    candidates.sort((a, b) => rankOf(a) - rankOf(b) || a.name.localeCompare(b.name));
 
     // Limit and format
     return candidates.slice(0, 50).map((u) => ({
@@ -199,9 +216,6 @@ export const assignManager = mutation({
 
     // If supervisorId provided, verify they exist and are in the same org
     if (supervisorId) {
-      if (supervisorId === employeeId) {
-        throw new Error('An employee cannot be their own manager');
-      }
       const supervisor = await ctx.db.get(supervisorId);
       if (!supervisor) throw new Error('Supervisor not found');
       if (!isSuperadminUser && supervisor.organizationId !== employee.organizationId) {
@@ -209,33 +223,13 @@ export const assignManager = mutation({
       }
       if (!supervisor.isActive) throw new Error('Supervisor account is inactive');
 
-      // Reject cycles: the new manager must not already report to this employee.
-      const seen = new Set<string>([employeeId]);
-      let cursor: Id<'users'> | undefined = supervisorId;
-      for (let hops = 0; hops < 20 && cursor; hops++) {
-        if (seen.has(cursor)) {
-          throw new Error('This assignment would create a circular reporting line');
-        }
-        seen.add(cursor);
-        const node: Doc<'users'> | null = await ctx.db.get(cursor);
-        if (!node) break;
-        const nodeProfile = await getProfile(ctx, cursor);
-        cursor = nodeProfile?.supervisorId ?? node.supervisorId ?? undefined;
-      }
+      // Self-management and cycles: one shared guard, so every writer of
+      // `supervisorId` rejects the same assignments.
+      await assertAssignable(ctx, employeeId, supervisorId);
     }
 
-    // Update both users table and userProfiles
-    await ctx.db.patch(employeeId, { supervisorId });
-
-    // Sync to profile
-    const profile = await ctx.db
-      .query('userProfiles')
-      .withIndex('by_user', (q) => q.eq('userId', employeeId))
-      .first();
-
-    if (profile) {
-      await ctx.db.patch(profile._id, { supervisorId });
-    }
+    // Canonical field + profile mirror, in one call.
+    await writeSupervisorId(ctx, employeeId, supervisorId);
 
     // Audit log
     const supervisorName = supervisorId
@@ -261,8 +255,14 @@ export const assignManager = mutation({
 });
 
 // ── Get Org Tree (for hierarchical view) ────────────────────────────────────
-// Returns the full user hierarchy as a nested tree structure, starting from
-// users with no supervisor (org admins/root) down to leaf employees.
+// Returns the user hierarchy as a nested tree rooted at the declared head of the
+// organization (`organizations.headUserId`).
+//
+// Before the head was declared, "no supervisor" was read as "root", so every
+// unassigned employee became a co-root next to the CEO — a forest, not a tree.
+// They are still returned (hiding people is worse than showing them out of
+// place) but flagged `isUnassigned` so the UI can park them in a "not placed in
+// the hierarchy yet" area instead of pretending they run the company.
 
 export const getOrgHierarchyTree = query({
   args: {
@@ -283,18 +283,27 @@ export const getOrgHierarchyTree = query({
 
     // Build a map: userId → user data
     const userMap = new Map(activeUsers.map((u) => [u._id, u]));
+    const headId = await getOrgHeadId(ctx, organizationId);
+
+    // Resolve each person's manager once, from the canonical field.
+    const supervisorOf = new Map<string, Id<'users'> | undefined>();
+    for (const u of activeUsers) {
+      supervisorOf.set(u._id, await resolveSupervisorId(ctx, u));
+    }
 
     // Build children map
     const childrenMap = new Map<string, typeof activeUsers>();
-    const roots: typeof activeUsers = [];
+    const head = headId ? userMap.get(headId) : undefined;
+    const unassigned: typeof activeUsers = [];
 
     for (const u of activeUsers) {
-      if (u.supervisorId && userMap.has(u.supervisorId)) {
-        const existing = childrenMap.get(u.supervisorId) ?? [];
+      const supervisorId = supervisorOf.get(u._id);
+      if (supervisorId && userMap.has(supervisorId)) {
+        const existing = childrenMap.get(supervisorId) ?? [];
         existing.push(u);
-        childrenMap.set(u.supervisorId, existing);
-      } else {
-        roots.push(u);
+        childrenMap.set(supervisorId, existing);
+      } else if (!head || u._id !== head._id) {
+        unassigned.push(u);
       }
     }
 
@@ -308,10 +317,14 @@ export const getOrgHierarchyTree = query({
       avatarUrl?: string;
       email: string;
       employeeType?: string;
+      /** True for the declared head of the organization. */
+      isHead: boolean;
+      /** True when this person has no manager and is not the head. */
+      isUnassigned: boolean;
       children: OrgTreeNode[];
       directReportCount: number;
     };
-    const buildNode = (u: (typeof activeUsers)[number]): OrgTreeNode => ({
+    const buildNode = (u: (typeof activeUsers)[number], isUnassigned = false): OrgTreeNode => ({
       _id: u._id,
       name: u.name,
       role: u.role,
@@ -320,10 +333,144 @@ export const getOrgHierarchyTree = query({
       avatarUrl: u.avatarUrl,
       email: u.email,
       employeeType: u.employeeType,
-      children: (childrenMap.get(u._id) ?? []).map(buildNode),
+      isHead: headId !== undefined && u._id === headId,
+      isUnassigned,
+      children: (childrenMap.get(u._id) ?? []).map((child) => buildNode(child)),
       directReportCount: childrenMap.get(u._id)?.length ?? 0,
     });
 
-    return roots.map(buildNode);
+    return [...(head ? [buildNode(head)] : []), ...unassigned.map((u) => buildNode(u, true))];
+  },
+});
+
+// ── Head of the organization ────────────────────────────────────────────────
+
+export const getOrganizationHead = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, { organizationId }) => {
+    const requester = await getAuthCaller(ctx);
+    if (!requester) return null;
+    if (!isSuperadmin(requester) && requester.organizationId !== organizationId) return null;
+
+    const headId = await getOrgHeadId(ctx, organizationId);
+    if (!headId) return null;
+    const head = await ctx.db.get(headId);
+    if (!head) return null;
+
+    const profile = await getProfile(ctx, headId);
+    return {
+      _id: head._id,
+      name: head.name,
+      email: head.email,
+      role: head.role,
+      position: head.position ?? profile?.position,
+      department: head.department ?? profile?.department,
+      avatarUrl: head.avatarUrl ?? profile?.avatarUrl,
+      isActive: head.isActive,
+    };
+  },
+});
+
+/**
+ * Declare who runs the organization.
+ *
+ * The head must be an active member of that organization and must not report to
+ * anyone: a head with a manager would make the tree's root an arbitrary point in
+ * the middle of the chain.
+ */
+export const setOrganizationHead = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    // Omitted clears the head — the chart falls back to "nobody is placed".
+    userId: v.optional(v.id('users')),
+  },
+  handler: async (ctx, { organizationId, userId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    await requireCapability(ctx, caller._id, 'org.manage', organizationId);
+
+    const org = await ctx.db.get(organizationId);
+    if (!org) throw new Error('Organization not found');
+
+    if (userId) {
+      const head = await ctx.db.get(userId);
+      if (!head) throw new Error('User not found');
+      if (head.organizationId !== organizationId) {
+        throw new Error('The head of the organization must belong to that organization');
+      }
+      if (!head.isActive) throw new Error('The head of the organization must be active');
+      if (head.role === 'superadmin') {
+        // A superadmin is the platform operator, not an org member: as head they
+        // would be paid by payroll but absent from the roster, the chart and
+        // every attendance list — the exact trap this model warns about.
+        throw new Error('The platform superadmin cannot be the head of an organization');
+      }
+      const supervisorId = await resolveSupervisorId(ctx, head);
+      if (supervisorId) {
+        throw new Error('The head of the organization cannot report to anyone');
+      }
+    }
+
+    await ctx.db.patch(organizationId, { headUserId: userId, updatedAt: Date.now() });
+
+    await ctx.db.insert('auditLogs', {
+      organizationId,
+      userId: caller._id,
+      action: userId ? 'org_head_set' : 'org_head_cleared',
+      target: userId ?? organizationId,
+      details: JSON.stringify({
+        previousHeadUserId: org.headUserId,
+        headUserId: userId,
+      }),
+      createdAt: Date.now(),
+    });
+
+    return { success: true, headUserId: userId };
+  },
+});
+
+/**
+ * People with no manager who are not the head — the bucket the UI should nag
+ * about. Empty is the healthy state.
+ */
+export const getUnassignedUsers = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, { organizationId }) => {
+    const requester = await getAuthCaller(ctx);
+    if (!requester) return [];
+    if (!isSuperadmin(requester) && requester.organizationId !== organizationId) return [];
+
+    const users = await ctx.db
+      .query('users')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .take(XLARGE_LIST_CAP);
+    const headId = await getOrgHeadId(ctx, organizationId);
+
+    const result: Array<{
+      _id: Id<'users'>;
+      name: string;
+      email: string;
+      role: string;
+      position?: string;
+      department?: string;
+      avatarUrl?: string;
+    }> = [];
+
+    for (const u of users) {
+      if (!u.isActive || u.role === 'superadmin') continue;
+      if (headId && u._id === headId) continue;
+      if (await resolveSupervisorId(ctx, u)) continue;
+      result.push({
+        _id: u._id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        position: u.position,
+        department: u.department,
+        avatarUrl: u.avatarUrl,
+      });
+    }
+
+    return result;
   },
 });

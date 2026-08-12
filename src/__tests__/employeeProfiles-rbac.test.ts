@@ -246,9 +246,25 @@ describe('employeeProfiles read RBAC', () => {
 
 // ── Write paths ──────────────────────────────────────────────────────────────
 describe('employeeProfiles write RBAC', () => {
+  /**
+   * Compensation is scoped by capability and by the reporting line, so the
+   * handler reads the *caller's* own document too. These tests resolve
+   * `ctx.db.get` by id instead of returning one shape for everything.
+   */
+  function grantCompensationCaller(
+    ctx: any,
+    caller: ReturnType<typeof makeCaller>,
+    target: ReturnType<typeof makeTarget>,
+  ) {
+    mockGetAuthCaller.mockResolvedValue(caller);
+    ctx.db.get.mockImplementation(async (id: string) =>
+      id === caller._id ? { ...caller, isActive: true } : target,
+    );
+  }
+
   it('updateSalary allows a same-org admin', async () => {
     const ctx = makeCtx();
-    grantSameOrgAdmin(ctx);
+    grantCompensationCaller(ctx, makeCaller('admin', ORG_A), makeTarget('employee', ORG_A));
     ctx.db._chain.first.mockResolvedValue({ _id: 'profile_existing' });
 
     await expect(updateSalary(ctx, { userId: EMPLOYEE_ID, baseSalary: 1 })).resolves.toBe(
@@ -260,26 +276,58 @@ describe('employeeProfiles write RBAC', () => {
     );
   });
 
-  it('updateSalary rejects a cross-org admin', async () => {
+  it('updateSalary rejects a supervisor who does not manage the employee', async () => {
+    // A supervisor holds `compensation.manage`, but only for their own subtree:
+    // the target here reports to nobody, so the reporting-line check refuses.
     const ctx = makeCtx();
-    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A));
-    ctx.db.get.mockResolvedValue(makeTarget('employee', ORG_B));
+    grantCompensationCaller(
+      ctx,
+      makeCaller('supervisor', ORG_A),
+      makeTarget('employee', ORG_A) as never,
+    );
 
     await expect(updateSalary(ctx, { userId: EMPLOYEE_ID, baseSalary: 999 })).rejects.toThrow(
-      NOT_AUTHORIZED,
+      'reporting line',
     );
     expect(ctx.db.patch).not.toHaveBeenCalled();
     expect(ctx.db.insert).not.toHaveBeenCalled();
   });
 
-  it('updateSalary rejects an employee raising their own salary', async () => {
-    // selfAllowed: false — self-service must not extend to compensation.
+  it('updateSalary rejects an employee outright', async () => {
     const ctx = makeCtx();
-    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, EMPLOYEE_ID));
-    ctx.db.get.mockResolvedValue(makeTarget('employee', ORG_A, EMPLOYEE_ID));
+    grantCompensationCaller(
+      ctx,
+      makeCaller('employee', ORG_A, 'user_other'),
+      makeTarget('employee', ORG_A),
+    );
+
+    await expect(updateSalary(ctx, { userId: EMPLOYEE_ID, baseSalary: 999 })).rejects.toThrow(
+      "Not authorized to change this employee's compensation",
+    );
+    expect(ctx.db.patch).not.toHaveBeenCalled();
+  });
+
+  it('updateSalary rejects a cross-org admin', async () => {
+    const ctx = makeCtx();
+    grantCompensationCaller(ctx, makeCaller('admin', ORG_A), makeTarget('employee', ORG_B));
+
+    await expect(updateSalary(ctx, { userId: EMPLOYEE_ID, baseSalary: 999 })).rejects.toThrow(
+      'cross-organization',
+    );
+    expect(ctx.db.patch).not.toHaveBeenCalled();
+    expect(ctx.db.insert).not.toHaveBeenCalled();
+  });
+
+  it('updateSalary rejects anyone setting their own compensation', async () => {
+    const ctx = makeCtx();
+    grantCompensationCaller(
+      ctx,
+      makeCaller('admin', ORG_A, EMPLOYEE_ID),
+      makeTarget('employee', ORG_A, EMPLOYEE_ID),
+    );
 
     await expect(updateSalary(ctx, { userId: EMPLOYEE_ID, baseSalary: 999999 })).rejects.toThrow(
-      NOT_AUTHORIZED,
+      'your own compensation',
     );
     expect(ctx.db.patch).not.toHaveBeenCalled();
     expect(ctx.db.insert).not.toHaveBeenCalled();
@@ -290,7 +338,7 @@ describe('employeeProfiles write RBAC', () => {
     mockGetAuthCaller.mockResolvedValue(null);
 
     await expect(updateSalary(ctx, { userId: EMPLOYEE_ID, baseSalary: 1 })).rejects.toThrow(
-      NOT_AUTHORIZED,
+      'Not authenticated',
     );
   });
 

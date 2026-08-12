@@ -35,7 +35,7 @@ export const KNOWLEDGE_DOCS: KnowledgeDoc[] = [
     title: 'Roles & permissions',
     roles: ALL,
     keywords:
-      'роль role роли roles права rights права доступа permissions доступ access rbac разрешения кто может who can нет доступа не вижу не видно скрыт hidden запрещено forbidden недоступно superadmin суперадмин админ admin administrator supervisor супервайзер руководитель manager employee сотрудник работник driver водитель уровень level scope область видимости иерархия hierarchy դեր իրավունքներ',
+      'роль role роли roles права rights права доступа permissions доступ access rbac разрешения кто может who can нет доступа не вижу не видно скрыт hidden запрещено forbidden недоступно superadmin суперадмин админ admin administrator supervisor супервайзер руководитель manager employee сотрудник работник driver водитель уровень level scope область видимости иерархия hierarchy подчинение подчиняется кому подчиняется линия подчинения reporting line глава организации руководитель организации директор ceo владелец head оргструктура org chart должность position դեր իրավունքներ',
     body: `The platform has exactly five roles: superadmin, admin, supervisor, employee, driver. A user has one role, stored on their user record and carried in the auth token. Self-signup can only produce employee or supervisor; admin, superadmin and driver are assigned by an existing admin/superadmin. Changing a role takes effect on the user's next request.
 
 ## Role matrix — матрица ролей, сравнение прав
@@ -44,16 +44,24 @@ export const KNOWLEDGE_DOCS: KnowledgeDoc[] = [
 | --- | --- | --- | --- |
 | 🟢 employee | Own records only | Own leaves, tasks, profile, presence | Payroll, analytics, reports, talent, admin console |
 | 🔵 driver | Own records + trips assigned to them | Same as employee, plus accept/decline/complete trips | Same as employee |
-| 🟡 supervisor | Their team | Approve/reject team leaves, assign tasks, team goals | Admin console, org settings, superadmin pages |
+| 🟡 supervisor | Their own reports, at any depth | Approve/reject leave of their reports, assign tasks, team goals | Admin console, org settings, superadmin pages, people outside their subtree |
 | 🟠 admin | Whole organization | Employees, org settings, holidays, leave balances, integrations, compliance | Other organizations, billing, platform ops |
 | 🔴 superadmin | All organizations | Everything above plus orgs, plans, backups, security centre, impersonation | Nothing |
 
-Roles are cumulative: supervisor sees everything an employee sees, admin everything a supervisor sees, superadmin everything. Driver is employee + trip duty, not a step in that ladder.
+A role is a permission tier, not a rank and not a job title. Driver is employee + trip duty, at the same level as employee, not a step above it. Two people with the same role can still be senior to one another — that is the reporting line, not the role.
+
+## Reporting line & head of the organization — линия подчинения, руководитель, CEO
+
+Who you answer to is stored separately from what you may do: every person has one manager (\`supervisorId\`), and each organization declares its head (the CEO/owner) explicitly. The head is the root of the org chart and the last step of every approval chain; they must not report to anyone, and they are a normal employee otherwise — they hold a position, file attendance, accrue leave and are paid.
+Because the line is separate from the role, an admin can report to another admin: in a company with three admins, the CEO is one of them and the other two report to him. Seniority is never read from the role.
+People with no manager who are not the head are "not placed in the hierarchy": they show as separate roots on the org chart and the chart page lists them so someone can assign a manager. The chart is built from the line and labelled by position — never by role. Moving a person in the chart *is* changing their manager: the chart is configured through the reporting line, so the two can never disagree.
+Performance ratings follow the same shape: a manager rates their own reports at any depth, HR/admins rate anyone in the organization, nobody rates themselves, and the head of the organization is rated by nobody — so the CEO rates HR, and HR rates everyone except the CEO.
+Set the head and see the unplaced list on \`/org-chart\` (admin only).
 
 ## Employee — сотрудник, сотрудника, работник
 
 Sections: \`/dashboard\`, \`/leaves\`, \`/attendance\`, \`/calendar\`, \`/tasks\`, \`/chat\`, \`/rooms\`, \`/documents\`, \`/learning\`, \`/recognition\`, \`/goals\`, \`/performance\`, \`/signatures\`, \`/surveys\`, \`/news\`, \`/events\`, \`/org-chart\`, \`/employees\` (directory), \`/profile\`, \`/settings\`, \`/help\`.
-Can: submit and cancel own pending leave requests, check in/out, update own tasks, book a meeting room, request a corporate driver, sign documents sent to them, enrol in courses, answer surveys, update own profile and presence.
+Can: submit leave requests, request cancellation of their own leave (the request goes to HR for approval — they cannot cancel it themselves), check in/out, update own tasks, book a meeting room, request a corporate driver, sign documents sent to them, enrol in courses, answer surveys, update own profile and presence.
 Cannot: approve any leave (including their own), see other people's balances, salary or attendance detail, open payroll/analytics/reports, or reach any admin page. The employee directory shows colleagues but not their private data.
 
 ## Driver — водитель, водителя
@@ -64,14 +72,14 @@ Cannot: see other drivers' trip histories, other employees' personal data, or an
 ## Supervisor — супервайзер, супервайзера, руководитель, руководителя, начальник
 
 Everything an employee can do, plus their team: \`/team\`, \`/approvals\` for pending team leave requests, \`/analytics\` and \`/reports\`, \`/projects\`, \`/assets\`, \`/strategy\`, the talent group (\`/recruitment\`, \`/onboarding\`, \`/offboarding\`) and the finance group (\`/payroll\`, \`/compensation\`, \`/expenses\`).
-Can: approve or reject leave for their own reports (with a comment the requester sees), assign tasks, set team goals, read team attendance patterns and coverage conflicts.
-Cannot: change organization settings, edit leave-type balances or holidays, manage users, or open the admin/superadmin consoles.
+Can: approve or reject leave for their own reports — anyone below them in the reporting line, at any depth — with a comment the requester sees; assign tasks, set team goals, read team attendance patterns and coverage conflicts, correct attendance, rate performance and set salary for their own reports.
+Cannot: approve leave for someone who does not report to them, review their own request, rate themselves, set their own salary, touch the salary, attendance or rating of anyone outside their subtree, change organization settings, edit leave-type balances or holidays, manage users, or open the admin/superadmin consoles.
 
 ## Admin — админ, админа, администратор, администратора организации
 
 Everything a supervisor can do, for the whole organization, plus the admin console: \`/admin\`, \`/admin/holidays\`, \`/admin/leave-settings\`, \`/admin/leave-balances\`, \`/admin/integrations\`, \`/admin/events\`, \`/admin/ai-governance\`, \`/join-requests\`, \`/org-requests\`, \`/compliance\`.
-Can: create, edit and deactivate employees, assign roles and departments, configure leave types/balances/accrual and the holiday calendar, approve join requests, set up integrations, publish news and broadcasts, review compliance and AI-governance logs, approve any leave in the organization.
-Cannot: see or touch another organization, change subscription plans or billing, run platform backups, impersonate users, or use the AI site editor.
+Can: create, edit and deactivate employees, assign roles and departments, set the head of the organization and everyone's manager, configure leave types/balances/accrual and the holiday calendar, approve join requests, set up integrations, publish news and broadcasts, review compliance and AI-governance logs, approve leave for anyone in the organization, and rate anyone's performance — HR authority is org-wide and does not depend on the reporting line.
+Cannot: approve their own request, approve a request they filed on someone else's behalf, review the head of the organization's leave (it is auto-approved instead), rate the head of the organization or themselves, set their own salary, see or touch another organization, change subscription plans or billing, run platform backups, impersonate users, or use the AI site editor.
 
 ## Superadmin — суперадмин, суперадмина, владелец платформы
 
@@ -84,8 +92,9 @@ Three independent layers, which is why "the menu item is missing" and "the actio
 1. Navigation visibility — the sidebar and the mobile menu filter every entry by role, so a role simply does not see sections it may not use.
 2. Page guards — sensitive pages check the role again on open and show a "no access" state instead of content.
 3. Server-side authorization — the Convex functions behind every mutation re-check the caller's role and organization. This is the layer that actually protects data; the first two are convenience.
+Two rules cut across all three: nobody reviews their own leave request (or one they filed for someone else) and nobody sets their own salary; and a manager's reach is their own subtree — an admin's reach is the whole organization.
 Edge middleware only checks that the user is signed in, not what their role is — never describe it as the permission boundary.
-If a user says a section is missing or an action is blocked, the useful questions are: which role do they have, is the page in their role's list, and is the record inside their organization/team.`,
+If a user says a section is missing or an action is blocked, the useful questions are: which role do they have, is the page in their role's list, is the record inside their organization, and — for approvals — is the requester below them in the reporting line.`,
   },
   {
     id: 'leave-policy',
@@ -94,9 +103,10 @@ If a user says a section is missing or an action is blocked, the useful question
     keywords:
       'отпуск leave vacation арձակուրդ leavepolicy баланс balance sick больничный family семейный doctor врач unpaid оплачиваемый paid days дни лимит limit approval согласование',
     body: `Leave types: paid (annual), unpaid, sick, family, doctor. Each type has its own annual balance configured per organization (leave settings); balances accrue monthly.
-Workday: 09:00–18:00. A leave request needs start/end dates and a reason; it is created with status "pending", then approved or rejected by a supervisor/admin (the review comment is visible to the requester).
+Workday: 09:00–18:00. A leave request needs start/end dates and a reason; it is created with status "pending" and routed to the requester's approver (the review comment is visible to the requester).
+Who approves: the nearest manager above the requester in the reporting line, plus HR/admins, who may approve anyone in the organization. Nobody may approve their own request, or one they filed on someone else's behalf. The head of the organization has nobody above them, so their own leave is recorded as approved automatically with an audit note explaining why — HR does not review the head's leave.
 Conflict rule: if more than 30% of a department is already on leave for the requested dates, the system raises a conflict alert and asks to pick other dates. The AI assistant checks conflicts BEFORE booking.
-Requests can be edited or cancelled while pending. The team calendar shows all approved leaves. Balance warnings surface when remaining days are low.`,
+Requests can be edited while pending. Cancelling a leave (pending or approved) sends a request to HR, who approve or reject it — employees cannot cancel a leave directly. The team calendar shows all approved leaves. Balance warnings surface when remaining days are low.`,
   },
   {
     id: 'attendance',
@@ -106,6 +116,8 @@ Requests can be edited or cancelled while pending. The team calendar shows all a
       'посещаемость attendance time tracking чекин check-in check-out опоздание late absence прогул присутствие график work schedule kehadiran',
     body: `Employees check in/out daily (check-in button on the dashboard or the attendance page). Each record stores date, check-in time, check-out time and status (present, late, absent).
 Standard schedule is 09:00–18:00; late = check-in after 09:00. Work schedules and holidays are configured per organization.
+Everybody files attendance, admins and the head of the organization included — only the platform superadmin is outside it. You clock yourself in; doing it for somebody else, or marking them absent, is a correction available to HR/admins org-wide and to a manager for their own reports.
+Reading follows the same rule: your own history always, your reports' history if you manage them, everyone's if you are HR/admin. A colleague cannot read your attendance detail.
 The attendance page shows personal history; supervisors/admins see team attendance, patterns and monthly summaries in analytics.`,
   },
   {

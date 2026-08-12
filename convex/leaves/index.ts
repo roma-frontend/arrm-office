@@ -8,6 +8,7 @@ export {
   getUnreadCount,
   getLeavesPagederated,
   getLeaveById,
+  getReviewEligibility,
   listLeavesPaginated,
 } from './queries';
 export {
@@ -21,6 +22,6 @@ export {
   markAllLeavesAsRead,
   bulkApproveLeaves,
   bulkRejectLeaves,
-  secureApproveLeave,
-  secureRejectLeave,
+  requestLeaveCancellation,
+  rejectLeaveCancellation,
 } from './mutations';

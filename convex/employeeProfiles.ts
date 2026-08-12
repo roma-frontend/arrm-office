@@ -4,6 +4,8 @@ import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { isSuperadmin } from './lib/auth';
 import { getAuthCaller } from './lib/getAuthCaller';
+import { hasCapability, hasOrgWideReach } from './lib/capabilities';
+import { isAncestorOf } from './lib/reportingLine';
 import { SMALL_LIST_CAP, DEFAULT_LIST_CAP } from './lib/limits';
 
 /**
@@ -52,6 +54,43 @@ async function assertCanManageEmployee(
 ) {
   const caller = await resolveEmployeeAccess(ctx, userId, opts);
   if (!caller) throw new Error('Not authorized to manage this employee');
+  return caller;
+}
+
+/**
+ * Compensation is a narrower decision than the rest of the employee record.
+ *
+ * `resolveEmployeeAccess` treats every admin *and every supervisor* of the
+ * organization as equal, which let any supervisor set anybody's salary —
+ * including the CEO's. Money follows the same shape as leave approval instead:
+ * an org-wide holder (HR / admin) may set anyone's, a manager only for people
+ * below them in the reporting line, and nobody sets their own.
+ */
+async function assertCanSetCompensation(ctx: MutationCtx, userId: Id<'users'>) {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) throw new Error('Not authenticated');
+
+  if (caller._id === userId) {
+    throw new Error('You cannot change your own compensation');
+  }
+
+  const target = await ctx.db.get(userId);
+  if (!target) throw new Error('User not found');
+  if (isSuperadmin(caller)) return caller;
+
+  if (!caller.organizationId || caller.organizationId !== target.organizationId) {
+    throw new Error('Access denied: cross-organization operation');
+  }
+
+  // `getAuthCaller` already carries the role, so the capability decision needs no
+  // second read of the caller's own document.
+  if (!hasCapability(caller, 'compensation.manage')) {
+    throw new Error("Not authorized to change this employee's compensation");
+  }
+  if (!hasOrgWideReach(caller) && !(await isAncestorOf(ctx, caller._id, userId))) {
+    throw new Error("Only a manager in this employee's reporting line may set their compensation");
+  }
+
   return caller;
 }
 
@@ -265,8 +304,9 @@ export const updateSalary = mutation({
     salaryCurrency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Staff-only: an employee must not set their own compensation.
-    await assertCanManageEmployee(ctx, args.userId, { selfAllowed: false });
+    // Staff-only, scoped: HR org-wide, a manager only within their own subtree,
+    // and never your own compensation.
+    await assertCanSetCompensation(ctx, args.userId);
 
     const existing = await ctx.db
       .query('employeeProfiles')

@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -144,6 +146,83 @@ function CreateObjectiveWizard({
   ]);
   const [submitting, setSubmitting] = useState(false);
 
+  // ── Черновик: правки переживают случайное закрытие диалога ────────────────
+  const draftData = useMemo(
+    () => ({ title, description, level, department, periodType, periodYear, parentId, keyResults }),
+    [title, description, level, department, periodType, periodYear, parentId, keyResults],
+  );
+
+  const draftDefaults = useMemo(
+    () => ({
+      title: '',
+      description: '',
+      level: 'individual' as ObjectiveLevel,
+      department: userDepartment || '',
+      periodType: 'Q2' as PeriodType,
+      periodYear: new Date().getFullYear(),
+      parentId: '',
+      keyResults: [
+        {
+          title: '',
+          description: '',
+          metricType: 'number' as const,
+          direction: 'increase' as const,
+          startValue: 0,
+          targetValue: 100,
+          unit: '',
+          weight: 100,
+        },
+      ],
+    }),
+    [userDepartment],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    if (d.title !== undefined) setTitle(d.title);
+    if (d.description !== undefined) setDescription(d.description);
+    if (d.level) setLevel(d.level);
+    if (d.department !== undefined) setDepartment(d.department);
+    if (d.periodType) setPeriodType(d.periodType);
+    if (d.periodYear !== undefined) setPeriodYear(d.periodYear);
+    if (d.parentId !== undefined) setParentId(d.parentId);
+    if (d.keyResults && d.keyResults.length > 0) setKeyResults(d.keyResults);
+    setStep(Math.min(Math.max(savedStep, 0), 2));
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'create-objective',
+    enabled: true,
+    data: draftData,
+    step,
+    defaults: draftDefaults,
+    onRestore: handleRestoreDraft,
+  });
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setTitle('');
+    setDescription('');
+    setLevel('individual');
+    setDepartment(userDepartment || '');
+    setPeriodType('Q2');
+    setPeriodYear(new Date().getFullYear());
+    setParentId('');
+    setKeyResults([
+      {
+        title: '',
+        description: '',
+        metricType: 'number',
+        direction: 'increase',
+        startValue: 0,
+        targetValue: 100,
+        unit: '',
+        weight: 100,
+      },
+    ]);
+    setStep(0);
+  }, [clearDraft, userDepartment]);
+
   const canCreateCompany = userRole === 'admin' || userRole === 'superadmin';
   const canCreateTeam = canCreateCompany || userRole === 'supervisor';
 
@@ -206,6 +285,7 @@ function CreateObjectiveWizard({
         })),
       });
       toast.success(t('goals.wizard.success'));
+      clearDraft();
       onClose();
     } catch (e) {
       toast.error(String(e));
@@ -280,6 +360,12 @@ function CreateObjectiveWizard({
 
         {/* Step Content */}
         <div className="px-5 py-4 min-h-[280px] overflow-y-auto max-h-[50vh]">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
+
           {step === 0 && (
             <div className="space-y-4">
               <div>

@@ -340,36 +340,15 @@ export const getUserById = query({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET SUPERVISORS — scoped to org
+// GET SUPERVISORS — REMOVED
 // ─────────────────────────────────────────────────────────────────────────────
-export const getSupervisors = query({
-  args: {
-    organizationId: v.optional(v.id('organizations')),
-  },
-  handler: async (ctx, args) => {
-    const requester = await getAuthCaller(ctx);
-    if (!requester) return [];
-
-    // Determine target org: explicit param > requester's own org
-    const targetOrgId = args.organizationId ?? requester.organizationId;
-
-    if (!targetOrgId) return [];
-
-    const supervisors = await ctx.db
-      .query('users')
-      .withIndex('by_org_role', (q) => q.eq('organizationId', targetOrgId).eq('role', 'supervisor'))
-      .take(MAX_PAGE_SIZE);
-
-    const admins = await ctx.db
-      .query('users')
-      .withIndex('by_org_role', (q) => q.eq('organizationId', targetOrgId).eq('role', 'admin'))
-      .take(MAX_PAGE_SIZE);
-
-    return [...supervisors, ...admins]
-      .filter((u) => u.isActive)
-      .map((u) => ({ _id: u._id, name: u.name, role: u.role, email: u.email }));
-  },
-});
+// It returned only users whose *role* is `supervisor` or `admin`, which encoded
+// seniority in the permission tier: an employee could never be someone's
+// manager, and an admin was implicitly senior to everyone. Under the
+// reporting-line model any active colleague can be a manager.
+//
+// Use `reporting.getPotentialManagers` — org-scoped, searchable, ordered by
+// position rank with the head of the organization first.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET USERS BY ROLE — optionally scoped to organization, for driver registration

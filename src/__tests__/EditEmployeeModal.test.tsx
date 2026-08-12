@@ -55,9 +55,11 @@ jest.mock('convex/react', () => ({
 jest.mock('../../convex/_generated/api', () => ({
   api: {
     users: {
-      queries: { getSupervisors: { _name: 'getSupervisors' } },
       mutations: { updateUser: { _name: 'updateUser' } },
     },
+    // The manager picker now comes from the reporting-line query. The mock keeps
+    // the `getSupervisors` key so the fixtures below still read naturally.
+    reporting: { getPotentialManagers: { _name: 'getSupervisors' } },
     employeeProfiles: {
       updateSalary: { _name: 'updateSalary' },
       updatePassport: { _name: 'updatePassport' },
@@ -88,6 +90,54 @@ jest.mock('@/hooks/useOrgUnits', () => ({
     positions: mockPositions,
     allPositions: mockAllPositions,
   }),
+}));
+
+// ── Draft (controllable) ─────────────────────────────────────────────────────
+let mockDraft: { restored: boolean; restoredStep: number; clearDraft: jest.Mock };
+jest.mock('@/hooks/useWizardDraft', () => ({
+  useWizardDraft: (opts: any) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+      if (mockDraft.restored) {
+        opts.onRestore?.(
+          {
+            form: {
+              name: 'Draft Name',
+              role: 'supervisor',
+              phone: '+374000000',
+              departmentId: 'd9',
+              positionId: 'p9',
+              baseSalary: 123456,
+              travelAllowance: '25000',
+            },
+            passport: { passportNumber: 'AB999' },
+            passportScan: null,
+            selectedOrgId: 'org-2',
+          },
+          mockDraft.restoredStep,
+        );
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return {
+      restored: mockDraft.restored,
+      restoredStep: mockDraft.restoredStep,
+      clearDraft: mockDraft.clearDraft,
+      dismissNotice: jest.fn(),
+    };
+  },
+}));
+
+jest.mock('@/components/ui/WizardDraftNotice', () => ({
+  WizardDraftNotice: ({ show, step, onReset }: any) =>
+    show ? (
+      <div data-testid="draft-notice" data-step={step}>
+        Draft restored at step {step + 1}
+        <button type="button" onClick={onReset}>
+          Start over
+        </button>
+      </div>
+    ) : null,
 }));
 
 // ── UI primitives ────────────────────────────────────────────────────────────
@@ -257,6 +307,14 @@ beforeEach(() => {
   mockPositions = POSITIONS;
   mockAllPositions = POSITIONS;
   mockUserState = { user: { id: 'u_admin', role: 'admin', email: 'a@x.com' } };
+  mockDraft = {
+    restored: false,
+    restoredStep: 0,
+    clearDraft: jest.fn(() => {
+      mockDraft.restored = false;
+    }),
+  };
+  sessionStorage.clear();
 });
 
 // ── Access guards ────────────────────────────────────────────────────────────
@@ -747,5 +805,78 @@ describe('superadmin flow', () => {
     });
     expect(toast.success).toHaveBeenCalledWith('modals.editEmployee.updatedSuccess');
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+// ── Wizard draft ────────────────────────────────────────────────────────────
+describe('wizard draft', () => {
+  it('restores a draft into the form and jumps to the saved step', () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 2; // salary step for a non-superadmin
+    renderModal(employee());
+
+    // The notice is shown with the saved step.
+    expect(screen.getByTestId('draft-notice')).toBeTruthy();
+    expect(screen.getByTestId('draft-notice').getAttribute('data-step')).toBe('2');
+    // The wizard jumped to the salary step and the restored values are applied.
+    expect(screen.getByText('common.step 3 / 5')).toBeTruthy();
+    expect(screen.getByDisplayValue('123456')).toBeTruthy(); // baseSalary
+    expect(screen.getByDisplayValue('25000')).toBeTruthy(); // travelAllowance
+
+    // Navigate back to the personal step: the restored name is in the input.
+    fireEvent.click(screen.getByText('wizard.previous'));
+    fireEvent.click(screen.getByText('wizard.previous'));
+    expect(screen.getByDisplayValue('Draft Name')).toBeTruthy();
+    expect(screen.getByDisplayValue('+374000000')).toBeTruthy(); // phone
+  });
+
+  it('start over clears the draft and resets the form to the server data', () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 2;
+    renderModal(employee());
+
+    fireEvent.click(screen.getByText('Start over'));
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
+    // Back on the first step with the pristine employee data.
+    expect(screen.getByText('common.step 1 / 5')).toBeTruthy();
+    expect(screen.getByDisplayValue('Anna Petrova')).toBeTruthy();
+  });
+
+  it('clears the draft after a successful save', async () => {
+    renderModal(employee());
+
+    fireEvent.click(screen.getByText('wizard.next')); // personal → work
+    fireEvent.click(screen.getByText('wizard.next')); // work → salary
+    fireEvent.click(screen.getByText('wizard.next')); // salary → identity
+    fireEvent.click(screen.getByText('wizard.next')); // identity → review
+    expect(screen.getByText('common.step 5 / 5')).toBeTruthy();
+    fireEvent.click(screen.getByText('modals.editEmployee.saveChanges'));
+
+    await waitFor(() => expect(mutationCalls['updateUser']).toHaveLength(1));
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+  });
+
+  it('does not show the draft notice when nothing was restored', () => {
+    renderModal(employee());
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
+  });
+
+  it('keeps restored draft values when the salary query resolves after the restore', () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 2;
+    // The query resolves asynchronously — after the hook's restore macrotask.
+    queryResults['getSalary'] = undefined;
+    const view = renderModal(employee());
+
+    // Restored baseSalary is in the field on the salary step.
+    expect(screen.getByDisplayValue('123456')).toBeTruthy();
+
+    // The server responds with a different salary — hydration must NOT clobber
+    // the restored draft value.
+    queryResults['getSalary'] = SALARY; // baseSalary 200
+    view.rerender(<EditEmployeeModal employee={employee()} open onClose={jest.fn()} />);
+    expect(screen.getByDisplayValue('123456')).toBeTruthy();
   });
 });

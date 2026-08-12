@@ -11,6 +11,16 @@ export const orgchart = {
     title: v.optional(v.string()), // job title or department name
     avatarUrl: v.optional(v.string()),
     order: v.optional(v.number()), // for sibling ordering
+    /**
+     * Who created this node. `auto` nodes are rebuilt from the reporting line by
+     * `generateOrgChartFromUsers`; `manual` nodes (and legacy nodes with no
+     * value) are never touched by it.
+     *
+     * Before this field existed, regenerating wiped the whole chart, so any
+     * hand-made structure — dotted lines, vacancies, planned teams, which the
+     * reporting line cannot express — was destroyed on every regenerate.
+     */
+    source: v.optional(v.union(v.literal('auto'), v.literal('manual'))),
     metadata: v.optional(v.any()), // extra data (location, contact info, etc.)
     createdAt: v.number(),
     updatedAt: v.number(),

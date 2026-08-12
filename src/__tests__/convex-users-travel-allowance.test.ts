@@ -36,6 +36,7 @@ jest.mock('../../convex/lib/rbac', () => ({
 }));
 
 jest.mock('../../convex/lib/auth', () => ({
+  isSuperadmin: jest.fn(() => false),
   isSuperadminEmail: jest.fn(() => false),
   SUPERADMIN_EMAIL: 'boss@superadmin.example',
 }));

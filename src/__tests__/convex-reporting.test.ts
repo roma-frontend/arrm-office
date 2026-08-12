@@ -659,24 +659,35 @@ describe('reporting.assignManager', () => {
 
   it('detects circular reporting lines', async () => {
     mockGetAuthCaller.mockResolvedValue(adminCallerA);
-    // Target's supervisor points back to target → cycle
-    const cycleEmployee = { ...sampleEmployee, supervisorId: 'user-manager-1' };
-    const cycleManager = { ...sampleManager, supervisorId: 'user-target' };
-    mockGet
-      .mockResolvedValueOnce(cycleEmployee) // employee
-      .mockResolvedValueOnce(cycleManager) // supervisor (reports back to target)
-      .mockResolvedValueOnce(sampleTopManager); // for supervisor name in audit
-    // getProfile returns supervisorId cycle
-    mockGetProfile.mockImplementation((_ctx: any, id: string) => {
-      if (id === 'user-manager-1') return { supervisorId: 'user-target' };
+    // The proposed manager already reports to the employee, so pointing the
+    // employee at them would close a loop. `assertAssignable` walks up from the
+    // manager, so the mock resolves by id rather than by call order.
+    const cycleEmployee = { ...sampleEmployee, _id: 'user-target', supervisorId: undefined };
+    const cycleManager = { ...sampleManager, _id: 'user-manager-1', supervisorId: 'user-target' };
+    mockGet.mockImplementation(async (id: string) => {
+      if (id === 'user-target') return cycleEmployee;
+      if (id === 'user-manager-1') return cycleManager;
       return null;
     });
+    mockGetProfile.mockResolvedValue(null);
     await expect(
       reporting.assignManager.handler(makeCtx(null), {
         employeeId: 'user-target' as any,
         supervisorId: 'user-manager-1' as any,
       }),
     ).rejects.toThrow('circular reporting line');
+  });
+
+  it('rejects making someone their own manager', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminCallerA);
+    mockGet.mockResolvedValue({ ...sampleEmployee, _id: 'user-target' });
+    mockGetProfile.mockResolvedValue(null);
+    await expect(
+      reporting.assignManager.handler(makeCtx(null), {
+        employeeId: 'user-target' as any,
+        supervisorId: 'user-target' as any,
+      }),
+    ).rejects.toThrow('cannot be their own manager');
   });
 
   it('removes manager when supervisorId is omitted', async () => {

@@ -5,6 +5,15 @@ export const leaves = {
   leaveRequests: defineTable({
     organizationId: v.optional(v.id('organizations')),
     userId: v.id('users'),
+    /**
+     * Who actually filed the request. Equals `userId` for a self-service
+     * request; differs when HR files on someone's behalf.
+     *
+     * Needed for separation of duties: the person who filed a request may not
+     * also approve it. Optional because rows created before this field existed
+     * have no filer recorded.
+     */
+    createdBy: v.optional(v.id('users')),
     type: v.union(
       v.literal('paid'),
       v.literal('unpaid'),
@@ -21,7 +30,18 @@ export const leaves = {
     days: v.number(),
     reason: v.string(),
     comment: v.optional(v.string()),
-    status: v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected')),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('approved'),
+      v.literal('rejected'),
+      v.literal('cancel_requested'),
+    ),
+    /** Status before the employee asked HR to cancel the leave — used to restore it when HR rejects the cancellation. */
+    previousStatus: v.optional(
+      v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected')),
+    ),
+    /** When the employee requested cancellation (HR queue). */
+    cancelRequestedAt: v.optional(v.number()),
     isRead: v.optional(v.boolean()),
     reviewedBy: v.optional(v.id('users')),
     reviewComment: v.optional(v.string()),

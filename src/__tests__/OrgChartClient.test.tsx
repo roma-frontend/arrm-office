@@ -82,7 +82,12 @@ jest.mock('@/convex/_generated/api', () => ({
       updateNode: { _name: 'updateNode' },
       deleteNode: { _name: 'deleteNode' },
       saveLayout: { _name: 'saveLayout' },
-      fixOrgChartDepartments: { _name: 'fixOrgChartDepartments' },
+    },
+    reporting: {
+      getOrganizationHead: { _name: 'getOrganizationHead' },
+      getUnassignedUsers: { _name: 'getUnassignedUsers' },
+      getPotentialManagers: { _name: 'getPotentialManagers' },
+      setOrganizationHead: { _name: 'setOrganizationHead' },
     },
   },
 }));
@@ -279,7 +284,7 @@ beforeEach(() => {
   mockMutations.updateNode = jest.fn().mockResolvedValue(undefined);
   mockMutations.deleteNode = jest.fn().mockResolvedValue(undefined);
   mockMutations.saveLayout = jest.fn().mockResolvedValue(undefined);
-  mockMutations.fixOrgChartDepartments = jest.fn().mockResolvedValue({ fixedCount: 3 });
+  mockMutations.setOrganizationHead = jest.fn().mockResolvedValue({ success: true });
   (global as any).URL.createObjectURL = jest.fn(() => 'blob:x');
   (global as any).URL.revokeObjectURL = jest.fn();
 });
@@ -319,7 +324,6 @@ describe('OrgChartClient', () => {
     expect(screen.getByText('orgChart.title')).toBeInTheDocument();
     expect(screen.getByText('common.exportSVG')).toBeInTheDocument();
     expect(screen.getByText('orgChart.addNode')).toBeInTheDocument();
-    expect(screen.getByText('orgChart.fixDepartments')).toBeInTheDocument();
     expect(screen.getByText('orgChart.generateFromUsers')).toBeInTheDocument();
   });
 
@@ -328,7 +332,6 @@ describe('OrgChartClient', () => {
     render(<OrgChartClient />);
     expect(screen.getByText('common.exportSVG')).toBeInTheDocument();
     expect(screen.queryByText('orgChart.addNode')).not.toBeInTheDocument();
-    expect(screen.queryByText('orgChart.fixDepartments')).not.toBeInTheDocument();
     expect(screen.queryByText('orgChart.generateFromUsers')).not.toBeInTheDocument();
   });
 
@@ -387,28 +390,57 @@ describe('OrgChartClient', () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('orgChart.generateError'));
   });
 
-  it('shows a success toast when departments are fixed', async () => {
+  // ── Head of the organization ────────────────────────────────────────────
+
+  it('saves the head of the organization', async () => {
+    mockQueries.getPotentialManagers = [{ _id: 'user-9', name: 'Tigran', position: 'CEO' }];
     render(<OrgChartClient />);
-    fireEvent.click(screen.getByText('orgChart.fixDepartments'));
-    await waitFor(() => expect(mockMutations.fixOrgChartDepartments).toHaveBeenCalled());
-    expect(toast.success).toHaveBeenCalledWith('orgChart.fixDepartmentsSuccess');
+    fireEvent.click(screen.getByTestId('select-option-user-9'));
+    await waitFor(() =>
+      expect(mockMutations.setOrganizationHead).toHaveBeenCalledWith({
+        organizationId: 'org-1',
+        userId: 'user-9',
+      }),
+    );
+    expect(toast.success).toHaveBeenCalledWith('orgChart.headSaved');
   });
 
-  it('shows an info toast when no department changes are needed', async () => {
-    mockMutations.fixOrgChartDepartments = jest
+  it('clears the head of the organization', async () => {
+    mockQueries.getOrganizationHead = { _id: 'user-9', name: 'Tigran' };
+    render(<OrgChartClient />);
+    fireEvent.click(screen.getByTestId('select-option-__none__'));
+    await waitFor(() =>
+      expect(mockMutations.setOrganizationHead).toHaveBeenCalledWith({
+        organizationId: 'org-1',
+      }),
+    );
+  });
+
+  it('surfaces the reason a head was refused', async () => {
+    mockQueries.getPotentialManagers = [{ _id: 'user-9', name: 'Tigran' }];
+    mockMutations.setOrganizationHead = jest
       .fn()
-      .mockResolvedValue({ fixedCount: 0, debug: [{ id: 'n1' }] });
+      .mockRejectedValue(new Error('The head of the organization cannot report to anyone'));
     render(<OrgChartClient />);
-    fireEvent.click(screen.getByText('orgChart.fixDepartments'));
-    await waitFor(() => expect(toast.info).toHaveBeenCalled());
+    fireEvent.click(screen.getByTestId('select-option-user-9'));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        'The head of the organization cannot report to anyone',
+      ),
+    );
   });
 
-  it('logs and shows an error when fixing departments fails', async () => {
-    mockMutations.fixOrgChartDepartments = jest.fn().mockRejectedValue(new Error('fix boom'));
+  it('lists people who are not placed in the hierarchy', () => {
+    mockQueries.getUnassignedUsers = [{ _id: 'user-3', name: 'Dana', position: 'Driver' }];
     render(<OrgChartClient />);
-    fireEvent.click(screen.getByText('orgChart.fixDepartments'));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('orgChart.fixDepartmentsError'));
-    expect(logger.error).toHaveBeenCalledWith('Fix departments error:', expect.any(Error));
+    expect(screen.getByText('orgChart.unassignedHint')).toBeInTheDocument();
+    expect(screen.getByText('Dana')).toBeInTheDocument();
+  });
+
+  it('says so when everyone reports to someone', () => {
+    mockQueries.getUnassignedUsers = [];
+    render(<OrgChartClient />);
+    expect(screen.getByText('orgChart.unassignedNone')).toBeInTheDocument();
   });
 
   // ── Export SVG ──────────────────────────────────────────────────────────

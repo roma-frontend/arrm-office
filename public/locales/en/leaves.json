@@ -57,7 +57,19 @@
     "notFoundHint": "This request does not exist or you do not have access to it.",
     "backToLeaves": "Back to Leaves",
     "type": "Type",
-    "myLeaves": "My leaves"
+    "myLeaves": "My leaves",
+    "cancellationRequested": "Cancellation requested",
+    "requestCancellation": "Request cancellation",
+    "cancelRequestedSuccess": "Cancellation request sent to HR",
+    "cancelRequestFailed": "Failed to request cancellation",
+    "cancelApprovedSuccess": "Cancellation approved",
+    "cancelRejectedSuccess": "Cancellation request rejected",
+    "cancelApproveFailed": "Failed to approve cancellation",
+    "cancelRejectFailed": "Failed to reject cancellation",
+    "cancelPendingHint": "The cancellation request is pending HR approval",
+    "approveCancellation": "Approve cancellation",
+    "rejectCancellation": "Reject cancellation",
+    "reviewNotAllowedHint": "This request is decided by the manager above this employee in the reporting line, or by HR."
   },
   "leaveTypes": {
     "paid": "Paid Vacation",
@@ -135,7 +147,8 @@
   "leaveStatus": {
     "approved": "Approved",
     "pending": "Pending",
-    "rejected": "Rejected"
+    "rejected": "Rejected",
+    "cancelRequested": "Cancellation requested"
   },
   "leaveWizard": {
     "title": "Leave Request",

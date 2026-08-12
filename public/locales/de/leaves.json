@@ -57,7 +57,19 @@
     "notFoundHint": "Dieser Antrag existiert nicht oder Sie haben keinen Zugriff darauf.",
     "backToLeaves": "Zurück zu den Anträgen",
     "type": "Typ",
-    "myLeaves": "Meine Urlaube"
+    "myLeaves": "Meine Urlaube",
+    "cancellationRequested": "Stornierung angefordert",
+    "requestCancellation": "Stornierung anfordern",
+    "cancelRequestedSuccess": "Stornierungsanfrage an HR gesendet",
+    "cancelRequestFailed": "Stornierungsanfrage fehlgeschlagen",
+    "cancelApprovedSuccess": "Stornierung genehmigt",
+    "cancelRejectedSuccess": "Stornierungsanfrage abgelehnt",
+    "cancelApproveFailed": "Stornierung konnte nicht genehmigt werden",
+    "cancelRejectFailed": "Stornierung konnte nicht abgelehnt werden",
+    "cancelPendingHint": "Die Stornierungsanfrage wartet auf die HR-Genehmigung",
+    "approveCancellation": "Stornierung genehmigen",
+    "rejectCancellation": "Stornierung ablehnen",
+    "reviewNotAllowedHint": "Über diesen Antrag entscheidet die vorgesetzte Person dieses Mitarbeiters in der Berichtslinie oder HR."
   },
   "leaveTypes": {
     "paid": "Bezahlter Urlaub",
@@ -135,7 +147,8 @@
   "leaveStatus": {
     "approved": "Genehmigt",
     "pending": "Ausstehend",
-    "rejected": "Abgelehnt"
+    "rejected": "Abgelehnt",
+    "cancelRequested": "Stornierung angefordert"
   },
   "leaveWizard": {
     "title": "Urlaubsantrag",

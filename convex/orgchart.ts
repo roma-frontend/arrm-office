@@ -5,6 +5,13 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { getProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
+import { requireCapability } from './lib/capabilities';
+import {
+  assertAssignable,
+  getOrgHeadId,
+  resolveSupervisorId,
+  writeSupervisorId,
+} from './lib/reportingLine';
 
 // Tree node type — a flat chart node with recursively nested children
 type OrgChartTreeNode = Doc<'orgChartNodes'> & { children: OrgChartTreeNode[] };
@@ -70,7 +77,9 @@ export const getOrgChart = query({
               department: userProfile?.department ?? userData.department,
               avatarUrl: userProfile?.avatarUrl ?? userData.avatarUrl,
               phone: userProfile?.phone ?? userData.phone,
-              supervisorId: userProfile?.supervisorId ?? userData.supervisorId,
+              // Canonical field first: `users.supervisorId` is the side with the
+              // reverse index and the one every writer now updates.
+              supervisorId: userData.supervisorId ?? userProfile?.supervisorId,
             }
           : null,
       };
@@ -133,8 +142,29 @@ export const getOrgChartTree = query({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AUTO-GENERATE ORG CHART from user data (supervisor relationships)
+// MATERIALIZE THE ORG CHART FROM THE REPORTING LINE
 // ─────────────────────────────────────────────────────────────────────────────
+// What this used to do: group everyone by department, insert Company →
+// Department → flat people, and delete every existing node first. Depth was
+// always 3, so the CEO rendered as a leaf beside the people who report to them;
+// the person's own manager was never consulted despite the function being headed
+// "supervisor relationships"; and any hand-made structure was destroyed on every
+// run.
+//
+// What it does now:
+//   • parents each person by their actual manager (`users.supervisorId`), rooted
+//     at the declared head of the organization;
+//   • labels nodes from their position, never from `role` — a role is a
+//     permission tier, not a job title;
+//   • orders siblings by `positions.rank`, then by name;
+//   • leaves people with no manager as separate roots, so they are visibly
+//     unplaced instead of silently sharing the top with the CEO;
+//   • touches only nodes it owns. Nodes created by hand (`source: 'manual'`) are
+//     what the reporting line cannot express — dotted lines, vacancies, planned
+//     teams — and they survive.
+//
+// Departments are a grouping/colour dimension for the renderer, not the shape of
+// the tree.
 export const generateOrgChartFromUsers = mutation({
   args: {
     organizationId: v.id('organizations'),
@@ -142,16 +172,7 @@ export const generateOrgChartFromUsers = mutation({
   handler: async (ctx, { organizationId }) => {
     const requester = await getAuthCaller(ctx);
     if (!requester) throw new Error('Not authenticated');
-
-    const userIsSuperadmin = isSuperadmin(requester);
-    const isAdmin = requester.role === 'admin';
-    if (!userIsSuperadmin && !isAdmin) {
-      throw new Error('Access denied: only admins can generate org chart');
-    }
-
-    if (!userIsSuperadmin && requester.organizationId !== organizationId) {
-      throw new Error('Access denied');
-    }
+    await requireCapability(ctx, requester._id, 'org.manage', organizationId);
 
     // Get all active users in org
     const users = await ctx.db
@@ -160,90 +181,189 @@ export const generateOrgChartFromUsers = mutation({
       .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')))
       .take(MAX_PAGE_SIZE);
 
-    // Clear existing nodes
+    const positionRecords = await ctx.db
+      .query('positions')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .take(MAX_PAGE_SIZE);
+    const positionById = new Map(positionRecords.map((p) => [p._id as string, p]));
+
+    const userMap = new Map(users.map((u) => [u._id as string, u]));
+    const headId = await getOrgHeadId(ctx, organizationId);
+
+    // Resolve every manager once, from the canonical field.
+    const managerOf = new Map<string, Id<'users'> | undefined>();
+    for (const u of users) {
+      managerOf.set(u._id, await resolveSupervisorId(ctx, u));
+    }
+
+    const childrenOf = new Map<string, Doc<'users'>[]>();
+    const roots: Doc<'users'>[] = [];
+    for (const u of users) {
+      const managerId = managerOf.get(u._id);
+      if (managerId && userMap.has(managerId)) {
+        const siblings = childrenOf.get(managerId) ?? [];
+        siblings.push(u);
+        childrenOf.set(managerId, siblings);
+      } else {
+        roots.push(u);
+      }
+    }
+
+    // The declared head leads the roots; everybody else at the top level is
+    // unplaced and follows.
+    const rankOf = (u: Doc<'users'>): number => {
+      if (headId && u._id === headId) return -1;
+      const rank = u.positionId ? positionById.get(u.positionId)?.rank : undefined;
+      return rank ?? Number.MAX_SAFE_INTEGER;
+    };
+    const bySeniority = (a: Doc<'users'>, b: Doc<'users'>) =>
+      rankOf(a) - rankOf(b) || a.name.localeCompare(b.name);
+    roots.sort(bySeniority);
+
+    const titleOf = (u: Doc<'users'>): string | undefined => {
+      const fromRecord = u.positionId ? positionById.get(u.positionId)?.title : undefined;
+      // No `|| u.role` fallback: labelling someone "admin" in the chart is what
+      // made permissions look like job titles in the first place.
+      return fromRecord ?? u.position ?? undefined;
+    };
+
+    // ── Reconcile the nodes this function owns ───────────────────────────────
     const existingNodes = await ctx.db
       .query('orgChartNodes')
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(MAX_PAGE_SIZE);
 
-    for (const node of existingNodes) {
-      await ctx.db.delete(node._id);
+    // Legacy nodes carry no `source`. They came from the old generator, so they
+    // are treated as owned here; only nodes explicitly marked `manual` are kept.
+    const owned = existingNodes.filter((n) => n.source !== 'manual');
+    const preservedManual = existingNodes.length - owned.length;
+
+    // Reuse the node of each person instead of delete-and-reinsert, so manual
+    // nodes parented onto them keep pointing at something real.
+    const nodeByUser = new Map<string, Doc<'orgChartNodes'>>();
+    const orphanedOwned: Doc<'orgChartNodes'>[] = [];
+    for (const node of owned) {
+      if (node.userId && userMap.has(node.userId) && !nodeByUser.has(node.userId)) {
+        nodeByUser.set(node.userId, node);
+      } else {
+        // Departed people, plus the old Company/Department scaffolding.
+        orphanedOwned.push(node);
+      }
     }
 
-    // Group users by department.
-    //
-    // `departmentId` is the real link; the free-text `department` is only a
-    // denormalized label. Grouping by the string alone split one department into
-    // several nodes whenever spelling drifted ("IT" vs "it ") and produced nodes
-    // for departments that no longer exist — so the id wins whenever it is set,
-    // and the canonical department name is used for the label.
-    const departmentRecords = await ctx.db
-      .query('departments')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .take(MAX_PAGE_SIZE);
-    const nameById = new Map(departmentRecords.map((d) => [d._id as string, d.name]));
+    let created = 0;
+    let updated = 0;
+    const now = Date.now();
 
-    const departments = new Map<string, Doc<'users'>[]>();
-    users.forEach((user) => {
-      const dept =
-        (user.departmentId ? nameById.get(user.departmentId) : undefined) ??
-        user.department?.trim() ??
-        'Unassigned';
-      if (!departments.has(dept)) departments.set(dept, []);
-      departments.get(dept)!.push(user);
-    });
+    const materialize = async (
+      user: Doc<'users'>,
+      parentId: Id<'orgChartNodes'> | undefined,
+      order: number,
+    ): Promise<void> => {
+      const existing = nodeByUser.get(user._id);
+      const fields = {
+        organizationId,
+        parentId,
+        userId: user._id,
+        name: user.name,
+        type: 'person' as const,
+        title: titleOf(user),
+        avatarUrl: user.avatarUrl,
+        order,
+        source: 'auto' as const,
+        updatedAt: now,
+      };
 
-    // Create root node (company)
-    const org = await ctx.db.get(organizationId);
-    const companyId = await ctx.db.insert('orgChartNodes', {
-      organizationId: organizationId,
-      name: org?.name || 'Company',
-      type: 'department',
-      title: org?.name || 'Company',
-      order: 0,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    // Create department nodes and user nodes
-    let order = 0;
-    for (const [deptName, deptUsers] of departments) {
-      const deptNodeId = await ctx.db.insert('orgChartNodes', {
-        organizationId: organizationId,
-        parentId: companyId,
-        name: deptName,
-        type: 'department',
-        title: deptName,
-        order: order++,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-
-      // Create user nodes under department
-      let userOrder = 0;
-      for (const user of deptUsers) {
-        await ctx.db.insert('orgChartNodes', {
-          organizationId: organizationId,
-          parentId: deptNodeId,
-          userId: user._id,
-          name: user.name,
-          type: 'person',
-          title: user.position || user.role,
-          avatarUrl: user.avatarUrl,
-          order: userOrder++,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
+      let nodeId: Id<'orgChartNodes'>;
+      if (existing) {
+        await ctx.db.patch(existing._id, fields);
+        nodeId = existing._id;
+        updated++;
+      } else {
+        nodeId = await ctx.db.insert('orgChartNodes', { ...fields, createdAt: now });
+        created++;
       }
+
+      const children = (childrenOf.get(user._id) ?? []).slice().sort(bySeniority);
+      let childOrder = 0;
+      for (const child of children) {
+        await materialize(child, nodeId, childOrder++);
+      }
+    };
+
+    let rootOrder = 0;
+    for (const root of roots) {
+      await materialize(root, undefined, rootOrder++);
+    }
+
+    for (const stale of orphanedOwned) {
+      await ctx.db.delete(stale._id);
     }
 
     return {
       success: true,
-      nodesCreated: 1 + departments.size + users.length, // company + depts + users
-      departments: Array.from(departments.keys()),
+      // Kept for the existing toast: how many person nodes the chart now holds.
+      nodesCreated: created + updated,
+      created,
+      updated,
+      removed: orphanedOwned.length,
+      preservedManual,
+      headUserId: headId,
+      unassigned: roots.filter((u) => !headId || u._id !== headId).length,
     };
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Re-parenting a person means changing who they report to
+// ─────────────────────────────────────────────────────────────────────────────
+// The chart is configured *through* the reporting line, so moving a person under
+// somebody else in the chart writes `users.supervisorId` instead of pinning a
+// manual override. Otherwise the chart and the line would drift apart the moment
+// anyone dragged a card, and the next regenerate would silently undo the move.
+//
+// Structure the line cannot express — department boxes, groups, vacancies —
+// keeps the plain manual behaviour.
+async function applyParentChange(
+  ctx: MutationCtx,
+  node: Doc<'orgChartNodes'>,
+  newParentId: Id<'orgChartNodes'> | undefined,
+): Promise<{ reassignedManager: boolean }> {
+  const newParent = newParentId ? await ctx.db.get(newParentId) : null;
+  if (newParentId && !newParent) throw new Error('New parent not found');
+
+  const isPersonMove = node.type === 'person' && !!node.userId;
+  const parentIsPerson = !newParent || (newParent.type === 'person' && !!newParent.userId);
+
+  if (isPersonMove && parentIsPerson) {
+    const employeeId = node.userId!;
+    const managerId = newParent?.userId;
+
+    if (managerId) {
+      const manager = await ctx.db.get(managerId);
+      if (!manager) throw new Error('Manager not found');
+      if (manager.organizationId !== node.organizationId) {
+        throw new Error('Manager must be in the same organization');
+      }
+      if (!manager.isActive) throw new Error('Manager account is inactive');
+      await assertAssignable(ctx, employeeId, managerId);
+    }
+
+    await writeSupervisorId(ctx, employeeId, managerId);
+    // The node now agrees with the line, so it stays owned by the generator.
+    await ctx.db.patch(node._id, { parentId: newParentId, updatedAt: Date.now() });
+    return { reassignedManager: true };
+  }
+
+  await ctx.db.patch(node._id, {
+    parentId: newParentId,
+    // Hanging a person off a department box, or moving a box, is a statement the
+    // reporting line cannot make — that node stops being regenerated.
+    source: 'manual',
+    updatedAt: Date.now(),
+  });
+  return { reassignedManager: false };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE NODE
@@ -280,6 +400,9 @@ export const createNode = mutation({
       type: args.type,
       title: args.title,
       order: args.order ?? 0,
+      // Hand-made: this is what the reporting line cannot express, so the
+      // line-based generator must never delete or re-parent it.
+      source: 'manual',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -324,12 +447,21 @@ export const updateNode = mutation({
     if (args.name !== undefined) patch.name = args.name;
     if (args.title !== undefined) patch.title = args.title;
     if (args.order !== undefined) patch.order = args.order;
-    if (args.parentId !== undefined) patch.parentId = args.parentId;
     if (args.userId !== undefined) patch.userId = args.userId;
 
     await ctx.db.patch(args.nodeId, patch);
 
-    return { success: true };
+    // Re-parenting is handled separately: for a person it is a change of manager,
+    // written to the reporting line.
+    let reassignedManager = false;
+    if (args.parentId !== undefined) {
+      const fresh = await ctx.db.get(args.nodeId);
+      if (fresh) {
+        ({ reassignedManager } = await applyParentChange(ctx, fresh, args.parentId));
+      }
+    }
+
+    return { success: true, reassignedManager };
   },
 });
 
@@ -417,12 +549,10 @@ export const moveNode = mutation({
       }
     }
 
-    await ctx.db.patch(args.nodeId, {
-      parentId: args.newParentId,
-      updatedAt: Date.now(),
-    });
+    // For a person this writes the reporting line; see applyParentChange.
+    const { reassignedManager } = await applyParentChange(ctx, node, args.newParentId);
 
-    return { success: true };
+    return { success: true, reassignedManager };
   },
 });
 
@@ -504,128 +634,16 @@ export const saveLayout = mutation({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FIX: Move all person nodes to their correct department based on user.department
-// ─────────────────────────────────────────────────────────────────────────────────────────────
-export const fixOrgChartDepartments = mutation({
-  args: {
-    organizationId: v.id('organizations'),
-  },
-  handler: async (ctx, args) => {
-    const requester = await getAuthCaller(ctx);
-    if (!requester) throw new Error('Not authenticated');
-
-    const userIsSuperadmin = isSuperadmin(requester);
-    const isAdmin = requester.role === 'admin';
-    if (!userIsSuperadmin && !isAdmin) {
-      throw new Error('Access denied');
-    }
-
-    // Get all nodes
-    const nodes = await ctx.db
-      .query('orgChartNodes')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .take(MAX_PAGE_SIZE);
-
-    // Build map of department name -> department node id (case-insensitive)
-    const deptMap = new Map<string, Id<'orgChartNodes'>>();
-    const deptNames: string[] = [];
-    for (const node of nodes) {
-      if (node.type === 'department') {
-        const normalizedName = node.name.toLowerCase().trim();
-        deptMap.set(normalizedName, node._id);
-        deptNames.push(normalizedName);
-        // Also add common variations
-        deptMap.set(normalizedName.replace(/\s+/g, ''), node._id);
-      }
-    }
-
-    // Get all users to map userId -> department and name -> department
-    const users = await ctx.db
-      .query('users')
-      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .take(MAX_PAGE_SIZE);
-
-    const userDeptMap = new Map<string, string>();
-    const nameDeptMap = new Map<string, string>();
-    for (const user of users) {
-      const dept = user.department || 'Unassigned';
-      userDeptMap.set(user._id, dept);
-      nameDeptMap.set(user.name.toLowerCase().trim(), dept);
-      // Also map by email
-      if (user.email) {
-        nameDeptMap.set(user.email.toLowerCase().trim(), dept);
-      }
-    }
-
-    // Helper to find matching department
-    const findDeptId = (deptName: string): Id<'orgChartNodes'> | null => {
-      const normalized = deptName.toLowerCase().trim();
-      if (deptMap.has(normalized)) return deptMap.get(normalized)!;
-      // Try partial match
-      for (const [key, id] of deptMap) {
-        if (key.includes(normalized) || normalized.includes(key)) {
-          return id;
-        }
-      }
-      return null;
-    };
-
-    let fixedCount = 0;
-    const debug: string[] = [];
-
-    // Log all department nodes for reference
-    for (const [name, id] of deptMap) {
-      debug.push(`DEPT: "${name}" -> ${id}`);
-    }
-
-    // Fix person nodes that are under wrong department
-    for (const node of nodes) {
-      if (node.type === 'person') {
-        let userDept: string | undefined;
-        let matchMethod = '';
-
-        // Try userId first
-        if (node.userId) {
-          userDept = userDeptMap.get(node.userId);
-          if (userDept) matchMethod = 'userId';
-        }
-
-        // Fallback: try matching by name
-        if (!userDept) {
-          userDept = nameDeptMap.get(node.name.toLowerCase().trim());
-          if (userDept) matchMethod = 'name';
-        }
-
-        const currentParentId = node.parentId || 'null (root)';
-        debug.push(
-          `Node "${node.name}": userId=${node.userId || 'none'}, dept=${userDept || 'not found'}, method=${matchMethod}, currentParentId=${currentParentId}`,
-        );
-
-        if (userDept) {
-          const correctDeptId = findDeptId(userDept);
-          if (correctDeptId) {
-            if (node.parentId !== correctDeptId) {
-              await ctx.db.patch(node._id, {
-                parentId: correctDeptId,
-                updatedAt: Date.now(),
-              });
-              fixedCount++;
-              debug.push(`  -> FIXED: ${currentParentId} -> ${correctDeptId} ("${userDept}")`);
-            } else {
-              debug.push(`  -> Already correct (parentId=${correctDeptId})`);
-            }
-          } else {
-            debug.push(`  -> No matching dept node for "${userDept}"`);
-          }
-        } else {
-          debug.push(`  -> Could not determine department`);
-        }
-      }
-    }
-
-    return { success: true, fixedCount, debug };
-  },
-});
+// FIX ORG CHART DEPARTMENTS — REMOVED
+// ─────────────────────────────────────────────────────────────────────────────
+// It re-parented every person node under a department node, matching by
+// lowercased name with a substring fallback. The chart is no longer shaped by
+// department — it is shaped by the reporting line — so this mutation had nothing
+// correct left to do: it would have pulled people out of their manager's subtree
+// and back under a department box.
+//
+// Departments are a grouping/colour dimension of the renderer now. Re-run
+// `generateOrgChartFromUsers` to rebuild the tree from the line.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DEBUG: Dump org chart structure

@@ -224,16 +224,19 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {/* Employee: Check-In widget + full attendance dashboard */}
+        {/* Everybody files attendance — admins and the head of the organization
+            included. This widget used to be rendered only for non-managers, so
+            HR and the CEO had no way to clock in from anywhere in the app while
+            still being counted in the "Absent" tile below. */}
+        <div>
+          <CheckInOutWidget />
+        </div>
+
+        {/* Employee: full attendance dashboard */}
         {!isAdminOrSupervisor && (
-          <>
-            <div>
-              <CheckInOutWidget />
-            </div>
-            <div>
-              <AttendanceDashboard />
-            </div>
-          </>
+          <div>
+            <AttendanceDashboard />
+          </div>
         )}
 
         {/* Tabs for Admin/Supervisor */}

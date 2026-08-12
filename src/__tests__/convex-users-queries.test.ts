@@ -507,39 +507,10 @@ describe('getUserById', () => {
   });
 });
 
-// ── getSupervisors ───────────────────────────────────────────────────────────
-describe('getSupervisors', () => {
-  it('returns [] when unauthenticated', async () => {
-    mockGetAuthCaller.mockResolvedValue(null);
-    const h = makeCtx();
-    expect(await queries.getSupervisors.handler(h.ctx, {})).toEqual([]);
-  });
-
-  it('returns [] when the caller has no organization', async () => {
-    mockGetAuthCaller.mockResolvedValue({ ...employeeA, organizationId: undefined });
-    const h = makeCtx();
-    expect(await queries.getSupervisors.handler(h.ctx, {})).toEqual([]);
-  });
-
-  it('returns active supervisors and admins of the org', async () => {
-    mockGetAuthCaller.mockResolvedValue(employeeA);
-    const h = makeCtx();
-    h.chain('users')
-      .take.mockResolvedValueOnce([
-        { _id: 's1', name: 'Sup', role: 'supervisor', email: 's@x.com', isActive: true },
-        { _id: 's2', name: 'Inactive', role: 'supervisor', email: 's2@x.com', isActive: false },
-      ])
-      .mockResolvedValueOnce([
-        { _id: 'a1', name: 'Adm', role: 'admin', email: 'a@x.com', isActive: true },
-      ]);
-
-    const result = await queries.getSupervisors.handler(h.ctx, {});
-    expect(result).toEqual([
-      { _id: 's1', name: 'Sup', role: 'supervisor', email: 's@x.com' },
-      { _id: 'a1', name: 'Adm', role: 'admin', email: 'a@x.com' },
-    ]);
-  });
-});
+// `getSupervisors` was removed: it filtered candidates by role, so an employee
+// could never be someone's manager and an admin was implicitly senior to
+// everyone. `reporting.getPotentialManagers` replaces it and is covered by
+// convex-reporting.test.ts and convex-tasks.integration.test.ts.
 
 // ── getUsersByRole ───────────────────────────────────────────────────────────
 describe('getUsersByRole', () => {

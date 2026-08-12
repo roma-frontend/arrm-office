@@ -66,6 +66,51 @@ jest.mock('@/store/useAuthStore', () => ({
   useAuthUser: () => mockUser,
 }));
 
+// ── Draft (controllable) ─────────────────────────────────────────────────────
+let mockDraft: { restored: boolean; restoredStep: number; clearDraft: jest.Mock };
+jest.mock('@/hooks/useWizardDraft', () => ({
+  useWizardDraft: (opts: any) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+      if (mockDraft.restored) {
+        opts.onRestore?.(
+          {
+            title: 'Restored Vacancy',
+            department: 'Eng',
+            location: 'Yerevan',
+            employmentType: 'part_time',
+            description: 'desc',
+            requirements: 'req',
+            salaryMin: '1000',
+            salaryMax: '2000',
+            currency: 'USD',
+          },
+          mockDraft.restoredStep,
+        );
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return {
+      restored: mockDraft.restored,
+      restoredStep: mockDraft.restoredStep,
+      clearDraft: mockDraft.clearDraft,
+      dismissNotice: jest.fn(),
+    };
+  },
+}));
+
+jest.mock('@/components/ui/WizardDraftNotice', () => ({
+  WizardDraftNotice: ({ show, step, onReset }: any) =>
+    show ? (
+      <div data-testid="draft-notice" data-step={step}>
+        Draft restored at step {step + 1}
+        <button type="button" onClick={onReset}>
+          Start over
+        </button>
+      </div>
+    ) : null,
+}));
+
 jest.mock('@/hooks/useMainRef', () => ({
   useMainRef: () => ({ current: null }),
 }));
@@ -278,6 +323,14 @@ describe('RecruitmentClient', () => {
     };
     // jsdom lacks window.scrollTo
     window.scrollTo = jest.fn() as any;
+    mockDraft = {
+      restored: false,
+      restoredStep: 0,
+      clearDraft: jest.fn(() => {
+        mockDraft.restored = false;
+      }),
+    };
+    sessionStorage.clear();
   });
 
   it('shows a loader when there is no user', () => {
@@ -369,6 +422,66 @@ describe('RecruitmentClient', () => {
       );
     });
     expect(toast.success).toHaveBeenCalledWith('Vacancy created');
+  });
+
+  it('restores a draft into the form and jumps to the saved step', () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 1; // description step
+    render(<RecruitmentClient />);
+    fireEvent.click(screen.getByText('New Vacancy'));
+
+    expect(screen.getByTestId('draft-notice')).toBeTruthy();
+    expect(screen.getByTestId('draft-notice').getAttribute('data-step')).toBe('1');
+    // Description step with the restored content and salary range.
+    expect(screen.getByDisplayValue('desc')).toBeTruthy();
+    expect(screen.getByDisplayValue('req')).toBeTruthy();
+    expect(screen.getByDisplayValue('1000')).toBeTruthy();
+    expect(screen.getByDisplayValue('2000')).toBeTruthy();
+
+    // Back on the job-info step: restored title and location.
+    fireEvent.click(screen.getByText('Back'));
+    expect(screen.getByDisplayValue('Restored Vacancy')).toBeTruthy();
+    expect(screen.getByDisplayValue('Yerevan')).toBeTruthy();
+  });
+
+  it('start over clears the draft and resets the form', () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 1;
+    render(<RecruitmentClient />);
+    fireEvent.click(screen.getByText('New Vacancy'));
+
+    fireEvent.click(screen.getByText('Start over'));
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
+    expect(screen.getByPlaceholderText('e.g. Senior Frontend Developer')).toHaveValue('');
+  });
+
+  it('clears the draft after a successful save', async () => {
+    render(<RecruitmentClient />);
+    fireEvent.click(screen.getByText('New Vacancy'));
+    fireEvent.change(screen.getByPlaceholderText('e.g. Senior Frontend Developer'), {
+      target: { value: 'Backend Engineer' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.change(screen.getByPlaceholderText('Describe the role, responsibilities...'), {
+      target: { value: 'Build APIs' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getAllByText('Create Vacancy')[1]);
+
+    await waitFor(() =>
+      expect(mutationCalls).toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: 'createVacancy' })]),
+      ),
+    );
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+  });
+
+  it('does not show the draft notice when nothing was restored', () => {
+    render(<RecruitmentClient />);
+    fireEvent.click(screen.getByText('New Vacancy'));
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
   });
 
   it('keeps the Next button disabled until a title is entered', () => {

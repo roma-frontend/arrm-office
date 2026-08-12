@@ -1,6 +1,6 @@
 ﻿// ── Leave Types ──────────────────────────────────────────────────────────────
 export type LeaveType = 'paid' | 'unpaid' | 'sick' | 'family' | 'doctor';
-export type LeaveStatus = 'pending' | 'approved' | 'rejected';
+export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancel_requested';
 export type EmployeeType = 'staff' | 'contractor';
 export type UserRole = 'admin' | 'manager' | 'employee';
 

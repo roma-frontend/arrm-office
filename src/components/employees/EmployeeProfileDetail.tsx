@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Briefcase,
   Star,
@@ -18,6 +19,9 @@ import {
   ShieldAlert,
   ShieldQuestion,
   Calculator,
+  LayoutGrid,
+  User,
+  FileText,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -40,7 +44,10 @@ import {
 import { EditEmployeeModal, type Employee } from './EditEmployeeModal';
 import { ReportingLineWidget } from './ReportingLineWidget';
 import { AssignManagerModal } from './AssignManagerModal';
-import ExtendedProfileSection, { type ExtendedProfileData } from './ExtendedProfileSection';
+import ExtendedProfileSection, {
+  hasExtendedProfileData,
+  type ExtendedProfileData,
+} from './ExtendedProfileSection';
 import HiringPacketPanel from './HiringPacketPanel';
 import EditExtendedProfileModal from './EditExtendedProfileModal';
 import EmployeeProfileHero from './EmployeeProfileHero';
@@ -68,8 +75,20 @@ interface MonthlyStatsShape {
   lateDays: number;
 }
 
+// Literal class strings (not interpolated) so Tailwind emits them.
+const TAB_GRID_BY_COUNT: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-3',
+  4: 'grid-cols-2 sm:grid-cols-4',
+};
+
+const TAB_TRIGGER_CLASS =
+  'w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2';
+
 export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDetailProps) {
   const { user: currentUser } = useAuthStore();
+  const [activeTab, setActiveTab] = useState('overview');
   const [showRatingForm, setShowRatingForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -93,6 +112,12 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
     employeeId,
     limit: 3,
   });
+  // Who may rate whom follows the reporting line (manager → own subtree, HR →
+  // everyone in the org, head → rated by nobody), so the server decides with the
+  // same `ratingRefusal` that `createRating` enforces.
+  const ratingEligibility = useQuery(api.supervisorRatings.getRatingEligibility, {
+    employeeId,
+  });
 
   const deleteUser = useMutation(api.users.mutations.deleteUser);
 
@@ -107,18 +132,16 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
     !!currentUser?.organizationId && currentUser.organizationId === employee?.organizationId;
   const canEdit = (isAdminOrSupervisor && isSameOrg) || isSuperadmin;
   const canDelete = canEdit && !isTargetSuperadmin && employeeId !== currentUser?.id;
-  // Rating is subject to the same org scoping as editing — an admin/supervisor
-  // may only rate employees in their own org; superadmin is global. Like
-  // createRating / getEmployeesNeedingRating, admin/superadmin and inactive
-  // targets are not rateable by non-superadmins, so the button is hidden for
-  // them too.
-  const canRate =
-    (isAdminOrSupervisor &&
-      isSameOrg &&
-      !isTargetSuperadmin &&
-      employee?.role !== 'admin' &&
-      employee?.isActive) ||
-    isSuperadmin;
+  // Rating is a reporting-line decision, not a rank one: a manager rates their
+  // own subtree, HR/admins rate anyone in the organization (so the CEO's HR
+  // admin is rateable — the old `employee.role !== 'admin'` check made everyone
+  // of equal role unrateable), the head of the organization is rated by nobody
+  // and nobody rates themselves. The server returns the verdict.
+  const canRate = ratingEligibility?.allowed === true;
+  const canManagePacket =
+    currentUser?.role === 'admin' ||
+    currentUser?.role === 'superadmin' ||
+    currentUser?.role === 'supervisor';
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -206,6 +229,52 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
     );
   }
 
+  const extendedProfile = profile?.profile as unknown as ExtendedProfileData | null | undefined;
+  const documents = profile?.documents ?? [];
+  const biography = profile?.profile?.biography;
+  const hasIdentity = Boolean(
+    profile?.profile &&
+    (profile.profile.passportNumber ||
+      profile.profile.passportIssuedBy ||
+      profile.profile.passportIssueDate ||
+      profile.profile.passportExpiryDate ||
+      profile.profile.socialCardNumber ||
+      profile.profile.nationality),
+  );
+  const hasBiography = Boolean(biography?.skills?.length || biography?.languages?.length);
+
+  // A tab is only offered when it has something to show — either data, or an
+  // affordance for a viewer who is allowed to add that data.
+  const showProfileTab =
+    hasExtendedProfileData(extendedProfile) || hasIdentity || hasBiography || canEdit;
+  const showDocumentsTab = documents.length > 0 || canManagePacket;
+
+  const tabs = [
+    { value: 'overview', icon: LayoutGrid, label: t('employeeProfile.tabs.overview', 'Overview') },
+    ...(showProfileTab
+      ? [{ value: 'profile', icon: User, label: t('employeeProfile.tabs.profile', 'Profile') }]
+      : []),
+    {
+      value: 'performance',
+      icon: Star,
+      label: t('employeeProfile.tabs.performance', 'Performance'),
+    },
+    ...(showDocumentsTab
+      ? [
+          {
+            value: 'documents',
+            icon: FileText,
+            label: t('employeeProfile.tabs.documents', 'Documents'),
+            count: documents.length,
+          },
+        ]
+      : []),
+  ];
+
+  // Tabs appear as their data loads, so a selection can briefly point at a tab
+  // that is not on offer — fall back to Overview instead of rendering nothing.
+  const currentTab = tabs.some((tab) => tab.value === activeTab) ? activeTab : 'overview';
+
   return (
     <div className="space-y-6">
       {/* Professional Hero Header */}
@@ -232,426 +301,480 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
         showRatingForm={showRatingForm}
         onEdit={() => setShowEditModal(true)}
         onDelete={() => setShowDeleteDialog(true)}
-        onRate={() => setShowRatingForm(!showRatingForm)}
+        onRate={() => {
+          // The form lives in the Performance tab — follow the action there so
+          // it is not opened out of sight.
+          setShowRatingForm(!showRatingForm);
+          setActiveTab('performance');
+        }}
       />
 
-      {/* Reporting Line Widget */}
-      {employee.organizationId && (
-        <ReportingLineWidget
-          userId={employeeId}
-          organizationId={employee.organizationId as Id<'organizations'>}
-          onAssignManager={() => setShowAssignManager(true)}
-          canEdit={canEdit}
-        />
-      )}
+      <Tabs value={currentTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList
+          className={`w-full gap-2 bg-transparent p-0 h-auto grid ${TAB_GRID_BY_COUNT[tabs.length] ?? 'grid-cols-2 sm:grid-cols-4'}`}
+        >
+          {tabs.map(({ value, icon: Icon, label, count }) => (
+            <TabsTrigger key={value} value={value} className={TAB_TRIGGER_CLASS}>
+              <Icon className="w-4 h-4" />
+              <span className="truncate">{label}</span>
+              {!!count && (
+                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">
+                  {count}
+                </Badge>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Probation period (HR-managed: extend / pass / fail) */}
-      <React.Suspense fallback={null}>
-        <ProbationCard employeeId={employeeId} />
-      </React.Suspense>
+        {/* ── Overview: where this person sits, and how the month is going ── */}
+        <TabsContent value="overview" className="space-y-6">
+          {employee.organizationId && (
+            <ReportingLineWidget
+              userId={employeeId}
+              organizationId={employee.organizationId as Id<'organizations'>}
+              onAssignManager={() => setShowAssignManager(true)}
+              canEdit={canEdit}
+            />
+          )}
 
-      {/* Extended Profile Section */}
-      <ExtendedProfileSection
-        data={profile?.profile as unknown as ExtendedProfileData | null | undefined}
-        canEdit={canEdit}
-        onEdit={() => setShowExtendedEdit(true)}
-      />
+          {/* Probation period (HR-managed: extend / pass / fail) */}
+          <React.Suspense fallback={null}>
+            <ProbationCard employeeId={employeeId} />
+          </React.Suspense>
 
-      {/* Supervisor Rating Form (inline) */}
-      {canRate && showRatingForm && (
-        <SupervisorRatingForm
-          employeeId={employeeId}
-          employeeName={employee.name}
-          onClose={() => setShowRatingForm(false)}
-          onSuccess={() => setShowRatingForm(false)}
-        />
-      )}
-
-      {/* This Month's Attendance Stats */}
-      {monthlyStats && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="w-5 h-5 text-blue-500" />
-              {t('attendance.thisMonthsAttendance')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
-                <p className="text-2xl font-bold text-blue-500">{monthlyStats.totalDays}</p>
-                <p className="text-xs text-(--text-muted) mt-1">{t('attendance.daysWorked')}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
-                <p className="text-2xl font-bold text-green-500">
-                  {monthlyStats.totalWorkedHours}h
-                </p>
-                <p className="text-xs text-(--text-muted) mt-1">{t('attendance.totalHours')}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
-                <p className="text-2xl font-bold text-sky-400">{monthlyStats.punctualityRate}%</p>
-                <p className="text-xs text-(--text-muted) mt-1">{t('attendance.punctuality')}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
-                <p
-                  className={`text-2xl font-bold ${Number(monthlyStats.lateDays) > 0 ? 'text-red-500' : 'text-green-500'}`}
-                >
-                  {monthlyStats.lateDays}
-                </p>
-                <p className="text-xs text-(--text-muted) mt-1">{t('attendance.lateDays')}</p>
-              </div>
-            </div>
-            {(Number(monthlyStats.lateDays) > 0 || Number(monthlyStats.earlyLeaveDays) > 0) && (
-              <div className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
-                <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0" />
-                <p className="text-sm text-orange-700 dark:text-orange-200">
-                  {Number(monthlyStats.lateDays) > 0 &&
-                    `${monthlyStats.lateDays} ${t('attendance.lateArrivals')}`}
-                  {Number(monthlyStats.lateDays) > 0 &&
-                    Number(monthlyStats.earlyLeaveDays) > 0 &&
-                    ' · '}
-                  {Number(monthlyStats.earlyLeaveDays) > 0 &&
-                    `${monthlyStats.earlyLeaveDays} ${t('attendance.earlyLeaves')}`}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Latest Performance Rating */}
-      {latestRating && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                {t('employeeProfile.latestPerformanceRating')}
-              </CardTitle>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-(--primary)">
-                  {latestRating.overallRating.toFixed(1)}
-                  <span className="text-sm font-normal text-(--text-muted)">/5</span>
-                </p>
-                <p className="text-xs text-(--text-muted)">
-                  {t('performance.by')} {latestRating.supervisor?.name ?? t('roles.supervisor')} ·{' '}
-                  {latestRating.ratingPeriod}
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { label: t('dashboard.qualityOfWork'), value: latestRating.qualityOfWork },
-              { label: t('dashboard.efficiency'), value: latestRating.efficiency },
-              { label: t('dashboard.teamwork'), value: latestRating.teamwork },
-              { label: t('dashboard.initiative'), value: latestRating.initiative },
-              { label: t('dashboard.communication'), value: latestRating.communication },
-              { label: t('dashboard.reliability'), value: latestRating.reliability },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center justify-between">
-                <span className="text-sm text-(--text-muted) w-36">{label}</span>
-                <div className="flex items-center gap-2">
-                  <div className="flex">{renderStars(value)}</div>
-                  <span
-                    className="text-sm font-semibold w-5 text-right"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {value}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {latestRating.strengths && (
-              <div className="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-950">
-                <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1">
-                  💪 {t('performance.strengths')}
-                </p>
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  {latestRating.strengths}
-                </p>
-              </div>
-            )}
-            {latestRating.areasForImprovement && (
-              <div className="mt-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
-                <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">
-                  📈 {t('performance.areasForImprovement')}
-                </p>
-                <p className="text-sm text-orange-700 dark:text-orange-300">
-                  {latestRating.areasForImprovement}
-                </p>
-              </div>
-            )}
-            {latestRating.generalComments && (
-              <div className="mt-2 p-3 rounded-lg bg-(--background-subtle)">
-                <p className="text-xs font-semibold text-(--text-muted) mb-1">
-                  💬 {t('performance.comments')}
-                </p>
-                <p className="text-sm text-(--text-primary)">{latestRating.generalComments}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Rating History */}
-      {ratingHistory && ratingHistory.length > 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t('employeeProfile.ratingHistory')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {ratingHistory.map((rating) => (
-                <div
-                  key={rating._id}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                  style={{ borderColor: 'var(--border)', background: 'var(--background-subtle)' }}
-                >
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                      {rating.ratingPeriod}
+          {/* This Month's Attendance Stats */}
+          {monthlyStats && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-blue-500" />
+                  {t('attendance.thisMonthsAttendance')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-2xl font-bold text-blue-500">{monthlyStats.totalDays}</p>
+                    <p className="text-xs text-(--text-muted) mt-1">{t('attendance.daysWorked')}</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-2xl font-bold text-green-500">
+                      {monthlyStats.totalWorkedHours}h
                     </p>
-                    <p className="text-xs text-(--text-muted)">
-                      by {rating.supervisor?.name ?? 'Supervisor'}
+                    <p className="text-xs text-(--text-muted) mt-1">{t('attendance.totalHours')}</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-2xl font-bold text-sky-400">
+                      {monthlyStats.punctualityRate}%
+                    </p>
+                    <p className="text-xs text-(--text-muted) mt-1">
+                      {t('attendance.punctuality')}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex">{renderStars(rating.overallRating)}</div>
-                    <span className="text-sm font-bold text-(--primary)">
-                      {rating.overallRating.toFixed(1)}
-                    </span>
+                  <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
+                    <p
+                      className={`text-2xl font-bold ${Number(monthlyStats.lateDays) > 0 ? 'text-red-500' : 'text-green-500'}`}
+                    >
+                      {monthlyStats.lateDays}
+                    </p>
+                    <p className="text-xs text-(--text-muted) mt-1">{t('attendance.lateDays')}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                {(Number(monthlyStats.lateDays) > 0 || Number(monthlyStats.earlyLeaveDays) > 0) && (
+                  <div className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
+                    <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0" />
+                    <p className="text-sm text-orange-700 dark:text-orange-200">
+                      {Number(monthlyStats.lateDays) > 0 &&
+                        `${monthlyStats.lateDays} ${t('attendance.lateArrivals')}`}
+                      {Number(monthlyStats.lateDays) > 0 &&
+                        Number(monthlyStats.earlyLeaveDays) > 0 &&
+                        ' · '}
+                      {Number(monthlyStats.earlyLeaveDays) > 0 &&
+                        `${monthlyStats.earlyLeaveDays} ${t('attendance.earlyLeaves')}`}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-      {/* No rating yet */}
-      {latestRating === null && canRate && (
-        <Card className="border-dashed">
-          <CardContent className="p-6 text-center">
-            <Star className="w-10 h-10 text-(--text-muted) mx-auto mb-2 opacity-30" />
-            <p className="text-sm text-(--text-muted)">{t('employeeProfile.noRatingYet')}</p>
-            <Button
-              size="sm"
-              className="mt-3 bg-linear-to-r from-blue-600 to-sky-700 text-white"
-              onClick={() => setShowRatingForm(true)}
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              {t('employeeProfile.addFirstRating')}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Leave Balances */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t('employeeProfile.leaveBalances')}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-3 gap-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-[#2563eb]">{employee.paidLeaveBalance}</p>
-            <p className="text-xs text-(--text-muted) mt-1">{t('employeeProfile.paidLeave')}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-[#ef4444]">{employee.sickLeaveBalance}</p>
-            <p className="text-xs text-(--text-muted) mt-1">{t('employeeProfile.sickLeave')}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-[#10b981]">{employee.familyLeaveBalance}</p>
-            <p className="text-xs text-(--text-muted) mt-1">{t('employeeProfile.familyLeave')}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Final Settlement (admins only) */}
-      {canEdit && (
-        <Card className="border-dashed">
-          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                <Calculator className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="font-medium text-(--text-primary)">
-                  {t('employees.settlement.title', 'Final Settlement')}
-                </p>
-                <p className="text-sm text-(--text-muted)">
-                  {t(
-                    'employees.settlement.openDesc',
-                    'Preview the final payout on termination and download the Excel report',
-                  )}
-                </p>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              className="shrink-0 bg-linear-to-r from-blue-600 to-sky-700 text-white"
-              onClick={() => setShowSettlement(true)}
-            >
-              <Calculator className="w-4 h-4 mr-1" />
-              {t('employees.settlement.openButton', 'Final Settlement')}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Identity / Passport */}
-      {profile?.profile &&
-        (profile.profile.passportNumber ||
-          profile.profile.passportIssuedBy ||
-          profile.profile.passportIssueDate ||
-          profile.profile.passportExpiryDate ||
-          profile.profile.socialCardNumber ||
-          profile.profile.nationality) && (
+          {/* Leave Balances */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <IdCard className="w-5 h-5 text-sky-500" />
-                  {t('employees.identity') || 'Identity'}
-                </CardTitle>
-                {renderTaxIdBadge()}
-              </div>
+              <CardTitle className="text-lg">{t('employeeProfile.leaveBalances')}</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { label: t('employees.passportNumber'), value: profile.profile.passportNumber },
-                { label: t('employees.nationality'), value: profile.profile.nationality },
-                { label: t('employees.passportIssuedBy'), value: profile.profile.passportIssuedBy },
-                {
-                  label: t('employees.socialCardNumber'),
-                  value: profile.profile.socialCardNumber,
-                },
-                {
-                  label: t('employees.passportIssueDate'),
-                  value: profile.profile.passportIssueDate,
-                },
-                {
-                  label: t('employees.passportExpiryDate'),
-                  value: profile.profile.passportExpiryDate,
-                },
-              ]
-                .filter((f) => f.value)
-                .map((f, i) => (
-                  <div key={i}>
-                    <p className="text-sm text-(--text-muted)">{f.label}</p>
-                    <p className="font-medium text-(--text-primary)">{f.value}</p>
-                  </div>
-                ))}
+            <CardContent className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-[#2563eb]">{employee.paidLeaveBalance}</p>
+                <p className="text-xs text-(--text-muted) mt-1">{t('employeeProfile.paidLeave')}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-[#ef4444]">{employee.sickLeaveBalance}</p>
+                <p className="text-xs text-(--text-muted) mt-1">{t('employeeProfile.sickLeave')}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-[#10b981]">{employee.familyLeaveBalance}</p>
+                <p className="text-xs text-(--text-muted) mt-1">
+                  {t('employeeProfile.familyLeave')}
+                </p>
+              </div>
             </CardContent>
           </Card>
-        )}
 
-      {/* AI Performance Breakdown */}
-      {score && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Target className="w-5 h-5 text-(--primary)" />
-              {t('employeeProfile.performance')} {t('common.breakdown', 'Breakdown')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-sm text-(--text-muted)">{t('employeeProfile.performance')}</p>
-              <p className="text-2xl font-bold text-(--primary)">{score.breakdown.performance}%</p>
-            </div>
-            <div>
-              <p className="text-sm text-(--text-muted)">{t('employeeProfile.attendance')}</p>
-              <p className="text-2xl font-bold text-(--primary)">{score.breakdown.attendance}%</p>
-            </div>
-            <div>
-              <p className="text-sm text-(--text-muted)">{t('employeeProfile.behavior')}</p>
-              <p className="text-2xl font-bold text-(--primary)">{score.breakdown.behavior}%</p>
-            </div>
-            <div>
-              <p className="text-sm text-(--text-muted)">{t('employeeProfile.leaveHistory')}</p>
-              <p className="text-2xl font-bold text-(--primary)">{score.breakdown.leaveHistory}%</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Biography */}
-      {profile?.profile?.biography && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t('employeeProfile.biography')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {profile.profile.biography.skills && profile.profile.biography.skills.length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-2">{t('employeeProfile.skills')}</p>
-                <div className="flex flex-wrap gap-2">
-                  {profile.profile.biography.skills.map((skill, i) => (
-                    <Badge key={i} variant="secondary">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-            {profile.profile.biography.languages &&
-              profile.profile.biography.languages.length > 0 && (
+          {/* AI Performance Breakdown */}
+          {score && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="w-5 h-5 text-(--primary)" />
+                  {t('employeeProfile.performance')} {t('common.breakdown', 'Breakdown')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-sm font-medium mb-2">{t('employeeProfile.languages')}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.profile.biography.languages.map((lang, i) => (
-                      <Badge key={i} variant="outline">
-                        {lang}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Hiring document packet — generated at creation, signed during onboarding */}
-      <HiringPacketPanel
-        userId={employeeId as Id<'users'>}
-        canManage={
-          currentUser?.role === 'admin' ||
-          currentUser?.role === 'superadmin' ||
-          currentUser?.role === 'supervisor'
-        }
-      />
-
-      {/* Documents */}
-      {profile?.documents && profile.documents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t('employeeProfile.documents')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {profile.documents.map((doc) => (
-                <div
-                  key={doc._id}
-                  className="flex items-center justify-between p-3 bg-[var(--card-hover)] rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <Briefcase className="w-5 h-5 text-(--text-muted)" />
-                    <div>
-                      <p className="text-sm font-medium">{doc.fileName}</p>
-                      <p className="text-xs text-(--text-muted)">{doc.category}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-(--text-muted)">
-                    {format(new Date(doc.uploadedAt), 'MMM d, yyyy', { locale: dateFnsLocale })}
+                  <p className="text-sm text-(--text-muted)">{t('employeeProfile.performance')}</p>
+                  <p className="text-2xl font-bold text-(--primary)">
+                    {score.breakdown.performance}%
                   </p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                <div>
+                  <p className="text-sm text-(--text-muted)">{t('employeeProfile.attendance')}</p>
+                  <p className="text-2xl font-bold text-(--primary)">
+                    {score.breakdown.attendance}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-(--text-muted)">{t('employeeProfile.behavior')}</p>
+                  <p className="text-2xl font-bold text-(--primary)">{score.breakdown.behavior}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-(--text-muted)">{t('employeeProfile.leaveHistory')}</p>
+                  <p className="text-2xl font-bold text-(--primary)">
+                    {score.breakdown.leaveHistory}%
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Final Settlement (admins only) */}
+          {canEdit && (
+            <Card className="border-dashed">
+              <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                    <Calculator className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-(--text-primary)">
+                      {t('employees.settlement.title', 'Final Settlement')}
+                    </p>
+                    <p className="text-sm text-(--text-muted)">
+                      {t(
+                        'employees.settlement.openDesc',
+                        'Preview the final payout on termination and download the Excel report',
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="shrink-0 bg-linear-to-r from-blue-600 to-sky-700 text-white"
+                  onClick={() => setShowSettlement(true)}
+                >
+                  <Calculator className="w-4 h-4 mr-1" />
+                  {t('employees.settlement.openButton', 'Final Settlement')}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ── Profile: who this person is on paper ────────────────────────── */}
+        {showProfileTab && (
+          <TabsContent value="profile" className="space-y-6">
+            <ExtendedProfileSection
+              data={extendedProfile}
+              canEdit={canEdit}
+              onEdit={() => setShowExtendedEdit(true)}
+            />
+
+            {/* Identity / Passport */}
+            {hasIdentity && profile?.profile && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <IdCard className="w-5 h-5 text-sky-500" />
+                      {t('employees.identity') || 'Identity'}
+                    </CardTitle>
+                    {renderTaxIdBadge()}
+                  </div>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { label: t('employees.passportNumber'), value: profile.profile.passportNumber },
+                    { label: t('employees.nationality'), value: profile.profile.nationality },
+                    {
+                      label: t('employees.passportIssuedBy'),
+                      value: profile.profile.passportIssuedBy,
+                    },
+                    {
+                      label: t('employees.socialCardNumber'),
+                      value: profile.profile.socialCardNumber,
+                    },
+                    {
+                      label: t('employees.passportIssueDate'),
+                      value: profile.profile.passportIssueDate,
+                    },
+                    {
+                      label: t('employees.passportExpiryDate'),
+                      value: profile.profile.passportExpiryDate,
+                    },
+                  ]
+                    .filter((f) => f.value)
+                    .map((f, i) => (
+                      <div key={i}>
+                        <p className="text-sm text-(--text-muted)">{f.label}</p>
+                        <p className="font-medium text-(--text-primary)">{f.value}</p>
+                      </div>
+                    ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Biography */}
+            {hasBiography && biography && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{t('employeeProfile.biography')}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {biography.skills && biography.skills.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">{t('employeeProfile.skills')}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {biography.skills.map((skill, i) => (
+                          <Badge key={i} variant="secondary">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {biography.languages && biography.languages.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">{t('employeeProfile.languages')}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {biography.languages.map((language, i) => (
+                          <Badge key={i} variant="outline">
+                            {language}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        )}
+
+        {/* ── Performance: ratings, past and present ──────────────────────── */}
+        <TabsContent value="performance" className="space-y-6">
+          {/* Supervisor Rating Form (inline) */}
+          {canRate && showRatingForm && (
+            <SupervisorRatingForm
+              employeeId={employeeId}
+              employeeName={employee.name}
+              onClose={() => setShowRatingForm(false)}
+              onSuccess={() => setShowRatingForm(false)}
+            />
+          )}
+
+          {/* Latest Performance Rating */}
+          {latestRating && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                    {t('employeeProfile.latestPerformanceRating')}
+                  </CardTitle>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-(--primary)">
+                      {latestRating.overallRating.toFixed(1)}
+                      <span className="text-sm font-normal text-(--text-muted)">/5</span>
+                    </p>
+                    <p className="text-xs text-(--text-muted)">
+                      {t('performance.by')} {latestRating.supervisor?.name ?? t('roles.supervisor')}{' '}
+                      · {latestRating.ratingPeriod}
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[
+                  { label: t('dashboard.qualityOfWork'), value: latestRating.qualityOfWork },
+                  { label: t('dashboard.efficiency'), value: latestRating.efficiency },
+                  { label: t('dashboard.teamwork'), value: latestRating.teamwork },
+                  { label: t('dashboard.initiative'), value: latestRating.initiative },
+                  { label: t('dashboard.communication'), value: latestRating.communication },
+                  { label: t('dashboard.reliability'), value: latestRating.reliability },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-sm text-(--text-muted) w-36">{label}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex">{renderStars(value)}</div>
+                      <span
+                        className="text-sm font-semibold w-5 text-right"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {value}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {latestRating.strengths && (
+                  <div className="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-950">
+                    <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1">
+                      💪 {t('performance.strengths')}
+                    </p>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      {latestRating.strengths}
+                    </p>
+                  </div>
+                )}
+                {latestRating.areasForImprovement && (
+                  <div className="mt-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
+                    <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">
+                      📈 {t('performance.areasForImprovement')}
+                    </p>
+                    <p className="text-sm text-orange-700 dark:text-orange-300">
+                      {latestRating.areasForImprovement}
+                    </p>
+                  </div>
+                )}
+                {latestRating.generalComments && (
+                  <div className="mt-2 p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-xs font-semibold text-(--text-muted) mb-1">
+                      💬 {t('performance.comments')}
+                    </p>
+                    <p className="text-sm text-(--text-primary)">{latestRating.generalComments}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Rating History */}
+          {ratingHistory && ratingHistory.length > 1 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{t('employeeProfile.ratingHistory')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {ratingHistory.map((rating) => (
+                    <div
+                      key={rating._id}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                      style={{
+                        borderColor: 'var(--border)',
+                        background: 'var(--background-subtle)',
+                      }}
+                    >
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {rating.ratingPeriod}
+                        </p>
+                        <p className="text-xs text-(--text-muted)">
+                          by {rating.supervisor?.name ?? 'Supervisor'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex">{renderStars(rating.overallRating)}</div>
+                        <span className="text-sm font-bold text-(--primary)">
+                          {rating.overallRating.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No rating yet — `null` is "none on record", `undefined` is still
+              loading, so only the former gets the empty state. */}
+          {latestRating === null && (
+            <Card className="border-dashed">
+              <CardContent className="p-6 text-center">
+                <Star className="w-10 h-10 text-(--text-muted) mx-auto mb-2 opacity-30" />
+                <p className="text-sm text-(--text-muted)">{t('employeeProfile.noRatingYet')}</p>
+                {canRate && !showRatingForm && (
+                  <Button
+                    size="sm"
+                    className="mt-3 bg-linear-to-r from-blue-600 to-sky-700 text-white"
+                    onClick={() => setShowRatingForm(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    {t('employeeProfile.addFirstRating')}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* ── Documents: the hiring packet and everything filed since ─────── */}
+        {showDocumentsTab && (
+          <TabsContent value="documents" className="space-y-6">
+            {/* Hiring document packet — generated at creation, signed during onboarding */}
+            <HiringPacketPanel userId={employeeId as Id<'users'>} canManage={canManagePacket} />
+
+            {documents.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{t('employeeProfile.documents')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {documents.map((doc) => (
+                      <div
+                        key={doc._id}
+                        className="flex items-center justify-between p-3 bg-[var(--card-hover)] rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Briefcase className="w-5 h-5 text-(--text-muted)" />
+                          <div>
+                            <p className="text-sm font-medium">{doc.fileName}</p>
+                            <p className="text-xs text-(--text-muted)">{doc.category}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-(--text-muted)">
+                          {format(new Date(doc.uploadedAt), 'MMM d, yyyy', {
+                            locale: dateFnsLocale,
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-dashed">
+                <CardContent className="p-6 text-center">
+                  <FileText className="w-10 h-10 text-(--text-muted) mx-auto mb-2 opacity-30" />
+                  <p className="text-sm text-(--text-muted)">
+                    {t('employeeProfile.noDocuments', 'No documents uploaded yet')}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        )}
+      </Tabs>
 
       {/* Delete Confirmation Dialog */}
       <AnimatePresence>
@@ -726,7 +849,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
         {...(employee.organizationId
           ? { organizationId: employee.organizationId as Id<'organizations'> }
           : {})}
-        initialData={profile?.profile as unknown as ExtendedProfileData | null | undefined}
+        initialData={extendedProfile}
       />
 
       {/* Final Settlement Dialog */}

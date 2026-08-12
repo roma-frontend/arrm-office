@@ -65,6 +65,7 @@ function StatusBadge({ status }: { status: LeaveStatus }) {
     pending: { variant: 'warning', label: t('leave.pending') },
     approved: { variant: 'success', label: t('leave.approved') },
     rejected: { variant: 'destructive', label: t('leave.rejected') },
+    cancel_requested: { variant: 'warning', label: t('leave.cancellationRequested') },
   };
   const { variant, label } = map[status];
   return <Badge variant={variant}>{label}</Badge>;
@@ -215,9 +216,42 @@ export function LeavesClient() {
     }
   };
 
+  // HR decides on an employee's cancellation request: approving it runs the
+  // normal delete path (balance restored + owner notified), rejecting it keeps
+  // the leave at its previous status.
+  const rejectLeaveCancellation = useMutation(api.leaves.rejectLeaveCancellation);
+
+  const handleApproveCancellation = async (id: Id<'leaveRequests'>) => {
+    if (!user?.id) {
+      toast.error(t('errors.unauthorized'));
+      return;
+    }
+    try {
+      await deleteOptimistic(id, user.id as Id<'users'>);
+      toast.success(t('leave.cancelApprovedSuccess'));
+    } catch (err) {
+      logger.error('Approve cancellation error:', err);
+      toast.error(err instanceof Error ? err.message : t('leave.cancelApproveFailed'));
+    }
+  };
+
+  const handleRejectCancellation = async (id: Id<'leaveRequests'>) => {
+    if (!user?.id) {
+      toast.error(t('errors.unauthorized'));
+      return;
+    }
+    try {
+      await rejectLeaveCancellation({ leaveId: id });
+      toast.success(t('leave.cancelRejectedSuccess'));
+    } catch (err) {
+      logger.error('Reject cancellation error:', err);
+      toast.error(err instanceof Error ? err.message : t('leave.cancelRejectFailed'));
+    }
+  };
+
   const isLoading = leavesStatus === 'LoadingFirstPage';
-  const isSuperadmin = user?.role === 'superadmin';
-  const isAdmin = !isSuperadmin && (user?.role === 'admin' || user?.role === 'supervisor');
+  const isAdmin =
+    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -266,6 +300,9 @@ export function LeavesClient() {
                   <SelectItem value="pending">{t('statuses.pending')}</SelectItem>
                   <SelectItem value="approved">{t('statuses.approved')}</SelectItem>
                   <SelectItem value="rejected">{t('statuses.rejected')}</SelectItem>
+                  <SelectItem value="cancel_requested">
+                    {t('leave.cancellationRequested')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -394,6 +431,34 @@ export function LeavesClient() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleReject(req._id);
+                                }}
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                          {req.status === 'cancel_requested' && (
+                            <>
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                className="text-emerald-500 hover:text-emerald-400 ml-auto"
+                                title={t('leave.approveCancellation')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApproveCancellation(req._id);
+                                }}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                className="text-red-500 hover:text-red-400"
+                                title={t('leave.rejectCancellation')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRejectCancellation(req._id);
                                 }}
                               >
                                 <XCircle className="w-4 h-4" />
@@ -548,6 +613,34 @@ export function LeavesClient() {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleReject(req._id);
+                                        }}
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {req.status === 'cancel_requested' && (
+                                    <>
+                                      <Button
+                                        size="icon-sm"
+                                        variant="ghost"
+                                        className="text-emerald-500 hover:text-emerald-400"
+                                        title={t('leave.approveCancellation')}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleApproveCancellation(req._id);
+                                        }}
+                                      >
+                                        <CheckCircle className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        size="icon-sm"
+                                        variant="ghost"
+                                        className="text-red-500 hover:text-red-400"
+                                        title={t('leave.rejectCancellation')}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRejectCancellation(req._id);
                                         }}
                                       >
                                         <XCircle className="w-4 h-4" />

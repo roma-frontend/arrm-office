@@ -635,6 +635,12 @@ function StatusBadge({
       bg: 'bg-amber-500/10',
       label: t('leave.pending'),
     },
+    cancel_requested: {
+      icon: Clock,
+      color: 'text-amber-600',
+      bg: 'bg-amber-500/10',
+      label: t('leave.cancellationRequested'),
+    },
   };
   const c = config[status] || config.pending;
   const Icon = c.icon;

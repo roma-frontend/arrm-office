@@ -74,18 +74,41 @@ export const POST = withCsrfProtection(async (req: Request) => {
       return NextResponse.json({ success: false, message: 'Requester not found' });
     }
 
-    const isAdmin = requester.role === 'admin';
+    const isAdmin =
+      requester.role === 'admin' ||
+      requester.role === 'supervisor' ||
+      requester.role === 'superadmin';
     const isOwner = targetLeave.userId === requesterId;
 
     if (!isAdmin && !isOwner) {
       return NextResponse.json({
         success: false,
-        message: '❌ You can only delete your own leave requests.',
+        message: '❌ You can only cancel your own leave requests.',
       });
     }
 
     const ownerUser = allUsers.find((u) => u._id === targetLeave.userId);
     const ownerName = ownerUser?.name ?? 'Employee';
+
+    if (isOwner && !isAdmin) {
+      // Employees cannot cancel their leave directly — the request goes to the
+      // HR queue, where only HR may approve (delete) or reject it.
+      await fetchMutation(
+        api.leaves.requestLeaveCancellation,
+        {
+          leaveId: targetLeave._id as Id<'leaveRequests'>,
+        },
+        convexAuth,
+      );
+      return NextResponse.json({
+        success: true,
+        message: t('aiMessages.leaveCancelRequested', {
+          type: targetLeave.type,
+          start: targetLeave.startDate,
+          end: targetLeave.endDate,
+        }),
+      });
+    }
 
     await fetchMutation(
       api.leaves.deleteLeave,

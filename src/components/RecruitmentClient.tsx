@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useTranslation } from 'react-i18next';
@@ -112,6 +114,85 @@ function CreateVacancyWizard({
   const [submitting, setSubmitting] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
 
+  // ── Черновик: правки переживают случайное закрытие диалога ────────────────
+  const draftData = useMemo(
+    () => ({
+      title,
+      department,
+      location,
+      employmentType,
+      description,
+      requirements,
+      salaryMin,
+      salaryMax,
+      currency,
+    }),
+    [
+      title,
+      department,
+      location,
+      employmentType,
+      description,
+      requirements,
+      salaryMin,
+      salaryMax,
+      currency,
+    ],
+  );
+
+  const draftDefaults = useMemo(
+    () => ({
+      title: '',
+      department: '',
+      location: '',
+      employmentType: 'full_time' as const,
+      description: '',
+      requirements: '',
+      salaryMin: '',
+      salaryMax: '',
+      currency: 'USD',
+    }),
+    [],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    if (d.title !== undefined) setTitle(d.title);
+    if (d.department !== undefined) setDepartment(d.department);
+    if (d.location !== undefined) setLocation(d.location);
+    if (d.employmentType) setEmploymentType(d.employmentType);
+    if (d.description !== undefined) setDescription(d.description);
+    if (d.requirements !== undefined) setRequirements(d.requirements);
+    if (d.salaryMin !== undefined) setSalaryMin(d.salaryMin);
+    if (d.salaryMax !== undefined) setSalaryMax(d.salaryMax);
+    if (d.currency) setCurrency(d.currency);
+    // Three steps: job info, description, review.
+    setStep(Math.min(Math.max(savedStep, 0), 2));
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'create-vacancy',
+    enabled: true,
+    data: draftData,
+    step,
+    defaults: draftDefaults,
+    onRestore: handleRestoreDraft,
+  });
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setTitle('');
+    setDepartment('');
+    setLocation('');
+    setEmploymentType('full_time');
+    setDescription('');
+    setRequirements('');
+    setSalaryMin('');
+    setSalaryMax('');
+    setCurrency('USD');
+    setStep(0);
+  }, [clearDraft]);
+
   const steps = [
     t('recruitment.wizard.step1', 'Job Info'),
     t('recruitment.wizard.step2', 'Description'),
@@ -136,6 +217,7 @@ function CreateVacancyWizard({
         hiringManagerId: userId,
       });
       toast.success(t('recruitment.wizard.success', 'Vacancy created'));
+      clearDraft();
       onClose();
     } catch (e) {
       toast.error(String(e));
@@ -197,6 +279,13 @@ function CreateVacancyWizard({
 
         {/* Content */}
         <div className="px-5 py-4 min-h-[280px] overflow-y-auto max-h-[50vh]">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+            className="mb-4"
+          />
+
           {step === 0 && (
             <div className="space-y-4">
               <div>

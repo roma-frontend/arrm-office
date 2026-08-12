@@ -4,9 +4,16 @@ import { mutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin, isSuperadminEmail } from '../lib/auth';
 import { MAX_PAGE_SIZE } from '../pagination';
-import { patchProfile } from '../lib/userProfile';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
+import { hasCapability } from '../lib/capabilities';
+import { deductLeaveBalance, restoreLeaveBalance } from './balances';
+import {
+  assertMayReview,
+  resolveApprovalRoute,
+  reviewRefusal,
+  HEAD_AUTO_APPROVAL_NOTE,
+} from './approval';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE LEAVE REQUEST
@@ -32,38 +39,108 @@ export const createLeave = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // The caller comes from the verified identity, never from `args.userId`:
+    // this mutation used to file a request for whatever user id it was handed,
+    // so any authenticated client could book leave in someone else's name.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    const filingForSelf = args.userId === caller._id;
+    if (!filingForSelf) {
+      // Filing on behalf of an employee is an HR action (sick employee who
+      // cannot log in, paper form handed in). It needs the org-wide capability.
+      const callerDoc = await ctx.db.get(caller._id);
+      if (!callerDoc || !hasCapability(callerDoc, 'leave.approve.org')) {
+        throw new Error('You can only file leave requests for yourself');
+      }
+    }
+
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');
     if (!user.isApproved) throw new Error('Account pending approval');
     if (!user.organizationId) throw new Error('User does not belong to an organization');
+    if (
+      !filingForSelf &&
+      caller.role !== 'superadmin' &&
+      caller.organizationId !== user.organizationId
+    ) {
+      throw new Error('Access denied: cross-organization operation');
+    }
+
+    // Where this request goes: the nearest manager in the line who may approve,
+    // HR as a fallback, or — for the head of the organization, who has nobody
+    // above them — straight to approved under the `auto` head policy.
+    const route = await resolveApprovalRoute(ctx, user);
+    const now = Date.now();
 
     const leaveId = await ctx.db.insert('leaveRequests', {
       organizationId: user.organizationId, // ← tenant isolation
       userId: args.userId,
+      createdBy: caller._id,
       type: args.type,
       startDate: args.startDate,
       endDate: args.endDate,
       days: args.days,
       reason: args.reason,
       comment: args.comment,
-      status: 'pending',
-      isRead: false,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      ...(route.autoApprove
+        ? {
+            status: 'approved' as const,
+            reviewComment: HEAD_AUTO_APPROVAL_NOTE,
+            reviewedAt: now,
+          }
+        : { status: 'pending' as const }),
+      isRead: route.autoApprove,
+      createdAt: now,
+      updatedAt: now,
     });
 
     // Conflict detection with company events is handled by:
     // 1. Admin manually checking events before approving
     // 2. Future: scheduled job to check conflicts
 
-    // Notify admins within same org only
-    // NOTE: Using .take(DEFAULT_LIST_CAP) here because we must notify ALL admins of a new leave request; truncating would miss recipients
-    const admins = await ctx.db
-      .query('users')
-      .withIndex('by_org_role', (q) =>
-        q.eq('organizationId', user.organizationId).eq('role', 'admin'),
-      )
-      .take(DEFAULT_LIST_CAP);
+    if (route.autoApprove) {
+      // Nothing to wait for, so the balance moves now and no SLA row is opened:
+      // SLA measures how fast an approver responded, and there is no approver.
+      await deductLeaveBalance(ctx, args.userId, user, args.type, args.days);
+
+      await notify(ctx, {
+        organizationId: user.organizationId,
+        userId: args.userId,
+        type: 'leave_approved',
+        titleKey: 'notifications.titles.leaveApproved',
+        messageKey: 'notifications.messages.leaveApprovedPlain',
+        params: {
+          type: args.type,
+          start: args.startDate,
+          end: args.endDate,
+        },
+        fallbackTitle: '✅ Leave Approved!',
+        fallbackMessage: `Your ${args.type} leave (${args.startDate} → ${args.endDate}) has been recorded as approved. ${HEAD_AUTO_APPROVAL_NOTE}`,
+        relatedId: leaveId,
+        route: '/leaves',
+        createdAt: now,
+      });
+
+      await ctx.db.insert('auditLogs', {
+        organizationId: user.organizationId,
+        userId: caller._id,
+        action: 'leave_auto_approved',
+        target: leaveId,
+        details: JSON.stringify({
+          type: args.type,
+          startDate: args.startDate,
+          endDate: args.endDate,
+          days: args.days,
+          reason: args.reason,
+          approvalReason: route.reason,
+          note: HEAD_AUTO_APPROVAL_NOTE,
+        }),
+        createdAt: now,
+      });
+
+      return leaveId;
+    }
 
     // Auto-reply to the employee: the request landed and when to expect an answer.
     const expectedResponseDate = new Date();
@@ -92,11 +169,15 @@ export const createLeave = mutation({
       route: '/leaves',
     });
 
-    for (const recipient of admins) {
-      if (recipient._id === args.userId) continue;
+    // Notify the resolved approvers — the manager in the requester's line plus
+    // the org-wide approvers. The old code fanned out to every `admin` by index,
+    // which told people with no relationship to the requester and left the
+    // requester's actual supervisor uninformed.
+    for (const recipientId of route.notifyIds) {
+      if (recipientId === args.userId) continue;
       await notify(ctx, {
         organizationId: user.organizationId,
-        userId: recipient._id,
+        userId: recipientId,
         type: 'leave_request',
         titleKey: 'notifications.titles.leaveRequestNew',
         messageKey: 'notifications.messages.leaveRequestNewDetailed',
@@ -118,18 +199,18 @@ export const createLeave = mutation({
     await ctx.db.insert('slaMetrics', {
       organizationId: user.organizationId,
       leaveRequestId: leaveId,
-      submittedAt: Date.now(),
+      submittedAt: now,
       targetResponseTime: 24,
       status: 'pending',
       warningTriggered: false,
       criticalTriggered: false,
-      createdAt: Date.now(),
+      createdAt: now,
     });
 
     // Audit log: leave request created
     await ctx.db.insert('auditLogs', {
       organizationId: user.organizationId,
-      userId: args.userId,
+      userId: caller._id,
       action: 'leave_created',
       target: leaveId,
       details: JSON.stringify({
@@ -138,8 +219,10 @@ export const createLeave = mutation({
         endDate: args.endDate,
         days: args.days,
         reason: args.reason,
+        onBehalfOf: filingForSelf ? undefined : args.userId,
+        approvalReason: route.reason,
       }),
-      createdAt: Date.now(),
+      createdAt: now,
     });
 
     return leaveId;
@@ -166,23 +249,18 @@ export const approveLeave = mutation({
     const reviewer = await ctx.db.get(reviewerId);
     if (!reviewer) throw new Error('Reviewer not found');
 
-    // Cross-org protection
-    if (reviewer.organizationId !== leave.organizationId) {
-      throw new Error('Access denied: cross-organization operation');
-    }
-    if (
-      reviewer.role !== 'admin' &&
-      reviewer.role !== 'supervisor' &&
-      reviewer.role !== 'superadmin'
-    ) {
-      throw new Error('Only admins and supervisors can approve leaves');
-    }
+    // Cross-org protection, separation of duties, the reporting line and the
+    // head-of-organization policy — all in one place. Replaces the old rank
+    // check, which let any admin or supervisor approve any request in the org,
+    // including their own.
+    await assertMayReview(ctx, reviewer, leave);
+    const headSelfApproval = leave.userId === reviewerId;
 
     const now = Date.now();
     await ctx.db.patch(leaveId, {
       status: 'approved',
       reviewedBy: reviewerId,
-      reviewComment: comment,
+      reviewComment: comment ?? (headSelfApproval ? HEAD_AUTO_APPROVAL_NOTE : undefined),
       reviewedAt: now,
       updatedAt: now,
     });
@@ -213,36 +291,7 @@ export const approveLeave = mutation({
     // Deduct balance
     const user = await ctx.db.get(leave.userId);
     if (user) {
-      if (leave.type === 'paid') {
-        await patchProfile(ctx, leave.userId, {
-          paidLeaveBalance: Math.max(0, (user.paidLeaveBalance ?? 24) - leave.days),
-        });
-      } else if (leave.type === 'sick') {
-        await patchProfile(ctx, leave.userId, {
-          sickLeaveBalance: Math.max(0, (user.sickLeaveBalance ?? 10) - leave.days),
-        });
-      } else if (leave.type === 'family') {
-        await patchProfile(ctx, leave.userId, {
-          familyLeaveBalance: Math.max(0, (user.familyLeaveBalance ?? 5) - leave.days),
-        });
-      } else if (leave.type === 'day_off') {
-        await patchProfile(ctx, leave.userId, {
-          dayOffBalance: Math.max(0, (user.dayOffBalance ?? 6) - leave.days),
-        });
-      } else if (leave.type === 'study') {
-        await patchProfile(ctx, leave.userId, {
-          studyLeaveBalance: Math.max(0, (user.studyLeaveBalance ?? 5) - leave.days),
-        });
-      } else if (leave.type === 'maternity') {
-        await patchProfile(ctx, leave.userId, {
-          maternityLeaveBalance: Math.max(0, (user.maternityLeaveBalance ?? 126) - leave.days),
-        });
-      } else if (leave.type === 'paternity') {
-        // Paternity leave — deduct from paid leave or track separately.
-        await patchProfile(ctx, leave.userId, {
-          paidLeaveBalance: Math.max(0, (user.paidLeaveBalance ?? 24) - leave.days),
-        });
-      }
+      await deductLeaveBalance(ctx, leave.userId, user, leave.type, leave.days);
     }
 
     // Update SLA metric
@@ -273,7 +322,7 @@ export const approveLeave = mutation({
     await ctx.db.insert('auditLogs', {
       organizationId: leave.organizationId,
       userId: reviewerId,
-      action: 'leave_approved',
+      action: headSelfApproval ? 'leave_auto_approved' : 'leave_approved',
       target: leaveId,
       details: JSON.stringify({
         type: leave.type,
@@ -281,6 +330,10 @@ export const approveLeave = mutation({
         endDate: leave.endDate,
         days: leave.days,
         comment,
+        // The head of the organization clearing their own pending request under
+        // the `auto` policy — recorded explicitly so the trail never looks like
+        // an ordinary self-approval, which is forbidden for everyone else.
+        ...(headSelfApproval ? { note: HEAD_AUTO_APPROVAL_NOTE } : {}),
       }),
       createdAt: now,
     });
@@ -309,16 +362,9 @@ export const rejectLeave = mutation({
     const reviewer = await ctx.db.get(reviewerId);
     if (!reviewer) throw new Error('Reviewer not found');
 
-    if (reviewer.organizationId !== leave.organizationId) {
-      throw new Error('Access denied: cross-organization operation');
-    }
-    if (
-      reviewer.role !== 'admin' &&
-      reviewer.role !== 'supervisor' &&
-      reviewer.role !== 'superadmin'
-    ) {
-      throw new Error('Only admins and supervisors can reject leaves');
-    }
+    // Same gate as approval: rejecting is a review decision too, and letting a
+    // wider set of people reject than approve would be its own hole.
+    await assertMayReview(ctx, reviewer, leave);
 
     const now = Date.now();
     await ctx.db.patch(leaveId, {
@@ -505,61 +551,57 @@ export const deleteLeave = mutation({
       throw new Error('Access denied: cross-organization operation');
     }
 
-    const isAdmin = requester.role === 'admin' || requester.role === 'superadmin';
+    // Employees cannot cancel their own leave directly — a cancellation request
+    // goes through the HR queue (requestLeaveCancellation → deleteLeave here or
+    // rejectLeaveCancellation to decline it). Only HR may delete a request.
+    const isAdmin =
+      requester.role === 'admin' ||
+      requester.role === 'supervisor' ||
+      requester.role === 'superadmin';
+    if (!isAdmin) throw new Error('Only admins and supervisors can delete leave requests');
+
+    // Reinstated: the notification below skips the case where HR deleted their
+    // own request — telling someone that they deleted their own leave is noise.
     const isOwner = leave.userId === requesterId;
 
-    if (!isAdmin && !isOwner) throw new Error('You can only delete your own leave requests');
-
-    // Restore balance if approved
-    if (leave.status === 'approved') {
+    // Restore the balance if the leave was approved (or its cancellation was
+    // approved while the request still sits in the HR queue).
+    const wasApproved =
+      leave.status === 'approved' ||
+      (leave.status === 'cancel_requested' && leave.previousStatus === 'approved');
+    if (wasApproved) {
       const user = await ctx.db.get(leave.userId);
       if (user) {
-        if (leave.type === 'paid')
-          await patchProfile(ctx, leave.userId, {
-            paidLeaveBalance: (user.paidLeaveBalance ?? 0) + leave.days,
-          });
-        else if (leave.type === 'sick')
-          await patchProfile(ctx, leave.userId, {
-            sickLeaveBalance: (user.sickLeaveBalance ?? 0) + leave.days,
-          });
-        else if (leave.type === 'family')
-          await patchProfile(ctx, leave.userId, {
-            familyLeaveBalance: (user.familyLeaveBalance ?? 0) + leave.days,
-          });
-        else if (leave.type === 'day_off')
-          await patchProfile(ctx, leave.userId, {
-            dayOffBalance: (user.dayOffBalance ?? 0) + leave.days,
-          });
-        else if (leave.type === 'study')
-          await patchProfile(ctx, leave.userId, {
-            studyLeaveBalance: (user.studyLeaveBalance ?? 0) + leave.days,
-          });
-        else if (leave.type === 'maternity')
-          await patchProfile(ctx, leave.userId, {
-            maternityLeaveBalance: (user.maternityLeaveBalance ?? 0) + leave.days,
-          });
-        else if (leave.type === 'paternity')
-          await patchProfile(ctx, leave.userId, {
-            paidLeaveBalance: (user.paidLeaveBalance ?? 0) + leave.days,
-          });
+        await restoreLeaveBalance(ctx, leave.userId, user, leave.type, leave.days);
       }
     }
 
     if (isAdmin && !isOwner) {
+      // Deleting a cancel_requested row IS the HR approval of the employee's
+      // cancellation — tell the owner that, not that their leave was deleted.
+      const isCancellation = leave.status === 'cancel_requested';
       await notify(ctx, {
         organizationId: leave.organizationId,
         userId: leave.userId,
         type: 'leave_request',
-        titleKey: 'notifications.titles.leaveDeleted',
-        messageKey: 'notifications.messages.leaveDeleted',
-        params: {
-          type: leave.type,
-          start: leave.startDate,
-          end: leave.endDate,
-          requesterName: requester.name,
-        },
-        fallbackTitle: '🗑️ Leave Deleted',
-        fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was deleted by ${requester.name}.`,
+        titleKey: isCancellation
+          ? 'notifications.titles.leaveCancellationApproved'
+          : 'notifications.titles.leaveDeleted',
+        messageKey: isCancellation
+          ? 'notifications.messages.leaveCancellationApproved'
+          : 'notifications.messages.leaveDeleted',
+        params: isCancellation
+          ? { type: leave.type, start: leave.startDate, end: leave.endDate }
+          : {
+              type: leave.type,
+              start: leave.startDate,
+              end: leave.endDate,
+              requesterName: requester.name,
+            },
+        fallbackTitle: isCancellation ? '✅ Cancellation Approved' : '🗑️ Leave Deleted',
+        fallbackMessage: isCancellation
+          ? `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) cancellation has been approved.`
+          : `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was deleted by ${requester.name}.`,
         relatedId: args.leaveId,
         route: '/leaves',
       });
@@ -583,6 +625,193 @@ export const deleteLeave = mutation({
 
     await ctx.db.delete(args.leaveId);
     return args.leaveId;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REQUEST LEAVE CANCELLATION — employee → HR approval queue
+// ─────────────────────────────────────────────────────────────────────────────
+export const requestLeaveCancellation = mutation({
+  args: {
+    leaveId: v.id('leaveRequests'),
+    comment: v.optional(v.string()),
+  },
+  handler: async (ctx, { leaveId, comment }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const requesterId = caller._id;
+    const leave = await ctx.db.get(leaveId);
+    if (!leave) throw new Error('Leave request not found');
+
+    const requester = await ctx.db.get(requesterId);
+    if (!requester) throw new Error('Requester not found');
+
+    if (requester.organizationId !== leave.organizationId) {
+      throw new Error('Access denied: cross-organization operation');
+    }
+
+    // Only the owner may ask HR to cancel their own leave — the request is
+    // decided by HR, never applied by the employee themselves.
+    if (leave.userId !== requesterId) {
+      throw new Error('You can only request cancellation of your own leave requests');
+    }
+    if (leave.status !== 'pending' && leave.status !== 'approved') {
+      throw new Error('Only pending or approved leaves can be cancelled');
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(leaveId, {
+      status: 'cancel_requested',
+      previousStatus: leave.status,
+      cancelRequestedAt: now,
+      isRead: false, // surfaces in the HR review queue
+      updatedAt: now,
+    });
+
+    // Notify HR so the cancellation request does not sit unnoticed — the same
+    // roles that may decide it (admins approve/delete, supervisors may reject).
+    const adminRows = await ctx.db
+      .query('users')
+      .withIndex('by_org_role', (q) =>
+        q.eq('organizationId', requester.organizationId).eq('role', 'admin'),
+      )
+      .take(DEFAULT_LIST_CAP);
+    const supervisorRows = await ctx.db
+      .query('users')
+      .withIndex('by_org_role', (q) =>
+        q.eq('organizationId', requester.organizationId).eq('role', 'supervisor'),
+      )
+      .take(DEFAULT_LIST_CAP);
+    const recipients = [...adminRows, ...supervisorRows].filter(
+      (user, index, all) => all.findIndex((u) => u._id === user._id) === index,
+    );
+
+    for (const recipient of recipients) {
+      if (recipient._id === requesterId) continue;
+      await notify(ctx, {
+        organizationId: leave.organizationId,
+        userId: recipient._id,
+        type: 'leave_request',
+        titleKey: 'notifications.titles.leaveCancelRequested',
+        messageKey: 'notifications.messages.leaveCancelRequested',
+        params: {
+          userName: requester.name,
+          type: leave.type,
+          start: leave.startDate,
+          end: leave.endDate,
+        },
+        fallbackTitle: '↩️ Leave Cancellation Requested',
+        fallbackMessage: `${requester.name} requested to cancel their ${leave.type} leave (${leave.startDate} → ${leave.endDate}).`,
+        relatedId: leaveId,
+        route: '/leaves',
+        createdAt: now,
+      });
+    }
+
+    // Audit log: cancellation requested
+    await ctx.db.insert('auditLogs', {
+      organizationId: leave.organizationId,
+      userId: requesterId,
+      action: 'leave_cancel_requested',
+      target: leaveId,
+      details: JSON.stringify({
+        type: leave.type,
+        startDate: leave.startDate,
+        endDate: leave.endDate,
+        days: leave.days,
+        previousStatus: leave.status,
+        comment,
+      }),
+      createdAt: now,
+    });
+
+    return leaveId;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REJECT LEAVE CANCELLATION — HR declines, the leave keeps its previous status
+// ─────────────────────────────────────────────────────────────────────────────
+export const rejectLeaveCancellation = mutation({
+  args: {
+    leaveId: v.id('leaveRequests'),
+    comment: v.optional(v.string()),
+  },
+  handler: async (ctx, { leaveId, comment }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const reviewerId = caller._id;
+    const leave = await ctx.db.get(leaveId);
+    if (!leave) throw new Error('Leave request not found');
+
+    const reviewer = await ctx.db.get(reviewerId);
+    if (!reviewer) throw new Error('Reviewer not found');
+
+    if (reviewer.organizationId !== leave.organizationId) {
+      throw new Error('Access denied: cross-organization operation');
+    }
+    if (
+      reviewer.role !== 'admin' &&
+      reviewer.role !== 'supervisor' &&
+      reviewer.role !== 'superadmin'
+    ) {
+      throw new Error('Only admins and supervisors can reject cancellation requests');
+    }
+    if (leave.status !== 'cancel_requested') {
+      throw new Error('Leave has no pending cancellation request');
+    }
+
+    const now = Date.now();
+    // `previousStatus` is always written by requestLeaveCancellation, so the
+    // `?? 'approved'` fallback is only reachable for hand-edited legacy rows.
+    await ctx.db.patch(leaveId, {
+      status: leave.previousStatus ?? 'approved',
+      previousStatus: undefined,
+      cancelRequestedAt: undefined,
+      updatedAt: now,
+    });
+
+    // Notify the employee that their cancellation was declined.
+    await notify(ctx, {
+      organizationId: leave.organizationId,
+      userId: leave.userId,
+      type: 'leave_request',
+      titleKey: 'notifications.titles.leaveCancellationRejected',
+      messageKey: comment
+        ? 'notifications.messages.leaveCancellationRejectedWithReason'
+        : 'notifications.messages.leaveCancellationRejected',
+      params: {
+        type: leave.type,
+        start: leave.startDate,
+        end: leave.endDate,
+        reviewerName: reviewer.name,
+        ...(comment ? { comment } : {}),
+      },
+      fallbackTitle: '↩️ Cancellation Rejected',
+      fallbackMessage: `Your cancellation of the ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was rejected by ${reviewer.name}.${comment ? ` Reason: ${comment}` : ''}`,
+      relatedId: leaveId,
+      route: '/leaves',
+      createdAt: now,
+    });
+
+    // Audit log: cancellation rejected
+    await ctx.db.insert('auditLogs', {
+      organizationId: leave.organizationId,
+      userId: reviewerId,
+      action: 'leave_cancel_rejected',
+      target: leaveId,
+      details: JSON.stringify({
+        type: leave.type,
+        startDate: leave.startDate,
+        endDate: leave.endDate,
+        days: leave.days,
+        restoredStatus: leave.previousStatus ?? 'approved',
+        comment,
+      }),
+      createdAt: now,
+    });
+
+    return leaveId;
   },
 });
 
@@ -716,13 +945,6 @@ export const bulkApproveLeaves = mutation({
     const reviewerId = caller._id;
     const reviewer = await ctx.db.get(reviewerId);
     if (!reviewer) throw new Error('Reviewer not found');
-    if (
-      reviewer.role !== 'admin' &&
-      reviewer.role !== 'supervisor' &&
-      reviewer.role !== 'superadmin'
-    ) {
-      throw new Error('Only admins and supervisors can bulk approve leaves');
-    }
 
     const now = Date.now();
     const approved: Id<'leaveRequests'>[] = [];
@@ -760,6 +982,14 @@ export const bulkApproveLeaves = mutation({
           errors.push(`Access denied for leave ${leaveId}`);
           continue;
         }
+        // Per-row authorization: the reviewer may own the chain for one
+        // requester and not for another, so a single up-front rank check cannot
+        // express this. A refused row is reported and the batch continues.
+        const bulkRefusal = await reviewRefusal(ctx, reviewer, leave);
+        if (bulkRefusal) {
+          errors.push(`${bulkRefusal} (leave ${leaveId})`);
+          continue;
+        }
 
         // Approve leave
         await ctx.db.patch(leaveId, {
@@ -795,35 +1025,7 @@ export const bulkApproveLeaves = mutation({
         // Deduct balance
         const user = userMap.get(leave.userId);
         if (user) {
-          if (leave.type === 'paid') {
-            await patchProfile(ctx, leave.userId, {
-              paidLeaveBalance: Math.max(0, (user.paidLeaveBalance ?? 24) - leave.days),
-            });
-          } else if (leave.type === 'sick') {
-            await patchProfile(ctx, leave.userId, {
-              sickLeaveBalance: Math.max(0, (user.sickLeaveBalance ?? 10) - leave.days),
-            });
-          } else if (leave.type === 'family') {
-            await patchProfile(ctx, leave.userId, {
-              familyLeaveBalance: Math.max(0, (user.familyLeaveBalance ?? 5) - leave.days),
-            });
-          } else if (leave.type === 'day_off') {
-            await patchProfile(ctx, leave.userId, {
-              dayOffBalance: Math.max(0, (user.dayOffBalance ?? 6) - leave.days),
-            });
-          } else if (leave.type === 'study') {
-            await patchProfile(ctx, leave.userId, {
-              studyLeaveBalance: Math.max(0, (user.studyLeaveBalance ?? 5) - leave.days),
-            });
-          } else if (leave.type === 'maternity') {
-            await patchProfile(ctx, leave.userId, {
-              maternityLeaveBalance: Math.max(0, (user.maternityLeaveBalance ?? 126) - leave.days),
-            });
-          } else if (leave.type === 'paternity') {
-            await patchProfile(ctx, leave.userId, {
-              paidLeaveBalance: Math.max(0, (user.paidLeaveBalance ?? 24) - leave.days),
-            });
-          }
+          await deductLeaveBalance(ctx, leave.userId, user, leave.type, leave.days);
         }
 
         // Update SLA metric
@@ -889,13 +1091,6 @@ export const bulkRejectLeaves = mutation({
     const reviewerId = caller._id;
     const reviewer = await ctx.db.get(reviewerId);
     if (!reviewer) throw new Error('Reviewer not found');
-    if (
-      reviewer.role !== 'admin' &&
-      reviewer.role !== 'supervisor' &&
-      reviewer.role !== 'superadmin'
-    ) {
-      throw new Error('Only admins and supervisors can bulk reject leaves');
-    }
 
     const now = Date.now();
     const rejected: Id<'leaveRequests'>[] = [];
@@ -914,6 +1109,12 @@ export const bulkRejectLeaves = mutation({
         }
         if (reviewer.organizationId !== leave.organizationId && reviewer.role !== 'superadmin') {
           errors.push(`Access denied for leave ${leaveId}`);
+          continue;
+        }
+        // Same per-row gate as bulk approve — rejecting is a review decision.
+        const bulkRefusal = await reviewRefusal(ctx, reviewer, leave);
+        if (bulkRefusal) {
+          errors.push(`${bulkRefusal} (leave ${leaveId})`);
           continue;
         }
 
@@ -997,118 +1198,12 @@ export const bulkRejectLeaves = mutation({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECURED: APPROVE LEAVE — uses ctx.auth identity verification
+// SECURED: APPROVE / REJECT LEAVE — REMOVED
 // ─────────────────────────────────────────────────────────────────────────────
-export const secureApproveLeave = mutation({
-  args: { leaveId: v.id('leaveRequests'), comment: v.optional(v.string()) },
-  handler: async (ctx, { leaveId, comment }) => {
-    const caller = await getAuthCaller(ctx);
-    if (!caller) throw new Error('Not authenticated');
-    const leave = await ctx.db.get(leaveId);
-    if (!leave) throw new Error('Leave request not found');
-    if (leave.status !== 'pending') throw new Error('Leave is not pending');
-
-    if (caller.role !== 'superadmin' && caller.organizationId !== leave.organizationId) {
-      throw new Error('Access denied: cross-organization operation');
-    }
-
-    const now = Date.now();
-    await ctx.db.patch(leaveId, {
-      status: 'approved',
-      reviewedBy: caller._id,
-      reviewComment: comment,
-      reviewedAt: now,
-      updatedAt: now,
-    });
-
-    await notify(ctx, {
-      organizationId: leave.organizationId,
-      userId: leave.userId,
-      type: 'leave_approved',
-      titleKey: 'notifications.titles.leaveApproved',
-      messageKey: 'notifications.messages.leaveApprovedBy',
-      params: {
-        type: leave.type,
-        start: leave.startDate,
-        end: leave.endDate,
-        reviewerName: caller.name,
-      },
-      fallbackTitle: '✅ Leave Approved!',
-      fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) has been approved by ${caller.name}.`,
-      relatedId: leaveId,
-      route: '/leaves',
-      createdAt: now,
-    });
-
-    await ctx.db.insert('auditLogs', {
-      organizationId: leave.organizationId,
-      userId: caller._id,
-      action: 'leave_approved',
-      target: leaveId,
-      details: JSON.stringify({ type: leave.type, days: leave.days, comment }),
-      createdAt: now,
-    });
-
-    return leaveId;
-  },
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECURED: REJECT LEAVE — uses ctx.auth identity verification
-// ─────────────────────────────────────────────────────────────────────────────
-export const secureRejectLeave = mutation({
-  args: { leaveId: v.id('leaveRequests'), comment: v.optional(v.string()) },
-  handler: async (ctx, { leaveId, comment }) => {
-    const caller = await getAuthCaller(ctx);
-    if (!caller) throw new Error('Not authenticated');
-    const leave = await ctx.db.get(leaveId);
-    if (!leave) throw new Error('Leave request not found');
-    if (leave.status !== 'pending') throw new Error('Leave is not pending');
-
-    if (caller.role !== 'superadmin' && caller.organizationId !== leave.organizationId) {
-      throw new Error('Access denied: cross-organization operation');
-    }
-
-    const now = Date.now();
-    await ctx.db.patch(leaveId, {
-      status: 'rejected',
-      reviewedBy: caller._id,
-      reviewComment: comment,
-      reviewedAt: now,
-      updatedAt: now,
-    });
-
-    await notify(ctx, {
-      organizationId: leave.organizationId,
-      userId: leave.userId,
-      type: 'leave_rejected',
-      titleKey: 'notifications.titles.leaveRejected',
-      messageKey: comment
-        ? 'notifications.messages.leaveRejectedByWithReason'
-        : 'notifications.messages.leaveRejectedBy',
-      params: {
-        type: leave.type,
-        start: leave.startDate,
-        end: leave.endDate,
-        reviewerName: caller.name,
-        ...(comment ? { comment } : {}),
-      },
-      fallbackTitle: '❌ Leave Rejected',
-      fallbackMessage: `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was rejected by ${caller.name}.${comment ? ` Reason: ${comment}` : ''}`,
-      relatedId: leaveId,
-      route: '/leaves',
-      createdAt: now,
-    });
-
-    await ctx.db.insert('auditLogs', {
-      organizationId: leave.organizationId,
-      userId: caller._id,
-      action: 'leave_rejected',
-      target: leaveId,
-      details: JSON.stringify({ type: leave.type, days: leave.days, comment }),
-      createdAt: now,
-    });
-
-    return leaveId;
-  },
-});
+// `secureApproveLeave` and `secureRejectLeave` were near-copies of the mutations
+// above that authenticated the caller and then checked *only* the organization —
+// no role, no reporting line, no self-approval guard. Any employee could approve
+// or reject any pending request in their own organization, including their own.
+//
+// Nothing in `src/` called them. Use `approveLeave` / `rejectLeave`, which go
+// through `leaves/approval.reviewRefusal`.

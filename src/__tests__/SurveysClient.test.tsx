@@ -23,6 +23,51 @@ let mockSurveys: any = undefined;
 let mockTakeSurvey: any = undefined;
 let mockResults: any = undefined;
 let mockDragEndHandler: ((e: any) => void) | null = null;
+
+// ── Draft (controllable) ─────────────────────────────────────────────────────
+let mockDraft: { restored: boolean; restoredStep: number; clearDraft: jest.Mock };
+jest.mock('@/hooks/useWizardDraft', () => ({
+  useWizardDraft: (opts: any) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+      if (mockDraft.restored) {
+        opts.onRestore?.(
+          {
+            title: 'Restored Survey',
+            description: 'desc',
+            isAnonymous: false,
+            questions: [
+              { type: 'rating', text: 'Q1', isRequired: true },
+              { type: 'text', text: 'Q2', isRequired: false },
+            ],
+            newQuestion: { type: 'rating', text: '', isRequired: true },
+            newOption: '',
+          },
+          mockDraft.restoredStep,
+        );
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return {
+      restored: mockDraft.restored,
+      restoredStep: mockDraft.restoredStep,
+      clearDraft: mockDraft.clearDraft,
+      dismissNotice: jest.fn(),
+    };
+  },
+}));
+
+jest.mock('@/components/ui/WizardDraftNotice', () => ({
+  WizardDraftNotice: ({ show, step, onReset }: any) =>
+    show ? (
+      <div data-testid="draft-notice" data-step={step}>
+        Draft restored at step {step + 1}
+        <button type="button" onClick={onReset}>
+          Start over
+        </button>
+      </div>
+    ) : null,
+}));
 const mockPush = jest.fn();
 const mockScrollTo = jest.fn();
 const mockCreateSurvey = jest.fn(async () => undefined);
@@ -433,6 +478,14 @@ beforeEach(() => {
   mockToast.mockClear();
   mockToast.error.mockClear();
   mockToast.success.mockClear();
+  mockDraft = {
+    restored: false,
+    restoredStep: 0,
+    clearDraft: jest.fn(() => {
+      mockDraft.restored = false;
+    }),
+  };
+  sessionStorage.clear();
 });
 
 afterEach(() => {
@@ -829,6 +882,61 @@ describe('SurveysClient — create wizard', () => {
     fireEvent.click(wizardSubmitButton());
     await flush();
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('create boom'));
+  });
+
+  it('restores a draft into the form and jumps to the saved step', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 1; // questions step
+    await openWizard();
+
+    expect(screen.getByTestId('draft-notice')).toBeTruthy();
+    expect(screen.getByTestId('draft-notice').getAttribute('data-step')).toBe('1');
+    // Questions step: both restored questions are listed.
+    expect(screen.getByText('Q1')).toBeTruthy();
+    expect(screen.getByText('Q2')).toBeTruthy();
+
+    // Back on the info step: restored title and anonymity.
+    fireEvent.click(screen.getByText('common.back'));
+    await flush();
+    expect(screen.getByDisplayValue('Restored Survey')).toBeTruthy();
+    const anonymous = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(anonymous.checked).toBe(false);
+  });
+
+  it('start over clears the draft and resets the form', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 1;
+    await openWizard();
+
+    fireEvent.click(screen.getByText('Start over'));
+    await flush();
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
+    expect(screen.getByTestId('input-text')).toHaveValue('');
+  });
+
+  it('clears the draft after a successful save', async () => {
+    await openWizard();
+    fireEvent.change(screen.getByTestId('input-text'), { target: { value: 'Pulse' } });
+    await flush();
+    fireEvent.click(screen.getByText('common.next'));
+    await flush();
+    fireEvent.change(screen.getByTestId('input-text'), { target: { value: 'Q?' } });
+    await flush();
+    fireEvent.click(screen.getByText('surveys.form.addQuestionBtn'));
+    await flush();
+    fireEvent.click(screen.getByText('common.next'));
+    await flush();
+    fireEvent.click(wizardSubmitButton());
+    await flush();
+    await waitFor(() => expect(mockCreateSurvey).toHaveBeenCalled());
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+  });
+
+  it('does not show the draft notice when nothing was restored', async () => {
+    await openWizard();
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
   });
 });
 

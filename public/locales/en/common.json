@@ -1411,7 +1411,11 @@
       "probationExtended": "{{employeeName}}'s probation was extended by {{days}} day(s).",
       "probationPassed": "{{employeeName}} has passed the probation period.",
       "probationPassedAuto": "{{employeeName}} has passed the probation period automatically — employment continued past the end date.",
-      "probationFailed": "{{employeeName}} has not passed the probation period."
+      "probationFailed": "{{employeeName}} has not passed the probation period.",
+      "leaveCancelRequested": "{{userName}} requested to cancel their $t(leaveTypes.{{type}}) ({{start}} → {{end}})",
+      "leaveCancellationApproved": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation has been approved.",
+      "leaveCancellationRejected": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}.",
+      "leaveCancellationRejectedWithReason": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}. Reason: {{comment}}"
     },
     "titles": {
       "movementFormReady": "📄 Movement Form Ready for Signing",
@@ -1512,7 +1516,10 @@
       "probationEndingSoon": "⏰ Probation ending soon",
       "probationExtended": "⏳ Probation extended",
       "probationPassed": "✅ Probation passed",
-      "probationFailed": "⛔ Probation not passed"
+      "probationFailed": "⛔ Probation not passed",
+      "leaveCancelRequested": "Leave Cancellation Requested",
+      "leaveCancellationApproved": "Cancellation Approved",
+      "leaveCancellationRejected": "Cancellation Rejected"
     }
   },
   "aiChat": {
@@ -1567,7 +1574,8 @@
     "driverSubmitted": "✅ Driver request submitted!",
     "conflictWarning": "⚠️ Note: {{warnings}}",
     "conflictDetected": "🚨 **Conflict detected for your {{type}} leave ({{start}} → {{end}})**:",
-    "conflictAdvice": "Please consider alternative dates or discuss with your manager."
+    "conflictAdvice": "Please consider alternative dates or discuss with your manager.",
+    "leaveCancelRequested": "↩️ Cancellation requested for your {{type}} leave ({{start}} → {{end}}). HR will review it."
   },
   "leaveTypes": {
     "paid": "Paid Vacation",

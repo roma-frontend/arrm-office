@@ -326,7 +326,14 @@
     "biography": "Biografie",
     "skills": "Fähigkeiten",
     "languages": "Sprachen",
-    "documents": "Dokumente"
+    "documents": "Dokumente",
+    "tabs": {
+      "overview": "Übersicht",
+      "profile": "Profil",
+      "performance": "Leistung",
+      "documents": "Dokumente"
+    },
+    "noDocuments": "Noch keine Dokumente hochgeladen"
   },
   "profile": {
     "currentLanguage": "Aktuelle Sprache",
@@ -538,9 +545,14 @@
     "collapseAll": "Alle reduzieren",
     "noOrgSelected": "Keine Organisation ausgewählt",
     "selectOrgToView": "Bitte wählen Sie eine Organisation zur Ansicht aus oder erstellen Sie deren Organisationsstruktur.",
-    "fixDepartments": "Abteilungen korrigieren",
-    "fixDepartmentsSuccess": "{{count}} Abteilungen erfolgreich korrigiert",
-    "fixDepartmentsError": "Fehler beim Korrigieren der Abteilungen"
+    "head": "Leitung der Organisation",
+    "parentIsManager": "Bei einer Person ist dies ihre Führungskraft: Speichern ändert die Berichtslinie, nicht nur das Organigramm.",
+    "headHint": "Die Wurzel des Organigramms und der letzte Schritt jeder Genehmigungskette. Sie darf niemandem berichten.",
+    "headSaved": "Leitung der Organisation aktualisiert",
+    "headSaveError": "Leitung der Organisation konnte nicht gespeichert werden",
+    "unassigned": "Nicht in der Hierarchie platziert",
+    "unassignedNone": "Alle berichten an jemanden.",
+    "unassignedHint": "Diese Personen haben keine Führungskraft und erscheinen daher als eigene Wurzeln. Weisen Sie eine Führungskraft zu, um sie zu platzieren."
   },
   "organization": {
     "organization": "Organisation",

@@ -138,6 +138,37 @@ jest.mock('lucide-react', () => {
   return new Proxy({}, { get: () => Icon });
 });
 
+// ── Draft (controllable) ─────────────────────────────────────────────────────
+let mockDraft: {
+  restored: boolean;
+  restoredStep: number;
+  clearDraft: jest.Mock;
+  onRestoreData?: Record<string, unknown>;
+};
+jest.mock('@/hooks/useWizardDraft', () => ({
+  useWizardDraft: (opts: any) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+      if (mockDraft.restored) {
+        opts.onRestore?.(mockDraft.onRestoreData ?? {}, mockDraft.restoredStep);
+      }
+    }, []);
+    return mockDraft;
+  },
+}));
+
+jest.mock('@/components/ui/WizardDraftNotice', () => ({
+  WizardDraftNotice: ({ show, step, onReset }: any) =>
+    show ? (
+      <div data-testid="draft-notice" data-step={step}>
+        Draft restored at step {step + 1}
+        <button type="button" onClick={onReset}>
+          Start over
+        </button>
+      </div>
+    ) : null,
+}));
+
 function Harness({ initialOpen = true, org = 'org_1', uid = 'user_super' }: any) {
   const [open, setOpen] = React.useState(initialOpen);
   return (
@@ -186,6 +217,13 @@ beforeEach(() => {
   queryResult = ORGS;
   queryCalls.length = 0;
   jest.clearAllMocks();
+  mockDraft = {
+    restored: false,
+    restoredStep: 0,
+    clearDraft: jest.fn(() => {
+      mockDraft.restored = false;
+    }),
+  };
 });
 
 describe('rendering & dialog lifecycle', () => {
@@ -632,6 +670,78 @@ describe('sending', () => {
     fireEvent.click(sendBtn());
     await waitFor(() => expect(screen.getByText('broadcastDialog.userNotLoaded')).toBeTruthy());
     expect(sendBroadcast).not.toHaveBeenCalled();
+  });
+});
+
+describe('ServiceBroadcastDialog — wizard draft', () => {
+  it('restores a draft on open and shows the notice', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 2;
+    mockDraft.onRestoreData = {
+      title: 'Restored broadcast',
+      content: 'draft text',
+      selectedIcon: '⚠️',
+      scheduleDateTime: '',
+      scheduleMaintenance: false,
+      broadcastScope: 'specific',
+      selectedOrgId: 'org_1',
+    };
+    renderDialog();
+    await waitFor(() =>
+      expect(screen.getByTestId('draft-notice')).toHaveAttribute('data-step', '2'),
+    );
+
+    // restored onto the saved step (schedule)
+    expect(screen.getByText('broadcastDialog.maintenanceSchedule')).toBeTruthy();
+    // back to the message step to see the restored title
+    fireEvent.click(backBtn());
+    expect(
+      (screen.getByPlaceholderText('broadcastDialog.titlePlaceholder') as HTMLInputElement).value,
+    ).toBe('Restored broadcast');
+  });
+
+  it('start over clears the draft and resets the fields', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 2;
+    mockDraft.onRestoreData = {
+      title: 'Restored broadcast',
+      content: 'draft text',
+      selectedIcon: '⚠️',
+      scheduleDateTime: '',
+      scheduleMaintenance: false,
+      broadcastScope: 'specific',
+      selectedOrgId: 'org_1',
+    };
+    renderDialog();
+    await waitFor(() => expect(screen.getByTestId('draft-notice')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Start over'));
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
+    // back to the audience step with empty fields
+    expect(screen.getByText('broadcastDialog.whoGetsMessage')).toBeTruthy();
+  });
+
+  it('clears the draft after a successful send', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 0;
+    mockDraft.onRestoreData = {
+      title: 'Restored broadcast',
+      content: 'draft text',
+      selectedIcon: '⚠️',
+      scheduleDateTime: '',
+      scheduleMaintenance: false,
+      broadcastScope: 'specific',
+      selectedOrgId: 'org_1',
+    };
+    renderDialog();
+    await waitFor(() => expect(sendBroadcast).not.toHaveBeenCalled());
+    goToReview();
+    fireEvent.click(sendBtn());
+    await waitFor(() => expect(screen.getByText('broadcastDialog.sentSuccessfully')).toBeTruthy());
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
   });
 });
 

@@ -75,6 +75,29 @@ interface ExtendedProfileSectionProps {
   onEdit: () => void;
 }
 
+// Shared with the profile page so the Profile tab knows whether it has anything
+// to show before rendering an empty state. Keep the field list in sync with the
+// cards rendered below — a profile with only these set must still count as
+// "has data".
+export function hasExtendedProfileData(data: ExtendedProfileData | null | undefined): boolean {
+  if (!data) return false;
+  return Boolean(
+    data.address ||
+    data.emergencyContactName ||
+    data.emergencyContactPhone ||
+    data.workFormat ||
+    data.workSchedule ||
+    data.socialLinks?.linkedin ||
+    data.socialLinks?.github ||
+    data.socialLinks?.portfolio ||
+    data.structuredWorkHistory?.length ||
+    data.structuredEducation?.length ||
+    data.dateOfBirth ||
+    data.birthYear !== undefined ||
+    data.pensionExempt !== undefined,
+  );
+}
+
 // ── Helper ──
 const WORK_FORMAT_MAP: Record<string, { label: string; icon: string; color: string }> = {
   remote: {
@@ -211,22 +234,7 @@ export default function ExtendedProfileSection({
   // Edit button still render for editors.
   const profile = data ?? ({} as ExtendedProfileData);
 
-  const hasAnyData =
-    profile.address ||
-    profile.emergencyContactName ||
-    profile.emergencyContactPhone ||
-    profile.workFormat ||
-    profile.workSchedule ||
-    profile.socialLinks?.linkedin ||
-    profile.socialLinks?.github ||
-    profile.socialLinks?.portfolio ||
-    profile.structuredWorkHistory?.length ||
-    profile.structuredEducation?.length ||
-    profile.dateOfBirth ||
-    // Kept in sync with the Personal Details card condition below — a profile
-    // with only these set must still count as "has data".
-    profile.birthYear !== undefined ||
-    profile.pensionExempt !== undefined;
+  const hasAnyData = hasExtendedProfileData(profile);
 
   if (!hasAnyData && !canEdit) return null;
 

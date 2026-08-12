@@ -59,6 +59,7 @@ jest.mock('../../convex/_generated/api', () => ({
     supervisorRatings: {
       getLatestRating: { _name: 'getLatestRating' },
       getEmployeeRatings: { _name: 'getEmployeeRatings' },
+      getRatingEligibility: { _name: 'getRatingEligibility' },
     },
     timeTracking: { getMonthlyStats: { _name: 'getMonthlyStats' } },
     settlement: { getSettlementPreview: { _name: 'getSettlementPreview' } },
@@ -159,6 +160,15 @@ jest.mock('lucide-react', () => {
     Loader2: MockIcon,
     Wallet: MockIcon,
     CalendarDays: MockIcon,
+    LayoutGrid: MockIcon,
+    FileText: MockIcon,
+    BadgeCheck: MockIcon,
+    ShieldAlert: MockIcon,
+    ShieldQuestion: MockIcon,
+    Hourglass: MockIcon,
+    CalendarClock: MockIcon,
+    CheckCircle2: MockIcon,
+    XCircle: MockIcon,
   };
 });
 
@@ -248,6 +258,44 @@ jest.mock('@/components/employees/ReportingLineWidget', () => ({
 jest.mock('@/components/employees/ExtendedProfileSection', () => ({
   __esModule: true,
   default: ({ data, canEdit, onEdit }: any) => <div data-testid="extended-profile-section" />,
+  // EmployeeProfileDetail uses this to decide whether the Profile tab has
+  // anything to show.
+  hasExtendedProfileData: (data: any) => Boolean(data?.address || data?.workFormat),
+}));
+
+// ── Tabs mock (pattern: DocumentsClient.test.tsx) ────────────────────────────
+jest.mock('@/components/ui/tabs', () => {
+  const ReactMod = require('react');
+  const TabsCtx = ReactMod.createContext({ value: '', setValue: (_v: string) => {} });
+  return {
+    Tabs: ({ defaultValue, value, onValueChange, children }: any) => {
+      const [internal, setInternal] = ReactMod.useState(value ?? defaultValue ?? '');
+      const active = value !== undefined ? value : internal;
+      const setValue = (v: string) => {
+        setInternal(v);
+        onValueChange?.(v);
+      };
+      return <TabsCtx.Provider value={{ value: active, setValue }}>{children}</TabsCtx.Provider>;
+    },
+    TabsList: ({ children }: any) => <div>{children}</div>,
+    TabsTrigger: ({ value, children }: any) => {
+      const ctx = ReactMod.useContext(TabsCtx);
+      return (
+        <button type="button" onClick={() => ctx.setValue(value)} data-value={value}>
+          {children}
+        </button>
+      );
+    },
+    TabsContent: ({ value, children }: any) => {
+      const ctx = ReactMod.useContext(TabsCtx);
+      return ctx.value === value ? <div data-testid={`tab-${value}`}>{children}</div> : null;
+    },
+  };
+});
+
+jest.mock('@/components/employees/HiringPacketPanel', () => ({
+  __esModule: true,
+  default: () => <div data-testid="hiring-packet-panel" />,
 }));
 
 jest.mock('@/components/employees/AssignManagerModal', () => ({
@@ -288,6 +336,13 @@ import EmployeeProfileDetail from '@/components/employees/EmployeeProfileDetail'
 import type { Id } from '../../convex/_generated/dataModel';
 
 const mockEmployeeId = 'emp-1' as Id<'users'>;
+
+// The profile is tabbed — Overview is the landing tab, so anything else has to
+// be selected before its content is in the DOM. The `t` mock returns the
+// fallback, so triggers are labelled in English.
+const openTab = (label: 'Overview' | 'Profile' | 'Performance' | 'Documents') => {
+  fireEvent.click(screen.getByText(label));
+};
 
 const defaultEmployee = {
   _id: 'emp-1',
@@ -360,6 +415,11 @@ describe('EmployeeProfileDetail', () => {
       getMonthlyStats: undefined,
       getEmployeeRatings: undefined,
       getSettlementPreview: undefined,
+      // Who may rate whom is now a server decision (reporting line + head
+      // policy), so the Rate button follows `getRatingEligibility` instead of
+      // comparing roles in the client. Allowed by default; the tests that care
+      // seed a refusal.
+      getRatingEligibility: { allowed: true, reason: null },
     };
   });
 
@@ -457,6 +517,7 @@ describe('EmployeeProfileDetail', () => {
       queryResults.getLatestRating = defaultLatestRating;
       queryResults.getEmployeeRatings = [defaultLatestRating];
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Performance');
       expect(screen.getByText('employeeProfile.latestPerformanceRating')).toBeInTheDocument();
       expect(screen.getByText('4.2')).toBeInTheDocument();
     });
@@ -464,18 +525,21 @@ describe('EmployeeProfileDetail', () => {
     it('renders strengths section', () => {
       queryResults.getLatestRating = defaultLatestRating;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Performance');
       expect(screen.getByText('Great team player')).toBeInTheDocument();
     });
 
     it('renders areas for improvement', () => {
       queryResults.getLatestRating = defaultLatestRating;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Performance');
       expect(screen.getByText('Could improve documentation')).toBeInTheDocument();
     });
 
     it('renders general comments', () => {
       queryResults.getLatestRating = defaultLatestRating;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Performance');
       expect(screen.getByText('Solid performer overall')).toBeInTheDocument();
     });
   });
@@ -521,18 +585,21 @@ describe('EmployeeProfileDetail', () => {
     it('renders passport number from profile', () => {
       queryResults.getEmployeeProfile = defaultProfile;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Profile');
       expect(screen.getByText('AB123456')).toBeInTheDocument();
     });
 
     it('renders nationality from profile', () => {
       queryResults.getEmployeeProfile = defaultProfile;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Profile');
       expect(screen.getByText('Armenian')).toBeInTheDocument();
     });
 
     it('renders skills from biography', () => {
       queryResults.getEmployeeProfile = defaultProfile;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Profile');
       expect(screen.getByText('JavaScript')).toBeInTheDocument();
       expect(screen.getByText('React')).toBeInTheDocument();
     });
@@ -540,6 +607,7 @@ describe('EmployeeProfileDetail', () => {
     it('renders languages from biography', () => {
       queryResults.getEmployeeProfile = defaultProfile;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Profile');
       expect(screen.getByText('English')).toBeInTheDocument();
       expect(screen.getByText('Russian')).toBeInTheDocument();
     });
@@ -547,6 +615,7 @@ describe('EmployeeProfileDetail', () => {
     it('renders documents section', () => {
       queryResults.getEmployeeProfile = defaultProfile;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Documents');
       expect(screen.getByText('resume.pdf')).toBeInTheDocument();
     });
   });
@@ -560,6 +629,7 @@ describe('EmployeeProfileDetail', () => {
     it('shows add first rating button when latestRating is null', () => {
       queryResults.getLatestRating = null;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Performance');
       expect(screen.getByText('employeeProfile.noRatingYet')).toBeInTheDocument();
       expect(screen.getByText('employeeProfile.addFirstRating')).toBeInTheDocument();
     });
@@ -567,6 +637,7 @@ describe('EmployeeProfileDetail', () => {
     it('opens rating form when add first rating is clicked', () => {
       queryResults.getLatestRating = null;
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      openTab('Performance');
       fireEvent.click(screen.getByText('employeeProfile.addFirstRating'));
       expect(screen.getByTestId('rating-form')).toBeInTheDocument();
     });
@@ -584,6 +655,40 @@ describe('EmployeeProfileDetail', () => {
       expect(screen.getByTestId('rating-form')).toBeInTheDocument();
       fireEvent.click(screen.getByTestId('close-rating'));
       expect(screen.queryByTestId('rating-form')).not.toBeInTheDocument();
+    });
+
+    it('follows the rate action into the Performance tab', () => {
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      // Rate is in the hero, above the tabs — the form it opens lives in the
+      // Performance tab, so selecting that tab is part of the action.
+      expect(screen.getByTestId('tab-overview')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('employeeProfile.ratePerformance'));
+      expect(screen.getByTestId('tab-performance')).toBeInTheDocument();
+      expect(screen.queryByTestId('tab-overview')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Tabs', () => {
+    beforeEach(() => {
+      queryResults.getUserById = defaultEmployee;
+      queryResults.getMonthlyStats = defaultMonthlyStats;
+    });
+
+    it('lands on the Overview tab', () => {
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      expect(screen.getByTestId('tab-overview')).toBeInTheDocument();
+      expect(screen.getByTestId('reporting-line-widget')).toBeInTheDocument();
+    });
+
+    it('hides the Profile tab when there is no profile data and the viewer cannot edit', () => {
+      mockCurrentUser = { id: 'peer-1', role: 'employee', name: 'Peer', organizationId: 'org-1' };
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      expect(screen.queryByText('Profile')).not.toBeInTheDocument();
+    });
+
+    it('offers the Profile tab to an editor even with an empty profile', () => {
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+      expect(screen.getByText('Profile')).toBeInTheDocument();
     });
   });
 
@@ -617,6 +722,11 @@ describe('EmployeeProfileDetail', () => {
         name: 'Other Org Admin',
         organizationId: 'org-999',
       };
+      // Cross-org refusals come from the server for rating, same as for editing.
+      queryResults.getRatingEligibility = {
+        allowed: false,
+        reason: 'Access denied: cross-organization operation',
+      };
 
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
 
@@ -640,8 +750,24 @@ describe('EmployeeProfileDetail', () => {
       expect(screen.getByTestId('rate-button')).toBeInTheDocument();
     });
 
-    it('hides the rate button when the target is an admin (non-superadmin viewer)', () => {
+    // Equal role used to mean "unrateable", which is precisely why a CEO could
+    // not rate their own HR admin. Rating now follows the reporting line, so an
+    // admin target is rateable when the server says so.
+    it('shows the rate button on an admin colleague when the server allows it', () => {
       queryResults.getUserById = { ...defaultEmployee, role: 'admin' };
+
+      render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
+
+      expect(screen.getByTestId('edit-button')).toBeInTheDocument();
+      expect(screen.getByTestId('rate-button')).toBeInTheDocument();
+    });
+
+    it('hides the rate button when the target is the head of the organization', () => {
+      queryResults.getUserById = { ...defaultEmployee, role: 'admin' };
+      queryResults.getRatingEligibility = {
+        allowed: false,
+        reason: 'The head of the organization is not rated',
+      };
 
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
 
@@ -651,6 +777,10 @@ describe('EmployeeProfileDetail', () => {
 
     it('hides the rate button when the target is inactive (non-superadmin viewer)', () => {
       queryResults.getUserById = { ...defaultEmployee, isActive: false };
+      queryResults.getRatingEligibility = {
+        allowed: false,
+        reason: 'Cannot rate inactive employees',
+      };
 
       render(<EmployeeProfileDetail employeeId={mockEmployeeId} />);
 

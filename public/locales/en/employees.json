@@ -326,7 +326,14 @@
     "biography": "Biography",
     "skills": "Skills",
     "languages": "Languages",
-    "documents": "Documents"
+    "documents": "Documents",
+    "tabs": {
+      "overview": "Overview",
+      "profile": "Profile",
+      "performance": "Performance",
+      "documents": "Documents"
+    },
+    "noDocuments": "No documents uploaded yet"
   },
   "profile": {
     "currentLanguage": "Current Language",
@@ -538,9 +545,14 @@
     "collapseAll": "Collapse All",
     "noOrgSelected": "No organization selected",
     "selectOrgToView": "Please select an organization to view or create its org chart.",
-    "fixDepartments": "Fix Departments",
-    "fixDepartmentsSuccess": "Fixed {{count}} departments",
-    "fixDepartmentsError": "Failed to fix departments"
+    "head": "Head of the organization",
+    "parentIsManager": "For a person this is their manager: saving it changes the reporting line, not just the chart.",
+    "headHint": "The root of the chart and the last step of every approval chain. They must not report to anyone.",
+    "headSaved": "Head of the organization updated",
+    "headSaveError": "Failed to save the head of the organization",
+    "unassigned": "Not placed in the hierarchy",
+    "unassignedNone": "Everyone reports to someone.",
+    "unassignedHint": "These people have no manager, so they render as separate roots. Assign a manager to place them."
   },
   "organization": {
     "organization": "Organization",

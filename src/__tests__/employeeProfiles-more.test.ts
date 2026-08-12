@@ -128,8 +128,14 @@ function makeCtx() {
 }
 
 function grantSameOrgAdmin(ctx: any) {
-  mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A));
-  ctx.db.get.mockResolvedValue(makeTarget('employee', ORG_A));
+  const caller = makeCaller('admin', ORG_A);
+  mockGetAuthCaller.mockResolvedValue(caller);
+  // Compensation checks read the *caller's* own document as well (capability +
+  // reporting line), so resolve by id instead of returning the target for every
+  // lookup — otherwise the admin looks like an employee to those checks.
+  ctx.db.get.mockImplementation(async (id: string) =>
+    id === caller._id ? { ...caller, isActive: true } : makeTarget('employee', ORG_A),
+  );
 }
 
 // ── getEmployeeProfile: full bundle ─────────────────────────────────────────

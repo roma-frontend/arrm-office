@@ -4,7 +4,17 @@ import { internal } from '../_generated/api';
 import { mutation } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { requireRole, requireOrgAdmin, requireUser } from '../lib/rbac';
-import { isSuperadminEmail } from '../lib/auth';
+/**
+ * `hasSuperadminPowers` is the role-based check (`users.role === 'superadmin'`,
+ * with the env bootstrap email as a fallback). These handlers used
+ * `isSuperadminEmail(caller.email)` directly, which meant a real superadmin —
+ * one holding the role in the database — was refused the cross-org bypass unless
+ * their address happened to match `BOOTSTRAP_SUPERADMIN_EMAIL`. Two notions of
+ * "superadmin", one of them an env-pinned address, is exactly the kind of split
+ * this rework removes.
+ */
+import { isSuperadmin as hasSuperadminPowers } from '../lib/auth';
+import { assertAssignable } from '../lib/reportingLine';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
 import { patchProfile } from '../lib/userProfile';
@@ -144,7 +154,7 @@ export const createUser = mutation({
     const { adminId, organizationId } = args;
     // RBAC: require org admin access (superadmin can create in any org)
     const caller = await requireUser(ctx, adminId);
-    const isSuperadmin = isSuperadminEmail(caller.email);
+    const isSuperadmin = hasSuperadminPowers(caller);
 
     const email = args.email.toLowerCase().trim();
 
@@ -390,7 +400,7 @@ export const updateUser = mutation({
     const { adminId, userId, travelAllowance: travelAllowanceInput, ...updates } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
-    const isSuperadmin = isSuperadminEmail(caller.email);
+    const isSuperadmin = hasSuperadminPowers(caller);
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
@@ -442,6 +452,21 @@ export const updateUser = mutation({
     );
     if (departmentName !== undefined) updates.department = departmentName;
     if (positionName !== undefined) updates.position = positionName;
+
+    // The reporting line is validated here too. This mutation used to write
+    // `supervisorId` with no checks at all, so an edit could point someone at a
+    // manager in another organization, at an inactive account, or at one of
+    // their own reports — a cycle that then broke the chart and the approval
+    // walk for everyone caught in it.
+    if (updates.supervisorId) {
+      const supervisor = await ctx.db.get(updates.supervisorId);
+      if (!supervisor) throw new Error('Supervisor not found');
+      if (supervisor.organizationId !== user.organizationId) {
+        throw new Error('Supervisor must be in the same organization');
+      }
+      if (!supervisor.isActive) throw new Error('Supervisor account is inactive');
+      await assertAssignable(ctx, userId, updates.supervisorId);
+    }
 
     // Dual-write: patch users table (backward compat) + sync profile fields to userProfiles
     await ctx.db.patch(userId, { ...updates, travelAllowance, travelAllowanceOverride });
@@ -505,7 +530,7 @@ export const deleteUser = mutation({
     const { adminId, userId } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
-    const isSuperadmin = isSuperadminEmail(caller.email);
+    const isSuperadmin = hasSuperadminPowers(caller);
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
@@ -590,7 +615,7 @@ export const approveUser = mutation({
     const { adminId, userId } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
-    const isSuperadmin = isSuperadminEmail(caller.email);
+    const isSuperadmin = hasSuperadminPowers(caller);
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');
@@ -663,7 +688,7 @@ export const rejectUser = mutation({
     const { adminId, userId } = args;
     // RBAC: require org admin access
     const caller = await requireUser(ctx, adminId);
-    const isSuperadmin = isSuperadminEmail(caller.email);
+    const isSuperadmin = hasSuperadminPowers(caller);
 
     const user = await ctx.db.get(userId);
     if (!user) throw new Error('User not found');

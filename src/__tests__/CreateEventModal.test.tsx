@@ -241,6 +241,37 @@ jest.mock('@/lib/notificationSound', () => ({
   sendBrowserNotification,
 }));
 
+// ── Draft (controllable) ─────────────────────────────────────────────────────
+let mockDraft: {
+  restored: boolean;
+  restoredStep: number;
+  clearDraft: jest.Mock;
+  onRestoreData?: Record<string, unknown>;
+};
+jest.mock('@/hooks/useWizardDraft', () => ({
+  useWizardDraft: (opts: any) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+      if (mockDraft.restored) {
+        opts.onRestore?.(mockDraft.onRestoreData ?? {}, mockDraft.restoredStep);
+      }
+    }, []);
+    return mockDraft;
+  },
+}));
+
+jest.mock('@/components/ui/WizardDraftNotice', () => ({
+  WizardDraftNotice: ({ show, step, onReset }: any) =>
+    show ? (
+      <div data-testid="draft-notice" data-step={step}>
+        Draft restored at step {step + 1}
+        <button type="button" onClick={onReset}>
+          Start over
+        </button>
+      </div>
+    ) : null,
+}));
+
 // Component import (after the mocks — see note at the top).
 // eslint-disable-next-line import/first
 import { CreateEventModal } from '@/components/calendar/CreateEventModal';
@@ -324,6 +355,13 @@ beforeEach(() => {
   mockToast.success.mockClear();
   playNotificationSound.mockClear();
   sendBrowserNotification.mockClear();
+  mockDraft = {
+    restored: false,
+    restoredStep: 0,
+    clearDraft: jest.fn(() => {
+      mockDraft.restored = false;
+    }),
+  };
 });
 
 afterEach(() => {
@@ -1007,5 +1045,182 @@ describe('CreateEventModal — save flows', () => {
     await flush();
     await waitFor(() => expect(createEventMutation).toHaveBeenCalled());
     expect(playNotificationSound).not.toHaveBeenCalled();
+  });
+});
+
+describe('CreateEventModal — wizard draft', () => {
+  it('restores a draft on open and shows the notice', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 1;
+    mockDraft.onRestoreData = {
+      title: 'Restored Event',
+      date: '2026-09-01',
+      startTime: '11:00',
+      endTime: '12:00',
+      allDay: false,
+      location: 'HQ',
+      description: 'draft',
+      category: 'meeting',
+      reminder: '30min',
+      roomId: null,
+      attendees: [],
+    };
+    renderModal();
+    await flush();
+
+    // restore jumped to the saved step (people)
+    expect(screen.getByTestId('draft-notice')).toHaveAttribute('data-step', '1');
+    expect(screen.getByPlaceholderText('createMeeting.searchPeople')).toBeInTheDocument();
+    // the restored title is visible once we go back to details
+    fireEvent.click(screen.getByText('createMeeting.back'));
+    await flush();
+    expect(screen.getByPlaceholderText('createMeeting.titlePlaceholder')).toHaveValue(
+      'Restored Event',
+    );
+  });
+
+  it('start over clears the draft and resets the form', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 2;
+    mockDraft.onRestoreData = {
+      title: 'Restored Event',
+      attendees: [],
+    };
+    renderModal();
+    await flush();
+    expect(screen.getByTestId('draft-notice')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Start over'));
+    await flush();
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
+    expect(screen.getByPlaceholderText('createMeeting.titlePlaceholder')).toHaveValue('');
+  });
+
+  it('clears the draft after a successful save', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 0;
+    mockDraft.onRestoreData = {
+      title: 'Restored Event',
+      attendees: [],
+    };
+    renderModal();
+    await flush();
+
+    await goToPeopleStep('Saved Event');
+    fireEvent.click(screen.getByText('createMeeting.next'));
+    await flush();
+    fireEvent.click(screen.getByText('createMeeting.save'));
+    await flush();
+    await waitFor(() => expect(createEventMutation).toHaveBeenCalled());
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+  });
+
+  it('cancel clears the draft instead of saving it', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 0;
+    mockDraft.onRestoreData = {
+      title: 'Restored Event',
+      attendees: [],
+    };
+    const onOpenChange = jest.fn();
+    render(<CreateEventModal open={true} onOpenChange={onOpenChange} />);
+    await flush();
+
+    fireEvent.click(screen.getByText('createMeeting.cancel'));
+    await flush();
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('resets the form after a successful save', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 0;
+    mockDraft.onRestoreData = { title: 'Restored Event', attendees: [] };
+    const onOpenChange = jest.fn();
+    const view = render(<CreateEventModal open={true} onOpenChange={onOpenChange} />);
+    await flush();
+
+    await goToPeopleStep('Saved Event');
+    fireEvent.click(screen.getByText('createMeeting.next'));
+    await flush();
+    fireEvent.click(screen.getByText('createMeeting.save'));
+    await flush();
+    await waitFor(() => expect(createEventMutation).toHaveBeenCalled());
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+
+    // Reopening shows a clean form, not the saved event's data
+    view.rerender(<CreateEventModal open={true} onOpenChange={onOpenChange} />);
+    await flush();
+    expect(screen.getByPlaceholderText('createMeeting.titlePlaceholder')).toHaveValue('');
+    expect(screen.getByText('createMeeting.cancel')).toBeInTheDocument();
+  });
+
+  it('does not let a late editEvent clobber a restored draft', async () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 0;
+    mockDraft.onRestoreData = {
+      title: 'Restored Event',
+      date: '2026-08-05',
+      attendees: [],
+    };
+    const view = render(<CreateEventModal open={true} onOpenChange={jest.fn()} />);
+    await flush();
+    expect(screen.getByPlaceholderText('createMeeting.titlePlaceholder')).toHaveValue(
+      'Restored Event',
+    );
+
+    // The parent resolves editEvent after open — hydration must not overwrite
+    // the restored draft.
+    const editEvent: CalendarEvent = {
+      id: 'evt-1',
+      title: 'Sync',
+      date: '2026-08-05',
+      startTime: '14:00',
+      endTime: '15:00',
+      allDay: false,
+      location: 'Boardroom',
+      description: 'Weekly',
+      category: 'training',
+      reminder: '30min',
+      attendees: [],
+    };
+    view.rerender(<CreateEventModal open={true} onOpenChange={jest.fn()} editEvent={editEvent} />);
+    await flush();
+    expect(screen.getByPlaceholderText('createMeeting.titlePlaceholder')).toHaveValue(
+      'Restored Event',
+    );
+  });
+
+  it('start over restores the pristine edit-event data', async () => {
+    const editEvent: CalendarEvent = {
+      id: 'evt-1',
+      title: 'Sync',
+      date: '2026-08-05',
+      startTime: '14:00',
+      endTime: '15:00',
+      allDay: false,
+      location: 'Boardroom',
+      description: 'Weekly',
+      category: 'training',
+      reminder: '30min',
+      attendees: [],
+    };
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 0;
+    mockDraft.onRestoreData = { title: 'Restored Event', attendees: [] };
+    renderModal({ editEvent });
+    await flush();
+    expect(screen.getByTestId('draft-notice')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Start over'));
+    await flush();
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    // back to the event's own data, not an empty form
+    expect(screen.getByPlaceholderText('createMeeting.titlePlaceholder')).toHaveValue('Sync');
   });
 });

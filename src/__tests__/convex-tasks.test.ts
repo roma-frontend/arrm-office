@@ -405,35 +405,6 @@ describe('addComment', () => {
   });
 });
 
-describe('assignSupervisor', () => {
-  it('patches the supervisorId and audits with the employee org', async () => {
-    const { ctx, get, patch, insert } = makeCtx();
-    get.mockResolvedValueOnce(userDoc({ organizationId: ORG_A }));
-
-    await handlers.assignSupervisor(ctx, { employeeId: USER_ID, supervisorId: ADMIN_ID });
-
-    expect(patch).toHaveBeenCalledWith(USER_ID, { supervisorId: ADMIN_ID });
-    expect(insert).toHaveBeenCalledWith(
-      'auditLogs',
-      expect.objectContaining({
-        action: 'task_supervisor_assigned',
-        organizationId: ORG_A,
-        userId: ADMIN_ID,
-      }),
-    );
-  });
-
-  it('falls back to the employee id when no supervisor is given', async () => {
-    const { ctx, get, patch, insert } = makeCtx();
-    get.mockResolvedValueOnce(userDoc());
-
-    await handlers.assignSupervisor(ctx, { employeeId: USER_ID });
-
-    expect(patch).toHaveBeenCalledWith(USER_ID, { supervisorId: undefined });
-    expect(insert).toHaveBeenCalledWith('auditLogs', expect.objectContaining({ userId: USER_ID }));
-  });
-});
-
 describe('getTasksForEmployee', () => {
   it('throws for a missing employee', async () => {
     const { ctx, get } = makeCtx();
@@ -645,27 +616,6 @@ describe('getUsersForAssignment', () => {
     expect(withIndex).not.toHaveBeenCalled();
     expect(query).toHaveBeenCalledWith('users');
     expect(result).toHaveLength(1);
-  });
-});
-
-describe('getSupervisors', () => {
-  it('returns active supervisors and admins of the caller org', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A));
-    const { ctx, withIndex, take } = makeCtx();
-    // supervisors query
-    take.mockResolvedValueOnce([
-      userDoc({ _id: 'sup_1', role: 'supervisor', isActive: true, isApproved: true }),
-      userDoc({ _id: 'sup_2', role: 'supervisor', organizationId: ORG_B }),
-    ]);
-    // admins query
-    take.mockResolvedValueOnce([
-      userDoc({ _id: ADMIN_ID, role: 'admin', isActive: true, isApproved: true }),
-    ]);
-    mockGetProfile.mockResolvedValue(null);
-
-    const result = (await handlers.getSupervisors(ctx, {})) as any[];
-
-    expect(result.map((u) => u._id).sort()).toEqual([ADMIN_ID, 'sup_1'].sort());
   });
 });
 

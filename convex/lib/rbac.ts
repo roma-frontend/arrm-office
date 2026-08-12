@@ -10,17 +10,34 @@
 import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin as isSuperadminRole } from './auth';
+import { hasCapability } from './capabilities';
+import { isAncestorOf } from './reportingLine';
 
-/** Valid role hierarchy (lower index = higher privilege) */
+/**
+ * Role order for the coarse tier checks below.
+ *
+ * `driver` sits at the same level as `employee`, not above it: a driver is a job
+ * classification, not a privilege level. It used to rank between `supervisor`
+ * and `employee`, so every `requireRoleAtLeast(..., 'employee')` check silently
+ * treated drivers as more privileged than the staff they drive.
+ */
 export const ROLE_HIERARCHY = ['superadmin', 'admin', 'supervisor', 'driver', 'employee'] as const;
 
 export type Role = (typeof ROLE_HIERARCHY)[number];
 
+const ROLE_RANK: Record<Role, number> = {
+  superadmin: 0,
+  admin: 1,
+  supervisor: 2,
+  employee: 3,
+  driver: 3,
+};
+
 /** Check if roleA has at least the privileges of roleB */
 export function hasRoleAtLeast(roleA: Role, roleB: Role): boolean {
-  const indexA = ROLE_HIERARCHY.indexOf(roleA);
-  const indexB = ROLE_HIERARCHY.indexOf(roleB);
-  return indexA <= indexB;
+  const rankA = ROLE_RANK[roleA] ?? Number.MAX_SAFE_INTEGER;
+  const rankB = ROLE_RANK[roleB] ?? Number.MAX_SAFE_INTEGER;
+  return rankA <= rankB;
 }
 
 /** Get user by ID with role info */
@@ -32,6 +49,12 @@ export async function getUserWithRole(
   role: Role;
   email: string;
   organizationId?: Id<'organizations'>;
+  /**
+   * Included so access decisions can follow the reporting line. This projection
+   * used to drop it, which is why no rbac helper could reason about the chain
+   * even when it wanted to.
+   */
+  supervisorId?: Id<'users'>;
 } | null> {
   const user = await ctx.db.get(userId);
   if (!user) return null;
@@ -51,6 +74,7 @@ export async function getUserWithRole(
     role: user.role as Role,
     email: user.email,
     organizationId: user.organizationId,
+    supervisorId: user.supervisorId,
   };
 }
 
@@ -162,10 +186,19 @@ export async function requireOrgSupervisor(
 
 /**
  * Check if user can access another user's data.
- * - Superadmin: all users
- * - Admin: users in same organization
- * - Supervisor: users in same organization (except admins/superadmins)
- * - Employee/Driver: only themselves
+ *
+ * Visibility follows the reporting line and capabilities, not rank:
+ * - yourself → always;
+ * - platform superadmin → everyone;
+ * - holder of `users.read.org` (HR / admin) → everyone in that organization;
+ * - anyone in your subtree, however deep → yes;
+ * - otherwise → no.
+ *
+ * The rule this replaces said a `supervisor` may never read an `admin`, which
+ * made it impossible for a CEO modelled as a supervisor to see their own admin
+ * reports — the single hardest blocker to expressing "the HR admin reports to
+ * the CEO". It also gave every supervisor read access to every employee in the
+ * organization whether or not they managed them.
  */
 export async function canAccessUser(
   ctx: QueryCtx | MutationCtx,
@@ -184,20 +217,17 @@ export async function canAccessUser(
   const target = await getUserWithRole(ctx, targetUserId);
   if (!target) return false;
 
-  // Admin can access users in same org (except superadmins)
-  if (requester.role === 'admin') {
-    if (isSuperadminRole(target)) return false;
-    return requester.organizationId === target.organizationId;
-  }
+  // The platform operator's own record is not org data.
+  if (isSuperadminRole(target)) return false;
 
-  // Supervisor can access users in same org (except admins/superadmins)
-  if (requester.role === 'supervisor') {
-    if (isSuperadminRole(target) || target.role === 'admin') return false;
-    return requester.organizationId === target.organizationId;
-  }
+  // Cross-tenant reads are never allowed, capability or not.
+  if (requester.organizationId !== target.organizationId) return false;
 
-  // Employee/Driver can only access themselves
-  return false;
+  // HR / admin: org-wide read.
+  if (hasCapability(requester, 'users.read.org')) return true;
+
+  // Managers: their own subtree, at any depth.
+  return isAncestorOf(ctx, requesterId, targetUserId);
 }
 
 /**

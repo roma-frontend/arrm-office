@@ -79,6 +79,9 @@ async function seed() {
       name: 'Employee',
       email: 'employee@acme.test',
       role: 'employee',
+      // The reporting line is the canonical approval path now — the supervisor
+      // may only review requests of people below them.
+      supervisorId,
     });
     const pendingEmployeeId = await ctx.db.insert('users', {
       ...baseUser,
@@ -148,15 +151,17 @@ describe('leaves.createLeave', () => {
       return id;
     });
 
+    // Filing for someone else is an HR action, so the admin identity must be
+    // used to reach the user lookup.
     await expect(
-      asEmployee(c).mutation(api.leaves.createLeave, createArgs(c, ghostId)),
+      asAdmin(c).mutation(api.leaves.createLeave, createArgs(c, ghostId)),
     ).rejects.toThrow('User not found');
   });
 
   it('rejects an account pending approval', async () => {
     const c = await seed();
     await expect(
-      asEmployee(c).mutation(api.leaves.createLeave, createArgs(c, c.pendingEmployeeId)),
+      asAdmin(c).mutation(api.leaves.createLeave, createArgs(c, c.pendingEmployeeId)),
     ).rejects.toThrow('Account pending approval');
   });
 
@@ -179,9 +184,13 @@ describe('leaves.createLeave', () => {
     expect(state.leave?.organizationId).toBe(c.organizationId);
     expect(state.leave?.isRead).toBe(false);
 
-    // Employee got the "request received" ack, the admin got a new-request notice.
+    // Employee got the "request received" ack; the new-request notice goes to
+    // the chain approver (the supervisor) and the org-wide approvers (the
+    // admin).
     const types = state.notifications.map((n) => n.type).sort();
-    expect(types).toEqual(['leave_request', 'system']);
+    expect(types).toEqual(['leave_request', 'leave_request', 'system']);
+    const supervisorNotice = state.notifications.find((n) => n.userId === c.supervisorId);
+    expect(supervisorNotice?.type).toBe('leave_request');
     const adminNotice = state.notifications.find((n) => n.userId === c.adminId);
     expect(adminNotice?.type).toBe('leave_request');
     const ack = state.notifications.find((n) => n.userId === c.employeeId);
@@ -214,11 +223,12 @@ describe('leaves.approveLeave', () => {
     );
   });
 
-  it('blocks an employee from approving', async () => {
+  it('blocks an employee from approving their own request', async () => {
     const c = await seed();
     const leaveId = await createLeaveRequest(c, asEmployee, c.employeeId);
+    // The employee filed for themselves, so the separation-of-duties gate fires.
     await expect(asEmployee(c).mutation(api.leaves.approveLeave, { leaveId })).rejects.toThrow(
-      'Only admins and supervisors can approve leaves',
+      'You cannot review your own leave request',
     );
   });
 

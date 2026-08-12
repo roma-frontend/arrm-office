@@ -21,6 +21,7 @@ import { EnterpriseWidgets } from '@/components/dashboard/EnterpriseWidgets';
 import StrategyDashboardWidget from '@/components/dashboard/StrategyDashboardWidget';
 import LeaveStats from '@/components/dashboard/LeaveStats';
 import { QuickActions } from '@/components/dashboard/QuickActions';
+import { CheckInOutWidget } from '@/components/attendance/CheckInOutWidget';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -178,6 +179,12 @@ export default function DashboardClient() {
       />
 
       <DashboardBanners />
+
+      {/* Managers file attendance like everyone else, so the tracker belongs on
+          their dashboard too — it was only ever mounted on the employee one. */}
+      <motion.div variants={itemVariants}>
+        <CheckInOutWidget />
+      </motion.div>
 
       <motion.div variants={itemVariants}>
         <div data-tour="quick-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">

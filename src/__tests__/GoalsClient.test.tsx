@@ -61,6 +61,61 @@ jest.mock('@/store/useAuthStore', () => ({
   useAuthUser: () => mockUser,
 }));
 
+// ── Draft (controllable) ─────────────────────────────────────────────────────
+let mockDraft: { restored: boolean; restoredStep: number; clearDraft: jest.Mock };
+jest.mock('@/hooks/useWizardDraft', () => ({
+  useWizardDraft: (opts: any) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+      if (mockDraft.restored) {
+        opts.onRestore?.(
+          {
+            title: 'Restored Goal',
+            description: 'desc',
+            level: 'team',
+            department: 'Eng',
+            periodType: 'Q3',
+            periodYear: 2027,
+            parentId: '',
+            keyResults: [
+              {
+                title: 'KR1',
+                description: '',
+                metricType: 'number',
+                direction: 'increase',
+                startValue: 0,
+                targetValue: 100,
+                unit: '',
+                weight: 100,
+              },
+            ],
+          },
+          mockDraft.restoredStep,
+        );
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return {
+      restored: mockDraft.restored,
+      restoredStep: mockDraft.restoredStep,
+      clearDraft: mockDraft.clearDraft,
+      dismissNotice: jest.fn(),
+    };
+  },
+}));
+
+jest.mock('@/components/ui/WizardDraftNotice', () => ({
+  WizardDraftNotice: ({ show, step, onReset }: any) =>
+    show ? (
+      <div data-testid="draft-notice" data-step={step}>
+        Draft restored at step {step + 1}
+        <button type="button" onClick={onReset}>
+          Start over
+        </button>
+      </div>
+    ) : null,
+}));
+
 jest.mock('@/hooks/useSelectedOrganization', () => ({
   useSelectedOrganization: () => mockSelectedOrg,
 }));
@@ -340,6 +395,14 @@ const seed = () => {
     department: 'Engineering',
   };
   mockSelectedOrg = 'org-1';
+  mockDraft = {
+    restored: false,
+    restoredStep: 0,
+    clearDraft: jest.fn(() => {
+      mockDraft.restored = false;
+    }),
+  };
+  sessionStorage.clear();
 };
 
 beforeEach(seed);
@@ -741,6 +804,60 @@ describe('CreateObjectiveWizard', () => {
     openWizard();
     fireEvent.click(screen.getByText('Cancel'));
     expect(screen.queryByText('Create Objective')).not.toBeInTheDocument();
+  });
+
+  it('restores a draft into the form and jumps to the saved step', () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 1; // key-results step
+    const dialog = openWizard();
+
+    expect(screen.getByTestId('draft-notice')).toBeTruthy();
+    expect(screen.getByTestId('draft-notice').getAttribute('data-step')).toBe('1');
+    // Jumped to the key-results step with the restored KR title.
+    expect(screen.getByPlaceholderText('e.g. Reach 95% NPS score')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('KR1')).toBeTruthy();
+
+    // Back on the first step: title and level are restored.
+    fireEvent.click(screen.getByText('Back'));
+    expect(screen.getByDisplayValue('Restored Goal')).toBeTruthy();
+    expect(within(dialog).getByTestId('select-current-team')).toBeTruthy();
+  });
+
+  it('start over clears the draft and resets the form', () => {
+    mockDraft.restored = true;
+    mockDraft.restoredStep = 1;
+    openWizard();
+
+    fireEvent.click(screen.getByText('Start over'));
+
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
+    // First step, empty title.
+    expect(screen.getByPlaceholderText('e.g. Increase customer satisfaction')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g. Increase customer satisfaction')).toHaveValue('');
+  });
+
+  it('clears the draft after a successful save', async () => {
+    const dialog = openWizard();
+    fireEvent.change(screen.getByPlaceholderText('e.g. Increase customer satisfaction'), {
+      target: { value: 'NPS boost' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.change(screen.getByPlaceholderText('e.g. Reach 95% NPS score'), {
+      target: { value: 'Reach 95' },
+    });
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getAllByText('Create Objective')[1]);
+    await waitFor(() =>
+      expect(mutationCalls).toContainEqual({ name: 'createObjective', args: [expect.anything()] }),
+    );
+    expect(mockDraft.clearDraft).toHaveBeenCalled();
+    void dialog;
+  });
+
+  it('does not show the draft notice when nothing was restored', () => {
+    openWizard();
+    expect(screen.queryByTestId('draft-notice')).toBeNull();
   });
 
   it('handles create errors', async () => {

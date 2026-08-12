@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
@@ -37,6 +37,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useOrgUnits } from '@/hooks/useOrgUnits';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import {
   Dialog,
   DialogContent,
@@ -127,10 +129,15 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
   const isSuperadmin = user?.role === 'superadmin';
   const targetOrgId = isSuperadmin ? selectedOrgId : (employee.organizationId ?? '');
   const supervisors = useQuery(
-    api.users.queries.getSupervisors,
+    // Any active colleague can be someone's manager under the reporting-line
+    // model — `users.getSupervisors` filtered by role, which excluded everyone
+    // who is not already an admin or supervisor and encoded seniority in the
+    // role. This query is org-scoped, searchable and ordered by position rank.
+    api.reporting.getPotentialManagers,
     user?.id && targetOrgId
       ? {
           organizationId: targetOrgId as Id<'organizations'>,
+          excludeUserId: employee._id as Id<'users'>,
         }
       : 'skip',
   );
@@ -221,64 +228,110 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
 
   const effectiveTotalSteps = isSuperadmin ? TOTAL_STEPS + 1 : TOTAL_STEPS;
 
-  // Reset form on open
+  // Сотрудники, заведённые до перехода на справочники, хранят только название
+  // отдела/должности — подбираем id по названию. Вычисляем в render, потому что
+  // это нужно и для эффекта ниже, и для снапшота «нетронутой формы» (defaults
+  // черновика): снимок должен совпадать с формой и до, и после гидрации.
+  const legacyDepartmentId = useMemo(() => {
+    if (!employee.department || !departments) return '';
+    return departments.find((d) => d.name === employee.department)?._id ?? '';
+  }, [employee.department, departments]);
+  const legacyPositionId = useMemo(() => {
+    if (!employee.position || !allPositions) return '';
+    return allPositions.find((pos) => pos.title === employee.position)?._id ?? '';
+  }, [employee.position, allPositions]);
+
+  /** Состояние формы, в котором её оставляет авто-заполнение (не тронута рукой). */
+  const pristineForm = useMemo(
+    () => ({
+      name: employee.name,
+      role: employee.role,
+      employeeType: employee.employeeType,
+      departmentId: employee.departmentId ?? legacyDepartmentId,
+      positionId: employee.positionId ?? legacyPositionId,
+      phone: employee.phone ?? '',
+      supervisorId: employee.supervisorId ?? '',
+      isActive: employee.isActive,
+      paidLeaveBalance: employee.paidLeaveBalance,
+      sickLeaveBalance: employee.sickLeaveBalance,
+      familyLeaveBalance: employee.familyLeaveBalance,
+      registrationDate: employee.createdAt ? toLocalDateString(employee.createdAt) : '',
+      baseSalary: currentSalary?.baseSalary ?? 0,
+      bonuses: currentSalary?.bonuses ?? 0,
+      overtimeHours: currentSalary?.overtimeHours ?? 0,
+      salaryCurrency: currentSalary?.salaryCurrency ?? 'AMD',
+      travelAllowance:
+        employee.travelAllowanceOverride !== undefined
+          ? String(employee.travelAllowanceOverride)
+          : '',
+    }),
+    [employee, legacyDepartmentId, legacyPositionId, currentSalary],
+  );
+
+  /** Паспорт, каким его присылает сервер (до правок пользователя). */
+  const pristinePassport = useMemo(
+    () => ({
+      passportNumber: employeeProfile?.profile?.passportNumber ?? '',
+      passportIssuedBy: employeeProfile?.profile?.passportIssuedBy ?? '',
+      passportIssueDate: employeeProfile?.profile?.passportIssueDate ?? '',
+      passportExpiryDate: employeeProfile?.profile?.passportExpiryDate ?? '',
+      socialCardNumber: employeeProfile?.profile?.socialCardNumber ?? '',
+      nationality: employeeProfile?.profile?.nationality ?? '',
+    }),
+    [employeeProfile],
+  );
+
+  // Пока из черновика восстановлены данные, эффекты гидрации (salary, passport)
+  // не должны затирать их серверными значениями: запросы резолвятся после
+  // restore (тот выполняется в макротаске), поэтому без этого флага правки
+  // пользователя терялись бы при повторном открытии.
+  const restoredDraftRef = useRef(false);
+
+  const resetForm = useCallback(() => {
+    restoredDraftRef.current = false;
+    setStep(0);
+    setDirection(1);
+    setSelectedOrgId(employee.organizationId ?? '');
+    setForm(pristineForm);
+    setErrors({});
+  }, [employee.organizationId, pristineForm]);
+
+  // Чистим форму только на переходе «закрыта → открыта» (или при смене
+  // редактируемого сотрудника). Зависеть от identity объекта employee или от
+  // результатов запросов нельзя: они приходят асинхронно и стёрли бы
+  // восстановленный черновик.
+  const wasOpenForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (open) {
-      setStep(0);
-      setDirection(1);
-      setSelectedOrgId(employee.organizationId ?? '');
-      setForm({
-        name: employee.name,
-        role: employee.role,
-        employeeType: employee.employeeType,
-        departmentId: employee.departmentId ?? '',
-        positionId: employee.positionId ?? '',
-        phone: employee.phone ?? '',
-        supervisorId: employee.supervisorId ?? '',
-        isActive: employee.isActive,
-        paidLeaveBalance: employee.paidLeaveBalance,
-        sickLeaveBalance: employee.sickLeaveBalance,
-        familyLeaveBalance: employee.familyLeaveBalance,
-        registrationDate: employee.createdAt ? toLocalDateString(employee.createdAt) : '',
-        baseSalary: 0,
-        bonuses: 0,
-        overtimeHours: 0,
-        salaryCurrency: 'AMD',
-        travelAllowance:
-          employee.travelAllowanceOverride !== undefined
-            ? String(employee.travelAllowanceOverride)
-            : '',
-      });
-      setErrors({});
+    if (open && wasOpenForRef.current !== employee._id) {
+      resetForm();
     }
-  }, [open, employee]);
+    wasOpenForRef.current = open ? employee._id : null;
+  }, [open, employee._id, resetForm]);
 
   // Hydrate salary fields when query resolves
   useEffect(() => {
-    if (currentSalary) {
-      setForm((p) => ({
-        ...p,
-        baseSalary: currentSalary.baseSalary ?? 0,
-        bonuses: currentSalary.bonuses ?? 0,
-        overtimeHours: currentSalary.overtimeHours ?? 0,
-        salaryCurrency: currentSalary.salaryCurrency ?? 'AMD',
-      }));
-    }
+    if (restoredDraftRef.current || !currentSalary) return;
+    setForm((p) => ({
+      ...p,
+      baseSalary: currentSalary.baseSalary ?? 0,
+      bonuses: currentSalary.bonuses ?? 0,
+      overtimeHours: currentSalary.overtimeHours ?? 0,
+      salaryCurrency: currentSalary.salaryCurrency ?? 'AMD',
+    }));
   }, [currentSalary]);
 
   // Hydrate passport fields when the profile resolves
   useEffect(() => {
     const p = employeeProfile?.profile;
-    if (p) {
-      setPassport({
-        passportNumber: p.passportNumber ?? '',
-        passportIssuedBy: p.passportIssuedBy ?? '',
-        passportIssueDate: p.passportIssueDate ?? '',
-        passportExpiryDate: p.passportExpiryDate ?? '',
-        socialCardNumber: p.socialCardNumber ?? '',
-        nationality: p.nationality ?? '',
-      });
-    }
+    if (restoredDraftRef.current || !p) return;
+    setPassport({
+      passportNumber: p.passportNumber ?? '',
+      passportIssuedBy: p.passportIssuedBy ?? '',
+      passportIssueDate: p.passportIssueDate ?? '',
+      passportExpiryDate: p.passportExpiryDate ?? '',
+      socialCardNumber: p.socialCardNumber ?? '',
+      nationality: p.nationality ?? '',
+    });
   }, [employeeProfile]);
 
   // Reset passport transient state on open
@@ -314,6 +367,58 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
       }
     }
   }, [targetOrgId, isSuperadmin, form.supervisorId, supervisors]);
+
+  // ── Черновик: правки переживают случайное закрытие модалки ──────────────
+  const draftData = useMemo(
+    () => ({ form, passport, passportScan, selectedOrgId }),
+    [form, passport, passportScan, selectedOrgId],
+  );
+
+  // Слепок нетронутой формы: «пусто» здесь — это данные сотрудника с сервера,
+  // причём часть из них приходит асинхронно (salary, passport, легаси-отделы).
+  // Defaults строятся из тех же источников, что и гидрация, поэтому форма без
+  // правок никогда не совпадает с черновиком — плашка не появится сама собой.
+  const draftDefaults = useMemo(
+    () => ({
+      form: pristineForm,
+      passport: pristinePassport,
+      passportScan: null,
+      selectedOrgId: employee.organizationId ?? '',
+    }),
+    [pristineForm, pristinePassport, employee.organizationId],
+  );
+
+  const handleRestoreDraft = useCallback(
+    (d: typeof draftData, savedStep: number) => {
+      restoredDraftRef.current = true;
+      if (d.form) setForm((p) => ({ ...p, ...d.form }));
+      if (d.passport) setPassport((p) => ({ ...p, ...d.passport }));
+      setPassportScan(d.passportScan ?? null);
+      setSelectedOrgId(d.selectedOrgId ?? '');
+      setDirection(1);
+      setErrors({});
+      setStep(Math.min(Math.max(savedStep, 0), effectiveTotalSteps - 1));
+    },
+    [effectiveTotalSteps],
+  );
+
+  const draft = useWizardDraft({
+    key: `edit-employee:${employee._id}`,
+    enabled: open,
+    data: draftData,
+    step,
+    defaults: draftDefaults,
+    onRestore: handleRestoreDraft,
+  });
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    resetForm();
+    // Возвращаем паспорт к серверному состоянию, а не к черновику.
+    setPassport(pristinePassport);
+    setPassportScan(null);
+  }, [clearDraft, resetForm, pristinePassport]);
 
   /**
    * "" means "no individual amount — follow the organization policy". Anything
@@ -497,14 +602,25 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
           ? new Date(form.registrationDate + 'T00:00:00').getTime()
           : undefined,
       });
-      await updateSalary({
-        userId: employee._id as Id<'users'>,
-        organizationId: (employee.organizationId || undefined) as Id<'organizations'> | undefined,
-        baseSalary: form.baseSalary,
-        bonuses: form.bonuses,
-        overtimeHours: form.overtimeHours,
-        salaryCurrency: form.salaryCurrency,
-      });
+      // Compensation is written only when it actually changed. Sending it on
+      // every save bumped `salaryUpdatedAt` for unrelated edits, and now that
+      // setting a salary is scoped (HR org-wide, a manager within their subtree,
+      // never your own) an unconditional call would fail an otherwise valid edit.
+      const salaryChanged =
+        form.baseSalary !== (currentSalary?.baseSalary ?? 0) ||
+        form.bonuses !== (currentSalary?.bonuses ?? 0) ||
+        form.overtimeHours !== (currentSalary?.overtimeHours ?? 0) ||
+        form.salaryCurrency !== (currentSalary?.salaryCurrency ?? 'AMD');
+      if (salaryChanged) {
+        await updateSalary({
+          userId: employee._id as Id<'users'>,
+          organizationId: (employee.organizationId || undefined) as Id<'organizations'> | undefined,
+          baseSalary: form.baseSalary,
+          bonuses: form.bonuses,
+          overtimeHours: form.overtimeHours,
+          salaryCurrency: form.salaryCurrency,
+        });
+      }
       await updatePassport({
         userId: employee._id as Id<'users'>,
         organizationId: (employee.organizationId || undefined) as Id<'organizations'> | undefined,
@@ -526,6 +642,8 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         }).catch(() => {});
       }
       toast.success(t('modals.editEmployee.updatedSuccess'));
+      // Правки применены — черновик больше не нужен.
+      clearDraft();
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('modals.editEmployee.failedToUpdate'));
@@ -595,6 +713,12 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
 
         {/* Content */}
         <div className="px-6 py-5 max-h-[50vh] overflow-y-auto">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
+
           <AnimatePresence mode="wait">
             {/* Step 0: Organization (superadmin only) */}
             {isSuperadmin && step === 0 && (

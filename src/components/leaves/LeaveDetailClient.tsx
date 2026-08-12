@@ -34,6 +34,7 @@ const LeaveStatusBadge = ({ status }: { status: string }) => {
       pending: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
       approved: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
       rejected: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+      cancel_requested: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
     }[status] ?? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
 
   const label =
@@ -41,6 +42,7 @@ const LeaveStatusBadge = ({ status }: { status: string }) => {
       pending: t('leaveStatus.pending'),
       approved: t('leaveStatus.approved'),
       rejected: t('leaveStatus.rejected'),
+      cancel_requested: t('leaveStatus.cancelRequested'),
     }[status] ?? t('leaveStatus.pending');
 
   return <Badge className={`${variant} border-0`}>{label}</Badge>;
@@ -71,16 +73,23 @@ export default function LeaveDetailClient() {
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRequestingCancel, setIsRequestingCancel] = useState(false);
+  const [isRejectingCancel, setIsRejectingCancel] = useState(false);
 
   const leave = useQuery(api.leaves.getLeaveById, { leaveId });
   const currentUser = useQuery(
     api.users.queries.getUserById,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
   );
+  // Who may decide this request is a reporting-line question, not a role
+  // question, so the server answers it (same `reviewRefusal` the mutation runs).
+  const reviewEligibility = useQuery(api.leaves.getReviewEligibility, { leaveId });
 
   const approveLeave = useMutation(api.leaves.approveLeave);
   const rejectLeave = useMutation(api.leaves.rejectLeave);
   const deleteLeave = useMutation(api.leaves.deleteLeave);
+  const requestLeaveCancellation = useMutation(api.leaves.requestLeaveCancellation);
+  const rejectLeaveCancellation = useMutation(api.leaves.rejectLeaveCancellation);
 
   const handleApprove = async () => {
     if (!currentUser) return;
@@ -124,6 +133,48 @@ export default function LeaveDetailClient() {
     }
   };
 
+  // The employee asks HR to cancel the leave — the request lands in the HR
+  // queue and only HR may approve (delete) or reject it.
+  const handleRequestCancellation = async () => {
+    if (!currentUser) return;
+    setIsRequestingCancel(true);
+    try {
+      await requestLeaveCancellation({ leaveId });
+      toast.success(t('leave.cancelRequestedSuccess'));
+    } catch {
+      toast.error(t('leave.cancelRequestFailed'));
+    } finally {
+      setIsRequestingCancel(false);
+    }
+  };
+
+  const handleApproveCancellation = async () => {
+    if (!currentUser) return;
+    setIsDeleting(true);
+    try {
+      await deleteLeave({ leaveId });
+      toast.success(t('leave.cancelApprovedSuccess'));
+      router.push('/leaves');
+    } catch {
+      toast.error(t('leave.cancelApproveFailed'));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleRejectCancellation = async () => {
+    if (!currentUser) return;
+    setIsRejectingCancel(true);
+    try {
+      await rejectLeaveCancellation({ leaveId });
+      toast.success(t('leave.cancelRejectedSuccess'));
+    } catch {
+      toast.error(t('leave.cancelRejectFailed'));
+    } finally {
+      setIsRejectingCancel(false);
+    }
+  };
+
   if (leave === undefined) {
     return (
       <div className="space-y-6">
@@ -144,6 +195,19 @@ export default function LeaveDetailClient() {
   const endDate = new Date(leave.endDate);
   const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
+  const isStaff =
+    currentUser?.role === 'admin' ||
+    currentUser?.role === 'supervisor' ||
+    currentUser?.role === 'superadmin';
+  const isOwner = currentUser?._id === leave.userId;
+  // `allowed` covers: HR/admins (org-wide), the manager above the requester in
+  // the line, the delegate for the head's request, and the head clearing a
+  // pending request of their own under the auto policy. It excludes reviewing
+  // your own request and reviewing one you filed for somebody else.
+  const canReview = reviewEligibility?.allowed === true;
+  const showReviewHint =
+    leave.status === 'pending' && isStaff && !isOwner && reviewEligibility?.allowed === false;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -160,7 +224,7 @@ export default function LeaveDetailClient() {
         </div>
 
         <div className="flex items-center gap-2">
-          {leave.status === 'pending' && currentUser?.role === 'admin' && (
+          {leave.status === 'pending' && canReview && (
             <>
               <Button variant="default" onClick={handleApprove} disabled={isApproving}>
                 <CheckCircle className="mr-2 h-4 w-4" />
@@ -172,6 +236,37 @@ export default function LeaveDetailClient() {
               </Button>
             </>
           )}
+          {showReviewHint && (
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {t('leave.reviewNotAllowedHint')}
+            </p>
+          )}
+          {leave.status === 'cancel_requested' && isStaff && (
+            <>
+              <Button variant="default" onClick={handleApproveCancellation} disabled={isDeleting}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                {isDeleting ? t('common.saving') : t('leave.approveCancellation')}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRejectCancellation}
+                disabled={isRejectingCancel}
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                {isRejectingCancel ? t('common.saving') : t('leave.rejectCancellation')}
+              </Button>
+            </>
+          )}
+          {(leave.status === 'pending' || leave.status === 'approved') && isOwner && (
+            <Button
+              variant="outline"
+              onClick={handleRequestCancellation}
+              disabled={isRequestingCancel}
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              {isRequestingCancel ? t('common.saving') : t('leave.requestCancellation')}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -179,9 +274,11 @@ export default function LeaveDetailClient() {
           >
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={handleDelete} disabled={isDeleting}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {isStaff && (
+            <Button variant="outline" size="icon" onClick={handleDelete} disabled={isDeleting}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -280,7 +377,16 @@ export default function LeaveDetailClient() {
                 </p>
               </div>
             </div>
-            {leave.status !== 'pending' && (
+            {leave.status === 'cancel_requested' && (
+              <div className="flex items-start gap-3">
+                <div className="mt-1 h-2 w-2 rounded-full bg-yellow-500" />
+                <div>
+                  <p className="font-medium">{t('leave.cancellationRequested')}</p>
+                  <p className="text-sm text-muted-foreground">{t('leave.cancelPendingHint')}</p>
+                </div>
+              </div>
+            )}
+            {leave.status !== 'pending' && leave.status !== 'cancel_requested' && (
               <div className="flex items-start gap-3">
                 <div
                   className={`mt-1 h-2 w-2 rounded-full ${leave.status === 'approved' ? 'bg-green-500' : 'bg-red-500'}`}

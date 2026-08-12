@@ -456,11 +456,19 @@ describe('getLeaveStats', () => {
       leaveDoc({ _id: 'l2', status: 'approved' }),
       leaveDoc({ _id: 'l3', status: 'approved', startDate: today, endDate: today }),
       leaveDoc({ _id: 'l4', status: 'rejected' }),
+      leaveDoc({ _id: 'l5', status: 'cancel_requested' }),
     ]);
 
     const res = (await handlers.getLeaveStats(ctx, {})) as any;
 
-    expect(res).toEqual({ total: 4, pending: 1, approved: 2, rejected: 1, onLeaveToday: 1 });
+    expect(res).toEqual({
+      total: 5,
+      pending: 1,
+      approved: 2,
+      rejected: 1,
+      pendingCancellations: 1,
+      onLeaveToday: 1,
+    });
   });
 
   it('staff reads their own org stats', async () => {

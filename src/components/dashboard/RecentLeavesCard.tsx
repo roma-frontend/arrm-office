@@ -31,6 +31,7 @@ const StatusBadgeMemo = React.memo(({ status, label }: { status: LeaveStatus; la
     pending: 'warning',
     approved: 'success',
     rejected: 'destructive',
+    cancel_requested: 'warning',
   };
   return (
     <Badge variant={variants[status]} className="capitalize">

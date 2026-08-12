@@ -500,15 +500,17 @@ describe('getLeaveStats RBAC', () => {
       leaveDoc({ status: 'approved' }),
       leaveDoc({ status: 'approved', startDate: today, endDate: today }),
       leaveDoc({ status: 'rejected' }),
+      leaveDoc({ status: 'cancel_requested' }),
     ]);
 
     const result = (await getLeaveStatsHandler(ctx, {})) as any;
 
     expect(result).toEqual({
-      total: 4,
+      total: 5,
       pending: 1,
       approved: 2,
       rejected: 1,
+      pendingCancellations: 1,
       onLeaveToday: 1,
     });
   });

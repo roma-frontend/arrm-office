@@ -28,9 +28,21 @@ const USER = {
   organizationId: 'org-1',
 };
 
+/**
+ * A `userProfiles` query stub. `canAccessUser` now walks the reporting line, and
+ * the walk consults the profile mirror when a user doc has no `supervisorId`.
+ */
+function profileQueryStub() {
+  const chain: any = {
+    withIndex: () => chain,
+    first: async () => null,
+  };
+  return () => chain;
+}
+
 function makeCtx(user: unknown = USER) {
   const get = jest.fn().mockResolvedValue(user);
-  return { ctx: { db: { get } }, get };
+  return { ctx: { db: { get, query: profileQueryStub() } }, get };
 }
 
 describe('hasRoleAtLeast', () => {
@@ -258,23 +270,47 @@ describe('canAccessUser', () => {
     expect(await canAccessUser(ctx, 'user_1' as any, 'user_2' as any)).toBe(false);
   });
 
-  it('allows a supervisor to access same-org employees', async () => {
-    const requester = { ...USER, role: 'supervisor' };
-    const target = { ...USER, _id: 'user_2' };
-    const get = jest.fn(async (id: string) =>
-      String(id).startsWith('org') ? { _id: id } : id === 'user_1' ? requester : target,
-    );
-    const ctx = { db: { get } } as any;
+  it('allows a manager to access someone in their subtree', async () => {
+    // Visibility follows the line: user_2 → user_mid → user_1.
+    const requester = { ...USER, _id: 'user_1', role: 'supervisor' };
+    const mid = { ...USER, _id: 'user_mid', supervisorId: 'user_1' };
+    const target = { ...USER, _id: 'user_2', supervisorId: 'user_mid' };
+    const get = jest.fn(async (id: string) => {
+      if (String(id).startsWith('org')) return { _id: id };
+      if (id === 'user_1') return requester;
+      if (id === 'user_mid') return mid;
+      return target;
+    });
+    const ctx = { db: { get, query: profileQueryStub() } } as any;
     expect(await canAccessUser(ctx, 'user_1' as any, 'user_2' as any)).toBe(true);
   });
 
-  it('blocks a supervisor from accessing an admin', async () => {
-    const get = jest
-      .fn()
-      .mockResolvedValueOnce({ ...USER, role: 'supervisor' })
-      .mockResolvedValueOnce({ ...USER, _id: 'user_2', role: 'admin' });
-    const ctx = { db: { get } } as any;
+  it('blocks a manager from accessing someone outside their subtree', async () => {
+    // The old rule let any supervisor read any employee in the organization.
+    const requester = { ...USER, _id: 'user_1', role: 'supervisor' };
+    const target = { ...USER, _id: 'user_2', supervisorId: 'someone_else' };
+    const get = jest.fn(async (id: string) => {
+      if (String(id).startsWith('org')) return { _id: id };
+      if (id === 'user_1') return requester;
+      if (id === 'user_2') return target;
+      return null;
+    });
+    const ctx = { db: { get, query: profileQueryStub() } } as any;
     expect(await canAccessUser(ctx, 'user_1' as any, 'user_2' as any)).toBe(false);
+  });
+
+  it('allows a manager to access an admin who reports to them', async () => {
+    // The rule this replaces said a supervisor may never read an admin, which
+    // made "the HR admin reports to the CEO" inexpressible.
+    const requester = { ...USER, _id: 'user_1', role: 'supervisor' };
+    const target = { ...USER, _id: 'user_2', role: 'admin', supervisorId: 'user_1' };
+    const get = jest.fn(async (id: string) => {
+      if (String(id).startsWith('org')) return { _id: id };
+      if (id === 'user_1') return requester;
+      return target;
+    });
+    const ctx = { db: { get, query: profileQueryStub() } } as any;
+    expect(await canAccessUser(ctx, 'user_1' as any, 'user_2' as any)).toBe(true);
   });
 
   it('blocks employees from accessing others', async () => {
@@ -282,7 +318,7 @@ describe('canAccessUser', () => {
       .fn()
       .mockResolvedValueOnce({ ...USER, role: 'employee' })
       .mockResolvedValueOnce({ ...USER, _id: 'user_2' });
-    const ctx = { db: { get } } as any;
+    const ctx = { db: { get, query: profileQueryStub() } } as any;
     expect(await canAccessUser(ctx, 'user_1' as any, 'user_2' as any)).toBe(false);
   });
 });

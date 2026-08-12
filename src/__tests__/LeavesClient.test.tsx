@@ -113,6 +113,7 @@ jest.mock('../../convex/_generated/api', () => ({
       listLeavesPaginated: { _name: 'listLeavesPaginated' },
       getUnreadCount: { _name: 'getUnreadCount' },
       markLeaveAsRead: { _name: 'markLeaveAsRead' },
+      rejectLeaveCancellation: { _name: 'rejectLeaveCancellation' },
     },
   },
 }));
@@ -334,6 +335,18 @@ describe('LeavesClient — rendering', () => {
     // No admin actions for employees.
     expect(screen.queryAllByTestId('icon-Trash2').length).toBe(0);
   });
+
+  it('shows the HR actions for superadmins like for admins', () => {
+    mockUser = { id: 'u-1', role: 'superadmin' };
+    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    renderClient();
+    // Delete button plus the approve/reject cancellation pair render in the
+    // desktop table for a superadmin, matching the admin view.
+    const table = document.querySelector('table')!;
+    expect(within(table).getAllByTestId('icon-Trash2').length).toBe(1);
+    expect(within(table).getAllByTestId('icon-CheckCircle').length).toBe(1);
+    expect(within(table).getAllByTestId('icon-XCircle').length).toBe(1);
+  });
 });
 
 describe('LeavesClient — filters and search', () => {
@@ -485,6 +498,72 @@ describe('LeavesClient — admin actions', () => {
     paginatedResult = { results: [req()], status: 'Exhausted' };
     renderClient();
     fireEvent.click(screen.getAllByTestId('icon-Trash2')[0]);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('errors.unauthorized'));
+  });
+});
+
+describe('LeavesClient — HR cancellation queue', () => {
+  it('shows the cancellation badge and approve/reject actions for a cancel_requested row', () => {
+    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    renderClient();
+    expect(screen.getAllByText('leave.cancellationRequested').length).toBeGreaterThanOrEqual(1);
+    const table = document.querySelector('table')!;
+    expect(within(table).getAllByTestId('icon-CheckCircle').length).toBe(1);
+    expect(within(table).getAllByTestId('icon-XCircle').length).toBe(1);
+    // No pending-review eye for cancellation rows.
+    expect(within(table).queryAllByTestId('icon-Eye').length).toBe(0);
+  });
+
+  it('approves the cancellation (deletes the leave) from the queue', async () => {
+    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    renderClient();
+    const table = document.querySelector('table')!;
+    fireEvent.click(within(table).getAllByTestId('icon-CheckCircle')[0]);
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('leave.cancelApprovedSuccess'));
+    expect(mockOptimistic.delete ?? expect.anything()).toBeDefined();
+  });
+
+  it('rejects the cancellation request', async () => {
+    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    renderClient();
+    const table = document.querySelector('table')!;
+    fireEvent.click(within(table).getAllByTestId('icon-XCircle')[0]);
+    await waitFor(() => expect(mutationCalls['rejectLeaveCancellation']).toHaveLength(1));
+    expect(mutationCalls['rejectLeaveCancellation'][0].args[0]).toEqual({ leaveId: 'r1' });
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('leave.cancelRejectedSuccess'));
+  });
+
+  it('shows the reject-cancellation error toast', async () => {
+    mutationImpl['rejectLeaveCancellation'] = jest.fn().mockRejectedValue(new Error('boom'));
+    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    renderClient();
+    fireEvent.click(screen.getAllByTestId('icon-XCircle')[0]);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('boom'));
+    expect(logger.error).toHaveBeenCalledWith('Reject cancellation error:', expect.anything());
+  });
+
+  it('shows the approve-cancellation error toast for a generic throw', async () => {
+    mockOptimistic.delete = jest.fn().mockRejectedValue('string');
+    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    renderClient();
+    const table = document.querySelector('table')!;
+    fireEvent.click(within(table).getAllByTestId('icon-CheckCircle')[0]);
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('leave.cancelApproveFailed'));
+  });
+
+  it('filters by the cancellation status', () => {
+    paginatedResult = { results: [req()], status: 'Exhausted' };
+    renderClient();
+    fireEvent.click(screen.getByTestId('select-option-cancel_requested'));
+    expect(screen.getByTestId('select-current-cancel_requested')).toBeInTheDocument();
+  });
+
+  it('blocks cancellation actions for unauthenticated users', async () => {
+    mockUser = { id: undefined, role: 'admin' };
+    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    renderClient();
+    const table = document.querySelector('table')!;
+    fireEvent.click(within(table).getAllByTestId('icon-CheckCircle')[0]);
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('errors.unauthorized'));
   });
 });

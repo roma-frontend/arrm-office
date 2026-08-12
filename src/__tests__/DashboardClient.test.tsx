@@ -47,6 +47,11 @@ jest.mock('../../convex/_generated/api', () => ({
     security: {
       getLoginStats: { _name: 'getLoginStats' },
     },
+    timeTracking: {
+      getTodayStatus: { _name: 'timeTracking.getTodayStatus' },
+      checkIn: { _name: 'timeTracking.checkIn' },
+      checkOut: { _name: 'timeTracking.checkOut' },
+    },
   },
 }));
 
@@ -55,6 +60,7 @@ let mockUser: any = { id: 'user-1', role: 'admin', name: 'Admin' };
 
 jest.mock('@/store/useAuthStore', () => ({
   useAuthUser: () => mockUser,
+  useAuthStore: () => ({ user: mockUser }),
 }));
 
 jest.mock('@/hooks/useSelectedOrganization', () => ({
@@ -81,6 +87,9 @@ jest.mock('lucide-react', () => {
     CheckCircle: MockIcon,
     UserCheck: MockIcon,
     TrendingUp: MockIcon,
+    LogIn: MockIcon,
+    LogOut: MockIcon,
+    AlertCircle: MockIcon,
   };
 });
 
@@ -145,6 +154,9 @@ describe('DashboardClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     queryResults = {};
+    // CheckInOutWidget is mounted on the dashboard since the org-scope fix;
+    // a settled (null) status avoids the loading placeholder in every test.
+    queryResults['timeTracking.getTodayStatus'] = null;
     mockUser = { id: 'user-1', role: 'admin', name: 'Admin' };
 
     // Default: return loading state (undefined) for all queries

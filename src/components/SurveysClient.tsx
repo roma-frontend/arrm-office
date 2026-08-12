@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -207,6 +209,56 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
 
   const createSurveyMutation = useMutation(api.surveys.createSurvey);
 
+  // ── Черновик: правки переживают случайное закрытие диалога ────────────────
+  const draftData = useMemo(
+    () => ({ title, description, isAnonymous, questions, newQuestion, newOption }),
+    [title, description, isAnonymous, questions, newQuestion, newOption],
+  );
+
+  const draftDefaults = useMemo(
+    () => ({
+      title: '',
+      description: '',
+      isAnonymous: true,
+      questions: [] as QuestionDraft[],
+      newQuestion: { type: 'rating', text: '', isRequired: true } as QuestionDraft,
+      newOption: '',
+    }),
+    [],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    if (d.title !== undefined) setTitle(d.title);
+    if (d.description !== undefined) setDescription(d.description);
+    if (typeof d.isAnonymous === 'boolean') setIsAnonymous(d.isAnonymous);
+    if (d.questions && d.questions.length > 0) setQuestions(d.questions);
+    if (d.newQuestion) setNewQuestion((p) => ({ ...p, ...d.newQuestion }));
+    if (d.newOption !== undefined) setNewOption(d.newOption);
+    // Three steps: info, questions, review.
+    setCurrentStep(Math.min(Math.max(savedStep, 0), 2));
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'create-survey',
+    enabled: open,
+    data: draftData,
+    step: currentStep,
+    defaults: draftDefaults,
+    onRestore: handleRestoreDraft,
+  });
+  const { clearDraft } = draft;
+
+  const handleStartOver = useCallback(() => {
+    clearDraft();
+    setTitle('');
+    setDescription('');
+    setIsAnonymous(true);
+    setQuestions([]);
+    setNewQuestion({ type: 'rating', text: '', isRequired: true });
+    setNewOption('');
+    setCurrentStep(0);
+  }, [clearDraft]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -311,6 +363,7 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
         })),
       });
       toast.success(t('surveys.created'));
+      clearDraft();
       onClose();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : t('surveys.errors.createFailed'));
@@ -384,6 +437,13 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
 
           {/* Step Content */}
           <div className="px-5 py-4 min-h-[300px] max-h-[50vh] overflow-y-auto">
+            <WizardDraftNotice
+              show={draft.restored}
+              step={draft.restoredStep}
+              onReset={handleStartOver}
+              className="mb-4"
+            />
+
             {/* Step 1: Survey Info */}
             {currentStep === 0 && (
               <div className="space-y-4">

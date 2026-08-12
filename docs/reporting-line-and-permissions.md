@@ -1,13 +1,18 @@
 # Reporting line, positions and permissions
 
-**Status:** design proposal, nothing implemented yet.
+**Status:** implemented (phases 0–4), except where §5 says otherwise. Sections 1–2 describe the
+state **before** the change and the research behind it; keep them as the reasoning record.
 **Trigger:** Profix has three `admin` accounts — Tigran, Karine, Lusine — but Tigran is the
 CEO. Karine and Lusine report to him, as does everyone else. Admins must file attendance and
 request leave like anyone else, and the CEO needs leave balances and a salary because he is an
 employee too. The org chart must follow the reporting line and be labelled by Position.
 
-The app cannot express any of that today. Not because of missing features, but because one
-field — `users.role` — is being asked to mean five different things at once.
+The app could not express any of that. Not because of missing features, but because one
+field — `users.role` — was being asked to mean five different things at once.
+
+**Decisions taken with the customer:** the head of the organization's own leave is
+auto-approved with an audit note (`headApproval: 'auto'`, the default); HR approves everyone in
+the organization except the head.
 
 ---
 
@@ -325,60 +330,158 @@ everyone beneath, labelled by position.
 
 ---
 
-## 5. Work plan
+## 5. What landed
 
-Ordered so each phase is deployable on its own and nothing depends on a later phase.
+Ordered as it was built; each phase is independently deployable.
 
-**Phase 0 — bugs that are wrong regardless of this design**
+**Phase 0 — bugs that were wrong regardless of this design.** All done.
 
-| #   | Fix                                                                                                                                                  | Where                                                         |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 0.1 | `tasks.assignSupervisor` has no auth at all — add `getAuthCaller`, org check, cycle guard, or delete it and route the UI through `assignManager`     | `convex/tasks.ts:398`                                         |
-| 0.2 | Self-approval of leave                                                                                                                               | `convex/leaves/mutations.ts:178,315` + `bulkApproveLeaves`    |
-| 0.3 | `createLeave` trusts `args.userId`                                                                                                                   | `convex/leaves/mutations.ts:14`                               |
-| 0.4 | `updateUser` writes `supervisorId` with no cycle guard                                                                                               | `convex/users/mutations.ts:372`                               |
-| 0.5 | Pick one canonical `supervisorId` (recommend `users` — it has the reverse index) and make every writer dual-write and every reader read the same one | 4 writers, 5 readers listed in §1                             |
-| 0.6 | Two superadmin notions: role-based `isSuperadmin()` vs env-based `isSuperadminEmail()` used as the bypass in `users/mutations.ts`                    | `convex/lib/auth.ts:95`, `users/mutations.ts:147,393,508,593` |
+- 0.1 `tasks.assignSupervisor` had no auth at all — **deleted**. The UI now calls
+  `reporting.assignManager`, which authenticates the caller, checks the organization and rejects
+  cycles (`convex/tasks.ts`, `src/components/tasks/AssignSupervisorModal.tsx`).
+- 0.2 Self-approval of leave — blocked for everyone including HR, and for whoever filed the
+  request on someone else's behalf (new `leaveRequests.createdBy`).
+- 0.3 `createLeave` trusted `args.userId` — now resolves the caller from `getAuthCaller`; filing
+  for someone else requires `leave.approve.org`.
+- 0.4 `updateUser` wrote `supervisorId` with no checks — now shares `assertAssignable` with
+  `assignManager` and verifies the org and that the manager is active.
+- 0.5 One canonical `supervisorId` (`users`), one writer (`writeSupervisorId`), one reader
+  (`resolveSupervisorId`), both in `convex/lib/reportingLine.ts`.
+- 0.6 The env-email superadmin bypass in `users/mutations.ts` now goes through the role-based
+  `isSuperadmin`, so a real superadmin is no longer refused unless their address matches
+  `BOOTSTRAP_SUPERADMIN_EMAIL`.
+- 0.7 Found while working: `secureApproveLeave` / `secureRejectLeave` checked only the
+  organization — no role, no line, no self-approval guard — so **any** employee could approve any
+  pending request in their own org. Unused in `src/`; deleted.
+- 0.8 Found while working: `tasks.getSupervisors` queried `by_role` globally and only filtered by
+  organization when a caller happened to be authenticated, so an unauthenticated call returned
+  every tenant's supervisors and admins. Deleted in favour of `reporting.getPotentialManagers`.
+- 0.9 Found while reviewing what "everyone is an employee" implies: `convex/timeTracking.ts` had no
+  authentication anywhere in the file. `checkIn`, `checkOut` and `markAbsent` acted on whatever
+  `userId` the client sent, so anyone signed in could clock in or out as anyone else, in any
+  organization, and mark anyone absent — and attendance feeds the overtime hours payroll pays for.
+  All three now resolve the caller from `getAuthCaller`; acting on somebody else needs
+  `attendance.manage` (org-wide for HR/admins, own subtree for a manager), and nobody marks
+  themselves absent. The per-person read queries (`getTodayStatus`, `getUserHistory`,
+  `getRecentAttendance`, `getMonthlyStats`, `getEmployeeAttendanceHistory`) now go through
+  `canAccessUser`, so a colleague can no longer read your attendance detail.
+- 0.10 `employeeProfiles.updateSalary` treated every admin _and every supervisor_ of the
+  organization as equal, so any supervisor could set anybody's salary, the CEO's included. It now
+  uses `compensation.manage` with the same scope rule as leave — HR org-wide, a manager only within
+  their own subtree — and refuses your own compensation outright. `EditEmployeeModal` sends the
+  salary only when it changed, so an unrelated edit no longer trips the new gate (and no longer
+  bumps `salaryUpdatedAt` for nothing).
+- 0.11 Performance ratings had the same rank shape plus a hole: the queue listed the whole
+  organization regardless of who managed whom, `role === 'admin'` made somebody unrateable by
+  anyone (so a CEO could not rate their own HR admin), and the authorization check let
+  `caller._id === employeeId` through — anyone could rate themselves 5/5 and collect the review
+  points that buy vouchers. Now `ratings.manage` with the usual scope: a manager rates their own
+  subtree, HR/admins rate anyone in the organization, nobody rates themselves, the head is rated by
+  nobody, and the platform superadmin is outside it entirely.
+- 0.12 Nobody could clock in from the UI unless their role was exactly `employee`: `/attendance`
+  rendered the tracker under `!isAdminOrSupervisor` and the managers' dashboard had none at all,
+  while admins were still counted in the "Absent" tile. The tracker is now on `/attendance` for
+  everyone and on `DashboardClient`.
 
-**Phase 1 — declare the top of the org**
-`organizations.headUserId`; `getOrgHierarchyTree` roots at it; unassigned users surface as a
-list to fix rather than as extra roots; backfill Profix.
+**Phase 1 — the top of the organization is declared.**
+`organizations.headUserId`, plus `headApproval` and `headApproverUserId`.
+`reporting.getOrgHierarchyTree` roots at the head; people with no manager who are not the head
+come back flagged `isUnassigned` instead of silently becoming co-roots, and
+`reporting.getUnassignedUsers` is the list to fix. `reporting.setOrganizationHead` refuses a head
+who reports to anyone, is inactive, belongs to another organization, or is the platform
+superadmin. Both live on `/org-chart` for admins.
+_Not done:_ backfilling Profix's own data — a production data change, not code.
 
-**Phase 2 — org chart from the line, labelled by position**
-Wire `getOrgHierarchyTree` into `OrgChartClient`; rewrite or retire
-`generateOrgChartFromUsers`; drop `title: position || role`; add
-`positions.reportsToPositionId` + `rank` for labels and ordering. Retire the role-filtered
-`users.getSupervisors` in favour of `reporting.getPotentialManagers` in `EditEmployeeModal`.
+**Phase 2 — the chart follows the line.**
+`generateOrgChartFromUsers` was rewritten: it parents each person by their manager, roots at the
+head, labels from `positions.title` (never from `role`), orders siblings by `positions.rank` then
+name, and leaves unplaced people as separate roots. It reuses each person's existing node instead
+of delete-and-reinsert, and touches only nodes it owns — hand-made nodes (`source: 'manual'`),
+which is where dotted lines, vacancies and planned structure live, survive a regenerate.
+`positions` gained `reportsToPositionId` and `rank`. `fixOrgChartDepartments` was deleted: the
+chart is no longer shaped by department, so it had nothing correct left to do.
+Re-parenting a person — through the edit dialog or `moveNode` — writes
+`users.supervisorId` rather than pinning a manual override, so the chart is configured _through_
+the reporting line and the two cannot drift apart. Boxes the line cannot express (departments,
+groups, vacancies) keep the plain manual behaviour.
+_Deviation:_ `OrgChartClient` still renders `orgChartNodes` rather than calling
+`getOrgHierarchyTree` directly. The generator is the bridge that materializes the line into
+nodes, which keeps manual nodes, drag-to-rearrange and node CRUD working. The cost is that the
+chart refreshes when someone presses "Generate from Employee Data" rather than live.
 
-**Phase 3 — approvals follow the chain**
-Approver resolution walking the line; head-of-org policy; notify the resolved approver;
-scope supervisor queues to their subtree; then activate `approvalChain` for multi-step.
+**Phase 3 — approvals follow the chain.**
+`convex/leaves/approval.ts` resolves the approver: the nearest ancestor holding `leave.approve`,
+with holders of `leave.approve.org` (HR / admins) able to approve anyone except the head. The
+head's own request is recorded as approved with an audit note (`leave_auto_approved`), the balance
+is deducted immediately, and no SLA row is opened — there was no approver whose response time
+could be measured. `bulkApproveLeaves` / `bulkRejectLeaves` apply the same gate per row and report
+refusals instead of aborting the batch. The nine-branch balance if-chain, previously inlined three
+times, moved to `convex/leaves/balances.ts` so deduct and restore stay exact mirrors.
+_Deviation:_ a new request notifies the resolved chain approver **and** the org-wide approvers,
+not the chain approver alone. HR approves everyone here, so dropping them would make HR blind to
+requests they are responsible for; the recipient list is bounded by the admin count, not by org
+size.
+_Not done:_ multi-step `approvalChain`, and `delegateUserId` delegation while away.
+`rejectLeaveCancellation`, added in parallel with this work, still uses a rank check.
 
-**Phase 4 — capabilities replace rank**
-`requireCapability`; rewrite `canAccessUser` as subtree + capability; migrate module by
-module. Largest and last, because everything above works with `role` untouched.
+**Phase 4 — capabilities instead of rank.**
+`convex/lib/capabilities.ts` defines only capabilities something actually checks:
+`leave.approve`, `leave.approve.org`, `users.read.org`, `attendance.manage`, `ratings.manage`,
+`compensation.manage`, `org.manage`. They are derived from `role`
+— no grants table that nothing writes to — and `requireCapability` refuses across tenants.
+Capabilities held by both HR and managers (attendance, compensation) mean different things to
+each, so instead of a `.org` twin for every name the call site asks `hasOrgWideReach` once and
+falls back to a reporting-line check.
+`canAccessUser` was rewritten as self → platform superadmin → `users.read.org` → own subtree,
+which drops the "a supervisor may never read an admin" rule that made "the HR admin reports to
+the CEO" inexpressible; `getUserWithRole` no longer strips `supervisorId`. `driver` was moved to
+the same rank as `employee` in `hasRoleAtLeast` — it is a job, not a privilege.
+_Not done:_ migrating the modules that still call `requireOrgAdmin` / `requireOrgSupervisor`.
+They keep working; migrate each when it is next touched.
 
----
+**Phase 5 — the UI asks the server, instead of guessing.**
+Two screens still decided permission locally with the rank rules the backend had just dropped, so
+they contradicted it: `/leaves/:id` drew Approve/Reject for `role === 'admin'` (hiding them from the
+manager who actually decides, and showing them on requests the mutation refuses — your own, one you
+filed for somebody else, the head's auto-approved one), and the employee profile hid the Rate button
+whenever `employee.role === 'admin'`, which is exactly the equal-rank rule that stopped the CEO
+rating their own HR admin. Both now read a verdict from the same helper the mutation enforces:
+`leaves.getReviewEligibility` (`reviewRefusal`) and `supervisorRatings.getRatingEligibility`
+(`ratingRefusal`), each returning `{ allowed, reason }`. Duplicating the rule in the client was the
+alternative and would drift the first time the line changed. Staff who may not review a pending
+request now see `leave.reviewNotAllowedHint` instead of a button that fails.
+The rating queue on `/attendance` needed no change — `getEmployeesNeedingRating` is already scoped
+server-side, so HR sees everyone except the head and the CEO sees HR in their queue.
 
-## 6. Open questions for you
+**Tests.** `src/__tests__/convex-leaves-approval.integration.test.ts` (21 cases) covers head
+auto-approval, chain routing, subtree limits, HR's org-wide reach, separation of duties and the
+per-row bulk gate. `src/__tests__/convex-orgchart-line.integration.test.ts` (13 cases) covers tree
+shape and depth, position labels, manual-node preservation across a regenerate, head validation,
+and re-parenting writing the reporting line.
+`src/__tests__/convex-attendance-compensation.integration.test.ts` (19 cases) covers who may clock
+in for whom, marking absent, reading somebody else's attendance, and the salary scope including
+"not your own" and "not the CEO's". `src/__tests__/convex-ratings.integration.test.ts` (24 cases)
+covers HR rating everyone but the CEO, the CEO rating HR, subtree limits, self-rating, the
+queue each role sees and the eligibility verdict the profile page draws from. `supervisorRatings-rbac.test.ts` was deleted: every assertion in it encoded
+the rank rules that are gone, and its subject is now covered against the real schema.
+`LeaveDetailClient.test.tsx` and `EmployeeProfileDetail.test.tsx` seed the eligibility verdict
+rather than a role, which is what the components now depend on.
 
-1. **Head's own leave** — auto-approve, delegate to a named person, or peer-approve? Default
-   proposal: `auto` with an audit note, configurable.
-2. **Should a manager without `admin` rank approve?** Under the target model a `supervisor`
-   who is the requester's actual manager approves; an `admin` who is _not_ in the chain does
-   not (unless they hold an org-wide override). Is that acceptable for Profix, where HR
-   (Karine) probably wants to approve everyone's leave? If so she needs an explicit
-   `leave.approve.org` capability rather than getting it from rank.
-3. **Multiple managers per person** — Workday supports it and routes to all. Do you need it,
-   or is one manager plus dotted lines on the chart enough?
-4. **Position-based vs person-based line** — stay person-based (stage 1) or move to
-   position-based routing later? Position-based needs positions to be genuine single-holder
-   instances, which changes how positions are created.
-5. **Attendance for the CEO** — he is already counted in the denominator and marked absent if
-   he does not check in. Should the head be exempt, or does he clock in like everyone else?
-6. **Dotted lines** — needed for Profix now, or defer?
+## 6. Questions and answers
 
----
+1. **Head's own leave** — auto-approve with an audit note, and that is the default
+   (`headApproval: 'auto'`). `delegate` (a named approver) and `peer` (any other org-wide
+   approver) are supported by the schema and the resolver but not exposed in the UI.
+2. **Should a manager without `admin` rank approve?** Yes, for their own reports, at any depth.
+   HR approves everyone in the organization through `leave.approve.org` rather than through rank
+   — except the head, whose leave is auto-approved and is not reviewed by anyone.
+3. **Multiple managers per person** — not built. One manager, plus manual chart nodes for
+   dotted-line relationships.
+4. **Position-based vs person-based line** — person-based, and staying that way.
+   `reportsToPositionId` exists for labels and ordering only, never for routing.
+5. **Attendance for the CEO** — unchanged: the head clocks in like everyone else.
+6. **Dotted lines** — deferred. `orgChartNodes` with `source: 'manual'` is where they belong and
+   is now safe from regeneration.
 
 ## 7. Files that will change
 

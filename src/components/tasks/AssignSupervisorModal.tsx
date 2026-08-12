@@ -45,10 +45,22 @@ export function AssignSupervisorModal({ onClose }: Props) {
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { user } = useAuthStore();
   const employees = useQuery(api.tasks.getUsersForAssignment, user?.id ? {} : 'skip');
-  const supervisors = useQuery(api.tasks.getSupervisors, user?.id ? {} : 'skip');
+  // Managers come from the reporting-line query, not from a role filter: under
+  // the reporting-line model any active colleague can be someone's manager (the
+  // CEO manages admins), and this query is org-scoped and auth-checked.
+  const supervisors = useQuery(
+    api.reporting.getPotentialManagers,
+    user?.organizationId
+      ? {
+          organizationId: user.organizationId as Id<'organizations'>,
+          ...(selectedEmployee ? { excludeUserId: selectedEmployee as Id<'users'> } : {}),
+        }
+      : 'skip',
+  );
 
   // Debug: log to check if data is loading
   logger.log('AssignSupervisorModal - user:', user);
@@ -57,7 +69,7 @@ export function AssignSupervisorModal({ onClose }: Props) {
   logger.log('AssignSupervisorModal - employees:', employees);
   logger.log('AssignSupervisorModal - supervisors:', supervisors);
 
-  const assignSupervisor = useMutation(api.tasks.assignSupervisor);
+  const assignSupervisor = useMutation(api.reporting.assignManager);
 
   const selectedEmp = employees?.find((e) => e._id === selectedEmployee);
   const currentSupervisor = supervisors?.find((s) => s._id === selectedEmp?.supervisorId);
@@ -65,6 +77,7 @@ export function AssignSupervisorModal({ onClose }: Props) {
   const handleAssign = async () => {
     if (!selectedEmployee) return;
     setLoading(true);
+    setError(null);
     try {
       await assignSupervisor({
         employeeId: selectedEmployee as Id<'users'>,
@@ -76,6 +89,11 @@ export function AssignSupervisorModal({ onClose }: Props) {
         setSelectedEmployee('');
         setSelectedSupervisor('');
       }, 1500);
+    } catch (e) {
+      // `assignManager` refuses cycles and cross-org assignments. Surfacing the
+      // reason matters: silently swallowing it left the admin believing a
+      // rejected assignment had been saved.
+      setError(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -110,6 +128,15 @@ export function AssignSupervisorModal({ onClose }: Props) {
           {success && (
             <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-xl px-4 py-3 text-center font-medium">
               ✅ {t('modals.assignSupervisor.supervisorAssignedSuccess')}
+            </div>
+          )}
+
+          {error && (
+            <div
+              role="alert"
+              className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 font-medium"
+            >
+              {error}
             </div>
           )}
 

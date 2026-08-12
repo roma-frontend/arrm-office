@@ -1411,7 +1411,11 @@
       "probationExtended": "{{employeeName}}-ի փորձաշրջանը երկարաձգվել է {{days}} օրով։",
       "probationPassed": "{{employeeName}}-ը հաջողությամբ անցել է փորձաշրջանը։",
       "probationPassedAuto": "{{employeeName}}-ը փորձաշրջանն անցել է ավտոմատ՝ աշխատանքը ավարտի ամսաթվից հետո շարունակվելու պատճառով։",
-      "probationFailed": "{{employeeName}}-ը չի անցել փորձաշրջանը։"
+      "probationFailed": "{{employeeName}}-ը չի անցել փորձաշրջանը։",
+      "leaveCancelRequested": "{{userName}}-ը պահանջել է չեղարկել $t(leaveTypes.{{type}}) ({{start}} → {{end}})",
+      "leaveCancellationApproved": "Ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը հաստատվել է։",
+      "leaveCancellationRejected": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։",
+      "leaveCancellationRejectedWithReason": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։ Պատճառը՝ {{comment}}"
     },
     "titles": {
       "movementFormReady": "📄 Տեղափոխման ակտը պատրաստ է ստորագրման",
@@ -1512,7 +1516,10 @@
       "probationEndingSoon": "⏰ Փորձաշրջանը մոտենում է ավարտին",
       "probationExtended": "⏳ Փորձաշրջանը երկարաձգվել է",
       "probationPassed": "✅ Փորձաշրջանը հաջողությամբ անցել է",
-      "probationFailed": "⛔ Փորձաշրջանը չի անցել"
+      "probationFailed": "⛔ Փորձաշրջանը չի անցել",
+      "leaveCancelRequested": "Արձակուրդի չեղարկում է պահանջվել",
+      "leaveCancellationApproved": "Չեղարկումը հաստատված է",
+      "leaveCancellationRejected": "Չեղարկումը մերժված է"
     }
   },
   "aiChat": {
@@ -1567,7 +1574,8 @@
     "driverSubmitted": "✅ {{owner}}-ի վարորդի հայտը հաջողությամբ ներկայացվել է: {{balanceNote}}",
     "conflictWarning": "⚠️ Հնարավոր հակասություն հայտնաբերվել է {{type}} հայտի հետ ({{start}} → {{end}}):",
     "conflictDetected": "❌ Հակասություն հայտնաբերվել է {{type}} հայտի հետ ({{start}} → {{end}}):",
-    "conflictAdvice": "✅ Խորհուրդ է տրվում վերանայել և լուծել հակասությունը՝ հնարավոր է, որ {{owner}}-ի {{type}} հայտը չեղարկվի կամ մերժվի:"
+    "conflictAdvice": "✅ Խորհուրդ է տրվում վերանայել և լուծել հակասությունը՝ հնարավոր է, որ {{owner}}-ի {{type}} հայտը չեղարկվի կամ մերժվի:",
+    "leaveCancelRequested": "↩️ Ձեր {{type}} արձակուրդի ({{start}} → {{end}}) չեղարկում է պահանջվել։ HR-ը կդիտարկի այն։"
   },
   "leaveTypes": {
     "paid": "Վճարովի արձակուրդ",

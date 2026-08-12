@@ -238,13 +238,24 @@ describe('createRating — RBAC', () => {
     );
   });
 
-  it('denies rating an admin or superadmin target', async () => {
+  it('lets HR rate another admin — this is how the CEO rates HR', async () => {
+    // The old rule refused any admin target outright, which made "equal role ⇒
+    // nobody is senior" true again and left the CEO unable to rate their own HR.
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, SUPERVISOR_ID));
+    const { ctx, get, insert } = makeCtx();
+    get.mockResolvedValueOnce(employeeDoc({ role: 'admin' }));
+    withWallet(ctx, get, insert);
+
+    await expect(handlers.createRating(ctx, ratingArgs())).resolves.toBe('rating_1');
+  });
+
+  it('denies rating the platform superadmin', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, SUPERVISOR_ID));
     const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(employeeDoc({ role: 'admin' }));
+    get.mockResolvedValueOnce(employeeDoc({ role: 'superadmin' }));
 
     await expect(handlers.createRating(ctx, ratingArgs())).rejects.toThrow(
-      'Admins and superadmins cannot be rated',
+      'platform superadmin is not rated',
     );
   });
 
@@ -280,28 +291,17 @@ describe('createRating — RBAC', () => {
 });
 
 describe('createRating — success paths', () => {
-  it('lets the employee rate themself', async () => {
+  it('refuses an employee rating themself', async () => {
+    // Self-rating used to be allowed, and a 4+ review pays out points that buy
+    // vouchers — so it was a self-service reward.
     mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A));
     const { ctx, get, insert } = makeCtx();
     get.mockResolvedValueOnce(employeeDoc());
-    ctx.db.query.mockReturnValue({
-      withIndex: () => ({
-        take: jest.fn().mockResolvedValue([]),
-        first: jest.fn().mockResolvedValue(null),
-        order: () => ({ first: jest.fn().mockResolvedValue(null) }),
-      }),
-    });
 
-    const id = await handlers.createRating(ctx, ratingArgs({ supervisorId: EMPLOYEE_ID }));
-
-    expect(id).toBe('rating_1');
-    expect(insert).toHaveBeenCalledWith(
-      'supervisorRatings',
-      expect.objectContaining({
-        overallRating: (4 + 4 + 5 + 4 + 5 + 4) / 6,
-        ratingPeriod: '2026-07',
-      }),
-    );
+    await expect(
+      handlers.createRating(ctx, ratingArgs({ supervisorId: EMPLOYEE_ID })),
+    ).rejects.toThrow('You cannot rate yourself');
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it('creates the rating, updates performance metrics and awards points for a 4+ review', async () => {
@@ -574,19 +574,22 @@ describe('getEmployeesNeedingRating', () => {
       employeeDoc({ _id: 'user_admin', role: 'admin' }),
       employeeDoc({ _id: 'user_rated', name: 'Rated' }),
     ]);
-    // rating lookups: first() returns latest rating per employee
+    // rating lookups: first() returns the latest rating per rateable person, in
+    // list order — the inactive user is filtered out before these run.
     first
-      .mockResolvedValueOnce(null) // employee 1: never rated
-      .mockResolvedValueOnce(ratingDoc({ ratingPeriod: '2020-01' })) // rated long ago
-      .mockResolvedValueOnce(ratingDoc({ ratingPeriod: '2020-01' })) // admin — filtered out earlier
-      .mockResolvedValueOnce(ratingDoc({ ratingPeriod: new Date().toISOString().slice(0, 7) })); // rated this month
+      .mockResolvedValueOnce(null) // user_emp: never rated
+      .mockResolvedValueOnce(ratingDoc({ ratingPeriod: '2020-01' })) // user_admin: rated long ago
+      .mockResolvedValueOnce(ratingDoc({ ratingPeriod: new Date().toISOString().slice(0, 7) })); // user_rated: rated this month
     mockGetProfile.mockResolvedValue({ userId: EMPLOYEE_ID, avatarUrl: 'avatar-1' });
 
     const result = (await handlers.getEmployeesNeedingRating(ctx, {})) as any[];
 
     expect(withIndex).toHaveBeenCalledWith('by_org', expect.any(Function));
-    // employee 1 (never rated) and 'user_rated' (rated in an old period) need rating
-    expect(result.map((r) => r.employee._id).sort()).toEqual([EMPLOYEE_ID, 'user_rated'].sort());
+    // The inactive user is dropped and the one already rated this month falls
+    // out; the admin does not — an admin is somebody's report like anybody else,
+    // which is what lets the CEO rate HR. Only the declared head of the
+    // organization is excluded, and this org has none.
+    expect(result.map((r) => r.employee._id).sort()).toEqual([EMPLOYEE_ID, 'user_admin'].sort());
     expect(result[0].employee.avatarUrl).toBe('avatar-1');
     expect(result[0].lastRated).toBe('Never');
   });

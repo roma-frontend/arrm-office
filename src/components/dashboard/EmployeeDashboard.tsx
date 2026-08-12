@@ -83,6 +83,7 @@ const StatusBadge = memo(({ status }: { status: LeaveStatus }) => {
     pending: 'warning',
     approved: 'success',
     rejected: 'destructive',
+    cancel_requested: 'warning',
   };
   return (
     <Badge variant={variants[status]} className="capitalize">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -46,6 +46,8 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { uploadTaskAttachment } from '@/actions/cloudinary';
 import { getInitials } from '@/lib/stringUtils';
 import { playNotificationSound, sendBrowserNotification } from '@/lib/notificationSound';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import {
   capacityFits,
   DEFAULT_ROOM_COLOR,
@@ -277,9 +279,15 @@ export function CreateEventModal({
   const stepIndex = STEPS.indexOf(step);
   const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
+  // Пока из черновика восстановлены данные, гидрация из editEvent не должна
+  // затирать их: editEvent может прийти позже (асинхронный запрос родителя),
+  // а restore выполняется в макротаске.
+  const restoredDraftRef = useRef(false);
+
   const editId = editEvent?.id ?? null;
   React.useEffect(() => {
     if (!open) return;
+    if (restoredDraftRef.current) return;
     if (editEvent) {
       setTitle(editEvent.title);
       setDate(editEvent.date);
@@ -316,9 +324,110 @@ export function CreateEventModal({
     setUploading(false);
   };
 
+  // ── Черновик: введённые данные переживают случайное закрытие модалки ───────
+  const draftData = useMemo(
+    () => ({
+      title,
+      date,
+      startTime,
+      endTime,
+      allDay,
+      location,
+      description,
+      category,
+      reminder,
+      roomId,
+      attendees,
+    }),
+    [
+      title,
+      date,
+      startTime,
+      endTime,
+      allDay,
+      location,
+      description,
+      category,
+      reminder,
+      roomId,
+      attendees,
+    ],
+  );
+
+  // «Нетронутая форма» — пустое состояние (или данные редактируемого события),
+  // чтобы плашка не появлялась на формах без правок.
+  const pristineForm = useMemo(
+    () => ({
+      title: editEvent?.title ?? '',
+      date: editEvent?.date ?? (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''),
+      startTime: editEvent?.startTime ?? '09:00',
+      endTime: editEvent?.endTime ?? '10:00',
+      allDay: editEvent?.allDay ?? false,
+      location: editEvent?.location ?? '',
+      description: editEvent?.description ?? '',
+      category: editEvent?.category ?? 'meeting',
+      reminder: editEvent?.reminder ?? '15min',
+      roomId: editEvent?.roomId ?? null,
+    }),
+    [editEvent, selectedDate],
+  );
+
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    restoredDraftRef.current = true;
+    if (d.title !== undefined) setTitle(d.title);
+    if (d.date !== undefined) setDate(d.date);
+    if (d.startTime !== undefined) setStartTime(d.startTime);
+    if (d.endTime !== undefined) setEndTime(d.endTime);
+    if (d.allDay !== undefined) setAllDay(d.allDay);
+    if (d.location !== undefined) setLocation(d.location);
+    if (d.description !== undefined) setDescription(d.description);
+    if (d.category !== undefined) setCategory(d.category);
+    if (d.reminder !== undefined) setReminder(d.reminder);
+    if (d.roomId !== undefined) setRoomId(d.roomId);
+    if (Array.isArray(d.attendees)) setAttendees(d.attendees as OrgUser[]);
+    setStep(STEPS[Math.min(Math.max(savedStep, 0), STEPS.length - 1)] as Step);
+  }, []);
+
+  const draft = useWizardDraft({
+    key: `create-event:${editId ?? 'new'}`,
+    enabled: open,
+    data: draftData,
+    step: stepIndex,
+    defaults: pristineForm,
+    onRestore: handleRestoreDraft,
+  });
+  const { clearDraft } = draft;
+
+  const handleStartOver = () => {
+    clearDraft();
+    restoredDraftRef.current = false;
+    // Вернуть «нетронутую» форму: данные редактируемого события или пустоту.
+    resetForm();
+    setTitle(pristineForm.title);
+    setDate(pristineForm.date);
+    setStartTime(pristineForm.startTime);
+    setEndTime(pristineForm.endTime);
+    setAllDay(pristineForm.allDay);
+    setLocation(pristineForm.location);
+    setDescription(pristineForm.description);
+    setCategory(pristineForm.category);
+    setReminder(pristineForm.reminder);
+    setRoomId(pristineForm.roomId);
+  };
+
+  /**
+   * Закрытие крестиком / Escape / кликом вне окна — сохраняет черновик.
+   * Явная кнопка «Отмена» стирает его и сбрасывает форму.
+   */
   const handleClose = (val: boolean) => {
-    if (!val) resetForm();
     onOpenChange(val);
+  };
+
+  const handleCancel = () => {
+    clearDraft();
+    restoredDraftRef.current = false;
+    resetForm();
+    onOpenChange(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -422,6 +531,9 @@ export function CreateEventModal({
         roomColor: selectedRoom?.color,
       };
       onSave?.(event);
+      clearDraft();
+      restoredDraftRef.current = false;
+      resetForm();
       handleClose(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
@@ -508,6 +620,11 @@ export function CreateEventModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -1062,7 +1179,7 @@ export function CreateEventModal({
           ) : (
             <Button
               variant="ghost"
-              onClick={() => handleClose(false)}
+              onClick={handleCancel}
               className="rounded-xl text-(--text-muted)"
             >
               {t('createMeeting.cancel')}

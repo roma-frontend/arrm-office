@@ -18,6 +18,31 @@ export const organizations = {
     currency: v.optional(v.string()),
     payrollCycle: v.optional(v.string()),
     overtimeMultiplier: v.optional(v.number()),
+    /**
+     * The head of this organization (CEO / owner) — the single root of the
+     * reporting line and of the org chart.
+     *
+     * Lives here rather than as a flag on the user so that "exactly one head"
+     * is enforced by cardinality instead of by convention, and so that "who is
+     * the CEO" is a fact you can query rather than something inferred from a
+     * missing `supervisorId`. Users with no supervisor who are *not* the head
+     * are unassigned, not co-roots.
+     *
+     * The head is a normal org member: they hold a position, file attendance,
+     * accrue leave and are paid. Never model them as `superadmin` — that would
+     * remove them from the roster, the chart and every attendance statistic
+     * while keeping them in payroll.
+     */
+    headUserId: v.optional(v.id('users')),
+    /**
+     * What happens to the head's own leave request, which has no ancestor to
+     * route to. `auto` records it as approved with an audit note; `delegate`
+     * routes it to `headApproverUserId`; `peer` lets any other holder of
+     * `leave.approve.org` decide. Unset behaves as `auto`.
+     */
+    headApproval: v.optional(v.union(v.literal('auto'), v.literal('delegate'), v.literal('peer'))),
+    /** Who approves the head's leave when `headApproval` is `delegate`. */
+    headApproverUserId: v.optional(v.id('users')),
     // Superadmin freeze: the org keeps its data but nobody inside it can log
     // in or use any feature until unfrozen. The reason is shown to employees
     // at login and on the in-app freeze screen.

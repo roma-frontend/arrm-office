@@ -7,9 +7,14 @@
 import { renderHook, act } from '@testing-library/react';
 import { useWizardDraft, clearWizardDraft } from '@/hooks/useWizardDraft';
 
+// Управляемый id пользователя — проверяем изоляцию черновиков между людьми.
+let mockUserId: string | null = 'user-1';
+
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: (selector: (s: unknown) => unknown) =>
-    selector({ user: { id: 'user-1' } } as unknown),
+    selector({
+      user: mockUserId ? { id: mockUserId } : null,
+    } as unknown),
 }));
 
 interface FormData {
@@ -33,6 +38,7 @@ function settle() {
 describe('useWizardDraft', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    mockUserId = 'user-1';
     window.sessionStorage.clear();
   });
 
@@ -162,6 +168,48 @@ describe('useWizardDraft', () => {
 
     expect(window.sessionStorage.length).toBe(0);
     expect(onRestore).not.toHaveBeenCalled();
+  });
+
+  it('keeps drafts of different users apart', () => {
+    // Пользователь A заполняет форму и закрывает её.
+    mockUserId = 'user-a';
+    const a = renderHook(
+      ({ data }: { data: FormData }) =>
+        useWizardDraft<FormData>({ key: 'test', data, onRestore: jest.fn() }),
+      { initialProps: { data: {} as FormData } },
+    );
+    settle();
+    a.rerender({ data: { name: 'Черновик А' } });
+    settle();
+    a.unmount();
+    expect(window.sessionStorage.getItem('wizard-draft:user-a:test')).not.toBeNull();
+
+    // Пользователь B открывает ту же форму — черновик А не восстанавливается.
+    mockUserId = 'user-b';
+    const onRestoreB = jest.fn();
+    renderHook(() => useWizardDraft<FormData>({ key: 'test', data: {}, onRestore: onRestoreB }));
+    settle();
+    expect(onRestoreB).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem('wizard-draft:user-b:test')).toBeNull();
+
+    // Черновик А по-прежнему лежит под его ключом.
+    expect(window.sessionStorage.getItem('wizard-draft:user-a:test')).not.toBeNull();
+  });
+
+  it('falls back to an anon namespace when the user is unknown', () => {
+    mockUserId = null;
+    const { rerender, unmount } = renderHook(
+      ({ data }: { data: FormData }) =>
+        useWizardDraft<FormData>({ key: 'test', data, onRestore: jest.fn() }),
+      { initialProps: { data: {} as FormData } },
+    );
+    settle();
+    rerender({ data: { name: 'Иван' } });
+    settle();
+    unmount();
+
+    expect(window.sessionStorage.getItem('wizard-draft:anon:test')).not.toBeNull();
+    expect(window.sessionStorage.getItem('wizard-draft:user-1:test')).toBeNull();
   });
 
   it('keeps drafts of different forms apart', () => {

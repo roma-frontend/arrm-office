@@ -1,10 +1,78 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/server';
 import { Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { creditBalance, resolveRecognitionSettings } from './lib/points';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { hasCapability, hasOrgWideReach } from './lib/capabilities';
+import { isAncestorOf } from './lib/reportingLine';
+import { canAccessUser } from './lib/rbac';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Whose attendance may the caller touch?
+// ─────────────────────────────────────────────────────────────────────────────
+// This module used to take `userId` from the client and act on it with no
+// authentication at all — anyone signed in could clock in or out as anyone else,
+// in any organization, and mark anyone absent. Attendance feeds statistics and
+// the overtime hours that payroll pays for, so it is not a cosmetic record.
+//
+// Clocking yourself in is self-service. Doing it for somebody else is an HR
+// correction (the employee forgot, or handed in a paper form), so it needs
+// `attendance.manage`: org-wide for HR/admins, own subtree for a manager.
+
+/**
+ * @param selfAllowed `false` for actions nobody should perform on themselves,
+ *   such as marking oneself absent.
+ * @returns the id whose record may be written.
+ */
+async function assertMayRecordAttendance(
+  ctx: MutationCtx,
+  targetUserId: Id<'users'> | undefined,
+  opts: { selfAllowed?: boolean } = {},
+): Promise<Id<'users'>> {
+  const { selfAllowed = true } = opts;
+  const caller = await getAuthCaller(ctx);
+  if (!caller) throw new Error('Not authenticated');
+
+  const userId = targetUserId ?? caller._id;
+  if (userId === caller._id) {
+    if (!selfAllowed) throw new Error('You cannot record this for yourself');
+    return userId;
+  }
+
+  const target = await ctx.db.get(userId);
+  if (!target) throw new Error('User not found');
+  if (isSuperadmin(caller)) return userId;
+
+  if (!caller.organizationId || caller.organizationId !== target.organizationId) {
+    throw new Error('Access denied: cross-organization operation');
+  }
+
+  // `getAuthCaller` already carries the role, so the capability decision needs no
+  // second read of the caller's own document.
+  if (!hasCapability(caller, 'attendance.manage')) {
+    throw new Error('You can only record your own attendance');
+  }
+  if (!hasOrgWideReach(caller) && !(await isAncestorOf(ctx, caller._id, userId))) {
+    throw new Error("Only a manager in this employee's reporting line may record their attendance");
+  }
+  return userId;
+}
+
+/**
+ * May the caller read this person's attendance? Follows the same rule as every
+ * other personal record: yourself, your subtree, or an org-wide reader.
+ *
+ * Queries degrade to empty data instead of throwing, per the convention in this
+ * codebase — an error boundary on a dashboard widget is worse than a blank card.
+ */
+async function mayReadAttendance(ctx: QueryCtx, userId: Id<'users'>): Promise<boolean> {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) return false;
+  return canAccessUser(ctx, caller._id, userId);
+}
 
 // Armenia timezone offset: UTC+4
 const ARMENIA_OFFSET_MS = 4 * 60 * 60 * 1000;
@@ -43,16 +111,19 @@ function getScheduledTimestamps(dateStr: string, startTime: string, endTime: str
 // ── Check In (Employee arrives at work) ──────────────────────────────────
 export const checkIn = mutation({
   args: {
-    userId: v.id('users'),
+    // Optional: the caller's own id is used when omitted. Supplying somebody
+    // else's id is an HR correction and needs `attendance.manage`.
+    userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    const userId = await assertMayRecordAttendance(ctx, args.userId);
     const now = Date.now();
     const today = getTodayDate();
 
     // Check if already checked in today
     const existing = await ctx.db
       .query('timeTracking')
-      .withIndex('by_user_date', (q) => q.eq('userId', args.userId).eq('date', today))
+      .withIndex('by_user_date', (q) => q.eq('userId', userId).eq('date', today))
       .first();
 
     if (existing && existing.status === 'checked_in') {
@@ -62,7 +133,7 @@ export const checkIn = mutation({
     // Get work schedule (default 9:00-18:00)
     const schedule = await ctx.db
       .query('workSchedule')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .withIndex('by_user', (q) => q.eq('userId', userId))
       .first();
 
     const startTime = schedule?.startTime || '09:00';
@@ -90,7 +161,7 @@ export const checkIn = mutation({
     } else {
       // Create new record
       recordId = await ctx.db.insert('timeTracking', {
-        userId: args.userId,
+        userId,
         checkInTime: now,
         scheduledStartTime: scheduledStart,
         scheduledEndTime: scheduledEnd,
@@ -107,7 +178,7 @@ export const checkIn = mutation({
     // Attendance credit. The amount is per-organization policy now (0 switches
     // it off): once points buy real vouchers, paying for mere presence is a
     // choice a tenant makes, not a constant baked into check-in.
-    const user = await ctx.db.get(args.userId);
+    const user = await ctx.db.get(userId);
     if (user?.organizationId) {
       const orgId = user.organizationId;
       const settings = await resolveRecognitionSettings(ctx, orgId);
@@ -118,7 +189,7 @@ export const checkIn = mutation({
         const existingPointsToday = await ctx.db
           .query('pointTransactions')
           .withIndex('by_org_user_created', (q) =>
-            q.eq('organizationId', orgId).eq('userId', args.userId).gte('createdAt', todayStart),
+            q.eq('organizationId', orgId).eq('userId', userId).gte('createdAt', todayStart),
           )
           .filter((q) => q.eq(q.field('type'), 'earned_attendance'))
           .first();
@@ -126,7 +197,7 @@ export const checkIn = mutation({
         if (!existingPointsToday) {
           await creditBalance(ctx, {
             organizationId: orgId,
-            userId: args.userId,
+            userId,
             amount: settings.attendanceReward,
             type: 'earned_attendance',
             description: 'Daily attendance',
@@ -142,17 +213,18 @@ export const checkIn = mutation({
 // ── Check Out (Employee leaves work) ─────────────────────────────────────
 export const checkOut = mutation({
   args: {
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await assertMayRecordAttendance(ctx, args.userId);
     const now = Date.now();
     const today = getTodayDate();
 
     // Find today's check-in record
     const record = await ctx.db
       .query('timeTracking')
-      .withIndex('by_user_date', (q) => q.eq('userId', args.userId).eq('date', today))
+      .withIndex('by_user_date', (q) => q.eq('userId', userId).eq('date', today))
       .first();
 
     if (!record) {
@@ -166,7 +238,7 @@ export const checkOut = mutation({
     // Recalculate scheduled end fresh (correct Armenia UTC+4 timezone)
     const scheduleForOut = await ctx.db
       .query('workSchedule')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .withIndex('by_user', (q) => q.eq('userId', userId))
       .first();
     const endTime = scheduleForOut?.endTime || '18:00';
     const startTime = scheduleForOut?.startTime || '09:00';
@@ -214,6 +286,7 @@ export const getTodayStatus = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    if (!(await mayReadAttendance(ctx, args.userId))) return null;
     const today = getTodayDate();
 
     const record = await ctx.db
@@ -232,6 +305,7 @@ export const getUserHistory = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    if (!(await mayReadAttendance(ctx, args.userId))) return [];
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -293,6 +367,7 @@ export const getCurrentlyAtWork = query({
 export const getRecentAttendance = query({
   args: { userId: v.id('users'), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
+    if (!(await mayReadAttendance(ctx, args.userId))) return [];
     const limit = args.limit ?? 7;
     const records = await ctx.db
       .query('timeTracking')
@@ -437,6 +512,17 @@ export const getMonthlyStats = query({
     month: v.string(), // "2026-02"
   },
   handler: async (ctx, args) => {
+    if (!(await mayReadAttendance(ctx, args.userId))) {
+      return {
+        totalDays: 0,
+        lateDays: 0,
+        earlyLeaveDays: 0,
+        totalWorkedHours: '0',
+        totalOvertimeHours: '0',
+        averageWorkHours: '0',
+        punctualityRate: '100',
+      };
+    }
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -556,6 +642,7 @@ export const getEmployeeAttendanceHistory = query({
     month: v.string(), // "2026-02"
   },
   handler: async (ctx, args) => {
+    if (!(await mayReadAttendance(ctx, args.userId))) return [];
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -575,10 +662,14 @@ export const markAbsent = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Marking somebody absent is always an act about another person: it needs
+    // `attendance.manage`, and nobody records it against themselves.
+    const userId = await assertMayRecordAttendance(ctx, args.userId, { selfAllowed: false });
+
     // Check if record already exists
     const existing = await ctx.db
       .query('timeTracking')
-      .withIndex('by_user_date', (q) => q.eq('userId', args.userId).eq('date', args.date))
+      .withIndex('by_user_date', (q) => q.eq('userId', userId).eq('date', args.date))
       .first();
 
     if (existing) {
@@ -588,7 +679,7 @@ export const markAbsent = mutation({
     // Get schedule
     const schedule = await ctx.db
       .query('workSchedule')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .withIndex('by_user', (q) => q.eq('userId', userId))
       .first();
 
     const startTime = schedule?.startTime || '09:00';
@@ -599,7 +690,7 @@ export const markAbsent = mutation({
 
     // Create absent record
     const id = await ctx.db.insert('timeTracking', {
-      userId: args.userId,
+      userId,
       checkInTime: 0, // no check-in
       scheduledStartTime: scheduledStart,
       scheduledEndTime: scheduledEnd,

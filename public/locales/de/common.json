@@ -1411,7 +1411,11 @@
       "probationExtended": "Die Probezeit von {{employeeName}} wurde um {{days}} Tag(e) verlängert.",
       "probationPassed": "{{employeeName}} hat die Probezeit bestanden.",
       "probationPassedAuto": "{{employeeName}} hat die Probezeit automatisch bestanden – das Arbeitsverhältnis wurde über das Enddatum hinaus fortgesetzt.",
-      "probationFailed": "{{employeeName}} hat die Probezeit nicht bestanden."
+      "probationFailed": "{{employeeName}} hat die Probezeit nicht bestanden.",
+      "leaveCancelRequested": "{{userName}} hat die Stornierung von $t(leaveTypes.{{type}}) beantragt ({{start}} → {{end}})",
+      "leaveCancellationApproved": "Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) wurde genehmigt.",
+      "leaveCancellationRejected": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt.",
+      "leaveCancellationRejectedWithReason": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt. Grund: {{comment}}"
     },
     "titles": {
       "movementFormReady": "📄 Übergabeprotokoll zur Unterschrift bereit",
@@ -1512,7 +1516,10 @@
       "probationEndingSoon": "⏰ Probezeit endet bald",
       "probationExtended": "⏳ Probezeit verlängert",
       "probationPassed": "✅ Probezeit bestanden",
-      "probationFailed": "⛔ Probezeit nicht bestanden"
+      "probationFailed": "⛔ Probezeit nicht bestanden",
+      "leaveCancelRequested": "Urlaubsstornierung angefordert",
+      "leaveCancellationApproved": "Stornierung genehmigt",
+      "leaveCancellationRejected": "Stornierung abgelehnt"
     }
   },
   "aiChat": {
@@ -1567,7 +1574,8 @@
     "driverSubmitted": "✅ Fahreranfrage eingereicht!",
     "conflictWarning": "⚠️ Hinweis: {{warnings}}",
     "conflictDetected": "🚨 **Konflikt für {{type}}-Urlaub ({{start}} → {{end}})**:",
-    "conflictAdvice": "Bitte alternative Termine erwägen."
+    "conflictAdvice": "Bitte alternative Termine erwägen.",
+    "leaveCancelRequested": "↩️ Stornierung Ihres {{type}}-Urlaubs ({{start}} → {{end}}) angefordert. HR prüft den Antrag."
   },
   "leaveTypes": {
     "paid": "Bezahlter Urlaub",

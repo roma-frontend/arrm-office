@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
 
@@ -98,6 +100,85 @@ export function ServiceBroadcastDialog({
   const enableMaintenanceMode = useMutation(api.admin.enableMaintenanceMode);
 
   const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep);
+
+  // ── Черновик: введённые данные переживают случайное закрытие модалки ───────
+  const draftData = useMemo(
+    () => ({
+      title,
+      content,
+      selectedIcon,
+      scheduleDateTime,
+      estimatedDuration,
+      scheduleMaintenance,
+      broadcastScope,
+      selectedOrgId,
+    }),
+    [
+      title,
+      content,
+      selectedIcon,
+      scheduleDateTime,
+      estimatedDuration,
+      scheduleMaintenance,
+      broadcastScope,
+      selectedOrgId,
+    ],
+  );
+
+  // «Нетронутая форма» — исходные значения, чтобы плашка не появлялась на
+  // формах без правок.
+  const pristineForm = useMemo(
+    () => ({
+      title: '',
+      content: '',
+      selectedIcon: '⚠️',
+      scheduleDateTime: '',
+      estimatedDuration: undefined as string | undefined,
+      scheduleMaintenance: false,
+      broadcastScope: 'specific' as 'all' | 'specific',
+      selectedOrgId: (organizationId as string) ?? '',
+    }),
+    [organizationId],
+  );
+  const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {
+    if (d.title !== undefined) setTitle(d.title);
+    if (d.content !== undefined) setContent(d.content);
+    if (d.selectedIcon) setSelectedIcon(d.selectedIcon);
+    if (d.scheduleDateTime !== undefined) setScheduleDateTime(d.scheduleDateTime);
+    if (d.estimatedDuration !== undefined) setEstimatedDuration(d.estimatedDuration);
+    if (d.scheduleMaintenance !== undefined) setScheduleMaintenance(d.scheduleMaintenance);
+    if (d.broadcastScope) setBroadcastScope(d.broadcastScope);
+    if (d.selectedOrgId !== undefined) setSelectedOrgId(d.selectedOrgId);
+    const idx = Math.min(Math.max(savedStep, 0), STEPS.length - 1);
+    const step = STEPS[idx];
+    if (step) setCurrentStep(step.id);
+    // STEPS пересоздаётся каждый рендер (зависит от t()), но его id-список
+    // стабилен — берём длину из замыкания один раз.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const draft = useWizardDraft({
+    key: 'service-broadcast',
+    enabled: open,
+    data: draftData,
+    step: currentStepIndex,
+    defaults: pristineForm,
+    onRestore: handleRestoreDraft,
+  });
+  const { clearDraft } = draft;
+
+  const handleStartOver = () => {
+    clearDraft();
+    setTitle('');
+    setContent('');
+    setSelectedIcon('⚠️');
+    setScheduleDateTime('');
+    setEstimatedDuration(undefined);
+    setScheduleMaintenance(false);
+    setBroadcastScope('specific');
+    setSelectedOrgId((organizationId as string) ?? '');
+    setCurrentStep('audience');
+  };
 
   const selectedOrg = organizations?.find((o) => o._id === selectedOrgId);
   const targetOrgCount = broadcastScope === 'all' ? (organizations?.length ?? 0) : 1;
@@ -217,6 +298,7 @@ export function ServiceBroadcastDialog({
       setScheduleMaintenance(false);
       setBroadcastScope('specific');
       setSelectedOrgId(organizationId as string);
+      clearDraft();
 
       setTimeout(() => {
         onOpenChange(false);
@@ -684,6 +766,11 @@ export function ServiceBroadcastDialog({
 
         {/* Content */}
         <div className="px-6 pb-6">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+          />
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}

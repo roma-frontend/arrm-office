@@ -28,7 +28,7 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-let mockAuthUser: any = { id: 'u1', name: 'Me' };
+let mockAuthUser: any = { id: 'u1', name: 'Me', organizationId: 'org-1' };
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: () => ({ user: mockAuthUser }),
 }));
@@ -42,8 +42,10 @@ jest.mock('@/convex/_generated/api', () => ({
   api: {
     tasks: {
       getUsersForAssignment: { _name: 'tasks.getUsersForAssignment' },
-      getSupervisors: { _name: 'tasks.getSupervisors' },
-      assignSupervisor: { _name: 'tasks.assignSupervisor' },
+    },
+    reporting: {
+      getPotentialManagers: { _name: 'reporting.getPotentialManagers' },
+      assignManager: { _name: 'reporting.assignManager' },
     },
   },
 }));
@@ -52,10 +54,10 @@ jest.mock('convex/react', () => ({
   useQuery: (q: any, args?: any) => {
     if (!q || args === 'skip') return undefined;
     if (q._name === 'tasks.getUsersForAssignment') return mockEmployees;
-    if (q._name === 'tasks.getSupervisors') return mockSupervisors;
+    if (q._name === 'reporting.getPotentialManagers') return mockSupervisors;
     return undefined;
   },
-  useMutation: (m: any) => (m._name === 'tasks.assignSupervisor' ? assignMutation : jest.fn()),
+  useMutation: (m: any) => (m._name === 'reporting.assignManager' ? assignMutation : jest.fn()),
 }));
 
 // ── next/image ───────────────────────────────────────────────────────────────
@@ -102,7 +104,7 @@ const SUP = {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockAuthUser = { id: 'u1', name: 'Me' };
+  mockAuthUser = { id: 'u1', name: 'Me', organizationId: 'org-1' };
   mockEmployees = undefined;
   mockSupervisors = undefined;
   (assignMutation as jest.Mock).mockResolvedValue(undefined);

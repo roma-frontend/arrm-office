@@ -13,6 +13,7 @@ import {
 import { enrichLeavesWithUserData } from './helpers';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
+import { reviewRefusal } from './approval';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ALL LEAVES — scoped to caller's organization
@@ -241,12 +242,22 @@ export const getLeaveStats = query({
     const pending = all.filter((l) => l.status === 'pending').length;
     const approved = all.filter((l) => l.status === 'approved').length;
     const rejected = all.filter((l) => l.status === 'rejected').length;
+    // Cancellations awaiting an HR decision — tracked separately so they do not
+    // vanish from the review stats while they sit in limbo.
+    const pendingCancellations = all.filter((l) => l.status === 'cancel_requested').length;
     const today = new Date().toISOString().split('T')[0] || '';
     const onLeaveToday = all.filter(
       (l) => l.status === 'approved' && l.startDate <= today && l.endDate >= today,
     ).length;
 
-    return { total: all.length, pending, approved, rejected, onLeaveToday };
+    return {
+      total: all.length,
+      pending,
+      approved,
+      rejected,
+      pendingCancellations,
+      onLeaveToday,
+    };
   },
 });
 
@@ -267,7 +278,9 @@ export const getUnreadCount = query({
       const allLeaves = await ctx.db.query('leaveRequests').order('desc').take(MAX_PAGE_SIZE);
       // Treat missing isRead as false (old records before field was added)
       unread = allLeaves.filter(
-        (l) => (l.isRead === false || l.isRead === undefined) && l.status === 'pending',
+        (l) =>
+          (l.isRead === false || l.isRead === undefined) &&
+          (l.status === 'pending' || l.status === 'cancel_requested'),
       ).length;
     } else if (requester.role === 'admin' || requester.role === 'supervisor') {
       if (!requester.organizationId) throw new Error('User does not belong to an organization');
@@ -277,7 +290,9 @@ export const getUnreadCount = query({
         .take(MAX_PAGE_SIZE);
       // Treat missing isRead as false (old records before field was added)
       unread = orgLeaves.filter(
-        (l) => (l.isRead === false || l.isRead === undefined) && l.status === 'pending',
+        (l) =>
+          (l.isRead === false || l.isRead === undefined) &&
+          (l.status === 'pending' || l.status === 'cancel_requested'),
       ).length;
     } else {
       return 0;
@@ -375,5 +390,35 @@ export const getLeaveById = query({
       userName: user?.name ?? 'Unknown',
       userDepartment: profile?.department ?? user?.department ?? '',
     };
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAY I REVIEW THIS REQUEST? — for the detail page's Approve/Reject buttons
+// ─────────────────────────────────────────────────────────────────────────────
+// The UI used to show Approve/Reject to `role === 'admin'` and nothing else,
+// which was wrong in both directions once approval moved onto the reporting
+// line: a supervisor who actually manages the requester saw no buttons, and an
+// admin saw buttons on their own request (and on the head's auto-approved one)
+// that the mutation then refused. Rather than re-implementing the rule in the
+// client — where it would drift — the client asks the same `reviewRefusal` the
+// mutation enforces.
+export const getReviewEligibility = query({
+  args: { leaveId: v.id('leaveRequests') },
+  handler: async (ctx, { leaveId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { allowed: false, reason: 'Not authenticated' };
+
+    const leave = await ctx.db.get(leaveId);
+    if (!leave) return { allowed: false, reason: 'Leave request not found' };
+    if (leave.status !== 'pending') return { allowed: false, reason: 'Leave is not pending' };
+
+    // `reviewRefusal` reads the reviewer's document in the mutation path too;
+    // the caller record is re-read here so both paths see the same shape.
+    const reviewer = await ctx.db.get(caller._id);
+    if (!reviewer) return { allowed: false, reason: 'Reviewer not found' };
+
+    const refusal = await reviewRefusal(ctx, reviewer, leave);
+    return { allowed: refusal === null, reason: refusal };
   },
 });

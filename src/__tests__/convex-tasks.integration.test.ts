@@ -18,12 +18,15 @@ import type { Id } from '../../convex/_generated/dataModel';
 const modules = {
   './_generated/api.ts': () => import('../../convex/_generated/api'),
   './tasks.ts': () => import('../../convex/tasks'),
+  './reporting.ts': () => import('../../convex/reporting'),
   './lib/auth.ts': () => import('../../convex/lib/auth'),
   './lib/limits.ts': () => import('../../convex/lib/limits'),
   './lib/userProfile.ts': () => import('../../convex/lib/userProfile'),
   './lib/getAuthCaller.ts': () => import('../../convex/lib/getAuthCaller'),
   './lib/notify.ts': () => import('../../convex/lib/notify'),
   './lib/sanitize.ts': () => import('../../convex/lib/sanitize'),
+  './lib/capabilities.ts': () => import('../../convex/lib/capabilities'),
+  './lib/reportingLine.ts': () => import('../../convex/lib/reportingLine'),
 } as unknown as Record<string, () => Promise<unknown>>;
 
 type Ctx = Awaited<ReturnType<typeof seed>>;
@@ -393,10 +396,15 @@ describe('assignment helpers', () => {
     expect(names).not.toContain('Super');
   });
 
-  it('getSupervisors returns active supervisors and admins of the org', async () => {
+  // `tasks.getSupervisors` was removed: it queried `by_role` globally and only
+  // filtered by organization when a caller happened to be authenticated, so an
+  // unauthenticated call returned every tenant's supervisors and admins. It was
+  // also role-filtered, which the reporting-line model rejects — any active
+  // colleague can be someone's manager.
+  it('reporting.getPotentialManagers is org-scoped, active-only and requires auth', async () => {
     const c = await seed();
     await c.t.run(async (ctx) => {
-      // An inactive supervisor must be excluded.
+      // An inactive user must be excluded.
       await ctx.db.insert('users', {
         organizationId: c.organizationId,
         passwordHash: 'x',
@@ -414,22 +422,20 @@ describe('assignment helpers', () => {
         createdAt: Date.now(),
       } as never);
     });
+
     const res = await c.t
       .withIdentity({ email: 'admin@acme.test' })
-      .query(api.tasks.getSupervisors, {});
+      .query(api.reporting.getPotentialManagers, { organizationId: c.organizationId });
     const names = res.map((u) => u.name);
     expect(names).toContain('Manager');
     expect(names).toContain('Admin');
     expect(names).not.toContain('Inactive');
-    const mgr = res.find((u) => u.name === 'Manager');
-    expect(mgr?.position).toBe('Lead');
-  });
+    expect(names).not.toContain('Super');
 
-  it('getSupervisors returns everything for unauthenticated callers (no filter)', async () => {
-    const c = await seed();
-    const res = await c.t.run((ctx) => ctx.runQuery(api.tasks.getSupervisors, {}));
-    const names = res.map((u) => u.name);
-    expect(names).toContain('Manager');
+    const anonymous = await c.t.run((ctx) =>
+      ctx.runQuery(api.reporting.getPotentialManagers, { organizationId: c.organizationId }),
+    );
+    expect(anonymous).toEqual([]);
   });
 });
 
