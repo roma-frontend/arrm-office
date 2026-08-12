@@ -156,8 +156,21 @@ jest.mock('lucide-react', () => {
 
 // ── Chat sub-components ──────────────────────────────────────────────────────
 jest.mock('@/components/chat/MessageBubble', () => ({
-  MessageBubble: ({ message, isOwn, onReply, onOpenThread, onSendMessage }: any) => (
-    <div data-testid="msg-bubble" data-own={String(isOwn)}>
+  MessageBubble: ({
+    message,
+    isOwn,
+    showAvatar,
+    showName,
+    onReply,
+    onOpenThread,
+    onSendMessage,
+  }: any) => (
+    <div
+      data-testid="msg-bubble"
+      data-own={String(isOwn)}
+      data-show-avatar={String(showAvatar)}
+      data-show-name={String(showName)}
+    >
       <span data-testid="msg-content">{message.content || '📎 Attachment'}</span>
       <button
         data-testid="msg-reply"
@@ -286,6 +299,19 @@ const CONVERSATIONS = [
   },
 ];
 
+/** Same id, so `defaultProps` keeps working — but a named group of three. */
+const GROUP_CONVERSATIONS = [
+  {
+    _id: 'conv-1',
+    type: 'group',
+    name: 'Accounting',
+    avatarUrl: null,
+    memberCount: 3,
+    membership: { isMuted: false },
+    otherUser: null,
+  },
+];
+
 const MEMBERS = [
   { userId: 'u1', user: { name: 'Anna Petrova', avatarUrl: null } },
   { userId: 'u2', user: { name: 'Bob Smith', avatarUrl: AVATAR_URL, department: 'Sales' } },
@@ -367,6 +393,74 @@ describe('ChatWindow', () => {
     const bubbles = screen.getAllByTestId('msg-bubble');
     expect(bubbles[0]).toHaveAttribute('data-own', 'true'); // m1 is from u1
     expect(bubbles[1]).toHaveAttribute('data-own', 'false'); // m2 from u2
+  });
+
+  // ── Sender attribution in groups ───────────────────────────────────────
+  // In a group you cannot tell who wrote a message unless the bubble shows the
+  // sender. The name and avatar only appear on the first message of a streak,
+  // and a system notice ("Group X was created") used to count as part of the
+  // streak — so the group creator's first real message was left unattributed.
+
+  describe('sender attribution in a group', () => {
+    beforeEach(() => {
+      queryResults.getMyConversations = GROUP_CONVERSATIONS;
+    });
+
+    it('attributes the first message after a system notice from the same sender', () => {
+      paginated = {
+        // Query order is newest-first; ChatWindow reverses it.
+        results: [
+          makeMessage({ _id: 'm3', senderId: 'u1', content: 'Got it' }),
+          makeMessage({ _id: 'm2', senderId: 'u2', content: 'trying it out' }),
+          makeMessage({ _id: 'm1', senderId: 'u2', type: 'system', content: 'Group created' }),
+        ],
+        status: 'Exhausted',
+        loadMore: jest.fn(),
+      };
+      renderWindow();
+
+      const bubbles = screen.getAllByTestId('msg-bubble');
+      expect(bubbles[1]).toHaveAttribute('data-show-name', 'true');
+      expect(bubbles[1]).toHaveAttribute('data-show-avatar', 'true');
+    });
+
+    it('does not repeat the name on a consecutive message from the same sender', () => {
+      paginated = {
+        results: [
+          makeMessage({ _id: 'm2', senderId: 'u2', content: 'and one more' }),
+          makeMessage({ _id: 'm1', senderId: 'u2', content: 'trying it out' }),
+        ],
+        status: 'Exhausted',
+        loadMore: jest.fn(),
+      };
+      renderWindow();
+
+      const bubbles = screen.getAllByTestId('msg-bubble');
+      expect(bubbles[0]).toHaveAttribute('data-show-name', 'true');
+      expect(bubbles[1]).toHaveAttribute('data-show-name', 'false');
+    });
+
+    it('never labels your own messages with your name', () => {
+      paginated = {
+        results: [makeMessage({ _id: 'm1', senderId: 'u1', content: 'mine' })],
+        status: 'Exhausted',
+        loadMore: jest.fn(),
+      };
+      renderWindow();
+
+      expect(screen.getByTestId('msg-bubble')).toHaveAttribute('data-show-name', 'false');
+    });
+
+    it('shows the conversation name in the header', () => {
+      paginated = { results: [], status: 'Exhausted', loadMore: jest.fn() };
+      renderWindow();
+
+      // A `hidden sm:blocktext-[15px]` typo used to collapse the two classes
+      // into one, hiding the heading at every breakpoint.
+      const heading = screen.getByRole('heading', { name: 'Accounting' });
+      expect(heading.className).toContain('sm:block');
+      expect(heading.className).not.toContain('sm:blocktext');
+    });
   });
 
   it('deduplicates messages and merges optimistic messages', () => {

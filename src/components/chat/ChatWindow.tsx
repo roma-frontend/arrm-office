@@ -709,7 +709,7 @@ export const ChatWindow = React.memo(function ChatWindow({
 
           <div className="flex-1 min-w-0">
             <h3
-              className="hidden sm:blocktext-[15px] font-semibold truncate"
+              className="hidden sm:block text-[15px] font-semibold truncate"
               style={{ color: 'var(--text-primary)' }}
             >
               {displayName}
@@ -914,9 +914,20 @@ export const ChatWindow = React.memo(function ChatWindow({
                   if (!msg) return null;
 
                   const isOwn = msg.senderId === currentUserId;
-                  const prevMsg = dedupedMessages?.[virtualRow.index - 1];
+                  // Index into the same array `msg` came from: `allMessages`
+                  // appends optimistic messages, so reading the previous item
+                  // out of `dedupedMessages` mismatched at the tail.
+                  const prevMsg = allMessages[virtualRow.index - 1];
+                  // A system notice ("Group X was created", ticket updates) is a
+                  // centred pill with no author, so it cannot continue anyone's
+                  // streak. Treating it as one left the next message with no
+                  // avatar and no sender name whenever the notice happened to
+                  // carry the same senderId — which is exactly what a group
+                  // creator's first message looks like.
                   const isFirstOfStreak =
-                    virtualRow.index === 0 || prevMsg?.senderId !== msg.senderId;
+                    virtualRow.index === 0 ||
+                    prevMsg?.type === 'system' ||
+                    prevMsg?.senderId !== msg.senderId;
                   const isSystemAnnouncements = conv?.name === 'System Announcements';
                   const showAvatar = isFirstOfStreak && !isSystemAnnouncements;
                   const showName = isSystemAnnouncements
