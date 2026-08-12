@@ -256,17 +256,22 @@ export const register = mutation({
           throw new Error(`ORG_FROZEN|${org.frozenReason ?? ''}`);
         }
 
-        // Check employee limit
-        const currentMembers = await ctx.db
-          .query('users')
-          .withIndex('by_org_active', (q) =>
-            q.eq('organizationId', organizationId!).eq('isActive', true),
-          )
-          .take(DEFAULT_LIST_CAP);
-        if (isApproved && currentMembers.length >= org.employeeLimit) {
-          throw new Error(
-            `This organization has reached its employee limit (${org.employeeLimit}). Contact your administrator.`,
-          );
+        // Auto-approved joiners (invite-token path) are added to the org
+        // immediately, so they must respect the employee limit. Pending-approval
+        // registrations skip this — the limit is enforced at approval time in
+        // approveJoinRequest, when the seat is actually taken.
+        if (isApproved) {
+          const currentMembers = await ctx.db
+            .query('users')
+            .withIndex('by_org_active', (q) =>
+              q.eq('organizationId', organizationId!).eq('isActive', true),
+            )
+            .take(DEFAULT_LIST_CAP);
+          if (currentMembers.length >= org.employeeLimit) {
+            throw new Error(
+              `This organization has reached its employee limit (${org.employeeLimit}). Contact your administrator.`,
+            );
+          }
         }
 
         // Check if first member of the org → becomes admin
@@ -300,8 +305,13 @@ export const register = mutation({
             )
           : {};
 
+      // A pending-approval registration has not joined any organization yet:
+      // leave organizationId unset (the user does not exist inside the org),
+      // otherwise they would show up in employee lists while still unapproved.
+      const effectiveOrgId = isApproved ? organizationId : undefined;
+
       const userId = await ctx.db.insert('users', {
-        organizationId,
+        organizationId: effectiveOrgId,
         name: args.name,
         email,
         passwordHash: hashedPassword,
@@ -317,37 +327,63 @@ export const register = mutation({
         createdAt: Date.now(),
       });
 
-      // ── 4. Notify org admins if user needs approval ────────────────────────
+      // ── 4. Pending approval → create a join-request invite ────────────────
+      // Unified with the select-organization join flow: registering into an
+      // existing organization produces the same `organizationInvites` record an
+      // admin reviews in /join-requests. The account only joins the org (and
+      // becomes visible in employee lists) once the admin approves.
       if (!isApproved) {
-        const org = await ctx.db.get(organizationId);
-        const admins = await ctx.db
-          .query('users')
-          .withIndex('by_org_role', (q) =>
-            q.eq('organizationId', organizationId!).eq('role', 'admin'),
+        const existing = await ctx.db
+          .query('organizationInvites')
+          .withIndex('by_email', (q) => q.eq('requestedByEmail', email))
+          .filter((q) =>
+            q.and(
+              q.eq(q.field('organizationId'), organizationId),
+              q.eq(q.field('status'), 'pending'),
+            ),
           )
-          .take(SMALL_LIST_CAP);
-
-        for (const admin of admins) {
-          await notify(ctx, {
+          .first();
+        if (!existing) {
+          const inviteId = await ctx.db.insert('organizationInvites', {
             organizationId,
-            userId: admin._id,
-            type: 'join_request',
-            titleKey: 'notifications.titles.joinRequestNew',
-            messageKey: 'notifications.messages.joinRequestNew',
-            params: {
-              name: args.name,
-              email,
-              orgName: org?.name ?? 'your organization',
-            },
-            fallbackTitle: '🙋 New Join Request',
-            fallbackMessage: `${args.name} (${email}) wants to join ${org?.name ?? 'your organization'}.`,
-            relatedId: userId,
-            route: '/join-requests',
+            requestedByEmail: email,
+            requestedByName: args.name,
+            requestedAt: Date.now(),
+            status: 'pending',
+            userId,
+            createdAt: Date.now(),
           });
+
+          const org = await ctx.db.get(organizationId);
+          const admins = await ctx.db
+            .query('users')
+            .withIndex('by_org_role', (q) =>
+              q.eq('organizationId', organizationId!).eq('role', 'admin'),
+            )
+            .take(SMALL_LIST_CAP);
+
+          for (const admin of admins) {
+            await notify(ctx, {
+              organizationId,
+              userId: admin._id,
+              type: 'join_request',
+              titleKey: 'notifications.titles.joinRequestNew',
+              messageKey: 'notifications.messages.joinRequestNew',
+              params: {
+                name: args.name,
+                email,
+                orgName: org?.name ?? 'your organization',
+              },
+              fallbackTitle: '🙋 New Join Request',
+              fallbackMessage: `${args.name} (${email}) wants to join ${org?.name ?? 'your organization'}.`,
+              relatedId: inviteId,
+              route: '/join-requests',
+            });
+          }
         }
       }
 
-      return { userId, role, needsApproval: !isApproved, organizationId };
+      return { userId, role, needsApproval: !isApproved, organizationId: effectiveOrgId };
     }, 'register');
   },
 });

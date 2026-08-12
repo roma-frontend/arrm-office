@@ -1190,7 +1190,7 @@ export default function AIChatPage() {
               <div className="w-8 h-8 rounded-lg btn-gradient flex items-center justify-center shrink-0">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <div className="min-w-0">
+              <div className="hidden sm:block min-w-0">
                 <h1 className="font-semibold text-(--text-primary) truncate">
                   {t('aiChat.title') || 'Shield HR AI'}
                 </h1>

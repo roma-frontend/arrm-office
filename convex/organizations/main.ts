@@ -322,7 +322,10 @@ export const getOrgMembers = query({
       // cursor-based pagination not supported in this query
     }
 
-    const members = await query.take(effectiveLimit + 1);
+    // Pending-approval users are not employees yet — never list them.
+    const members = await query
+      .filter((q) => q.neq(q.field('isApproved'), false))
+      .take(effectiveLimit + 1);
 
     // Filter out superadmins (should never be in org, but just in case)
     const filteredMembers = members.filter((m) => !isSuperadmin(m));

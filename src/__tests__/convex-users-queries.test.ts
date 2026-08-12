@@ -217,6 +217,23 @@ describe('getAllUsers', () => {
     expect(h.chain('users').order).toHaveBeenCalledWith('desc');
   });
 
+  it('drops pending-approval users from the superadmin listing', async () => {
+    mockGetAuthCaller.mockResolvedValue(superadminInA);
+    mockIsSuperadmin.mockReturnValue(true);
+    const h = makeCtx({
+      rows: {
+        users: [
+          employeeA,
+          { ...employeeA, _id: 'pending', isApproved: false },
+          // Legacy rows without the field must still surface.
+          { ...employeeA, _id: 'legacy', isApproved: undefined },
+        ],
+      },
+    });
+    const result = await queries.getAllUsers.handler(h.ctx, {});
+    expect(result.map((u: any) => u._id).sort()).toEqual(['legacy', employeeA._id]);
+  });
+
   it('throws when a non-superadmin has no organization', async () => {
     mockGetAuthCaller.mockResolvedValue({ ...employeeA, organizationId: undefined });
     const h = makeCtx();
@@ -256,6 +273,21 @@ describe('listUsersPaginated', () => {
     });
     expect(result.page).toEqual([employeeA]);
     expect(h.chain('users').withIndex).toHaveBeenCalledWith('by_org', expect.any(Function));
+  });
+
+  it('filters pending-approval users out of the paginated listing', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminA);
+    const h = makeCtx({ rows: { users: [employeeA] } });
+    await queries.listUsersPaginated.handler(h.ctx, {
+      organizationId: ORG_A,
+      paginationOpts,
+    });
+    // The approved-only predicate runs through the chain filter mock.
+    expect(h.chain('users').filter).toHaveBeenCalledWith(expect.any(Function));
+    const predicate = (h.chain('users').filter as jest.Mock).mock.calls[0][0];
+    const qb = makeQueryBuilder();
+    predicate(qb);
+    expect(qb.neq).toHaveBeenCalledWith(expect.anything(), false);
   });
 
   it('paginates all users for a superadmin', async () => {

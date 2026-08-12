@@ -14,6 +14,10 @@ import React from 'react';
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
+// This suite renders a large calendar grid and routinely exceeds the default
+// 5s per-test timeout when the full suite runs in parallel — bump it.
+jest.setTimeout(30000);
+
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: any) =>

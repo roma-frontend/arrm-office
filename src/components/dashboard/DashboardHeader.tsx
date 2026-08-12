@@ -41,7 +41,7 @@ export function DashboardHeader({ selectedOrganization, userRole }: DashboardHea
    */
   return (
     <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 mb-4 sm:mb-5 bg-(--background)/95 backdrop-blur supports-backdrop-filter:bg-(--background)/60 border-b border-(--border)">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-wrap flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           {selectedOrganization?.name && (
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--text-muted)">

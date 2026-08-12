@@ -210,6 +210,24 @@ export const approveJoinRequest = mutation({
       throw new Error('Access denied: cross-organization operation');
     }
 
+    // Enforce the same employee limit as organizations.approveJoinRequest so
+    // approving via either admin page can never exceed the plan's seat count.
+    // Pending registrations created by auth.register have no organizationId
+    // yet, so they are NOT counted here — only approved seats matter.
+    const targetOrg = await ctx.db.get(invite.organizationId);
+    if (!targetOrg) throw new Error('Organization not found');
+    const currentCount = await ctx.db
+      .query('users')
+      .withIndex('by_org_active', (q) =>
+        q.eq('organizationId', invite.organizationId).eq('isActive', true),
+      )
+      .take(DEFAULT_LIST_CAP);
+    if (currentCount.length >= targetOrg.employeeLimit) {
+      throw new Error(
+        `Employee limit reached (${targetOrg.employeeLimit}). Upgrade your plan to add more employees.`,
+      );
+    }
+
     const userId = invite.userId;
     if (!userId) throw new Error('Invite has no associated user');
 

@@ -45,6 +45,12 @@ async function _getUserIdIdentityOrEmail(
 // Passing `organizationId` pins the result to that one organization. Omitting it
 // keeps the historical behaviour, which several callers depend on: a superadmin
 // gets every user across every organization (see the chat "All orgs" mode).
+//
+// Pending-approval users (isApproved === false, e.g. someone who registered
+// with an organizationId but has not been approved yet) are never listed as
+// employees — they only exist in the Join Requests review flow. The check is
+// `isApproved !== false` (rather than `=== true`) so legacy rows without the
+// field still surface.
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllUsers = query({
   args: {
@@ -69,7 +75,13 @@ export const getAllUsers = query({
       const scoped = await ctx.db
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-        .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')))
+        .filter((q) =>
+          q.and(
+            q.eq(q.field('isActive'), true),
+            q.neq(q.field('role'), 'superadmin'),
+            q.neq(q.field('isApproved'), false),
+          ),
+        )
         .take(effectiveLimit + 1);
       return scoped.map(redactUser);
     }
@@ -81,7 +93,7 @@ export const getAllUsers = query({
         // cursor-based pagination not supported in this query
       }
       const users = await query.take(effectiveLimit + 1);
-      return users.filter((u) => u.role !== 'superadmin').map(redactUser);
+      return users.filter((u) => u.role !== 'superadmin' && u.isApproved !== false).map(redactUser);
     }
 
     // Everyone else only sees their organization
@@ -92,7 +104,13 @@ export const getAllUsers = query({
     const query = ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
-      .filter((q) => q.and(q.eq(q.field('isActive'), true), q.neq(q.field('role'), 'superadmin')));
+      .filter((q) =>
+        q.and(
+          q.eq(q.field('isActive'), true),
+          q.neq(q.field('role'), 'superadmin'),
+          q.neq(q.field('isApproved'), false),
+        ),
+      );
 
     if (args.cursor) {
       // cursor-based pagination not supported in this query
@@ -118,20 +136,27 @@ export const listUsersPaginated = query({
 
     const redactPage = <T extends { _id: string }>(page: T[]) => page.map(redactUser);
 
+    // Pending-approval users are not employees yet — never list them.
     if (args.organizationId) {
       const result = await ctx.db
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+        .filter((q) => q.neq(q.field('isApproved'), false))
         .order('desc')
         .paginate(args.paginationOpts);
       return { ...result, page: redactPage(result.page) };
     } else if (isSuperadminUser) {
-      const result = await ctx.db.query('users').order('desc').paginate(args.paginationOpts);
+      const result = await ctx.db
+        .query('users')
+        .filter((q) => q.neq(q.field('isApproved'), false))
+        .order('desc')
+        .paginate(args.paginationOpts);
       return { ...result, page: redactPage(result.page) };
     } else if (requester.organizationId) {
       const result = await ctx.db
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
+        .filter((q) => q.neq(q.field('isApproved'), false))
         .order('desc')
         .paginate(args.paginationOpts);
       return { ...result, page: redactPage(result.page) };

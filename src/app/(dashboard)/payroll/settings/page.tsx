@@ -41,8 +41,10 @@ export default function PayrollSettingsPage() {
     | Id<'organizations'>
     | undefined;
 
-  const isAdmin =
-    user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
+  // Admin-only, matching saveSalarySettings (convex/payroll/mutations.ts). The
+  // read query allows supervisors, but this whole page is an editor: letting a
+  // supervisor in only got them a filled-in form that failed on save.
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   const settings = useQuery(
     api.payroll.queries.getSalarySettings,

@@ -124,6 +124,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   const [type, setType] = useState<'staff' | 'contractor'>('staff');
   const [selectedOrgId, setSelectedOrgId] = useState('');
   const [registrationDate, setRegistrationDate] = useState('');
+  // Kept as a string so "" can mean "no individual amount — follow the policy",
+  // which 0 cannot (0 is a valid deliberate override).
+  const [travelAllowance, setTravelAllowance] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Resolve the tax country for salary calc from the target organization.
@@ -188,6 +191,13 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
   );
   const travelAllowancePolicy = salarySettings?.travelAllowance;
   const allowance = resolveTravelAllowance(travelAllowancePolicy, type);
+  /** What this hire will actually be paid once created — shown on the review step. */
+  const effectiveTravelAllowance = (() => {
+    const raw = travelAllowance.trim();
+    if (raw === '') return allowance;
+    const amount = Number(raw);
+    return Number.isFinite(amount) && amount >= 0 ? amount : allowance;
+  })();
 
   /**
    * Sensible default for the second document language: the admin's own UI
@@ -228,6 +238,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     setRole('employee');
     setSelectedOrgId('');
     setRegistrationDate('');
+    setTravelAllowance('');
     setSalary({
       mode: 'gross',
       amount: 0,
@@ -264,6 +275,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       type,
       selectedOrgId,
       registrationDate,
+      travelAllowance,
       salary,
       passport,
       passportScan,
@@ -281,6 +293,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       type,
       selectedOrgId,
       registrationDate,
+      travelAllowance,
       salary,
       passport,
       passportScan,
@@ -301,6 +314,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       if (d.type) setType(d.type);
       setSelectedOrgId(d.selectedOrgId ?? '');
       setRegistrationDate(d.registrationDate ?? '');
+      setTravelAllowance(d.travelAllowance ?? '');
       if (d.salary) setSalary((p) => ({ ...p, ...d.salary }));
       if (d.passport) setPassport((p) => ({ ...p, ...d.passport }));
       setPassportScan(d.passportScan ?? null);
@@ -357,6 +371,15 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     else if (email && !email.toLowerCase().includes('contractor')) setType('staff');
   }, [email]);
 
+  /** Empty means "follow the org policy"; anything else must be a valid amount. */
+  const travelAllowanceError = (): string | null => {
+    const raw = travelAllowance.trim();
+    if (raw === '') return null;
+    const amount = Number(raw);
+    if (!Number.isFinite(amount) || amount < 0) return t('employees.travelAllowanceInvalid');
+    return null;
+  };
+
   const validateStep = (currentStep: number): boolean => {
     const errs: Record<string, string> = {};
 
@@ -382,6 +405,11 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
       // Role & Type — optional validation
     }
 
+    if (currentStep === (isSuperadmin ? 4 : 3)) {
+      const allowanceError = travelAllowanceError();
+      if (allowanceError) errs.travelAllowance = allowanceError;
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -400,6 +428,14 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
 
   const handleSubmit = async () => {
     if (!validateStep(step)) return;
+    // The allowance lives on an earlier step than the create button, so it has
+    // to be re-checked here rather than trusting the current step's validation.
+    const allowanceError = travelAllowanceError();
+    if (allowanceError) {
+      setErrors((p) => ({ ...p, travelAllowance: allowanceError }));
+      toast.error(allowanceError);
+      return;
+    }
     if (!currentUser?.id) {
       toast.error(t('toasts.userIdNotFound'));
       return;
@@ -446,6 +482,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
             }
           : {}),
         ...(dateOfBirth ? { dateOfBirth } : {}),
+        // null/omitted follows the organization policy; a number pins this hire
+        // to that amount from day one.
+        travelAllowance: travelAllowance.trim() === '' ? null : Number(travelAllowance.trim()),
         language: documentLanguage,
         createdAt: registrationDate
           ? new Date(registrationDate + 'T00:00:00').getTime()
@@ -919,6 +958,40 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                     value={salary}
                     onChange={(patch) => setSalary((p) => ({ ...p, ...patch }))}
                   />
+
+                  {/* Travel allowance — org policy by default, editable per hire */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">{t('employees.travelAllowance')}</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={travelAllowance}
+                      onChange={(e) => {
+                        setTravelAllowance(e.target.value);
+                        setErrors((p) => ({ ...p, travelAllowance: '' }));
+                      }}
+                      placeholder={travelAllowancePolicy?.enabled ? String(allowance) : '0'}
+                      className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
+                        errors.travelAllowance ? 'border-red-500' : ''
+                      }`}
+                      style={{
+                        background: 'var(--input)',
+                        borderColor: errors.travelAllowance ? undefined : 'var(--border)',
+                        color: 'var(--text-primary)',
+                      }}
+                    />
+                    <p className="text-xs text-(--text-muted)">
+                      {travelAllowancePolicy?.enabled
+                        ? t('employees.travelAllowanceHint', {
+                            amount: formatCurrency(allowance, i18n.language),
+                          })
+                        : t('employees.travelAllowanceHintNoPolicy')}
+                    </p>
+                    {errors.travelAllowance && (
+                      <p className="text-xs text-red-500">{errors.travelAllowance}</p>
+                    )}
+                  </div>
                 </motion.div>
               )}
 
@@ -1140,10 +1213,12 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                     </div>
                   </div>
 
-                  {/* Travel allowance preview — only when the org actually pays one */}
-                  {travelAllowancePolicy?.enabled && (
+                  {/* Travel allowance preview — the amount this hire will actually
+                      be paid, so an individual amount shows here too and not just
+                      the policy default. Hidden only when neither applies. */}
+                  {(travelAllowancePolicy?.enabled || effectiveTravelAllowance > 0) && (
                     <motion.div
-                      key={allowance}
+                      key={effectiveTravelAllowance}
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       className="rounded-lg bg-(--background-subtle) border border-(--border) p-4 flex items-center justify-between"
@@ -1153,14 +1228,11 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                           {t('employees.travelAllowance')}
                         </p>
                         <p className="text-xs text-(--text-muted) mt-0.5">
-                          {type === 'contractor'
-                            ? t('employeeTypes.contractor')
-                            : t('employeeTypes.staff')}{' '}
-                          type
+                          {t(`employees.${type}`)}
                         </p>
                       </div>
                       <p className="text-xl font-bold text-(--text-primary)">
-                        {formatCurrency(allowance, i18n.language)}
+                        {formatCurrency(effectiveTravelAllowance, i18n.language)}
                       </p>
                     </motion.div>
                   )}

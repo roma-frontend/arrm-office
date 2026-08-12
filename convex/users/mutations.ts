@@ -10,7 +10,6 @@ import { notify } from '../lib/notify';
 import { patchProfile } from '../lib/userProfile';
 import { getStartingLeaveBalances } from '../lib/leaveBalances';
 import {
-  resolveTravelAllowanceForOrg,
   resolveTravelAllowanceForUser,
   validateTravelAllowanceOverride,
 } from '../lib/travelAllowance';
@@ -131,6 +130,12 @@ export const createUser = mutation({
     language: v.optional(
       v.union(v.literal('en'), v.literal('ru'), v.literal('de'), v.literal('hy')),
     ),
+    // Per-employee travel allowance agreed at hiring time. Omitted (or null)
+    // means "follow the organization policy", which is what most hires do; a
+    // number pins this employee to that amount from day one. Mirrors the same
+    // argument on `updateUser`, so a negotiated amount does not have to be set
+    // in a second edit right after the hire.
+    travelAllowance: v.optional(v.union(v.number(), v.null())),
     // Registration / join date (ms epoch) — lets admins backdate employees who
     // were already working before the account was created (project handover).
     createdAt: v.optional(v.number()),
@@ -181,7 +186,27 @@ export const createUser = mutation({
       );
     }
 
-    const travelAllowance = await resolveTravelAllowanceForOrg(ctx, targetOrgId, args.employeeType);
+    // An amount supplied at hiring time is stored as an override so later edits
+    // keep it, exactly as `updateUser` does; null/omitted follows the org policy.
+    const travelAllowanceOverride = args.travelAllowance ?? undefined;
+    if (travelAllowanceOverride !== undefined) {
+      // ConvexError: production replaces a plain Error's message with
+      // "Server Error", and the admin needs to see why the amount was refused.
+      try {
+        validateTravelAllowanceOverride(travelAllowanceOverride);
+      } catch (e) {
+        throw new ConvexError({
+          code: 'INVALID_TRAVEL_ALLOWANCE',
+          message: e instanceof Error ? e.message : 'Invalid travel allowance',
+        });
+      }
+    }
+    const travelAllowance = await resolveTravelAllowanceForUser(
+      ctx,
+      targetOrgId,
+      args.employeeType,
+      travelAllowanceOverride,
+    );
 
     // Resolve department/position records and denormalize their names. Both
     // must belong to the target org — otherwise an admin could attach an
@@ -218,6 +243,7 @@ export const createUser = mutation({
       approvedBy: adminId,
       approvedAt: Date.now(),
       travelAllowance,
+      travelAllowanceOverride,
       ...balances,
       createdAt: args.createdAt ?? Date.now(),
     });
