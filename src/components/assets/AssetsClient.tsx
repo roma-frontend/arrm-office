@@ -89,7 +89,8 @@ import {
   parseAssetFormContent,
   type AssetFormInput,
 } from '@/lib/assetFormDocument';
-import { getLocaleString } from '@/lib/date-format';
+import { getLocaleString, formatDate as formatLongDate } from '@/lib/date-format';
+import { applySignaturesToBlocks, collectSignaturesInOrder } from '@/lib/bilingualDocument';
 import type { AccentColor } from '@/lib/documentCatalog';
 import QRCodeModal from './QRCodeModal';
 
@@ -575,7 +576,20 @@ function AssetDetailCard({
         title: assetFormTitle(isReturn, t),
         subtitle: asset.name,
         documentNumber: assetFormDocumentNumber(input, t),
-        body: buildAssetFormBlocks(input, t, i18n.language),
+        // Same two-party grid as the e-signature export, filled from every
+        // request that has been signed. Without this the act downloaded from the
+        // asset page carried empty signature lines even after both parties
+        // signed, because `input` here never held a signature.
+        body: applySignaturesToBlocks(
+          buildAssetFormBlocks(input, t, i18n.language),
+          collectSignaturesInOrder(sigDoc.requests),
+          (ts) =>
+            formatLongDate(ts, i18n.language, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+        ),
         accent: (sigDoc.accent as AccentColor) || 'blue',
         // The structured body renders its own two-party signature grid.
         signature: false,

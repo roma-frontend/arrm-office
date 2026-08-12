@@ -559,6 +559,40 @@ export interface CollectedSignature {
 }
 
 /**
+ * Collect a document's signatures in signing order, one slot per request
+ * whether it has been signed yet or not.
+ *
+ * The empty slots matter: {@link applySignaturesToBlocks} pairs signatures with
+ * parties by index, so compacting the unsigned requests out would slide a
+ * countersignature up into the first party's box. An unsigned slot carries no
+ * image, name or date, so it leaves its party exactly as the grid defined it.
+ */
+export function collectSignaturesInOrder(
+  requests:
+    | ReadonlyArray<{
+        status: string;
+        order: number;
+        signerName?: string;
+        signatureData?: string;
+        signedAt?: number;
+      }>
+    | undefined,
+): CollectedSignature[] {
+  return (requests ?? [])
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map((request) =>
+      request.status === 'signed'
+        ? {
+            signerName: request.signerName,
+            signatureData: request.signatureData,
+            signedAt: request.signedAt,
+          }
+        : {},
+    );
+}
+
+/**
  * Fill a frozen signature grid with the signatures that were actually collected.
  *
  * The grid is stored empty inside the immutable content — the image and date come

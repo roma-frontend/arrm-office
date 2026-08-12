@@ -64,6 +64,7 @@ import {
 import { hiringPacketFileName } from '@/lib/hiringPacketDocument';
 import {
   applySignaturesToBlocks,
+  collectSignaturesInOrder,
   parseDocumentContent,
   type CollectedSignature,
 } from '@/lib/bilingualDocument';
@@ -190,7 +191,15 @@ export function toRenderableDocument(
   t?: TFunction,
   lang?: string,
 ): RenderableDocument {
-  // The primary signed request supplies the signature image + signer name/date.
+  // Every signature request in signing order, signed or not. Positions are kept
+  // as-is because the signature grid is matched by index — see
+  // collectSignaturesInOrder. `convex/assets.ts` files the assignee as order 1
+  // and the admin as order 2, which is the order of the act's [employee, admin]
+  // grid.
+  const collected: CollectedSignature[] = collectSignaturesInOrder(doc.requests);
+
+  // The first drawn signature also feeds the single-signature block that generic
+  // (non-grid) documents still render.
   const signedReq = (doc.requests || [])
     .filter((r) => r.status === 'signed' && r.signatureData)
     .sort((a, b) => a.order - b.order)[0];
@@ -207,16 +216,6 @@ export function toRenderableDocument(
   // the body.
   const packet = parseDocumentContent(doc.content);
   if (packet) {
-    const collected: CollectedSignature[] = (doc.requests || [])
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .filter((r) => r.status === 'signed')
-      .map((r) => ({
-        signerName: r.signerName,
-        signatureData: r.signatureData,
-        signedAt: r.signedAt,
-      }));
-
     return {
       title: packet.title,
       documentNumber: packet.documentNumber,
@@ -239,19 +238,23 @@ export function toRenderableDocument(
   }
 
   // Structured asset act → typed blocks (definition tables + signature grid).
-  const act = t
-    ? buildActBody(doc, t, lang, {
-        image: signedReq?.signatureData,
-        signerName: signedReq?.signerName,
-        signedAt: signedReq?.signedAt,
-      })
+  //
+  // The grid is built empty and then filled from every collected signature, so
+  // each party gets their own. Handing buildActBody a single signature printed
+  // it in the employee's box and left the countersigner's line blank, however
+  // many people had actually signed.
+  const act = t ? buildActBody(doc, t, lang) : null;
+  const actBody = act
+    ? applySignaturesToBlocks(act.blocks, collected, (ts) =>
+        formatLocalizedDate(ts, lang, { year: 'numeric', month: 'long', day: 'numeric' }),
+      )
     : null;
 
   return {
     title: act && t ? assetFormTitle(act.input.isReturn, t) : doc.title,
     subtitle: act?.input.assetName || undefined,
     documentNumber: act && t ? assetFormDocumentNumber(act.input, t) : undefined,
-    body: act ? act.blocks : doc.content,
+    body: actBody ?? doc.content,
     accent: (doc.accent as AccentColor) || 'blue',
     // Acts render their own two-party signature grid; generic documents keep the
     // legacy block (shown when themed with one, or when we have a signature).

@@ -23,9 +23,23 @@ jest.mock('react-i18next', () => ({
 // ── Document-building libs (mutable so each test picks its branch) ─────────
 let mockParsed: any = null;
 let mockPacket: any = null;
+/** Signatures the component handed to the grid, per call. */
+let appliedSignatures: any[][] = [];
 jest.mock('@/lib/bilingualDocument', () => ({
   parseDocumentContent: () => mockPacket,
-  applySignaturesToBlocks: (blocks: any) => blocks,
+  applySignaturesToBlocks: (blocks: any, signatures: any[]) => {
+    appliedSignatures.push(signatures);
+    return blocks;
+  },
+  collectSignaturesInOrder: (requests: any[] | undefined) =>
+    (requests ?? [])
+      .slice()
+      .sort((a: any, b: any) => a.order - b.order)
+      .map((r: any) =>
+        r.status === 'signed'
+          ? { signerName: r.signerName, signatureData: r.signatureData, signedAt: r.signedAt }
+          : {},
+      ),
 }));
 
 jest.mock('@/lib/hiringPacketDocument', () => ({
@@ -137,6 +151,7 @@ beforeEach(() => {
   mockParsed = null;
   mockPacket = null;
   mockCtx = null;
+  appliedSignatures = [];
   HTMLCanvasElement.prototype.getContext = jest.fn(() => mockCtx as any);
   document.createElement = nativeCreateElement as any;
   globalThis.Image = nativeImage;
@@ -303,6 +318,78 @@ describe('toRenderableDocument', () => {
     expect(r.title).toBe('Return Form');
     expect(r.body).toEqual([{ text: 'asset block' }]);
     expect(r.signature).toBe(false);
+  });
+
+  // An act has two parties, employee then admin (convex/assets.ts files them as
+  // order 1 and order 2). Only the first signature used to reach the grid, so
+  // the countersigner's box stayed blank however many people had signed.
+  it('hands every signature of an asset act to the signature grid', () => {
+    mockParsed = { assetName: 'PC-1', isReturn: false };
+    const doc = {
+      _id: 'd1' as any,
+      title: 'Movement Form - PC',
+      content: 'act',
+      status: 'completed',
+      createdAt: 1000,
+      createdBy: 'u1' as any,
+      requests: [
+        {
+          _id: 'r2' as any,
+          status: 'signed',
+          signatureData: 'data:admin',
+          order: 2,
+          signerName: 'Ann',
+          signedAt: 2500,
+        },
+        {
+          _id: 'r1' as any,
+          status: 'signed',
+          signatureData: 'data:employee',
+          order: 1,
+          signerName: 'Bob',
+          signedAt: 1500,
+        },
+      ],
+    };
+
+    toRenderableDocument(doc as any, labels, t, 'ru');
+
+    expect(appliedSignatures).toHaveLength(1);
+    expect(appliedSignatures[0]).toEqual([
+      { signerName: 'Bob', signatureData: 'data:employee', signedAt: 1500 },
+      { signerName: 'Ann', signatureData: 'data:admin', signedAt: 2500 },
+    ]);
+  });
+
+  it('keeps a countersignature in its own slot when the first signer has not signed', () => {
+    mockParsed = { assetName: 'PC-1', isReturn: false };
+    const doc = {
+      _id: 'd1' as any,
+      title: 'Movement Form - PC',
+      content: 'act',
+      status: 'sent',
+      createdAt: 1000,
+      createdBy: 'u1' as any,
+      requests: [
+        { _id: 'r1' as any, status: 'pending', order: 1, signerName: 'Bob' },
+        {
+          _id: 'r2' as any,
+          status: 'signed',
+          signatureData: 'data:admin',
+          order: 2,
+          signerName: 'Ann',
+          signedAt: 2500,
+        },
+      ],
+    };
+
+    toRenderableDocument(doc as any, labels, t, 'ru');
+
+    // Slot 0 stays empty rather than being filled with the admin's signature.
+    expect(appliedSignatures[0]).toEqual([
+      {},
+      { signerName: 'Ann', signatureData: 'data:admin', signedAt: 2500 },
+    ]);
   });
 });
 

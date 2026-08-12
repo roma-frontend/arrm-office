@@ -13,6 +13,7 @@ import {
   applySignaturesToBlocks,
   auditSegments,
   blockToText,
+  collectSignaturesInOrder,
   buildDocumentBlocks,
   createSegment,
   documentFileName,
@@ -301,6 +302,53 @@ describe('signature grid', () => {
     if (grid?.type !== 'signatures') throw new Error('unreachable');
     expect(grid.parties[0]?.signatureImage).toBe('first');
     expect(grid.parties[1]?.signatureImage).toBe('second');
+  });
+});
+
+describe('collectSignaturesInOrder', () => {
+  it('returns the signatures in signing order regardless of row order', () => {
+    expect(
+      collectSignaturesInOrder([
+        { status: 'signed', order: 2, signerName: 'Boss', signatureData: 'b', signedAt: 20 },
+        { status: 'signed', order: 1, signerName: 'Anna', signatureData: 'a', signedAt: 10 },
+      ]),
+    ).toEqual([
+      { signerName: 'Anna', signatureData: 'a', signedAt: 10 },
+      { signerName: 'Boss', signatureData: 'b', signedAt: 20 },
+    ]);
+  });
+
+  it('keeps an empty slot for a request nobody has signed yet', () => {
+    // Compacting this away would hand the employer's signature to the employee's
+    // box, because the grid pairs signatures with parties by index.
+    const collected = collectSignaturesInOrder([
+      { status: 'pending', order: 1, signerName: 'Anna' },
+      { status: 'signed', order: 2, signerName: 'Boss', signatureData: 'b', signedAt: 20 },
+    ]);
+
+    expect(collected).toEqual([{}, { signerName: 'Boss', signatureData: 'b', signedAt: 20 }]);
+
+    const grid = applySignaturesToBlocks(
+      [
+        {
+          type: 'signatures',
+          parties: [
+            { role: 'Employee', nameLabel: 'Name', name: 'Anna', dateLabel: 'Date' },
+            { role: 'Employer', nameLabel: 'Name', name: 'Boss', dateLabel: 'Date' },
+          ],
+        },
+      ],
+      collected,
+      () => 'x',
+    )[0];
+    if (grid?.type !== 'signatures') throw new Error('unreachable');
+    expect(grid.parties[0]?.signatureImage).toBeUndefined();
+    expect(grid.parties[1]?.signatureImage).toBe('b');
+  });
+
+  it('returns nothing for a document with no requests', () => {
+    expect(collectSignaturesInOrder(undefined)).toEqual([]);
+    expect(collectSignaturesInOrder([])).toEqual([]);
   });
 });
 
