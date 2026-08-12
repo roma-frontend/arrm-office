@@ -9,8 +9,18 @@
  *   returned (preserves backwards compatibility with existing tests).
  */
 
-/** Minimal i18next-compatible translator signature. */
-export type Translator = (key: string, defaultValue?: string) => string;
+/**
+ * Minimal i18next-compatible translator signature.
+ *
+ * `defaultValue` is required, not optional: i18next's own `TFunction` overloads
+ * are `(key, options?)` and `(key, defaultValue: string, options?)`, and neither
+ * accepts a second argument of type `string | undefined`. Declaring it optional
+ * here made `react-i18next`'s `t` unassignable to this type, which is how
+ * `SmartEmailInput` broke the production build. Callers that only translate a
+ * key still fit — a function taking fewer parameters is assignable to one
+ * taking more.
+ */
+export type Translator = (key: string, defaultValue: string) => string;
 
 export interface PasswordValidationResult {
   isValid: boolean;

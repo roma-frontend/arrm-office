@@ -1,0 +1,22 @@
+// Typecheck the way CI does: on the source alone.
+//
+// The root config includes `.next/types` and `.next/dev/types`, which a running
+// `next dev` rewrites continuously. Catching those files mid-write leaves a
+// syntax error in the program (an unterminated template literal in
+// `routes.d.ts`), and `tsc` then reports that instead of the real errors in
+// `src/` — so `npm run type-check` can pass locally while CI and the Vercel
+// build fail on a genuine type error.
+//
+// CI checks out a fresh tree with no `.next` at all, which is what this
+// reproduces. Use `npm run type-check:ci` before pushing.
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "src/__tests__",
+    "tests",
+    "**/*.stories.tsx",
+    ".next"
+  ]
+}
