@@ -34,7 +34,7 @@ jest.mock('@/lib/cssMotion', () => {
 });
 
 jest.mock('lucide-react', () => {
-  const icons = ['ChevronLeft', 'ChevronRight', 'CheckCircle'];
+  const icons = ['ChevronLeft', 'ChevronRight', 'CheckCircle', 'Check'];
   const mocks: Record<string, any> = {};
   for (const name of icons) {
     mocks[name] = (props: any) => <span data-testid={`icon-${name}`} {...props} />;

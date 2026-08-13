@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme } from '@/lib/chart-theme';
 import { CalendarDays } from 'lucide-react';
 import {
   PieChart,
@@ -39,28 +39,13 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
   const { t } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
+  const { status, gridStroke, axisTickFill, tooltipStyle, tooltipColor, hoverFill } =
+    useChartTheme();
   // Index of the slice under the pointer, or null. Drives three things at once:
   // the slice highlight, the dimming of the others, and hiding the total in the
   // hole — the tooltip is anchored to the pointer, so the total has to step
   // aside rather than be covered by it.
   const [activeSlice, setActiveSlice] = React.useState<number | null>(null);
-
-  const tooltipBg = isDark ? '#0f172a' : '#ffffff';
-  const tooltipBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-  const tooltipColor = isDark ? '#ffffff' : '#0f172a';
-  const tooltipShadow = isDark ? '0 4px 12px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(0, 0, 0, 0.1)';
-  const gridStroke = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
-  const axisTickFill = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)';
-
-  const tooltipStyle = {
-    background: tooltipBg,
-    border: `1px solid ${tooltipBorder}`,
-    borderRadius: '8px',
-    color: tooltipColor,
-    boxShadow: tooltipShadow,
-  };
 
   const pieTotal = pieData.reduce((sum, d) => sum + d.value, 0);
   const hasTrend = monthlyTrend.some((m) => m.approved + m.pending + m.rejected > 0);
@@ -75,9 +60,9 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
             title={t('dashboard.monthlyLeaveTrend')}
             aside={
               <div className="flex items-center gap-3 ml-auto">
-                <LegendDot color="#10b981" label={t('statuses.approved')} />
-                <LegendDot color="#f59e0b" label={t('statuses.pending')} />
-                <LegendDot color="#ef4444" label={t('statuses.rejected')} />
+                <LegendDot color={status.success} label={t('statuses.approved')} />
+                <LegendDot color={status.warning} label={t('statuses.pending')} />
+                <LegendDot color={status.danger} label={t('statuses.rejected')} />
               </div>
             }
           />
@@ -102,26 +87,26 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
                     contentStyle={tooltipStyle}
                     itemStyle={{ color: tooltipColor }}
                     labelStyle={{ color: tooltipColor }}
-                    cursor={{ fill: 'rgba(99,102,241,0.05)' }}
+                    cursor={{ fill: hoverFill }}
                   />
                   <Bar
                     dataKey="approved"
                     name={t('statuses.approved')}
-                    fill="#10b981"
+                    fill={status.success}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={22}
                   />
                   <Bar
                     dataKey="pending"
                     name={t('statuses.pending')}
-                    fill="#f59e0b"
+                    fill={status.warning}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={22}
                   />
                   <Bar
                     dataKey="rejected"
                     name={t('statuses.rejected')}
-                    fill="#ef4444"
+                    fill={status.danger}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={22}
                   />

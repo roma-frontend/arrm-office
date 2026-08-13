@@ -38,11 +38,13 @@ import type { User as UserType } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { AddEmployeeModal } from './AddEmployeeModal';
 import { EditEmployeeModal, type Employee as EditEmployeeType } from './EditEmployeeModal';
+import { EmployeeSheet } from './EmployeeSheet';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
+import { useDraftResume } from '@/hooks/useDraftResume';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { TeamSidebar } from './TeamSidebar';
 import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { useRouter } from 'next/navigation';
 
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { MobileCard } from '@/components/ui/mobile-card';
@@ -86,7 +88,6 @@ export function EmployeesClient() {
   const mainRef = useMainRef();
   const user = useAuthStore(useShallow((state: { user: UserType | null }) => state.user));
   const selectedOrgId = useSelectedOrganization();
-  const router = useRouter();
   const isMobile = useMediaQuery('(max-width: 640px)');
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -100,10 +101,20 @@ export function EmployeesClient() {
   );
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAddModal, setShowAddModal] = useState(false);
+  const addEmployeeDraft = useDraftResume('add-employee', !showAddModal);
   const [editEmployee, setEditEmployee] = useState<Doc<'users'> | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false); // Закрыт по умолчанию
+  /** Employee shown in the slide-over, plus the name to title it with before the
+   *  profile query resolves. */
+  const [sheetEmployee, setSheetEmployee] = useState<{ id: Id<'users'>; name: string } | null>(
+    null,
+  );
+
+  const openEmployee = React.useCallback((id: Id<'users'>, name: string) => {
+    setSheetEmployee({ id, name });
+  }, []);
 
   // Server-side pagination state
   const paginatedArgs =
@@ -468,7 +479,7 @@ export function EmployeesClient() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/employees/${emp._id}`);
+                          openEmployee(emp._id, emp.name ?? '');
                           setOpenMenuId(null);
                         }}
                         className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:opacity-80"
@@ -527,7 +538,7 @@ export function EmployeesClient() {
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           transition={{ delay: i * 0.03 }}
-                          onClick={() => router.push(`/employees/${emp._id}`)}
+                          onClick={() => openEmployee(emp._id, emp.name ?? '')}
                           className="flex flex-col justify-between relative p-5 rounded-2xl border group cursor-pointer hover:shadow-lg transition-shadow"
                           style={{
                             background: 'var(--card)',
@@ -681,7 +692,7 @@ export function EmployeesClient() {
                       return (
                         <MobileCard
                           key={emp._id}
-                          onClick={() => router.push(`/employees/${emp._id}`)}
+                          onClick={() => openEmployee(emp._id, emp.name ?? '')}
                           avatar={
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-linear-to-r from-(--primary) to-(--primary-dark,var(--primary)) flex items-center justify-center text-white text-xs font-bold">
                               {emp.avatarUrl ? (
@@ -769,7 +780,7 @@ export function EmployeesClient() {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ delay: i * 0.02 }}
-                            onClick={() => router.push(`/employees/${emp._id}`)}
+                            onClick={() => openEmployee(emp._id, emp.name ?? '')}
                             className="flex flex-col gap-3 p-4 sm:grid sm:grid-cols-12 sm:gap-4 sm:px-5 sm:py-3.5 sm:items-center group cursor-pointer border-t transition-colors hover:bg-(--background-subtle) relative"
                             style={{
                               borderColor: 'var(--border)',
@@ -905,7 +916,7 @@ export function EmployeesClient() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  router.push(`/employees/${emp._id}`);
+                                  openEmployee(emp._id, emp.name ?? '');
                                 }}
                                 className="p-1.5 rounded-md text-blue-500 hover:bg-blue-500/20 transition-colors"
                                 title={t('common.view')}
@@ -955,6 +966,30 @@ export function EmployeesClient() {
 
         {/* Modals */}
         <AddEmployeeModal open={showAddModal} onClose={() => setShowAddModal(false)} />
+
+        {/* "Draft saved. Restore?" — the add-employee wizard is six steps and
+            includes passport data; losing it silently is the worst case here. */}
+        <DraftResumeBar
+          show={addEmployeeDraft.available}
+          label={t('employees.addEmployee')}
+          step={addEmployeeDraft.step}
+          onResume={() => {
+            addEmployeeDraft.dismiss();
+            setShowAddModal(true);
+          }}
+          onDismiss={addEmployeeDraft.dismiss}
+          onDiscard={addEmployeeDraft.discard}
+        />
+
+        {/* Profile slide-over. Replaces a navigation to /employees/[id]: the list
+            keeps its search, filters, view mode and scroll position underneath,
+            so scanning several people costs one click each instead of two
+            navigations and a roster re-fetch. */}
+        <EmployeeSheet
+          employeeId={sheetEmployee?.id ?? null}
+          employeeName={sheetEmployee?.name}
+          onClose={() => setSheetEmployee(null)}
+        />
 
         {editEmployee && (
           <EditEmployeeModal

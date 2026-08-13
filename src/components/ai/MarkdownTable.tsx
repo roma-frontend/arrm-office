@@ -112,7 +112,7 @@ export function MarkdownTable({ content }: { content: string }) {
           {table.rows.map((row, rowIdx) => (
             <tr
               key={rowIdx}
-              className={`${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-blue-50 transition-colors`}
+              className={`${rowIdx % 2 === 0 ? 'bg-(--surface-1)' : 'bg-(--surface-2)'} transition-colors duration-140 ease-spark hover:bg-(--brand-quiet)`}
             >
               {row.map((cell, cellIdx) => (
                 <td

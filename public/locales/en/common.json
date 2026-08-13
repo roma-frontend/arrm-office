@@ -2040,7 +2040,10 @@
     "draft": {
       "restored": "Draft restored",
       "continueFromStep": "Continue from step {{step}}",
-      "startOver": "Start over"
+      "startOver": "Start over",
+      "savedTitle": "Draft saved",
+      "resume": "Restore",
+      "discard": "Discard"
     }
   },
   "tripPriorities": {
@@ -2099,5 +2102,17 @@
     "title": "Organization temporarily suspended",
     "description": "Your organization has been temporarily deactivated by the platform administrator. Access will return once the organization is unfrozen.",
     "logout": "Log out"
+  },
+  "aiText": {
+    "label": "AI",
+    "improve": "Improve",
+    "shorten": "Shorten",
+    "expand": "Expand",
+    "proofread": "Proofread",
+    "professional": "More formal",
+    "friendly": "Warmer",
+    "translate": "Translate",
+    "undo": "Undo",
+    "failed": "Could not rewrite the text"
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme } from '@/lib/chart-theme';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -30,17 +30,17 @@ interface SLAStatsProps {
 
 function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) {
   const { t, i18n } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
+  const {
+    tooltipBg,
+    tooltipBorder,
+    tooltipColor,
+    tooltipShadow,
+    textColor,
+    gridStroke,
+    axisTickFill,
+  } = useChartTheme();
   const locale = i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US';
 
-  const tooltipBg = isDark ? '#0f172a' : '#ffffff';
-  const tooltipBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-  const tooltipColor = isDark ? '#ffffff' : '#0f172a';
-  const tooltipShadow = isDark ? '0 4px 12px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(0, 0, 0, 0.1)';
-  const textColor = isDark ? '#ffffff' : '#0f172a';
-  const gridStroke = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
-  const axisTickFill = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)';
   const stats = useQuery(api.sla.getSLAStats, {
     startDate,
     endDate,

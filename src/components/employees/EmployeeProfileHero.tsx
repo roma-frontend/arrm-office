@@ -140,8 +140,10 @@ export default function EmployeeProfileHero({
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-(--border) shadow-sm">
-      {/* Cover gradient */}
-      <div className="absolute inset-0 bg-primary opacity-90" />
+      {/* Cover.
+          `.brand-panel` rather than `bg-primary`: at this size the solid accent
+          reads as a light source on the dark theme instead of as a surface. */}
+      <div className="brand-panel absolute inset-0" />
 
       {/* Decorative circles */}
       <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/[0.06] rounded-full" />

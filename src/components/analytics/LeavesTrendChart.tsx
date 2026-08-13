@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme } from '@/lib/chart-theme';
 import {
   LineChart,
   Line,
@@ -26,16 +26,7 @@ interface LeavesTrendChartProps {
 
 export function LeavesTrendChart({ leaves }: LeavesTrendChartProps) {
   const { t, i18n } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-
-  const tooltipBg = isDark ? '#0f172a' : '#ffffff';
-  const tooltipBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-  const tooltipColor = isDark ? '#ffffff' : '#0f172a';
-  const tooltipShadow = isDark ? '0 4px 12px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(0, 0, 0, 0.1)';
-  const textColor = isDark ? '#ffffff' : '#0f172a';
-  const gridStroke = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
-  const axisTickFill = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)';
+  const { status, textColor, gridStroke, axisTickFill, tooltipProps } = useChartTheme();
 
   const dfLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
   // Generate last 6 months
@@ -83,17 +74,7 @@ export function LeavesTrendChart({ leaves }: LeavesTrendChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} opacity={0.3} />
           <XAxis dataKey="month" tick={{ fill: axisTickFill, fontSize: 12 }} />
           <YAxis tick={{ fill: axisTickFill, fontSize: 12 }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: tooltipBg,
-              border: `1px solid ${tooltipBorder}`,
-              borderRadius: '8px',
-              color: tooltipColor,
-              boxShadow: tooltipShadow,
-            }}
-            itemStyle={{ color: tooltipColor, fontWeight: 500 }}
-            labelStyle={{ color: tooltipColor, fontWeight: 700, fontSize: '14px' }}
-          />
+          <Tooltip {...tooltipProps} />
           <Legend
             wrapperStyle={{ color: textColor, fontSize: '13px' }}
             formatter={(value: string) => (
@@ -103,21 +84,21 @@ export function LeavesTrendChart({ leaves }: LeavesTrendChartProps) {
           <Line
             type="monotone"
             dataKey="approved"
-            stroke="#10B981"
+            stroke={status.success}
             strokeWidth={2}
             name={t('leaveRequestsTrend.approved')}
           />
           <Line
             type="monotone"
             dataKey="pending"
-            stroke="#F59E0B"
+            stroke={status.warning}
             strokeWidth={2}
             name={t('leaveRequestsTrend.pending')}
           />
           <Line
             type="monotone"
             dataKey="rejected"
-            stroke="#EF4444"
+            stroke={status.danger}
             strokeWidth={2}
             name={t('leaveRequestsTrend.rejected')}
           />

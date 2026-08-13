@@ -207,6 +207,7 @@ export default function AssetWizard({ orgId, userId, onComplete, onCancel }: Ass
 
   return (
     <Wizard
+      className="min-h-0 flex-1 px-5 pt-4"
       steps={steps}
       onComplete={handleSubmit}
       onCancel={onCancel}

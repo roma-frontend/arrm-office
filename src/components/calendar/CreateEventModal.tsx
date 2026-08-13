@@ -5,7 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -283,7 +291,6 @@ export function CreateEventModal({
   };
 
   const stepIndex = STEPS.indexOf(step);
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
 
   // Пока из черновика восстановлены данные, гидрация из editEvent не должна
   // затирать их: editEvent может прийти позже (асинхронный запрос родителя),
@@ -585,47 +592,25 @@ export function CreateEventModal({
     t('createMeeting.attachment'),
   ];
 
+  const stepperSteps = STEPS.map((s, i) => ({ id: s, title: stepLabels[i] ?? s }));
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[640px] max-h-[92vh] overflow-hidden p-0 gap-0 flex flex-col">
-        {/* Header with stepper */}
-        <div className="shrink-0 bg-(--card) border-b border-(--border) px-6 pt-5 pb-4">
-          <h2 className="text-xl font-bold text-(--text-primary) mb-4">
-            {t('createMeeting.title')}
-          </h2>
-          {/* Progress bar */}
-          <div className="relative h-1.5 bg-(--background-subtle) rounded-full overflow-hidden mb-3">
-            <motion.div
-              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-          {/* Step indicators */}
-          <div className="flex items-center justify-between">
-            {STEPS.map((s, i) => (
-              <button
-                key={s}
-                onClick={() => (i <= stepIndex || canNext) && setStep(s)}
-                className="flex items-center gap-2 group"
-              >
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${i < stepIndex ? 'bg-blue-500 border-blue-500 text-white' : i === stepIndex ? 'border-blue-500 text-blue-500 bg-blue-500/10' : 'border-(--border) text-(--text-muted)'}`}
-                >
-                  {i < stepIndex ? <CheckCircle className="w-4 h-4" /> : i + 1}
-                </div>
-                <span
-                  className={`text-xs font-medium hidden sm:inline ${i === stepIndex ? 'text-blue-500' : 'text-(--text-muted)'}`}
-                >
-                  {stepLabels[i]}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')} className="p-0">
+        {/* Header — title plus the step map. The connector between the pills is
+            the progress bar, so the header costs one row instead of two. */}
+        <SheetHeader className="gap-3.5">
+          <SheetTitle>{t('createMeeting.title')}</SheetTitle>
+          <WizardStepper
+            steps={stepperSteps}
+            current={stepIndex}
+            maxReachable={canNext ? STEPS.length - 1 : stepIndex}
+            onStepClick={(i) => setStep(STEPS[i] as Step)}
+          />
+        </SheetHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <SheetBody className="px-5 py-5 sm:px-6">
           <WizardDraftNotice
             show={draft.restored}
             step={draft.restoredStep}
@@ -644,22 +629,22 @@ export function CreateEventModal({
                 <div className="space-y-5">
                   {/* Title */}
                   <div>
-                    <Label className="text-sm font-medium text-(--text-primary) mb-1.5 block">
+                    <Label className="text-label mb-1.5 block text-(--text-primary)">
                       {t('createMeeting.titlePlaceholder')} *
                     </Label>
                     <Input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder={t('createMeeting.titlePlaceholder')}
-                      className="h-12 text-base border-2 border-(--border) focus-visible:border-blue-500 rounded-xl"
+                      className="h-11 text-base"
                       autoFocus
                     />
                   </div>
                   {/* Date & Time */}
-                  <div className="p-4 rounded-xl border border-(--border) bg-(--background-subtle)/50 space-y-3">
-                    <div className="flex items-center gap-2 text-blue-500">
-                      <Calendar className="w-4 h-4" />
-                      <span className="text-sm font-semibold">{t('createMeeting.date')}</span>
+                  <div className="surface-inset space-y-3 rounded-card p-4">
+                    <div className="flex items-center gap-2 text-(--text-secondary)">
+                      <Calendar className="w-4 h-4 text-(--brand)" />
+                      <span className="text-label font-semibold">{t('createMeeting.date')}</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <Input
@@ -667,7 +652,7 @@ export function CreateEventModal({
                         value={date}
                         min={editEvent ? undefined : format(new Date(), 'yyyy-MM-dd')}
                         onChange={(e) => setDate(e.target.value)}
-                        className="h-10 rounded-lg"
+                        className="h-10"
                       />
                       {!allDay && (
                         <>
@@ -677,7 +662,7 @@ export function CreateEventModal({
                               type="time"
                               value={startTime}
                               onChange={(e) => setStartTime(e.target.value)}
-                              className="h-10 pl-9 rounded-lg"
+                              className="h-10 pl-9"
                             />
                           </div>
                           <div className="relative">
@@ -686,7 +671,7 @@ export function CreateEventModal({
                               type="time"
                               value={endTime}
                               onChange={(e) => setEndTime(e.target.value)}
-                              className="h-10 pl-9 rounded-lg"
+                              className="h-10 pl-9"
                             />
                           </div>
                         </>
@@ -696,7 +681,7 @@ export function CreateEventModal({
                       <Switch checked={allDay} onCheckedChange={setAllDay} id="all-day" />
                       <Label
                         htmlFor="all-day"
-                        className="text-sm text-(--text-muted) cursor-pointer"
+                        className="text-label cursor-pointer text-(--text-muted)"
                       >
                         {t('createMeeting.allDay')}
                       </Label>
@@ -706,28 +691,26 @@ export function CreateEventModal({
                   <div>
                     <div className="flex items-center gap-2 text-(--text-muted) mb-1.5">
                       <MapPin className="w-4 h-4" />
-                      <Label className="text-sm font-medium">{t('createMeeting.location')}</Label>
+                      <Label className="text-label">{t('createMeeting.location')}</Label>
                     </div>
                     <Input
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       placeholder={t('createMeeting.locationPlaceholder')}
-                      className="h-10 rounded-xl"
+                      className="h-10"
                     />
                   </div>
                   {/* Description */}
                   <div>
                     <div className="flex items-center gap-2 text-(--text-muted) mb-1.5">
                       <AlignLeft className="w-4 h-4" />
-                      <Label className="text-sm font-medium">
-                        {t('createMeeting.description')}
-                      </Label>
+                      <Label className="text-label">{t('createMeeting.description')}</Label>
                     </div>
                     <Textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder={t('createMeeting.descriptionPlaceholder')}
-                      className="min-h-[90px] resize-none rounded-xl"
+                      className="min-h-[90px] resize-none"
                     />
                   </div>
                   {/* Category & Reminder */}
@@ -735,10 +718,10 @@ export function CreateEventModal({
                     <div>
                       <div className="flex items-center gap-2 text-(--text-muted) mb-1.5">
                         <Tag className="w-4 h-4" />
-                        <Label className="text-sm font-medium">{t('createMeeting.category')}</Label>
+                        <Label className="text-label">{t('createMeeting.category')}</Label>
                       </div>
                       <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger className="h-10 rounded-xl">
+                        <SelectTrigger className="h-10 rounded-field">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -763,10 +746,10 @@ export function CreateEventModal({
                     <div>
                       <div className="flex items-center gap-2 text-(--text-muted) mb-1.5">
                         <Bell className="w-4 h-4" />
-                        <Label className="text-sm font-medium">{t('createMeeting.reminder')}</Label>
+                        <Label className="text-label">{t('createMeeting.reminder')}</Label>
                       </div>
                       <Select value={reminder} onValueChange={setReminder}>
-                        <SelectTrigger className="h-10 rounded-xl">
+                        <SelectTrigger className="h-10 rounded-field">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -792,11 +775,13 @@ export function CreateEventModal({
               {/* Step 2: People */}
               {step === 'people' && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-blue-500 mb-1">
-                    <Users className="w-5 h-5" />
-                    <span className="text-base font-semibold">{t('createMeeting.attendees')}</span>
+                  <div className="mb-1 flex items-center gap-2">
+                    <Users className="w-4.5 h-4.5 text-(--brand)" />
+                    <span className="text-heading text-(--text-primary)">
+                      {t('createMeeting.attendees')}
+                    </span>
                     {attendees.length > 0 && (
-                      <span className="ml-auto text-xs bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full font-medium">
+                      <span className="num ml-auto rounded-pill bg-(--brand-quiet) px-2 py-0.5 text-[11px] font-semibold text-(--brand-text)">
                         {attendees.length}
                       </span>
                     )}
@@ -813,12 +798,12 @@ export function CreateEventModal({
                       }}
                       onFocus={() => setShowPeoplePicker(true)}
                       placeholder={t('createMeeting.searchPeople')}
-                      className="h-11 pl-10 rounded-xl text-sm"
+                      className="h-10 pl-9"
                     />
                     {showPeoplePicker && (
-                      <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-52 overflow-y-auto rounded-xl border border-(--border) bg-(--card) shadow-2xl">
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-(--z-dropdown) max-h-56 overflow-y-auto rounded-panel border border-(--border-default) bg-(--surface-1) shadow-elev-3">
                         {filteredUsers.length === 0 ? (
-                          <p className="px-4 py-6 text-sm text-center text-(--text-muted)">
+                          <p className="px-4 py-6 text-center text-label text-(--text-muted)">
                             {t('createMeeting.noResults')}
                           </p>
                         ) : (
@@ -832,25 +817,25 @@ export function CreateEventModal({
                                   setAttendeeSearch('');
                                   setShowPeoplePicker(false);
                                 }}
-                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500/5 transition-colors text-left border-b border-(--border) last:border-0"
+                                className="flex w-full items-center gap-3 border-b border-(--border-subtle) px-3 py-2.5 text-left transition-colors duration-140 ease-spark last:border-0 hover:bg-(--surface-2)"
                               >
                                 <Avatar className="w-8 h-8 shrink-0">
-                                  <AvatarFallback className="text-[10px] bg-gradient-to-br from-blue-500 to-indigo-500 text-white font-bold">
+                                  <AvatarFallback className="btn-gradient text-[10px] font-semibold">
                                     {getInitials(u.name)}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium text-(--text-primary) truncate">
+                                  <p className="truncate text-label text-(--text-primary)">
                                     {u.name}
                                   </p>
                                   {u.position && (
-                                    <p className="text-xs text-(--text-muted) truncate">
+                                    <p className="truncate text-caption text-(--text-muted)">
                                       {u.position}
                                     </p>
                                   )}
                                 </div>
                                 {hasConflict && (
-                                  <span className="flex items-center gap-1 text-[10px] text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full shrink-0">
+                                  <span className="flex shrink-0 items-center gap-1 rounded-pill bg-(--warning-quiet) px-2 py-1 text-[10px] font-medium text-(--warning-text)">
                                     <AlertTriangle className="w-3 h-3" />
                                     {t('createMeeting.conflict')}
                                   </span>
@@ -865,9 +850,9 @@ export function CreateEventModal({
 
                   {/* Conflict warning */}
                   {attendees.some((a) => getConflict(a._id)) && (
-                    <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-400/30">
-                      <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
-                      <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                    <div className="flex items-center gap-2.5 rounded-card border border-(--warning-outline) bg-(--warning-quiet) px-4 py-3">
+                      <AlertTriangle className="w-4.5 h-4.5 shrink-0 text-(--warning-solid)" />
+                      <span className="text-label font-medium text-(--warning-text)">
                         {t('createMeeting.conflict')}
                       </span>
                     </div>
@@ -881,50 +866,48 @@ export function CreateEventModal({
                         return (
                           <div
                             key={a._id}
-                            className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${hasConflict ? 'border-amber-400/50 bg-amber-500/5' : 'border-(--border) bg-(--background-subtle)/50 hover:border-blue-300'}`}
+                            className={`flex items-center gap-3 rounded-card border p-2.5 transition-colors duration-140 ease-spark ${hasConflict ? 'border-(--warning-outline) bg-(--warning-quiet)' : 'border-(--border-subtle) bg-(--surface-2)'}`}
                           >
                             <Avatar className="w-9 h-9 shrink-0">
-                              <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-indigo-500 text-white font-bold">
+                              <AvatarFallback className="btn-gradient text-xs font-semibold">
                                 {getInitials(a.name)}
                               </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-(--text-primary) truncate">
-                                {a.name}
-                              </p>
-                              <p className="text-xs text-(--text-muted) truncate">
+                              <p className="truncate text-label text-(--text-primary)">{a.name}</p>
+                              <p className="truncate text-caption text-(--text-muted)">
                                 {a.position ?? a.department ?? ''}
                               </p>
                             </div>
                             {hasConflict && (
-                              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                              <AlertTriangle className="w-4 h-4 shrink-0 text-(--warning-solid)" />
                             )}
                             <button
                               onClick={() => setAttendees((p) => p.filter((x) => x._id !== a._id))}
-                              className="p-1.5 rounded-lg hover:bg-(--border) transition-colors"
+                              className="press-subtle rounded-control p-1.5 text-(--text-muted) transition-colors duration-140 ease-spark hover:bg-(--surface-3) hover:text-(--text-primary)"
                             >
-                              <X className="w-4 h-4 text-(--text-muted)" />
+                              <X className="w-4 h-4" />
                             </button>
                           </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-(--text-muted)">
-                      <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">{t('createMeeting.addAttendees')}</p>
+                    <div className="rounded-card border border-dashed border-(--border-default) py-8 text-center text-(--text-muted)">
+                      <Users className="mx-auto mb-2 h-9 w-9 opacity-30" />
+                      <p className="text-label">{t('createMeeting.addAttendees')}</p>
                     </div>
                   )}
 
                   {/* Meeting rooms — reserved together with the event */}
-                  <div className="pt-2 border-t border-(--border) space-y-3">
-                    <div className="flex items-center gap-2 text-blue-500">
-                      <DoorOpen className="w-5 h-5" />
-                      <span className="text-base font-semibold">
+                  <div className="hairline space-y-3 pt-4">
+                    <div className="flex items-center gap-2">
+                      <DoorOpen className="w-4.5 h-4.5 text-(--brand)" />
+                      <span className="text-heading text-(--text-primary)">
                         {t('createMeeting.room.title')}
                       </span>
                       {selectedRoom && (
-                        <span className="ml-auto inline-flex items-center gap-1 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+                        <span className="ml-auto inline-flex items-center gap-1 rounded-pill bg-(--success-quiet) px-2 py-0.5 text-[11px] font-medium text-(--success-text)">
                           <CheckCircle className="w-3 h-3" />
                           {selectedRoom.name}
                         </span>
@@ -932,11 +915,11 @@ export function CreateEventModal({
                     </div>
 
                     {!roomWindowValid ? (
-                      <p className="text-xs text-(--text-muted)">
+                      <p className="text-caption text-(--text-muted)">
                         {t('createMeeting.room.setTimeFirst')}
                       </p>
                     ) : (
-                      <p className="text-xs text-(--text-muted)">
+                      <p className="text-caption text-(--text-muted)">
                         {t('createMeeting.room.slotHint', {
                           from: formatTime(roomStart!),
                           to: formatTime(roomEnd!),
@@ -945,10 +928,10 @@ export function CreateEventModal({
                     )}
 
                     {selectedRoomBlocked && selectedRoom && (
-                      <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-500/10 border border-red-400/30">
-                        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+                      <div className="flex items-start gap-2.5 rounded-card border border-(--danger-outline) bg-(--danger-quiet) px-4 py-3">
+                        <AlertTriangle className="w-4.5 h-4.5 shrink-0 text-(--danger-solid)" />
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                          <p className="text-label font-medium text-(--danger-text)">
                             {t('createMeeting.room.busyUntil', {
                               room: selectedRoom.name,
                               time: formatTime(
@@ -957,7 +940,7 @@ export function CreateEventModal({
                             })}
                           </p>
                           {selectedRoomAvailability?.suggestion && (
-                            <p className="text-xs text-(--text-muted) mt-0.5">
+                            <p className="mt-0.5 text-caption text-(--text-muted)">
                               {t('createMeeting.room.nextFreeSlot', {
                                 time: formatTime(selectedRoomAvailability.suggestion),
                               })}
@@ -970,14 +953,11 @@ export function CreateEventModal({
                     {rooms === undefined ? (
                       <div className="space-y-2">
                         {[0, 1].map((i) => (
-                          <div
-                            key={i}
-                            className="h-16 rounded-xl bg-(--background-subtle) animate-pulse"
-                          />
+                          <div key={i} className="skeleton h-16 rounded-card" />
                         ))}
                       </div>
                     ) : rooms.length === 0 ? (
-                      <p className="text-xs text-(--text-muted)">
+                      <p className="text-caption text-(--text-muted)">
                         {t('createMeeting.room.noRooms')}
                       </p>
                     ) : (
@@ -996,36 +976,36 @@ export function CreateEventModal({
                               type="button"
                               onClick={() => handlePickRoom(room)}
                               aria-pressed={isSelected}
-                              className={`w-full flex items-start gap-3 p-3 rounded-xl border text-left transition-colors ${
+                              className={`flex w-full items-start gap-3 rounded-card border p-3 text-left transition-colors duration-140 ease-spark ${
                                 isSelected
-                                  ? 'border-blue-500 bg-blue-500/5'
+                                  ? 'border-(--brand) bg-(--brand-quiet)'
                                   : free && fits
-                                    ? 'border-(--border) bg-(--background-subtle)/50 hover:border-blue-300'
-                                    : 'border-(--border) bg-(--background-subtle)/30 opacity-80 hover:border-red-300'
+                                    ? 'border-(--border-subtle) bg-(--surface-2) hover:border-(--border-strong)'
+                                    : 'border-(--border-subtle) bg-(--surface-2) opacity-70 hover:opacity-100'
                               }`}
                             >
                               <span
-                                className="w-1 self-stretch rounded-full shrink-0"
+                                className="w-1 self-stretch rounded-pill shrink-0"
                                 style={{ background: room.color ?? DEFAULT_ROOM_COLOR }}
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <p className="text-sm font-semibold text-(--text-primary) truncate">
+                                  <p className="truncate text-label font-semibold text-(--text-primary)">
                                     {room.name}
                                   </p>
-                                  <span className="text-[10px] text-(--text-muted) shrink-0 inline-flex items-center gap-1">
+                                  <span className="num inline-flex shrink-0 items-center gap-1 text-[10px] text-(--text-muted)">
                                     <Users className="w-3 h-3" />
                                     {room.capacity}
                                   </span>
                                 </div>
                                 {roomLocation && (
-                                  <p className="text-xs text-(--text-muted) truncate mt-0.5">
+                                  <p className="mt-0.5 truncate text-caption text-(--text-muted)">
                                     {roomLocation}
                                   </p>
                                 )}
-                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                                   {!fits ? (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                                    <span className="inline-flex items-center gap-1 rounded-pill bg-(--warning-quiet) px-2 py-0.5 text-[10px] font-medium text-(--warning-text)">
                                       <AlertTriangle className="w-3 h-3" />
                                       {t('createMeeting.room.tooSmallShort', {
                                         people: headcount,
@@ -1033,12 +1013,12 @@ export function CreateEventModal({
                                       })}
                                     </span>
                                   ) : free ? (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                    <span className="inline-flex items-center gap-1 rounded-pill bg-(--success-quiet) px-2 py-0.5 text-[10px] font-medium text-(--success-text)">
                                       <CheckCircle className="w-3 h-3" />
                                       {t('createMeeting.room.free')}
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                                    <span className="inline-flex items-center gap-1 rounded-pill bg-(--danger-quiet) px-2 py-0.5 text-[10px] font-medium text-(--danger-text)">
                                       <Clock className="w-3 h-3" />
                                       {t('createMeeting.room.busyUntilShort', {
                                         time: formatTime(
@@ -1059,7 +1039,7 @@ export function CreateEventModal({
                                 </div>
                               </div>
                               {isSelected && (
-                                <CheckCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                                <CheckCircle className="w-4.5 h-4.5 shrink-0 text-(--brand)" />
                               )}
                             </button>
                           );
@@ -1072,7 +1052,7 @@ export function CreateEventModal({
                               setRoomId(null);
                               if (previous && location === previous) setLocation('');
                             }}
-                            className="w-full text-xs text-(--text-muted) hover:text-(--text-primary) py-2 rounded-lg hover:bg-(--background-subtle) transition-colors"
+                            className="w-full rounded-control py-2 text-caption text-(--text-muted) transition-colors duration-140 ease-spark hover:bg-(--surface-2) hover:text-(--text-primary)"
                           >
                             {t('createMeeting.room.clear')}
                           </button>
@@ -1087,22 +1067,22 @@ export function CreateEventModal({
               {step === 'extras' && (
                 <div className="space-y-5">
                   {/* Teams Meeting */}
-                  <div className="flex items-center justify-between p-5 rounded-xl border border-(--border) bg-gradient-to-r from-purple-500/5 to-indigo-500/5">
+                  <div className="flex items-center justify-between rounded-card border border-(--border-subtle) bg-(--surface-2) p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center">
-                        <Video className="w-5 h-5 text-purple-500" />
+                      <div className="flex size-10 items-center justify-center rounded-card bg-(--purple-quiet)">
+                        <Video className="w-4.5 h-4.5 text-(--purple-text)" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-(--text-primary)">
+                        <p className="text-label font-semibold text-(--text-primary)">
                           {t('createMeeting.teamsMeeting')}
                         </p>
-                        <p className="text-xs text-(--text-muted)">
+                        <p className="text-caption text-(--text-muted)">
                           {t('createMeeting.teamsMeetingDesc')}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold text-purple-500 bg-purple-500/10 px-2.5 py-1 rounded-full">
+                      <span className="rounded-pill bg-(--purple-quiet) px-2.5 py-1 text-[10px] font-semibold text-(--purple-text)">
                         {t('createMeeting.comingSoon')}
                       </span>
                       <Switch disabled checked={false} />
@@ -1112,46 +1092,46 @@ export function CreateEventModal({
                   {/* File Attachment */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <Paperclip className="w-4 h-4 text-blue-500" />
-                      <Label className="text-sm font-semibold text-(--text-primary)">
+                      <Paperclip className="w-4 h-4 text-(--brand)" />
+                      <Label className="text-label font-semibold text-(--text-primary)">
                         {t('createMeeting.attachment')}
                       </Label>
-                      <span className="text-xs text-(--text-muted) ml-auto">
+                      <span className="ml-auto text-caption text-(--text-muted)">
                         {t('createMeeting.maxFileSize')}
                       </span>
                     </div>
                     {attachment ? (
-                      <div className="flex items-center gap-3 p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-500/5">
-                        <div className="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-blue-500" />
+                      <div className="flex items-center gap-3 rounded-card border border-(--brand-outline) bg-(--brand-quiet) p-3.5">
+                        <div className="flex size-10 items-center justify-center rounded-field bg-(--surface-1)">
+                          <FileText className="w-4.5 h-4.5 text-(--brand)" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-(--text-primary) truncate">
+                          <p className="truncate text-label font-medium text-(--text-primary)">
                             {attachment.name}
                           </p>
-                          <p className="text-xs text-(--text-muted)">
+                          <p className="num text-caption text-(--text-muted)">
                             {(attachment.size / 1024).toFixed(1)} KB
                           </p>
                         </div>
                         <button
                           onClick={() => setAttachment(null)}
-                          className="p-2 rounded-lg hover:bg-(--border) transition-colors"
+                          className="press-subtle rounded-control p-2 text-(--text-muted) transition-colors duration-140 ease-spark hover:bg-(--surface-1) hover:text-(--text-primary)"
                         >
-                          <X className="w-4 h-4 text-(--text-muted)" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full flex flex-col items-center justify-center gap-2 p-8 rounded-xl border-2 border-dashed border-(--border) hover:border-blue-400 hover:bg-blue-500/5 transition-all cursor-pointer group"
+                        className="group flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-card border border-dashed border-(--border-default) p-8 transition-colors duration-140 ease-spark hover:border-(--brand) hover:bg-(--brand-quiet)"
                       >
-                        <div className="w-12 h-12 rounded-full bg-(--background-subtle) group-hover:bg-blue-500/10 flex items-center justify-center transition-colors">
-                          <Paperclip className="w-5 h-5 text-(--text-muted) group-hover:text-blue-500 transition-colors" />
+                        <div className="flex size-12 items-center justify-center rounded-pill bg-(--surface-2) transition-colors duration-140 ease-spark group-hover:bg-(--surface-1)">
+                          <Paperclip className="w-4.5 h-4.5 text-(--text-muted) transition-colors duration-140 ease-spark group-hover:text-(--brand)" />
                         </div>
-                        <span className="text-sm font-medium text-(--text-muted) group-hover:text-blue-500 transition-colors">
+                        <span className="text-label font-medium text-(--text-secondary) transition-colors duration-140 ease-spark group-hover:text-(--brand-text)">
                           {t('createMeeting.attachFile')}
                         </span>
-                        <span className="text-xs text-(--text-muted)">
+                        <span className="text-caption text-(--text-muted)">
                           {t('createMeeting.maxFileSize')}
                         </span>
                       </button>
@@ -1168,33 +1148,24 @@ export function CreateEventModal({
               )}
             </motion.div>
           </AnimatePresence>
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="shrink-0 bg-(--card) border-t border-(--border) px-6 py-4 flex items-center justify-between gap-3">
+        <SheetFooter className="justify-between px-5 sm:px-6">
           {stepIndex > 0 ? (
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              disabled={uploading}
-              className="rounded-xl"
-            >
+            <Button variant="outline" onClick={prevStep} disabled={uploading}>
               <ChevronLeft className="w-4 h-4 mr-1" />
               {t('createMeeting.back')}
             </Button>
           ) : (
-            <Button
-              variant="ghost"
-              onClick={handleCancel}
-              className="rounded-xl text-(--text-muted)"
-            >
+            <Button variant="ghost" onClick={handleCancel}>
               {t('createMeeting.cancel')}
             </Button>
           )}
           <Button
             onClick={nextStep}
             disabled={!canNext || uploading}
-            className="rounded-xl btn-gradient text-white font-medium shadow-md hover:shadow-lg px-6"
+            className="btn-gradient px-6 font-medium"
           >
             {uploading ? (
               <>
@@ -1210,9 +1181,9 @@ export function CreateEventModal({
               </>
             )}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

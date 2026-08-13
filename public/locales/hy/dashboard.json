@@ -230,13 +230,27 @@
     }
   },
   "commandPalette": {
-    "placeholder": "Որոնել ֆունկցիաներ... (օրինակ՝ արձակուրդ, չատ, խնդիրներ)",
-    "noResults": "Ոչինչ չգտնվեց: Փորձեք այլ հարցում:",
+    "placeholder": "Որոնել կամ անցնել…",
+    "noResults": "Ոչինչ չգտնվեց:",
     "tryDifferent": "Փորձեք այլ հարցում",
     "navigate": "նավիգացիա",
     "select": "ընտրել",
     "shortcut": "Ctrl+K բացելու համար",
-    "open": "Բացել հրամանների պալիտրը"
+    "open": "Բացել հրամանների պալիտրը",
+    "recent": "Վերջինները",
+    "resultCount": "{{count}} արդյունք",
+    "groups": {
+      "actions": "Գործողություններ",
+      "people": "Մարդիկ",
+      "navigate": "Անցնել",
+      "suggested": "Ընդունվող"
+    },
+    "actions": {
+      "newLeave": "Հայցել արամավարտ",
+      "newTask": "Ընտրել առաջադրանք",
+      "bookRoom": "Ամրագրել սրահ",
+      "askAi": "Հարցնել ասիստենտին"
+    }
   },
   "teamInfo": {
     "team": "Թիմ",
@@ -440,5 +454,33 @@
     "noDirectReports": "Անմիջական ենթականեր չկան",
     "noReportingData": "Ենթակայության տվյալներ չկան",
     "notInHierarchy": "Դուք դեռ կապված չեք կազմակերպության կառուցվածքին"
+  },
+  "focus": {
+    "title": "Այսօր կենտրոնում",
+    "greetingMorning": "Բարի լույս",
+    "greetingAfternoon": "Բարեւ օր",
+    "greetingEvening": "Բարի երեկո",
+    "allClear": "Էամենայնը կարգին է",
+    "allClearHint": "Այս պահին ոչինչ չի պահանջվում:",
+    "approvals": "Հարցումներ սպասում են",
+    "approvalsOne": "1 հարցում սպասում է",
+    "approvalsMany": "{{count}} հարցում սպասում է",
+    "approve": "Հաստատել",
+    "reject": "Մերժել",
+    "approved": "Հաստատված",
+    "rejected": "Մերժված",
+    "reviewAll": "Դիտել բոլորը",
+    "eventsToday": "Այսօր",
+    "eventsTodayCount": "{{count}} միջոցառում",
+    "birthdays": "Այսօր ծննdան օր է",
+    "birthdaysMany": "{{count}} ծննdան օր",
+    "outToday": "Այսօր բացակայում են",
+    "outTodayCount": "{{count}} հոգի բացակայում է",
+    "tasksDue": "Առաջադրանքներ",
+    "tasksOverdue": "{{count}} ժամկետանց",
+    "tasksDueToday": "{{count}} այսօր",
+    "viewAll": "Բոլորը",
+    "search": "Որոնում",
+    "searchHint": "Որոնել ամեն բան"
   }
 }

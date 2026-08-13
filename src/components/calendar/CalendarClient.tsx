@@ -70,6 +70,8 @@ import { DriverRequestModal } from './DriverRequestModal';
 import { CreateEventModal, type CalendarEvent } from './CreateEventModal';
 import { DayDetailsModal } from './DayDetailsModal';
 import { EventTimelineModal } from './EventTimelineModal';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
+import { useDraftResume } from '@/hooks/useDraftResume';
 import { CalendarScopeSwitcher } from './CalendarScopeSwitcher';
 import { RoomAvailabilityStrip } from '@/components/rooms/RoomAvailabilityStrip';
 import { RoomBookingModal } from '@/components/rooms/RoomBookingModal';
@@ -625,6 +627,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [roomBookingRoomId, setRoomBookingRoomId] = useState<string | null>(null);
   const [detailsRoom, setDetailsRoom] = useState<RoomDoc | null>(null);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
+
+  // Draft prompts. Watched only while the matching form is closed — an offer to
+  // restore a draft on top of the form it belongs to would be nonsense.
+  const eventDraft = useDraftResume('create-event:new', !showCreateEvent);
+  const leaveDraft = useDraftResume('leave-request', !showLeaveModal);
   const deleteEventMutation = useMutation(api.calendarEvents.remove);
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [selectedDriverEvent, setSelectedDriverEvent] = useState<DriverScheduleEvent | null>(null);
@@ -2084,6 +2091,34 @@ export const CalendarClient = React.memo(function CalendarClient() {
         // leave in the organization, not just the ones the viewer owns.
         leaves={leaves}
         editEvent={editEvent}
+      />
+
+      {/* "Draft saved. Restore?" — the event wizard and the leave request both
+          keep their contents after an accidental close; this is what tells the
+          user so. One bar at a time: the event draft wins, because it is the
+          longer form and the more expensive one to lose. */}
+      <DraftResumeBar
+        show={eventDraft.available}
+        label={t('createMeeting.title')}
+        step={eventDraft.step}
+        onResume={() => {
+          eventDraft.dismiss();
+          setEditEvent(null);
+          setShowCreateEvent(true);
+        }}
+        onDismiss={eventDraft.dismiss}
+        onDiscard={eventDraft.discard}
+      />
+      <DraftResumeBar
+        show={!eventDraft.available && leaveDraft.available}
+        label={t('leaveRequest.newLeaveRequest', 'New Leave Request')}
+        step={leaveDraft.step}
+        onResume={() => {
+          leaveDraft.dismiss();
+          setShowLeaveModal(true);
+        }}
+        onDismiss={leaveDraft.dismiss}
+        onDiscard={leaveDraft.discard}
       />
 
       {/* Day Details Modal */}

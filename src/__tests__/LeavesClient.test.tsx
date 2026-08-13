@@ -148,6 +148,14 @@ jest.mock('next/dynamic', () => {
 });
 
 // ── Leaves modal / wizard ────────────────────────────────────────────────────
+// The detail slide-over lazily loads LeaveDetailClient, which pulls in the whole
+// approve/reject/cancel surface — none of which this suite is about. The stub
+// records which request was handed to it.
+jest.mock('@/components/leaves/LeaveSheet', () => ({
+  LeaveSheet: ({ leaveId }: { leaveId: string | null }) =>
+    leaveId ? <div data-testid="leave-sheet" data-leave-id={leaveId} /> : null,
+}));
+
 jest.mock('@/components/leaves/LeaveRequestModal', () => ({
   LeaveRequestModal: ({ open, onClose }: any) =>
     open ? (
@@ -652,27 +660,35 @@ describe('LeavesClient — pagination and navigation', () => {
     expect(screen.queryByText('Load more requests')).toBeNull();
   });
 
-  it('navigates to the leave detail page from the desktop table', () => {
+  // The list opens a slide-over instead of navigating: deciding a queue of
+  // requests no longer costs a round trip per request, and the filters, sort and
+  // scroll position stay put behind the panel.
+  it('opens the detail slide-over from the desktop table', () => {
     paginatedResult = { results: [req()], status: 'Exhausted' };
     renderClient();
+    expect(screen.queryByTestId('leave-sheet')).not.toBeInTheDocument();
+
     const table = document.querySelector('table')!;
-    // Every data cell carries the navigation handler.
+    // Every data cell carries the open handler.
     const cells = within(table).getAllByText('Anna Petrova');
     fireEvent.click(cells[0]);
-    expect(mockPush).toHaveBeenCalledWith('/leaves/r1');
+
+    expect(screen.getByTestId('leave-sheet').getAttribute('data-leave-id')).toBe('r1');
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('navigates from the desktop dates and type cells', () => {
+  it('opens from the desktop dates and type cells', () => {
     paginatedResult = { results: [req()], status: 'Exhausted' };
     renderClient();
     const table = document.querySelector('table')!;
     const tds = within(table).getAllByRole('cell');
     fireEvent.click(tds[1]); // type cell
+    expect(screen.getByTestId('leave-sheet')).toBeInTheDocument();
     fireEvent.click(tds[2]); // dates cell
-    expect(mockPush).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('leave-sheet').getAttribute('data-leave-id')).toBe('r1');
   });
 
-  it('navigates from the days, reason and status cells', () => {
+  it('opens from the days, reason and status cells', () => {
     paginatedResult = { results: [req()], status: 'Exhausted' };
     renderClient();
     const table = document.querySelector('table')!;
@@ -680,17 +696,16 @@ describe('LeavesClient — pagination and navigation', () => {
     fireEvent.click(tds[3]); // days cell
     fireEvent.click(tds[4]); // reason cell
     fireEvent.click(tds[5]); // status cell
-    expect(mockPush).toHaveBeenCalledTimes(3);
+    expect(screen.getByTestId('leave-sheet').getAttribute('data-leave-id')).toBe('r1');
   });
 
-  it('navigates from a mobile card header', () => {
+  it('opens from a mobile card header', () => {
     mockUser = { id: 'u-1', role: 'employee' };
     paginatedResult = { results: [req()], status: 'Exhausted' };
     renderClient();
-    // The mobile card header also navigates.
     const cells = screen.getAllByText('Anna Petrova');
     fireEvent.click(cells[0]);
-    expect(mockPush).toHaveBeenCalledWith('/leaves/r1');
+    expect(screen.getByTestId('leave-sheet').getAttribute('data-leave-id')).toBe('r1');
   });
 });
 

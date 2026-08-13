@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme, CHART_PALETTE_LIGHT } from '@/lib/chart-theme';
 import { motion } from '@/lib/cssMotion';
 import {
   Monitor,
@@ -58,6 +58,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import {
   BarChart,
   Bar,
@@ -124,7 +131,9 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
+/** Fallback series colours for the category chart, for categories with no colour
+ *  of their own. Shares the app-wide chart palette. */
+const COLORS = CHART_PALETTE_LIGHT;
 
 const CATEGORY_CONFIG: Record<
   string,
@@ -978,14 +987,8 @@ function QRButton({
 
 export default function AssetsClient() {
   const { t, i18n } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-
-  const tooltipBg = isDark ? '#0f172a' : '#ffffff';
-  const tooltipBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-  const tooltipColor = isDark ? '#ffffff' : '#0f172a';
-  const tooltipShadow = isDark ? '0 4px 12px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(0, 0, 0, 0.1)';
-  const textColor = isDark ? '#ffffff' : '#0f172a';
+  const { isDark, tooltipBg, tooltipBorder, tooltipColor, tooltipShadow, textColor } =
+    useChartTheme();
 
   const selectedOrgId = useSelectedOrganization();
   const { user } = useAuthStore();
@@ -2135,12 +2138,12 @@ export default function AssetsClient() {
       )}
 
       {/* Dialogs */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-0">
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle>{t('assets.createTitle')}</DialogTitle>
-            <DialogDescription>{t('assets.createDescription')}</DialogDescription>
-          </DialogHeader>
+      <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>{t('assets.createTitle')}</SheetTitle>
+            <SheetDescription>{t('assets.createDescription')}</SheetDescription>
+          </SheetHeader>
           {orgId && user && (
             <AssetWizard
               orgId={orgId}
@@ -2149,8 +2152,8 @@ export default function AssetsClient() {
               onCancel={() => setCreateDialogOpen(false)}
             />
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {assignDialogAsset && orgId && user && (
         <AssignDialog

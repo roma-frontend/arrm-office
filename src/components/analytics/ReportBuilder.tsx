@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConvex } from 'convex/react';
 import { toast } from 'sonner';
+import { CHART_PALETTE_LIGHT } from '@/lib/chart-theme';
 import {
   BarChart3,
   PieChart,
@@ -87,18 +88,10 @@ const METRIC_FIELDS: { value: MetricField; icon: typeof Users; label: string }[]
   { value: 'recruitment', icon: Users, label: 'Recruitment' },
 ];
 
-const COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#06b6d4',
-  '#f43f5e',
-  '#84cc16',
-  '#14b8a6',
-  '#d946ef',
-];
+/** Swatches offered in the widget colour picker. Mirrors the chart palette so a
+ *  user-picked colour always belongs to the same family as the auto-assigned
+ *  series colours. */
+const COLORS = [...CHART_PALETTE_LIGHT, '#84cc16', '#14b8a6'];
 
 const getDefaultWidget = (): ReportWidget => ({
   id: `widget-${Date.now()}`,

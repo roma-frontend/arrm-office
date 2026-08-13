@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
-import { Users, Clock, CheckCircle, UserCheck, TrendingUp } from 'lucide-react';
+import { Users, CheckCircle, TrendingUp } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
@@ -22,6 +22,9 @@ import StrategyDashboardWidget from '@/components/dashboard/StrategyDashboardWid
 import LeaveStats from '@/components/dashboard/LeaveStats';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { CheckInOutWidget } from '@/components/attendance/CheckInOutWidget';
+import { FocusFeed } from '@/components/dashboard/FocusFeed';
+import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
+import { useCommandPaletteStore } from '@/store/useCommandPaletteStore';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,6 +38,7 @@ const itemVariants = {
 export default function DashboardClient() {
   const { t } = useTranslation();
   const user = useAuthUser();
+  const openPalette = useCommandPaletteStore((s) => s.openPalette);
 
   const [mounted, setMounted] = React.useState(false);
 
@@ -132,10 +136,6 @@ export default function DashboardClient() {
     () => stats.monthlyTrend.map((m) => m.approved),
     [stats.monthlyTrend],
   );
-  const pendingTrend = useMemo(
-    () => stats.monthlyTrend.map((m) => m.pending),
-    [stats.monthlyTrend],
-  );
   const approvedChange = useMemo(() => {
     const series = stats.monthlyTrend;
     if (series.length < 2) return undefined;
@@ -178,6 +178,15 @@ export default function DashboardClient() {
         userRole={user?.role}
       />
 
+      {/* Lead block: what needs this person today, and the ability to act on it
+          here. Everything below is reference material — stats, charts, widgets —
+          which is why it used to take three clicks to find a pending approval. */}
+      <motion.div variants={itemVariants}>
+        <WidgetErrorBoundary name="FocusFeed">
+          <FocusFeed onOpenSearch={openPalette} />
+        </WidgetErrorBoundary>
+      </motion.div>
+
       <DashboardBanners />
 
       {/* Managers file attendance like everyone else, so the tracker belongs on
@@ -187,7 +196,16 @@ export default function DashboardClient() {
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <div data-tour="quick-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        {/* Two tiles, not four.
+            "Pending requests" and "On leave now" were removed: the Focus Feed
+            above states both — and lets a pending request be approved in place,
+            which makes a bare count a strictly weaker copy of it. Worse, the two
+            widgets computed "on leave" from different sources (this tile scans
+            leaveRequests date ranges, the Feed reads getOutOfOffice's isOutToday),
+            so they could show different numbers on the same screen.
+            What is left is the two figures nothing else reports: headcount, and
+            the month's approvals with their trend. */}
+        <div data-tour="quick-stats" className="grid grid-cols-2 gap-2 sm:gap-3">
           <StatsCard
             title={t('titles.totalEmployees')}
             value={isLoading ? '—' : stats.totalEmployees}
@@ -198,44 +216,15 @@ export default function DashboardClient() {
             hint={t('dashboard.stat.inOrganization')}
           />
           <StatsCard
-            title={t('titles.pendingRequests')}
-            value={isLoading ? '—' : stats.pendingRequests}
-            icon={<Clock className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />}
-            color="yellow"
-            index={1}
-            href="/leaves"
-            hint={
-              stats.pendingRequests > 0
-                ? t('dashboard.stat.needsDecision')
-                : t('dashboard.stat.allClear')
-            }
-            trend={pendingTrend}
-          />
-          <StatsCard
             title={t('titles.approvedThisMonth')}
             value={isLoading ? '—' : stats.approvedThisMonth}
             icon={<CheckCircle className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />}
             color="green"
-            index={2}
+            index={1}
             href="/leaves"
             change={approvedChange}
             changeLabel={approvedChange !== undefined ? t('dashboard.stat.vsLastMonth') : undefined}
             trend={approvedTrend}
-          />
-          <StatsCard
-            title={t('titles.onLeaveNow')}
-            value={isLoading ? '—' : stats.onLeaveNow}
-            icon={<UserCheck className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />}
-            color="purple"
-            index={3}
-            href="/calendar"
-            hint={
-              stats.totalEmployees > 0
-                ? t('dashboard.stat.ofTeam', {
-                    percent: Math.round((stats.onLeaveNow / stats.totalEmployees) * 100),
-                  })
-                : undefined
-            }
           />
         </div>
       </motion.div>

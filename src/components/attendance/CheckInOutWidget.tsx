@@ -77,13 +77,15 @@ export function CheckInOutWidget() {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="btn-gradient text-white font-medium shadow-md hover:shadow-lg">
+      {/* Full-bleed header: `.brand-panel`, not `.btn-gradient` — a button fill
+          spread across the width of a card reads as a lit slab. */}
+      <CardHeader className="brand-panel font-medium">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-white">
             <Clock className="w-5 h-5" />
             {t('attendance.timeTracker')}
           </CardTitle>
-          <div className="text-2xl font-mono">
+          <div className="num text-2xl font-mono">
             {currentTime ? format(currentTime, 'HH:mm:ss', { locale: dfLocale }) : '--:--:--'}
           </div>
         </div>
@@ -100,12 +102,7 @@ export function CheckInOutWidget() {
               {isCheckedOut && t('attendance.finishedToday')}
             </p>
           </div>
-          <Badge
-            variant={isCheckedIn ? 'default' : isCheckedOut ? 'secondary' : 'outline'}
-            className={
-              isCheckedIn ? 'bg-green-500 text-white' : isCheckedOut ? 'bg-blue-500 text-white' : ''
-            }
-          >
+          <Badge variant={isCheckedIn ? 'success' : isCheckedOut ? 'info' : 'outline'}>
             {!todayStatus && t('attendance.offline')}
             {isCheckedIn && t('attendance.online')}
             {isCheckedOut && t('attendance.offline')}
@@ -115,31 +112,31 @@ export function CheckInOutWidget() {
         {/* Check In/Out Times */}
         {todayStatus && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border)' }}>
+            <div className="rounded-card border border-(--border-default) p-3">
               <div className="flex items-center gap-2 mb-1">
-                <LogIn className="w-4 h-4 text-green-500" />
+                <LogIn className="w-4 h-4 text-(--success-text)" />
                 <span className="text-xs text-(--text-muted)">{t('attendance.checkIn')}</span>
               </div>
-              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <p className="num font-semibold text-(--text-primary)">
                 {formatTime(todayStatus.checkInTime)}
               </p>
               {todayStatus.isLate && todayStatus.lateMinutes && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="mt-1 text-xs text-(--danger-text)">
                   {t('attendance.lateBy', { minutes: todayStatus.lateMinutes })}
                 </p>
               )}
             </div>
 
-            <div className="p-3 rounded-lg border" style={{ borderColor: 'var(--border)' }}>
+            <div className="rounded-card border border-(--border-default) p-3">
               <div className="flex items-center gap-2 mb-1">
-                <LogOut className="w-4 h-4 text-blue-500" />
+                <LogOut className="w-4 h-4 text-(--brand-text)" />
                 <span className="text-xs text-(--text-muted)">{t('attendance.checkOut')}</span>
               </div>
-              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <p className="num font-semibold text-(--text-primary)">
                 {todayStatus.checkOutTime ? formatTime(todayStatus.checkOutTime) : '—'}
               </p>
               {todayStatus.isEarlyLeave && todayStatus.earlyLeaveMinutes && (
-                <p className="text-xs text-orange-500 mt-1">
+                <p className="mt-1 text-xs text-(--warning-text)">
                   {t('attendance.leftEarlyBy', { minutes: todayStatus.earlyLeaveMinutes })}
                 </p>
               )}
@@ -149,22 +146,21 @@ export function CheckInOutWidget() {
 
         {/* Work Duration */}
         {todayStatus && todayStatus.totalWorkedMinutes && (
-          <div className="p-4 rounded-lg bg-linear-to-r from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950">
+          <div className="rounded-card border border-(--success-outline) bg-(--success-quiet) p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
-                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                <TrendingUp className="w-5 h-5 text-(--success-text)" />
+                <span className="font-medium text-(--text-primary)">
                   {t('attendance.totalWorked')}
                 </span>
               </div>
-              <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <span className="num text-2xl font-bold text-(--success-text)">
                 {formatDuration(todayStatus.totalWorkedMinutes)}
               </span>
             </div>
             {todayStatus.overtimeMinutes && todayStatus.overtimeMinutes > 0 && (
-              <p className="text-sm text-green-600 dark:text-green-400 mt-2">
-                +{formatDuration(todayStatus.overtimeMinutes)} {t('attendanceExtra.overtimeShort')}{' '}
-                🌟
+              <p className="mt-2 text-sm text-(--success-text)">
+                +{formatDuration(todayStatus.overtimeMinutes)} {t('attendanceExtra.overtimeShort')}
               </p>
             )}
           </div>
@@ -173,39 +169,31 @@ export function CheckInOutWidget() {
         {/* Action Buttons */}
         <div className="flex gap-3 pt-2">
           {!todayStatus && (
-            <Button
-              onClick={handleCheckIn}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-              size="lg"
-            >
+            <Button onClick={handleCheckIn} className="flex-1" size="lg">
               <LogIn className="w-5 h-5 mr-2" />
               {t('attendance.checkIn')}
             </Button>
           )}
 
           {isCheckedIn && (
-            <Button onClick={handleCheckOut} className="flex-1 btn-gradient" size="lg">
+            <Button onClick={handleCheckOut} className="flex-1" size="lg">
               <LogOut className="w-5 h-5 mr-2" />
               {t('attendance.checkOut')}
             </Button>
           )}
 
           {isCheckedOut && (
-            <div className="flex-1 p-4 rounded-lg bg-blue-50 dark:bg-blue-950 text-center">
-              <p className="text-blue-600 dark:text-blue-400 font-medium">
-                {t('attendance.seeYouTomorrow')}
-              </p>
+            <div className="flex-1 rounded-card border border-(--brand-outline) bg-(--brand-quiet) p-4 text-center">
+              <p className="font-medium text-(--brand-text)">{t('attendance.seeYouTomorrow')}</p>
             </div>
           )}
         </div>
 
         {/* Info Message */}
         {!todayStatus && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950">
-            <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              {t('ui.notCheckedInWarning')}
-            </p>
+          <div className="flex items-start gap-2 rounded-card border border-(--warning-outline) bg-(--warning-quiet) p-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-(--warning-text)" />
+            <p className="text-sm text-(--warning-text)">{t('ui.notCheckedInWarning')}</p>
           </div>
         )}
       </CardContent>

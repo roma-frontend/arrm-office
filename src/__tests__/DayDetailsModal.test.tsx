@@ -383,15 +383,21 @@ describe('DayDetailsModal', () => {
     expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('closes via the backdrop and ignores panel clicks', () => {
+  // The panel is a slide-over now, not a hand-rolled centered modal. The old
+  // version had no `role="dialog"`, no focus trap and no Escape handling — it
+  // could only be dismissed with the mouse. Radix supplies all three, so what is
+  // worth asserting changed with it.
+  it('exposes dialog semantics', () => {
+    render(<DayDetailsModal {...makeProps()} />);
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.getAttribute('data-side')).toBe('right');
+  });
+
+  it('closes on Escape', () => {
     const props = makeProps();
     render(<DayDetailsModal {...props} />);
-    const backdrop = document.querySelector('.modal-backdrop-in')!;
-    fireEvent.click(backdrop);
-    expect(props.onClose).toHaveBeenCalledTimes(1);
-
-    const panel = document.querySelector('.modal-panel-in')!;
-    fireEvent.click(panel);
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(props.onClose).toHaveBeenCalledTimes(1);
   });
 

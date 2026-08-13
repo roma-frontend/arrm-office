@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme } from '@/lib/chart-theme';
 import { motion } from '@/lib/cssMotion';
 import {
   DollarSign,
@@ -103,16 +103,15 @@ function getStatusBadge(status: string, t: (key: string) => string) {
 
 export default function PayrollDashboard() {
   const { t } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-
-  const tooltipBg = isDark ? '#0f172a' : '#ffffff';
-  const tooltipBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-  const tooltipColor = isDark ? '#ffffff' : '#0f172a';
-  const tooltipShadow = isDark ? '0 4px 12px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(0, 0, 0, 0.1)';
-  const textColor = isDark ? '#ffffff' : '#0f172a';
-  const gridStroke = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
-  const axisTickFill = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)';
+  const {
+    tooltipBg,
+    tooltipBorder,
+    tooltipColor,
+    tooltipShadow,
+    textColor,
+    gridStroke,
+    axisTickFill,
+  } = useChartTheme();
 
   const selectedOrgId = useSelectedOrganization();
   const { user } = useAuthStore();

@@ -5,6 +5,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
 import { X, Search, Users, MessageCircle, Check, Globe, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useOrgSelectorStore } from '@/store/useOrgSelectorStore';
@@ -326,13 +327,10 @@ export function NewConversationModal({
         {/* Group name */}
         {mode === 'group' && (
           <div className="px-3 pb-2">
-            <input
+            <Input
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder={t('chat.groupName')}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-(--input-border) bg-(--input) text-(--text-primary) outline-none"
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--primary)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
             />
           </div>
         )}
@@ -340,22 +338,12 @@ export function NewConversationModal({
         {/* Search */}
         <div className="px-3 pb-2">
           <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5"
-              style={{ color: 'var(--text-disabled)' }}
-            />
-            <input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-(--text-disabled)" />
+            <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('chat.searchEmployees')}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border outline-none"
-              style={{
-                background: 'var(--background-subtle)',
-                borderColor: 'var(--border)',
-                color: 'var(--text-primary)',
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--primary)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+              className="h-8 pl-9 text-xs"
             />
           </div>
         </div>

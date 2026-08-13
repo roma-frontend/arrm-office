@@ -1,3 +1,35 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP STYLESHEET ENTRY
+
+   Import order is load-bearing:
+
+     1. tailwindcss        registers @layer theme/base/components/utilities
+     2. @custom-variant    binds `dark:` to the app's .dark class, not the OS
+     3. tokens.css         design tokens — unlayered, so they win over @layer theme
+     4. spark.css          depth / glass / motion / focus utility layer
+     5. dark-compat.css    maps leftover raw Tailwind palette classes onto tokens
+                           in dark mode; must come after spark.css so its
+                           (0,3,0) selectors sit last among the unlayered rules
+     6. animations.css     shared keyframes
+     7. everything below   app- and page-specific CSS
+
+   These used to sit ~215 lines below the top of the file, which put every rule
+   above them outside the cascade layers entirely.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@import 'tailwindcss';
+
+/* Drive Tailwind's `dark:` variant off the app's `.dark` class (toggled by
+   ThemeProvider on <html>) instead of the browser's prefers-color-scheme.
+   Without this, Tailwind v4 defaults `dark:` to @media (prefers-color-scheme:
+   dark), so dark utilities followed the OS setting even when the in-app theme
+   was Light. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import '../styles/tokens.css';
+@import '../styles/spark.css';
+@import '../styles/dark-compat.css';
+@import '../styles/animations.css';
+
 /* Force black text for LanguageSwitcher button in both themes */
 .language-switcher-btn {
   color: var(--text-primary) !important;
@@ -95,20 +127,22 @@ body.lang-switching #main-content {
 
 /* ═══════════════════════════════════════════════════════════════
    MODERN DESIGN UTILITIES
+
+   `.glass-card`, `.glow-*`, `.card-hover`, `.depth-card`, `.text-gradient`,
+   `.btn-gradient` and the skeleton shimmer now live in src/styles/spark.css,
+   built from tokens instead of literal hex and rgba(). Redefining them there
+   restyles every existing call site at once — which is the whole point of
+   keeping the class names.
+
+   `.gradient-border` and `.counter-animate` stay here: they are one-off effects
+   with no token surface of their own.
    ═══════════════════════════════════════════════════════════════ */
 
-/* 1. Glassmorphism card */
-.glass-card {
-  background: color-mix(in srgb, var(--card) 75%, transparent);
-  backdrop-filter: blur(12px);
-  border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-}
-
-/* 2. Gradient border on hover */
+/* Gradient border on hover */
 .gradient-border {
   position: relative;
   border: 1px solid var(--border);
-  transition: border-color 0.3s;
+  transition: border-color var(--dur-base) var(--ease-spark);
 }
 .gradient-border::before {
   content: '';
@@ -116,13 +150,13 @@ body.lang-switching #main-content {
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9, #8b5cf6);
+  background: linear-gradient(135deg, var(--brand-600), var(--brand-400), var(--violet-500));
   mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity var(--dur-base) var(--ease-spark);
   pointer-events: none;
 }
 .gradient-border:hover::before {
@@ -132,36 +166,23 @@ body.lang-switching #main-content {
   border-color: transparent;
 }
 
-/* 3. Subtle glow */
-.glow-sm {
-  box-shadow: 0 0 15px rgba(37, 99, 235, 0.1);
+/* Animated counter (used with JS) */
+.counter-animate {
+  display: inline-block;
+  transition: transform var(--dur-base) var(--ease-spring);
 }
-.glow-md {
-  box-shadow: 0 0 25px rgba(37, 99, 235, 0.15);
-}
-.glow-active {
-  box-shadow:
-    0 0 20px rgba(37, 99, 235, 0.2),
-    0 0 40px rgba(37, 99, 235, 0.05);
+.counter-animate.counting {
+  transform: scale(1.1);
 }
 
-/* 4. Micro-interactions */
-.card-hover {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-.card-hover:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-/* 5. Shimmer skeleton */
+/* Shimmer skeleton — kept as a class alias; `.skeleton` in spark.css is the
+   token-driven version used by new code. */
 .shimmer {
   background: linear-gradient(
     90deg,
-    var(--background-subtle) 25%,
-    color-mix(in srgb, var(--background-subtle) 50%, var(--border)) 50%,
-    var(--background-subtle) 75%
+    var(--surface-2) 25%,
+    var(--surface-3) 50%,
+    var(--surface-2) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -175,151 +196,21 @@ body.lang-switching #main-content {
   }
 }
 
-/* 6. Animated counter (used with JS) */
-.counter-animate {
-  display: inline-block;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.counter-animate.counting {
-  transform: scale(1.1);
-}
+/* Theme mappings, design tokens and both palettes now live in
+   src/styles/tokens.css (imported at the top of this file).
 
-/* 7. Gradient text */
-.text-gradient {
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.text-gradient-purple {
-  background: linear-gradient(135deg, #8b5cf6, #ec4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* 8. Dark mode depth — subtle noise + layered shadows.
-   Class-driven only (see @custom-variant dark below); no prefers-color-scheme
-   block so OS dark mode doesn't leak into the in-app Light theme. */
-[data-theme='dark'] .depth-card,
-.dark .depth-card {
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.3),
-    0 4px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-/* Override Radix UI scroll-lock compensation */
-body[data-scroll-locked] {
-  margin-right: 0 !important;
-  padding-right: 0 !important;
-}
-
-@import 'tailwindcss';
-@import '../styles/animations.css';
-
-/* Drive Tailwind's `dark:` variant off the app's `.dark` class (toggled by
-   ThemeProvider on <html>) instead of the browser's prefers-color-scheme.
-   Without this, Tailwind v4 defaults `dark:` to @media (prefers-color-scheme:
-   dark), so dark utilities followed the OS setting even when the in-app theme
-   was Light. */
-@custom-variant dark (&:where(.dark, .dark *));
-
-/* ═══════════════════════════════════════════════════════════════
-   TAILWIND V4 THEME MAPPINGS
-   Map CSS variables to Tailwind utility classes
-   Eliminates need for inline style={{}} throughout the codebase
-   ═══════════════════════════════════════════════════════════════ */
-@theme {
-  /* Background colors */
-  --color-background: var(--background);
-  --color-background-subtle: var(--background-subtle);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-hover: var(--card-hover);
-  --color-card-foreground: var(--card-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-
-  /* Border colors */
-  --color-border: var(--border);
-  --color-border-subtle: var(--border-subtle);
-  --color-input: var(--input-border);
-  --color-ring: var(--ring);
-
-  /* Primary colors */
-  --color-primary: var(--primary);
-  --color-primary-hover: var(--primary-hover);
-  --color-primary-foreground: var(--primary-foreground);
-
-  /* Secondary colors */
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-
-  /* Accent colors */
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-
-  /* Semantic colors */
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-
-  /* Text colors */
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted: var(--text-muted);
-  --color-text-disabled: var(--text-disabled);
-
-  /* Sidebar colors */
-  --color-sidebar-bg: var(--sidebar-bg);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-item-hover: var(--sidebar-item-hover);
-  --color-sidebar-item-active: var(--sidebar-item-active);
-  --color-sidebar-text: var(--sidebar-text);
-  --color-sidebar-text-muted: var(--sidebar-text-muted);
-
-  /* Navbar colors */
-  --color-navbar-bg: var(--navbar-bg);
-  --color-navbar-border: var(--navbar-border);
-
-  /* Shadows */
-  --shadow: var(--shadow);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
-}
-
-/* Professional HR Platform Theme - Deep Navy & Sky Blue */
-:root {
-  --color-bg-deep: #0f172a;
-  --color-bg-card: #1e293b;
-  --color-bg-elevated: #1e3a5f;
-  --color-primary: #2563eb;
-  --color-primary-light: #60a5fa;
-  --color-primary-dark: #1d4ed8;
-  --color-slate-400: #94a3b8;
-  --color-slate-600: #475569;
-}
-
-/* Light Desktop Theme - for desktop/favicon use */
-.desktop {
-  --color-primary: #3b82f6;
-  --color-primary-light: #60a5fa;
-  --color-primary-lighter: #93c5fd;
-  --color-primary-lightest: #bfdbfe;
-  --color-bg-deep: #f8fafc;
-  --color-bg-card: #ffffff;
-  --color-bg-elevated: #f1f5f9;
-  --color-text: #1e293b;
-  --color-text-muted: #64748b;
-}
-
-/* Body background moved to line 280 to avoid duplication */
+   Removed from here along the way:
+   • the duplicate `@import 'tailwindcss'` that sat mid-file;
+   • `@theme { --shadow-md: var(--shadow-md) }` and friends — a custom property
+     that references itself is invalid at computed-value time, so those steps
+     only ever resolved because an unlayered `:root` below happened to redeclare
+     them. tokens.css maps them with `@theme inline`, which has no such cycle;
+   • a leftover `:root { --color-primary: #2563eb; --color-bg-*: … }` block
+     holding *dark* values inside the light theme. Being unlayered, it outranked
+     the `@layer theme` output of `@theme`, which pinned every `bg-primary` /
+     `text-primary` / `border-primary` / `ring-primary` utility in the app to a
+     single hard-coded blue that never followed the dark theme;
+   • the unused `.desktop` palette. */
 
 /* Skip to content link - hidden by default, visible on focus */
 .sr-only {
@@ -361,366 +252,22 @@ html.light {
   color-scheme: light;
 }
 
-/* ── Light Theme (default) ─────────────────────────────────────── */
-:root {
-  /* Base */
-  --background: #f0f6ff;
-  --background-subtle: #ffffff;
-  --background-subtle-calendar: #738bb4;
-  --foreground: #0c1a2e;
+/* ── Palettes ───────────────────────────────────────────────────────────────
+   Both themes now live in src/styles/tokens.css. They were lifted out of here
+   verbatim in role terms — every one of the 181 custom properties this file used
+   to declare still exists under the same name, re-pointed at a semantic token.
 
-  /* Card / Surface */
-  --card: #ffffff;
-  --card-hover: #f0f6ff;
-  --card-foreground: #0c1a2e;
-  --card-border: #c7d9f5;
-  --surface-hover: #f0f6ff;
-
-  /* Popover */
-  --popover: #ffffff;
-  --popover-foreground: #0c1a2e;
-
-  /* Border */
-  --border: #c7d9f5;
-  --border-subtle: #e8f0fe;
-  --input: #f8fafc;
-  --input-border: #93bef7;
-  --ring: #2563eb;
-
-  /* Primary
-   *
-   * `--primary` has to stay a *colour*. Tailwind maps `bg-primary`,
-   * `text-primary`, `border-primary` and `ring-primary` onto
-   * `background-color: var(--primary)` and friends (see `--color-primary` in the
-   * `@theme` block), and a `linear-gradient` is not a valid value there — the
-   * browser drops the declaration. While this held a gradient, every one of the
-   * ~1400 accented utilities in the app painted nothing in the light theme:
-   * white labels on white surfaces, invisible unread dots, borderless
-   * highlights. It only looked right in dark mode, where the value was solid.
-   *
-   * The brand gradient now lives in `--primary-gradient`, for the few surfaces
-   * that set `background` and genuinely want it. */
-  --primary: #2563eb;
-  --primary-gradient: linear-gradient(135deg, rgb(37, 99, 235), rgb(96, 165, 250));
-  --primary-hover: #1d4ed8;
-  --primary-foreground: #ffffff;
-  --primary-rgb: 37, 99, 235;
-
-  /* Tab active state */
-  --tab-active-bg: #2563eb;
-  --tab-active-text: #ffffff;
-
-  /* Secondary */
-  --secondary: #e8f0fe;
-  --secondary-foreground: #1e3a6e;
-
-  /* Muted */
-  --muted: #e8f0fe;
-  --muted-foreground: #3d6196;
-
-  /* Accent */
-  --accent: #f0f6ff;
-  --accent-foreground: #0c1a2e;
-
-  /* Loader - контрастный цвет для светлой темы */
-  --loader-color: #1e40af;
-
-  /* Semantic */
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --success: #10b981;
-  --success-foreground: #ffffff;
-  --warning: #f59e0b;
-  --warning-foreground: #ffffff;
-  --info: #2563eb;
-  --info-foreground: #ffffff;
-
-  /* Button colors */
-  /* Primary buttons keep the gradient they have always had in this theme; only
-     the token they read it from changed. */
-  --button-primary-bg: var(--primary-gradient);
-  --button-primary-hover: var(--primary-hover);
-  --button-primary-text: #ffffff;
-  --button-secondary-bg: rgba(37, 99, 235, 0.08);
-  --button-secondary-hover: rgba(37, 99, 235, 0.15);
-  --button-secondary-text: #2563eb;
-  --button-secondary-border: rgba(37, 99, 235, 0.2);
-  --button-danger-bg: rgba(239, 68, 68, 0.08);
-  --button-danger-hover: rgba(239, 68, 68, 0.15);
-  --button-danger-text: #ef4444;
-  --button-danger-border: rgba(239, 68, 68, 0.2);
-  --button-success-bg: rgba(16, 185, 129, 0.08);
-  --button-success-hover: rgba(16, 185, 129, 0.15);
-  --button-success-text: #047857;
-  --button-success-border: rgba(16, 185, 129, 0.2);
-  --button-outline-bg: transparent;
-  --button-outline-hover: rgba(0, 0, 0, 0.04);
-  --button-outline-text: var(--text-primary);
-  --button-outline-border: var(--border);
-
-  /* Card variants */
-  --card-default: var(--card);
-  --card-elevated: var(--card-hover);
-  --card-subtle: var(--background-subtle);
-  --card-border-default: var(--border);
-  --card-border-elevated: var(--border-subtle);
-
-  /* Badge variants */
-  --badge-primary-bg: rgba(37, 99, 235, 0.1);
-  --badge-primary-text: #2563eb;
-  --badge-primary-border: rgba(37, 99, 235, 0.2);
-  --badge-success-bg: rgba(16, 185, 129, 0.1);
-  --badge-success-text: #047857;
-  --badge-success-border: rgba(16, 185, 129, 0.2);
-  --badge-warning-bg: rgba(245, 158, 11, 0.1);
-  --badge-warning-text: #f59e0b;
-  --badge-warning-border: rgba(245, 158, 11, 0.2);
-  --badge-danger-bg: rgba(239, 68, 68, 0.1);
-  --badge-danger-text: #ef4444;
-  --badge-danger-border: rgba(239, 68, 68, 0.2);
-  --badge-info-bg: rgba(37, 99, 235, 0.1);
-  --badge-info-text: #2563eb;
-  --badge-info-border: rgba(37, 99, 235, 0.2);
-  --badge-secondary-bg: rgba(147, 197, 253, 0.1);
-  --badge-secondary-text: #3d6196;
-  --badge-secondary-border: rgba(147, 197, 253, 0.15);
-  --badge-purple-bg: rgba(147, 51, 234, 0.1);
-  --badge-purple-text: #9333ea;
-  --badge-purple-border: rgba(147, 51, 234, 0.2);
-  --purple: #9333ea;
-
-  /* Text */
-  --text-primary: #0c1a2e;
-  --text-secondary: #1e3a6e;
-  --text-muted: #3d6196;
-  --text-disabled: #93bef7;
-
-  /* Sidebar */
-  --sidebar-bg: #ffffff;
-  --sidebar-border: #c7d9f5;
-  --sidebar-item-hover: #e8f0fe;
-  --sidebar-item-active: rgba(37, 99, 235, 0.1);
-  --sidebar-item-active-text: #2563eb;
-  --sidebar-text: #3d6196;
-  --sidebar-text-muted: #93bef7;
-
-  /* Navbar */
-  --navbar-bg: rgba(255, 255, 255, 0.88);
-  --navbar-border: #c7d9f5;
-
-  /* Shadows */
-  --shadow: 0 1px 3px rgba(37, 99, 235, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px rgba(37, 99, 235, 0.1), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px rgba(37, 99, 235, 0.1), 0 4px 6px rgba(0, 0, 0, 0.04);
-
-  /* Status badges */
-  --status-approved-bg: rgba(16, 185, 129, 0.1);
-  --status-approved-text: #059669;
-  --status-pending-bg: rgba(245, 158, 11, 0.1);
-  --status-pending-text: #d97706;
-  --status-rejected-bg: rgba(239, 68, 68, 0.1);
-  --status-rejected-text: #dc2626;
-
-  /* Modal overlay */
-  --overlay-bg: rgba(0, 0, 0, 0.4);
-
-  /* Accent gradient for buttons and headers */
-  --accent-gradient: linear-gradient(135deg, #2563eb, #3b82f6);
-  --text-on-accent: #ffffff;
-  --text-on-accent-secondary: rgba(255, 255, 255, 0.8);
-
-  /* Landing page specific colors - Light Theme */
-  --landing-bg: linear-gradient(135deg, #f0f6ff 0%, #e8f0fe 50%, #f0f6ff 100%);
-  --landing-text-primary: #0c1a2e;
-  --landing-text-secondary: #1e3a6e;
-  --landing-text-muted: #3d6196;
-  --landing-navbar-bg: rgba(255, 255, 255, 0.88);
-  --landing-navbar-bg-rgb: 255, 255, 255;
-  --landing-navbar-text: #1e3a6e;
-  --landing-navbar-text-hover: #2563eb;
-  --landing-card-bg: rgba(255, 255, 255, 0.5);
-  --landing-card-border: rgba(199, 217, 245, 0.5);
-  --landing-modal-bg: #ffffff;
-  --landing-gradient-from: #2563eb;
-  --landing-gradient-to: #60a5fa;
-  --landing-orb-1: rgba(37, 99, 235, 0.15);
-  --landing-orb-2: rgba(96, 165, 250, 0.12);
-  --landing-orb-3: rgba(56, 189, 248, 0.1);
-}
-
-/* ── Dark Theme ────────────────────────────────────────────────── */
-.dark {
-  /* Base */
-  --background: #060e1e;
-  --background-subtle: #0d1e38;
-  --background-subtle-calendar: #29436f;
-  --foreground: #e8f0fe;
-
-  /* Card / Surface */
-  --card: #0d1e38;
-  --card-hover: #112344;
-  --card-foreground: #e8f0fe;
-  --card-border: #1a3460;
-  --surface-hover: #112344;
-
-  /* Popover */
-  --popover: #0d1e38;
-  --popover-foreground: #e8f0fe;
-
-  /* Border */
-  --border: #1a3460;
-  --border-subtle: #0d1e38;
-  --input: #0f2447;
-  --input-border: #2563eb;
-  --ring: #60a5fa;
-
-  /* Primary */
-  --primary: #3b82f6;
-  --primary-gradient: linear-gradient(135deg, #3b82f6, #60a5fa);
-  --primary-hover: #2563eb;
-  --primary-foreground: #ffffff;
-  --primary-rgb: 59, 130, 246;
-
-  /* Tab active state */
-  --tab-active-bg: #2563eb;
-  --tab-active-text: #ffffff;
-
-  /* Secondary */
-  --secondary: #0d1e38;
-  --secondary-foreground: #93c5fd;
-
-  /* Muted */
-  --muted: #0d1e38;
-  --muted-foreground: #7ab3f5;
-
-  /* Accent */
-  --accent: #01579b;
-  --accent-foreground: #ffffff;
-
-  /* Loader - яркий цвет для тёмной темы */
-  --loader-color: #60a5fa;
-
-  /* Semantic */
-  --destructive: #f87171;
-  --destructive-foreground: #ffffff;
-  --success: #34d399;
-  --success-foreground: #ffffff;
-  --warning: #fbbf24;
-  --warning-foreground: #ffffff;
-  --info: #60a5fa;
-  --info-foreground: #ffffff;
-
-  /* Button colors */
-  --button-primary-bg: var(--primary);
-  --button-primary-hover: var(--primary-hover);
-  --button-primary-text: #ffffff;
-  --button-secondary-bg: rgba(59, 130, 246, 0.12);
-  --button-secondary-hover: rgba(59, 130, 246, 0.2);
-  --button-secondary-text: #60a5fa;
-  --button-secondary-border: rgba(59, 130, 246, 0.3);
-  --button-danger-bg: rgba(248, 113, 113, 0.12);
-  --button-danger-hover: rgba(248, 113, 113, 0.2);
-  --button-danger-text: #f87171;
-  --button-danger-border: rgba(248, 113, 113, 0.3);
-  --button-success-bg: rgba(52, 211, 153, 0.12);
-  --button-success-hover: rgba(52, 211, 153, 0.2);
-  --button-success-text: #34d399;
-  --button-success-border: rgba(52, 211, 153, 0.3);
-  --button-outline-bg: transparent;
-  --button-outline-hover: rgba(255, 255, 255, 0.05);
-  --button-outline-text: var(--text-primary);
-  --button-outline-border: var(--border);
-
-  /* Card variants */
-  --card-default: var(--card);
-  --card-elevated: var(--card-hover);
-  --card-subtle: var(--background-subtle);
-  --card-border-default: var(--border);
-  --card-border-elevated: var(--border-subtle);
-
-  /* Badge variants */
-  --badge-primary-bg: rgba(59, 130, 246, 0.15);
-  --badge-primary-text: #60a5fa;
-  --badge-primary-border: rgba(59, 130, 246, 0.3);
-  --badge-success-bg: rgba(52, 211, 153, 0.15);
-  --badge-success-text: #34d399;
-  --badge-success-border: rgba(52, 211, 153, 0.3);
-  --badge-warning-bg: rgba(251, 191, 36, 0.15);
-  --badge-warning-text: #fbbf24;
-  --badge-warning-border: rgba(251, 191, 36, 0.3);
-  --badge-danger-bg: rgba(248, 113, 113, 0.15);
-  --badge-danger-text: #f87171;
-  --badge-danger-border: rgba(248, 113, 113, 0.3);
-  --badge-info-bg: rgba(96, 165, 250, 0.15);
-  --badge-info-text: #60a5fa;
-  --badge-info-border: rgba(96, 165, 250, 0.3);
-  --badge-secondary-bg: rgba(147, 197, 253, 0.1);
-  --badge-secondary-text: #93c5fd;
-  --badge-secondary-border: rgba(147, 197, 253, 0.2);
-  --badge-purple-bg: rgba(168, 85, 247, 0.15);
-  --badge-purple-text: #a855f7;
-  --badge-purple-border: rgba(168, 85, 247, 0.3);
-  --purple: #a855f7;
-
-  /* Text */
-  --text-primary: #e8f0fe;
-  --text-secondary: #bdd4fa;
-  --text-muted: #7ab3f5;
-  --text-disabled: #2d5a9e;
-
-  /* Sidebar */
-  --sidebar-bg: #060e1e;
-  --sidebar-border: #0d1e38;
-  --sidebar-item-hover: #0d1e38;
-  --sidebar-item-active: rgba(59, 130, 246, 0.18);
-  --sidebar-item-active-text: #60a5fa;
-  --sidebar-text: #7ab3f5;
-  --sidebar-text-muted: #2d5a9e;
-
-  /* Navbar */
-  --navbar-bg: rgba(6, 14, 30, 0.88);
-  --navbar-border: #0d1e38;
-  --navbar-button-hover: #0d1e38;
-
-  /* Shadows */
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
-
-  /* Status badges */
-  --status-approved-bg: rgba(52, 211, 153, 0.15);
-  --status-approved-text: #34d399;
-  --status-pending-bg: rgba(251, 191, 36, 0.15);
-  --status-pending-text: #fbbf24;
-  --status-rejected-bg: rgba(248, 113, 113, 0.15);
-  --status-rejected-text: #f87171;
-
-  /* Modal overlay */
-  --overlay-bg: rgba(0, 0, 0, 0.7);
-
-  /* Accent gradient for buttons and headers */
-  --accent-gradient: linear-gradient(135deg, #1e40af, #2563eb, #3b82f6);
-  --text-on-accent: #ffffff;
-  --text-on-accent-secondary: rgba(255, 255, 255, 0.9);
-
-  /* Landing page specific colors - Dark Theme */
-  --landing-bg: linear-gradient(135deg, #060e1e 0%, #0d1e38 50%, #060e1e 100%);
-  --landing-text-primary: #e8f0fe;
-  --landing-text-secondary: #bdd4fa;
-  --landing-text-muted: #7ab3f5;
-  --landing-navbar-bg: rgba(6, 14, 30, 0.88);
-  --landing-navbar-bg-rgb: 6, 14, 30;
-  --landing-navbar-text: #bdd4fa;
-  --landing-navbar-text-hover: #60a5fa;
-  --landing-card-bg: rgba(13, 30, 56, 0.4);
-  --landing-card-border: rgba(26, 52, 96, 0.3);
-  --landing-modal-bg: #0f1f3d;
-  --landing-gradient-from: #2563eb;
-  --landing-gradient-to: #93c5fd;
-  --landing-orb-1: rgba(37, 99, 235, 0.25);
-  --landing-orb-2: rgba(96, 165, 250, 0.2);
-  --landing-orb-3: rgba(56, 189, 248, 0.15);
-}
+   What changed in the values:
+   • surfaces went from blue-tinted (#f0f6ff canvas, #c7d9f5 borders, #3d6196
+     muted text) to a cool neutral ramp, so the brand blue has something to
+     stand out against;
+   • shadows went from brand-tinted to neutral ink on a four-step elevation
+     scale — coloured shadows read as smudge, not depth;
+   • the dark theme dropped from saturated navy (#060e1e) to neutral graphite,
+     and its accent moved one step brighter so actions stay legible;
+   • `--accent`, which shadcn uses as the *neutral hover* role, no longer holds
+     a saturated blue (#01579b in dark) that turned every hover into a flash.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 /* ── Base Styles ───────────────────────────────────────────────── */
 * {
@@ -739,8 +286,8 @@ textarea,
 .transition-all,
 .transition {
   transition-property: color, background-color, border-color, opacity, box-shadow, transform;
-  transition-duration: 0.15s;
-  transition-timing-function: ease;
+  transition-duration: var(--dur-hover);
+  transition-timing-function: var(--ease-spark);
 }
 
 html {
@@ -806,25 +353,19 @@ body {
 }
 
 /* ── Glassmorphism ─────────────────────────────────────────────── */
-.glass {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(37, 99, 235, 0.12);
-}
-
-.dark .glass {
-  background: rgba(6, 14, 30, 0.75);
-  border: 1px solid rgba(59, 130, 246, 0.18);
-}
+/* `.glass` / `.glass-strong` are defined in src/styles/spark.css, token-driven
+   and behind an @supports guard. The hard-coded rgba() pair that used to live
+   here ignored the theme and could not follow a palette change. */
 
 /* ── Beautiful heading & section effects ───────────────────────── */
 
-/* Gradient text for section titles */
+/* Section titles. Weight 700 rather than the previous 900: at display sizes an
+   ultra-bold weight reads as shouting, and negative tracking is what actually
+   makes large type look composed. */
 .heading-gradient {
-  /* Use primary color instead of gradient for better visibility in both themes */
-  color: var(--primary);
-  font-weight: 900;
+  color: var(--text-1);
+  font-weight: 700;
+  letter-spacing: -0.022em;
 }
 
 @keyframes heading-shimmer {
@@ -1000,10 +541,13 @@ body {
   }
 }
 
-/* ── Scrollbar ─────────────────────────────────────────────────── */
+/* ── Scrollbar ─────────────────────────────────────────────────────────────
+   Track stays invisible, the thumb is a rounded hairline that only reaches full
+   contrast on hover. A permanently dark 4px square thumb is a surprisingly
+   large part of why a dense interface reads as utilitarian. */
 ::-webkit-scrollbar {
   width: 4px;
-  height: 6px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -1011,12 +555,25 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  /* border-radius: 9999px; */
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+  /* Transparent border shrinks the visible thumb to 6px while keeping a 10px
+     hit area — the trick every native-feeling web scroller uses. */
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-disabled);
+  background: var(--text-3);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+* {
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .scrollbar-width-none {
@@ -1024,15 +581,7 @@ body {
 }
 
 /* ── Animations ────────────────────────────────────────────────── */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
-}
+/* NOTE: @keyframes shimmer is defined once, next to `.shimmer` above. */
 
 @keyframes pulse-ring {
   0% {
@@ -1062,39 +611,39 @@ body {
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, var(--card) 25%, var(--card-hover) 50%, var(--card) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 50%,
+    var(--surface-2) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
 .gradient-text {
-  background: linear-gradient(135deg, #2563eb, #0ea5e9, #0ea5e9);
+  background: linear-gradient(135deg, var(--brand-600), var(--brand-400));
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .gradient-bg {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb, #0ea5e9);
+  background: linear-gradient(135deg, var(--brand-700), var(--brand-500), var(--brand-400));
   background-size: 200% 200%;
   animation: gradient-shift 4s ease infinite;
 }
 
 /* ── Focus Ring ────────────────────────────────────────────────── */
-*:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
+/* Defined in src/styles/spark.css with `border-radius: inherit`. The rule that
+   used to be here forced `border-radius: 6px` on every focus outline, which cut
+   visible corners off pill buttons, circular avatars and square cards alike. */
 
 /* ── Selection ─────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(37, 99, 235, 0.25);
-  color: var(--text-primary);
+  background: var(--brand-quiet-hover);
+  color: var(--text-1);
 }
 
 /* ── Landing Dropdown — professional slate+indigo theme ──────── */
@@ -1178,7 +727,7 @@ body {
 }
 
 .badge-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, var(--brand-quiet-hover), transparent);
   animation: badge-shimmer 3s linear infinite;
 }
 
@@ -1285,91 +834,103 @@ body {
    Works with light/dark themes
    ═══════════════════════════════════════════════════════════════ */
 
-/* Primary button gradient — used for all default/primary buttons */
-.btn-gradient {
-  background: linear-gradient(135deg, rgb(37, 99, 235), rgb(96, 165, 250));
-  color: var(--primary-foreground);
-  transition: all 0.2s ease;
-}
-.btn-gradient:hover {
-  opacity: 0.9;
-  filter: brightness(1.05);
-}
-.btn-gradient:active {
-  opacity: 0.95;
-  transform: scale(0.98);
-}
-.btn-gradient:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  filter: none;
-}
+/* Primary brand fill — `.btn-gradient` now lives in src/styles/spark.css.
+   The version here hard-coded rgb(37,99,235)→rgb(96,165,250) at 135°, which
+   ignored the theme and read as a two-tone sweep; the token version is a
+   vertical, few-percent gradient with an inner top highlight. */
 
 .cta-btn-primary {
-  @apply inline-flex items-center justify-center gap-3;
-  @apply px-8 py-4 sm:px-10 sm:py-4;
-  @apply rounded-2xl;
-  @apply font-bold text-lg;
-  @apply transition-all duration-300;
-  @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50;
-
-  /* Gradient background — works in both themes */
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-
-  /* Hover effects */
-  transform: scale(1);
-  box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-sheet);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  background-color: var(--brand);
+  background-image: var(--primary-gradient);
+  color: var(--brand-contrast);
+  box-shadow: var(--inner-highlight), var(--elev-brand);
+  transition:
+    box-shadow var(--dur-base) var(--ease-spark),
+    filter var(--dur-hover) var(--ease-spark),
+    transform var(--dur-press) var(--ease-spark);
 }
 
-.cta-btn-primary:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 40px rgba(37, 99, 235, 0.6);
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+@media (min-width: 640px) {
+  .cta-btn-primary,
+  .cta-btn-secondary {
+    padding: 1rem 2.5rem;
+  }
 }
 
-.cta-btn-primary:active {
-  transform: scale(0.97);
+/* Hover grows the *shadow*, not the element. Scaling a CTA on hover nudges the
+   surrounding layout optically and is the single most dated effect on the page. */
+.cta-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow:
+    var(--inner-highlight),
+    0 2px 4px rgb(var(--brand-700-ch) / 24%),
+    0 14px 34px -10px rgb(var(--brand-600-ch) / 42%);
+}
+
+.cta-btn-primary:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.cta-btn-primary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
 }
 
 .cta-btn-primary:disabled {
-  @apply opacity-50 cursor-not-allowed;
-  transform: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
 }
 
-/* Secondary CTA — Glass morphism effect */
+/* Secondary CTA — quiet brand surface, no blur. Backdrop-filter on a button
+   sitting over an already-translucent section is invisible and still costs a
+   compositing layer. */
 .cta-btn-secondary {
-  @apply inline-flex items-center justify-center gap-3;
-  @apply px-8 py-4 sm:px-10 sm:py-4;
-  @apply rounded-2xl;
-  @apply font-semibold text-lg;
-  @apply transition-all duration-300;
-  @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50;
-
-  /* Glass effect — works on both light and dark backgrounds */
-  background: rgba(59, 130, 246, 0.1);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: #2563eb;
-
-  /* Hover effects */
-  transform: scale(1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border-radius: var(--radius-sheet);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  background-color: var(--brand-quiet);
+  border: 1px solid var(--brand-outline);
+  color: var(--brand-text);
+  transition:
+    background-color var(--dur-hover) var(--ease-spark),
+    border-color var(--dur-hover) var(--ease-spark),
+    transform var(--dur-press) var(--ease-spark);
 }
 
-.cta-btn-secondary:hover {
-  transform: scale(1.03);
-  background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.5);
-  color: #1d4ed8;
+.cta-btn-secondary:hover:not(:disabled) {
+  background-color: var(--brand-quiet-hover);
+  border-color: var(--brand);
 }
 
-.cta-btn-secondary:active {
-  transform: scale(0.97);
+.cta-btn-secondary:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.cta-btn-secondary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
 }
 
 .cta-btn-secondary:disabled {
-  @apply opacity-50 cursor-not-allowed;
-  transform: none;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Floating particles — pure CSS, replaces framer-motion */
@@ -1562,62 +1123,60 @@ body {
   animation: gradient-shift 3s ease infinite;
 }
 
-/* ── Sonner Toast Custom Styling ────────────────────────────────── */
+/* ── Sonner Toast Custom Styling ────────────────────────────────────────────
+   A toast is a floating layer, so it is one of the few places glass belongs.
+   Success now reads green instead of brand blue: a success toast tinted with the
+   primary colour is indistinguishable from an informational one. */
 [data-sonner-toast] {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(8px);
+  background: var(--surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-panel);
+  padding: 14px 16px;
+  box-shadow: var(--elev-4);
 }
 
 [data-sonner-toast][data-type='success'] {
-  background: var(--card);
-  border-left: 3px solid var(--primary);
+  border-left: 3px solid var(--success-solid);
 }
 
 [data-sonner-toast][data-type='success'] [data-icon] {
-  color: var(--primary);
+  color: var(--success-text);
   width: 20px;
   height: 20px;
 }
 
 [data-sonner-toast][data-type='error'] {
-  background: var(--card);
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--danger-solid);
 }
 
 [data-sonner-toast][data-type='error'] [data-icon] {
-  color: #ef4444;
+  color: var(--danger-text);
   width: 20px;
   height: 20px;
 }
 
 [data-sonner-toast][data-type='info'] {
-  background: var(--card);
-  border-left: 3px solid var(--primary);
+  border-left: 3px solid var(--brand);
 }
 
 [data-sonner-toast][data-type='info'] [data-icon] {
-  color: var(--primary);
+  color: var(--brand-text);
   width: 20px;
   height: 20px;
 }
 
 [data-sonner-toast][data-type='warning'] {
-  background: var(--card);
-  border-left: 3px solid #f59e0b;
+  border-left: 3px solid var(--warning-solid);
 }
 
 [data-sonner-toast][data-type='warning'] [data-icon] {
-  color: #f59e0b;
+  color: var(--warning-text);
   width: 20px;
   height: 20px;
 }
 
 [data-sonner-toast] [data-title] {
-  color: var(--foreground);
+  color: var(--text-1);
   font-weight: 600;
   font-size: 14px;
   line-height: 1.4;
@@ -1625,8 +1184,7 @@ body {
 }
 
 [data-sonner-toast] [data-description] {
-  color: var(--foreground);
-  opacity: 0.8;
+  color: var(--text-3);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -1763,16 +1321,9 @@ input[type='date']:focus {
    Animation Classes (used by ShieldLoader and other components)
    ═══════════════════════════════════════════════════════════════ */
 
-/* Slow spin animation for loader */
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* Slow spin animation for loader.
+   NOTE: @keyframes spin-slow is declared once, in the landing animations block
+   above; `.spin-slow` (20s) and `.animate-spin-slow` (1.5s) share it. */
 .animate-spin-slow {
   animation: spin-slow 1.5s linear infinite;
 }
@@ -1997,20 +1548,9 @@ input[type='date']:focus {
   animation: bounce-subtle 2s ease-in-out infinite;
 }
 
-/* Float */
-@keyframes float-animation {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.animate-float {
-  animation: float-animation 3s ease-in-out infinite;
-}
+/* Float — NOTE: `.animate-float` binds `@keyframes float` (declared once in the
+   landing animations block). The `float-animation` copy that used to live here
+   was a third definition of the same motion and simply overrode the other two. */
 
 /* Pulse */
 @keyframes pulse-subtle {
@@ -2077,22 +1617,12 @@ input[type='date']:focus {
   animation: chat-badge 1.2s ease-in-out infinite;
 }
 
-/* ThreadPanel: slide-in from right */
-@keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Slide in from right — defined once above */
-
+/* ThreadPanel: slide-in from right.
+   NOTE: @keyframes slide-in-right is declared once, in the "Additional Animation
+   Utilities" block above. This is only the shorter 0.25s binding used by the
+   thread panel; the earlier `.animate-slide-in-right` (0.3s) is overridden by it. */
 .animate-slide-in-right {
-  animation: slide-in-right 0.25s ease-out both;
+  animation: slide-in-right 0.25s var(--ease-spark) both;
 }
 
 /* ConversationList: conversation item entrance animation */
@@ -2153,14 +1683,7 @@ input[type='date']:focus {
   animation: bubble-fade-in 0.2s ease-out both;
 }
 
-/* Utility: hide scrollbar */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+/* NOTE: `.scrollbar-hide` is defined once, in the utilities block above. */
 
 /* Tab Content: smooth fade + slide animation */
 @keyframes tab-fade-in {
@@ -2236,14 +1759,8 @@ input[type='date']:focus {
   }
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
+/* NOTE: @keyframes shimmer is defined once, next to `.shimmer` near the top of
+   this file. Two further copies used to sit here and in the animations block. */
 
 /* ═══════════════════════════════════════════════════════════════
    MESH GRADIENT ORB ANIMATIONS — Hero Section
@@ -2390,7 +1907,14 @@ input[type='date']:focus {
   inset: -2px;
   border-radius: inherit;
   padding: 2px;
-  background: conic-gradient(from var(--angle), #2563eb, #60a5fa, #38bdf8, #60a5fa, #2563eb);
+  background: conic-gradient(
+    from var(--angle),
+    var(--brand-600),
+    var(--brand-400),
+    var(--cyan-400),
+    var(--brand-400),
+    var(--brand-600)
+  );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -2479,7 +2003,7 @@ input[type='date']:focus {
 }
 
 .dark .react-flow__edge-path {
-  stroke: #64748b;
+  stroke: var(--border-strong);
 }
 
 .dark .react-flow__handle {
@@ -2564,9 +2088,9 @@ input[type='date']:focus {
   background: conic-gradient(
     from 0deg,
     rgb(0 0 0 / 0%) 0deg,
-    rgb(37 99 235 / 75%) 80deg,
+    rgb(var(--brand-600-ch) / 70%) 80deg,
     rgb(0 0 0 / 0%) 180deg,
-    rgb(147 51 234 / 70%) 280deg,
+    rgb(var(--violet-500-ch) / 65%) 280deg,
     rgb(0 0 0 / 0%) 360deg
   );
   animation: mobileDockAura 6s linear infinite;

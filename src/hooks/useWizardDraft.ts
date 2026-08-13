@@ -294,3 +294,18 @@ export function useWizardDraft<T>({
 export function clearWizardDraft(key: string, userId?: string | null): void {
   removeEnvelope(`${PREFIX}${userId ?? 'anon'}:${key}`);
 }
+
+/**
+ * Заглянуть в черновик, не подписываясь на него.
+ *
+ * Нужно для плашки «Черновик сохранён. Восстановить?»: она живёт в родителе, а
+ * форма к этому моменту уже размонтирована, поэтому спросить сам хук нельзя.
+ */
+export function peekWizardDraft(
+  key: string,
+  userId?: string | null,
+): { step: number; savedAt: number } | null {
+  const envelope = readEnvelope<unknown>(`${PREFIX}${userId ?? 'anon'}:${key}`);
+  if (!envelope) return null;
+  return { step: envelope.step, savedAt: envelope.savedAt };
+}

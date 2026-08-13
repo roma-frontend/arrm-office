@@ -23,10 +23,13 @@ import {
   Settings2,
   ArrowUpRight,
   Layers,
+  Search,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { SectionHeader } from '@/components/dashboard/SectionHeader';
 import { useAuthUser } from '@/store/useAuthStore';
+import { useCommandPaletteStore } from '@/store/useCommandPaletteStore';
+import { cn } from '@/lib/utils';
 
 interface QuickAction {
   id: string;
@@ -61,6 +64,7 @@ export function QuickActions() {
   const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthUser();
+  const openPalette = useCommandPaletteStore((s) => s.openPalette);
 
   const actions = useMemo<QuickAction[]>(() => {
     const commonActions: QuickAction[] = [
@@ -170,15 +174,22 @@ export function QuickActions() {
       <SectionHeader
         title={t('quickActions.title')}
         aside={
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-(--muted-foreground) ml-auto">
-            <kbd className="px-1.5 py-0.5 rounded-md bg-(--muted) border border-(--border) font-mono text-[11px]">
-              Ctrl
-            </kbd>
-            <span className="opacity-50">+</span>
-            <kbd className="px-1.5 py-0.5 rounded-md bg-(--muted) border border-(--border) font-mono text-[11px]">
-              K
-            </kbd>
-          </div>
+          // This used to be a decorative pair of <kbd> elements: it told the user
+          // a shortcut existed but could not be clicked, and until the palette was
+          // mounted the shortcut itself did nothing either. It is a real opener now.
+          <button
+            type="button"
+            onClick={openPalette}
+            className={cn(
+              'press-subtle ml-auto hidden items-center gap-1.5 rounded-control border border-(--border-default)',
+              'bg-(--card) px-2 py-1 text-caption text-(--text-3) sm:flex',
+              'transition-colors duration-140 ease-spark hover:border-(--border-strong) hover:text-(--text-2)',
+              'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25',
+            )}
+          >
+            <Search className="size-3" aria-hidden="true" />
+            <kbd className="kbd">⌘K</kbd>
+          </button>
         }
       />
       <CardContent className="px-4 sm:px-5 pb-4">
@@ -196,6 +207,7 @@ export function QuickActions() {
                     over each other. The surface is the card, the colour marks the
                     action, and the label is finally legible on it. */}
                 <button
+                  data-slot="quick-action"
                   onClick={() => handleAction(action.href)}
                   className="group w-full h-full text-left rounded-xl border border-(--border) bg-(--card) p-3 transition-all duration-200 hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/40 focus-visible:ring-offset-1"
                 >

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { createPortal } from 'react-dom';
 import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -21,6 +20,19 @@ import { format, isToday } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
 import { Badge } from '@/components/ui/badge';
+// Migrated from a hand-rolled `createPortal` centered modal to the shared
+// slide-over. The old wrapper had no `role="dialog"`, no `aria-modal`, no focus
+// trap and no Escape handling — closing it was mouse-only. It also covered the
+// middle of the screen, which is exactly where the calendar grid the user had
+// just clicked lives; a right-side panel leaves the month visible.
+import {
+  Sheet,
+  SheetBody,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { getLeaveTypeLabel, type LeaveType, type LeaveStatus } from '@/lib/types';
 import { getInitials } from '@/lib/stringUtils';
 import type { CalendarEvent } from './CreateEventModal';
@@ -192,80 +204,65 @@ export function DayDetailsModal({
         }
       : {};
 
-  if (typeof window === 'undefined' || !open) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 lg:left-60 lg:top-16 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="modal-backdrop-in absolute inset-0 bg-black/60 backdrop-blur-md"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div
-        className="modal-panel-in relative z-10 w-full max-w-lg bg-(--card) rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
+  return (
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent
+        side="right"
+        size="lg"
+        hideClose
+        closeLabel={t('common.close', 'Close')}
+        className="p-0"
       >
-        {/* Header */}
-        <div className="relative px-6 pt-6 pb-5 shrink-0 overflow-hidden">
-          <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-(--primary) to-transparent" />
-          <div className="absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 opacity-10 blur-3xl bg-(--primary)" />
-
+        {/* Header. Sticky and non-shrinking (see `.spark-sheet-header`), so the
+            date and the close control stay reachable however long the day is. */}
+        <SheetHeader className="px-6 pb-5 pt-6 pr-6">
           <div className="relative flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-(--primary)/10 border border-(--primary)/20 flex flex-col items-center justify-center shadow-lg">
-                <span className="text-lg font-bold text-(--primary) leading-none">
+              <div className="flex h-14 w-14 flex-col items-center justify-center rounded-2xl border border-(--brand-outline) bg-(--brand-quiet)">
+                <span className="num text-lg font-semibold leading-none text-(--brand-text)">
                   {format(date, 'd')}
                 </span>
-                <span className="text-[10px] font-medium text-(--primary)/70 uppercase">
+                <span className="text-[10px] font-medium uppercase text-(--brand-text)/70">
                   {format(date, 'MMM', { locale })}
                 </span>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-(--text-primary) leading-tight">
+                <SheetTitle className="text-title leading-tight">
                   {format(date, 'EEEE', { locale })}
-                </h3>
-                <p className="text-sm text-(--text-muted) mt-0.5">
+                </SheetTitle>
+                <p className="mt-0.5 text-label text-(--text-3)">
                   {format(date, 'd MMMM yyyy', { locale })}
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-(--text-muted) hover:text-(--text-primary) transition-colors p-2 rounded-full hover:bg-(--background-subtle) shrink-0"
+            <SheetClose
+              className="shrink-0 rounded-control p-2 text-(--text-3) transition-colors duration-140 ease-spark hover:bg-(--surface-2) hover:text-(--text-1) focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+              aria-label={t('common.close', 'Close')}
             >
-              <X className="w-5 h-5" />
-            </button>
+              <X className="h-5 w-5" />
+            </SheetClose>
           </div>
 
           {/* Summary badges */}
-          <div className="relative flex flex-wrap gap-2 mt-4">
-            {isToday(date) && (
-              <Badge className="bg-(--primary)/10 text-(--primary) border border-(--primary)/20 text-xs">
-                {t('timePeriods.today')}
-              </Badge>
-            )}
-            <Badge variant="secondary" className="text-xs">
+          <div className="relative mt-4 flex flex-wrap gap-2">
+            {isToday(date) && <Badge variant="primary">{t('timePeriods.today')}</Badge>}
+            <Badge variant="secondary">
               {totalEvents} {t('dayDetails.events', 'events')}
             </Badge>
             {leaves.length > 0 && (
-              <Badge
-                variant="secondary"
-                className="text-xs bg-blue-500/10 text-blue-600 border-blue-200"
-              >
+              <Badge variant="info">
                 {leaves.length} {t('dayDetails.leaves', 'leaves')}
               </Badge>
             )}
           </div>
-        </div>
+        </SheetHeader>
 
         {/* Content */}
-        <div className="px-6 pb-6 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-(--border) scrollbar-track-transparent space-y-3">
+        <SheetBody className="space-y-3 px-6 pb-6">
           {totalEvents === 0 ? (
             <div className="py-10 text-center">
-              <CalendarDays className="w-12 h-12 text-(--border) mx-auto mb-3" />
-              <p className="text-sm text-(--text-muted)">
+              <CalendarDays className="mx-auto mb-3 h-12 w-12 text-(--text-4)" />
+              <p className="text-body text-(--text-3)">
                 {t('dayDetails.noEvents', 'No events on this day')}
               </p>
             </div>
@@ -591,10 +588,9 @@ export function DayDetailsModal({
               )}
             </>
           )}
-        </div>
-      </div>
-    </div>,
-    document.body,
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 

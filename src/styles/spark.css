@@ -1,0 +1,611 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SPARK UTILITY LAYER — depth, glass, motion and focus primitives
+
+   Everything here reads tokens.css and nothing here hard-codes a colour.
+   Imported after `tailwindcss`, so these class rules are unlayered and win over
+   Tailwind utilities of the same specificity — which is what lets a single
+   redefinition here restyle every existing call site.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ───────────────────────────────────────────────────────────────────────────
+   SURFACES & ELEVATION
+
+   The rule that creates hierarchy: resting content is flat. Only one thing on
+   a screen should be raised, and only while the pointer is on it. When every
+   card carries a shadow, nothing reads as foreground.
+   ─────────────────────────────────────────────────────────────────────────── */
+.surface {
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+}
+
+.surface-inset {
+  background-color: var(--sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-field);
+}
+
+.elev-0 {
+  box-shadow: none;
+}
+.elev-1 {
+  box-shadow: var(--elev-1);
+}
+.elev-2 {
+  box-shadow: var(--elev-2);
+}
+.elev-3 {
+  box-shadow: var(--elev-3);
+}
+.elev-4 {
+  box-shadow: var(--elev-4);
+}
+
+/* Lift by exactly one level. No scale: growing a card nudges everything around
+   it optically and makes dense lists feel unstable. */
+.hover-elev {
+  transition:
+    box-shadow var(--dur-hover) var(--ease-spark),
+    border-color var(--dur-hover) var(--ease-spark),
+    background-color var(--dur-hover) var(--ease-spark);
+}
+.hover-elev:hover {
+  box-shadow: var(--elev-2);
+  border-color: var(--border-strong);
+}
+
+/* Legacy hooks, retargeted at the elevation scale.
+   `.card-hover` used to hard-code `0 8px 25px rgba(0,0,0,.1)` — heavy enough on
+   a light surface to look like a drop shadow in a slide deck. */
+.card-hover {
+  transition:
+    box-shadow var(--dur-hover) var(--ease-spark),
+    border-color var(--dur-hover) var(--ease-spark),
+    background-color var(--dur-hover) var(--ease-spark);
+}
+.card-hover:hover {
+  box-shadow: var(--elev-2);
+}
+
+/* `depth-card` is dark-theme only by design: in light mode the elevation scale
+   already carries the depth, and stacking a second shadow on top muddies it. */
+[data-theme='dark'] .depth-card,
+.dark .depth-card {
+  box-shadow: var(--elev-1);
+}
+
+/* Interactive list row — the workhorse of employee / task / request lists. */
+.row-interactive {
+  border-radius: var(--radius-card);
+  transition:
+    background-color var(--dur-hover) var(--ease-spark),
+    box-shadow var(--dur-hover) var(--ease-spark);
+}
+.row-interactive:hover {
+  background-color: var(--surface-2);
+}
+.row-interactive[data-selected='true'] {
+  background-color: var(--brand-quiet);
+}
+
+/* Hairline divider that survives fractional device pixel ratios. */
+.hairline {
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   GLASS — floating layers only
+
+   Navbar, command palette, sheet header, floating assistant, mobile dock.
+   Never body cards: blur behind running text costs legibility, and every
+   blurred layer is a viewport-sized GPU surface re-rasterised on scroll.
+
+   Opaque fallback first, translucency behind @supports — `color-mix()` and
+   `backdrop-filter` are the two declarations most likely to be dropped on
+   older WebViews, and a dropped background here means a see-through navbar.
+   ─────────────────────────────────────────────────────────────────────────── */
+.glass {
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-default);
+}
+
+.glass-strong {
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-default);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass {
+    background-color: var(--glass-surface);
+    border-color: var(--glass-border);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(180%);
+    backdrop-filter: blur(var(--blur-glass)) saturate(180%);
+  }
+
+  .glass-strong {
+    background-color: var(--glass-surface-strong);
+    border-color: var(--glass-border);
+    -webkit-backdrop-filter: blur(var(--blur-glass-strong)) saturate(180%);
+    backdrop-filter: blur(var(--blur-glass-strong)) saturate(180%);
+  }
+}
+
+/* Kept for the handful of call sites that ask for a glass *card*; it now
+   resolves to a plain elevated surface unless it is actually floating. */
+.glass-card {
+  background-color: var(--surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  box-shadow: var(--elev-1);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   BRAND SURFACE
+
+   `.btn-gradient` is the app's brand fill — primary buttons, the sidebar logo
+   tile, the assistant FAB, the selected calendar day. The gradient is now
+   vertical and only a few percent apart, so it reads as a lit solid rather than
+   a two-tone sweep; the inner top highlight is what actually sells the
+   "physical button" impression.
+   ─────────────────────────────────────────────────────────────────────────── */
+.btn-gradient {
+  background-color: var(--brand);
+  background-image: var(--primary-gradient);
+  color: var(--brand-contrast);
+  box-shadow: var(--inner-highlight), var(--elev-brand);
+  transition:
+    filter var(--dur-hover) var(--ease-spark),
+    box-shadow var(--dur-hover) var(--ease-spark),
+    transform var(--dur-press) var(--ease-spark);
+}
+.btn-gradient:hover:not(:disabled) {
+  filter: brightness(1.06) saturate(1.02);
+}
+.btn-gradient:active:not(:disabled) {
+  transform: scale(0.985);
+  filter: brightness(0.98);
+}
+.btn-gradient:disabled {
+  filter: none;
+  box-shadow: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Large brand surface — page heroes and full-bleed card headers.
+   Deliberately NOT `.btn-gradient`. Area changes what a colour does: the fill
+   that reads as "the primary action" on a 36px button reads as a light source
+   across a 200px banner, and on a dark theme it made those panels look like they
+   belonged to a different app. `--brand-panel` is the same hue two steps deeper,
+   so the panel reads as brand-tinted rather than brand-lit. */
+.brand-panel {
+  background-color: var(--brand);
+  background-image: var(--brand-panel);
+  color: var(--brand-panel-contrast);
+}
+
+/* Soft brand glow — for the one hero element per screen, nothing else. */
+.glow-sm {
+  box-shadow:
+    0 0 0 1px var(--brand-outline),
+    0 4px 16px -6px rgb(var(--brand-600-ch) / 24%);
+}
+.glow-md {
+  box-shadow:
+    0 0 0 1px var(--brand-outline),
+    0 8px 28px -8px rgb(var(--brand-600-ch) / 30%);
+}
+.glow-active {
+  box-shadow:
+    0 0 0 1px var(--brand-outline),
+    0 10px 34px -10px rgb(var(--brand-600-ch) / 38%);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--brand-600), var(--brand-400));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   PRESS FEEDBACK
+
+   Replaces the Material ripple that used to be attached to every Button. A
+   ripple is a *Material* signature, it fought the rest of this UI, and it was
+   implemented by appending and removing a DOM node on every click — unskippable
+   even under `prefers-reduced-motion`. A 90ms scale is the tactile idiom Spark
+   uses, costs no DOM work, and compositor-only.
+   ─────────────────────────────────────────────────────────────────────────── */
+.press {
+  transition: transform var(--dur-press) var(--ease-spark);
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.press-subtle {
+  transition: transform var(--dur-press) var(--ease-spark);
+}
+.press-subtle:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   FOCUS
+
+   One focus treatment for the whole app: a 1px accent border plus a soft ring.
+   `border-radius: inherit` matters — the previous global rule forced a 6px
+   radius on every focus outline, which cut visible corners off pill buttons and
+   circular avatars.
+   ─────────────────────────────────────────────────────────────────────────── */
+:where(*):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+.focus-ring:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgb(var(--brand-600-ch) / 18%);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   TYPOGRAPHY HELPERS
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Every metric, table cell, price, date and countdown. Proportional digits
+   change width as they tick, which makes dashboards visibly twitch. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Optical balance for large headings — no tracking hack needed at body size. */
+.text-display,
+.text-title {
+  text-wrap: balance;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   SLIDE-OVER / SHEET
+
+   The Spark pattern: detail views arrive from the edge and keep the list
+   visible behind them, so the user never loses their place. Enter uses
+   `--ease-spark` over `--dur-sheet`; exit is faster and uses `--ease-exit`,
+   because a leave animation that mirrors its entrance feels like lag.
+   ─────────────────────────────────────────────────────────────────────────── */
+@keyframes spark-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spark-scrim-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes spark-sheet-in-right {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes spark-sheet-out-right {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes spark-sheet-in-left {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes spark-sheet-out-left {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+@keyframes spark-sheet-in-bottom {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes spark-sheet-out-bottom {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+
+.spark-scrim {
+  background-color: var(--overlay-bg);
+}
+.spark-scrim[data-state='open'] {
+  animation: spark-scrim-in var(--dur-panel) var(--ease-spark) both;
+}
+.spark-scrim[data-state='closed'] {
+  animation: spark-scrim-out var(--dur-exit) var(--ease-exit) both;
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .spark-scrim {
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+}
+
+.spark-sheet {
+  background-color: var(--surface-1);
+  box-shadow: var(--elev-4);
+  will-change: transform;
+}
+
+.spark-sheet[data-side='right'][data-state='open'] {
+  animation: spark-sheet-in-right var(--dur-sheet) var(--ease-spark) both;
+}
+.spark-sheet[data-side='right'][data-state='closed'] {
+  animation: spark-sheet-out-right var(--dur-exit) var(--ease-exit) both;
+}
+.spark-sheet[data-side='left'][data-state='open'] {
+  animation: spark-sheet-in-left var(--dur-sheet) var(--ease-spark) both;
+}
+.spark-sheet[data-side='left'][data-state='closed'] {
+  animation: spark-sheet-out-left var(--dur-exit) var(--ease-exit) both;
+}
+.spark-sheet[data-side='bottom'][data-state='open'] {
+  animation: spark-sheet-in-bottom var(--dur-sheet) var(--ease-spark) both;
+}
+.spark-sheet[data-side='bottom'][data-state='closed'] {
+  animation: spark-sheet-out-bottom var(--dur-exit) var(--ease-exit) both;
+}
+
+/* Sticky sheet chrome: the header stays legible over scrolling content without
+   a hard border, which is how a panel reads as one continuous surface. */
+.spark-sheet-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--surface-1);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.spark-sheet-footer {
+  position: sticky;
+  bottom: 0;
+  background-color: var(--surface-1);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Grab handle for the mobile bottom-sheet variant. */
+.spark-sheet-grip {
+  width: 2.25rem;
+  height: 0.25rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--border-strong);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   AMBIENT DEPTH
+
+   Wide, very low-opacity colour fields behind the page. At these opacities they
+   are not perceived as colour at all — only as the page having depth. Anything
+   stronger turns into the "gamer gradient" look.
+   ─────────────────────────────────────────────────────────────────────────── */
+.ambient-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: var(--radius-pill);
+  filter: blur(80px);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   SKELETON
+
+   Shimmer travels across the sunken surface, not across white — a bright sweep
+   on a light background is the most common "unfinished" tell in a loading state.
+   ─────────────────────────────────────────────────────────────────────────── */
+@keyframes spark-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-2);
+  border-radius: var(--radius-field);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--surface-3), transparent);
+  animation: spark-shimmer 1.4s var(--ease-smooth) infinite;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   KEYBOARD HINT — the visual promise that a shortcut exists
+   ─────────────────────────────────────────────────────────────────────────── */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 0.3125rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-default);
+  background-color: var(--surface-2);
+  box-shadow: 0 1px 0 var(--border-default);
+  color: var(--text-3);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   REDUCED MOTION
+
+   Transforms and animations are removed; opacity transitions are kept. Stripping
+   fades too makes state changes appear as hard jumps, which is harder to follow
+   for exactly the users this setting protects.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .press:active,
+  .press-subtle:active,
+  .btn-gradient:active {
+    transform: none;
+  }
+
+  .spark-sheet[data-state],
+  .skeleton::after,
+  .ambient-orb {
+    animation: none !important;
+  }
+
+  .spark-sheet[data-state='open'],
+  .spark-sheet[data-state='closed'] {
+    transform: none;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   COMMAND PALETTE
+
+   The one surface in the app that is unambiguously *floating* — it hovers over
+   whatever you were doing and disappears — so it gets the strongest treatment:
+   top elevation, glass, and a spring-less scale-in that reads as instant.
+   ─────────────────────────────────────────────────────────────────────────── */
+@keyframes spark-command-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes spark-command-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -4px) scale(0.99);
+  }
+}
+
+.command-panel {
+  background-color: var(--surface-1);
+  box-shadow: var(--elev-4);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .command-panel {
+    background-color: var(--glass-surface-strong);
+    -webkit-backdrop-filter: blur(var(--blur-glass-strong)) saturate(180%);
+    backdrop-filter: blur(var(--blur-glass-strong)) saturate(180%);
+  }
+}
+
+/* `translate(-50%, …)` is baked into the keyframes rather than left to a
+   `-translate-x-1/2` utility: an animation that sets `transform` overrides the
+   utility outright, and the panel would snap 50% to the right for the duration
+   of the animation. */
+.command-panel[data-state='open'] {
+  animation: spark-command-in 200ms var(--ease-spark) both;
+}
+
+.command-panel[data-state='closed'] {
+  animation: spark-command-out 130ms var(--ease-exit) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .command-panel[data-state='open'],
+  .command-panel[data-state='closed'] {
+    animation-duration: 1ms;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   FOCUS FEED
+
+   The dashboard's lead block. It has to read as "start here" without shouting,
+   so instead of a coloured fill or a heavy border it gets a very low-opacity
+   brand wash and a hairline. The wash is a separate absolutely-positioned layer
+   rather than a background on the section itself, so it can be a gradient
+   without affecting the border radius or the child stacking context.
+   ─────────────────────────────────────────────────────────────────────────── */
+.focus-feed {
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface-2);
+}
+
+.focus-feed-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--brand-quiet), transparent 60%),
+    radial-gradient(90% 120% at 100% 0%, var(--purple-quiet), transparent 55%);
+  opacity: 0.9;
+}

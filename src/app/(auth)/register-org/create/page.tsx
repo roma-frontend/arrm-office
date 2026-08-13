@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from '@/lib/cssMotion';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { Input } from '@/components/ui/input';
 import {
   Building2,
   User,
@@ -167,7 +168,7 @@ export default function CreateStarterOrgPage() {
               </label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-                <input
+                <Input
                   type="text"
                   required
                   value={formData.orgName}
@@ -181,14 +182,7 @@ export default function CreateStarterOrgPage() {
                     setFormData((p) => ({ ...p, orgName, slug }));
                   }}
                   placeholder={t('placeholders.acmeInc')}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                  style={{
-                    background: 'var(--input)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = '#10b981')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                  className="h-11 pl-10 pr-4"
                 />
               </div>
             </div>
@@ -200,7 +194,7 @@ export default function CreateStarterOrgPage() {
               </label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-                <input
+                <Input
                   type="text"
                   required
                   value={formData.slug}
@@ -211,14 +205,7 @@ export default function CreateStarterOrgPage() {
                     }))
                   }
                   placeholder="acme-inc"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                  style={{
-                    background: 'var(--input)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = '#10b981')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                  className="h-11 pl-10 pr-4"
                 />
               </div>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -234,20 +221,13 @@ export default function CreateStarterOrgPage() {
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-                  <input
+                  <Input
                     type="text"
                     required
                     value={formData.userName}
                     onChange={(e) => setFormData((p) => ({ ...p, userName: e.target.value }))}
                     placeholder={t('placeholders.johnDoe')}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                    style={{
-                      background: 'var(--input)',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)',
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = '#10b981')}
-                    onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                    className="h-11 pl-10 pr-4"
                   />
                 </div>
               </div>
@@ -259,20 +239,13 @@ export default function CreateStarterOrgPage() {
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-                  <input
+                  <Input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
                     placeholder={t('placeholders.youAtCompany')}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                    style={{
-                      background: 'var(--input)',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)',
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = '#10b981')}
-                    onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                    className="h-11 pl-10 pr-4"
                   />
                 </div>
               </div>
@@ -286,19 +259,12 @@ export default function CreateStarterOrgPage() {
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-                  <input
+                  <Input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
                     placeholder={t('placeholders.phonePlaceholder')}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                    style={{
-                      background: 'var(--input)',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)',
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = '#10b981')}
-                    onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                    className="h-11 pl-10 pr-4"
                   />
                 </div>
               </div>
@@ -308,19 +274,12 @@ export default function CreateStarterOrgPage() {
                 <label className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                   {t('register.countryOptional')}
                 </label>
-                <input
+                <Input
                   type="text"
                   value={formData.country}
                   onChange={(e) => setFormData((p) => ({ ...p, country: e.target.value }))}
                   placeholder={t('placeholders.unitedStates')}
-                  className="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                  style={{
-                    background: 'var(--input)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = '#10b981')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                  className="h-11"
                 />
               </div>
             </div>
@@ -332,19 +291,12 @@ export default function CreateStarterOrgPage() {
               </label>
               <div className="relative">
                 <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-                <input
+                <Input
                   type="text"
                   value={formData.industry}
                   onChange={(e) => setFormData((p) => ({ ...p, industry: e.target.value }))}
                   placeholder={t('placeholders.technologyHealthcare')}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                  style={{
-                    background: 'var(--input)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = '#10b981')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                  className="h-11 pl-10 pr-4"
                 />
               </div>
             </div>
@@ -356,20 +308,13 @@ export default function CreateStarterOrgPage() {
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) pointer-events-none" />
-                <input
+                <Input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={formData.password}
                   onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
                   placeholder={t('placeholders.minCharacters')}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                  style={{
-                    background: 'var(--input)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = '#10b981')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                  className="h-11 pl-10 pr-10"
                 />
                 <button
                   type="button"

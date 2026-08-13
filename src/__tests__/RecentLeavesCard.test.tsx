@@ -128,22 +128,42 @@ describe('RecentLeavesCard', () => {
 
   // ── Status badges ──────────────────────────────────────────────────────
 
+  // Labels come from `statuses.*` keyed off the status directly. They used to be
+  // picked by a three-branch ternary over `titles.leaveStatus.*` whose `else`
+  // caught `cancel_requested` — so a cancellation request was labelled
+  // "rejected". The mock resolves t(key, fallback) to the fallback, which is the
+  // raw status string.
   it('renders approved badge for approved leaves', () => {
     render(<RecentLeavesCard recentLeaves={defaultLeaves} />);
-    // t('titles.leaveStatus.approved') → fallback 'titles.leaveStatus.approved' is key
-    // Wait, with the mock: t = (key, fallback?) => fallback || key
-    // In component: t('titles.leaveStatus.approved') - no fallback → returns 'titles.leaveStatus.approved'
-    expect(screen.getByText('titles.leaveStatus.approved')).toBeInTheDocument();
+    expect(screen.getByText('approved')).toBeInTheDocument();
   });
 
   it('renders pending badge for pending leaves', () => {
     render(<RecentLeavesCard recentLeaves={defaultLeaves} />);
-    expect(screen.getByText('titles.leaveStatus.pending')).toBeInTheDocument();
+    expect(screen.getByText('pending')).toBeInTheDocument();
   });
 
   it('renders rejected badge for rejected leaves', () => {
     render(<RecentLeavesCard recentLeaves={defaultLeaves} />);
-    expect(screen.getByText('titles.leaveStatus.rejected')).toBeInTheDocument();
+    expect(screen.getByText('rejected')).toBeInTheDocument();
+  });
+
+  it('labels a cancellation request as such, not as rejected', () => {
+    render(
+      <RecentLeavesCard
+        recentLeaves={
+          [
+            {
+              ...defaultLeaves[0],
+              _id: 'cancel-1',
+              status: 'cancel_requested',
+            },
+          ] as never
+        }
+      />,
+    );
+    expect(screen.getByText('cancel_requested')).toBeInTheDocument();
+    expect(screen.queryByText('rejected')).not.toBeInTheDocument();
   });
 
   it('renders badges with correct status variants', () => {

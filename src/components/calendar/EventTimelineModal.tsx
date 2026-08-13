@@ -12,7 +12,6 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import { motion } from '@/lib/cssMotion';
@@ -44,6 +43,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetBody, SheetContent } from '@/components/ui/sheet';
 import { useNow } from '@/hooks/useNow';
 import { getInitials } from '@/lib/stringUtils';
 import { formatDate, formatTime } from '@/lib/date-format';
@@ -135,18 +135,15 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
   // reopened hours later is already current.
   const now = useNow(TICK_MS);
 
+  // Escape is handled by the Sheet (Radix `onEscapeKeyDown`), so the hand-rolled
+  // document listener that used to live here is gone. It also called
+  // `stopPropagation`, which meant that when this panel opened on top of the
+  // day-details panel, one Escape closed both — Radix dismisses only the topmost
+  // layer, which is what a user expects from a stack.
   useEffect(() => {
     if (!input) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
     closeRef.current?.focus();
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [input, onClose]);
+  }, [input]);
 
   const timeline = useMemo(
     () => (input ? buildEventTimeline(input, { now, lang, t }) : null),
@@ -188,26 +185,15 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
     toast.success(t('eventTimeline.actions.downloaded'));
   }, [timeline, t]);
 
-  if (typeof document === 'undefined') return null;
-
-  return createPortal(
-    <>
-      {timeline && (
-        <div
-          className="fixed inset-0 lg:left-60 lg:top-16 z-[60] flex items-center justify-center p-3 sm:p-6"
-          role="dialog"
-          aria-modal="true"
-          aria-label={timeline.title}
-        >
-          <div
-            className="modal-backdrop-in absolute inset-0 bg-black/65 backdrop-blur-md"
-            onClick={onClose}
-          />
-
-          <div
-            className="modal-panel-in relative z-10 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl border border-(--border) bg-(--card) shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+  return (
+    <Sheet open={timeline !== null} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent side="right" size="xl" hideClose label={timeline?.title} className="p-0">
+        {timeline && (
+          <>
+            {/* This panel can open on top of the day-details panel (double-click a
+                day with several entries). Radix stacks nested dialogs and scopes
+                the focus trap to the topmost one, which replaces the hand-managed
+                z-50 / z-[60] pair the two portals used to coordinate with. */}
             <TimelineHeader
               timeline={timeline}
               formatMoment={formatMoment}
@@ -215,7 +201,7 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
               closeRef={closeRef}
             />
 
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-(--border) scrollbar-track-transparent">
+            <SheetBody className="px-0 py-0">
               <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
                 <MilestoneRail timeline={timeline} formatMoment={formatMoment} />
                 <div className="space-y-6">
@@ -223,7 +209,7 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
                   <PeopleList timeline={timeline} />
                 </div>
               </div>
-            </div>
+            </SheetBody>
 
             <TimelineFooter
               timeline={timeline}
@@ -231,11 +217,10 @@ export function EventTimelineModal({ input, onClose }: EventTimelineModalProps) 
               onDownload={handleDownloadIcs}
               onClose={onClose}
             />
-          </div>
-        </div>
-      )}
-    </>,
-    document.body,
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 

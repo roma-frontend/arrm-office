@@ -12,7 +12,14 @@ import { useNow } from '@/hooks/useNow';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -382,26 +389,33 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
 
   if (!currentUser)
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
-          <div className="flex items-center justify-center py-12">
-            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="right"
+          size="lg"
+          label={t('driver.requestDriver', 'Request Driver')}
+          closeLabel={t('common.close', 'Close')}
+        >
+          <div className="flex flex-1 items-center justify-center py-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-(--brand) border-t-transparent" />
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Car className="w-5 h-5" />
-            {t('driver.requestDriver', 'Request Driver')}
-          </DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-field bg-(--brand-quiet) text-(--brand-text)">
+              <Car className="size-4" />
+            </span>
+            <SheetTitle>{t('driver.requestDriver', 'Request Driver')}</SheetTitle>
+          </div>
+        </SheetHeader>
 
-        <div className="space-y-6" style={{ overflow: 'visible' }}>
+        <SheetBody className="space-y-6">
           {/* Select Driver */}
           <div className="space-y-2">
             <Label>{t('driver.selectDriver', 'Select Driver')}</Label>
@@ -430,14 +444,17 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
 
           {/* Leave Warning Alert */}
           {leaveWarning && (
-            <Alert variant="warning" className="border-amber-500 bg-amber-50 dark:bg-amber-950">
-              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <AlertTitle className="text-amber-800 dark:text-amber-200">
+            <Alert
+              variant="warning"
+              className="border-(--warning-outline) bg-(--warning-quiet) text-(--text-primary)"
+            >
+              <AlertTriangle className="h-4 w-4 text-(--warning-solid)" />
+              <AlertTitle className="text-(--warning-text)">
                 {t('driver.driverOnLeave', 'Driver on leave')}
               </AlertTitle>
-              <AlertDescription className="text-amber-700 dark:text-amber-300">
-                <p className="font-semibold mb-2">
-                  ⛔ {t('driver.bookingUnavailable', 'Booking unavailable')}
+              <AlertDescription className="text-(--text-secondary)">
+                <p className="mb-2 font-semibold text-(--warning-text)">
+                  {t('driver.bookingUnavailable', 'Booking unavailable')}
                 </p>
                 {t('driver.onLeaveFrom', 'On leave from')} {leaveWarning.startDate}{' '}
                 {t('driver.to', 'to')} {leaveWarning.endDate}
@@ -460,18 +477,18 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                 )}
                 {/* Alternative Drivers */}
                 {alternativeDrivers && alternativeDrivers.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-800">
-                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-3 flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <div className="mt-4 border-t border-(--warning-outline) pt-4">
+                    <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-(--text-primary)">
+                      <CheckCircle2 className="h-4 w-4 text-(--success-solid)" />
                       {t('driver.alternativeDrivers', 'Доступные водители:')}
                     </p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <div className="max-h-48 space-y-2 overflow-y-auto">
                       {alternativeDrivers
                         .filter((d): d is NonNullable<typeof d> => Boolean(d))
                         .map((driver) => (
                           <div
                             key={driver._id}
-                            className="flex items-center justify-between p-2 rounded-md bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-700"
+                            className="flex items-center justify-between rounded-field border border-(--border-subtle) bg-(--surface-1) p-2"
                           >
                             <div className="flex items-center gap-2">
                               <Avatar className="h-8 w-8">
@@ -479,10 +496,10 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                                 <AvatarFallback>{driver.userName?.charAt(0)}</AvatarFallback>
                               </Avatar>
                               <div className="text-sm">
-                                <p className="font-medium text-amber-900 dark:text-amber-100">
+                                <p className="font-medium text-(--text-primary)">
                                   {driver.userName}
                                 </p>
-                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                <p className="text-xs text-(--text-muted)">
                                   {driver.vehicleInfo?.model} • {driver.vehicleInfo?.plateNumber}
                                   {driver.vehicleInfo?.capacity &&
                                     ` • ${driver.vehicleInfo.capacity} ${t('driver.seats', 'мест')}`}
@@ -492,7 +509,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-8 text-xs border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900"
+                              className="h-8 text-xs"
                               onClick={() => {
                                 setSelectedDriver(driver._id);
                                 toast.success(
@@ -508,8 +525,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                   </div>
                 )}
                 {(!alternativeDrivers || alternativeDrivers.length === 0) && (
-                  <p className="text-sm mt-3 text-amber-800 dark:text-amber-200">
-                    💡{' '}
+                  <p className="mt-3 text-sm text-(--text-secondary)">
                     {t(
                       'driver.noAlternativeDrivers',
                       'Нет доступных водителей. Измените даты бронирования или обратитесь к администратору.',
@@ -525,7 +541,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
             {/* Pickup */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-emerald-500" />
+                <MapPin className="w-4 h-4 text-(--success-solid)" />
                 {t('driver.pickupLocation', 'Pickup Location')}
               </Label>
               <PlaceAutocomplete
@@ -547,7 +563,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
             {/* Dropoff */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-red-500" />
+                <MapPin className="w-4 h-4 text-(--danger-solid)" />
                 {t('driver.dropoffLocation', 'Dropoff Location')}
               </Label>
               <PlaceAutocomplete
@@ -578,7 +594,7 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
                 {t('driver.clickToPickLocation', 'Click to pick location')}
               </Badge>
             </div>
-            <div className="rounded-lg overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600">
+            <div className="overflow-hidden rounded-card border border-dashed border-(--border-default)">
               {open && (
                 <DriverMap
                   pickupLocation={tripInfo.from}
@@ -661,25 +677,25 @@ export function DriverRequestModal({ open, onOpenChange, selectedDate }: DriverR
               rows={3}
             />
           </div>
+        </SheetBody>
 
-          {/* Actions */}
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {t('cancel', 'Cancel')}
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={Boolean(leaveWarning) || Boolean(isCheckingLeave)}
-            >
-              {isCheckingLeave
-                ? t('driver.checking', 'Проверка...')
-                : leaveWarning
-                  ? t('driver.driverOnLeave', 'Водитель в отпуске')
-                  : t('driver.submitRequest', 'Submit Request')}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        <SheetFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={Boolean(leaveWarning) || Boolean(isCheckingLeave)}
+            className="btn-gradient"
+          >
+            {isCheckingLeave
+              ? t('driver.checking', 'Проверка...')
+              : leaveWarning
+                ? t('driver.driverOnLeave', 'Водитель в отпуске')
+                : t('driver.submitRequest', 'Submit Request')}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

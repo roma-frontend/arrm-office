@@ -36,6 +36,9 @@ jest.mock('lucide-react', () => {
     Zap: MockIcon,
     ArrowUpRight: MockIcon,
     Layers: MockIcon,
+    // The section header's ⌘K affordance is a real palette opener now, not a
+    // decorative pair of <kbd>s, so the icon it uses has to be mocked too.
+    Search: MockIcon,
   };
 });
 
@@ -102,10 +105,8 @@ describe('QuickActions', () => {
   });
 
   it('shows 4 common actions for employee role', () => {
-    render(<QuickActions />);
-    // 4 common actions
-    const actionButtons = screen.getAllByRole('button');
-    expect(actionButtons.length).toBe(4);
+    const { container } = render(<QuickActions />);
+    expect(container.querySelectorAll('[data-slot="quick-action"]').length).toBe(4);
   });
 
   // ── Manager actions ───────────────────────────────────────────────────
@@ -185,23 +186,23 @@ describe('QuickActions', () => {
 
   it('shows 9 actions for admin (4 common + 3 manager + 2 admin)', () => {
     mockUser = { id: 'admin-1', role: 'admin', name: 'Admin' };
-    render(<QuickActions />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(9);
+    const { container } = render(<QuickActions />);
+    // Counted by `data-slot`, not by `role="button"`: the section header now
+    // carries its own ⌘K opener, and a bare button count would break again the
+    // next time any chrome is added next to the grid.
+    expect(container.querySelectorAll('[data-slot="quick-action"]').length).toBe(9);
   });
 
   it('shows 7 actions for supervisor (4 common + 3 manager)', () => {
     mockUser = { id: 'sup-1', role: 'supervisor', name: 'Supervisor' };
-    render(<QuickActions />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(7);
+    const { container } = render(<QuickActions />);
+    expect(container.querySelectorAll('[data-slot="quick-action"]').length).toBe(7);
   });
 
   it('shows 9 actions for superadmin (4 common + 3 manager + 2 admin)', () => {
     mockUser = { id: 'super-1', role: 'superadmin', name: 'Superadmin' };
-    render(<QuickActions />);
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(9);
+    const { container } = render(<QuickActions />);
+    expect(container.querySelectorAll('[data-slot="quick-action"]').length).toBe(9);
   });
 
   // ── Navigation ────────────────────────────────────────────────────────

@@ -1,9 +1,8 @@
 ﻿'use client';
 
-import { useState, useMemo, useRef, useTransition, useEffect } from 'react';
+import { useState, useMemo, useRef, useTransition, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
-import { useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
@@ -11,8 +10,11 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { CreateTaskWizard } from './CreateTaskWizard';
 import { ProjectBadge } from './ProjectBadge';
-import { localizedTaskTitle } from '@/lib/taskTitle';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { localizedTaskTitle, type TitledTask } from '@/lib/taskTitle';
+import { TaskSheet } from './TaskSheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
+import { useDraftResume } from '@/hooks/useDraftResume';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AssignSupervisorModal } from './AssignSupervisorModal';
 import {
@@ -528,11 +530,13 @@ interface TasksClientProps {
 
 export const TasksClient = memo(function TasksClient({ userId, userRole }: TasksClientProps) {
   const { t } = useTranslation();
-  const router = useRouter();
   const mainRef = useMainRef();
   const kanbanScrollRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [showCreate, setShowCreate] = useState(false);
+  const taskDraft = useDraftResume('create-task', !showCreate);
+  /** Task shown in the slide-over, with its title for the panel header. */
+  const [sheetTask, setSheetTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
   const [showAssign, setShowAssign] = useState(false);
   const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
@@ -577,6 +581,21 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   );
   const { updateOptimistic } = useOptimisticTaskStatus();
   const [optimisticStatuses, setOptimisticStatuses] = useState<Map<string, Status>>(new Map());
+
+  /**
+   * Open a task in the panel instead of navigating.
+   *
+   * The kanban board is why this matters most here: a column layout is a spatial
+   * memory aid, and leaving the page destroys the arrangement the user was
+   * reading. The title is captured now so the panel header has something to show
+   * before the task query resolves.
+   */
+  const openTask = useCallback(
+    (task: { _id: string } & TitledTask) => {
+      setSheetTask({ id: task._id as Id<'tasks'>, title: localizedTaskTitle(t, task) });
+    },
+    [t],
+  );
 
   // Queries - for admin/superadmin, get all tasks in their organization
   const adminTasks = useQuery(
@@ -961,7 +980,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           <ShieldLoader size="lg" />
         </div>
       ) : viewMode === 'timeline' ? (
-        <TimelineView tasks={tasks} onOpen={(task) => router.push(`/tasks/${task._id}`)} />
+        <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
       ) : viewMode === 'kanban' ? (
         <DndContext
           sensors={sensors}
@@ -1024,7 +1043,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                 key={status}
                 status={status}
                 tasks={tasksByStatus[status]}
-                onOpen={(task) => router.push(`/tasks/${task._id}`)}
+                onOpen={(task) => openTask(task)}
               />
             ))}
           </div>
@@ -1063,11 +1082,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               </thead>
               <tbody>
                 {tasks.map((task) => (
-                  <TaskRow
-                    key={task._id}
-                    task={task}
-                    onOpen={() => router.push(`/tasks/${task._id}`)}
-                  />
+                  <TaskRow key={task._id} task={task} onOpen={() => openTask(task)} />
                 ))}
               </tbody>
             </table>
@@ -1076,26 +1091,43 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       )}
 
       {/* Modals */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent
-          className="w-[95vw] sm:w-[90vw] md:w-[85vw] max-w-2xl max-h-[95vh] flex flex-col"
-          aria-describedby={undefined}
-        >
-          <DialogHeader>
-            <DialogTitle className="text-lg md:text-xl">{t('task.createTask')}</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            {convexId && (
-              <CreateTaskWizard
-                currentUserId={convexId}
-                userRole={userRole as 'admin' | 'supervisor' | 'employee'}
-                onComplete={() => setShowCreate(false)}
-                onCancel={() => setShowCreate(false)}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Detail slide-over. Opening a card no longer unmounts the board, so the
+          column arrangement — which is the whole point of a kanban — survives. */}
+      <TaskSheet
+        taskId={sheetTask?.id ?? null}
+        taskTitle={sheetTask?.title}
+        onClose={() => setSheetTask(null)}
+      />
+
+      <Sheet open={showCreate} onOpenChange={setShowCreate}>
+        <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>{t('task.createTask')}</SheetTitle>
+          </SheetHeader>
+          {convexId && (
+            <CreateTaskWizard
+              className="min-h-0 flex-1 px-5 pt-4"
+              currentUserId={convexId}
+              userRole={userRole as 'admin' | 'supervisor' | 'employee'}
+              onComplete={() => setShowCreate(false)}
+              onCancel={() => setShowCreate(false)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* "Draft saved. Restore?" for an accidentally closed task wizard. */}
+      <DraftResumeBar
+        show={taskDraft.available}
+        label={t('task.createTask')}
+        step={taskDraft.step}
+        onResume={() => {
+          taskDraft.dismiss();
+          setShowCreate(true);
+        }}
+        onDismiss={taskDraft.dismiss}
+        onDiscard={taskDraft.discard}
+      />
       {showAssign && <AssignSupervisorModal onClose={() => setShowAssign(false)} />}
     </div>
   );

@@ -42,6 +42,8 @@ interface CreateTaskWizardProps {
   projectId?: Id<'projects'>;
   /** Overridable so a goal-scoped draft cannot clash with the board's draft. */
   draftKey?: string;
+  /** Passed through to the Wizard shell — lets a host sheet own the layout. */
+  className?: string;
   onComplete?: () => void;
   onCancel?: () => void;
 }
@@ -198,6 +200,7 @@ export function CreateTaskWizard({
   objectiveId,
   projectId,
   draftKey = 'create-task',
+  className,
   onComplete,
   onCancel,
 }: CreateTaskWizardProps) {
@@ -252,6 +255,9 @@ export function CreateTaskWizard({
             label={t('taskWizard.steps.details.descriptionLabel')}
             placeholder={t('taskWizard.steps.details.descriptionPlaceholder')}
             rows={5}
+            // Someone else has to act on this text, and a vague description is
+            // the most common reason a task bounces back for clarification.
+            aiContext="task description"
           />
         </div>
       ),
@@ -506,6 +512,7 @@ export function CreateTaskWizard({
 
   return (
     <Wizard
+      className={className}
       steps={steps}
       onComplete={handleSubmit}
       onCancel={onCancel}

@@ -120,15 +120,17 @@ jest.mock('@/components/ui/avatar', () => ({
   AvatarImage: ({ src, alt }: any) => <img src={src} alt={alt ?? ''} />,
 }));
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
-  DialogContent: ({ children, className }: any) => (
-    <div data-testid="dialog-content" className={className}>
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ children, open }: any) => (open ? <div data-testid="sheet">{children}</div> : null),
+  SheetContent: ({ children, className }: any) => (
+    <div data-testid="sheet-content" className={className}>
       {children}
     </div>
   ),
-  DialogHeader: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children }: any) => <div>{children}</div>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
+  SheetFooter: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock('@/components/ui/select', () => {
@@ -236,7 +238,7 @@ describe('DriverRequestModal', () => {
   it('shows the loader while the current user loads', () => {
     queryResults.getCurrentUser = undefined;
     renderModal();
-    expect(screen.getByTestId('dialog-content')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-content')).toBeInTheDocument();
     expect(screen.queryByText('Request Driver')).not.toBeInTheDocument();
   });
 
@@ -537,7 +539,7 @@ describe('DriverRequestModal', () => {
   it('closes the result dropdowns on outside click', () => {
     renderModal();
     fireEvent.mouseDown(document.body);
-    expect(screen.getByTestId('dialog-content')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-content')).toBeInTheDocument();
   });
 
   it('does not render the form when closed', () => {

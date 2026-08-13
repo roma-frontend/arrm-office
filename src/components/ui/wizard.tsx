@@ -9,8 +9,9 @@ import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 
@@ -157,8 +158,6 @@ export function Wizard({
     }));
   };
 
-  const progress = ((currentStep + 1) / steps.length) * 100;
-
   return (
     <div className={cn('flex flex-col', className)}>
       {/* Scrollable Content Area */}
@@ -172,83 +171,7 @@ export function Wizard({
         {/* Stepper */}
         {showStepper && (
           <div className="mb-5 md:mb-6">
-            {/* Progress Bar */}
-            <div className="relative h-1.5 md:h-2 bg-(--background-subtle) rounded-full overflow-hidden mb-4 md:mb-5">
-              <motion.div
-                className="absolute inset-y-0 left-0 bg-(--primary)"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-              />
-            </div>
-
-            {/* Steps — each step is an equal-width column. The connector is
-                pinned to the circle's vertical centre (top-[14px]/[18px] = half
-                the circle height) and drawn *behind* the circle, so it never
-                crosses the labels no matter how many steps there are or how many
-                lines a title wraps to. */}
-            <div className="flex items-start">
-              {steps.map((step, index) => {
-                const isCompleted = index < currentStep;
-                const isCurrent = index === currentStep;
-
-                return (
-                  <div key={step.id} className="relative flex flex-col items-center flex-1 min-w-0">
-                    {index < steps.length - 1 && (
-                      <div className="absolute top-[14px] md:top-[18px] left-1/2 w-full h-0.5 bg-(--border) overflow-hidden">
-                        <motion.div
-                          className={cn(
-                            'h-full transition-colors',
-                            isCompleted ? 'bg-blue-500' : 'bg-(--border)',
-                          )}
-                          initial={{ width: '0%' }}
-                          animate={{ width: isCompleted ? '100%' : '0%' }}
-                          transition={{ duration: 0.3 }}
-                        />
-                      </div>
-                    )}
-                    <motion.div
-                      className={cn(
-                        'relative z-10 w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center border-2 transition-colors shrink-0',
-                        isCompleted
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : isCurrent
-                            ? 'border-blue-500 bg-(--background) text-blue-500'
-                            : 'border-(--border) bg-(--background) text-(--muted-foreground)',
-                      )}
-                      initial={{ scale: 1 }}
-                      animate={{ scale: isCurrent ? 1.1 : 1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      ) : (
-                        <span className="text-[11px] md:text-xs font-semibold">{index + 1}</span>
-                      )}
-                    </motion.div>
-                    <div className="mt-1.5 md:mt-2 text-center w-full px-0.5 md:px-1">
-                      <p
-                        className={cn(
-                          'text-[10px] md:text-xs font-medium transition-colors leading-tight line-clamp-2',
-                          isCurrent
-                            ? 'text-(--primary)'
-                            : isCompleted
-                              ? 'text-(--text-primary)'
-                              : 'text-(--muted-foreground)',
-                        )}
-                      >
-                        {step.title}
-                      </p>
-                      {step.description && (
-                        <p className="text-[9px] md:text-[10px] text-(--muted-foreground) mt-0.5 hidden sm:block line-clamp-1">
-                          {step.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <WizardStepper steps={steps} current={currentStep} onStepClick={setCurrentStep} />
           </div>
         )}
 
@@ -280,25 +203,25 @@ export function Wizard({
       </div>
 
       {/* Navigation Buttons - Fixed at bottom */}
-      <div className="shrink-0 px-4 py-4 md:px-6 md:py-5 border-t border-(--border) bg-(--background) rounded-xl">
-        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
+      <div className="shrink-0 border-t border-(--border-subtle) bg-(--surface-1) px-4 py-4 md:px-6 md:py-5">
+        <div className="flex flex-col-reverse items-stretch justify-between gap-2 sm:flex-row sm:items-center sm:gap-3">
           <Button
             variant="outline"
             onClick={handleBack}
             disabled={currentStep === 0 || isSubmitting}
-            className="border-(--border) bg-(--background) hover:bg-(--background-subtle) text-(--foreground) w-full sm:w-auto text-sm"
+            className="w-full sm:w-auto"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             {t('wizard.back', 'Back')}
           </Button>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
             {onCancel && (
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={handleCancel}
                 disabled={isSubmitting}
-                className="border-(--border) bg-(--background) hover:bg-(--background-subtle) text-(--foreground) w-full sm:w-auto text-sm"
+                className="w-full sm:w-auto"
               >
                 {cancelLabel || t('wizard.cancel', 'Cancel')}
               </Button>
@@ -307,7 +230,7 @@ export function Wizard({
             <Button
               onClick={handleNext}
               disabled={!canGoNext() || isSubmitting}
-              className="bg-(--primary) hover:bg-(--primary-hover) text-white gap-2 w-full sm:w-auto text-sm"
+              className="btn-gradient w-full gap-2 sm:w-auto"
             >
               {isSubmitting ? (
                 t('wizard.processing', 'Processing...')

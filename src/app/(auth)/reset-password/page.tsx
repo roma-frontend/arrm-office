@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { Eye, EyeOff, Lock, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { Input } from '@/components/ui/input';
 
 function ResetPasswordForm() {
   const { t } = useTranslation();
@@ -197,21 +198,14 @@ function ResetPasswordForm() {
                         className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
                         style={{ color: 'var(--text-muted)' }}
                       />
-                      <input
+                      <Input
                         type={showPassword ? 'text' : 'password'}
                         required
                         autoFocus
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder={t('placeholders.minCharacters')}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                        style={{
-                          background: 'var(--input)',
-                          borderColor: 'var(--border)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                        onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                        className="h-11 pl-10 pr-10"
                       />
                       <button
                         type="button"
@@ -238,20 +232,13 @@ function ResetPasswordForm() {
                         className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
                         style={{ color: 'var(--text-muted)' }}
                       />
-                      <input
+                      <Input
                         type={showConfirm ? 'text' : 'password'}
                         required
                         value={confirm}
                         onChange={(e) => setConfirm(e.target.value)}
                         placeholder={t('placeholders.repeatPassword')}
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                        style={{
-                          background: 'var(--input)',
-                          borderColor: 'var(--border)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                        onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                        className="h-11 pl-10 pr-10"
                       />
                       <button
                         type="button"

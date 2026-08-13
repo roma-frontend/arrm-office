@@ -153,8 +153,8 @@ jest.mock('@/lib/cssMotion', () => {
   };
 });
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children, onOpenChange }: any) =>
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ open, children, onOpenChange }: any) =>
     open ? (
       <>
         {children}
@@ -163,10 +163,16 @@ jest.mock('@/components/ui/dialog', () => ({
         </button>
       </>
     ) : null,
-  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
-  DialogTitle: ({ children }: any) => <h2>{children}</h2>,
-  DialogDescription: ({ children }: any) => <p>{children}</p>,
-  DialogFooter: ({ children }: any) => <div>{children}</div>,
+  SheetContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
+  SheetFooter: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <h2>{children}</h2>,
+  SheetDescription: ({ children }: any) => <p>{children}</p>,
+}));
+
+jest.mock('@/components/ui/input', () => ({
+  Input: (props: any) => <input {...props} />,
 }));
 
 // data-value mirrors the controlled value so tests can assert empty values that
@@ -360,38 +366,28 @@ describe('wizard navigation', () => {
     expect(screen.getByText('common.step 1 / 5')).toBeTruthy();
   });
 
-  it('blocks advancing when the name is empty and blurs the input red', () => {
+  it('blocks advancing when the name is empty and marks the input invalid', () => {
     renderModal(employee({ name: '' }));
     fireEvent.click(screen.getByText('wizard.next'));
     expect(screen.getByText('common.name errors.required')).toBeTruthy();
+    // The invalid state is declarative now (aria-invalid + the focus token in
+    // the Input primitive) rather than an imperative style.borderColor write.
     const name = screen.getByDisplayValue('') as HTMLInputElement;
-    fireEvent.blur(name);
-    expect(name.style.borderColor).toBe('rgb(239, 68, 68)');
+    expect(name.getAttribute('aria-invalid')).toBe('true');
     // Still on the first step.
     expect(screen.getByText('common.step 1 / 5')).toBeTruthy();
   });
 
-  it('edits the personal fields and their focus states', () => {
+  it('edits the personal fields', () => {
     renderModal(employee());
     const name = screen.getByDisplayValue('Anna Petrova') as HTMLInputElement;
-    fireEvent.focus(name);
-    expect(name.style.borderColor).toBe('rgb(37, 99, 235)');
-    fireEvent.blur(name);
-    expect(name.style.borderColor).toBe('var(--border)');
+    expect(name.getAttribute('aria-invalid')).toBe('false');
 
     const phone = screen.getByDisplayValue('+374 00 000 000') as HTMLInputElement;
-    fireEvent.focus(phone);
-    expect(phone.style.borderColor).toBe('rgb(37, 99, 235)');
-    fireEvent.blur(phone);
-    expect(phone.style.borderColor).toBe('var(--border)');
     fireEvent.change(phone, { target: { value: '+374 11 222 333' } });
     expect(phone.value).toBe('+374 11 222 333');
 
     const date = screen.getByDisplayValue('2023-11-14') as HTMLInputElement;
-    fireEvent.focus(date);
-    expect(date.style.borderColor).toBe('rgb(37, 99, 235)');
-    fireEvent.blur(date);
-    expect(date.style.borderColor).toBe('var(--border)');
     fireEvent.change(date, { target: { value: '2024-01-01' } });
     expect(date.value).toBe('2024-01-01');
   });

@@ -4,7 +4,7 @@
   "description": "All-in-One HR Management Platform",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#060e1e",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
   "scope": "/",

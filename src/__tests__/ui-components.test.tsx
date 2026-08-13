@@ -90,10 +90,21 @@ describe('Button', () => {
     expect(btn.tagName).toBe('BUTTON');
   });
 
-  it('has ripple-effect class', () => {
-    render(<Button>Ripple</Button>);
-    const btn = screen.getByText('Ripple');
-    expect(btn.className).toContain('ripple-effect');
+  // Press feedback is a CSS transform (see `.press-subtle` in spark.css). It
+  // replaced a JS-driven Material ripple that appended a DOM node per click and
+  // could not honour `prefers-reduced-motion`.
+  it('has press-subtle class for tactile press feedback', () => {
+    render(<Button>Press</Button>);
+    const btn = screen.getByText('Press');
+    expect(btn.className).toContain('press-subtle');
+  });
+
+  it('does not attach the legacy ripple effect', () => {
+    render(<Button>No ripple</Button>);
+    const btn = screen.getByText('No ripple');
+    expect(btn.className).not.toContain('ripple-effect');
+    fireEvent.click(btn);
+    expect(btn.querySelector('.ripple-circle')).toBeNull();
   });
 });
 

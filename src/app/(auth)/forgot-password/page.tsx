@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { Mail, AlertCircle, Building2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
 
 export default function ForgotPasswordPage() {
@@ -113,21 +114,14 @@ export default function ForgotPasswordPage() {
                         className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
                         style={{ color: 'var(--text-muted)' }}
                       />
-                      <input
+                      <Input
                         type="email"
                         required
                         autoFocus
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@company.com"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                        style={{
-                          background: 'var(--input)',
-                          borderColor: 'var(--border)',
-                          color: 'var(--text-primary)',
-                        }}
-                        onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                        onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                        className="h-11 pl-10 pr-4"
                       />
                     </div>
                   </div>

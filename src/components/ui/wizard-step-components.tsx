@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { AiTextActions } from '@/components/ai/AiTextActions';
 import {
   Select,
   SelectContent,
@@ -92,6 +93,15 @@ interface TextareaStepProps {
   description?: string;
   required?: boolean;
   rows?: number;
+  /**
+   * Offer AI rewriting under the field. Pass what the text is — "task
+   * description", "job posting" — which is what steers register and length.
+   *
+   * Opt-in rather than always on: most wizard textareas are a note or a reason,
+   * where a row of rewrite buttons is noise. It earns its place on the fields
+   * someone else has to read and act on.
+   */
+  aiContext?: string;
 }
 
 export function TextareaStep({
@@ -103,6 +113,7 @@ export function TextareaStep({
   description,
   required = false,
   rows = 4,
+  aiContext,
 }: TextareaStepProps) {
   const context = useWizardContext();
   const data = stepData ?? context.stepData;
@@ -111,7 +122,7 @@ export function TextareaStep({
   return (
     <div className="space-y-2">
       <Label htmlFor={field} className="text-(--text-primary)">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-(--danger-text)">*</span>}
       </Label>
       <Textarea
         id={field}
@@ -120,9 +131,17 @@ export function TextareaStep({
         onChange={(e) => update(field, e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="bg-(--input) border-(--input-border) text-(--text-primary) placeholder-(--text-muted) resize-none"
+        className="resize-none"
         required={required}
       />
+      {aiContext && (
+        <AiTextActions
+          value={String(value ?? '')}
+          onChange={(next) => update(field, next)}
+          context={aiContext}
+          actions={['improve', 'shorten', 'expand', 'proofread']}
+        />
+      )}
       {description && <p className="text-xs text-(--text-muted)">{description}</p>}
     </div>
   );

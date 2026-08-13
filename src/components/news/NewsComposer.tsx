@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { AiTextActions } from '@/components/ai/AiTextActions';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -169,6 +170,16 @@ export function NewsComposer({ open, onClose, organizationId }: NewsComposerProp
               onChange={(event) => setContent(event.target.value)}
               placeholder={t('news.compose.bodyPlaceholder')}
               rows={8}
+            />
+            {/* An announcement goes to the whole company, so tone and length are
+                the two things authors most often want a second pass on — and
+                translation matters here more than anywhere: the same post has to
+                land for four interface languages. */}
+            <AiTextActions
+              value={content}
+              onChange={setContent}
+              context="company announcement"
+              actions={['improve', 'shorten', 'professional', 'proofread', 'translate']}
             />
             <p className="text-xs text-muted-foreground">{t('news.compose.markdownHint')}</p>
           </div>

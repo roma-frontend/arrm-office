@@ -7,7 +7,15 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import type { ExtendedProfileData } from './ExtendedProfileSection';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
@@ -821,69 +829,70 @@ export default function EditExtendedProfileModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[95vh] p-0 flex flex-col">
-        {/* Header */}
-        <div className="relative overflow-hidden rounded-t-2xl">
-          <div className="absolute inset-0 bg-linear-to-br from-blue-600/20 to-purple-600/20" />
-          <div className="relative z-10 px-6 pt-6 pb-4">
-            <DialogTitle className="text-lg font-bold text-(--text-primary) flex items-center gap-2">
-              <User className="w-5 h-5 text-(--primary)" />
-              {t('extendedProfile.editTitle', 'Edit Extended Profile')}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-(--text-muted) mt-1">
-              {t(
-                'extendedProfile.editDesc',
-                'Manage personal details, work preferences, history and more',
-              )}
-            </DialogDescription>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" size="xl" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-field bg-(--brand-quiet) text-(--brand-text)">
+              <User className="size-4" />
+            </span>
+            <SheetTitle>{t('extendedProfile.editTitle', 'Edit Extended Profile')}</SheetTitle>
+          </div>
+          <SheetDescription>
+            {t(
+              'extendedProfile.editDesc',
+              'Manage personal details, work preferences, history and more',
+            )}
+          </SheetDescription>
+        </SheetHeader>
+
+        {/* Tabs — a scrolling segmented track rather than eight loose chips, so
+            the row reads as one control and the active tab is unmistakable. */}
+        <div className="shrink-0 border-b border-(--border-subtle) px-5 py-2.5">
+          <div
+            className="surface-inset flex gap-1 overflow-x-auto rounded-pill p-1 scrollbar-hide"
+            role="tablist"
+          >
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors duration-140 ease-spark ${
+                    isActive
+                      ? 'bg-(--surface-1) text-(--text-primary) shadow-elev-1'
+                      : 'text-(--text-muted) hover:text-(--text-primary)'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {t(tab.labelKey)}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex overflow-x-auto gap-1 px-6 py-3 border-b border-(--border) bg-(--background-subtle)/30">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-(--primary)/10 text-(--primary) shadow-xs'
-                    : 'text-(--text-muted) hover:text-(--text-primary) hover:bg-(--background-subtle)'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {t(tab.labelKey)}
-              </button>
-            );
-          })}
-        </div>
-
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-[300px]">
+        <SheetBody className="min-h-[300px]">
           <AnimatePresence mode="wait">{renderTabContent()}</AnimatePresence>
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-(--border) flex items-center justify-between bg-(--background-subtle)/30">
+        <SheetFooter className="justify-between">
           <Button variant="ghost" size="sm" onClick={onClose} className="gap-1">
             <X className="w-4 h-4" />
             {t('common.cancel', 'Cancel')}
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            size="sm"
-            className="gap-2 bg-linear-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md"
-          >
+          <Button onClick={handleSave} disabled={saving} size="sm" className="btn-gradient gap-2">
             {saving ? <ShieldLoader size="xs" variant="inline" /> : <Save className="w-4 h-4" />}
             {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save Changes')}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -40,12 +40,16 @@ import { useOrgUnits } from '@/hooks/useOrgUnits';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -663,56 +667,38 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
 
   const isLastStep = step === effectiveTotalSteps - 1;
 
+  const stepperSteps = steps.map((s, i) => ({ id: `step-${i}`, title: s.label }));
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[95vh] p-0">
-        {/* Header with progress */}
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 btn-gradient" />
-          <div className="relative z-10 px-6 pt-6 pb-4">
-            <div className="flex items-center gap-3 mb-4">
-              <AvatarUpload
-                userId={employee._id}
-                currentUrl={employee.avatarUrl}
-                name={employee.name}
-                size="md"
-              />
-              <div>
-                <DialogTitle className="text-lg text-white">
-                  {t('modals.editEmployee.title')}
-                </DialogTitle>
-                <DialogDescription className="text-white/70 text-sm">
-                  {employee.email}
-                </DialogDescription>
-              </div>
-            </div>
-
-            {/* Step indicators */}
-            <div className="flex items-center gap-1.5 mt-2">
-              {steps.map((s, i) => (
-                <div key={i} className="flex items-center gap-1.5 flex-1">
-                  <div
-                    className={`flex-1 h-1 rounded-full transition-all duration-300 ${
-                      i <= step ? 'bg-white' : 'bg-white/30'
-                    }`}
-                    style={{ transformOrigin: 'left' }}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Step labels */}
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-white/60">
-                {t('common.step') || 'Step'} {step + 1} / {effectiveTotalSteps}
-              </span>
-              <span className="text-xs text-white/80 font-medium">{steps[step]?.label}</span>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader className="gap-3.5">
+          <div className="flex items-center gap-3">
+            <AvatarUpload
+              userId={employee._id}
+              currentUrl={employee.avatarUrl}
+              name={employee.name}
+              size="md"
+            />
+            <div className="min-w-0">
+              <SheetTitle>{t('modals.editEmployee.title')}</SheetTitle>
+              <SheetDescription>{employee.email}</SheetDescription>
             </div>
           </div>
-        </div>
+
+          <WizardStepper steps={stepperSteps} current={step} onStepClick={setStep} labels="none" />
+          <div className="flex items-center justify-between">
+            <span className="eyebrow num">
+              {t('common.step') || 'Step'} {step + 1} / {effectiveTotalSteps}
+            </span>
+            <span className="text-caption font-medium text-(--text-secondary)">
+              {steps[step]?.label}
+            </span>
+          </div>
+        </SheetHeader>
 
         {/* Content */}
-        <div className="px-6 py-5 max-h-[50vh] overflow-y-auto">
+        <SheetBody>
           <WizardDraftNotice
             show={draft.restored}
             step={draft.restoredStep}
@@ -776,37 +762,21 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                   <label className="text-sm font-medium flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5" /> {t('labels.fullName')} *
                   </label>
-                  <input
+                  <Input
                     value={form.name}
                     onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
-                      errors.name ? 'border-red-500' : ''
-                    }`}
-                    style={{
-                      background: 'var(--input)',
-                      borderColor: errors.name ? undefined : 'var(--border)',
-                      color: 'var(--text-primary)',
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                    onBlur={(e) =>
-                      (e.target.style.borderColor = errors.name ? '#ef4444' : 'var(--border)')
-                    }
+                    aria-invalid={Boolean(errors.name)}
                   />
-                  {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                  {errors.name && (
+                    <p className="text-caption text-(--danger-text)">{errors.name}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5" /> {t('labels.email')}
                   </label>
-                  <div
-                    className="px-3 py-2 rounded-xl border text-sm"
-                    style={{
-                      background: 'var(--background-subtle)',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
+                  <div className="surface-inset px-3 py-2 text-label text-(--text-muted)">
                     {employee.email}
                   </div>
                 </div>
@@ -815,18 +785,10 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                   <label className="text-sm font-medium flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5" /> {t('labels.phone')}
                   </label>
-                  <input
+                  <Input
                     value={form.phone}
                     onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
                     placeholder="+374 XX XXX XXX"
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all"
-                    style={{
-                      background: 'var(--input)',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)',
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                    onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
                   />
                 </div>
 
@@ -834,21 +796,13 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                   <label className="text-sm font-medium flex items-center gap-1.5">
                     <CalendarDays className="w-3.5 h-3.5" /> {t('editEmployee.registrationDate')}
                   </label>
-                  <input
+                  <Input
                     type="date"
                     value={form.registrationDate}
                     max={toLocalDateString(Date.now())}
                     onChange={(e) => setForm((p) => ({ ...p, registrationDate: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all"
-                    style={{
-                      background: 'var(--input)',
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)',
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                    onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
                   />
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <p className="text-caption text-(--text-muted)">
                     {t('editEmployee.registrationDateHint')}
                   </p>
                 </div>
@@ -1336,37 +1290,31 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <DialogFooter className="px-6 py-4 border-t" style={{ borderColor: 'var(--border)' }}>
-          <div className="flex items-center justify-between w-full">
-            {step > 0 ? (
-              <Button variant="outline" onClick={prevStep} className="gap-1">
-                <ChevronLeft className="w-4 h-4" />
-                {t('wizard.previous') || 'Previous'}
-              </Button>
-            ) : (
-              <div />
-            )}
-            {isLastStep ? (
-              <Button onClick={handleSave} disabled={loading} className="gap-2">
-                {loading ? (
-                  <ShieldLoader size="xs" variant="inline" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                {t('modals.editEmployee.saveChanges')}
-              </Button>
-            ) : (
-              <Button onClick={nextStep} className="gap-1">
-                {t('wizard.next') || 'Next'}
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <SheetFooter className="justify-between">
+          {step > 0 ? (
+            <Button variant="outline" onClick={prevStep} className="gap-1">
+              <ChevronLeft className="w-4 h-4" />
+              {t('wizard.previous') || 'Previous'}
+            </Button>
+          ) : (
+            <div />
+          )}
+          {isLastStep ? (
+            <Button onClick={handleSave} disabled={loading} className="btn-gradient gap-2">
+              {loading ? <ShieldLoader size="xs" variant="inline" /> : <Save className="w-4 h-4" />}
+              {t('modals.editEmployee.saveChanges')}
+            </Button>
+          ) : (
+            <Button onClick={nextStep} className="btn-gradient gap-1">
+              {t('wizard.next') || 'Next'}
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          )}
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

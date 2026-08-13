@@ -24,50 +24,50 @@ interface StatsCardProps {
   trend?: number[];
 }
 
-const colorMap = {
-  blue: {
-    accent: '#2563eb',
-    bg: 'from-[#2563eb]/20 to-[#2563eb]/5',
-    icon: 'bg-[#2563eb]/12 text-[#2563eb]',
-    border: 'border-[#2563eb]/15',
-    glow: 'shadow-[#2563eb]/10',
-  },
-  green: {
-    accent: '#10b981',
-    bg: 'from-[#10b981]/20 to-[#10b981]/5',
-    icon: 'bg-[#10b981]/12 text-[#10b981]',
-    border: 'border-[#10b981]/15',
-    glow: 'shadow-[#10b981]/10',
-  },
-  yellow: {
-    accent: '#f59e0b',
-    bg: 'from-[#f59e0b]/20 to-[#f59e0b]/5',
-    icon: 'bg-[#f59e0b]/12 text-[#f59e0b]',
-    border: 'border-[#f59e0b]/15',
-    glow: 'shadow-[#f59e0b]/10',
-  },
-  red: {
-    accent: '#ef4444',
-    bg: 'from-[#ef4444]/20 to-[#ef4444]/5',
-    icon: 'bg-[#ef4444]/12 text-[#ef4444]',
-    border: 'border-[#ef4444]/15',
-    glow: 'shadow-[#ef4444]/10',
-  },
-  purple: {
-    accent: '#0ea5e9',
-    bg: 'from-[#0ea5e9]/20 to-[#0ea5e9]/5',
-    icon: 'bg-[#0ea5e9]/12 text-[#0ea5e9]',
-    border: 'border-[#0ea5e9]/15',
-    glow: 'shadow-[#0ea5e9]/10',
-  },
-  cyan: {
-    accent: '#06b6d4',
-    bg: 'from-[#06b6d4]/20 to-[#06b6d4]/5',
-    icon: 'bg-[#06b6d4]/12 text-[#06b6d4]',
-    border: 'border-[#06b6d4]/15',
-    glow: 'shadow-[#06b6d4]/10',
-  },
-};
+/**
+ * Metric colours, resolved from design tokens rather than literal hex.
+ *
+ * Two things this fixes. The values were hard-coded (`#2563eb`, `#10b981`, …),
+ * so the tiles were the one part of the dashboard that ignored the theme and
+ * kept light-mode colours in dark mode. And `purple` was mapped to `#0ea5e9` —
+ * sky blue — which is why the "on leave now" tile never looked purple.
+ *
+ * `accent` is consumed as an inline `background`/`stroke`, so it must resolve to
+ * a colour value; `icon` is a utility pair for the chip.
+ */
+const colorMap: Record<StatsCardProps['color'], { accent: string; icon: string; border: string }> =
+  {
+    blue: {
+      accent: 'var(--brand)',
+      icon: 'bg-(--brand-quiet) text-(--brand-text)',
+      border: 'border-(--border-subtle)',
+    },
+    green: {
+      accent: 'var(--success-solid)',
+      icon: 'bg-(--success-quiet) text-(--success-text)',
+      border: 'border-(--border-subtle)',
+    },
+    yellow: {
+      accent: 'var(--warning-solid)',
+      icon: 'bg-(--warning-quiet) text-(--warning-text)',
+      border: 'border-(--border-subtle)',
+    },
+    red: {
+      accent: 'var(--danger-solid)',
+      icon: 'bg-(--danger-quiet) text-(--danger-text)',
+      border: 'border-(--border-subtle)',
+    },
+    purple: {
+      accent: 'var(--purple)',
+      icon: 'bg-(--purple-quiet) text-(--purple-text)',
+      border: 'border-(--border-subtle)',
+    },
+    cyan: {
+      accent: 'var(--cyan-500)',
+      icon: 'bg-(--brand-quiet) text-(--brand-text)',
+      border: 'border-(--border-subtle)',
+    },
+  };
 
 /**
  * A sparkline drawn as a single path, no library and no axes.
@@ -213,7 +213,7 @@ export const StatsCard = memo(
               <span
                 className={cn(
                   'inline-flex items-center gap-1 text-[11px] font-medium',
-                  isPositive ? 'text-emerald-500' : 'text-red-500',
+                  isPositive ? 'text-(--success-text)' : 'text-(--danger-text)',
                 )}
               >
                 {isPositive ? (
@@ -237,11 +237,11 @@ export const StatsCard = memo(
     );
 
     const shell = cn(
-      'relative overflow-hidden rounded-xl border p-3 sm:p-4 shadow-sm transition-all duration-300 bg-(--card)',
+      'relative overflow-hidden rounded-card border p-3 sm:p-4 shadow-sm bg-(--card)',
+      'transition-[box-shadow,border-color] duration-140 ease-spark',
       colors.border,
-      href && 'hover:shadow-md hover:border-(--primary)/30 cursor-pointer',
-      href &&
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/40 focus-visible:ring-offset-1',
+      href && 'cursor-pointer hover:shadow-md hover:border-(--border-strong)',
+      href && 'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25',
     );
 
     return (
@@ -249,7 +249,9 @@ export const StatsCard = memo(
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: index * 0.1, ease: 'easeOut' }}
-        whileHover={{ y: -2, transition: { duration: 0.2 } }}
+        // No hover lift. Nudging a tile upward shifts the optical baseline of a
+        // whole row of them, which makes a dense grid feel unstable; the shadow
+        // step on `shell` carries the affordance instead.
         className={href ? undefined : shell}
       >
         {href ? (

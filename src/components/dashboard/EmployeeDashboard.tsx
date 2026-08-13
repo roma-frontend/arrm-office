@@ -23,6 +23,9 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import PayrollUpcomingBanner from '@/components/payroll/PayrollUpcomingBanner';
 import { MyLeaveMoneyCard } from '@/components/dashboard/MyLeaveMoneyCard';
+import { FocusFeed } from '@/components/dashboard/FocusFeed';
+import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
+import { useCommandPaletteStore } from '@/store/useCommandPaletteStore';
 
 // Lazy load heavy dashboard components to reduce initial JS bundle
 const _AttendanceDashboard = dynamic(
@@ -106,6 +109,7 @@ StarRating.displayName = 'StarRating';
 export function EmployeeDashboard() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const openPalette = useCommandPaletteStore((s) => s.openPalette);
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
@@ -150,8 +154,6 @@ export function EmployeeDashboard() {
     );
   }
 
-  const today = new Date();
-
   return (
     <motion.div
       variants={containerVariants}
@@ -170,14 +172,14 @@ export function EmployeeDashboard() {
         />
       </motion.div>
 
-      {/* Welcome header */}
+      {/* Lead block. Replaces the plain "Welcome, Anna" heading + date line: same
+          greeting, but it now also answers what today actually holds — due tasks,
+          birthdays, who is out, today's events — instead of just saying hello.
+          The approvals row inside it is role-gated, so employees never see it. */}
       <motion.div variants={itemVariants}>
-        <h2 className="text-2xl font-bold text-(--text-primary)">
-          {t('dashboard.welcome')}, {user?.name?.split(' ')[0]} 👋
-        </h2>
-        <p className="text-(--text-muted) text-sm mt-1 capitalize">
-          {format(today, 'EEEE, MMMM d, yyyy', { locale: dateFnsLocale })}
-        </p>
+        <WidgetErrorBoundary name="FocusFeed">
+          <FocusFeed onOpenSearch={openPalette} />
+        </WidgetErrorBoundary>
       </motion.div>
 
       {/* Upcoming Pay Periods notification (compact) */}

@@ -1077,6 +1077,7 @@
     "allPeriods": "All",
     "empty": "No objectives yet",
     "emptyHint": "Create your first objective to get started",
+    "objective": "Objective",
     "overallProgress": "Overall Progress",
     "keyResults": "Key Results",
     "alignedGoals": "Aligned Goals",

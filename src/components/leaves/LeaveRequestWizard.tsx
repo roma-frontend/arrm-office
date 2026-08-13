@@ -40,7 +40,9 @@ import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
 
 interface LeaveRequestWizardProps {
   userId: Id<'users'>;
@@ -107,7 +109,6 @@ export function LeaveRequestWizard({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentStepId = stepIds[currentStepIdx];
-  const progress = ((currentStepIdx + 1) / stepIds.length) * 100;
 
   const updateStepData = (key: keyof StepData, value: string | number | boolean | null) => {
     setStepData((prev) => ({ ...prev, [key]: value }));
@@ -207,78 +208,27 @@ export function LeaveRequestWizard({
 
   if (allUsers === undefined)
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex flex-1 items-center justify-center p-8">
         <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
 
+  const stepperSteps = stepIds.map((id) => ({ id, title: stepConfig[id]?.title ?? id }));
+
   return (
-    <div className="bg-(--card) flex flex-col h-full max-h-[70vh]">
-      {/* Stepper */}
-      <div className="px-4 pt-4 pb-3 md:px-6">
-        {/* Progress bar */}
-        <div className="relative h-1.5 md:h-2 bg-(--background-subtle) rounded-full overflow-hidden mb-4">
-          <motion.div
-            className="absolute inset-y-0 left-0 bg-(--primary)"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-          />
-        </div>
-        {/* Step indicators */}
-        <div className="flex items-center gap-1">
-          {stepIds.map((stepId, idx) => {
-            const isCompleted = idx < currentStepIdx;
-            const isCurrent = idx === currentStepIdx;
-            const cfg = stepConfig[stepId];
-            return (
-              <React.Fragment key={stepId}>
-                <div className="flex flex-col items-center flex-1 min-w-0">
-                  <motion.div
-                    className={cn(
-                      'w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center border-2 transition-colors shrink-0',
-                      isCompleted
-                        ? 'bg-blue-500 border-blue-500 text-white'
-                        : isCurrent
-                          ? 'border-blue-500 bg-(--background) text-blue-500'
-                          : 'border-(--border) bg-(--background) text-(--muted-foreground)',
-                    )}
-                    animate={{ scale: isCurrent ? 1.1 : 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <span className="text-xs font-semibold">{idx + 1}</span>
-                    )}
-                  </motion.div>
-                  <p
-                    className={cn(
-                      'text-[10px] md:text-xs font-medium mt-1.5 text-center leading-tight truncate w-full px-1',
-                      isCurrent ? 'text-(--primary)' : 'text-(--muted-foreground)',
-                    )}
-                  >
-                    {cfg?.title}
-                  </p>
-                </div>
-                {idx < stepIds.length - 1 && (
-                  <div className="flex-1 h-0.5 bg-(--border) mx-1 max-w-6">
-                    <motion.div
-                      className={cn('h-full', isCompleted ? 'bg-blue-500' : 'bg-(--border)')}
-                      initial={{ width: '0%' }}
-                      animate={{ width: isCompleted ? '100%' : '0%' }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </div>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Step map — sits directly under the sheet header, so the two read as
+          one piece of chrome. */}
+      <div className="shrink-0 border-b border-(--border-subtle) px-5 py-3">
+        <WizardStepper
+          steps={stepperSteps}
+          current={currentStepIdx}
+          onStepClick={setCurrentStepIdx}
+        />
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
         <WizardDraftNotice
           show={draft.restored}
           step={draft.restoredStep}
@@ -332,24 +282,24 @@ export function LeaveRequestWizard({
       </div>
 
       {/* Navigation */}
-      <div className="shrink-0 px-4 py-4 md:px-6 border-t border-(--border) bg-(--background)">
-        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
+      <div className="spark-sheet-footer shrink-0 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="flex flex-col-reverse items-stretch justify-between gap-2 sm:flex-row sm:items-center sm:gap-3">
           <Button
             variant="outline"
             onClick={handleBack}
             disabled={currentStepIdx === 0 || isSubmitting}
-            className="w-full sm:w-auto text-sm"
+            className="w-full sm:w-auto"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             {t('wizard.back', 'Back')}
           </Button>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
             {onCancel && (
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={onCancel}
                 disabled={isSubmitting}
-                className="w-full sm:w-auto text-sm"
+                className="w-full sm:w-auto"
               >
                 {t('wizard.cancel', 'Cancel')}
               </Button>
@@ -357,7 +307,7 @@ export function LeaveRequestWizard({
             <Button
               onClick={handleNext}
               disabled={!canGoNext() || isSubmitting}
-              className="w-full sm:w-auto text-sm gap-2 btn-gradient text-white"
+              className="btn-gradient w-full gap-2 sm:w-auto"
             >
               {isSubmitting ? (
                 t('wizard.processing', 'Processing...')
@@ -392,20 +342,23 @@ function EmployeeStep({
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-sm font-medium text-(--text-primary)">
-          {t('labels.employee', 'Employee')} <span className="text-red-500">*</span>
+        <p className="text-label text-(--text-primary)">
+          {t('labels.employee', 'Employee')}{' '}
+          <span className="text-(--danger-text)" aria-hidden="true">
+            *
+          </span>
         </p>
-        <p className="text-xs text-(--text-muted) mt-1">
+        <p className="mt-1 text-caption text-(--text-muted)">
           {t('leaveWizard.selectEmployee', 'Select the employee for this leave request')}
         </p>
       </div>
       <Select value={value || ''} onValueChange={onChange}>
-        <SelectTrigger className="w-full px-3 py-2.5 rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent outline-none">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder={t('placeholders.selectEmployee', 'Select employee...')} />
         </SelectTrigger>
-        <SelectContent className="bg-(--input) border border-(--input-border) text-(--text-primary)">
+        <SelectContent>
           {allUsers?.map((emp) => (
-            <SelectItem key={emp._id} value={emp._id} className="text-(--text-primary)">
+            <SelectItem key={emp._id} value={emp._id}>
               {emp.name}
               {emp.department ? ` · ${emp.department}` : ''}
             </SelectItem>
@@ -424,102 +377,89 @@ function TypeStep({ value, onChange }: { value?: LeaveType; onChange: (v: LeaveT
     title: string;
     desc: string;
     icon: React.ReactNode;
-    color: string;
+    /** Quiet surface + matching text token for the resting icon chip. */
+    chip: string;
   }[] = [
     {
       value: 'paid',
       title: t('leave.types.paid', 'Paid Leave'),
       desc: t('leave.types.paidDesc', 'From paid leave balance'),
-      icon: <Sun className="w-5 h-5" />,
-      color: 'yellow',
+      icon: <Sun className="w-4.5 h-4.5" />,
+      chip: 'bg-(--warning-quiet) text-(--warning-text)',
     },
     {
       value: 'sick',
       title: t('leave.types.sick', 'Sick Leave'),
       desc: t('leave.types.sickDesc', 'Medical reasons'),
-      icon: <Heart className="w-5 h-5" />,
-      color: 'red',
+      icon: <Heart className="w-4.5 h-4.5" />,
+      chip: 'bg-(--danger-quiet) text-(--danger-text)',
     },
     {
       value: 'family',
       title: t('leave.types.family', 'Family Leave'),
       desc: t('leave.types.familyDesc', 'Family emergencies'),
-      icon: <Users className="w-5 h-5" />,
-      color: 'purple',
+      icon: <Users className="w-4.5 h-4.5" />,
+      chip: 'bg-(--purple-quiet) text-(--purple-text)',
     },
     {
       value: 'unpaid',
       title: t('leave.types.unpaid', 'Unpaid Leave'),
       desc: t('leave.types.unpaidDesc', 'No pay, needs approval'),
-      icon: <Briefcase className="w-5 h-5" />,
-      color: 'gray',
+      icon: <Briefcase className="w-4.5 h-4.5" />,
+      chip: 'bg-(--surface-3) text-(--text-secondary)',
     },
   ];
-
-  const colorMap: Record<string, string> = {
-    yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400',
-    red: 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400',
-    purple: 'bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400',
-    gray: 'bg-gray-100 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400',
-  };
 
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-sm font-medium text-(--text-primary)">
-          {t('labels.leaveType', 'Leave Type')} <span className="text-red-500">*</span>
+        <p className="text-label text-(--text-primary)">
+          {t('labels.leaveType', 'Leave Type')}{' '}
+          <span className="text-(--danger-text)" aria-hidden="true">
+            *
+          </span>
         </p>
-        <p className="text-xs text-(--text-muted) mt-1">
+        <p className="mt-1 text-caption text-(--text-muted)">
           {t('leaveWizard.selectType', 'What type of leave are you requesting?')}
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5" role="radiogroup">
         {types.map((type) => {
           const isSelected = value === type.value;
           return (
             <button
               key={type.value}
               type="button"
+              role="radio"
+              aria-checked={isSelected}
               onClick={() => onChange(type.value)}
               className={cn(
-                'p-4 rounded-xl border-2 text-left transition-all duration-200 flex flex-col items-center text-center gap-2',
+                'press-subtle relative flex flex-col items-start gap-2.5 rounded-card border p-3.5 text-left',
+                'transition-colors duration-140 ease-spark',
                 isSelected
-                  ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20'
-                  : 'border-(--border) bg-(--background) hover:bg-(--background-subtle)',
+                  ? 'border-(--brand) bg-(--brand-quiet)'
+                  : 'border-(--border-default) bg-(--surface-1) hover:bg-(--surface-2)',
               )}
             >
-              <div
+              <span
                 className={cn(
-                  'p-2.5 rounded-full',
-                  isSelected
-                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                    : colorMap[type.color],
+                  'flex size-9 items-center justify-center rounded-field transition-colors duration-140 ease-spark',
+                  isSelected ? 'btn-gradient' : type.chip,
                 )}
               >
                 {type.icon}
-              </div>
-              <div>
-                <p
-                  className={cn(
-                    'text-sm font-bold',
-                    isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-(--text-primary)',
-                  )}
-                >
+              </span>
+              <span className="min-w-0">
+                <span className="block text-label font-semibold text-(--text-primary)">
                   {type.title}
-                </p>
-                <p className="text-[10px] md:text-xs text-(--text-muted) mt-0.5 line-clamp-2">
-                  {type.desc}
-                </p>
-              </div>
+                </span>
+                <span className="mt-0.5 block text-caption text-(--text-muted)">{type.desc}</span>
+              </span>
               {isSelected && (
-                <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] px-2 py-0.5 mt-1 shadow-sm">
-                  ✓{' '}
-                  {i18n.language === 'ru'
-                    ? 'Выбрано'
-                    : i18n.language === 'hy'
-                      ? 'Ընտրված'
-                      : 'Selected'}
-                </Badge>
+                <CheckCircle
+                  className="absolute right-2.5 top-2.5 size-4 text-(--brand)"
+                  aria-hidden="true"
+                />
               )}
             </button>
           );
@@ -555,36 +495,37 @@ function DatesStep({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-medium text-(--text-primary)">
-          {t('labels.dates', 'Dates')} <span className="text-red-500">*</span>
+        <p className="text-label text-(--text-primary)">
+          {t('labels.dates', 'Dates')}{' '}
+          <span className="text-(--danger-text)" aria-hidden="true">
+            *
+          </span>
         </p>
-        <p className="text-xs text-(--text-muted) mt-1">
+        <p className="mt-1 text-caption text-(--text-muted)">
           {t('leaveWizard.selectDates', 'Choose start and end dates for your leave')}
         </p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-(--text-primary)">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="text-label text-(--text-secondary)">
             {t('labels.startDate', 'Start Date')}
           </label>
-          <input
+          <Input
             type="date"
             value={start}
             onChange={(e) => onStartDateChange(e.target.value)}
             min={new Date().toISOString().split('T')[0]}
-            className="w-full px-3 py-2.5 rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent outline-none"
           />
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-(--text-primary)">
+        <div className="space-y-1.5">
+          <label className="text-label text-(--text-secondary)">
             {t('labels.endDate', 'End Date')}
           </label>
-          <input
+          <Input
             type="date"
             value={end}
             onChange={(e) => onEndDateChange(e.target.value)}
             min={start || new Date().toISOString().split('T')[0]}
-            className="w-full px-3 py-2.5 rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) text-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent outline-none"
           />
         </div>
       </div>
@@ -592,14 +533,14 @@ function DatesStep({
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg bg-(--primary)/10 border border-(--primary)/20"
+          className="flex items-center gap-3 rounded-card border border-(--brand-outline) bg-(--brand-quiet) px-4 py-3"
         >
-          <CalendarDays className="w-5 h-5 text-(--primary) shrink-0" />
+          <CalendarDays className="w-4.5 h-4.5 shrink-0 text-(--brand)" />
           <div>
-            <p className="text-sm font-semibold text-(--text-primary)">
+            <p className="num text-label font-semibold text-(--text-primary)">
               {days} {days === 1 ? t('leave.day', 'day') : t('leave.days', 'days')}
             </p>
-            <p className="text-xs text-(--text-muted)">
+            <p className="text-caption text-(--text-muted)">
               {format(new Date(start), 'MMM d', { locale: dateFnsLocale })} –{' '}
               {format(new Date(end), 'MMM d, yyyy', { locale: dateFnsLocale })}
             </p>
@@ -641,10 +582,10 @@ function DetailsStep({
     unpaid: t('leave.types.unpaid', 'Unpaid Leave'),
   };
   const typeColors: Record<string, string> = {
-    paid: 'text-yellow-600 dark:text-yellow-400',
-    sick: 'text-red-600 dark:text-red-400',
-    family: 'text-purple-600 dark:text-purple-400',
-    unpaid: 'text-gray-600 dark:text-gray-400',
+    paid: 'text-(--warning-text)',
+    sick: 'text-(--danger-text)',
+    family: 'text-(--purple-text)',
+    unpaid: 'text-(--text-secondary)',
   };
 
   const days =
@@ -654,88 +595,97 @@ function DetailsStep({
 
   return (
     <div className="space-y-4">
-      {/* Employee */}
-      {displayUser && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-(--background-subtle) border border-(--border)">
-          <div className="w-10 h-10 rounded-full bg-linear-to-br from-(--primary) to-[var(--primary)]/60 flex items-center justify-center text-white font-bold text-sm shrink-0">
-            {displayUser.name?.charAt(0).toUpperCase()}
+      {/* Summary — one inset block, so the recap reads as a single object rather
+          than three stacked cards competing with the fields below it. */}
+      <div className="surface-inset divide-y divide-(--border-subtle) overflow-hidden rounded-card">
+        {displayUser && (
+          <div className="flex items-center gap-3 p-3">
+            <div className="btn-gradient flex size-9 shrink-0 items-center justify-center rounded-pill text-label font-semibold">
+              {displayUser.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-label font-semibold text-(--text-primary)">
+                {displayUser.name}
+              </p>
+              {displayUser.department && (
+                <p className="truncate text-caption text-(--text-muted)">
+                  {displayUser.department}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-(--text-primary) truncate">
-              {displayUser.name}
-            </p>
-            {displayUser.department && (
-              <p className="text-xs text-(--text-muted) truncate">{displayUser.department}</p>
-            )}
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Type */}
-      {stepData.type && (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-(--background-subtle) border border-(--border)">
-          <span className="text-sm text-(--text-muted)">{t('labels.leaveType', 'Leave Type')}</span>
-          <span
-            className={cn(
-              'text-sm font-semibold',
-              typeColors[stepData.type] || 'text-(--text-primary)',
-            )}
-          >
-            {typeLabels[stepData.type] || stepData.type}
-          </span>
-        </div>
-      )}
-
-      {/* Dates */}
-      {stepData.startDate && stepData.endDate && (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-(--background-subtle) border border-(--border)">
-          <span className="text-sm text-(--text-muted)">{t('labels.dates', 'Dates')}</span>
-          <div className="text-right">
-            <p className="text-sm font-medium text-(--text-primary)">
-              {format(new Date(stepData.startDate), 'MMM d', { locale: dateFnsLocale })} –{' '}
-              {format(new Date(stepData.endDate), 'MMM d, yyyy', { locale: dateFnsLocale })}
-            </p>
-            <p className="text-xs text-(--text-muted)">
-              {days} {days === 1 ? t('leave.day', 'day') : t('leave.days', 'days')}
-            </p>
+        {stepData.type && (
+          <div className="flex items-center justify-between p-3">
+            <span className="text-label text-(--text-muted)">
+              {t('labels.leaveType', 'Leave Type')}
+            </span>
+            <span
+              className={cn(
+                'text-label font-semibold',
+                typeColors[stepData.type] || 'text-(--text-primary)',
+              )}
+            >
+              {typeLabels[stepData.type] || stepData.type}
+            </span>
           </div>
-        </div>
-      )}
+        )}
+
+        {stepData.startDate && stepData.endDate && (
+          <div className="flex items-center justify-between p-3">
+            <span className="text-label text-(--text-muted)">{t('labels.dates', 'Dates')}</span>
+            <div className="text-right">
+              <p className="text-label font-medium text-(--text-primary)">
+                {format(new Date(stepData.startDate), 'MMM d', { locale: dateFnsLocale })} –{' '}
+                {format(new Date(stepData.endDate), 'MMM d, yyyy', { locale: dateFnsLocale })}
+              </p>
+              <p className="num text-caption text-(--text-muted)">
+                {days} {days === 1 ? t('leave.day', 'day') : t('leave.days', 'days')}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Reason */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-(--text-primary)">
-          {t('labels.reason', 'Reason')} <span className="text-red-500">*</span>
+      <div className="space-y-1.5">
+        <label className="text-label text-(--text-secondary)">
+          {t('labels.reason', 'Reason')}{' '}
+          <span className="text-(--danger-text)" aria-hidden="true">
+            *
+          </span>
         </label>
-        <textarea
+        <Textarea
           value={stepData.reason || ''}
           onChange={(e) => onReasonChange(e.target.value)}
           placeholder={t('leaveRequest.reasonPlaceholder', 'e.g., Annual vacation')}
           rows={2}
-          className="w-full px-3 py-2.5 rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) placeholder-(--text-muted) text-sm resize-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent outline-none"
+          className="resize-none"
         />
       </div>
 
       {/* Comment */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-(--text-primary)">
+      <div className="space-y-1.5">
+        <label className="text-label text-(--text-secondary)">
           {t('leaveRequest.additionalComments', 'Comments')} ({t('common.optional', 'optional')})
         </label>
-        <textarea
+        <Textarea
           value={stepData.comment || ''}
           onChange={(e) => onCommentChange(e.target.value)}
           placeholder={t('leaveRequest.commentsPlaceholder', 'Additional information...')}
           rows={2}
-          className="w-full px-3 py-2.5 rounded-lg border border-(--input-border) bg-(--input) text-(--text-primary) placeholder-(--text-muted) text-sm resize-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent outline-none"
+          className="resize-none"
         />
       </div>
 
       {/* Balance */}
       {currentUser && stepData.type === 'paid' && (
-        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-          <p className="text-sm text-blue-400">
-            💡 {t('leaveWizard.currentBalance', 'Your balance')}:{' '}
-            {currentUser.paidLeaveBalance ?? 24} {t('leave.days', 'days')}
+        <div className="rounded-card border border-(--brand-outline) bg-(--brand-quiet) px-4 py-3">
+          <p className="text-label text-(--brand-text)">
+            {t('leaveWizard.currentBalance', 'Your balance')}:{' '}
+            <span className="num font-semibold">{currentUser.paidLeaveBalance ?? 24}</span>{' '}
+            {t('leave.days', 'days')}
           </p>
         </div>
       )}

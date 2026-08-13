@@ -230,13 +230,27 @@
     }
   },
   "commandPalette": {
-    "placeholder": "Поиск функций... (например: отпуск, чат, задачи)",
-    "noResults": "Ничего не найдено. Попробуйте другой запрос.",
+    "placeholder": "Поиск или переход…",
+    "noResults": "Ничего не найдено.",
     "tryDifferent": "Попробуйте другой запрос",
     "navigate": "для навигации",
     "select": "для выбора",
     "shortcut": "Ctrl+K для открытия",
-    "open": "Открыть командную палитру"
+    "open": "Открыть командную палитру",
+    "recent": "Недавние",
+    "resultCount": "результатов: {{count}}",
+    "groups": {
+      "actions": "Действия",
+      "people": "Люди",
+      "navigate": "Перейти",
+      "suggested": "Предложения"
+    },
+    "actions": {
+      "newLeave": "Запросить отпуск",
+      "newTask": "Создать задачу",
+      "bookRoom": "Забронировать переговорку",
+      "askAi": "Спросить ассистента"
+    }
   },
   "teamInfo": {
     "team": "Команда",
@@ -440,5 +454,33 @@
     "noDirectReports": "Нет прямых подчинённых",
     "noReportingData": "Нет данных о структуре подчинения",
     "notInHierarchy": "Вы ещё не привязаны к оргструктуре"
+  },
+  "focus": {
+    "title": "Сегодня в фокусе",
+    "greetingMorning": "Доброе утро",
+    "greetingAfternoon": "Добрый день",
+    "greetingEvening": "Добрый вечер",
+    "allClear": "Всё разобрано",
+    "allClearHint": "Сейчас ничего не требует внимания.",
+    "approvals": "Заявки на отпуск ждут решения",
+    "approvalsOne": "1 заявка ждёт решения",
+    "approvalsMany": "Заявок ждёт решения: {{count}}",
+    "approve": "Одобрить",
+    "reject": "Отклонить",
+    "approved": "Одобрено",
+    "rejected": "Отклонено",
+    "reviewAll": "Смотреть все",
+    "eventsToday": "Сегодня",
+    "eventsTodayCount": "Событий сегодня: {{count}}",
+    "birthdays": "День рождения сегодня",
+    "birthdaysMany": "Дней рождения сегодня: {{count}}",
+    "outToday": "Отсутствуют сегодня",
+    "outTodayCount": "Отсутствуют сегодня: {{count}}",
+    "tasksDue": "Задачи к сроку",
+    "tasksOverdue": "Просрочено: {{count}}",
+    "tasksDueToday": "На сегодня: {{count}}",
+    "viewAll": "Все",
+    "search": "Поиск",
+    "searchHint": "Искать всё"
   }
 }

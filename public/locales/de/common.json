@@ -2040,7 +2040,10 @@
     "draft": {
       "restored": "Entwurf wiederhergestellt",
       "continueFromStep": "Weiter ab Schritt {{step}}",
-      "startOver": "Neu beginnen"
+      "startOver": "Neu beginnen",
+      "savedTitle": "Entwurf gespeichert",
+      "resume": "Wiederherstellen",
+      "discard": "Verwerfen"
     }
   },
   "tripPriorities": {
@@ -2099,5 +2102,17 @@
     "title": "Organisation vorübergehend gesperrt",
     "description": "Ihre Organisation wurde vom Plattform-Administrator vorübergehend deaktiviert. Der Zugang kehrt zurück, sobald die Organisation aufgetaut wird.",
     "logout": "Abmelden"
+  },
+  "aiText": {
+    "label": "KI",
+    "improve": "Verbessern",
+    "shorten": "Kürzen",
+    "expand": "Erweitern",
+    "proofread": "Korrektur",
+    "professional": "Formeller",
+    "friendly": "Wärmer",
+    "translate": "Übersetzen",
+    "undo": "Rückgängig",
+    "failed": "Text konnte nicht umgeschrieben werden"
   }
 }

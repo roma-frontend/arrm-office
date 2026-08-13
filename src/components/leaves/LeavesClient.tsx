@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search, CheckCircle, XCircle, Trash2, Eye, CalendarDays } from 'lucide-react';
@@ -24,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { LeaveRequestModal } from '@/components/leaves/LeaveRequestModal';
+import { LeaveSheet } from '@/components/leaves/LeaveSheet';
 import { useAuthStore, type User } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import {
@@ -90,13 +90,29 @@ function LeaveTypeBadge({ type }: { type: LeaveType }) {
 }
 
 export function LeavesClient() {
-  const router = useRouter();
   const { t } = useTranslation();
   const user = useAuthStore(useShallow((state: { user: User | null }) => state.user));
   const selectedOrgId = useSelectedOrganization();
   const lang = i18n.language || 'en';
   const _dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
   const [modalOpen, setModalOpen] = useState(false);
+  /** Request shown in the slide-over, with the requester's name for the header. */
+  const [sheetLeave, setSheetLeave] = useState<{
+    id: Id<'leaveRequests'>;
+    requesterName: string;
+  } | null>(null);
+
+  /**
+   * Open a request in the panel rather than navigating.
+   *
+   * This is the review loop that used to cost the most: click a row, land on a
+   * page, decide, get pushed back to the list, find your place, repeat. The panel
+   * decides in place and closes itself, and the list — filters, sort and scroll
+   * position included — never moves.
+   */
+  const openLeave = useCallback((req: { _id: string; userName?: string | null }) => {
+    setSheetLeave({ id: req._id as Id<'leaveRequests'>, requesterName: req.userName ?? '' });
+  }, []);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -365,7 +381,7 @@ export function LeavesClient() {
                       {/* Card Header */}
                       <div
                         className="flex items-center justify-between p-4 cursor-pointer"
-                        onClick={() => router.push(`/leaves/${req._id}`)}
+                        onClick={() => openLeave(req)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-10 h-10 rounded-xl bg-[#2563eb]/20 flex items-center justify-center shrink-0">
@@ -537,10 +553,7 @@ export function LeavesClient() {
                       {filtered.map((req, _i) => (
                         <React.Fragment key={req._id}>
                           <tr className="hover:bg-(--background-subtle) transition-colors">
-                            <td
-                              className="px-6 py-3 cursor-pointer"
-                              onClick={() => router.push(`/leaves/${req._id}`)}
-                            >
+                            <td className="px-6 py-3 cursor-pointer" onClick={() => openLeave(req)}>
                               <div>
                                 <p className="text-sm font-medium text-(--text-primary) hover:text-[#2563eb] transition-colors">
                                   {req.userName}
@@ -548,15 +561,12 @@ export function LeavesClient() {
                                 <p className="text-xs text-(--text-muted)">{req.userDepartment}</p>
                               </div>
                             </td>
-                            <td
-                              className="px-4 py-3 cursor-pointer"
-                              onClick={() => router.push(`/leaves/${req._id}`)}
-                            >
+                            <td className="px-4 py-3 cursor-pointer" onClick={() => openLeave(req)}>
                               <LeaveTypeBadge type={req.type as LeaveType} />
                             </td>
                             <td
                               className="px-4 py-3 hidden md:table-cell cursor-pointer"
-                              onClick={() => router.push(`/leaves/${req._id}`)}
+                              onClick={() => openLeave(req)}
                             >
                               <p className="text-xs text-(--text-secondary) capitalize">
                                 {safeFormat(req.startDate, 'MMM d')} –{' '}
@@ -565,7 +575,7 @@ export function LeavesClient() {
                             </td>
                             <td
                               className="px-4 py-3 hidden sm:table-cell cursor-pointer"
-                              onClick={() => router.push(`/leaves/${req._id}`)}
+                              onClick={() => openLeave(req)}
                             >
                               <span className="text-sm font-medium text-(--text-primary)">
                                 {req.days}
@@ -574,16 +584,13 @@ export function LeavesClient() {
                             </td>
                             <td
                               className="px-4 py-3 hidden lg:table-cell cursor-pointer"
-                              onClick={() => router.push(`/leaves/${req._id}`)}
+                              onClick={() => openLeave(req)}
                             >
                               <p className="text-xs text-(--text-muted) max-w-45 truncate">
                                 {req.reason}
                               </p>
                             </td>
-                            <td
-                              className="px-4 py-3 cursor-pointer"
-                              onClick={() => router.push(`/leaves/${req._id}`)}
-                            >
+                            <td className="px-4 py-3 cursor-pointer" onClick={() => openLeave(req)}>
                               <StatusBadge status={req.status as LeaveStatus} />
                             </td>
                             {isAdmin && (
@@ -703,6 +710,14 @@ export function LeavesClient() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Detail slide-over: the list stays behind it, so deciding a queue of
+          requests stops being one round trip per request. */}
+      <LeaveSheet
+        leaveId={sheetLeave?.id ?? null}
+        requesterName={sheetLeave?.requesterName}
+        onClose={() => setSheetLeave(null)}
+      />
 
       {/* Single request entry point (the wizard was removed — its state was never set). */}
       <LeaveRequestModal open={modalOpen} onClose={() => setModalOpen(false)} />

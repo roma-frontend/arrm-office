@@ -1,0 +1,944 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — single source of truth for colour, depth, radius and motion
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Three layers, in this order. Never skip a layer when adding a token.
+
+     1. PRIMITIVES   `--n-*`, `--brand-*`, `--green-*` …
+                     Raw values. Theme-agnostic: identical in light and dark.
+                     Never referenced by components directly.
+
+     2. SEMANTIC     `--canvas`, `--surface-1`, `--text-2`, `--border-default` …
+                     Role-based. Re-pointed by the theme. This is what
+                     components and utilities are allowed to read.
+
+     3. LEGACY ALIAS `--card`, `--badge-primary-bg`, `--button-secondary-bg` …
+                     The names that already exist across ~1400 call sites in
+                     this app. Kept as thin aliases onto layer 2 so the whole
+                     codebase inherits the new palette without a single edit.
+                     Do not add new tokens here — pick a semantic role instead.
+
+   Why explicit `rgb(r g b / a%)` instead of `color-mix()` in this file: token
+   values are load-bearing. A declaration that fails to parse does not degrade
+   gracefully — it disappears, and an invisible border or a transparent card is
+   worse than an approximate colour. `color-mix()` is used in the utility layer
+   (spark.css), where a plain fallback is declared first. See the note on
+   `.mobile-dock` in globals.css for the iOS Safari < 17.2 precedent.
+
+   This file is unlayered on purpose: it is imported after `tailwindcss`, so its
+   `:root` declarations win over anything Tailwind emits inside `@layer theme`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ───────────────────────────────────────────────────────────────────────────
+   LAYER 1 — PRIMITIVES
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Light-theme ramp — the product's original palette, restored.
+     These are NOT greys. Every step carries the brand hue (~215°) at low
+     saturation, which is what gave the light theme its recognisable cool cast.
+
+     An earlier pass replaced them with true neutrals on the theory that a
+     tinted surface leaves the accent nothing to stand out against. That was
+     wrong for this product: the tint *is* the brand, the app was recognisable by
+     it, and removing it made the light theme look like an unstyled admin panel.
+     Restored to the exact values that shipped — the mapping onto semantic roles
+     below is the only thing that is new.
+
+     `--n-400` is the calendar's out-of-month wash; it is deliberately much
+     stronger than its neighbours because it has to read through a white grid. */
+  --n-0: #ffffff;
+  --n-25: #f8fafc; /* input wells */
+  --n-50: #f0f6ff; /* page canvas, hover on white */
+  --n-100: #e8f0fe; /* pressed, selected-neutral, secondary/muted */
+  --n-150: #dfeafd; /* one step deeper, for stacked tints */
+  --n-200: #c7d9f5; /* default border */
+  --n-300: #93bef7; /* strong border, disabled text */
+  --n-400: #738bb4;
+  --n-500: #5b7ba8;
+  --n-550: #3d6196; /* muted text */
+  --n-600: #2c4e7d;
+  --n-650: #1e3a6e; /* secondary text */
+  --n-ink: #0c1a2e; /* primary text — the darkest light-theme ink */
+  /* Not every step above is currently mapped to a role; the ramp is kept
+     complete so the family is documented rather than inferred. */
+  /* Dark-theme family — the product's original dark navy, verbatim.
+
+     These are saturated navies: hue 216–222°, saturation 55–70%, canvas at
+     L 7%. Three alternatives were tried over this redesign — neutral graphite, a
+     Windows-style slate, and a half-saturated navy — and every one of them was
+     rejected for the same reason: they read as dark *grey*. The saturation is
+     the identity of this theme, not an accident, so it is restored exactly.
+
+     Deliberately NOT sanitised. The usual objection to a 65%-saturation page is
+     eye strain over long sessions, and that objection is real. Two things offset
+     it here without touching these values: large brand surfaces use
+     `--brand-panel` (a deeper step) instead of the bright accent, and the
+     `dark-compat.css` layer keeps stray light-palette utilities from adding a
+     second, unrelated set of bright colours on top.
+
+     `--navy-well` is *lighter* than `--navy-card` on purpose: in this theme an
+     input reads as a lit recess rather than a hole. */
+  --navy-canvas: #060e1e;
+  --navy-deep: #030812;
+  --navy-card: #0d1e38;
+  --navy-raised: #112344;
+  --navy-well: #0f2447;
+  --navy-pressed: #16294f;
+  --navy-border: #1a3460;
+  --navy-border-strong: #2d5a9e;
+  --navy-calendar: #29436f;
+
+  /* Dark-theme accent steps. The dark theme uses Tailwind's blue ramp rather
+     than the brand ramp above — #3b82f6 / #60a5fa / #93c5fd — because that is
+     what it shipped with and what the badges and links are recognisable by. */
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-800: #1e40af;
+  --blue-500-ch: 59 130 246;
+  --blue-400-ch: 96 165 250;
+  --blue-300-ch: 147 197 253;
+
+  /* Brand ramp — 600 is the historical brand blue (#2563eb), unchanged. */
+  --brand-50: #eff4ff;
+  --brand-100: #dce7fe;
+  --brand-200: #bfd3fe;
+  --brand-300: #93b4fd;
+  --brand-400: #608ffa;
+  --brand-500: #3b76f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4fd7;
+  --brand-800: #1e43ae;
+  --brand-900: #1e3a8a;
+  --brand-950: #172554;
+
+  /* Channel triplets, for tints built with rgb(… / …%). */
+  --brand-400-ch: 96 143 250;
+  --brand-500-ch: 59 118 246;
+  --brand-600-ch: 37 99 235;
+  --brand-700-ch: 29 79 215;
+  --ink-ch: 11 13 18; /* shadow / overlay ink */
+
+  /* Status hues — one light-theme and one dark-theme step each. */
+  --green-400: #34d399;
+  --green-500: #10b981;
+  --green-600: #059669;
+  --green-700: #047857;
+  --green-500-ch: 16 185 129;
+  --green-400-ch: 52 211 153;
+
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-500-ch: 245 158 11;
+  --amber-400-ch: 251 191 36;
+
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --red-500-ch: 239 68 68;
+  --red-400-ch: 248 113 113;
+
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;
+  --violet-500-ch: 139 92 246;
+  --violet-400-ch: 167 139 250;
+
+  /* The light theme's purple predates the violet ramp and is a different hue.
+     Kept as its own primitive rather than rounded to violet-600, because the
+     purple badges and the "coming soon" chips are recognisable by it. */
+  --purple-brand: #9333ea;
+  --purple-brand-ch: 147 51 234;
+
+  --pink-400: #f472b6;
+  --pink-500: #ec4899;
+  --pink-600: #db2777;
+  --pink-500-ch: 236 72 153;
+  --pink-400-ch: 244 114 182;
+
+  --cyan-400: #22d3ee;
+  --cyan-500: #06b6d4;
+
+  /* ── Radius ───────────────────────────────────────────────────────────────
+     A separate namespace on purpose. Overriding Tailwind's own `--radius-lg`
+     would silently resize every `rounded-lg` in the app, including 16px badges.
+     These are semantic: pick by role, not by size. */
+  --radius-field: 10px; /* inputs, selects, small controls */
+  --radius-control: 10px; /* buttons, icon buttons, chips with square corners */
+  --radius-card: 14px; /* cards, tiles, list rows */
+  --radius-panel: 18px; /* popovers, dropdowns, floating panels */
+  --radius-sheet: 20px; /* slide-overs, bottom sheets, modals */
+  --radius-pill: 9999px;
+
+  /* ── Motion ───────────────────────────────────────────────────────────────
+     Two rules that matter more than the values: hover never exceeds
+     `--dur-hover` (a 300ms hover feels like lag), and everything that enters
+     uses `--ease-spark` while everything that leaves uses `--ease-exit` and a
+     shorter duration. Exits that mirror entrances feel sluggish. */
+  --ease-spark: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --dur-press: 90ms;
+  --dur-hover: 140ms;
+  --dur-base: 200ms;
+  --dur-panel: 240ms;
+  --dur-sheet: 340ms;
+  --dur-exit: 200ms;
+
+  /* ── Blur ─────────────────────────────────────────────────────────────── */
+  --blur-glass: 16px;
+  --blur-glass-strong: 28px;
+
+  /* ── Stacking order ───────────────────────────────────────────────────────
+     Replaces the ad-hoc z-[9999] / z-[10000] literals. Layers are 10 apart so
+     a one-off sibling can slot between two of them without renumbering. */
+  --z-sticky: 20;
+  --z-navbar: 30;
+  --z-dropdown: 40;
+  --z-sheet: 50;
+  --z-modal: 60;
+  --z-command: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   LAYER 2 + 3 — LIGHT THEME (default)
+
+   Restored to the palette that shipped before the redesign. Only the *mapping*
+   is new — every value below is the one the app already used, so nothing about
+   the light theme's colour changes. The semantic names exist so the new
+   components (sheets, stepper, badges) read the same palette as the old ones.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* ── Surfaces ───────────────────────────────────────────────────────────
+     The original scheme: a blue-tinted page with white cards. `surface-2`
+     equals the canvas on purpose — that was the hover colour on a white card,
+     and matching it is what keeps hover feeling like a lift rather than a
+     new colour. `surface-3` is the deeper tint used for pressed and selected. */
+  --canvas: var(--n-50); /* #f0f6ff */
+  --surface-1: var(--n-0); /* cards, panels, popovers */
+  --surface-2: var(--n-50); /* hover on white */
+  --surface-3: var(--n-100); /* pressed, selected-neutral */
+  --sunken: var(--n-25); /* inputs, tab tracks, wells */
+
+  /* ── Borders ────────────────────────────────────────────────────────────
+     Three weights only. `subtle` divides content inside one surface,
+     `default` separates surfaces, `strong` marks hover / focus-within. */
+  --border-subtle: var(--n-100);
+  --border-default: var(--n-200);
+  --border-strong: var(--n-300);
+
+  /* ── Text — the original blue-tinted ink ───────────────────────────────── */
+  --text-1: var(--n-ink); /* #0c1a2e */
+  --text-2: var(--n-650); /* #1e3a6e */
+  --text-3: var(--n-550); /* #3d6196 */
+  --text-4: var(--n-300); /* #93bef7 — disabled only */
+
+  /* ── Brand ──────────────────────────────────────────────────────────────
+     `quiet` is the tinted surface used for selected rows and soft badges;
+     `contrast` is the only text colour allowed on it. Opacities are the ones
+     the original badge and secondary-button tokens used. */
+  --brand: var(--brand-600);
+  --brand-hover: var(--brand-700);
+  --brand-active: var(--brand-800);
+  --brand-contrast: var(--n-0);
+  --brand-quiet: rgb(var(--brand-600-ch) / 10%);
+  --brand-quiet-hover: rgb(var(--brand-600-ch) / 15%);
+  --brand-outline: rgb(var(--brand-600-ch) / 20%);
+  --brand-text: var(--brand-600);
+  /* Large brand surfaces — page heroes, full-bleed card headers. Unchanged from
+     the original light theme: on white, a bright fill is the *contrast* and does
+     not glare. The dark theme overrides this with a much deeper pair. */
+  --brand-panel: linear-gradient(135deg, var(--brand-600), var(--brand-400));
+  --brand-panel-contrast: var(--n-0);
+
+  /* ── Elevation ──────────────────────────────────────────────────────────
+     Brand-tinted, as the original three shadows were: a blue-cast shadow on a
+     blue-cast page is what made cards sit *in* the surface rather than on top
+     of it. `--elev-4` is new (sheets and the command palette need a step above
+     `--shadow-lg`) and extends the same recipe. */
+  --elev-1: 0 1px 3px rgb(var(--brand-600-ch) / 8%), 0 1px 2px rgb(0 0 0 / 4%);
+  --elev-2: 0 4px 6px rgb(var(--brand-600-ch) / 10%), 0 2px 4px rgb(0 0 0 / 4%);
+  --elev-3: 0 10px 15px rgb(var(--brand-600-ch) / 10%), 0 4px 6px rgb(0 0 0 / 4%);
+  --elev-4: 0 24px 40px rgb(var(--brand-600-ch) / 14%), 0 8px 16px rgb(0 0 0 / 6%);
+  --elev-brand:
+    0 1px 2px rgb(var(--brand-700-ch) / 24%), 0 6px 16px -6px rgb(var(--brand-600-ch) / 28%);
+  --inner-highlight: inset 0 1px 0 rgb(255 255 255 / 55%);
+
+  /* ── Glass — floating layers only ───────────────────────────────────────
+     Navbar, command palette, sheet header, floating assistant. Not cards:
+     blur behind body text is what makes an interface look cheap, and each
+     blurred layer is a full-size GPU surface repainted on scroll.
+     `strong` is the original navbar's 88% white. */
+  --glass-surface: rgb(255 255 255 / 80%);
+  --glass-surface-strong: rgb(255 255 255 / 88%);
+  --glass-border: rgb(199 217 245 / 60%);
+
+  /* ── Status — the original badge colours ──────────────────────────────── */
+  --success-solid: var(--green-500);
+  --success-text: var(--green-700); /* #047857 */
+  --success-quiet: rgb(var(--green-500-ch) / 10%);
+  --success-outline: rgb(var(--green-500-ch) / 20%);
+
+  --warning-solid: var(--amber-500);
+  --warning-text: var(--amber-600); /* #d97706 */
+  --warning-quiet: rgb(var(--amber-500-ch) / 10%);
+  --warning-outline: rgb(var(--amber-500-ch) / 20%);
+
+  --danger-solid: var(--red-500);
+  --danger-text: var(--red-600); /* #dc2626 */
+  --danger-quiet: rgb(var(--red-500-ch) / 10%);
+  --danger-outline: rgb(var(--red-500-ch) / 20%);
+
+  /* The original purple was #9333ea, a different hue from the violet ramp. */
+  --purple-text: var(--purple-brand);
+  --purple-quiet: rgb(var(--purple-brand-ch) / 10%);
+  --purple-outline: rgb(var(--purple-brand-ch) / 20%);
+
+  --pink-text: var(--pink-600);
+  --pink-quiet: rgb(var(--pink-500-ch) / 10%);
+  --pink-outline: rgb(var(--pink-500-ch) / 20%);
+
+  /* ── Charts ─────────────────────────────────────────────────────────────
+     Categorical, ordered by how often a series is the "primary" one. Was
+     copy-pasted as a literal array in six components; those read tokens now. */
+  --chart-1: var(--brand-600);
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #06b6d4;
+  --chart-6: #ec4899;
+  --chart-7: #f43f5e;
+  --chart-8: #64748b;
+  --chart-grid: rgb(var(--ink-ch) / 8%);
+  --chart-axis: var(--n-550);
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     LEGACY ALIASES — existing names, new values. Nothing below introduces a
+     new concept; each line maps an old token onto a semantic role above.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* Base */
+  --background: var(--canvas);
+  --background-subtle: var(--surface-1);
+  --background-subtle-calendar: var(--n-400); /* #738bb4 */
+  --foreground: var(--text-1);
+
+  /* Card / surface */
+  --card: var(--surface-1);
+  --card-hover: var(--surface-2);
+  --card-foreground: var(--text-1);
+  --card-border: var(--border-default);
+  --surface-hover: var(--surface-2);
+  --card-default: var(--surface-1);
+  --card-elevated: var(--surface-2);
+  --card-subtle: var(--surface-1);
+  --card-border-default: var(--border-default);
+  --card-border-elevated: var(--border-subtle);
+
+  /* Popover */
+  --popover: var(--surface-1);
+  --popover-foreground: var(--text-1);
+
+  /* Border / input */
+  --border: var(--border-default);
+  --input: var(--sunken); /* #f8fafc */
+  --input-border: var(--border-strong); /* #93bef7 */
+  --ring: var(--brand);
+
+  /* Primary.
+     Stays a *colour*: Tailwind maps `bg-primary` / `text-primary` /
+     `border-primary` onto `var(--primary)`, and a `linear-gradient` is not a
+     valid value for those properties — the browser drops the declaration and
+     the utility paints nothing. The brand gradient lives in
+     `--primary-gradient`, for the few surfaces that set `background`; the
+     diagonal 135° sweep to #60a5fa is the app's original brand fill. */
+  --primary: var(--brand);
+  --primary-hover: var(--brand-hover);
+  --primary-foreground: var(--brand-contrast);
+  --primary-rgb: 37, 99, 235;
+  --primary-gradient: linear-gradient(135deg, var(--brand-600), var(--brand-400));
+
+  /* Tabs */
+  --tab-active-bg: var(--brand);
+  --tab-active-text: var(--brand-contrast);
+
+  /* Secondary / muted / accent.
+     `--accent` is shadcn's *neutral hover* role. The original values: hover on
+     a card is the canvas tint, secondary/muted go one step deeper. */
+  --secondary: var(--surface-3);
+  --secondary-foreground: var(--text-2);
+  --muted: var(--surface-3);
+  --muted-foreground: var(--text-3);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--text-1);
+
+  --loader-color: var(--brand-800); /* #1e40af */
+
+  /* Semantic */
+  --destructive: var(--danger-solid);
+  --destructive-foreground: var(--n-0);
+  --success: var(--success-solid);
+  --success-foreground: var(--n-0);
+  --warning: var(--warning-solid);
+  --warning-foreground: var(--n-0);
+  --info: var(--brand);
+  --info-foreground: var(--n-0);
+  --purple: var(--purple-brand); /* #9333ea */
+  --pink: var(--pink-600);
+
+  /* Buttons */
+  --button-primary-bg: var(--primary-gradient);
+  --button-primary-hover: var(--brand-hover);
+  --button-primary-text: var(--brand-contrast);
+  --button-secondary-bg: var(--brand-quiet);
+  --button-secondary-hover: var(--brand-quiet-hover);
+  --button-secondary-text: var(--brand-text);
+  --button-secondary-border: var(--brand-outline);
+  --button-danger-bg: var(--danger-quiet);
+  --button-danger-hover: rgb(var(--red-500-ch) / 15%);
+  --button-danger-text: var(--danger-solid);
+  --button-danger-border: var(--danger-outline);
+  --button-success-bg: var(--success-quiet);
+  --button-success-hover: rgb(var(--green-500-ch) / 15%);
+  --button-success-text: var(--success-text);
+  --button-success-border: var(--success-outline);
+  --button-outline-bg: transparent;
+  --button-outline-hover: rgb(0 0 0 / 4%);
+  --button-outline-text: var(--text-1);
+  --button-outline-border: var(--border-default);
+
+  /* Badges */
+  --badge-primary-bg: var(--brand-quiet);
+  --badge-primary-text: var(--brand-text);
+  --badge-primary-border: var(--brand-outline);
+  --badge-info-bg: var(--brand-quiet);
+  --badge-info-text: var(--brand-text);
+  --badge-info-border: var(--brand-outline);
+  --badge-success-bg: var(--success-quiet);
+  --badge-success-text: var(--success-text);
+  --badge-success-border: var(--success-outline);
+  --badge-warning-bg: var(--warning-quiet);
+  --badge-warning-text: var(--warning-solid);
+  --badge-warning-border: var(--warning-outline);
+  --badge-danger-bg: var(--danger-quiet);
+  --badge-danger-text: var(--danger-solid);
+  --badge-danger-border: var(--danger-outline);
+  --badge-secondary-bg: rgb(147 197 253 / 10%);
+  --badge-secondary-text: var(--text-3);
+  --badge-secondary-border: rgb(147 197 253 / 15%);
+  --badge-purple-bg: var(--purple-quiet);
+  --badge-purple-text: var(--purple-text);
+  --badge-purple-border: var(--purple-outline);
+
+  /* Text */
+  --text-primary: var(--text-1);
+  --text-secondary: var(--text-2);
+  --text-muted: var(--text-3);
+  --text-disabled: var(--text-4);
+
+  /* Sidebar */
+  --sidebar-bg: var(--surface-1);
+  --sidebar-border: var(--border-default);
+  --sidebar-item-hover: var(--surface-3);
+  --sidebar-item-active: var(--brand-quiet);
+  --sidebar-item-active-text: var(--brand-text);
+  --sidebar-text: var(--text-3);
+  --sidebar-text-muted: var(--text-4);
+
+  /* Navbar */
+  --navbar-bg: var(--glass-surface-strong);
+  --navbar-border: var(--border-default);
+  --navbar-button-hover: var(--surface-2);
+
+  /* Shadows — legacy names now point at the elevation scale. */
+  --shadow: var(--elev-1);
+  --shadow-md: var(--elev-2);
+  --shadow-lg: var(--elev-3);
+
+  /* Status chips */
+  --status-approved-bg: var(--success-quiet);
+  --status-approved-text: var(--green-600); /* #059669 */
+  --status-pending-bg: var(--warning-quiet);
+  --status-pending-text: var(--amber-600); /* #d97706 */
+  --status-rejected-bg: var(--danger-quiet);
+  --status-rejected-text: var(--red-600); /* #dc2626 */
+
+  /* Overlay */
+  --overlay-bg: rgb(0 0 0 / 40%);
+
+  /* Accent gradient — headers and landing CTAs. */
+  --accent-gradient: linear-gradient(135deg, var(--brand-600), #3b82f6);
+  --text-on-accent: var(--n-0);
+  --text-on-accent-secondary: rgb(255 255 255 / 80%);
+
+  /* Landing — the original tinted wash and orbs. */
+  --landing-bg: linear-gradient(135deg, var(--n-50) 0%, var(--n-100) 50%, var(--n-50) 100%);
+  --landing-text-primary: var(--text-1);
+  --landing-text-secondary: var(--text-2);
+  --landing-text-muted: var(--text-3);
+  --landing-navbar-bg: var(--glass-surface-strong);
+  --landing-navbar-bg-rgb: 255, 255, 255;
+  --landing-navbar-text: var(--text-2);
+  --landing-navbar-text-hover: var(--brand-text);
+  --landing-card-bg: rgb(255 255 255 / 50%);
+  --landing-card-border: rgb(199 217 245 / 50%);
+  --landing-modal-bg: var(--surface-1);
+  --landing-gradient-from: var(--brand-600);
+  --landing-gradient-to: var(--brand-400);
+  --landing-orb-1: rgb(var(--brand-600-ch) / 15%);
+  --landing-orb-2: rgb(var(--brand-400-ch) / 12%);
+  --landing-orb-3: rgb(56 189 248 / 10%);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   LAYER 2 + 3 — DARK THEME
+
+   The product's original dark theme, restored verbatim: a saturated navy with a
+   bright blue accent. Every value below is the one that shipped.
+
+   Three redesigns of this palette were tried and all three were rejected — they
+   traded the navy for grey. The saturation is what makes this theme recognisable,
+   so it stays.
+
+   One thing was genuinely wrong and is fixed without touching the palette: large
+   brand surfaces (page heroes, full-bleed card headers) used the same bright
+   `--primary` as a 36px button, which across 200px reads as a light source. Those
+   now use `--brand-panel`, a deeper step of the same hue. See `.brand-panel` in
+   spark.css.
+   ─────────────────────────────────────────────────────────────────────────── */
+.dark {
+  /* The original four navy surfaces. `sunken` is *lighter* than `surface-1`
+     here, not darker — see the note on `--navy-well` in the primitives. */
+  --canvas: var(--navy-canvas);
+  --surface-1: var(--navy-card);
+  --surface-2: var(--navy-raised);
+  --surface-3: var(--navy-pressed);
+  --sunken: var(--navy-well);
+
+  /* `subtle` is the card colour itself: in this theme an internal divider is a
+     shift in surface, not a visible line. */
+  --border-subtle: var(--navy-card);
+  --border-default: var(--navy-border);
+  --border-strong: var(--navy-border-strong);
+
+  /* The original blue-white ink. Every step is tinted toward the accent, which
+     is what ties the theme together — a neutral grey label on a navy card is the
+     single most common way this palette gets broken. */
+  --text-1: #e8f0fe;
+  --text-2: #bdd4fa;
+  --text-3: #7ab3f5;
+  --text-4: #2d5a9e;
+
+  /* Tailwind's blue ramp, as the original dark theme used: #2563eb is too dark
+     to read as an action on a navy surface, so the solid step is 500 and text on
+     quiet surfaces is 400. */
+  --brand: var(--blue-500);
+  --brand-hover: var(--blue-600);
+  --brand-active: var(--blue-800);
+  --brand-contrast: var(--n-0);
+  --brand-quiet: rgb(var(--blue-500-ch) / 15%);
+  --brand-quiet-hover: rgb(var(--blue-500-ch) / 20%);
+  --brand-outline: rgb(var(--blue-500-ch) / 30%);
+  --brand-text: var(--blue-400);
+  /* Large brand surfaces — page heroes, full-bleed card headers. Area changes
+     what a colour does: `--brand` is right on a 36px button and reads as a lit
+     slab across a 200px banner. Same hue, two steps deeper. This is the only
+     addition to the restored palette. */
+  --brand-panel: linear-gradient(135deg, #142a5c, #1e40af);
+  --brand-panel-contrast: var(--n-0);
+
+  /* Plain black ink, as the original three shadows were. On a saturated navy a
+     tinted shadow turns to mud; black keeps the edge clean. `--elev-4` is new
+     (sheets and the command palette need a step above `--shadow-lg`) and
+     extends the same recipe. */
+  --elev-1: 0 1px 3px rgb(0 0 0 / 40%);
+  --elev-2: 0 4px 6px rgb(0 0 0 / 50%);
+  --elev-3: 0 10px 15px rgb(0 0 0 / 60%);
+  --elev-4: 0 28px 64px -16px rgb(0 0 0 / 70%), 0 8px 20px -8px rgb(0 0 0 / 50%);
+  --elev-brand: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 18px -6px rgb(var(--blue-500-ch) / 45%);
+  --inner-highlight: inset 0 1px 0 rgb(255 255 255 / 8%);
+
+  /* Glass takes the canvas value, so a floating layer still belongs to the same
+     family as what it floats over. `strong` is the original navbar's 88%. */
+  --glass-surface: rgb(6 14 30 / 80%);
+  --glass-surface-strong: rgb(6 14 30 / 88%);
+  --glass-border: rgb(26 52 96 / 60%);
+
+  /* The original status colours: the 400 step of each hue on a 15% wash. */
+  --success-solid: var(--green-400);
+  --success-text: var(--green-400);
+  --success-quiet: rgb(var(--green-400-ch) / 15%);
+  --success-outline: rgb(var(--green-400-ch) / 30%);
+
+  --warning-solid: var(--amber-400);
+  --warning-text: var(--amber-400);
+  --warning-quiet: rgb(var(--amber-400-ch) / 15%);
+  --warning-outline: rgb(var(--amber-400-ch) / 30%);
+
+  --danger-solid: var(--red-400);
+  --danger-text: var(--red-400);
+  --danger-quiet: rgb(var(--red-400-ch) / 15%);
+  --danger-outline: rgb(var(--red-400-ch) / 30%);
+
+  /* The original dark purple was #a855f7 — a step brighter than the violet ramp. */
+  --purple-text: #a855f7;
+  --purple-quiet: rgb(168 85 247 / 15%);
+  --purple-outline: rgb(168 85 247 / 30%);
+
+  --pink-text: var(--pink-400);
+  --pink-quiet: rgb(var(--pink-400-ch) / 15%);
+  --pink-outline: rgb(var(--pink-400-ch) / 34%);
+
+  --chart-1: var(--blue-400);
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #22d3ee;
+  --chart-6: #f472b6;
+  --chart-7: #fb7185;
+  --chart-8: #94a3b8;
+  --chart-grid: rgb(255 255 255 / 8%);
+  --chart-axis: var(--text-3);
+
+  /* Legacy aliases — the original dark values. */
+  --background: var(--canvas);
+  --background-subtle: var(--surface-1);
+  --background-subtle-calendar: var(--navy-calendar); /* #29436f */
+  --foreground: var(--text-1);
+
+  --card: var(--surface-1);
+  --card-hover: var(--surface-2);
+  --card-foreground: var(--text-1);
+  --card-border: var(--border-default);
+  --surface-hover: var(--surface-2);
+  --card-default: var(--surface-1);
+  --card-elevated: var(--surface-2);
+  --card-subtle: var(--surface-1);
+  --card-border-default: var(--border-default);
+  --card-border-elevated: var(--border-subtle);
+
+  --popover: var(--surface-1);
+  --popover-foreground: var(--text-1);
+
+  --border: var(--border-default);
+  --input: var(--sunken); /* #0f2447 */
+  --input-border: var(--blue-600); /* #2563eb — a lit edge, as it shipped */
+  --ring: var(--blue-400);
+
+  --primary: var(--brand);
+  --primary-hover: var(--brand-hover);
+  --primary-foreground: var(--brand-contrast);
+  --primary-rgb: 59, 130, 246;
+  --primary-gradient: linear-gradient(135deg, var(--blue-500), var(--blue-400));
+
+  --tab-active-bg: var(--blue-600);
+  --tab-active-text: var(--n-0);
+
+  --secondary: var(--surface-1);
+  --secondary-foreground: var(--blue-300);
+  --muted: var(--surface-1);
+  --muted-foreground: var(--text-3);
+  /* The original dark `--accent` was a deep cyan-blue, not a neutral hover. */
+  --accent: #01579b;
+  --accent-foreground: var(--n-0);
+
+  --loader-color: var(--blue-400);
+
+  --destructive: var(--danger-solid);
+  --destructive-foreground: var(--n-0);
+  --success: var(--success-solid);
+  --success-foreground: var(--n-0);
+  --warning: var(--warning-solid);
+  --warning-foreground: var(--n-0);
+  --info: var(--blue-400);
+  --info-foreground: var(--n-0);
+  --purple: #a855f7;
+  --pink: var(--pink-400);
+
+  --button-primary-bg: var(--brand);
+  --button-primary-hover: var(--brand-hover);
+  --button-primary-text: var(--brand-contrast);
+  --button-secondary-bg: rgb(var(--blue-500-ch) / 12%);
+  --button-secondary-hover: var(--brand-quiet-hover);
+  --button-secondary-text: var(--brand-text);
+  --button-secondary-border: var(--brand-outline);
+  --button-danger-bg: rgb(var(--red-400-ch) / 12%);
+  --button-danger-hover: rgb(var(--red-400-ch) / 20%);
+  --button-danger-text: var(--danger-text);
+  --button-danger-border: var(--danger-outline);
+  --button-success-bg: rgb(var(--green-400-ch) / 12%);
+  --button-success-hover: rgb(var(--green-400-ch) / 20%);
+  --button-success-text: var(--success-text);
+  --button-success-border: var(--success-outline);
+  --button-outline-bg: transparent;
+  --button-outline-hover: rgb(255 255 255 / 5%);
+  --button-outline-text: var(--text-1);
+  --button-outline-border: var(--border-default);
+
+  --badge-primary-bg: var(--brand-quiet);
+  --badge-primary-text: var(--brand-text);
+  --badge-primary-border: var(--brand-outline);
+  --badge-info-bg: rgb(var(--blue-400-ch) / 15%);
+  --badge-info-text: var(--blue-400);
+  --badge-info-border: rgb(var(--blue-400-ch) / 30%);
+  --badge-success-bg: var(--success-quiet);
+  --badge-success-text: var(--success-text);
+  --badge-success-border: var(--success-outline);
+  --badge-warning-bg: var(--warning-quiet);
+  --badge-warning-text: var(--warning-text);
+  --badge-warning-border: var(--warning-outline);
+  --badge-danger-bg: var(--danger-quiet);
+  --badge-danger-text: var(--danger-text);
+  --badge-danger-border: var(--danger-outline);
+  --badge-secondary-bg: rgb(var(--blue-300-ch) / 10%);
+  --badge-secondary-text: var(--blue-300);
+  --badge-secondary-border: rgb(var(--blue-300-ch) / 20%);
+  --badge-purple-bg: var(--purple-quiet);
+  --badge-purple-text: var(--purple-text);
+  --badge-purple-border: var(--purple-outline);
+
+  --text-primary: var(--text-1);
+  --text-secondary: var(--text-2);
+  --text-muted: var(--text-3);
+  --text-disabled: var(--text-4);
+
+  --sidebar-bg: var(--canvas);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-item-hover: var(--surface-1);
+  --sidebar-item-active: rgb(var(--blue-500-ch) / 18%);
+  --sidebar-item-active-text: var(--brand-text);
+  --sidebar-text: var(--text-3);
+  --sidebar-text-muted: var(--text-4);
+
+  --navbar-bg: var(--glass-surface-strong);
+  --navbar-border: var(--border-subtle);
+  --navbar-button-hover: var(--surface-1);
+
+  --shadow: var(--elev-1);
+  --shadow-md: var(--elev-2);
+  --shadow-lg: var(--elev-3);
+
+  --status-approved-bg: var(--success-quiet);
+  --status-approved-text: var(--success-text);
+  --status-pending-bg: var(--warning-quiet);
+  --status-pending-text: var(--warning-text);
+  --status-rejected-bg: var(--danger-quiet);
+  --status-rejected-text: var(--danger-text);
+
+  /* Plain black at 70%, as it shipped. */
+  --overlay-bg: rgb(0 0 0 / 70%);
+
+  --accent-gradient: linear-gradient(135deg, var(--blue-800), var(--blue-600), var(--blue-500));
+  --text-on-accent: var(--n-0);
+  --text-on-accent-secondary: rgb(255 255 255 / 90%);
+
+  --landing-bg: linear-gradient(
+    135deg,
+    var(--navy-canvas) 0%,
+    var(--navy-card) 50%,
+    var(--navy-canvas) 100%
+  );
+  --landing-text-primary: var(--text-1);
+  --landing-text-secondary: var(--text-2);
+  --landing-text-muted: var(--text-3);
+  --landing-navbar-bg: var(--glass-surface-strong);
+  --landing-navbar-bg-rgb: 6, 14, 30;
+  --landing-navbar-text: var(--text-2);
+  --landing-navbar-text-hover: var(--blue-400);
+  --landing-card-bg: rgb(13 30 56 / 40%);
+  --landing-card-border: rgb(26 52 96 / 30%);
+  --landing-modal-bg: #0f1f3d;
+  --landing-gradient-from: var(--blue-600);
+  --landing-gradient-to: var(--blue-300);
+  --landing-orb-1: rgb(var(--brand-600-ch) / 25%);
+  --landing-orb-2: rgb(var(--blue-400-ch) / 20%);
+  --landing-orb-3: rgb(56 189 248 / 15%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TAILWIND MAPPING
+
+   `@theme inline` rather than `@theme`: inline substitutes the *value* into the
+   generated utility, so `bg-primary` compiles to `background-color:
+   var(--primary)` and follows the theme directly.
+
+   Plain `@theme` instead emits `--color-primary: var(--primary)` into
+   `@layer theme`, and any unlayered `:root` in the app that happens to declare
+   `--color-primary` then silently wins over it — unlayered CSS outranks
+   layered CSS regardless of specificity. That is exactly what used to happen
+   here: a leftover `:root { --color-primary: #2563eb }` pinned every
+   `bg-primary` / `text-primary` / `border-primary` / `ring-primary` in the app
+   to one hard-coded blue, so those utilities never followed the dark theme.
+   With `inline` there is no intermediate variable left to collide with.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@theme inline {
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
+  --color-canvas: var(--canvas);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-sunken: var(--sunken);
+
+  --color-background: var(--background);
+  --color-background-subtle: var(--background-subtle);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  /* ── Borders ──────────────────────────────────────────────────────────── */
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input-border);
+  --color-ring: var(--ring);
+
+  /* ── Brand ────────────────────────────────────────────────────────────── */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-quiet: var(--brand-quiet);
+  --color-brand-text: var(--brand-text);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  /* ── Status ───────────────────────────────────────────────────────────── */
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-purple: var(--purple);
+  --color-pink: var(--pink);
+
+  --color-success-quiet: var(--success-quiet);
+  --color-success-text: var(--success-text);
+  --color-warning-quiet: var(--warning-quiet);
+  --color-warning-text: var(--warning-text);
+  --color-danger-quiet: var(--danger-quiet);
+  --color-danger-text: var(--danger-text);
+
+  /* ── Text ─────────────────────────────────────────────────────────────── */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+
+  /* ── Chrome ───────────────────────────────────────────────────────────── */
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-item-hover: var(--sidebar-item-hover);
+  --color-sidebar-item-active: var(--sidebar-item-active);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-text-muted: var(--sidebar-text-muted);
+  --color-navbar-bg: var(--navbar-bg);
+  --color-navbar-border: var(--navbar-border);
+
+  /* ── Charts ───────────────────────────────────────────────────────────── */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+
+  /* ── Elevation ────────────────────────────────────────────────────────────
+     Tailwind's own shadow steps are re-pointed at the elevation scale, so the
+     ~600 existing `shadow-sm` / `shadow-md` / `shadow-lg` call sites pick up
+     the new neutral depth without being touched. */
+  --shadow-2xs: var(--elev-1);
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-1);
+  --shadow: var(--elev-1);
+  --shadow-md: var(--elev-2);
+  --shadow-lg: var(--elev-3);
+  --shadow-xl: var(--elev-3);
+  --shadow-2xl: var(--elev-4);
+  --shadow-elev-1: var(--elev-1);
+  --shadow-elev-2: var(--elev-2);
+  --shadow-elev-3: var(--elev-3);
+  --shadow-elev-4: var(--elev-4);
+  --shadow-brand: var(--elev-brand);
+
+  /* ── Radius (semantic, additive — Tailwind's own scale is untouched) ───── */
+  --radius-field: var(--radius-field);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+  --radius-sheet: var(--radius-sheet);
+  --radius-pill: var(--radius-pill);
+
+  /* ── Motion ───────────────────────────────────────────────────────────── */
+  --ease-spark: var(--ease-spark);
+  --ease-spring: var(--ease-spring);
+  --ease-exit: var(--ease-exit);
+  --ease-smooth: var(--ease-smooth);
+
+  /* ── Blur ─────────────────────────────────────────────────────────────── */
+  --blur-glass: var(--blur-glass);
+  --blur-glass-strong: var(--blur-glass-strong);
+
+  /* ── Type scale ───────────────────────────────────────────────────────────
+     Six steps, semantic names, max weight 600. The old headings ran at 900,
+     which reads as loud rather than confident. Tight negative tracking on the
+     large steps is what makes big text look composed. */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-caption--letter-spacing: 0.01em;
+  --text-caption--font-weight: 500;
+
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.125rem;
+  --text-label--font-weight: 500;
+
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+
+  --text-heading: 1rem;
+  --text-heading--line-height: 1.375rem;
+  --text-heading--letter-spacing: -0.01em;
+  --text-heading--font-weight: 600;
+
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-title--letter-spacing: -0.015em;
+  --text-title--font-weight: 600;
+
+  --text-display: 1.75rem;
+  --text-display--line-height: 2.125rem;
+  --text-display--letter-spacing: -0.022em;
+  --text-display--font-weight: 600;
+}

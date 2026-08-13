@@ -14,10 +14,28 @@ import { AlertTriangle, CheckCircle, TrendingUp, Award } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { SectionHeader } from '@/components/dashboard/SectionHeader';
+import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
+
+/**
+ * Annual paid-leave allowance the usage bar is measured against.
+ *
+ * Still a constant, and still wrong for any organisation whose policy differs —
+ * it was `/ 20` inline in the JSX before, which hid the assumption entirely.
+ * Named here so it is visible, and so the day it becomes an org setting there is
+ * exactly one place to change.
+ */
+const ANNUAL_LIMIT_DAYS = 20;
+
+const BALANCE_TONE = {
+  brand: 'text-(--brand-text)',
+  danger: 'text-(--danger-text)',
+  success: 'text-(--success-text)',
+} as const;
 
 interface LeaveStatsProps {
   userId: Id<'users'>;
@@ -61,7 +79,7 @@ export default React.memo(
       const totalDaysThisYear = leavesThisYear.reduce((sum, leave) => sum + (leave.days || 0), 0);
 
       const totalBalance = balances.paid + balances.sick + balances.family;
-      const usagePercentage = ((totalDaysThisYear / 20) * 100).toFixed(0);
+      const usagePercentage = ((totalDaysThisYear / ANNUAL_LIMIT_DAYS) * 100).toFixed(0);
 
       // Burnout prevention
       const approvedLeaves = userLeaves
@@ -116,45 +134,53 @@ export default React.memo(
     const burnoutRisk = stats.daysSinceLastLeave !== null && stats.daysSinceLastLeave > 180;
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* ═══════════════════════════════════════════════════════════════
-          BURNOUT PREVENTION CARD
+          BURNOUT PREVENTION
+
+          Restyled onto the theme. It used to paint itself with literal Tailwind
+          palette classes (`border-red-500 bg-red-500/5`, `text-orange-700
+          dark:text-orange-300`, …), which made it the loudest card on the page —
+          a 2px saturated border around a full-width block — and left it as one of
+          the last surfaces that ignored the design tokens.
+
+          The severity now reads from a token pair and a badge, not from a frame:
+          the risk level is information, not an alarm.
           ═══════════════════════════════════════════════════════════════ */}
-        <Card
-          className={`border-2 ${
-            stats.burnoutRiskLevel === 'critical'
-              ? 'border-red-500 bg-red-500/5'
-              : stats.burnoutRiskLevel === 'high'
-                ? 'border-orange-500 bg-orange-500/5'
-                : stats.burnoutRiskLevel === 'medium'
-                  ? 'border-yellow-500 bg-yellow-500/5'
-                  : 'border-green-500 bg-green-500/5'
-          }`}
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {burnoutRisk ? (
-                <AlertTriangle className="w-5 h-5 text-orange-500" />
-              ) : (
-                <CheckCircle className="w-5 h-5 text-green-500" />
-              )}
-              {t('leaveStats.burnoutPrevention')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card variant={burnoutRisk ? 'default' : 'flat'}>
+          <SectionHeader
+            title={t('leaveStats.burnoutPrevention')}
+            aside={
+              <span
+                className={cn(
+                  'ml-auto flex size-7 items-center justify-center rounded-control',
+                  burnoutRisk
+                    ? 'bg-(--warning-quiet) text-(--warning-text)'
+                    : 'bg-(--success-quiet) text-(--success-text)',
+                )}
+              >
+                {burnoutRisk ? (
+                  <AlertTriangle className="size-4" />
+                ) : (
+                  <CheckCircle className="size-4" />
+                )}
+              </span>
+            }
+          />
+          <CardContent className="px-4 pb-4 sm:px-5">
             {burnoutRisk ? (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                <p className="text-body font-medium text-(--text-1)">
                   {t('leaveStats.notOnLeave', { days: stats.daysSinceLastLeave })}
                 </p>
-                <p className="text-xs text-orange-600 dark:text-orange-400">
+                <p className="num text-caption text-(--text-3)">
                   {t('leaveStats.lastLeave')}:{' '}
                   {stats.lastLeaveDate
                     ? format(new Date(stats.lastLeaveDate), 'd MMM yyyy', { locale: dateFnsLocale })
                     : t('leaveStats.never')}
                 </p>
-                <div className="flex items-center gap-2">
-                  <Badge variant="destructive">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="warning">
                     {t('leaveStats.burnoutRisk')}: {t(`leaveStats.risk.${stats.burnoutRiskLevel}`)}
                   </Badge>
                   <Badge variant="secondary">
@@ -164,14 +190,12 @@ export default React.memo(
                     )}
                   </Badge>
                 </div>
-                <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
-                  {t('leaveStats.productivityBoost')}
-                </p>
+                <p className="text-caption text-(--text-3)">{t('leaveStats.productivityBoost')}</p>
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-green-600">{t('leaveStats.allGood')}</p>
-                <p className="text-xs text-green-600 dark:text-green-400">
+                <p className="text-body font-medium text-(--text-1)">{t('leaveStats.allGood')}</p>
+                <p className="num text-caption text-(--text-3)">
                   {t('leaveStats.lastLeave')}:{' '}
                   {stats.lastLeaveDate
                     ? format(new Date(stats.lastLeaveDate), 'd MMM yyyy', { locale: dateFnsLocale })
@@ -188,69 +212,74 @@ export default React.memo(
         </Card>
 
         {/* ═══════════════════════════════════════════════════════════════
-          ПЕРСОНАЛЬНАЯ СТАТИСТИКА
+          PERSONAL STATS
           ═══════════════════════════════════════════════════════════════ */}
-        <Card className="border-(--border)">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-blue-500" />
-              {t('leaveStats.personalStats', { year: stats.currentYear })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Card variant="flat">
+          <SectionHeader
+            title={t('leaveStats.personalStats', { year: stats.currentYear })}
+            aside={
+              <span className="ml-auto flex size-7 items-center justify-center rounded-control bg-(--brand-quiet) text-(--brand-text)">
+                <TrendingUp className="size-4" />
+              </span>
+            }
+          />
+          <CardContent className="space-y-4 px-4 pb-4 sm:px-5">
             {/* Прогресс использования отпуска */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">{t('leaveStats.daysUsed')}</span>
-                <span className="text-sm font-bold">{stats.totalDaysThisYear} / 20</span>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-label text-(--text-2)">{t('leaveStats.daysUsed')}</span>
+                <span className="num text-label font-semibold text-(--text-1)">
+                  {stats.totalDaysThisYear} / {ANNUAL_LIMIT_DAYS}
+                </span>
               </div>
-              <Progress value={parseInt(stats.usagePercentage)} className="h-3" />
-              <p className="text-xs text-muted-foreground mt-1">
+              <Progress value={parseInt(stats.usagePercentage)} className="h-2" />
+              <p className="num mt-1 text-caption text-(--text-3)">
                 {stats.usagePercentage}% {t('leaveStats.ofAnnualLimit')}
               </p>
             </div>
 
             {/* Балансы */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="text-center p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
-                <p className="text-xs text-muted-foreground">{t('leaveTypes.paid')}</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.balances.paid}</p>
-                <p className="text-xs text-muted-foreground">{t('leaveStats.days')}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-red-500/5 border border-red-500/20">
-                <p className="text-xs text-muted-foreground">{t('leaveTypes.sick')}</p>
-                <p className="text-2xl font-bold text-red-600">{stats.balances.sick}</p>
-                <p className="text-xs text-muted-foreground">{t('leaveStats.days')}</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-green-500/5 border border-green-500/20">
-                <p className="text-xs text-muted-foreground">{t('leaveTypes.family')}</p>
-                <p className="text-2xl font-bold text-green-600">{stats.balances.family}</p>
-                <p className="text-xs text-muted-foreground">{t('leaveStats.days')}</p>
-              </div>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {(
+                [
+                  ['paid', stats.balances.paid, 'brand'],
+                  ['sick', stats.balances.sick, 'danger'],
+                  ['family', stats.balances.family, 'success'],
+                ] as const
+              ).map(([key, value, tone]) => (
+                <div
+                  key={key}
+                  className="rounded-card border border-(--border-subtle) bg-(--surface-2) p-3 text-center"
+                >
+                  <p className="text-caption text-(--text-3)">{t(`leaveTypes.${key}`)}</p>
+                  <p className={cn('num text-title', BALANCE_TONE[tone])}>{value}</p>
+                  <p className="text-caption text-(--text-3)">{t('leaveStats.days')}</p>
+                </div>
+              ))}
             </div>
 
             {/* Общий баланс */}
-            <div className="p-4 rounded-xl border border-(--border) bg-(--muted)/40">
+            <div className="rounded-card border border-(--border-subtle) bg-(--surface-2) p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">{t('leaveStats.totalAvailable')}</p>
-                  <p className="text-3xl font-semibold text-(--text-primary) tabular-nums tracking-tight">
+                  <p className="text-label text-(--text-2)">{t('leaveStats.totalAvailable')}</p>
+                  <p className="num text-display text-(--text-1)">
                     {stats.totalBalance} {t('leaveStats.days')}
                   </p>
                 </div>
-                <Award className="w-9 h-9 text-(--text-muted)" />
+                <Award className="size-9 text-(--text-4)" />
               </div>
             </div>
 
             {/* Статистика */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">{t('leaveStats.totalLeaves')}</p>
-                <p className="text-lg font-bold">{stats.leavesThisYear.length}</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="rounded-card border border-(--border-subtle) bg-(--surface-2) p-3">
+                <p className="text-caption text-(--text-3)">{t('leaveStats.totalLeaves')}</p>
+                <p className="num text-heading text-(--text-1)">{stats.leavesThisYear.length}</p>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">{t('leaveStats.avgDuration')}</p>
-                <p className="text-lg font-bold">
+              <div className="rounded-card border border-(--border-subtle) bg-(--surface-2) p-3">
+                <p className="text-caption text-(--text-3)">{t('leaveStats.avgDuration')}</p>
+                <p className="num text-heading text-(--text-1)">
                   {stats.avgDuration} {t('leaveStats.days')}
                 </p>
               </div>

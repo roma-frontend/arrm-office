@@ -4,7 +4,7 @@
   "description": "All-in-One HR Management Platform with real-time attendance, leave management, task tracking, and AI assistant.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a1a",
+  "background_color": "#060e1e",
   "theme_color": "#2563eb",
   "orientation": "any",
   "lang": "en",

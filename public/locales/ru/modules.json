@@ -1101,6 +1101,7 @@
     "allPeriods": "Все",
     "empty": "Целей пока нет",
     "emptyHint": "Создайте первую цель, чтобы начать",
+    "objective": "Цель",
     "overallProgress": "Общий прогресс",
     "keyResults": "Ключевые результаты",
     "alignedGoals": "Связанные цели",

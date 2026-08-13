@@ -227,64 +227,66 @@ describe('LeaveStats', () => {
 
   // ── Burnout levels ──────────────────────────────────────────────────────
 
-  it('flags low risk with a green card and all-good message', () => {
+  it('flags low risk with an all-good message and a success badge', () => {
     queryResults.getUserAnalytics = makeAnalytics({
       userLeaves: [{ startDate: daysAgo(30), endDate: daysAgo(25), status: 'approved', days: 5 }],
     });
     queryResults.getUserById = makeUser();
-    const { container } = render(<LeaveStats userId={USER_ID} />);
+    render(<LeaveStats userId={USER_ID} />);
 
     expect(screen.getByText('leaveStats.allGood')).toBeInTheDocument();
-    expect(container.querySelector('[class*="border-green-500"]')).not.toBeNull();
     const badges = screen.getAllByTestId('badge');
     expect(
       badges.some((b) => b.textContent === 'leaveStats.burnoutRisk: leaveStats.risk.low'),
     ).toBe(true);
+    expect(badges.some((b) => b.getAttribute('data-variant') === 'success')).toBe(true);
   });
 
-  it('flags medium risk with a yellow card but still all-good', () => {
+  // The risk level is communicated by the badge, not by a saturated frame. The
+  // card used to draw a 2px `border-red-500` / `border-orange-500` /
+  // `border-yellow-500` box with a literal Tailwind palette class, which ignored
+  // the theme and made this the loudest block on the dashboard.
+
+  it('treats 120–180 days as medium risk without a burnout warning', () => {
     queryResults.getUserAnalytics = makeAnalytics({
       userLeaves: [
         { startDate: daysAgo(160), endDate: daysAgo(150), status: 'approved', days: 10 },
       ],
     });
     queryResults.getUserById = makeUser();
-    const { container } = render(<LeaveStats userId={USER_ID} />);
+    render(<LeaveStats userId={USER_ID} />);
 
     expect(screen.getByText('leaveStats.allGood')).toBeInTheDocument();
-    expect(container.querySelector('[class*="border-yellow-500"]')).not.toBeNull();
     expect(screen.queryByText('leaveStats.notOnLeave')).not.toBeInTheDocument();
   });
 
-  it('flags high risk with an orange card and burnout warning', () => {
+  it('flags high risk with a burnout warning and a warning badge', () => {
     queryResults.getUserAnalytics = makeAnalytics({
       userLeaves: [
         { startDate: daysAgo(210), endDate: daysAgo(200), status: 'approved', days: 14 },
       ],
     });
     queryResults.getUserById = makeUser();
-    const { container } = render(<LeaveStats userId={USER_ID} />);
+    render(<LeaveStats userId={USER_ID} />);
 
     expect(screen.getByText('leaveStats.notOnLeave')).toBeInTheDocument();
-    expect(container.querySelector('[class*="border-orange-500"]')).not.toBeNull();
     const badges = screen.getAllByTestId('badge');
     expect(
       badges.some((b) => b.textContent === 'leaveStats.burnoutRisk: leaveStats.risk.high'),
     ).toBe(true);
-    expect(badges.some((b) => b.getAttribute('data-variant') === 'destructive')).toBe(true);
+    expect(badges.some((b) => b.getAttribute('data-variant') === 'warning')).toBe(true);
   });
 
-  it('flags critical risk with a red card and destructive badge', () => {
+  it('flags critical risk with a burnout warning', () => {
     queryResults.getUserAnalytics = makeAnalytics({
       userLeaves: [
         { startDate: daysAgo(260), endDate: daysAgo(250), status: 'approved', days: 20 },
       ],
     });
     queryResults.getUserById = makeUser();
-    const { container } = render(<LeaveStats userId={USER_ID} />);
+    render(<LeaveStats userId={USER_ID} />);
 
     expect(screen.getByText('leaveStats.notOnLeave')).toBeInTheDocument();
-    expect(container.querySelector('[class*="border-red-500"]')).not.toBeNull();
     const badges = screen.getAllByTestId('badge');
     expect(
       badges.some((b) => b.textContent === 'leaveStats.burnoutRisk: leaveStats.risk.critical'),

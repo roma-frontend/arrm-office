@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme } from '@/lib/chart-theme';
 import { motion } from '@/lib/cssMotion';
 import {
   DollarSign,
@@ -124,14 +124,8 @@ function formatDate(timestamp: number): string {
 
 export default function ExpensesClient() {
   const { t } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-
-  const tooltipBg = isDark ? '#0f172a' : '#ffffff';
-  const tooltipBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-  const tooltipColor = isDark ? '#ffffff' : '#0f172a';
-  const tooltipShadow = isDark ? '0 4px 12px rgba(0, 0, 0, 0.5)' : '0 4px 12px rgba(0, 0, 0, 0.1)';
-  const textColor = isDark ? '#ffffff' : '#0f172a';
+  const { isDark, tooltipBg, tooltipBorder, tooltipColor, tooltipShadow, textColor } =
+    useChartTheme();
 
   const selectedOrgId = useSelectedOrganization();
   const { user } = useAuthStore();

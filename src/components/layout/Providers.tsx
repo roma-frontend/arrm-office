@@ -112,6 +112,14 @@ const MobilePageTransition = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// Global ⌘K / Ctrl+K palette. Mounted here rather than per-route so the shortcut
+// works everywhere in the dashboard; the component itself skips all of its Convex
+// queries until it is opened, so this costs nothing on page load.
+const CommandPalette = dynamic(
+  () => import('@/components/search/CommandPalette').then((m) => m.CommandPalette),
+  { ssr: false, loading: () => null },
+);
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const user = useAuthStore(useShallow((state: { user: User | null }) => state.user));
@@ -263,6 +271,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Tab Bar — fixed bottom navigation for mobile */}
           <MobileTabBar />
+
+          {/* ⌘K palette — the navbar shortcut modal, the dashboard Quick Actions
+              header and the productivity settings page all advertise this
+              shortcut, and until it was mounted here, pressing it did nothing. */}
+          {hydrated && user && <CommandPalette />}
 
           {/* Global incoming call detection — works on ALL pages */}
           {hydrated && user && <IncomingCallProvider />}

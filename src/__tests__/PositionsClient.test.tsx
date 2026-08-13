@@ -199,13 +199,13 @@ jest.mock('@/components/ui/select', () => ({
   SelectItem: ({ value, children }: any) => <option value={value}>{children}</option>,
 }));
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children }: any) =>
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ open, children }: any) =>
     open ? <div data-testid="wizard-dialog">{children}</div> : null,
-  DialogContent: ({ children }: any) => <div>{children}</div>,
-  DialogHeader: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children }: any) => <h2>{children}</h2>,
-  DialogDescription: ({ children }: any) => <p>{children}</p>,
+  SheetContent: ({ children }: any) => <div>{children}</div>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <h2>{children}</h2>,
+  SheetDescription: ({ children }: any) => <p>{children}</p>,
 }));
 
 jest.mock('@/lib/cssMotion', () => ({

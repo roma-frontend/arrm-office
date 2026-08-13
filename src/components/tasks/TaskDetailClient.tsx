@@ -7,7 +7,7 @@ import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { TaskAttachmentsCard, type TaskAttachment } from '@/components/tasks/TaskAttachmentsCard';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNow } from '@/hooks/useNow';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -121,12 +121,40 @@ const PriorityBadge = ({ priority }: { priority: string }) => {
   return <Badge className={`${variant} border-0`}>{label}</Badge>;
 };
 
-export default function TaskDetailClient() {
+/**
+ * Task detail.
+ *
+ * Renders in two places: the `/tasks/[id]` page, and a slide-over opened from the
+ * task list. That is why the id is a prop with a router fallback rather than
+ * being read from `useParams` outright — the panel is not on a `[id]` route, so
+ * there are no route params to read there.
+ *
+ * `onDone` is the same idea for the opposite direction: on the page, finishing
+ * with a task (deleting it, or going back) means navigating to `/tasks`; in a
+ * panel it means closing the panel, because the list is already behind it.
+ */
+export interface TaskDetailClientProps {
+  /** Supplied when embedded; omitted on the `/tasks/[id]` route. */
+  taskId?: Id<'tasks'>;
+  /** Replaces the navigation to `/tasks` when embedded. */
+  onDone?: () => void;
+}
+
+export default function TaskDetailClient({
+  taskId: taskIdProp,
+  onDone,
+}: TaskDetailClientProps = {}) {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation();
-  const taskId = convexIdFromParam<Id<'tasks'>>(params?.id);
+  const taskId = taskIdProp ?? convexIdFromParam<Id<'tasks'>>(params?.id);
+
+  /** Leave the task behind: close the panel, or return to the list. */
+  const done = useCallback(() => {
+    if (onDone) onDone();
+    else router.push('/tasks');
+  }, [onDone, router]);
 
   const dateLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
 
@@ -177,7 +205,7 @@ export default function TaskDetailClient() {
     try {
       await secureDeleteTask({ taskId });
       toast.success(t('tasksClient.taskDeleted'));
-      router.push('/tasks');
+      done();
     } catch (error) {
       logger.error('Failed to delete task', error);
       toast.error(t('common.error', 'Something went wrong'));
@@ -196,7 +224,7 @@ export default function TaskDetailClient() {
         <p className="mt-1 text-sm text-muted-foreground">
           {t('task.notFoundHint', 'It may have been deleted, or the link is incorrect.')}
         </p>
-        <Button variant="outline" className="mt-6 gap-2" onClick={() => router.push('/tasks')}>
+        <Button variant="outline" className="mt-6 gap-2" onClick={done}>
           <ArrowLeft className="h-4 w-4" />
           {t('task.backToTasks', 'Back to tasks')}
         </Button>
@@ -228,9 +256,12 @@ export default function TaskDetailClient() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/tasks')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          {/* Hidden when embedded — see the note in LeaveDetailClient. */}
+          {!onDone && (
+            <Button variant="ghost" size="icon" onClick={done}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
           <div>
             <h1 className="text-2xl font-bold">{localizedTaskTitle(t, task)}</h1>
             <p className="text-muted-foreground">

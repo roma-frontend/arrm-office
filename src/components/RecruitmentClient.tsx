@@ -41,6 +41,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -227,65 +236,24 @@ function CreateVacancyWizard({
   };
 
   return (
-    <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[95vh]">
-      <DialogHeader className="px-5 pt-5 pb-0">
-        <DialogTitle>{t('recruitment.wizard.title', 'Create Vacancy')}</DialogTitle>
-      </DialogHeader>
+    <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+      <SheetHeader className="gap-3.5">
+        <SheetTitle>{t('recruitment.wizard.title', 'Create Vacancy')}</SheetTitle>
+        <WizardStepper
+          steps={steps.map((s, i) => ({ id: `step-${i}`, title: s }))}
+          current={step}
+          onStepClick={setStep}
+        />
+      </SheetHeader>
 
-      <div className="flex flex-col">
-        {/* Stepper */}
-        <div className="px-5 pt-4 pb-3">
-          <div className="relative h-1.5 bg-muted rounded-full overflow-hidden mb-4">
-            <div
-              className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-300"
-              style={{ width: `${((step + 1) / steps.length) * 100}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-1">
-            {steps.map((s, idx) => (
-              <React.Fragment key={idx}>
-                <div className="flex flex-col items-center flex-1 min-w-0">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all shrink-0 ${
-                      idx < step
-                        ? 'bg-primary border-primary text-primary-foreground'
-                        : idx === step
-                          ? 'border-primary bg-background text-primary scale-110'
-                          : 'border-muted-foreground/30 bg-background text-muted-foreground'
-                    }`}
-                  >
-                    {idx < step ? <CheckCircle className="w-4 h-4" /> : idx + 1}
-                  </div>
-                  <p
-                    className={`text-[10px] font-medium mt-1.5 text-center truncate w-full px-1 ${
-                      idx === step ? 'text-primary' : 'text-muted-foreground'
-                    }`}
-                  >
-                    {s}
-                  </p>
-                </div>
-                {idx < steps.length - 1 && (
-                  <div className="flex-1 h-0.5 bg-muted mx-1 max-w-8 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${idx < step ? 'bg-primary' : 'bg-transparent'}`}
-                      style={{ width: idx < step ? '100%' : '0%' }}
-                    />
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="px-5 py-4 min-h-[280px] overflow-y-auto max-h-[50vh]">
-          <WizardDraftNotice
-            show={draft.restored}
-            step={draft.restoredStep}
-            onReset={handleStartOver}
-            className="mb-4"
-          />
-
+      <SheetBody className="min-h-[280px]">
+        <WizardDraftNotice
+          show={draft.restored}
+          step={draft.restoredStep}
+          onReset={handleStartOver}
+          className="mb-4"
+        />
+        <div className="contents">
           {step === 0 && (
             <div className="space-y-4">
               <div>
@@ -518,28 +486,33 @@ function CreateVacancyWizard({
             </div>
           )}
         </div>
+      </SheetBody>
 
-        {/* Navigation */}
-        <div className="flex justify-between px-5 py-4 border-t">
-          <Button variant="outline" onClick={() => (step === 0 ? onClose() : setStep(step - 1))}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            {step === 0 ? t('common.cancel', 'Cancel') : t('common.back', 'Back')}
+      {/* Navigation */}
+      <SheetFooter className="justify-between">
+        <Button variant="outline" onClick={() => (step === 0 ? onClose() : setStep(step - 1))}>
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          {step === 0 ? t('common.cancel', 'Cancel') : t('common.back', 'Back')}
+        </Button>
+        {step < 2 ? (
+          <Button
+            onClick={() => setStep(step + 1)}
+            disabled={step === 0 && !title.trim()}
+            className="btn-gradient"
+          >
+            {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
-          {step < 2 ? (
-            <Button onClick={() => setStep(step + 1)} disabled={step === 0 && !title.trim()}>
-              {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting || !title.trim() || !description.trim()}
-            >
-              {submitting ? '...' : t('recruitment.wizard.create', 'Create Vacancy')}
-            </Button>
-          )}
-        </div>
-      </div>
-    </DialogContent>
+        ) : (
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || !title.trim() || !description.trim()}
+            className="btn-gradient"
+          >
+            {submitting ? '...' : t('recruitment.wizard.create', 'Create Vacancy')}
+          </Button>
+        )}
+      </SheetFooter>
+    </SheetContent>
   );
 }
 
@@ -726,9 +699,16 @@ function CandidateDetailDialog({
 
   if (!data)
     return (
-      <DialogContent className="sm:max-w-2xl">
-        <ShieldLoader />
-      </DialogContent>
+      <SheetContent
+        side="right"
+        size="lg"
+        label={t('recruitment.candidate.title', 'Candidate')}
+        closeLabel={t('common.close', 'Close')}
+      >
+        <div className="flex flex-1 items-center justify-center">
+          <ShieldLoader />
+        </div>
+      </SheetContent>
     );
 
   const { candidate, vacancy, interviews, scorecards, events } = data;
@@ -771,17 +751,22 @@ function CandidateDetailDialog({
   };
 
   return (
-    <DialogContent className="sm:max-w-2xl max-h-[95vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          {candidate?.name ?? 'Candidate'}
-        </DialogTitle>
-      </DialogHeader>
+    <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+      <SheetHeader>
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-field bg-(--brand-quiet) text-(--brand-text)">
+            <Users className="size-4" />
+          </span>
+          <SheetTitle>{candidate?.name ?? 'Candidate'}</SheetTitle>
+          <Badge className={getStageBadgeColor(data.stage) + ' ml-auto'}>
+            {t(`recruitment.stage.${data.stage}`, data.stage)}
+          </Badge>
+        </div>
+      </SheetHeader>
 
-      <div className="space-y-4">
+      <SheetBody className="space-y-4">
         {/* Contact & Meta */}
-        <div className="flex flex-wrap gap-3 text-sm">
+        <div className="flex flex-wrap gap-3 text-label text-(--text-secondary)">
           {candidate?.email && (
             <span className="flex items-center gap-1">
               <Mail className="h-3 w-3" />
@@ -794,9 +779,6 @@ function CandidateDetailDialog({
               {candidate.phone}
             </span>
           )}
-          <Badge className={getStageBadgeColor(data.stage)}>
-            {t(`recruitment.stage.${data.stage}`, data.stage)}
-          </Badge>
         </div>
 
         {/* Vacancy link */}
@@ -864,48 +846,6 @@ function CandidateDetailDialog({
             {cvGateBlocks && (
               <p className="text-xs text-amber-600">{t('recruitment.cv.gateHint')}</p>
             )}
-          </div>
-        )}
-
-        {/* Actions */}
-        {data.stage !== 'rejected' && data.stage !== 'hired' && (
-          <div className="flex flex-wrap gap-2 border-t pt-3">
-            {nextStage && (
-              <Button
-                size="sm"
-                onClick={() => handleMove(nextStage)}
-                disabled={cvGateBlocks && CV_GATED_STAGES.has(nextStage)}
-              >
-                <ArrowRight className="h-4 w-4 mr-1" />
-                {t(`recruitment.stage.${nextStage}`, nextStage)}
-              </Button>
-            )}
-            <Button size="sm" variant="destructive" onClick={handleReject}>
-              <XCircle className="h-4 w-4 mr-1" />
-              {t('recruitment.candidate.reject', 'Reject')}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:text-destructive ml-auto"
-              onClick={handleDelete}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              {t('recruitment.candidate.delete', 'Remove')}
-            </Button>
-          </div>
-        )}
-        {(data.stage === 'rejected' || data.stage === 'hired') && (
-          <div className="flex justify-end border-t pt-3">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={handleDelete}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              {t('recruitment.candidate.delete', 'Remove')}
-            </Button>
           </div>
         )}
 
@@ -1007,7 +947,40 @@ function CandidateDetailDialog({
             ))}
           </div>
         )}
-      </div>
+      </SheetBody>
+
+      {/* Footer — the two things this panel exists to do: advance the candidate
+          or stop the process. They were buried mid-scroll before. */}
+      <SheetFooter className="justify-between">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive hover:text-destructive"
+          onClick={handleDelete}
+        >
+          <Trash2 className="h-4 w-4 mr-1" />
+          {t('recruitment.candidate.delete', 'Remove')}
+        </Button>
+        {data.stage !== 'rejected' && data.stage !== 'hired' && (
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="destructive" onClick={handleReject}>
+              <XCircle className="h-4 w-4 mr-1" />
+              {t('recruitment.candidate.reject', 'Reject')}
+            </Button>
+            {nextStage && (
+              <Button
+                size="sm"
+                onClick={() => handleMove(nextStage)}
+                disabled={cvGateBlocks && CV_GATED_STAGES.has(nextStage)}
+                className="btn-gradient"
+              >
+                <ArrowRight className="h-4 w-4 mr-1" />
+                {t(`recruitment.stage.${nextStage}`, nextStage)}
+              </Button>
+            )}
+          </div>
+        )}
+      </SheetFooter>
 
       {/* Nested AI Interview Prep dialog */}
       <Dialog open={showPrep} onOpenChange={setShowPrep}>
@@ -1019,7 +992,7 @@ function CandidateDetailDialog({
           />
         )}
       </Dialog>
-    </DialogContent>
+    </SheetContent>
   );
 }
 
@@ -1535,7 +1508,7 @@ export default function RecruitmentClient() {
       </Tabs>
 
       {/* Dialogs */}
-      <Dialog open={showWizard} onOpenChange={setShowWizard}>
+      <Sheet open={showWizard} onOpenChange={setShowWizard}>
         {showWizard && organizationId && userId && (
           <CreateVacancyWizard
             organizationId={organizationId}
@@ -1543,7 +1516,7 @@ export default function RecruitmentClient() {
             onClose={() => setShowWizard(false)}
           />
         )}
-      </Dialog>
+      </Sheet>
 
       <Dialog open={!!addCandidateVacancy} onOpenChange={() => setAddCandidateVacancy(null)}>
         {addCandidateVacancy && organizationId && userId && (
@@ -1555,7 +1528,7 @@ export default function RecruitmentClient() {
         )}
       </Dialog>
 
-      <Dialog open={!!selectedApplication} onOpenChange={() => setSelectedApplication(null)}>
+      <Sheet open={!!selectedApplication} onOpenChange={() => setSelectedApplication(null)}>
         {selectedApplication && userId && (
           <CandidateDetailDialog
             applicationId={selectedApplication}
@@ -1563,7 +1536,7 @@ export default function RecruitmentClient() {
             onClose={() => setSelectedApplication(null)}
           />
         )}
-      </Dialog>
+      </Sheet>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>

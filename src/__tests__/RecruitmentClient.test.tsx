@@ -173,6 +173,20 @@ jest.mock('@/components/ui/dialog', () => ({
   DialogTitle: ({ children }: any) => <div>{children}</div>,
 }));
 
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
+  SheetContent: ({ children, className }: any) => (
+    <div data-testid="dialog-content" className={className}>
+      {children}
+    </div>
+  ),
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
+  SheetFooter: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <div>{children}</div>,
+  SheetDescription: ({ children }: any) => <p>{children}</p>,
+}));
+
 jest.mock('@/components/ui/select', () => ({
   Select: ({ children }: any) => <div data-testid="select">{children}</div>,
   SelectTrigger: ({ children }: any) => <div>{children}</div>,
@@ -217,6 +231,7 @@ jest.mock('lucide-react', () => {
     'ChevronRight',
     'ChevronLeft',
     'CheckCircle',
+    'Check',
     'XCircle',
     'Calendar',
     'Star',

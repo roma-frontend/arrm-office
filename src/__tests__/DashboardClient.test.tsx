@@ -147,6 +147,12 @@ jest.mock('@/components/dashboard/QuickActions', () => ({
   QuickActions: () => <div data-testid="quick-actions">QuickActions</div>,
 }));
 
+// The Focus Feed runs its own Convex queries and is covered by its own suite;
+// here it is stubbed like every other dashboard child.
+jest.mock('@/components/dashboard/FocusFeed', () => ({
+  FocusFeed: () => <div data-testid="focus-feed">FocusFeed</div>,
+}));
+
 // ── Module under test ──
 import DashboardClient from '@/components/dashboard/DashboardClient';
 
@@ -189,14 +195,17 @@ describe('DashboardClient', () => {
     expect(screen.getByTestId('dashboard-banners')).toBeInTheDocument();
   });
 
-  it('renders stat cards with loading placeholders', () => {
+  // Two tiles, not four: "pending requests" and "on leave now" were removed
+  // because the Focus Feed states both above — and lets a pending request be
+  // approved in place, which makes a bare count a weaker copy of it.
+  it('renders the two stat cards with loading placeholders', () => {
     const { rerender } = render(<DashboardClient />);
     rerender(<DashboardClient />);
 
     expect(screen.getByText('titles.totalEmployees')).toBeInTheDocument();
-    expect(screen.getByText('titles.pendingRequests')).toBeInTheDocument();
     expect(screen.getByText('titles.approvedThisMonth')).toBeInTheDocument();
-    expect(screen.getByText('titles.onLeaveNow')).toBeInTheDocument();
+    expect(screen.queryByText('titles.pendingRequests')).not.toBeInTheDocument();
+    expect(screen.queryByText('titles.onLeaveNow')).not.toBeInTheDocument();
   });
 
   it('renders real stats when data loads', () => {
@@ -214,9 +223,10 @@ describe('DashboardClient', () => {
     rerender(<DashboardClient />);
 
     expect(screen.getByText(42)).toBeInTheDocument();
-    expect(screen.getByText(5)).toBeInTheDocument();
     expect(screen.getByText(18)).toBeInTheDocument();
-    expect(screen.getByText(3)).toBeInTheDocument();
+    // The two removed tiles' numbers must not appear anywhere on the page.
+    expect(screen.queryByText(5)).not.toBeInTheDocument();
+    expect(screen.queryByText(3)).not.toBeInTheDocument();
   });
 
   it('shows error state when dashboardStats returns null', () => {
@@ -386,9 +396,9 @@ describe('DashboardClient', () => {
     const { rerender } = render(<DashboardClient />);
     rerender(<DashboardClient />);
 
-    // All 4 stat cards display '0'
+    // Both remaining stat cards display '0'
     const zeros = screen.getAllByText(0);
-    expect(zeros.length).toBe(4);
+    expect(zeros.length).toBe(2);
   });
 
   it('renders without crashing when user has no id', () => {
@@ -442,7 +452,8 @@ describe('DashboardClient', () => {
 
     expect(screen.getByTestId('leave-charts')).toBeInTheDocument();
     expect(screen.getByText(50)).toBeInTheDocument();
-    expect(screen.getByText(3)).toBeInTheDocument();
+    // 15 = approvedThisMonth. `pendingRequests` (3) no longer has a tile.
+    expect(screen.getByText(15)).toBeInTheDocument();
   });
 
   it('renders without userId (not authenticated)', () => {

@@ -30,12 +30,12 @@ import { SkeletonTable } from '@/components/ui/skeleton';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import {
   TextInputStep,
@@ -232,39 +232,38 @@ function DepartmentWizard({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>
             {editingDepartment
               ? t('departmentWizard.update', 'Update Department')
               : t('departmentWizard.submit', 'Create Department')}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {editingDepartment
               ? t('departmentWizard.steps.review.description')
               : t('departmentWizard.steps.details.description')}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
-          <Wizard
-            key={editingId ?? 'new'}
-            steps={steps}
-            onComplete={handleSubmit}
-            onCancel={() => onOpenChange(false)}
-            submitLabel={
-              editingDepartment
-                ? t('departmentWizard.update', 'Update Department')
-                : t('departmentWizard.submit', 'Create Department')
-            }
-            cancelLabel={t('actions.cancel', 'Cancel')}
-            showStepper
-            defaultStepData={wizardData}
-            draftKey={editingDepartment ? undefined : 'create-department'}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+          </SheetDescription>
+        </SheetHeader>
+        <Wizard
+          key={editingId ?? 'new'}
+          className="min-h-0 flex-1 px-5 pt-4"
+          steps={steps}
+          onComplete={handleSubmit}
+          onCancel={() => onOpenChange(false)}
+          submitLabel={
+            editingDepartment
+              ? t('departmentWizard.update', 'Update Department')
+              : t('departmentWizard.submit', 'Create Department')
+          }
+          cancelLabel={t('actions.cancel', 'Cancel')}
+          showStepper
+          defaultStepData={wizardData}
+          draftKey={editingDepartment ? undefined : 'create-department'}
+        />
+      </SheetContent>
+    </Sheet>
   );
 }
 

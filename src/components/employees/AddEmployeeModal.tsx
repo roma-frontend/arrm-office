@@ -10,12 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
   Select,
@@ -582,53 +585,40 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
     exit: { x: -300, opacity: 0 },
   } as const;
 
+  const stepperSteps = steps.map((s, i) => ({ id: `step-${i}`, title: s.label }));
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()} modal={false}>
-      <DialogContent className="max-w-lg max-h-[95vh] p-0">
-        {/* Header with progress */}
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 btn-gradient" />
-          <div className="relative z-10 px-6 pt-6 pb-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                <UserPlus className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-lg text-white">
-                  {t('employees.addEmployee')}
-                </DialogTitle>
-                <DialogDescription className="text-white/70 text-sm">
-                  {t('employees.enterDetails')}
-                </DialogDescription>
-              </div>
-            </div>
-
-            {/* Step indicators */}
-            <div className="flex items-center gap-1.5 mt-2">
-              {steps.map((s, i) => (
-                <div key={i} className="flex items-center gap-1.5 flex-1">
-                  <div
-                    className={`flex-1 h-1 rounded-full transition-all duration-300 ${
-                      i <= step ? 'bg-white' : 'bg-white/30'
-                    }`}
-                    style={{ transformOrigin: 'left' }}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Step labels */}
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-white/60">
-                {t('common.step') || 'Step'} {step + 1} / {effectiveTotalSteps}
-              </span>
-              <span className="text-xs text-white/80 font-medium">{steps[step]?.label}</span>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} modal={false}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        {/* Header.
+            The brand-gradient banner this replaces forced white-on-blue text,
+            which put the panel outside the type and colour scale entirely and
+            made the form below look like a different product. The accent is now
+            a single 40px tile — one accent element, as everywhere else. */}
+        <SheetHeader className="gap-3.5">
+          <div className="flex items-center gap-3">
+            <span className="btn-gradient flex size-10 shrink-0 items-center justify-center rounded-card">
+              <UserPlus className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <SheetTitle>{t('employees.addEmployee')}</SheetTitle>
+              <SheetDescription>{t('employees.enterDetails')}</SheetDescription>
             </div>
           </div>
-        </div>
+
+          <WizardStepper steps={stepperSteps} current={step} onStepClick={setStep} labels="none" />
+          <div className="flex items-center justify-between">
+            <span className="eyebrow num">
+              {t('common.step') || 'Step'} {step + 1} / {effectiveTotalSteps}
+            </span>
+            <span className="text-caption font-medium text-(--text-secondary)">
+              {steps[step]?.label}
+            </span>
+          </div>
+        </SheetHeader>
 
         {/* Content */}
-        <div className="px-6 py-5 max-h-[50vh] overflow-y-auto">
+        <SheetBody>
           <WizardDraftNotice
             show={draft.restored}
             step={draft.restoredStep}
@@ -1240,54 +1230,56 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
               )}
             </motion.div>
           </AnimatePresence>
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <DialogFooter className="px-6 py-4 border-t border-(--border) bg-(--background-subtle)">
-          <div className="flex items-center justify-between w-full">
-            {step > 0 ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={submitting}
-                className="flex items-center gap-1"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                {t('wizard.previous') || 'Previous'}
-              </Button>
-            ) : (
-              <div />
-            )}
+        <SheetFooter className="justify-between">
+          {step > 0 ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={prevStep}
+              disabled={submitting}
+              className="flex items-center gap-1"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              {t('wizard.previous') || 'Previous'}
+            </Button>
+          ) : (
+            <div />
+          )}
 
-            {!isLastStep ? (
-              <Button type="button" onClick={nextStep} className="flex items-center gap-1">
-                {t('wizard.next') || 'Next'}
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex items-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <ShieldLoader size="xs" variant="inline" />
-                    {t('employees.adding') || 'Adding...'}
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4" />
-                    {t('employees.addEmployee')}
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          {!isLastStep ? (
+            <Button
+              type="button"
+              onClick={nextStep}
+              className="btn-gradient flex items-center gap-1"
+            >
+              {t('wizard.next') || 'Next'}
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="btn-gradient flex items-center gap-2"
+            >
+              {submitting ? (
+                <>
+                  <ShieldLoader size="xs" variant="inline" />
+                  {t('employees.adding') || 'Adding...'}
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  {t('employees.addEmployee')}
+                </>
+              )}
+            </Button>
+          )}
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -144,6 +144,7 @@ jest.mock('lucide-react', () => {
     'Briefcase',
     'Phone',
     'CheckCircle',
+    'Check',
     'ChevronRight',
     'ChevronLeft',
     'Building2',
@@ -226,8 +227,8 @@ jest.mock('@/components/employees/PassportFields', () => ({
 }));
 
 // ── UI primitives ────────────────────────────────────────────────────────────
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children, onOpenChange }: any) =>
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ open, children, onOpenChange }: any) =>
     open ? (
       <div data-testid="dialog">
         <button type="button" data-testid="dialog-close" onClick={() => onOpenChange(false)}>
@@ -236,10 +237,12 @@ jest.mock('@/components/ui/dialog', () => ({
         {children}
       </div>
     ) : null,
-  DialogContent: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children }: any) => <h2>{children}</h2>,
-  DialogDescription: ({ children }: any) => <p>{children}</p>,
-  DialogFooter: ({ children }: any) => <div>{children}</div>,
+  SheetContent: ({ children }: any) => <div>{children}</div>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
+  SheetFooter: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <h2>{children}</h2>,
+  SheetDescription: ({ children }: any) => <p>{children}</p>,
 }));
 
 jest.mock('@/components/ui/button', () => ({

@@ -15,6 +15,7 @@
 import React from 'react';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
+import { getChartTheme } from '@/lib/chart-theme';
 
 let tMode: 'fallback' | 'empty' = 'fallback';
 jest.mock('react-i18next', () => ({
@@ -806,18 +807,23 @@ describe('ExpensesClient', () => {
     expect(container.querySelectorAll('[data-testid="cell"]').length).toBe(3);
   });
 
+  // Asserted against the shared resolver rather than a literal: the tooltip
+  // surface is a design token, and a second copy of its value in a test is how
+  // the two drift apart.
   it('uses the dark theme tooltip colors when the theme is dark', () => {
     mockTheme = 'dark';
     render(<ExpensesClient />);
     const tooltips = screen.getAllByTestId('tooltip');
     expect(tooltips.length).toBe(2);
-    tooltips.forEach((el) => expect(el.getAttribute('data-bg')).toBe('#0f172a'));
+    tooltips.forEach((el) =>
+      expect(el.getAttribute('data-bg')).toBe(getChartTheme(true).tooltipBg),
+    );
   });
 
   it('uses light tooltip colors in light mode', () => {
     render(<ExpensesClient />);
     screen.getAllByTestId('tooltip').forEach((el) => {
-      expect(el.getAttribute('data-bg')).toBe('#ffffff');
+      expect(el.getAttribute('data-bg')).toBe(getChartTheme(false).tooltipBg);
     });
   });
 

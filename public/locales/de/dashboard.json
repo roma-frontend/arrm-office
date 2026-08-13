@@ -230,13 +230,27 @@
     }
   },
   "commandPalette": {
-    "placeholder": "Funktionen suchen... (z. B.: Urlaub, Chat, Aufgaben)",
-    "noResults": "Nichts gefunden. Versuchen Sie eine andere Anfrage.",
+    "placeholder": "Suchen oder springen zu…",
+    "noResults": "Nichts gefunden.",
     "tryDifferent": "Versuchen Sie eine andere Anfrage",
     "navigate": "zur Navigation",
     "select": "zur Auswahl",
     "shortcut": "Ctrl+K zum Öffnen",
-    "open": "Befehlspalette öffnen"
+    "open": "Befehlspalette öffnen",
+    "recent": "Zuletzt",
+    "resultCount": "{{count}} Ergebnisse",
+    "groups": {
+      "actions": "Aktionen",
+      "people": "Personen",
+      "navigate": "Gehe zu",
+      "suggested": "Vorschläge"
+    },
+    "actions": {
+      "newLeave": "Urlaub beantragen",
+      "newTask": "Aufgabe erstellen",
+      "bookRoom": "Besprechungsraum buchen",
+      "askAi": "Assistenten fragen"
+    }
   },
   "teamInfo": {
     "team": "Team",
@@ -440,5 +454,33 @@
     "noDirectReports": "Keine direkt unterstellten Mitarbeiter",
     "noReportingData": "Keine Berichtsdaten verfügbar",
     "notInHierarchy": "Sie sind noch nicht in der Organisationsstruktur verknüpft"
+  },
+  "focus": {
+    "title": "Heute im Fokus",
+    "greetingMorning": "Guten Morgen",
+    "greetingAfternoon": "Guten Tag",
+    "greetingEvening": "Guten Abend",
+    "allClear": "Alles erledigt",
+    "allClearHint": "Momentan ist nichts zu tun.",
+    "approvals": "Urlaubsanträge warten auf Sie",
+    "approvalsOne": "1 Antrag braucht Ihre Entscheidung",
+    "approvalsMany": "{{count}} Anträge brauchen Ihre Entscheidung",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "approved": "Genehmigt",
+    "rejected": "Abgelehnt",
+    "reviewAll": "Alle prüfen",
+    "eventsToday": "Heute",
+    "eventsTodayCount": "{{count}} Termine heute",
+    "birthdays": "Geburtstag heute",
+    "birthdaysMany": "{{count}} Geburtstage heute",
+    "outToday": "Heute abwesend",
+    "outTodayCount": "{{count}} Personen heute abwesend",
+    "tasksDue": "Fällige Aufgaben",
+    "tasksOverdue": "{{count}} überfällig",
+    "tasksDueToday": "{{count}} heute fällig",
+    "viewAll": "Alle ansehen",
+    "search": "Suche",
+    "searchHint": "Alles durchsuchen"
   }
 }

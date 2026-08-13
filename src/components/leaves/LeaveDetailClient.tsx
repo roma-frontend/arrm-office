@@ -5,7 +5,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -61,12 +61,36 @@ const LeaveTypeBadge = ({ type }: { type: string }) => {
   return <Badge variant="outline">{typeLabels[type] || type}</Badge>;
 };
 
-export default function LeaveDetailClient() {
+/**
+ * Leave request detail.
+ *
+ * Rendered by the `/leaves/[id]` page and by a slide-over opened from the list.
+ * The id is a prop with a router fallback because the panel is not on an `[id]`
+ * route; `onDone` replaces the "go back to /leaves" navigation that follows a
+ * terminal action, since in a panel the list is already behind it.
+ */
+export interface LeaveDetailClientProps {
+  /** Supplied when embedded; omitted on the `/leaves/[id]` route. */
+  leaveId?: Id<'leaveRequests'>;
+  /** Replaces the navigation to `/leaves` when embedded. */
+  onDone?: () => void;
+}
+
+export default function LeaveDetailClient({
+  leaveId: leaveIdProp,
+  onDone,
+}: LeaveDetailClientProps = {}) {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation();
-  const leaveId = params.id as Id<'leaveRequests'>;
+  const leaveId = leaveIdProp ?? (params.id as Id<'leaveRequests'>);
+
+  /** Done with this request: close the panel, or return to the list. */
+  const done = useCallback(() => {
+    if (onDone) onDone();
+    else router.push('/leaves');
+  }, [onDone, router]);
 
   const dateLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
 
@@ -97,7 +121,7 @@ export default function LeaveDetailClient() {
     try {
       await approveLeave({ leaveId, reviewerId: currentUser._id });
       toast.success(t('leave.approvedSuccess'));
-      router.push('/leaves');
+      done();
     } catch {
       toast.error(t('leave.approveFailed'));
     } finally {
@@ -111,7 +135,7 @@ export default function LeaveDetailClient() {
     try {
       await rejectLeave({ leaveId, reviewerId: currentUser._id });
       toast.success(t('leave.rejectedSuccess'));
-      router.push('/leaves');
+      done();
     } catch {
       toast.error(t('leave.rejectFailed'));
     } finally {
@@ -132,7 +156,7 @@ export default function LeaveDetailClient() {
         await deleteLeave({ leaveId });
         toast.success(t('leave.deletedSuccess'));
       }
-      router.push('/leaves');
+      done();
     } catch {
       toast.error(t('leave.deleteFailed'));
     } finally {
@@ -161,7 +185,7 @@ export default function LeaveDetailClient() {
     try {
       await deleteLeave({ leaveId });
       toast.success(t('leave.cancelApprovedSuccess'));
-      router.push('/leaves');
+      done();
     } catch {
       toast.error(t('leave.cancelApproveFailed'));
     } finally {
@@ -219,9 +243,14 @@ export default function LeaveDetailClient() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/leaves')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          {/* Hidden when embedded: a panel already has a close control, and a
+              second "back" affordance next to it is ambiguous about which one
+              returns you to the list. */}
+          {!onDone && (
+            <Button variant="ghost" size="icon" onClick={done}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
           <div>
             <h1 className="text-2xl font-bold">{t('leave.requestDetails')}</h1>
             <p className="text-muted-foreground">

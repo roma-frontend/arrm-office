@@ -88,6 +88,14 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+// The profile slide-over lazily loads EmployeeProfileDetail, which pulls in tabs,
+// charts, a rating form and three edit modals — none of which this suite is about.
+// The stub records which employee was handed to it.
+jest.mock('@/components/employees/EmployeeSheet', () => ({
+  EmployeeSheet: ({ employeeId }: { employeeId: string | null }) =>
+    employeeId ? <div data-testid="employee-sheet" data-employee-id={employeeId} /> : null,
+}));
+
 // ── CSS motion / debounce ────────────────────────────────────────────────────
 jest.mock('@/lib/cssMotion', () => ({
   motion: {
@@ -355,11 +363,21 @@ describe('grid view', () => {
     expect(screen.getByText('Marina')).toBeTruthy();
   });
 
-  it('navigates to the profile when a card is clicked', () => {
+  // The list no longer navigates away: it opens the profile in a slide-over so
+  // the search text, filters, view mode and scroll position survive. The sheet is
+  // stubbed below, so what is asserted here is that the right employee was handed
+  // to it.
+  it('opens the profile slide-over when a card is clicked', () => {
     paginatedResults = [empDoc()];
     renderClient();
+    expect(screen.queryByTestId('employee-sheet')).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByText('Anna Petrova'));
-    expect(mockPush).toHaveBeenCalledWith('/employees/u1');
+
+    const sheet = screen.getByTestId('employee-sheet');
+    expect(sheet).toBeInTheDocument();
+    expect(sheet.getAttribute('data-employee-id')).toBe('u1');
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('shows the noFound placeholder when filters match nothing', () => {
@@ -478,7 +496,7 @@ describe('list view', () => {
     const viewButtons = screen.getAllByTitle('common.view');
     expect(viewButtons.length).toBeGreaterThan(0);
     fireEvent.click(viewButtons[0]);
-    expect(mockPush).toHaveBeenCalledWith('/employees/u1');
+    expect(screen.getByTestId('employee-sheet').getAttribute('data-employee-id')).toBe('u1');
   });
 
   it('navigates when a mobile card is tapped', () => {
@@ -486,7 +504,7 @@ describe('list view', () => {
     renderClient();
     fireEvent.click(screen.getByTitle('ariaLabels.listView'));
     fireEvent.click(screen.getAllByTestId('mobile-card')[0]);
-    expect(mockPush).toHaveBeenCalledWith('/employees/u1');
+    expect(screen.getByTestId('employee-sheet').getAttribute('data-employee-id')).toBe('u1');
   });
 
   it('renders every list cell with fallbacks for sparse employees', () => {
@@ -544,7 +562,7 @@ describe('list view', () => {
     fireEvent.click(screen.getByTitle('ariaLabels.listView'));
     // First match is the mobile card title, second is the desktop table row.
     fireEvent.click(screen.getAllByText('Anna Petrova')[1]);
-    expect(mockPush).toHaveBeenCalledWith('/employees/u1');
+    expect(screen.getByTestId('employee-sheet').getAttribute('data-employee-id')).toBe('u1');
   });
 
   it('switches back to the grid view with the toggle', () => {
@@ -634,7 +652,7 @@ describe('modals', () => {
     renderClient();
     fireEvent.click(screen.getByTitle('ariaLabels.rowMenu'));
     fireEvent.click(screen.getByText('common.viewProfile'));
-    expect(mockPush).toHaveBeenCalledWith('/employees/u1');
+    expect(screen.getByTestId('employee-sheet').getAttribute('data-employee-id')).toBe('u1');
   });
 
   it('toggles the row menu closed with a second click', () => {

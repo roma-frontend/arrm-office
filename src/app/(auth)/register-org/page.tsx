@@ -26,6 +26,7 @@ export default function RegisterOrgPage() {
       description: t('auth.plans.starter.desc', 'Ideal for small teams getting started'),
       icon: Zap,
       color: 'from-green-500 to-emerald-500',
+      gradient: 'var(--green-500), var(--green-600)',
       features: [
         t('auth.plans.starter.employees', 'Up to 10 employees'),
         t('auth.plans.starter.basicLeave', 'Basic leave management'),
@@ -45,6 +46,7 @@ export default function RegisterOrgPage() {
       description: t('auth.plans.professional.desc', 'For growing teams with advanced needs'),
       icon: Building2,
       color: 'from-blue-500 to-cyan-500',
+      gradient: 'var(--brand-500), var(--cyan-500)',
       features: [
         t('auth.plans.professional.employees50', 'Up to 50 employees'),
         t('auth.plans.professional.everythingStarter', 'Everything in Starter +'),
@@ -64,6 +66,7 @@ export default function RegisterOrgPage() {
       description: t('auth.plans.enterprise.desc', 'Unlimited scale for large organizations'),
       icon: Crown,
       color: 'from-purple-500 to-pink-500',
+      gradient: 'var(--violet-500), var(--pink-500)',
       features: [
         t('auth.plans.enterprise.employees100', 'Unlimited employees'),
         t('auth.plans.enterprise.everythingPro', 'Everything in Professional +'),
@@ -146,10 +149,13 @@ export default function RegisterOrgPage() {
                   </div>
                 )}
 
-                {/* Icon */}
+                {/* Icon.
+                    `var(--color-${plan.id})` used to be interpolated here — no
+                    such variable was ever defined, so the gradient had a single
+                    invalid stop and the tile rendered with no background. */}
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{ background: `linear-gradient(135deg, var(--color-${plan.id}))` }}
+                  style={{ background: `linear-gradient(135deg, ${plan.gradient})` }}
                 >
                   <Icon className="w-6 h-6 text-white" />
                 </div>
@@ -158,9 +164,13 @@ export default function RegisterOrgPage() {
                 <h3 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
                   {plan.name}
                 </h3>
+                {/* `plan.color` holds Tailwind gradient class names, not CSS
+                    colour stops, so interpolating it into `linear-gradient()`
+                    produced an invalid value — combined with
+                    `text-transparent`, the price rendered invisible. */}
                 <p
-                  className="text-3xl font-bold mb-2 bg-linear-to-r bg-clip-text text-transparent"
-                  style={{ backgroundImage: `linear-gradient(135deg, ${plan.color})` }}
+                  className="text-3xl font-bold mb-2 bg-clip-text text-transparent"
+                  style={{ backgroundImage: `linear-gradient(135deg, ${plan.gradient})` }}
                 >
                   {plan.price}
                 </p>

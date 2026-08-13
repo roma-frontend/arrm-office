@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
-import { useTheme } from '@/components/ThemeProvider';
+import { useChartTheme, CHART_PALETTE_LIGHT } from '@/lib/chart-theme';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import {
@@ -46,16 +46,11 @@ interface ReportWidgetChartProps {
 }
 
 const PIE_COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#06b6d4',
-  '#f43f5e',
+  ...CHART_PALETTE_LIGHT,
+  // Two extra hues for pies with more than eight slices. Past ~10 categories a
+  // pie stops communicating anything, so this is the deliberate ceiling.
   '#84cc16',
   '#14b8a6',
-  '#d946ef',
 ];
 
 type Unit = 'count' | 'currency' | 'hours';
@@ -85,8 +80,7 @@ export function ReportWidgetChart({
   height = 260,
 }: ReportWidgetChartProps) {
   const { t } = useTranslation();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
+  const { gridStroke, axisTickFill, hoverFill, tooltipProps: baseTooltipProps } = useChartTheme();
 
   const data = useQuery(api.analytics.getReportData, {
     ...(organizationId ? { organizationId } : {}),
@@ -95,12 +89,6 @@ export function ReportWidgetChart({
     ...(rangeDays ? { rangeDays } : {}),
   });
 
-  const tooltipBg = isDark ? '#0f172a' : '#ffffff';
-  const tooltipBorder = isDark ? 'rgba(148, 163, 184, 0.3)' : 'rgba(0, 0, 0, 0.1)';
-  const tooltipColor = isDark ? '#ffffff' : '#0f172a';
-  const gridStroke = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)';
-  const axisTickFill = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)';
-
   const unit: Unit = data?.unit ?? 'count';
   const chartData = useMemo(
     () => (data?.series ?? []).map((s) => ({ name: s.label, value: s.value })),
@@ -108,14 +96,7 @@ export function ReportWidgetChart({
   );
 
   const tooltipProps = {
-    contentStyle: {
-      backgroundColor: tooltipBg,
-      border: `1px solid ${tooltipBorder}`,
-      borderRadius: '8px',
-      color: tooltipColor,
-    },
-    itemStyle: { color: tooltipColor },
-    labelStyle: { color: tooltipColor, fontWeight: 700 },
+    ...baseTooltipProps,
     formatter: (v: unknown) => formatValue(Number(v), unit),
   };
 
@@ -266,7 +247,7 @@ export function ReportWidgetChart({
         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} opacity={0.3} />
         <XAxis dataKey="name" tick={{ fill: axisTickFill, fontSize: 12 }} />
         <YAxis tick={{ fill: axisTickFill, fontSize: 12 }} />
-        <Tooltip {...tooltipProps} cursor={{ fill: isDark ? '#ffffff10' : '#00000008' }} />
+        <Tooltip {...tooltipProps} cursor={{ fill: hoverFill }} />
         <Bar dataKey="value" fill={color} radius={[6, 6, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>

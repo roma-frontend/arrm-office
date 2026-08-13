@@ -83,9 +83,14 @@ jest.mock('convex/react', () => ({
 }));
 
 // ── UI primitives ────────────────────────────────────────────────────────────
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children }: any) => (open ? <>{children}</> : null),
-  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ open, children }: any) => (open ? <>{children}</> : null),
+  SheetContent: ({ children }: any) => <div data-testid="sheet-content">{children}</div>,
+  SheetHeader: ({ children }: any) => <div data-testid="sheet-header">{children}</div>,
+  SheetBody: ({ children }: any) => <div data-testid="sheet-body">{children}</div>,
+  SheetFooter: ({ children }: any) => <div data-testid="sheet-footer">{children}</div>,
+  SheetTitle: ({ children }: any) => <h2>{children}</h2>,
+  SheetDescription: ({ children }: any) => <p>{children}</p>,
 }));
 
 jest.mock('@/components/ui/button', () => ({
@@ -214,6 +219,7 @@ jest.mock('lucide-react', () => {
     'ChevronRight',
     'ChevronLeft',
     'CheckCircle',
+    'Check',
     'DoorOpen',
   ];
   const mocks: Record<string, any> = {};
@@ -706,7 +712,7 @@ describe('CreateEventModal — meeting rooms', () => {
     renderModal({ selectedDate: new Date(2026, 7, 4) });
     await flush();
     await goToPeopleStep();
-    expect(document.querySelector('.animate-pulse')).toBeTruthy();
+    expect(document.querySelector('.skeleton')).toBeTruthy();
   });
 
   it('shows the no-rooms message', async () => {

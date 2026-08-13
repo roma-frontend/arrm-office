@@ -185,21 +185,42 @@ describe('StatsCard', () => {
   });
 
   // ── Color variants ─────────────────────────────────────────────────────
+  //
+  // The tiles used to hard-code hex (`border-[#2563eb]`), which is why they were
+  // the one part of the dashboard that kept light-mode colours in dark mode. The
+  // colour now comes from the theme, so what is asserted is the icon chip's token
+  // pair — the border is deliberately neutral on every variant.
 
-  it('applies color-specific border class for blue', () => {
+  it('tints the icon chip with the brand token for blue', () => {
+    const { container } = render(
+      <StatsCard title="Blue Card" value={10} icon={defaultIcon} color="blue" />,
+    );
+    expect(container.innerHTML).toContain('bg-(--brand-quiet)');
+    expect(container.innerHTML).toContain('text-(--brand-text)');
+  });
+
+  it('tints the icon chip with the success token for green', () => {
+    const { container } = render(
+      <StatsCard title="Green Card" value={10} icon={defaultIcon} color="green" />,
+    );
+    expect(container.innerHTML).toContain('bg-(--success-quiet)');
+    expect(container.innerHTML).toContain('text-(--success-text)');
+  });
+
+  it('keeps the border neutral so a row of tiles does not compete', () => {
     const { container } = render(
       <StatsCard title="Blue Card" value={10} icon={defaultIcon} color="blue" />,
     );
     const motionDiv = container.querySelector('[data-testid="motion-div"]');
-    expect(motionDiv?.className).toContain('border-[#2563eb]');
+    expect(motionDiv?.className).toContain('border-(--border-subtle)');
   });
 
-  it('applies color-specific border class for green', () => {
+  it('maps purple to the purple token, not to sky blue', () => {
+    // `purple` was mapped to #0ea5e9 — the "on leave now" tile never looked purple.
     const { container } = render(
-      <StatsCard title="Green Card" value={10} icon={defaultIcon} color="green" />,
+      <StatsCard title="Purple" value={5} icon={defaultIcon} color="purple" />,
     );
-    const motionDiv = container.querySelector('[data-testid="motion-div"]');
-    expect(motionDiv?.className).toContain('border-[#10b981]');
+    expect(container.innerHTML).toContain('bg-(--purple-quiet)');
   });
 
   it('renders icon inside card', () => {

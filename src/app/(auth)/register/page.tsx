@@ -33,6 +33,7 @@ import { SmartErrorMessage, parseAuthError } from '@/components/auth/SmartErrorM
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface OrgResult {
@@ -106,7 +107,7 @@ function OrgSearch({ onSelect }: { onSelect: (org: OrgResult) => void }) {
     <div className="space-y-3">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted)" />
-        <input
+        <Input
           type="text"
           value={query}
           onChange={(e) => {
@@ -114,18 +115,12 @@ function OrgSearch({ onSelect }: { onSelect: (org: OrgResult) => void }) {
             if (selected) setSelected(null);
           }}
           placeholder={t('placeholders.searchYourOrganization')}
-          className="w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm outline-none transition-all"
-          style={{
-            background: 'var(--input)',
-            borderColor: selected ? '#10b981' : 'var(--border)',
-            color: 'var(--text-primary)',
-          }}
-          onFocus={(e) => {
-            if (!selected) e.target.style.borderColor = '#2563eb';
-          }}
-          onBlur={(e) => {
-            if (!selected) e.target.style.borderColor = 'var(--border)';
-          }}
+          // A confirmed organization keeps the field green so the choice stays
+          // visible while the rest of the form is filled in.
+          className={cn(
+            'h-11 pl-10 pr-10',
+            selected && 'border-(--success-solid) hover:border-(--success-solid)',
+          )}
           autoComplete="off"
         />
         {query && (
@@ -430,14 +425,14 @@ function RegisterPageContent() {
                           style={{
                             background:
                               step === s
-                                ? '#2563eb'
+                                ? 'var(--brand)'
                                 : i < ['org', 'details'].indexOf(step)
                                   ? 'var(--card-border-default)'
                                   : 'var(--card)',
                             color:
                               step === s || i < ['org', 'details'].indexOf(step)
                                 ? '#fff'
-                                : 'var(--color-bg-elevated)',
+                                : 'var(--text-muted)',
                             border: step === s ? 'none' : '2px solid var(--border)',
                           }}
                         >
@@ -559,14 +554,7 @@ function RegisterPageContent() {
                             value={formData.name}
                             onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
                             placeholder={t('placeholders.johnDoe')}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                            style={{
-                              background: 'var(--input)',
-                              borderColor: 'var(--border)',
-                              color: 'var(--text-primary)',
-                            }}
-                            onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                            onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                            className="h-11 pl-10 pr-4"
                           />
                         </div>
                       </div>
@@ -602,14 +590,7 @@ function RegisterPageContent() {
                             value={formData.phone}
                             onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
                             placeholder="+374 XX XXX XXX"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm outline-none transition-all"
-                            style={{
-                              background: 'var(--input)',
-                              borderColor: 'var(--border)',
-                              color: 'var(--text-primary)',
-                            }}
-                            onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                            onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+                            className="h-11 pl-10 pr-4"
                           />
                         </div>
                       </div>

@@ -230,13 +230,27 @@
     }
   },
   "commandPalette": {
-    "placeholder": "Search functions... (e.g., leave, chat, tasks)",
-    "noResults": "Nothing found. Try a different query.",
+    "placeholder": "Search or jump to…",
+    "noResults": "Nothing found.",
     "tryDifferent": "Try a different query",
     "navigate": "to navigate",
     "select": "to select",
     "shortcut": "Ctrl+K to open",
-    "open": "Open command palette"
+    "open": "Open command palette",
+    "recent": "Recent",
+    "resultCount": "{{count}} results",
+    "groups": {
+      "actions": "Actions",
+      "people": "People",
+      "navigate": "Go to",
+      "suggested": "Suggested"
+    },
+    "actions": {
+      "newLeave": "Request time off",
+      "newTask": "Create a task",
+      "bookRoom": "Book a meeting room",
+      "askAi": "Ask the assistant"
+    }
   },
   "teamInfo": {
     "team": "Team",
@@ -440,5 +454,33 @@
     "noDirectReports": "No direct reports",
     "noReportingData": "No reporting data available",
     "notInHierarchy": "You are not linked in the org hierarchy yet"
+  },
+  "focus": {
+    "title": "Today's focus",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "allClear": "You're all caught up",
+    "allClearHint": "Nothing needs your attention right now.",
+    "approvals": "Time-off requests waiting on you",
+    "approvalsOne": "1 request needs your decision",
+    "approvalsMany": "{{count}} requests need your decision",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "reviewAll": "Review all",
+    "eventsToday": "On today",
+    "eventsTodayCount": "{{count}} events today",
+    "birthdays": "Birthday today",
+    "birthdaysMany": "{{count}} birthdays today",
+    "outToday": "Out of office today",
+    "outTodayCount": "{{count}} people out today",
+    "tasksDue": "Tasks due",
+    "tasksOverdue": "{{count}} overdue",
+    "tasksDueToday": "{{count}} due today",
+    "viewAll": "View all",
+    "search": "Search",
+    "searchHint": "Search anything"
   }
 }

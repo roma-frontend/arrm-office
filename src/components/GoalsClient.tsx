@@ -34,6 +34,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -301,71 +310,23 @@ function CreateObjectiveWizard({
   ];
 
   return (
-    <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[95vh]">
-      {/* Header */}
-      <DialogHeader className="px-5 pt-5 pb-0">
-        <DialogTitle>{t('goals.wizard.title', 'Create Objective')}</DialogTitle>
-      </DialogHeader>
+    <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+      <SheetHeader className="gap-3.5">
+        <SheetTitle>{t('goals.wizard.title', 'Create Objective')}</SheetTitle>
+        <WizardStepper
+          steps={steps.map((s, i) => ({ id: `step-${i}`, title: s }))}
+          current={step}
+          onStepClick={setStep}
+        />
+      </SheetHeader>
 
-      <div className="flex flex-col">
-        {/* Progress bar + Step indicators */}
-        <div className="px-5 pt-4 pb-3">
-          <div className="relative h-1.5 bg-muted rounded-full overflow-hidden mb-4">
-            <div
-              className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-300 ease-in-out"
-              style={{ width: `${((step + 1) / steps.length) * 100}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-1">
-            {steps.map((s, idx) => {
-              const isCompleted = idx < step;
-              const isCurrent = idx === step;
-              return (
-                <React.Fragment key={idx}>
-                  <div className="flex flex-col items-center flex-1 min-w-0">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 shrink-0 ${
-                        isCompleted
-                          ? 'bg-primary border-primary text-primary-foreground'
-                          : isCurrent
-                            ? 'border-primary bg-background text-primary scale-110'
-                            : 'border-muted-foreground/30 bg-background text-muted-foreground'
-                      }`}
-                    >
-                      {isCompleted ? <CheckCircle className="w-4 h-4" /> : idx + 1}
-                    </div>
-                    <p
-                      className={`text-[10px] font-medium mt-1.5 text-center truncate w-full px-1 ${
-                        isCurrent ? 'text-primary' : 'text-muted-foreground'
-                      }`}
-                    >
-                      {s}
-                    </p>
-                  </div>
-                  {idx < steps.length - 1 && (
-                    <div className="flex-1 h-0.5 bg-muted mx-1 max-w-8 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          isCompleted ? 'bg-blue-500' : 'bg-transparent'
-                        }`}
-                        style={{ width: isCompleted ? '100%' : '0%' }}
-                      />
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Step Content */}
-        <div className="px-5 py-4 min-h-[280px] overflow-y-auto max-h-[50vh]">
-          <WizardDraftNotice
-            show={draft.restored}
-            step={draft.restoredStep}
-            onReset={handleStartOver}
-          />
-
+      <SheetBody className="min-h-[280px]">
+        <WizardDraftNotice
+          show={draft.restored}
+          step={draft.restoredStep}
+          onReset={handleStartOver}
+        />
+        <div className="contents">
           {step === 0 && (
             <div className="space-y-4">
               <div>
@@ -660,27 +621,31 @@ function CreateObjectiveWizard({
             </div>
           )}
         </div>
+      </SheetBody>
 
-        {/* Navigation */}
-        <div className="flex justify-between px-5 py-4 border-t">
-          <Button variant="outline" onClick={() => (step === 0 ? onClose() : setStep(step - 1))}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            {step === 0 ? t('common.cancel', 'Cancel') : t('common.back', 'Back')}
+      {/* Navigation */}
+      <SheetFooter className="justify-between">
+        <Button variant="outline" onClick={() => (step === 0 ? onClose() : setStep(step - 1))}>
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          {step === 0 ? t('common.cancel', 'Cancel') : t('common.back', 'Back')}
+        </Button>
+        {step < 2 ? (
+          <Button
+            onClick={() => setStep(step + 1)}
+            disabled={step === 0 && !title.trim()}
+            className="btn-gradient"
+          >
+            {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
-          {step < 2 ? (
-            <Button onClick={() => setStep(step + 1)} disabled={step === 0 && !title.trim()}>
-              {t('common.next', 'Next')} <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting
-                ? t('common.saving', 'Saving...')
-                : t('goals.wizard.create', 'Create Objective')}
-            </Button>
-          )}
-        </div>
-      </div>
-    </DialogContent>
+        ) : (
+          <Button onClick={handleSubmit} disabled={submitting} className="btn-gradient">
+            {submitting
+              ? t('common.saving', 'Saving...')
+              : t('goals.wizard.create', 'Create Objective')}
+          </Button>
+        )}
+      </SheetFooter>
+    </SheetContent>
   );
 }
 
@@ -845,24 +810,33 @@ export function ObjectiveDetailDialog({
 
   if (!objective)
     return (
-      <DialogContent className="sm:max-w-2xl">
-        <ShieldLoader />
-      </DialogContent>
+      <SheetContent
+        side="right"
+        size="lg"
+        label={t('goals.objective', 'Objective')}
+        closeLabel={t('common.close', 'Close')}
+      >
+        <div className="flex flex-1 items-center justify-center">
+          <ShieldLoader />
+        </div>
+      </SheetContent>
     );
 
   const isOwner = user?.id === objective.ownerId;
   const isActive = objective.status === 'active';
 
   return (
-    <DialogContent className="sm:max-w-2xl max-h-[95vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          {objective.title}
-        </DialogTitle>
-      </DialogHeader>
+    <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+      <SheetHeader>
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-field bg-(--brand-quiet) text-(--brand-text)">
+            <Target className="size-4" />
+          </span>
+          <SheetTitle>{objective.title}</SheetTitle>
+        </div>
+      </SheetHeader>
 
-      <div className="space-y-4">
+      <SheetBody className="space-y-4">
         {/* Meta */}
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline">{objective.level}</Badge>
@@ -870,12 +844,12 @@ export function ObjectiveDetailDialog({
             {objective.periodType} {objective.periodYear}
           </Badge>
           <Badge
-            className={
+            variant={
               objective.status === 'active'
-                ? 'bg-green-100 text-green-800'
+                ? 'success'
                 : objective.status === 'completed'
-                  ? 'bg-blue-100 text-blue-800'
-                  : 'bg-gray-100 text-gray-600'
+                  ? 'info'
+                  : 'secondary'
             }
           >
             {t(`goals.status.${objective.status}`, objective.status)}
@@ -977,56 +951,56 @@ export function ObjectiveDetailDialog({
             {objective.children.map((child) => (
               <div
                 key={child._id}
-                className="text-sm flex items-center gap-2 p-2 border rounded mb-1"
+                className="mb-1 flex items-center gap-2 rounded-card border border-(--border-subtle) bg-(--surface-2) p-2 text-sm"
               >
                 <Crosshair className="h-4 w-4 text-muted-foreground" />
                 <span className="flex-1 truncate">{child.title}</span>
-                <span className={`font-medium ${getProgressColor(child.progress)}`}>
+                <span className={`num font-medium ${getProgressColor(child.progress)}`}>
                   {child.progress}%
                 </span>
               </div>
             ))}
           </div>
         )}
+      </SheetBody>
 
-        {/* Actions */}
-        {isOwner && isActive && (
-          <div className="flex flex-wrap gap-2 border-t pt-4">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={async () => {
-                try {
-                  await completeObjective({ objectiveId });
-                  toast.success(t('goals.completed', 'Objective completed!'));
-                  onClose();
-                } catch (e) {
-                  toast.error(String(e));
-                }
-              }}
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              {t('goals.markComplete', 'Mark Complete')}
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={async () => {
-                try {
-                  await deleteObjective({ objectiveId });
-                  toast.success(t('goals.deleted', 'Objective deleted'));
-                  onClose();
-                } catch (e) {
-                  toast.error(String(e));
-                }
-              }}
-            >
-              {t('common.delete', 'Delete')}
-            </Button>
-          </div>
-        )}
-      </div>
-    </DialogContent>
+      {/* Actions */}
+      {isOwner && isActive && (
+        <SheetFooter>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={async () => {
+              try {
+                await deleteObjective({ objectiveId });
+                toast.success(t('goals.deleted', 'Objective deleted'));
+                onClose();
+              } catch (e) {
+                toast.error(String(e));
+              }
+            }}
+          >
+            {t('common.delete', 'Delete')}
+          </Button>
+          <Button
+            size="sm"
+            className="btn-gradient"
+            onClick={async () => {
+              try {
+                await completeObjective({ objectiveId });
+                toast.success(t('goals.completed', 'Objective completed!'));
+                onClose();
+              } catch (e) {
+                toast.error(String(e));
+              }
+            }}
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            {t('goals.markComplete', 'Mark Complete')}
+          </Button>
+        </SheetFooter>
+      )}
+    </SheetContent>
   );
 }
 
@@ -1350,7 +1324,7 @@ export default function GoalsClient() {
       </Tabs>
 
       {/* Dialogs */}
-      <Dialog open={showWizard} onOpenChange={setShowWizard}>
+      <Sheet open={showWizard} onOpenChange={setShowWizard}>
         {showWizard && (
           <CreateObjectiveWizard
             organizationId={organizationId}
@@ -1361,7 +1335,7 @@ export default function GoalsClient() {
             onClose={() => setShowWizard(false)}
           />
         )}
-      </Dialog>
+      </Sheet>
 
       <Dialog open={!!checkinKR} onOpenChange={() => setCheckinKR(null)}>
         {checkinKR && (
