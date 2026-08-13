@@ -9,7 +9,6 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import type { User as UserType } from '@/store/useAuthStore';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { createPortal } from 'react-dom';
 import {
   X,
   Search,
@@ -78,7 +77,6 @@ export function AssignManagerModal({
 }: AssignManagerModalProps) {
   const { t } = useTranslation();
   const currentUser = useAuthStore(useShallow((state: { user: UserType | null }) => state.user));
-  const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<Id<'users'> | null>(
     currentSupervisorId ?? null,
@@ -86,8 +84,6 @@ export function AssignManagerModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [avatarErrors, setAvatarErrors] = useState<Set<string>>(new Set());
-
-  useEffect(() => setMounted(true), []);
 
   // Focus search input when modal opens
   useEffect(() => {
@@ -566,7 +562,16 @@ export function AssignManagerModal({
     </AnimatePresence>
   );
 
-  return mounted ? createPortal(content, document.body) : null;
+  // Rendered inline (no portal) on purpose: the modal is opened from inside the
+  // employee sheet, which is a Radix Dialog. A portaled node lives outside the
+  // dialog's content tree, so Radix treats every pointer-down inside the modal as
+  // an outside click and dismisses the sheet underneath it. Rendering inline
+  // keeps the modal inside the sheet's React tree (the same pattern
+  // EditEmployeeModal uses), so interacting with it no longer closes the sheet.
+  // Inside the sheet, `fixed` is contained by `.spark-sheet`'s transform, so the
+  // overlay covers the panel; on the full-page profile there is no transformed
+  // ancestor and it covers the viewport as before.
+  return content;
 }
 
 export default AssignManagerModal;
