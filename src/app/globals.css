@@ -204,7 +204,9 @@ body.lang-switching #main-content {
    • `@theme { --shadow-md: var(--shadow-md) }` and friends — a custom property
      that references itself is invalid at computed-value time, so those steps
      only ever resolved because an unlayered `:root` below happened to redeclare
-     them. tokens.css maps them with `@theme inline`, which has no such cycle;
+     them. tokens.css maps them with `@theme inline` — the shadow steps via
+     `var(--elev-*)`, and the radius / motion / blur steps as literals — so no
+     self-references survive into the build (see the note in tokens.css);
    • a leftover `:root { --color-primary: #2563eb; --color-bg-*: … }` block
      holding *dark* values inside the light theme. Being unlayered, it outranked
      the `@layer theme` output of `@theme`, which pinned every `bg-primary` /

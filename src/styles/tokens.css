@@ -893,23 +893,32 @@
   --shadow-elev-4: var(--elev-4);
   --shadow-brand: var(--elev-brand);
 
-  /* ── Radius (semantic, additive — Tailwind's own scale is untouched) ───── */
-  --radius-field: var(--radius-field);
-  --radius-control: var(--radius-control);
-  --radius-card: var(--radius-card);
-  --radius-panel: var(--radius-panel);
-  --radius-sheet: var(--radius-sheet);
-  --radius-pill: var(--radius-pill);
+  /* ── Radius (semantic, additive — Tailwind's own scale is untouched) ─────
+     Deliberately LITERAL, not `var(--radius-card)` self-references: a custom
+     property that references itself is invalid at computed-value time, so the
+     previous `--radius-card: var(--radius-card)` mapping only ever resolved
+     because the unlayered `:root` primitive beat the `@layer theme` emission
+     in the cascade — and the first CSS optimizer (Lightning CSS, critters)
+     that flattens the layers turns that into a cycle, dropping every
+     `border-radius` utility. These three groups (radius, motion, blur) are
+     theme-agnostic primitives that `.dark` never re-points, so the literals
+     cannot drift from the `:root` values. If one changes, change it here too. */
+  --radius-field: 10px; /* inputs, selects, small controls */
+  --radius-control: 10px; /* buttons, icon buttons, chips with square corners */
+  --radius-card: 14px; /* cards, tiles, list rows */
+  --radius-panel: 18px; /* popovers, dropdowns, floating panels */
+  --radius-sheet: 20px; /* slide-overs, bottom sheets, modals */
+  --radius-pill: 9999px;
 
   /* ── Motion ───────────────────────────────────────────────────────────── */
-  --ease-spark: var(--ease-spark);
-  --ease-spring: var(--ease-spring);
-  --ease-exit: var(--ease-exit);
-  --ease-smooth: var(--ease-smooth);
+  --ease-spark: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ── Blur ─────────────────────────────────────────────────────────────── */
-  --blur-glass: var(--blur-glass);
-  --blur-glass-strong: var(--blur-glass-strong);
+  --blur-glass: 16px;
+  --blur-glass-strong: 28px;
 
   /* ── Type scale ───────────────────────────────────────────────────────────
      Six steps, semantic names, max weight 600. The old headings ran at 900,
