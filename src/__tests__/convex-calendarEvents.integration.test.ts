@@ -91,6 +91,13 @@ async function seed() {
       email: 'employee@acme.test',
       role: 'employee',
     });
+    const colleagueId = await ctx.db.insert('users', {
+      ...baseUser,
+      organizationId,
+      name: 'Colleague',
+      email: 'colleague@acme.test',
+      role: 'employee',
+    });
     const otherAdminId = await ctx.db.insert('users', {
       ...baseUser,
       organizationId: otherOrgId,
@@ -99,7 +106,7 @@ async function seed() {
       role: 'admin',
     });
 
-    return { organizationId, otherOrgId, adminId, employeeId, otherAdminId };
+    return { organizationId, otherOrgId, adminId, employeeId, colleagueId, otherAdminId };
   });
   return { t, ...ids };
 }
@@ -221,6 +228,34 @@ describe('calendarEvents.create', () => {
     expect(bookings).toHaveLength(1);
   });
 
+  it('stores the guest list and derives the names from it', async () => {
+    const c = await seed();
+    const id = await asAdmin(c).mutation(
+      api.calendarEvents.create,
+      eventArgs(c, { attendeeIds: [c.employeeId, c.colleagueId] }),
+    );
+
+    await c.t.run(async (ctx) => {
+      const event = await ctx.db.get(id as Id<'calendarEvents'>);
+      expect(event?.attendeeIds).toEqual([c.employeeId, c.colleagueId]);
+      expect(event?.attendees).toEqual(['Employee', 'Colleague']);
+    });
+  });
+
+  it('drops attendees from another organization and de-duplicates the rest', async () => {
+    const c = await seed();
+    const id = await asAdmin(c).mutation(
+      api.calendarEvents.create,
+      eventArgs(c, { attendeeIds: [c.employeeId, c.otherAdminId, c.employeeId] }),
+    );
+
+    await c.t.run(async (ctx) => {
+      const event = await ctx.db.get(id as Id<'calendarEvents'>);
+      expect(event?.attendeeIds).toEqual([c.employeeId]);
+      expect(event?.attendees).toEqual(['Employee']);
+    });
+  });
+
   it('enforces the room capacity against attendees', async () => {
     const c = await seed();
     const roomId = await insertRoom(c, { capacity: 2 });
@@ -229,7 +264,7 @@ describe('calendarEvents.create', () => {
         api.calendarEvents.create,
         eventArgs(c, {
           roomId,
-          attendeeIds: [c.employeeId, c.otherAdminId, c.adminId],
+          attendeeIds: [c.employeeId, c.colleagueId, c.adminId],
           ...window(),
         }),
       ),
@@ -265,6 +300,42 @@ describe('calendarEvents.update', () => {
       const event = await ctx.db.get(id);
       expect(event?.title).toBe('Renamed');
       expect(event?.date).toBe('2026-09-02');
+    });
+  });
+
+  it('keeps the guest list the caller sends back and can clear it', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId, c.colleagueId] });
+
+    const base = {
+      id,
+      title: 'Team sync',
+      date: '2026-09-01',
+      startTime: '10:00',
+      endTime: '11:00',
+      allDay: false,
+      category: 'meeting',
+      reminder: '1h',
+    };
+
+    // Editing anything else must leave the roster alone.
+    await asAdmin(c).mutation(api.calendarEvents.update, {
+      ...base,
+      title: 'Renamed',
+      attendeeIds: [c.employeeId, c.colleagueId],
+    });
+    await c.t.run(async (ctx) => {
+      const event = await ctx.db.get(id);
+      expect(event?.attendeeIds).toEqual([c.employeeId, c.colleagueId]);
+      expect(event?.attendees).toEqual(['Employee', 'Colleague']);
+    });
+
+    // Removing everybody is a real edit, not an omission.
+    await asAdmin(c).mutation(api.calendarEvents.update, { ...base, attendeeIds: [] });
+    await c.t.run(async (ctx) => {
+      const event = await ctx.db.get(id);
+      expect(event?.attendeeIds).toBeUndefined();
+      expect(event?.attendees).toBeUndefined();
     });
   });
 

@@ -760,7 +760,7 @@ describe('CreateEventModal — save flows', () => {
         allDay: false,
         category: 'meeting',
         reminder: '15min',
-        attendees: ['Anna'],
+        // Only ids travel — the backend derives the names from them.
         attendeeIds: ['u-anna'],
         roomId: 'room-1',
         roomStartTime: new Date(2026, 7, 4, 9, 0).getTime(),

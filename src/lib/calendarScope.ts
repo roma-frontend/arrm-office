@@ -45,6 +45,7 @@ export interface ScopedDriverEvent {
 
 export interface ScopedCustomEvent {
   createdBy?: string;
+  attendeeIds?: string[];
   attendees?: string[];
 }
 
@@ -88,9 +89,14 @@ export function isMyDriverEvent(event: ScopedDriverEvent, viewer: ScopeViewer): 
   );
 }
 
-/** A custom event is personal for its organizer and for every attendee. */
+/**
+ * A custom event is personal for its organizer and for every attendee. Ids
+ * decide it when the event carries them; the name comparison stays for events
+ * created before ids were stored, where the roster is only a list of names.
+ */
 export function isMyCustomEvent(event: ScopedCustomEvent, viewer: ScopeViewer): boolean {
   if (sameId(event.createdBy, viewer.id)) return true;
+  if ((event.attendeeIds ?? []).some((id) => sameId(id, viewer.id))) return true;
   return (event.attendees ?? []).some((attendee) => sameName(attendee, viewer.name));
 }
 

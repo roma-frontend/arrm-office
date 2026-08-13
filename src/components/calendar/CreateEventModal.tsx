@@ -93,7 +93,13 @@ export interface CalendarEvent {
   description: string;
   category: string;
   reminder: string;
+  /** Attendee names, for labels. Kept in step with `attendeeIds` by the backend. */
   attendees: string[];
+  /**
+   * The attendees themselves. Names alone cannot be re-selected in the picker,
+   * so without the ids editing an event would silently drop its guest list.
+   */
+  attendeeIds?: string[];
   attachmentUrl?: string;
   /** Set when the event comes from the backend; absent for drafts. */
   createdAt?: number;

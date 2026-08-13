@@ -30,7 +30,13 @@ const roomArgs = {
   /** Reservation window in epoch ms — required whenever `roomId` is set. */
   roomStartTime: v.optional(v.number()),
   roomEndTime: v.optional(v.number()),
-  /** Attendee user ids — used for the room invitation and capacity check. */
+};
+
+/**
+ * The guest list. Ids are the record; names are stored alongside only so the
+ * calendar can render a roster without resolving every user.
+ */
+const attendeeArgs = {
   attendeeIds: v.optional(v.array(v.id('users'))),
 };
 
@@ -42,6 +48,33 @@ function roomWindow(args: { roomStartTime?: number; roomEndTime?: number }): {
     throw new Error('Room reservation window is missing');
   }
   return { start: args.roomStartTime, end: args.roomEndTime };
+}
+
+/**
+ * Resolves the guest list to the ids that may actually be invited, plus their
+ * current display names.
+ *
+ * Names are derived here rather than taken from the client: the two fields are
+ * written together, so a roster can never disagree with itself, and a client
+ * cannot record somebody under a name that is not theirs. Ids outside the
+ * organization are dropped — the same rule `filterOrgMembers` applies to
+ * company events.
+ */
+async function resolveAttendees(
+  ctx: QueryCtx,
+  organizationId: Id<'organizations'>,
+  attendeeIds: Id<'users'>[] | undefined,
+): Promise<{ ids: Id<'users'>[] | undefined; names: string[] | undefined }> {
+  const unique = [...new Set(attendeeIds ?? [])];
+  if (unique.length === 0) return { ids: undefined, names: undefined };
+
+  const users = await Promise.all(unique.map((id) => ctx.db.get(id)));
+  const members = users.filter(
+    (user): user is Doc<'users'> => !!user && user.organizationId === organizationId,
+  );
+  if (members.length === 0) return { ids: undefined, names: undefined };
+
+  return { ids: members.map((user) => user._id), names: members.map((user) => user.name) };
 }
 
 export const create = mutation({
@@ -56,8 +89,8 @@ export const create = mutation({
     description: v.optional(v.string()),
     category: v.string(),
     reminder: v.string(),
-    attendees: v.optional(v.array(v.string())),
     attachmentUrl: v.optional(v.string()),
+    ...attendeeArgs,
     ...roomArgs,
   },
   handler: async (ctx, args) => {
@@ -68,6 +101,8 @@ export const create = mutation({
     }
     const title = args.title.trim();
     if (!title) throw new Error('Title is required');
+
+    const attendees = await resolveAttendees(ctx, args.organizationId, args.attendeeIds);
 
     // Reserve first: if the room is taken the whole mutation aborts and no
     // orphan event is left behind claiming a room it never had.
@@ -80,7 +115,7 @@ export const create = mutation({
         description: args.description,
         startTime: start,
         endTime: end,
-        attendeeIds: args.attendeeIds,
+        attendeeIds: attendees.ids,
       });
     }
 
@@ -97,7 +132,8 @@ export const create = mutation({
       description: args.description,
       category: args.category,
       reminder: args.reminder,
-      attendees: args.attendees,
+      attendees: attendees.names,
+      attendeeIds: attendees.ids,
       attachmentUrl: args.attachmentUrl,
       roomId: args.roomId,
       roomBookingId,
@@ -125,8 +161,8 @@ export const update = mutation({
     description: v.optional(v.string()),
     category: v.string(),
     reminder: v.string(),
-    attendees: v.optional(v.array(v.string())),
     attachmentUrl: v.optional(v.string()),
+    ...attendeeArgs,
     ...roomArgs,
   },
   handler: async (ctx, args) => {
@@ -143,6 +179,8 @@ export const update = mutation({
     const title = args.title.trim();
     if (!title) throw new Error('Title is required');
 
+    const attendees = await resolveAttendees(ctx, event.organizationId, args.attendeeIds);
+
     const keepsSameRoom = args.roomId && args.roomId === event.roomId;
     let roomBookingId = keepsSameRoom ? event.roomBookingId : undefined;
 
@@ -157,7 +195,7 @@ export const update = mutation({
         description: args.description,
         startTime: start,
         endTime: end,
-        attendeeIds: args.attendeeIds,
+        attendeeIds: attendees.ids,
         excludeBookingId: keepsSameRoom ? event.roomBookingId : undefined,
       });
     }
@@ -177,7 +215,8 @@ export const update = mutation({
       description: args.description,
       category: args.category,
       reminder: args.reminder,
-      attendees: args.attendees,
+      attendees: attendees.names,
+      attendeeIds: attendees.ids,
       attachmentUrl: args.attachmentUrl ?? event.attachmentUrl,
       roomId: args.roomId,
       roomBookingId,

@@ -44,7 +44,13 @@ export const events = {
     description: v.optional(v.string()),
     category: v.string(),
     reminder: v.string(),
+    /**
+     * Attendee names, kept in step with `attendeeIds` by the mutations so the
+     * calendar can label an event without resolving every user.
+     */
     attendees: v.optional(v.array(v.string())),
+    /** The attendees themselves — the identity a rename or a namesake cannot break. */
+    attendeeIds: v.optional(v.array(v.id('users'))),
     attachmentUrl: v.optional(v.string()),
     /** Meeting room reserved for this event, when one was picked. */
     roomId: v.optional(v.id('meetingRooms')),
