@@ -735,6 +735,27 @@ describe('Attachments', () => {
     expect(screen.getByAltText('Preview')).toBeTruthy();
   });
 
+  it('closes the lightbox on Escape', () => {
+    const attachments = [{ url: 'https://cdn/a.png', name: 'a.png', type: 'image/png', size: 1 }];
+    renderBubble({ attachments } as any);
+    fireEvent.click(screen.getByAltText('a.png'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByAltText('Preview')).toBeNull();
+  });
+
+  it('renders the lightbox outside the bubble, not inside the transformed row', () => {
+    // Virtual rows carry a translateY transform, which makes them the containing
+    // block for position:fixed — an in-tree overlay is clipped to one row.
+    const attachments = [{ url: 'https://cdn/a.png', name: 'a.png', type: 'image/png', size: 1 }];
+    const { container } = renderBubble({ attachments } as any);
+    fireEvent.click(screen.getByAltText('a.png'));
+
+    const overlay = screen.getByAltText('Preview').closest('div.fixed') as HTMLElement;
+    expect(overlay).toBeTruthy();
+    expect(container.contains(overlay)).toBe(false);
+    expect(overlay.parentElement).toBe(document.body);
+  });
+
   it('blocks the avatar link click from bubbling', () => {
     const { container } = renderBubble();
     const link = screen.getByTitle("View Bob Smith's profile") as HTMLElement;

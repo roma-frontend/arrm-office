@@ -457,6 +457,17 @@ export const MessageBubble = React.memo(function MessageBubble({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMenu]);
 
+  // Escape closes the lightbox — the backdrop click is not discoverable when the
+  // image fills the viewport.
+  useEffect(() => {
+    if (!lightboxSrc) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxSrc(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [lightboxSrc]);
+
   // Extract URL from content for link preview
   const urlInContent = message.content ? extractUrl(message.content) : null;
 
@@ -630,29 +641,36 @@ export const MessageBubble = React.memo(function MessageBubble({
 
   return (
     <>
-      {/* Image lightbox */}
-      {lightboxSrc && (
-        <div
-          className="fixed inset-0 z-200 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in"
-          onClick={() => setLightboxSrc(null)}
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all hover:box-shadow-lg"
+      {/* Image lightbox — portalled for the same reason as the delete dialog:
+          every bubble is rendered inside a virtual row that carries a
+          `translateY` transform, and a transformed ancestor becomes the
+          containing block for `position: fixed`. Left in place, `inset-0`
+          resolved to that one row instead of the viewport, so the backdrop
+          covered a thin band while the 90vw/95vh image hung out of it. */}
+      {lightboxSrc &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
             onClick={() => setLightboxSrc(null)}
           >
-            <X className="w-5 h-5" />
-          </Button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={lightboxSrc}
-            alt={L.preview}
-            className="max-w-[90vw] max-h-[95vh] rounded-xl object-contain shadow-2xl transition-all duration-300 scale-100"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all hover:box-shadow-lg"
+              onClick={() => setLightboxSrc(null)}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightboxSrc}
+              alt={L.preview}
+              className="max-w-full max-h-full w-auto h-auto rounded-xl object-contain shadow-2xl transition-all duration-300"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>,
+          document.body,
+        )}
 
       {/* Delete dialog - use portal to render outside virtual list */}
       {showDeleteDialog &&
