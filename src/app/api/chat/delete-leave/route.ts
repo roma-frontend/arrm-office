@@ -90,9 +90,10 @@ export const POST = withCsrfProtection(async (req: Request) => {
     const ownerUser = allUsers.find((u) => u._id === targetLeave.userId);
     const ownerName = ownerUser?.name ?? 'Employee';
 
-    if (isOwner && !isAdmin) {
-      // Employees cannot cancel their leave directly — the request goes to the
-      // HR queue, where only HR may approve (delete) or reject it.
+    if (isOwner) {
+      // Nobody deletes their own leave here — not even HR. For employees the
+      // request goes to the HR queue; for HR it goes up the reporting line
+      // above them. Either way the deletion is only applied once approved.
       await fetchMutation(
         api.leaves.requestLeaveCancellation,
         {

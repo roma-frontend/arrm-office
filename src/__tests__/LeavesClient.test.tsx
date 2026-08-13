@@ -113,6 +113,7 @@ jest.mock('../../convex/_generated/api', () => ({
       listLeavesPaginated: { _name: 'listLeavesPaginated' },
       getUnreadCount: { _name: 'getUnreadCount' },
       markLeaveAsRead: { _name: 'markLeaveAsRead' },
+      requestLeaveCancellation: { _name: 'requestLeaveCancellation' },
       rejectLeaveCancellation: { _name: 'rejectLeaveCancellation' },
     },
   },
@@ -338,7 +339,10 @@ describe('LeavesClient — rendering', () => {
 
   it('shows the HR actions for superadmins like for admins', () => {
     mockUser = { id: 'u-1', role: 'superadmin' };
-    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    paginatedResult = {
+      results: [req({ status: 'cancel_requested', userId: 'u-2' })],
+      status: 'Exhausted',
+    };
     renderClient();
     // Delete button plus the approve/reject cancellation pair render in the
     // desktop table for a superadmin, matching the admin view.
@@ -419,12 +423,13 @@ describe('LeavesClient — admin actions', () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('leave.rejectedSuccess'));
   });
 
-  it('deletes from the desktop table', async () => {
-    paginatedResult = { results: [req()], status: 'Exhausted' };
+  it("deletes someone else's request from the desktop table", async () => {
+    paginatedResult = { results: [req({ userId: 'u-2' })], status: 'Exhausted' };
     renderClient();
     const table = document.querySelector('table')!;
     fireEvent.click(within(table).getAllByTestId('icon-Trash2')[0]);
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('leave.deletedSuccess'));
+    expect(mockOptimistic.delete ?? expect.anything()).toBeDefined();
   });
 
   it('rejects a pending request', async () => {
@@ -435,11 +440,16 @@ describe('LeavesClient — admin actions', () => {
     expect(playNotificationSound).toHaveBeenCalledWith('rejected');
   });
 
-  it('deletes a request', async () => {
+  it('routes HR deleting their own request to the reporting line', async () => {
+    // An admin removing their OWN leave is no longer an immediate delete: the
+    // request goes up the reporting line and the row stays until approved.
     paginatedResult = { results: [req()], status: 'Exhausted' };
     renderClient();
     fireEvent.click(screen.getAllByTestId('icon-Trash2')[0]);
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('leave.deletedSuccess'));
+    await waitFor(() => expect(mutationCalls['requestLeaveCancellation']).toHaveLength(1));
+    expect(mutationCalls['requestLeaveCancellation'][0].args[0]).toEqual({ leaveId: 'r1' });
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('leave.cancelRequestedSuccess'));
+    expect(mockOptimistic.delete).toBeUndefined();
   });
 
   it('shows the approve error toast', async () => {
@@ -469,7 +479,7 @@ describe('LeavesClient — admin actions', () => {
 
   it('shows the delete error toast', async () => {
     mockOptimistic.delete = jest.fn().mockRejectedValue(new Error('delete boom'));
-    paginatedResult = { results: [req()], status: 'Exhausted' };
+    paginatedResult = { results: [req({ userId: 'u-2' })], status: 'Exhausted' };
     renderClient();
     fireEvent.click(screen.getAllByTestId('icon-Trash2')[0]);
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('delete boom'));
@@ -504,7 +514,10 @@ describe('LeavesClient — admin actions', () => {
 
 describe('LeavesClient — HR cancellation queue', () => {
   it('shows the cancellation badge and approve/reject actions for a cancel_requested row', () => {
-    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    paginatedResult = {
+      results: [req({ status: 'cancel_requested', userId: 'u-2' })],
+      status: 'Exhausted',
+    };
     renderClient();
     expect(screen.getAllByText('leave.cancellationRequested').length).toBeGreaterThanOrEqual(1);
     const table = document.querySelector('table')!;
@@ -515,7 +528,10 @@ describe('LeavesClient — HR cancellation queue', () => {
   });
 
   it('approves the cancellation (deletes the leave) from the queue', async () => {
-    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    paginatedResult = {
+      results: [req({ status: 'cancel_requested', userId: 'u-2' })],
+      status: 'Exhausted',
+    };
     renderClient();
     const table = document.querySelector('table')!;
     fireEvent.click(within(table).getAllByTestId('icon-CheckCircle')[0]);
@@ -524,7 +540,10 @@ describe('LeavesClient — HR cancellation queue', () => {
   });
 
   it('rejects the cancellation request', async () => {
-    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    paginatedResult = {
+      results: [req({ status: 'cancel_requested', userId: 'u-2' })],
+      status: 'Exhausted',
+    };
     renderClient();
     const table = document.querySelector('table')!;
     fireEvent.click(within(table).getAllByTestId('icon-XCircle')[0]);
@@ -535,7 +554,10 @@ describe('LeavesClient — HR cancellation queue', () => {
 
   it('shows the reject-cancellation error toast', async () => {
     mutationImpl['rejectLeaveCancellation'] = jest.fn().mockRejectedValue(new Error('boom'));
-    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    paginatedResult = {
+      results: [req({ status: 'cancel_requested', userId: 'u-2' })],
+      status: 'Exhausted',
+    };
     renderClient();
     fireEvent.click(screen.getAllByTestId('icon-XCircle')[0]);
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('boom'));
@@ -544,7 +566,10 @@ describe('LeavesClient — HR cancellation queue', () => {
 
   it('shows the approve-cancellation error toast for a generic throw', async () => {
     mockOptimistic.delete = jest.fn().mockRejectedValue('string');
-    paginatedResult = { results: [req({ status: 'cancel_requested' })], status: 'Exhausted' };
+    paginatedResult = {
+      results: [req({ status: 'cancel_requested', userId: 'u-2' })],
+      status: 'Exhausted',
+    };
     renderClient();
     const table = document.querySelector('table')!;
     fireEvent.click(within(table).getAllByTestId('icon-CheckCircle')[0]);

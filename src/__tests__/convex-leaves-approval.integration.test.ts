@@ -406,3 +406,113 @@ describe('getReviewEligibility', () => {
     expect(verdict).toEqual({ allowed: false, reason: 'Not authenticated' });
   });
 });
+
+// ── HR deleting their own leave → reporting line ─────────────────────────────
+// HR may delete anyone's leave directly, but their own leave is a conflict of
+// interest. The request goes up the reporting line (Karine, HR → CEO Tigran)
+// for approval, exactly like a fresh request would; only then is it applied.
+describe('HR deleting their own leave', () => {
+  async function approvedOwnLeave(c: Ctx) {
+    const leaveId = await file(c, 'karine@profix.test', c.karineId);
+    await as(c, 'tigran@profix.test').mutation(api.leaves.approveLeave, { leaveId });
+    // Approved by the CEO: 10 days of paid balance minus the 3 booked.
+    expect((await c.t.run((ctx) => ctx.db.get(c.karineId)))?.paidLeaveBalance).toBe(7);
+    return leaveId as Id<'leaveRequests'>;
+  }
+
+  it('routes the deletion to the manager above and applies it only after approval', async () => {
+    const c = await seed();
+    const leaveId = await approvedOwnLeave(c);
+
+    // HR deletes their own leave: not applied here — routed to the CEO.
+    await as(c, 'karine@profix.test').mutation(api.leaves.deleteLeave, { leaveId });
+
+    const afterRoute = await c.t.run(async (ctx) => {
+      const all = await ctx.db.query('notifications').collect();
+      return {
+        leave: await ctx.db.get(leaveId),
+        karine: await ctx.db.get(c.karineId),
+        notified: all
+          .filter((n) => n.relatedId === leaveId && n.type === 'leave_request')
+          .map((n) => n.userId),
+        audits: (await ctx.db.query('auditLogs').collect()).map((a) => a.action),
+      };
+    });
+
+    // The row stays, marked as a pending cancellation for the reporting line.
+    expect(afterRoute.leave?.status).toBe('cancel_requested');
+    expect(afterRoute.leave?.previousStatus).toBe('approved');
+    // Balance is untouched while the deletion is pending.
+    expect(afterRoute.karine?.paidLeaveBalance).toBe(7);
+    // Only the manager above (the CEO) is told — not Karine herself. (The
+    // list includes the original filing notice to Tigran too, hence the dedupe.)
+    expect([...new Set(afterRoute.notified)]).toEqual([c.tigranId]);
+    expect(afterRoute.audits).toContain('leave_cancel_requested');
+
+    // HR cannot approve their own deletion — the retry re-routes and leaves
+    // the row pending. Nobody signs off on their own leave.
+    await as(c, 'karine@profix.test').mutation(api.leaves.deleteLeave, { leaveId });
+    expect((await c.t.run((ctx) => ctx.db.get(leaveId)))?.status).toBe('cancel_requested');
+
+    // The CEO approves the cancellation: the row is deleted, the balance is
+    // restored to Karine and she is told the cancellation was approved.
+    await as(c, 'tigran@profix.test').mutation(api.leaves.deleteLeave, { leaveId });
+
+    const afterApproval = await c.t.run(async (ctx) => {
+      const all = await ctx.db.query('notifications').collect();
+      return {
+        leave: await ctx.db.get(leaveId),
+        karine: await ctx.db.get(c.karineId),
+        karineTold: all.some((n) => {
+          if (n.userId !== c.karineId || n.relatedId !== leaveId) return false;
+          const meta = JSON.parse(n.metadata as string) as { titleKey?: string };
+          return meta.titleKey === 'notifications.titles.leaveCancellationApproved';
+        }),
+        audits: (await ctx.db.query('auditLogs').collect()).map((a) => a.action),
+      };
+    });
+
+    expect(afterApproval.leave).toBeNull();
+    expect(afterApproval.karine?.paidLeaveBalance).toBe(10);
+    expect(afterApproval.karineTold).toBe(true);
+    expect(afterApproval.audits).toContain('leave_deleted');
+  });
+
+  it('keeps the leave at its previous status when the manager rejects', async () => {
+    const c = await seed();
+    const leaveId = await approvedOwnLeave(c);
+
+    await as(c, 'karine@profix.test').mutation(api.leaves.deleteLeave, { leaveId });
+    expect((await c.t.run((ctx) => ctx.db.get(leaveId)))?.status).toBe('cancel_requested');
+
+    await as(c, 'tigran@profix.test').mutation(api.leaves.rejectLeaveCancellation, {
+      leaveId,
+      comment: 'too many people out that week',
+    });
+
+    const after = await c.t.run(async (ctx) => {
+      const leave = await ctx.db.get(leaveId);
+      return { status: leave?.status, karine: await ctx.db.get(c.karineId) };
+    });
+    // The leave is back to approved, unchanged; the balance stays deducted.
+    expect(after.status).toBe('approved');
+    expect(after.karine?.paidLeaveBalance).toBe(7);
+  });
+
+  it('refuses the owner — even HR — rejecting their own cancellation', async () => {
+    const c = await seed();
+    const leaveId = await approvedOwnLeave(c);
+
+    await as(c, 'karine@profix.test').mutation(api.leaves.deleteLeave, { leaveId });
+    expect((await c.t.run((ctx) => ctx.db.get(leaveId)))?.status).toBe('cancel_requested');
+
+    // Karine cannot decline her own cancellation: the reporting line above her
+    // owns the decision, and the mutation refuses the owner outright.
+    await expect(
+      as(c, 'karine@profix.test').mutation(api.leaves.rejectLeaveCancellation, { leaveId }),
+    ).rejects.toThrow('You cannot review your own leave request');
+
+    // The row is still pending for the CEO.
+    expect((await c.t.run((ctx) => ctx.db.get(leaveId)))?.status).toBe('cancel_requested');
+  });
+});

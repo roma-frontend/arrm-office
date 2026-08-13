@@ -328,6 +328,28 @@ describe('LeaveDetailClient — employee cancellation request', () => {
     expect(screen.getByTestId('icon-Trash2')).toBeInTheDocument();
   });
 
+  it('routes an HR deleting their own leave to the reporting line', async () => {
+    // The Trash button on HR's own leave is not an immediate delete — it goes
+    // up the reporting line for approval like any other cancellation request.
+    seed({ status: 'approved', userId: 'u-admin' }, admin());
+    renderPage();
+    fireEvent.click(screen.getByTestId('icon-Trash2'));
+    await waitFor(() => expect(mutationCalls['requestLeaveCancellation']).toHaveLength(1));
+    expect(mutationCalls['requestLeaveCancellation'][0].args[0]).toEqual({ leaveId: 'leave_1' });
+    expect(toast.success).toHaveBeenCalledWith('leave.cancelRequestedSuccess');
+    expect(mockPush).toHaveBeenCalledWith('/leaves');
+    expect(mutationCalls['deleteLeave']).toBeUndefined();
+  });
+
+  it("still deletes someone else's leave directly from the detail page", async () => {
+    seed({ status: 'approved' }, admin());
+    renderPage();
+    fireEvent.click(screen.getByTestId('icon-Trash2'));
+    await waitFor(() => expect(mutationCalls['deleteLeave']).toHaveLength(1));
+    expect(mutationCalls['deleteLeave'][0].args[0]).toEqual({ leaveId: 'leave_1' });
+    expect(toast.success).toHaveBeenCalledWith('leave.deletedSuccess');
+  });
+
   it('shows the cancel-pending hint to the owner while HR decides', () => {
     seed({ status: 'cancel_requested', previousStatus: 'approved' }, employee());
     renderPage();

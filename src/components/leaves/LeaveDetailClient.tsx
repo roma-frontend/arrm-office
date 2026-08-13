@@ -123,8 +123,15 @@ export default function LeaveDetailClient() {
     if (!currentUser) return;
     setIsDeleting(true);
     try {
-      await deleteLeave({ leaveId });
-      toast.success(t('leave.deletedSuccess'));
+      if (leave?.userId === currentUser._id) {
+        // HR removing their own leave is not an immediate delete — it goes up
+        // the reporting line for approval, like any other cancellation request.
+        await requestLeaveCancellation({ leaveId });
+        toast.success(t('leave.cancelRequestedSuccess'));
+      } else {
+        await deleteLeave({ leaveId });
+        toast.success(t('leave.deletedSuccess'));
+      }
       router.push('/leaves');
     } catch {
       toast.error(t('leave.deleteFailed'));
@@ -241,7 +248,7 @@ export default function LeaveDetailClient() {
               {t('leave.reviewNotAllowedHint')}
             </p>
           )}
-          {leave.status === 'cancel_requested' && isStaff && (
+          {leave.status === 'cancel_requested' && isStaff && !isOwner && (
             <>
               <Button variant="default" onClick={handleApproveCancellation} disabled={isDeleting}>
                 <CheckCircle className="mr-2 h-4 w-4" />

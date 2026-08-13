@@ -202,14 +202,23 @@ export function LeavesClient() {
     }
   };
 
-  const handleDelete = async (id: Id<'leaveRequests'>) => {
+  // HR removing their own leave is not an immediate delete — the request goes
+  // up the reporting line above them for approval (see requestLeaveCancellation).
+  const requestLeaveCancellation = useMutation(api.leaves.requestLeaveCancellation);
+
+  const handleDelete = async (id: Id<'leaveRequests'>, own = false) => {
     if (!user?.id) {
       toast.error(t('errors.unauthorized'));
       return;
     }
     try {
-      await deleteOptimistic(id, user.id as Id<'users'>);
-      toast.success(t('leave.deletedSuccess'));
+      if (own) {
+        await requestLeaveCancellation({ leaveId: id });
+        toast.success(t('leave.cancelRequestedSuccess'));
+      } else {
+        await deleteOptimistic(id, user.id as Id<'users'>);
+        toast.success(t('leave.deletedSuccess'));
+      }
     } catch (err) {
       logger.error('Delete error:', err);
       toast.error(err instanceof Error ? err.message : t('leave.deleteFailed'));
@@ -437,7 +446,7 @@ export function LeavesClient() {
                               </Button>
                             </>
                           )}
-                          {req.status === 'cancel_requested' && (
+                          {req.status === 'cancel_requested' && req.userId !== user?.id && (
                             <>
                               <Button
                                 size="icon-sm"
@@ -471,7 +480,7 @@ export function LeavesClient() {
                             className="text-(--text-muted) hover:text-red-400"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(req._id);
+                              handleDelete(req._id, req.userId === user?.id);
                             }}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -619,7 +628,7 @@ export function LeavesClient() {
                                       </Button>
                                     </>
                                   )}
-                                  {req.status === 'cancel_requested' && (
+                                  {req.status === 'cancel_requested' && req.userId !== user?.id && (
                                     <>
                                       <Button
                                         size="icon-sm"
@@ -653,7 +662,7 @@ export function LeavesClient() {
                                     className="text-(--text-muted) hover:text-red-400"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleDelete(req._id);
+                                      handleDelete(req._id, req.userId === user?.id);
                                     }}
                                   >
                                     <Trash2 className="w-4 h-4" />

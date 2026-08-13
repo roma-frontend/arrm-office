@@ -392,6 +392,108 @@ describe('deleteLeave extra branches', () => {
   });
 });
 
+// ── deleteLeave on the caller's OWN leave → reporting line ───────────────────
+describe('deleteLeave — HR deleting their own leave', () => {
+  it('routes the deletion up the reporting line instead of deleting', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get, patch, remove, insert } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ userId: ADMIN_ID, status: 'approved', days: 3 })) // leave, owned by the admin
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID)); // requester
+    mockResolveApprovalRoute.mockResolvedValue({
+      autoApprove: false,
+      reason: 'chain',
+      notifyIds: ['user_ceo', ADMIN_ID],
+    });
+
+    await handlers.deleteLeave(ctx, { leaveId: LEAVE_ID });
+
+    // Not deleted — the row now waits for the manager above to decide.
+    expect(remove).not.toHaveBeenCalled();
+    expect(patch).toHaveBeenCalledWith(
+      LEAVE_ID,
+      expect.objectContaining({ status: 'cancel_requested', previousStatus: 'approved' }),
+    );
+    // The manager above is notified; the requester (self) is skipped.
+    expect(mockNotify).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({
+        userId: 'user_ceo',
+        titleKey: 'notifications.titles.leaveCancelRequested',
+      }),
+    );
+    expect(mockNotify).not.toHaveBeenCalledWith(ctx, expect.objectContaining({ userId: ADMIN_ID }));
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({ action: 'leave_cancel_requested' }),
+    );
+    // No balance movement while the deletion is pending.
+    expect(mockPatchProfile).not.toHaveBeenCalled();
+  });
+
+  it('auto-applies the deletion when nobody above can approve (head/auto)', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get, patch, remove, insert } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ userId: ADMIN_ID, status: 'approved', days: 3 })) // leave, owned by the admin
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID)) // requester
+      .mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, paidLeaveBalance: 21 })); // owner balance
+    mockResolveApprovalRoute.mockResolvedValue({
+      autoApprove: true,
+      reason: 'head_auto',
+      notifyIds: [],
+    });
+
+    await handlers.deleteLeave(ctx, { leaveId: LEAVE_ID });
+
+    expect(remove).toHaveBeenCalledWith(LEAVE_ID);
+    expect(patch).not.toHaveBeenCalled();
+    expect(mockPatchProfile).toHaveBeenCalledWith(
+      ctx,
+      ADMIN_ID,
+      expect.objectContaining({ paidLeaveBalance: 24 }),
+    );
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({ action: 'leave_deleted' }),
+    );
+  });
+});
+
+// ── requestLeaveCancellation: HR cancelling their own leave → reporting line ─
+describe('requestLeaveCancellation — HR cancelling their own leave', () => {
+  it('routes an HR requester to the reporting line, not the HR queue', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get, patch, insert } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ userId: ADMIN_ID, status: 'approved' })) // leave, owned by the admin
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID)); // requester = HR
+    mockResolveApprovalRoute.mockResolvedValue({
+      autoApprove: false,
+      reason: 'chain',
+      notifyIds: ['user_ceo', ADMIN_ID],
+    });
+
+    const result = await handlers.requestLeaveCancellation(ctx, {
+      leaveId: LEAVE_ID,
+      comment: 'plans changed',
+    });
+
+    expect(result).toBe(LEAVE_ID);
+    expect(patch).toHaveBeenCalledWith(
+      LEAVE_ID,
+      expect.objectContaining({ status: 'cancel_requested', previousStatus: 'approved' }),
+    );
+    // The manager above is notified; the requester (self) is skipped.
+    expect(mockNotify).toHaveBeenCalledWith(ctx, expect.objectContaining({ userId: 'user_ceo' }));
+    expect(mockNotify).not.toHaveBeenCalledWith(ctx, expect.objectContaining({ userId: ADMIN_ID }));
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({ action: 'leave_cancel_requested', userId: ADMIN_ID }),
+    );
+  });
+});
+
 // ── markAllLeavesAsRead ──────────────────────────────────────────────────────
 describe('markAllLeavesAsRead extra branches', () => {
   it('throws for a user without an organization who is not a superadmin email', async () => {
@@ -818,6 +920,21 @@ describe('rejectLeaveCancellation', () => {
 
     await expect(handlers.rejectLeaveCancellation(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
       'Only admins and supervisors can reject cancellation requests',
+    );
+    expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('denies the owner — even HR — rejecting their own cancellation', async () => {
+    // The reporting line decided to route the request here; the owner cannot
+    // silently undo that by declining their own cancel_requested row.
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get, patch } = makeCtx();
+    get
+      .mockResolvedValueOnce(leaveDoc({ userId: ADMIN_ID, status: 'cancel_requested' })) // owner = reviewer
+      .mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID));
+
+    await expect(handlers.rejectLeaveCancellation(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'You cannot review your own leave request',
     );
     expect(patch).not.toHaveBeenCalled();
   });

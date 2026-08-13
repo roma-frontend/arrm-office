@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
-import { mutation } from '../_generated/server';
-import type { Id } from '../_generated/dataModel';
+import { mutation, type MutationCtx } from '../_generated/server';
+import type { Doc, Id } from '../_generated/dataModel';
 import { isSuperadmin, isSuperadminEmail } from '../lib/auth';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
@@ -13,6 +13,7 @@ import {
   resolveApprovalRoute,
   reviewRefusal,
   HEAD_AUTO_APPROVAL_NOTE,
+  type ApprovalReason,
 } from './approval';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -531,6 +532,130 @@ export const updateLeave = mutation({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// OWN-LEAVE DELETION — an HR-type user removing their own leave needs the
+// reporting line above them, not an immediate delete
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * HR/supervisor removing their OWN leave.
+ *
+ * HR may delete anyone's leave directly, but their own leave is a conflict of
+ * interest: the person who decides org-wide approvals should not decide their
+ * own deletion. The request goes up the reporting line instead — the nearest
+ * manager above who holds `leave.approve`, with the org-wide approvers as
+ * fallback — exactly the route a fresh request from them would get
+ * (`resolveApprovalRoute`). The manager above then approves with `deleteLeave`
+ * or declines with `rejectLeaveCancellation`; `reviewRefusal` already bars the
+ * owner from deciding their own row.
+ *
+ * When nobody above can approve (the head of the organization under the `auto`
+ * policy, or an org with no other approvers) the deletion applies immediately,
+ * mirroring how the head's leave requests are auto-approved.
+ *
+ * @returns `{ applied, reason }` — `applied: true` when the row was already
+ * deleted here; `false` when it now sits in the review queue as
+ * `cancel_requested` waiting for the reporting line to decide.
+ */
+async function routeOwnLeaveDeletion(
+  ctx: MutationCtx,
+  requester: Doc<'users'>,
+  leave: Doc<'leaveRequests'>,
+  comment?: string,
+): Promise<{ applied: boolean; reason: ApprovalReason }> {
+  const route = await resolveApprovalRoute(ctx, requester);
+  const now = Date.now();
+
+  const nobodyToDecide = route.autoApprove || route.notifyIds.length === 0;
+  if (nobodyToDecide) {
+    // The head (auto policy) or an org with no other approver: apply now.
+    const wasApproved =
+      leave.status === 'approved' ||
+      (leave.status === 'cancel_requested' && leave.previousStatus === 'approved');
+    if (wasApproved) {
+      const user = await ctx.db.get(leave.userId);
+      if (user) {
+        await restoreLeaveBalance(ctx, leave.userId, user, leave.type, leave.days);
+      }
+    }
+
+    await ctx.db.insert('auditLogs', {
+      organizationId: leave.organizationId,
+      userId: requester._id,
+      action: 'leave_deleted',
+      target: leave._id,
+      details: JSON.stringify({
+        type: leave.type,
+        startDate: leave.startDate,
+        endDate: leave.endDate,
+        days: leave.days,
+        status: leave.status,
+        approvalReason: route.reason,
+        note: 'Self-deletion applied without approval: nobody above the requester in the reporting line',
+      }),
+      createdAt: now,
+    });
+
+    await ctx.db.delete(leave._id);
+    return { applied: true, reason: route.reason };
+  }
+
+  // The reporting line must decide: mark the row as a pending cancellation and
+  // notify exactly the people who may act on it (the manager above, plus the
+  // org-wide approvers) — not the whole HR queue. For a row that is already
+  // `cancel_requested` the previous status is preserved, not overwritten.
+  const previousStatus =
+    leave.status === 'cancel_requested' ? (leave.previousStatus ?? 'approved') : leave.status;
+  await ctx.db.patch(leave._id, {
+    status: 'cancel_requested',
+    previousStatus,
+    cancelRequestedAt: now,
+    isRead: false,
+    updatedAt: now,
+  });
+
+  for (const recipientId of route.notifyIds) {
+    if (recipientId === requester._id) continue;
+    await notify(ctx, {
+      organizationId: leave.organizationId,
+      userId: recipientId,
+      type: 'leave_request',
+      titleKey: 'notifications.titles.leaveCancelRequested',
+      messageKey: 'notifications.messages.leaveCancelRequested',
+      params: {
+        userName: requester.name,
+        type: leave.type,
+        start: leave.startDate,
+        end: leave.endDate,
+      },
+      fallbackTitle: '↩️ Leave Cancellation Requested',
+      fallbackMessage: `${requester.name} (${requester.role}) requested to delete their own ${leave.type} leave (${leave.startDate} → ${leave.endDate}).`,
+      relatedId: leave._id,
+      route: '/leaves',
+      createdAt: now,
+    });
+  }
+
+  await ctx.db.insert('auditLogs', {
+    organizationId: leave.organizationId,
+    userId: requester._id,
+    action: 'leave_cancel_requested',
+    target: leave._id,
+    details: JSON.stringify({
+      type: leave.type,
+      startDate: leave.startDate,
+      endDate: leave.endDate,
+      days: leave.days,
+      previousStatus: leave.status,
+      comment,
+      approvalReason: route.reason,
+      routedTo: route.notifyIds,
+    }),
+    createdAt: now,
+  });
+
+  return { applied: false, reason: route.reason };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DELETE LEAVE — org scoped
 // ─────────────────────────────────────────────────────────────────────────────
 export const deleteLeave = mutation({
@@ -560,12 +685,21 @@ export const deleteLeave = mutation({
       requester.role === 'superadmin';
     if (!isAdmin) throw new Error('Only admins and supervisors can delete leave requests');
 
-    // Reinstated: the notification below skips the case where HR deleted their
-    // own request — telling someone that they deleted their own leave is noise.
     const isOwner = leave.userId === requesterId;
 
-    // Restore the balance if the leave was approved (or its cancellation was
-    // approved while the request still sits in the HR queue).
+    // HR deleting their OWN leave is a self-decision nobody above approved: the
+    // request goes up the reporting line (the manager above, up to the head)
+    // for approval instead of being applied here. Under the head policy with
+    // nobody above (`auto`) it applies immediately, mirroring the head's
+    // auto-approved leave requests.
+    if (isOwner) {
+      await routeOwnLeaveDeletion(ctx, requester, leave);
+      return args.leaveId;
+    }
+
+    // Admin deleting someone else's leave — restore the balance if the leave
+    // was approved (or its cancellation was approved while the request still
+    // sits in the HR queue).
     const wasApproved =
       leave.status === 'approved' ||
       (leave.status === 'cancel_requested' && leave.previousStatus === 'approved');
@@ -576,36 +710,34 @@ export const deleteLeave = mutation({
       }
     }
 
-    if (isAdmin && !isOwner) {
-      // Deleting a cancel_requested row IS the HR approval of the employee's
-      // cancellation — tell the owner that, not that their leave was deleted.
-      const isCancellation = leave.status === 'cancel_requested';
-      await notify(ctx, {
-        organizationId: leave.organizationId,
-        userId: leave.userId,
-        type: 'leave_request',
-        titleKey: isCancellation
-          ? 'notifications.titles.leaveCancellationApproved'
-          : 'notifications.titles.leaveDeleted',
-        messageKey: isCancellation
-          ? 'notifications.messages.leaveCancellationApproved'
-          : 'notifications.messages.leaveDeleted',
-        params: isCancellation
-          ? { type: leave.type, start: leave.startDate, end: leave.endDate }
-          : {
-              type: leave.type,
-              start: leave.startDate,
-              end: leave.endDate,
-              requesterName: requester.name,
-            },
-        fallbackTitle: isCancellation ? '✅ Cancellation Approved' : '🗑️ Leave Deleted',
-        fallbackMessage: isCancellation
-          ? `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) cancellation has been approved.`
-          : `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was deleted by ${requester.name}.`,
-        relatedId: args.leaveId,
-        route: '/leaves',
-      });
-    }
+    // Deleting a cancel_requested row IS the HR approval of the employee's
+    // cancellation — tell the owner that, not that their leave was deleted.
+    const isCancellation = leave.status === 'cancel_requested';
+    await notify(ctx, {
+      organizationId: leave.organizationId,
+      userId: leave.userId,
+      type: 'leave_request',
+      titleKey: isCancellation
+        ? 'notifications.titles.leaveCancellationApproved'
+        : 'notifications.titles.leaveDeleted',
+      messageKey: isCancellation
+        ? 'notifications.messages.leaveCancellationApproved'
+        : 'notifications.messages.leaveDeleted',
+      params: isCancellation
+        ? { type: leave.type, start: leave.startDate, end: leave.endDate }
+        : {
+            type: leave.type,
+            start: leave.startDate,
+            end: leave.endDate,
+            requesterName: requester.name,
+          },
+      fallbackTitle: isCancellation ? '✅ Cancellation Approved' : '🗑️ Leave Deleted',
+      fallbackMessage: isCancellation
+        ? `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) cancellation has been approved.`
+        : `Your ${leave.type} leave (${leave.startDate} → ${leave.endDate}) was deleted by ${requester.name}.`,
+      relatedId: args.leaveId,
+      route: '/leaves',
+    });
 
     // Audit log: leave deleted
     await ctx.db.insert('auditLogs', {
@@ -657,6 +789,18 @@ export const requestLeaveCancellation = mutation({
     }
     if (leave.status !== 'pending' && leave.status !== 'approved') {
       throw new Error('Only pending or approved leaves can be cancelled');
+    }
+
+    // HR asking to cancel their OWN leave must not be decided by the HR queue
+    // (their peers — or themselves, had they stayed in the recipient list): the
+    // request goes up the reporting line above them for approval instead.
+    const requesterIsHr =
+      requester.role === 'admin' ||
+      requester.role === 'supervisor' ||
+      requester.role === 'superadmin';
+    if (requesterIsHr) {
+      await routeOwnLeaveDeletion(ctx, requester, leave, comment);
+      return leaveId;
     }
 
     const now = Date.now();
@@ -756,6 +900,12 @@ export const rejectLeaveCancellation = mutation({
       reviewer.role !== 'superadmin'
     ) {
       throw new Error('Only admins and supervisors can reject cancellation requests');
+    }
+    // Separation of duties: the owner (even HR) cannot decline the cancellation
+    // of their own leave — the decision belongs to the reporting line above,
+    // which routed the request here in the first place.
+    if (leave.userId === reviewerId) {
+      throw new Error('You cannot review your own leave request');
     }
     if (leave.status !== 'cancel_requested') {
       throw new Error('Leave has no pending cancellation request');
