@@ -36,15 +36,47 @@ jest.mock('@/lib/logger', () => ({
   },
 }));
 
-const { uploader } = jest.requireMock('cloudinary').v2;
+const { uploader, config } = jest.requireMock('cloudinary').v2;
 const { getServerUser } = jest.requireMock('@/lib/server-auth');
 
 const TINY_PNG = 'data:image/png;base64,iVBORw0KGgo=';
 const BIG_PAYLOAD = 'A'.repeat(2 * 1024 * 1024); // > 1MB decoded
 
+/** Every name `assertCloudinaryConfigured()` consults, so a clear is a real clear. */
+const CREDENTIAL_VARS = [
+  'CLOUDINARY_URL',
+  'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_CLOUD_NAME',
+  'NEXT_PUBLIC_CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
+] as const;
+
+const savedEnv: Record<string, string | undefined> = {};
+
+function clearCredentials() {
+  for (const name of CREDENTIAL_VARS) delete process.env[name];
+}
+
+beforeAll(() => {
+  for (const name of CREDENTIAL_VARS) savedEnv[name] = process.env[name];
+});
+
+afterAll(() => {
+  for (const name of CREDENTIAL_VARS) {
+    if (savedEnv[name] === undefined) delete process.env[name];
+    else process.env[name] = savedEnv[name];
+  }
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
   getServerUser.mockResolvedValue({ userId: 'u1', role: 'employee', organizationId: 'org_1' });
+  // Uploads are gated on credentials now, so the happy paths need them present.
+  clearCredentials();
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = 'demo';
+  process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY = 'key';
+  process.env.CLOUDINARY_API_SECRET = 'secret';
 });
 
 describe('uploadTaskAttachment', () => {
@@ -118,18 +150,45 @@ describe('uploadAvatarToCloudinary', () => {
 
 describe('uploadChatAttachment', () => {
   it('throws when Cloudinary credentials are missing', async () => {
-    delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    delete process.env.CLOUDINARY_API_KEY;
-    delete process.env.CLOUDINARY_API_SECRET;
+    clearCredentials();
     await expect(uploadChatAttachment(TINY_PNG, 'voice.webm', 'audio/webm')).rejects.toThrow(
       'Cloudinary credentials not configured',
     );
   });
 
-  it('uploads audio as a video resource and prefixes the data URL', async () => {
+  it('names the missing variables so a bad deployment is diagnosable', async () => {
+    clearCredentials();
     process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = 'demo';
-    process.env.CLOUDINARY_API_KEY = 'key';
-    process.env.CLOUDINARY_API_SECRET = 'secret';
+    await expect(uploadChatAttachment(TINY_PNG, 'voice.webm', 'audio/webm')).rejects.toThrow(
+      /missing NEXT_PUBLIC_CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET/,
+    );
+  });
+
+  it('accepts CLOUDINARY_URL on its own', async () => {
+    clearCredentials();
+    process.env.CLOUDINARY_URL = 'cloudinary://url-key:url-secret@url-cloud';
+    uploader.upload.mockResolvedValue({ secure_url: 'https://res.cloudinary.com/x/v.webm' });
+
+    await expect(
+      uploadChatAttachment('dGluZQ==', 'voice.webm', 'audio/webm'),
+    ).resolves.toMatchObject({ url: 'https://res.cloudinary.com/x/v.webm' });
+    expect(config).toHaveBeenLastCalledWith({
+      cloud_name: 'url-cloud',
+      api_key: 'url-key',
+      api_secret: 'url-secret',
+    });
+  });
+
+  it('never hands the SDK an undefined value, which would blank a live config', async () => {
+    uploader.upload.mockResolvedValue({ secure_url: 'https://res.cloudinary.com/x/v.webm' });
+    await uploadChatAttachment('dGluZQ==', 'voice.webm', 'audio/webm');
+
+    for (const [args] of config.mock.calls) {
+      expect(Object.values(args)).not.toContain(undefined);
+    }
+  });
+
+  it('uploads audio as a video resource and prefixes the data URL', async () => {
     uploader.upload.mockResolvedValue({ secure_url: 'https://res.cloudinary.com/x/v.webm' });
 
     const result = await uploadChatAttachment('dGluZQ==', 'voice.webm', 'audio/webm');
@@ -145,9 +204,6 @@ describe('uploadChatAttachment', () => {
   });
 
   it('uploads images with an optimization transformation', async () => {
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = 'demo';
-    process.env.CLOUDINARY_API_KEY = 'key';
-    process.env.CLOUDINARY_API_SECRET = 'secret';
     uploader.upload.mockResolvedValue({ secure_url: 'https://res.cloudinary.com/x/i.png' });
 
     await uploadChatAttachment(TINY_PNG, 'photo.png', 'image/png');

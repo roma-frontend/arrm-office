@@ -2,14 +2,8 @@
 
 import { logger } from '@/lib/logger';
 import { validateUploadPayload, type UploadKind } from '@/lib/security';
+import { assertCloudinaryConfigured } from '@/lib/cloudinaryConfig';
 import { v2 as cloudinary } from 'cloudinary';
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Server-action guards
@@ -96,6 +90,7 @@ export async function uploadTaskAttachment(
 ): Promise<string> {
   await requireUser();
   assertUploadAllowed({ base64: base64File, fileName, mimeType, kind: 'attachment' });
+  assertCloudinaryConfigured();
 
   try {
     const publicId = `task_${Date.now()}_${fileName.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)}`;
@@ -133,6 +128,7 @@ export async function uploadAvatarToCloudinary(
     fileName: `avatar.${(mimeFromDataUrl(base64Image) ?? 'image/png').split('/')[1]}`,
     kind: 'avatar',
   });
+  assertCloudinaryConfigured();
 
   logger.log('☁️ Cloudinary signed upload starting...', { userId });
 
@@ -172,19 +168,7 @@ export async function uploadChatAttachment(
     base64Size: base64File.length,
   });
 
-  // Validate environment variables
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    logger.error('❌ Missing Cloudinary credentials:', {
-      cloudName: !!cloudName,
-      apiKey: !!apiKey,
-      apiSecret: !!apiSecret,
-    });
-    throw new Error('Cloudinary credentials not configured');
-  }
+  assertCloudinaryConfigured();
 
   const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
   const publicId = `chat_${Date.now()}_${safeFileName}`;
@@ -249,6 +233,7 @@ export async function deleteAvatarFromCloudinary(userId: string): Promise<void> 
   if (actor.userId !== targetUserId && !isPrivileged) {
     throw new Error('Not authorized to delete this avatar');
   }
+  assertCloudinaryConfigured();
 
   logger.log('🗑️ Cloudinary delete starting...', { userId });
 
@@ -283,6 +268,7 @@ export async function uploadDocument(
     mimeType,
     kind: 'document',
   });
+  assertCloudinaryConfigured();
 
   logger.log('📄 Document upload starting...');
 
@@ -329,6 +315,7 @@ export async function uploadDocument(
 
 export async function deleteTaskAttachmentFromCloudinary(url: string): Promise<void> {
   await requireUser();
+  assertCloudinaryConfigured();
 
   logger.log('🗑️ Cloudinary task attachment delete starting...', { url });
 

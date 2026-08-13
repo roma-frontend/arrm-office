@@ -21,6 +21,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 import { applyRateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
+import { assertCloudinaryConfigured } from '@/lib/cloudinaryConfig';
 
 const MAX_CV_BYTES = 10 * 1024 * 1024;
 
@@ -31,17 +32,13 @@ const CV_UPLOAD_RATE_LIMIT = {
   blockDurationMs: 60 * 60 * 1000,
 };
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
 export async function POST(req: NextRequest) {
   const limited = await applyRateLimit(req, CV_UPLOAD_RATE_LIMIT, 'careers-cv-upload');
   if (limited) return limited;
 
   try {
+    assertCloudinaryConfigured();
+
     const form = await req.formData();
     const file = form.get('file');
 
