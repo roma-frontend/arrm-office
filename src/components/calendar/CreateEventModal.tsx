@@ -499,13 +499,16 @@ export function CreateEventModal({
         description: description || undefined,
         category,
         reminder,
-        attendees: attendees.map((a) => a.name),
         attachmentUrl,
         // The room is reserved by the same mutation, so an event never claims a
         // room it did not get.
         roomId: (roomId as Id<'meetingRooms'> | null) ?? undefined,
         roomStartTime: roomId && roomWindowValid ? roomStart! : undefined,
         roomEndTime: roomId && roomWindowValid ? roomEnd! : undefined,
+        // NOTE: no `attendees` names here — Convex rejects args keys the
+        // mutation does not declare, and the backend derives the names itself
+        // from `attendeeIds` (resolveAttendees), so a client cannot record
+        // somebody under a name that is not theirs.
         attendeeIds: attendees.map((a) => a._id),
       };
 
