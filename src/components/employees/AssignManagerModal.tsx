@@ -113,23 +113,18 @@ export function AssignManagerModal({
   // Mutation
   const assignManager = useMutation(api.reporting.assignManager);
 
-  // Build list of candidates: if no search, show current supervisor + managers by role hierarchy
+  // Build list of candidates: if no search, show current supervisor + managers by role hierarchy.
+  // Deliberately no "selected first" re-sort: picking a manager must not move it
+  // to the top of the list — the selection is shown in place (radio + highlight).
   const candidates = useMemo(() => {
     if (!potentialManagers) return [];
-
-    // Sort: selected supervisor first, then by role hierarchy
-    return [...potentialManagers].sort((a, b) => {
-      if (selectedSupervisorId) {
-        if (a._id === selectedSupervisorId) return -1;
-        if (b._id === selectedSupervisorId) return 1;
-      }
-      const roleOrder = { admin: 0, supervisor: 1, employee: 2, driver: 3 } as const;
-      return (
+    const roleOrder = { admin: 0, supervisor: 1, employee: 2, driver: 3 } as const;
+    return [...potentialManagers].sort(
+      (a, b) =>
         (roleOrder[a.role as keyof typeof roleOrder] ?? 99) -
-        (roleOrder[b.role as keyof typeof roleOrder] ?? 99)
-      );
-    });
-  }, [potentialManagers, selectedSupervisorId]);
+        (roleOrder[b.role as keyof typeof roleOrder] ?? 99),
+    );
+  }, [potentialManagers]);
 
   const handleAssign = async () => {
     if (isSubmitting) return;
