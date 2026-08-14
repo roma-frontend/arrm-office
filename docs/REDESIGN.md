@@ -234,3 +234,114 @@ npm run test:coverage -- --ci                              # blocks under thresh
 `CalendarClient.test.tsx` is slow (~90s under coverage) and has been seen to
 flake on a driver-row assertion under parallel load. Re-run it alone before
 assuming a real break.
+
+---
+
+## 6. Dashboard redesign — every frequently-used tool one glance away
+
+Status: **planned**. The landing and the app shell are done; the dashboard is the
+next surface users actually live in, and it is still a vertical stack of widgets
+that buries the tools people reach for every day under scroll.
+
+### 6.1 The problem
+
+- The dashboard is a **single scrolling column**: FocusFeed → banners →
+  check-in → 2 stat tiles → leave charts → recent leaves → activity → strategy
+  → quick actions. Anything below the fold needs scroll, and the order is the
+  same for a driver, an employee and a superadmin.
+- All ~60 destinations live in the sidebar under 8 groups. The command palette
+  (⌘K) already solves "I know the name" — but **discovery of what is mine
+  today** still takes hunting.
+- There is no notion of "what I use a lot". A payroll admin scrolls past the
+  same leave charts every morning to reach the tools they actually open.
+
+### 6.2 Principles (from dashboard-UX research)
+
+1. **Actionable beats informative.** A dashboard answers "what needs me today"
+   and lets the answer be acted on in place (FocusFeed already does this — keep
+   it as the lead block, it is the one part that is already right).
+2. **Frequent tools are surfaced, not discovered.** Recency + frequency should
+   drive what is prominent, not a hardcoded editorial order.
+3. **Zero hunting.** The top of the dashboard must be a self-serve map of the
+   modules, so a first-day user sees the whole product at once.
+4. **One role, one layout.** Employee, manager and admin dashboards differ in
+   substance, so the default layout must differ too — and users can pin the
+   order that fits their week.
+5. **Progressive disclosure.** One glance shows the map; depth is one click
+   away. Never recreate a whole module on the dashboard.
+
+### 6.3 The plan — a "module dock" at the top of the dashboard
+
+Add a compact, always-visible **tool dock** between the header and the Focus
+Feed (or merged into the header row on desktop):
+
+- **Every module as a small tile** (icon + label), role-filtered, in a
+  responsive grid — 8–12 tiles on desktop, horizontally scrollable row on
+  mobile. This replaces the current `QuickActions` card at the bottom of the
+  page.
+- **Frequency-aware ordering**: tiles sort by "recency × frequency" per user
+  (see 6.4), with a stable "Core" group first (Tasks, Leaves, Attendance,
+  Calendar — the four most-used tools for every role).
+- **Pin/unpin** (persisted in `localStorage`) so power users can lock their
+  own order; the unpinned tail follows the frequency heuristic.
+- **Today's context inside the dock**: badges on tiles that carry live state
+  (Tasks → overdue count, Leaves → pending approvals, Attendance → not checked
+  in yet). This is what makes the dock feel alive instead of a menu.
+
+### 6.4 The frequency heuristic (no backend needed)
+
+Track clicks in `localStorage` per user id: `{ moduleHref: { count, lastUsed } }`
+(one small helper, ~40 lines — see `src/lib/nav.ts` as the single source of
+module hrefs). Score = recency-decayed count:
+
+```
+score = count * 0.7^(days since last use)
+```
+
+Ordering = Core (pinned set) → sorted by score. This gives the "I always use
+Payroll on Fridays" behaviour for free, with zero analytics infrastructure and
+no privacy concerns (stays on the device).
+
+### 6.5 Tasks first — the biggest lever
+
+Tasks is the first genuinely productive tool for most roles, and it currently
+sits mid-page on the employee dashboard (`MyTasksWidget` in the 3-widget row)
+and is only a tile in the bottom `QuickActions` for managers.
+
+- **Move Tasks directly under the dock** on both dashboards, as a real widget:
+  next 3 due/overdue tasks with check-off inline, "+ New task" and "View all".
+  Reuse the existing `MyTasksWidget` and `api.dashboard.getMyTasks` — no new
+  queries needed.
+- Overdue tasks render with a danger tone and a count in the dock badge, so
+  "I owe someone a task" is visible before any scroll.
+- For managers add the **assignee view** in the same widget (tasks I assigned,
+  still open), which is the manager-side counterpart of the same tool.
+
+### 6.6 Role-aware default stacks
+
+| Role       | Top of dashboard (after dock + FocusFeed)                          |
+| ---------- | ------------------------------------------------------------------ |
+| Employee   | Tasks → Check-in → My leave money → attendance stats               |
+| Manager    | Tasks (mine + assignee) → Approvals → Strategy/OKR → team on leave |
+| Admin      | Tasks → Approvals → Leave charts → Payroll banner → activity       |
+| Superadmin | Tasks → Security widget → activity → enterprise widgets            |
+
+### 6.7 Work items (in order)
+
+1. `QuickActions` → **ToolDock**: move the card to the top, add the frequency
+   heuristic + pinning, keep role filtering. (~1 component, reuses `nav.ts`.)
+2. **Tasks widget** on both dashboards, directly under the dock.
+3. **Live badges** on dock tiles (overdue tasks, pending approvals, un-checked
+   in) — reuse the queries FocusFeed already runs.
+4. Collapse `LeaveCharts` / `RecentLeavesCard` / `ActivityFeed` behind the fold
+   or into tabs on the employee dashboard — reference material, not action.
+5. Remove the bottom `QuickActions` once the dock replaces it; keep the ⌘K
+   button in the header as the universal "jump to anything".
+
+### 6.8 Non-goals (for now)
+
+- No drag-and-drop grid framework — pin/unpin via a small "pin" control is
+  enough; a full grid engine is a maintenance tax.
+- No server-side analytics — localStorage scoring is private and costs nothing.
+- No per-widget configuration UI — the dock + pinned set covers 90% of the
+  need; custom dashboards come later if users ask.
