@@ -207,7 +207,7 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
           {/* Title */}
           <h1 className="relative mb-6">
             <span
-              className="hero-word-1 relative block text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-[0.95]"
+              className="hero-word-1 relative block text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-[0.95] [overflow-wrap:anywhere] text-balance"
               style={{
                 color: 'var(--landing-text-primary)',
                 textShadow: '0 2px 40px rgba(37, 99, 235, 0.15)',

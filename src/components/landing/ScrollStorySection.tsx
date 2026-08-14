@@ -701,7 +701,7 @@ export default function ScrollStorySection({
             </div>
 
             {/* Scene text — stacked, active one is visible */}
-            <div className="relative h-[300px] md:h-[280px]">
+            <div className="relative h-[260px] md:h-[280px]">
               {SCENES.map(({ key, color }, i) => {
                 const Icon = SCENE_ICONS[i]!;
                 const isActive = active === i;
@@ -764,7 +764,7 @@ export default function ScrollStorySection({
               />
               {/* Screens */}
               <div
-                className="relative h-[400px] md:h-[430px] overflow-hidden rounded-3xl"
+                className="relative h-[340px] sm:h-[400px] md:h-[430px] overflow-hidden rounded-3xl"
                 style={{ background: 'var(--card)' }}
               >
                 {[
