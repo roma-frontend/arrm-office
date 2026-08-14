@@ -348,13 +348,23 @@ export default function FeaturesClient() {
                 {t('featuresPage.ctaSubtitle')}
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link
-                  href="/register"
-                  className="px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg shadow-md"
-                  style={{ background: 'linear-gradient(135deg, #2563eb, #60a5fa)' }}
-                >
-                  {t('featuresPage.ctaButton')}
-                </Link>
+                {isAuthenticated && mounted ? (
+                  <Link
+                    href="/dashboard"
+                    className="px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #2563eb, #60a5fa)' }}
+                  >
+                    {t('landing.goToDashboard')}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/register"
+                    className="px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg shadow-md"
+                    style={{ background: 'linear-gradient(135deg, #2563eb, #60a5fa)' }}
+                  >
+                    {t('featuresPage.ctaButton')}
+                  </Link>
+                )}
                 <Link
                   href="/contact"
                   className="px-8 py-3.5 rounded-xl font-semibold transition-all hover:opacity-80"
