@@ -370,7 +370,7 @@ export default function PlatformMegaMenu() {
 
 const RESOURCE_GROUPS: Array<{ groupKey: string; items: Array<{ key: string; href: string }> }> = [
   {
-    groupKey: 'resourcesMenu.learn',
+    groupKey: 'megaMenu.resourcesMenu.learn',
     items: [
       { key: 'story', href: '/#story' },
       { key: 'features', href: '/features' },
@@ -379,9 +379,10 @@ const RESOURCE_GROUPS: Array<{ groupKey: string; items: Array<{ key: string; hre
     ],
   },
   {
-    groupKey: 'resourcesMenu.company',
+    groupKey: 'megaMenu.resourcesMenu.company',
     items: [
       { key: 'careers', href: '/careers' },
+      { key: 'pricing', href: '/#pricing' },
       { key: 'contact', href: '/contact' },
       { key: 'privacy', href: '/privacy' },
     ],
@@ -396,6 +397,7 @@ const RESOURCE_LABELS: Record<string, { key: string; fallback: string }> = {
   careers: { key: 'nav.recruitment', fallback: 'Careers' },
   contact: { key: 'landing.megaMenu.contact', fallback: 'Contact' },
   privacy: { key: 'landing.megaMenu.resourcesMenu.items.privacy', fallback: 'Privacy' },
+  pricing: { key: 'landing.pricing', fallback: 'Pricing' },
 };
 
 /**

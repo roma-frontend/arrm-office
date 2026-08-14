@@ -202,36 +202,7 @@ export default function Navbar() {
           {mounted && <PlatformMegaMenu />}
           {mounted && <SolutionsMenu />}
           {mounted && <WhyMenu />}
-          {mounted &&
-            (() => {
-              const isActive = activeSection === 'pricing';
-              const item = { name: t('landing.pricing'), href: '/#pricing', section: 'pricing' };
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`nav-link-underline inline-flex items-center text-sm font-medium focus:outline-none focus:underline underline-offset-4 ${
-                    isActive ? 'nav-link-active' : ''
-                  }`}
-                  style={{
-                    color: isActive ? 'var(--primary)' : 'var(--landing-navbar-text)',
-                    transition: 'color 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = 'var(--landing-navbar-text-hover)')
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = isActive
-                      ? 'var(--primary)'
-                      : 'var(--landing-navbar-text)')
-                  }
-                  aria-label={`Navigate to ${item.name}`}
-                  aria-current={isActive ? 'true' : undefined}
-                >
-                  {item.name}
-                </Link>
-              );
-            })()}
+          {/* Pricing moved into Resources menu */}
           {mounted && <ResourcesMenu activeSection={activeSection} />}
         </div>
 
