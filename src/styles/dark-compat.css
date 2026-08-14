@@ -35,6 +35,15 @@
 
    THIS IS A MIGRATION AID, NOT AN API. New code reads tokens
    (`bg-(--success-quiet)`, `text-(--text-secondary)`) — see tokens.css.
+
+   STATUS (2026-08): the shim-remapped call sites are gone — every bare
+   `bg-X-50/100/200`, `text-X-600..900` and `border-X-100..300` without a
+   `dark:` variant has been converted to semantic tokens across the app. What
+   remains here is a safety net for the handful of 400–500 accent classes
+   (icons, dots, solid badges) that the rules below deliberately left alone,
+   and for any string-interpolated class a grep cannot see. It can be deleted
+   wholesale once the 400–500 accent audit is finished; nothing else depends on
+   it.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ───────────────────────────────────────────────────────────────────────────

@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { useTranslation } from 'react-i18next';
@@ -69,27 +71,27 @@ const STAGES = ['applied', 'screening', 'interview', 'offer', 'hired'] as const;
 const CV_GATED_STAGES = new Set<string>(['interview', 'offer', 'hired']);
 
 const CV_BADGE: Record<string, string> = {
-  pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  approved: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  rejected: 'bg-red-500/10 text-red-600 border-red-500/20',
+  pending: 'bg-(--warning-solid)/10 text-(--warning-text) border-(--warning-outline)/20',
+  approved: 'bg-(--success-solid)/10 text-(--success-text) border-(--success-outline)/20',
+  rejected: 'bg-(--danger-solid)/10 text-(--danger-text) border-(--danger-outline)/20',
 };
 
 function getStageBadgeColor(stage: string) {
   switch (stage) {
     case 'applied':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-(--brand-quiet) text-(--brand-text)';
     case 'screening':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-(--warning-quiet) text-(--warning-text)';
     case 'interview':
-      return 'bg-purple-100 text-purple-800';
+      return 'bg-(--brand-quiet) text-(--brand-text)';
     case 'offer':
-      return 'bg-orange-100 text-orange-800';
+      return 'bg-(--warning-quiet) text-(--warning-text)';
     case 'hired':
-      return 'bg-green-100 text-green-800';
+      return 'bg-(--success-quiet) text-(--success-text)';
     case 'rejected':
-      return 'bg-red-100 text-red-800';
+      return 'bg-(--danger-quiet) text-(--danger-text)';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-(--surface-2) text-(--text-primary)';
   }
 }
 
@@ -316,14 +318,14 @@ function CreateVacancyWizard({
           {step === 1 && (
             <div className="space-y-4">
               {/* AI Generate Button */}
-              <div className="flex items-center justify-between gap-2 p-3 rounded-xl border border-blue-500/20 bg-blue-500/5">
+              <div className="flex items-center justify-between gap-2 p-3 rounded-xl border border-(--brand-outline)/20 bg-(--brand)/5">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-lg">✨</span>
                   <div>
-                    <p className="font-medium text-blue-700 dark:text-blue-300 text-xs">
+                    <p className="font-medium text-(--brand-text) text-xs">
                       {t('recruitmentAI.title', 'AI-Powered Generation')}
                     </p>
-                    <p className="text-[11px] text-blue-600/60 dark:text-blue-400/60">
+                    <p className="text-[11px] text-(--brand-text)/60">
                       {t(
                         'recruitmentAI.hint',
                         'Generate a professional description and requirements based on the job title',
@@ -365,7 +367,7 @@ function CreateVacancyWizard({
                     }
                   }}
                   disabled={aiGenerating || !title.trim()}
-                  className="gap-1.5 shrink-0 bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:text-white"
+                  className="gap-1.5 shrink-0 bg-(--brand) hover:bg-(--brand) text-white border-(--brand-outline) hover:text-white"
                 >
                   {aiGenerating ? (
                     <>
@@ -584,11 +586,11 @@ function AddCandidateDialog({
   };
 
   return (
-    <DialogContent className="sm:max-w-md">
-      <DialogHeader>
-        <DialogTitle>{t('recruitment.candidate.addTitle', 'Add Candidate')}</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4">
+    <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+      <SheetHeader>
+        <SheetTitle>{t('recruitment.candidate.addTitle', 'Add Candidate')}</SheetTitle>
+      </SheetHeader>
+      <SheetBody className="space-y-4">
         <div>
           <Label>{t('recruitment.candidate.name', 'Full Name')}</Label>
           <Input
@@ -608,9 +610,9 @@ function AddCandidateDialog({
                 setEmailError('');
               }}
               placeholder={t('recruitment.fields.emailPlaceholder', 'john@example.com')}
-              className={emailError ? 'border-red-500' : ''}
+              className={emailError ? 'border-(--danger-outline)' : ''}
             />
-            {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
+            {emailError && <p className="text-xs text-(--danger-text) mt-1">{emailError}</p>}
           </div>
           <div>
             <Label>{t('recruitment.candidate.phone', 'Phone')}</Label>
@@ -650,16 +652,16 @@ function AddCandidateDialog({
             rows={3}
           />
         </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            {t('common.cancel', 'Cancel')}
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting ? t('common.loading', '...') : t('recruitment.candidate.add', 'Add')}
-          </Button>
-        </div>
-      </div>
-    </DialogContent>
+      </SheetBody>
+      <SheetFooter className="justify-end">
+        <Button variant="outline" onClick={onClose}>
+          {t('common.cancel', 'Cancel')}
+        </Button>
+        <Button onClick={handleSubmit} disabled={submitting}>
+          {submitting ? t('common.loading', '...') : t('recruitment.candidate.add', 'Add')}
+        </Button>
+      </SheetFooter>
+    </SheetContent>
   );
 }
 
@@ -758,7 +760,7 @@ function CandidateDetailDialog({
             <Users className="size-4" />
           </span>
           <SheetTitle>{candidate?.name ?? 'Candidate'}</SheetTitle>
-          <Badge className={getStageBadgeColor(data.stage) + ' ml-auto'}>
+          <Badge className={getStageBadgeColor(data.stage) + 'ml-auto'}>
             {t(`recruitment.stage.${data.stage}`, data.stage)}
           </Badge>
         </div>
@@ -784,7 +786,7 @@ function CandidateDetailDialog({
         {/* Vacancy link */}
         {vacancy && (
           <p className="text-xs text-muted-foreground">
-            {t('recruitment.candidate.appliedTo', 'Applied to')}:{' '}
+            {t('recruitment.candidate.appliedTo', 'Applied to')}:{''}
             <span className="font-medium">{vacancy.title}</span>
           </p>
         )}
@@ -844,7 +846,7 @@ function CandidateDetailDialog({
             </div>
 
             {cvGateBlocks && (
-              <p className="text-xs text-amber-600">{t('recruitment.cv.gateHint')}</p>
+              <p className="text-xs text-(--warning-text)">{t('recruitment.cv.gateHint')}</p>
             )}
           </div>
         )}
@@ -856,12 +858,12 @@ function CandidateDetailDialog({
               {t('recruitment.scorecards', 'Scorecards')} ({scorecards.length})
             </p>
             {scorecards.map((sc) => (
-              <Card key={sc._id} className="mb-2">
+              <Card key={sc._id} className="mb-2 glass-panel shadow-sm">
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{sc.interviewerName}</span>
                     <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 text-yellow-500" />
+                      <Star className="h-3 w-3 text-(--warning-text)" />
                       <span className="font-bold">{sc.overallScore}/5</span>
                       <Badge variant="outline" className="text-xs ml-1">
                         {String(t(`recruitment.rec.${sc.recommendation}`, sc.recommendation))}
@@ -890,7 +892,7 @@ function CandidateDetailDialog({
                 setShowPrep(true);
               }}
             >
-              <Sparkles className="h-3 w-3 text-purple-500" />
+              <Sparkles className="h-3 w-3 text-(--brand-text)" />
               {t('interviewPrep.prep', 'AI Prep')}
             </Button>
           </div>
@@ -910,10 +912,10 @@ function CandidateDetailDialog({
               <Badge
                 className={
                   iv.status === 'completed'
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-(--success-quiet) text-(--success-text)'
                     : iv.status === 'cancelled'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-blue-100 text-blue-800'
+                      ? 'bg-(--danger-quiet) text-(--danger-text)'
+                      : 'bg-(--brand-quiet) text-(--brand-text)'
                 }
               >
                 {iv.status}
@@ -941,7 +943,7 @@ function CandidateDetailDialog({
                     <ArrowRight className="h-3 w-3" />
                   </>
                 )}
-                <Badge className={getStageBadgeColor(ev.toStage) + ' text-xs'}>{ev.toStage}</Badge>
+                <Badge className={getStageBadgeColor(ev.toStage) + 'text-xs'}>{ev.toStage}</Badge>
                 <span>— {ev.changedByName}</span>
               </div>
             ))}
@@ -983,7 +985,7 @@ function CandidateDetailDialog({
       </SheetFooter>
 
       {/* Nested AI Interview Prep dialog */}
-      <Dialog open={showPrep} onOpenChange={setShowPrep}>
+      <Sheet open={showPrep} onOpenChange={setShowPrep}>
         {showPrep && (
           <InterviewPrepDialog
             applicationId={applicationId}
@@ -991,7 +993,7 @@ function CandidateDetailDialog({
             onClose={() => setShowPrep(false)}
           />
         )}
-      </Dialog>
+      </Sheet>
     </SheetContent>
   );
 }
@@ -1041,7 +1043,7 @@ function PipelineView({
         return (
           <div key={stage} className="border rounded-lg p-3 bg-muted/30">
             <div className="flex items-center justify-between mb-2">
-              <Badge className={getStageBadgeColor(stage) + ' text-xs'}>
+              <Badge className={getStageBadgeColor(stage) + 'text-xs'}>
                 {String(t(`recruitment.stage.${stage}`, stage))}
               </Badge>
               <span className="text-xs text-muted-foreground font-medium">
@@ -1050,7 +1052,10 @@ function PipelineView({
             </div>
             <div className="space-y-2 min-h-[60px]">
               {(byStage[stage] || []).map((app) => (
-                <Card key={app._id} className="cursor-pointer hover:shadow-sm transition-shadow">
+                <Card
+                  key={app._id}
+                  className="cursor-pointer glass-panel shadow-sm hover:shadow-md transition-all duration-300"
+                >
                   <CardContent className="p-2">
                     <p
                       className="text-xs font-medium truncate"
@@ -1061,7 +1066,7 @@ function PipelineView({
                     <div className="flex items-center justify-between mt-1">
                       {app.avgScore && (
                         <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                          <Star className="h-3 w-3 text-yellow-500" />
+                          <Star className="h-3 w-3 text-(--warning-text)" />
                           {app.avgScore}
                         </span>
                       )}
@@ -1105,6 +1110,7 @@ export default function RecruitmentClient() {
   const userRole = user?.role || 'employee';
 
   const [showWizard, setShowWizard] = useState(false);
+  const vacancyDraft = useDraftResume('create-vacancy', !showWizard);
   const [selectedVacancy, setSelectedVacancy] = useState<Id<'vacancies'> | null>(null);
   const [addCandidateVacancy, setAddCandidateVacancy] = useState<Id<'vacancies'> | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<Id<'applications'> | null>(null);
@@ -1190,10 +1196,10 @@ export default function RecruitmentClient() {
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100">
-                <Briefcase className="w-5 h-5 text-blue-700" />
+              <div className="p-2 rounded-lg bg-(--brand-quiet)">
+                <Briefcase className="w-5 h-5 text-(--brand-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.openVacancies}</p>
@@ -1203,10 +1209,10 @@ export default function RecruitmentClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-100">
-                <Users className="w-5 h-5 text-purple-700" />
+              <div className="p-2 rounded-lg bg-(--brand-quiet)">
+                <Users className="w-5 h-5 text-(--brand-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalCandidates}</p>
@@ -1216,10 +1222,10 @@ export default function RecruitmentClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100">
-                <CheckCircle className="w-5 h-5 text-green-700" />
+              <div className="p-2 rounded-lg bg-(--success-quiet)">
+                <CheckCircle className="w-5 h-5 text-(--success-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.pipeline.hired}</p>
@@ -1229,10 +1235,10 @@ export default function RecruitmentClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-100">
-                <TrendingUp className="w-5 h-5 text-orange-700" />
+              <div className="p-2 rounded-lg bg-(--warning-quiet)">
+                <TrendingUp className="w-5 h-5 text-(--warning-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.pipeline.interview}</p>
@@ -1297,7 +1303,8 @@ export default function RecruitmentClient() {
                       setShowWizard(true);
                     }}
                   >
-                    <Plus className="h-4 w-4 mr-1" />{' '}
+                    <Plus className="h-4 w-4 mr-1" />
+                    {''}
                     {t('recruitment.createVacancy', 'New Vacancy')}
                   </Button>
                 )}
@@ -1306,7 +1313,10 @@ export default function RecruitmentClient() {
           ) : (
             <div className="space-y-3">
               {vacancies.map((vac) => (
-                <Card key={vac._id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={vac._id}
+                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                >
                   <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="min-w-0">
@@ -1315,10 +1325,10 @@ export default function RecruitmentClient() {
                           <Badge
                             className={
                               vac.status === 'open'
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-(--success-quiet) text-(--success-text)'
                                 : vac.status === 'paused'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-gray-100 text-gray-600'
+                                  ? 'bg-(--warning-quiet) text-(--warning-text)'
+                                  : 'bg-(--surface-2) text-(--text-secondary)'
                             }
                           >
                             {String(t(`recruitment.status.${vac.status}`, vac.status))}
@@ -1472,7 +1482,10 @@ export default function RecruitmentClient() {
           ) : (
             <div className="space-y-2">
               {myInterviews.map((iv) => (
-                <Card key={iv._id} className="hover:shadow-sm transition-shadow">
+                <Card
+                  key={iv._id}
+                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                >
                   <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{iv.candidateName}</p>
@@ -1495,7 +1508,7 @@ export default function RecruitmentClient() {
                           setPrepFor({ applicationId: iv.applicationId, interviewType: iv.type })
                         }
                       >
-                        <Sparkles className="h-3 w-3 text-purple-500" />
+                        <Sparkles className="h-3 w-3 text-(--brand-text)" />
                         {t('interviewPrep.prep', 'Prep')}
                       </Button>
                     </div>
@@ -1548,11 +1561,11 @@ export default function RecruitmentClient() {
             {deleteConfirm?.type === 'vacancy'
               ? t(
                   'recruitment.deleteVacancyConfirm',
-                  'This will permanently delete the vacancy and all related applications. This action cannot be undone.',
+                  'This will permanently delete the vacancy and all related applications. action cannot be undone.',
                 )
               : t(
                   'recruitment.deleteCandidateConfirm',
-                  'This will remove the candidate from this vacancy. This action cannot be undone.',
+                  'This will remove the candidate from this vacancy. action cannot be undone.',
                 )}
           </p>
           <div className="flex justify-end gap-2 mt-4">
@@ -1574,7 +1587,7 @@ export default function RecruitmentClient() {
       </Dialog>
 
       {/* AI Interview Prep Dialog */}
-      <Dialog open={!!prepFor} onOpenChange={() => setPrepFor(null)}>
+      <Sheet open={!!prepFor} onOpenChange={() => setPrepFor(null)}>
         {prepFor && (
           <InterviewPrepDialog
             applicationId={prepFor.applicationId}
@@ -1582,7 +1595,21 @@ export default function RecruitmentClient() {
             onClose={() => setPrepFor(null)}
           />
         )}
-      </Dialog>
+      </Sheet>
+
+      {/* "Draft saved. Restore?" — the vacancy wizard keeps its contents
+          after an accidental close; this is what tells the user so. */}
+      <DraftResumeBar
+        show={vacancyDraft.available}
+        label={t('recruitment.newVacancy', 'New Vacancy')}
+        step={vacancyDraft.step}
+        onResume={() => {
+          vacancyDraft.dismiss();
+          setShowWizard(true);
+        }}
+        onDismiss={vacancyDraft.dismiss}
+        onDiscard={vacancyDraft.discard}
+      />
     </div>
   );
 }
@@ -1665,19 +1692,19 @@ function EditVacancyDialog({
 
   if (!vacancy)
     return (
-      <DialogContent className="sm:max-w-lg">
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
         <div className="flex justify-center p-8">
           <ShieldLoader />
         </div>
-      </DialogContent>
+      </SheetContent>
     );
 
   return (
-    <DialogContent className="sm:max-w-lg max-h-[95vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{t('recruitment.editVacancy', 'Edit Vacancy')}</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4">
+    <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+      <SheetHeader>
+        <SheetTitle>{t('recruitment.editVacancy', 'Edit Vacancy')}</SheetTitle>
+      </SheetHeader>
+      <SheetBody className="space-y-4">
         <div>
           <Label>{t('recruitment.vacancy.title', 'Job Title')}</Label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -1759,15 +1786,15 @@ function EditVacancyDialog({
             rows={3}
           />
         </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            {t('common.cancel', 'Cancel')}
-          </Button>
-          <Button onClick={handleSave} disabled={submitting}>
-            {submitting ? '...' : t('common.save', 'Save')}
-          </Button>
-        </div>
-      </div>
-    </DialogContent>
+      </SheetBody>
+      <SheetFooter className="justify-end">
+        <Button variant="outline" onClick={onClose}>
+          {t('common.cancel', 'Cancel')}
+        </Button>
+        <Button onClick={handleSave} disabled={submitting}>
+          {submitting ? '...' : t('common.save', 'Save')}
+        </Button>
+      </SheetFooter>
+    </SheetContent>
   );
 }

@@ -28,13 +28,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -552,16 +553,14 @@ function ItemDialog({
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {item ? t('rewards.admin.editItem') : t('rewards.admin.newItem')}
-          </DialogTitle>
-          <DialogDescription>{t('rewards.admin.itemHint')}</DialogDescription>
-        </DialogHeader>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{item ? t('rewards.admin.editItem') : t('rewards.admin.newItem')}</SheetTitle>
+          <SheetDescription>{t('rewards.admin.itemHint')}</SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4">
+        <SheetBody className="space-y-4">
           <div className="grid grid-cols-[1fr_auto] gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="reward-name">{t('rewards.admin.name')}</Label>
@@ -715,18 +714,18 @@ function ItemDialog({
               {t('rewards.admin.requiresCompanion')}
             </label>
           </div>
-        </div>
+        </SheetBody>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>
             {t('common.cancel')}
           </Button>
           <Button onClick={save} disabled={busy || !name.trim()}>
             {busy ? t('common.saving') : t('common.save')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -776,17 +775,17 @@ function CodePoolDialog({ item, onClose }: { item: Doc<'rewardItems'>; onClose: 
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <KeyRound className="h-4 w-4" />
             {item.name}
-          </DialogTitle>
-          <DialogDescription>{t('rewards.admin.codesHint')}</DialogDescription>
-        </DialogHeader>
+          </SheetTitle>
+          <SheetDescription>{t('rewards.admin.codesHint')}</SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4">
+        <SheetBody className="space-y-4">
           <div className="flex gap-2 text-sm">
             <Badge variant="secondary" className="font-normal">
               {t('rewards.admin.codesAvailable', { count: available })}
@@ -864,13 +863,13 @@ function CodePoolDialog({ item, onClose }: { item: Doc<'rewardItems'>; onClose: 
               ))}
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button onClick={onClose}>{t('common.close')}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -968,17 +967,17 @@ function EconomyDialog({
   );
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Wallet className="h-4 w-4" />
             {t('rewards.admin.economy')}
-          </DialogTitle>
-          <DialogDescription>{t('rewards.admin.economyHint')}</DialogDescription>
-        </DialogHeader>
+          </SheetTitle>
+          <SheetDescription>{t('rewards.admin.economyHint')}</SheetDescription>
+        </SheetHeader>
 
-        <div className="grid grid-cols-2 gap-3">
+        <SheetBody className="grid grid-cols-2 gap-3">
           {field('currency', 'rewards.admin.currency')}
           {field('pointValue', 'rewards.admin.pointValue', 'rewards.admin.pointValueHint')}
           {field(
@@ -1001,24 +1000,24 @@ function EconomyDialog({
           {field('reviewReward', 'rewards.admin.reviewReward')}
           {field('voucherValidDays', 'rewards.admin.voucherValidDays')}
           {field('monthlyBudgetCap', 'rewards.admin.budgetCap', 'rewards.admin.budgetCapHint')}
-        </div>
+        </SheetBody>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground px-5 pb-2">
           {t('rewards.admin.forecast', {
             amount: formatMoney(perHeadCost, form.currency || 'AMD', 'en'),
           })}
         </p>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>
             {t('common.cancel')}
           </Button>
           <Button onClick={save} disabled={busy}>
             {busy ? t('common.saving') : t('common.save')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

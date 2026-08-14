@@ -39,6 +39,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+} from '@/components/ui/sheet';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -316,16 +324,18 @@ export default function DocumentBuilderTab({
       )}
 
       {/* ── Built-in catalog ─────────────────────────────────── */}
-      <Dialog open={catalogOpen} onOpenChange={setCatalogOpen}>
-        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-          <DialogTitle>{t('docBuilder.catalogTitle', 'Built-in templates')}</DialogTitle>
-          <DialogDescription>
-            {t(
-              'docBuilder.catalogHint',
-              'A copy is created in your organization — the original stays untouched.',
-            )}
-          </DialogDescription>
-          <div className="mt-4 space-y-2">
+      <Sheet open={catalogOpen} onOpenChange={setCatalogOpen}>
+        <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>{t('docBuilder.catalogTitle', 'Built-in templates')}</SheetTitle>
+            <SheetDescription>
+              {t(
+                'docBuilder.catalogHint',
+                'A copy is created in your organization — the original stays untouched.',
+              )}
+            </SheetDescription>
+          </SheetHeader>
+          <SheetBody className="mt-0 space-y-2">
             {CATALOG.map((template) => (
               <button
                 key={template.id}
@@ -356,9 +366,9 @@ export default function DocumentBuilderTab({
                 <Copy className="h-4 w-4 shrink-0 text-(--text-muted)" />
               </button>
             ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
 
       {/* ── Issue ────────────────────────────────────────────── */}
       {issuing && (
@@ -399,7 +409,7 @@ function BlueprintCard({
     switch (blueprint.status) {
       case 'published':
         return (
-          <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-600">
+          <Badge className="border-(--success-outline) bg-(--success-quiet) text-(--success-text)">
             {t('docBuilder.statusPublished', {
               version: blueprint.version,
               defaultValue: `v${blueprint.version}`,
@@ -410,7 +420,7 @@ function BlueprintCard({
         return <Badge variant="outline">{t('docBuilder.statusArchived', 'Archived')}</Badge>;
       default:
         return (
-          <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-600">
+          <Badge className="border-(--warning-outline) bg-(--warning-quiet) text-(--warning-text)">
             {t('docBuilder.statusDraft', 'Draft')}
           </Badge>
         );
@@ -628,7 +638,7 @@ function IssueDialog({
           </div>
 
           {requiredMissing && (
-            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-600">
+            <p className="rounded-lg border border-(--warning-outline) bg-(--warning-quiet) p-2.5 text-xs text-(--warning-text)">
               {t('docBuilder.requiredLocaleMissing', {
                 locale: LOCALE_CAPTIONS[blueprint.requiredLocale!],
                 defaultValue: `This template must include ${LOCALE_CAPTIONS[blueprint.requiredLocale!]} — it is the binding language.`,

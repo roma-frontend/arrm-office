@@ -184,7 +184,7 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                           };
                         })}
                         triggerClassName="w-full px-4 py-2 rounded-xl text-sm font-medium focus:outline-none focus:ring-2"
-                        dropdownClassName="bg-gray-800 border border-gray-600 text-white"
+                        dropdownClassName="bg-(--canvas) border border-(--border-strong) text-(--text-1)"
                       />
                     </div>
                   </div>
@@ -199,22 +199,22 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                         {
                           label: t('attendance.days'),
                           value: monthlyStats.totalDays,
-                          color: 'text-blue-600',
+                          color: 'text-(--brand-text)',
                         },
                         {
                           label: t('attendance.late'),
                           value: monthlyStats.lateDays,
-                          color: 'text-rose-500',
+                          color: 'text-(--danger-text)',
                         },
                         {
                           label: t('attendance.hours'),
                           value: monthlyStats.totalWorkedHours + 'h',
-                          color: 'text-emerald-600',
+                          color: 'text-(--success-text)',
                         },
                         {
                           label: t('attendance.punctuality'),
                           value: monthlyStats.punctualityRate + '%',
-                          color: 'text-blue-600',
+                          color: 'text-(--brand-text)',
                         },
                       ].map((s) => (
                         <div
@@ -337,19 +337,19 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                                 {/* Badges */}
                                 <div className="flex flex-wrap gap-1 justify-end">
                                   {record.isLate && (
-                                    <span className="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-medium">
+                                    <span className="text-xs bg-(--danger-quiet) text-(--danger-text) px-2 py-0.5 rounded-full font-medium">
                                       {t('attendance.lateMinutes', { minutes: record.lateMinutes })}
                                     </span>
                                   )}
                                   {record.isEarlyLeave && (
-                                    <span className="text-xs bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-medium">
+                                    <span className="text-xs bg-(--warning-quiet) text-(--warning-text) px-2 py-0.5 rounded-full font-medium">
                                       {t('attendance.earlyLeave', {
                                         minutes: record.earlyLeaveMinutes,
                                       })}
                                     </span>
                                   )}
                                   {record.overtimeMinutes && record.overtimeMinutes > 0 && (
-                                    <span className="text-xs bg-sky-100 text-sky-500 px-2 py-0.5 rounded-full font-medium">
+                                    <span className="text-xs bg-(--brand-quiet) text-(--brand-text) px-2 py-0.5 rounded-full font-medium">
                                       {t('attendance.overtime', {
                                         minutes: record.overtimeMinutes,
                                       })}
@@ -358,12 +358,12 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                                   {record.status === 'checked_out' &&
                                     !record.isLate &&
                                     !record.isEarlyLeave && (
-                                      <span className="text-xs bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-medium">
+                                      <span className="text-xs bg-(--success-quiet) text-(--success-text) px-2 py-0.5 rounded-full font-medium">
                                         {t('attendance.perfect')}
                                       </span>
                                     )}
                                   {record.status === 'checked_in' && (
-                                    <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-medium animate-pulse">
+                                    <span className="text-xs bg-(--success-quiet) text-(--success-text) px-2 py-0.5 rounded-full font-medium animate-pulse">
                                       {t('attendance.active')}
                                     </span>
                                   )}

@@ -266,6 +266,35 @@ const pricingTiers: PricingTier[] = [
 ];
 
 // ── Reveal hook ───────────────────────────────────────────────────────────────
+function useCountUp(target: number, duration = 500) {
+  const [count, setCount] = useState(0);
+  const raf = useRef<number | null>(null);
+  const fromRef = useRef(0);
+
+  useEffect(() => {
+    const from = fromRef.current;
+    const start = performance.now();
+    const step = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setCount(Math.round(from + (target - from) * eased));
+      if (p < 1) {
+        raf.current = requestAnimationFrame(step);
+      } else {
+        fromRef.current = target;
+      }
+    };
+    if (raf.current) cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(step);
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current);
+    };
+  }, [target, duration]);
+
+  return count;
+}
+
+// ── Reveal hook ───────────────────────────────────────────────────────────────
 function useReveal(delay = '0s') {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -300,19 +329,32 @@ function PricingCard({
   delay,
   currentPlan,
   displayPrice,
+  priceAmount,
+  billing,
 }: {
   tier: PricingTier;
   delay: number;
   currentPlan?: string;
   displayPrice: string;
+  /** Numeric price in the current currency, null for custom-priced plans. */
+  priceAmount: number | null;
+  billing: 'monthly' | 'annual';
 }) {
   const { ref, style } = useReveal(`${delay}s`);
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const { symbol } = useCurrency();
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
   const isCurrentPlan = currentPlan === tier.id;
   const router = useRouter();
+
+  // Count-up the digits when the plan or billing period changes — the price
+  // is alive, not a static label, so switching Monthly ↔ Annual reads as
+  // the number actually dropping.
+  const animatedAmount = useCountUp(priceAmount ?? 0);
+  const priceLabel =
+    priceAmount === null ? displayPrice : `${symbol}${animatedAmount.toLocaleString()}`;
 
   const handleCheckout = async () => {
     if (tier.id === 'enterprise') {
@@ -460,14 +502,14 @@ function PricingCard({
             </div>
           </div>
 
-          {/* Price */}
+          {/* Price — animated when the plan or billing period changes */}
           <div className="mb-6 sm:mb-8">
             <div className="flex items-end gap-2">
               <span
-                className="text-3xl font-black leading-none"
+                className="text-3xl font-black leading-none tabular-nums"
                 style={{ color: 'var(--landing-text-primary)' }}
               >
-                {displayPrice}
+                {priceLabel}
               </span>
               {tier.priceMonthly !== undefined && (
                 <span
@@ -475,6 +517,24 @@ function PricingCard({
                   style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}
                 >
                   {t('pricing.perMonth')}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1.5 min-h-4">
+              {billing === 'annual' && tier.priceMonthly !== undefined && (
+                <span
+                  className="text-[10px] font-semibold line-through"
+                  style={{ color: 'var(--landing-text-muted)', opacity: 0.8 }}
+                >
+                  {`${symbol}${Math.round((priceAmount ?? 0) / 0.8).toLocaleString()}`}
+                </span>
+              )}
+              {tier.priceMonthly !== undefined && (
+                <span
+                  className="text-[10px] font-semibold"
+                  style={{ color: 'var(--landing-text-muted)', opacity: 0.85 }}
+                >
+                  {t(billing === 'annual' ? 'pricing.billedAnnually' : 'pricing.billedMonthly')}
                 </span>
               )}
             </div>
@@ -572,6 +632,234 @@ function PricingCard({
   );
 }
 
+// ── Savings calculator ────────────────────────────────────────────────────────
+/**
+ * Live ROI slider: pick a team size, see what replacing the typical 3-tool HR
+ * stack (HRIS + time tracking + spreadsheets) with Strata saves per year.
+ *
+ * The numbers are deliberately conservative and derived from a single per-seat
+ * assumption so the calculator stays honest: legacy tooling ≈ $12/seat/mo,
+ * Strata Professional ≈ $1.58/seat/mo (the $79 flat plan at 50 seats), and HR
+ * time saved ≈ 30 min/seat/mo at $30/hr. All three are multiplied through the
+ * current currency's professional amount so the result matches the pricing
+ * cards above.
+ */
+function SavingsCalculator({
+  professionalAmount,
+  symbol,
+}: {
+  professionalAmount: number;
+  symbol: string;
+}) {
+  const { t } = useTranslation();
+  const { ref, style } = useReveal('0.1s');
+  const [employees, setEmployees] = useState(50);
+
+  // Scale everything by the current currency relative to the $79 base so the
+  // calculator's numbers match the card prices in every locale.
+  const scale = professionalAmount / 79;
+  const legacyPerSeat = 12 * scale;
+  const strataPerSeat = 1.58 * scale;
+  const timePerSeat = 0.5 * 30 * scale; // 30 min/seat/mo × $30/hr
+  const monthlySavings = (legacyPerSeat + timePerSeat - strataPerSeat) * employees;
+  const annualSavings = Math.round(monthlySavings * 12);
+  const animatedSavings = useCountUp(annualSavings, 700);
+
+  // Slider fill — the track highlights from left to right as the team grows.
+  const min = 10;
+  const max = 500;
+  const pct = ((employees - min) / (max - min)) * 100;
+
+  return (
+    <div ref={ref} style={style} className="max-w-4xl mx-auto mt-16">
+      <div
+        className="relative rounded-3xl overflow-hidden"
+        style={{
+          background: 'var(--landing-card-bg)',
+          border: '1px solid var(--landing-card-border)',
+          boxShadow: '0 24px 64px -24px rgba(12, 26, 46, 0.25)',
+          backdropFilter: 'blur(14px)',
+        }}
+      >
+        {/* Top accent */}
+        <div
+          className="h-[2px] w-full"
+          style={{ background: 'linear-gradient(90deg, transparent, var(--brand), transparent)' }}
+        />
+
+        <div className="p-6 sm:p-10 grid md:grid-cols-2 gap-8 items-center">
+          {/* Left: slider */}
+          <div>
+            <span
+              className="text-[11px] font-bold uppercase tracking-widest"
+              style={{ color: 'var(--brand)' }}
+            >
+              {t('pricing.calculatorEyebrow')}
+            </span>
+            <h3
+              className="mt-2 text-2xl sm:text-3xl font-black leading-tight tracking-tighter"
+              style={{ color: 'var(--landing-text-primary)' }}
+            >
+              {t('pricing.calculatorTitle')}
+            </h3>
+            <p
+              className="mt-2 text-sm leading-relaxed"
+              style={{ color: 'var(--landing-text-secondary)' }}
+            >
+              {t('pricing.calculatorSubtitle')}
+            </p>
+
+            {/* Team size readout */}
+            <div className="mt-6 flex items-end gap-2">
+              <span
+                className="num text-4xl font-black tabular-nums leading-none"
+                style={{ color: 'var(--landing-text-primary)' }}
+              >
+                {employees}
+              </span>
+              <span
+                className="text-sm font-semibold pb-0.5"
+                style={{ color: 'var(--landing-text-muted)' }}
+              >
+                {t('pricing.calculatorEmployees')}
+              </span>
+            </div>
+
+            {/* Slider */}
+            <div className="relative mt-4">
+              <input
+                type="range"
+                min={min}
+                max={max}
+                step={10}
+                value={employees}
+                onChange={(e) => setEmployees(Number(e.target.value))}
+                aria-label={t('pricing.calculatorEmployees')}
+                className="w-full h-2 rounded-full appearance-none cursor-pointer calculator-range"
+                style={{
+                  background: `linear-gradient(to right, var(--brand) 0%, var(--brand) ${pct}%, var(--muted) ${pct}%, var(--muted) 100%)`,
+                }}
+              />
+              <div
+                className="flex justify-between mt-1.5 text-[10px] font-medium"
+                style={{ color: 'var(--landing-text-muted)' }}
+              >
+                <span>{min}</span>
+                <span>{(min + max) / 2}</span>
+                <span>{max}</span>
+              </div>
+            </div>
+
+            {/* Breakdown rows */}
+            <div className="mt-6 space-y-2.5">
+              {[
+                {
+                  label: t('pricing.calculatorLegacy'),
+                  value: legacyPerSeat * 12,
+                  color: 'var(--danger-solid)',
+                },
+                {
+                  label: t('pricing.calculatorTime'),
+                  value: timePerSeat * 12,
+                  color: 'var(--warning-solid)',
+                },
+                {
+                  label: t('pricing.calculatorStrata'),
+                  value: -strataPerSeat * 12,
+                  color: 'var(--success-solid)',
+                },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="flex items-center justify-between text-xs">
+                  <span
+                    className="flex items-center gap-2 font-medium"
+                    style={{ color: 'var(--landing-text-secondary)' }}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                    {label}
+                  </span>
+                  <span
+                    className="num font-bold tabular-nums"
+                    style={{
+                      color: value < 0 ? 'var(--success-text)' : 'var(--landing-text-primary)',
+                    }}
+                  >
+                    {value < 0 ? '−' : ''}
+                    {symbol}
+                    {Math.round(Math.abs(value)).toLocaleString()}
+                    <span
+                      className="text-[10px] font-medium ml-0.5"
+                      style={{ color: 'var(--landing-text-muted)' }}
+                    >
+                      {t('pricing.perYear')}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: big animated savings number */}
+          <div
+            className="relative rounded-2xl p-6 sm:p-8 text-center overflow-hidden"
+            style={{
+              border: '1px solid rgb(var(--green-500-ch) / 25%)',
+              background: 'rgb(var(--green-500-ch) / 7%)',
+            }}
+          >
+            <div
+              className="absolute -top-10 -right-10 w-40 h-40 rounded-full pointer-events-none"
+              style={{
+                background:
+                  'radial-gradient(circle, rgb(var(--green-500-ch) / 18%) 0%, transparent 70%)',
+                filter: 'blur(30px)',
+              }}
+            />
+            <span
+              className="text-[11px] font-bold uppercase tracking-widest"
+              style={{ color: 'var(--success-text)' }}
+            >
+              {t('pricing.calculatorSavingsLabel')}
+            </span>
+            <div className="mt-3 flex items-baseline justify-center gap-1.5">
+              <span
+                className="num text-5xl sm:text-6xl font-black tabular-nums leading-none"
+                style={{ color: 'var(--success-text)' }}
+              >
+                {symbol}
+                {animatedSavings.toLocaleString()}
+              </span>
+            </div>
+            <span
+              className="mt-1.5 block text-xs font-semibold"
+              style={{ color: 'var(--landing-text-muted)' }}
+            >
+              {t('pricing.calculatorPerYear')}
+            </span>
+            <div
+              className="mt-5 h-1.5 rounded-full overflow-hidden"
+              style={{ background: 'rgb(var(--green-500-ch) / 12%)' }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{
+                  width: `${Math.min(100, (employees / max) * 100)}%`,
+                  background: 'var(--success-solid)',
+                }}
+              />
+            </div>
+            <p
+              className="mt-4 text-[11px] leading-relaxed"
+              style={{ color: 'var(--landing-text-muted)' }}
+            >
+              {t('pricing.calculatorFootnote')}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Section ───────────────────────────────────────────────────────────────────
 export default function PricingPreview() {
   const { ref, style } = useReveal();
@@ -579,13 +867,25 @@ export default function PricingPreview() {
   const { user } = useAuthStore();
   const { plan } = useSubscription();
   const currency = useCurrency();
+  const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
 
   // Only show current plan if user is logged in
   const currentPlan = user ? plan : undefined;
 
+  // Numeric amounts (in the current currency) for the count-up animation and
+  // the savings calculator. enterprise is custom — no number to animate.
+  const priceAmounts: Record<string, number | null> = {
+    starter: Math.round(currency.starter.amount * (billing === 'annual' ? 0.8 : 1)),
+    professional: Math.round(currency.professional.amount * (billing === 'annual' ? 0.8 : 1)),
+    enterprise: null,
+  };
+
+  // Build price strings from the numeric amount so annual pricing survives
+  // currency formatting with thousand separators (₽2,610 → ₽2,090).
+  const fmtPrice = (amount: number) => `${currency.symbol}${amount.toLocaleString()}`;
   const priceMap: Record<string, string> = {
-    starter: currency.starter.formatted,
-    professional: currency.professional.formatted,
+    starter: fmtPrice(priceAmounts.starter!),
+    professional: fmtPrice(priceAmounts.professional!),
     enterprise: t('pricing.custom', 'Custom'),
   };
 
@@ -633,6 +933,54 @@ export default function PricingPreview() {
             </div>
           ))}
         </div>
+
+        {/* Billing toggle — monthly vs annual, with the annual discount. */}
+        <div
+          className="inline-flex items-center gap-1 p-1 rounded-full mt-8"
+          style={{
+            background: 'var(--landing-card-bg)',
+            border: '1px solid var(--landing-card-border)',
+          }}
+        >
+          {(['monthly', 'annual'] as const).map((period) => {
+            const isActive = billing === period;
+            return (
+              <button
+                key={period}
+                type="button"
+                onClick={() => setBilling(period)}
+                aria-pressed={isActive}
+                className="relative px-5 py-2 rounded-full text-sm font-bold transition-all duration-300"
+                style={
+                  isActive
+                    ? {
+                        background: 'var(--primary)',
+                        color: '#fff',
+                        boxShadow: '0 4px 16px rgb(var(--brand-600-ch) / 35%)',
+                      }
+                    : { color: 'var(--landing-text-secondary)' }
+                }
+              >
+                {t(period === 'annual' ? 'pricing.annually' : 'pricing.monthly')}
+                {period === 'annual' && (
+                  <span
+                    className="ml-1.5 text-[10px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                    style={
+                      isActive
+                        ? { background: 'rgba(255,255,255,0.22)', color: '#fff' }
+                        : {
+                            background: 'rgb(var(--green-500-ch) / 14%)',
+                            color: 'var(--success-text)',
+                          }
+                    }
+                  >
+                    {t('pricing.save')}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Cards grid */}
@@ -644,9 +992,17 @@ export default function PricingPreview() {
             delay={i * 0.12}
             currentPlan={currentPlan}
             displayPrice={priceMap[tier.id] ?? '$0'}
+            priceAmount={priceAmounts[tier.id] ?? null}
+            billing={billing}
           />
         ))}
       </div>
+
+      {/* Savings calculator — team size → annual savings, live and animated */}
+      <SavingsCalculator
+        professionalAmount={currency.professional.amount}
+        symbol={currency.symbol}
+      />
 
       {/* Footer note */}
       <p

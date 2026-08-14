@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthUser } from '@/store/useAuthStore';
 import { clearWizardDraft, peekWizardDraft } from '@/hooks/useWizardDraft';
 
 /**
@@ -37,7 +37,7 @@ export function useDraftResume(
   /** Pass `false` while the form is open — a prompt over the form is noise. */
   watch = true,
 ): DraftResumeState {
-  const userId = useAuthStore((s) => s.user?.id);
+  const userId = useAuthUser()?.id ?? null;
   const [snapshot, setSnapshot] = useState<{ step: number; savedAt: number } | null>(null);
   const [dismissedAt, setDismissedAt] = useState<number | null>(null);
 

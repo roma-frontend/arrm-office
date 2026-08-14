@@ -32,6 +32,8 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { TripDetailsModal } from './modals/TripDetailsModal';
 import { BlockTimeWizard } from './BlockTimeWizard';
 import { motion } from 'framer-motion';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 
 interface DriverCalendarProps {
   driverId: Id<'drivers'>;
@@ -233,7 +235,7 @@ function TripCard({
               e.stopPropagation();
               onUpdateStatus(item._id, 'completed');
             }}
-            className="w-full mt-1 py-1.5 text-[9px] sm:text-[10px] font-semibold rounded-md bg-emerald-500 hover:bg-emerald-600 text-white transition-colors flex items-center justify-center gap-1"
+            className="w-full mt-1 py-1.5 text-[9px] sm:text-[10px] font-semibold rounded-md bg-(--success-solid) hover:opacity-90 text-white transition-colors flex items-center justify-center gap-1"
           >
             <CheckCircle2 className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
             {t('driverCalendar.completeTrip', 'Complete')}
@@ -251,6 +253,7 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<ScheduleItem | null>(null);
   const [showTripModal, setShowTripModal] = useState(false);
+  const blockDraft = useDraftResume('driver-block-time', !showBlockModal);
   const now = useNow();
 
   const dateFnsLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
@@ -647,6 +650,20 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
           </div>,
           document.body,
         )}
+
+      {/* "Draft saved. Restore?" — the block-time wizard keeps its contents
+          after an accidental close; this is what tells the user so. */}
+      <DraftResumeBar
+        show={blockDraft.available}
+        label={t('driver.blockTime', 'Block Time')}
+        step={blockDraft.step}
+        onResume={() => {
+          blockDraft.dismiss();
+          setShowBlockModal(true);
+        }}
+        onDismiss={blockDraft.dismiss}
+        onDiscard={blockDraft.discard}
+      />
     </div>
   );
 }

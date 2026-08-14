@@ -65,13 +65,13 @@ export default function UserProfile360Page() {
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'superadmin':
-        return 'bg-purple-500/10 text-purple-600 border-purple-500/30';
+        return 'bg-(--purple-quiet) text-(--purple-text) border-(--purple-outline)';
       case 'admin':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/30';
+        return 'bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline)';
       case 'supervisor':
-        return 'bg-green-500/10 text-green-600 border-green-500/30';
+        return 'bg-(--success-quiet) text-(--success-text) border-(--success-outline)';
       default:
-        return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
+        return 'bg-(--surface-3) text-(--text-2) border-(--border-default)';
     }
   };
 
@@ -112,12 +112,18 @@ export default function UserProfile360Page() {
                         {user.role}
                       </Badge>
                       {user.isActive ? (
-                        <Badge variant="outline" className="text-green-600 border-green-500/30">
+                        <Badge
+                          variant="outline"
+                          className="text-(--success-text) border-(--success-outline)"
+                        >
                           <CheckCircle className="w-3 h-3 mr-1" />
                           {t('superadmin.users.active')}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-red-600 border-red-500/30">
+                        <Badge
+                          variant="outline"
+                          className="text-(--danger-text) border-(--danger-outline)"
+                        >
                           <XCircle className="w-3 h-3 mr-1" />
                           {t('superadmin.users.inactive')}
                         </Badge>
@@ -173,7 +179,7 @@ export default function UserProfile360Page() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2 text-red-600 hover:text-red-700"
+                    className="gap-2 text-(--danger-text) hover:opacity-80"
                   >
                     <Ban className="w-4 h-4" />
                     {t('superadmin.users.blockUser')}

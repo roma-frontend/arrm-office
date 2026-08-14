@@ -142,7 +142,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
     <div className="space-y-4">
       <div
         ref={printRef}
-        className="bg-(--card) border border-(--border) rounded-2xl shadow-sm overflow-hidden print:shadow-none print:border-gray-300 relative"
+        className="bg-(--card) border border-(--border) rounded-2xl shadow-sm overflow-hidden print:shadow-none print:border-(--border-strong) relative"
       >
         {payslip.status !== 'paid' && payslip.status !== 'viewed' && (
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.04] rotate-[-30deg] text-6xl font-black text-rose-500 select-none">
@@ -248,7 +248,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
                     ))}
                     <tr className="bg-emerald-500/5 border-t-2 border-emerald-500/20">
                       <td className="px-4 py-3 font-bold text-(--text-primary)">Gross Salary</td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-600 text-base">
+                      <td className="px-4 py-3 text-right font-bold text-(--success-text) text-base">
                         {formatCurrency(gross, currency)}
                       </td>
                     </tr>
@@ -299,7 +299,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
                       <td className="px-4 py-3 font-bold text-(--text-primary)">
                         Total Deductions
                       </td>
-                      <td className="px-4 py-3 text-right font-bold text-rose-600 text-base">
+                      <td className="px-4 py-3 text-right font-bold text-(--danger-text) text-base">
                         -{formatCurrency(totalDeductions, currency)}
                       </td>
                     </tr>
@@ -428,7 +428,7 @@ export default function PayslipViewer() {
             {myPayslips.map((payslip) => (
               <div
                 key={payslip._id}
-                className="group bg-(--card) border border-(--border) rounded-xl p-4 hover:shadow-md hover:border-blue-400/30 transition-all duration-200 cursor-pointer"
+                className="group bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md border border-(--border) rounded-xl p-4 hover:shadow-md hover:border-blue-400/30 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
                 onClick={() =>
                   setSelectedPayslip(selectedPayslip?._id === payslip._id ? null : payslip)
                 }

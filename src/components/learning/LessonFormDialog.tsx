@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -52,16 +53,16 @@ export function LessonFormDialog({
   const { t } = useTranslation();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>
             {isEdit
               ? t('learning.editLesson', 'Edit Lesson')
               : t('learning.createLesson', 'Create Lesson')}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
+          </SheetTitle>
+        </SheetHeader>
+        <SheetBody className="space-y-4">
           <div>
             <label className="text-sm font-medium">
               {t('learning.lessonTitle', 'Lesson Title')} *
@@ -149,14 +150,14 @@ export function LessonFormDialog({
               id="isPreview"
               checked={form.isPreview}
               onChange={(e) => setForm({ ...form, isPreview: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-(--border-strong)"
             />
             <label htmlFor="isPreview" className="text-sm font-medium">
               {t('learning.preview', 'Preview')}
             </label>
           </div>
-        </div>
-        <DialogFooter>
+        </SheetBody>
+        <SheetFooter>
           <Button variant="outline" onClick={onCancel}>
             {t('common.cancel', 'Cancel')}
           </Button>
@@ -166,8 +167,8 @@ export function LessonFormDialog({
               ? t('learning.updateLesson', 'Update Lesson')
               : t('learning.createLesson', 'Create Lesson')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

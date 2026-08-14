@@ -25,6 +25,7 @@
 import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Doc, Id } from '../_generated/dataModel';
 import { getProfile } from './userProfile';
+import { DEFAULT_LIST_CAP } from './limits';
 
 /**
  * Hard cap on any walk up the line. A cycle is already rejected on write, but a
@@ -118,6 +119,47 @@ export async function isAncestorOf(
   if (managerId === employeeId) return false;
   const ancestors = await getAncestorIds(ctx, employeeId);
   return ancestors.includes(managerId);
+}
+
+/**
+ * Everyone below `managerId` in the line — direct reports, their reports, and
+ * so on down. Excludes `managerId` itself.
+ *
+ * Walks breadth-first over the `by_supervisor` index, which is why the
+ * canonical field has to be `users.supervisorId`: the profile mirror has no
+ * reverse index, so a report whose relationship lives only on the profile row
+ * is invisible here. That is a data gap, not a bug in this walk — see
+ * `assertAssignable`'s callers for where the mirror gets written.
+ *
+ * Cycle-safe via `seen`, and depth-capped like the upward walk.
+ */
+export async function getSubordinateIds(
+  ctx: Pick<QueryCtx, 'db'>,
+  managerId: Id<'users'>,
+  maxDepth: number = MAX_LINE_HOPS,
+): Promise<Id<'users'>[]> {
+  const collected: Id<'users'>[] = [];
+  const seen = new Set<string>([managerId]);
+  let frontier: Id<'users'>[] = [managerId];
+
+  for (let depth = 0; depth < maxDepth && frontier.length > 0; depth++) {
+    const next: Id<'users'>[] = [];
+    for (const id of frontier) {
+      const reports = await ctx.db
+        .query('users')
+        .withIndex('by_supervisor', (q) => q.eq('supervisorId', id))
+        .take(DEFAULT_LIST_CAP);
+      for (const r of reports) {
+        if (seen.has(r._id)) continue;
+        seen.add(r._id);
+        collected.push(r._id);
+        next.push(r._id);
+      }
+    }
+    frontier = next;
+  }
+
+  return collected;
 }
 
 /**

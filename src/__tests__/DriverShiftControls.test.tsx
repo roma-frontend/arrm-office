@@ -73,9 +73,14 @@ jest.mock('@/components/ui/button', () => ({
 }));
 
 // Dialog is always "open" in the stub — content is present in the DOM.
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ children }: any) => <div data-testid="dialog">{children}</div>,
-  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ children, open }: any) =>
+    open !== false ? <div data-testid="dialog">{children}</div> : null,
+  SheetContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
+  SheetHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
+  SheetTitle: ({ children }: any) => <div data-testid="dialog-title">{children}</div>,
+  SheetBody: ({ children }: any) => <div data-testid="dialog-body">{children}</div>,
+  SheetFooter: ({ children }: any) => <div data-testid="dialog-footer">{children}</div>,
 }));
 
 jest.mock('@/components/ui/input', () => ({

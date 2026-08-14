@@ -4,6 +4,7 @@ import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { patchProfile } from './lib/userProfile';
+import { ALL_LEAVE_TYPES, getActiveLeaveTypes } from './lib/leaveTypes';
 import type { Id } from './_generated/dataModel';
 
 // ── Access helpers ──────────────────────────────────────────────────────────
@@ -38,6 +39,21 @@ export const getLeaveTypeConfigs = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .order('asc')
       .take(DEFAULT_LIST_CAP);
+  },
+});
+
+// ── Leave types the caller's own organization offers ────────────────────────
+// What the request forms filter on. Deliberately takes no arguments: the form
+// asks "what may I pick?", and answering from the caller's own membership keeps
+// one client from enumerating another org's configuration.
+export const getMyActiveLeaveTypes = query({
+  args: {},
+  handler: async (ctx) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller?.organizationId) return [...ALL_LEAVE_TYPES];
+
+    const active = await getActiveLeaveTypes(ctx, caller.organizationId);
+    return ALL_LEAVE_TYPES.filter((t) => active.has(t));
   },
 });
 

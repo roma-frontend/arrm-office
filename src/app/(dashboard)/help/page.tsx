@@ -32,13 +32,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetBody,
+} from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateTicketWizard } from '@/components/help/CreateTicketWizard';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -126,9 +127,9 @@ export default function HelpSupportPage() {
                     variant="outline"
                     className={
                       userOrg.plan === 'enterprise'
-                        ? 'border-purple-500 text-purple-600'
+                        ? 'border-(--purple-outline) text-(--purple-text)'
                         : userOrg.plan === 'professional'
-                          ? 'border-blue-500 text-blue-600'
+                          ? 'border-(--brand-outline) text-(--brand-text)'
                           : ''
                     }
                   >
@@ -138,12 +139,12 @@ export default function HelpSupportPage() {
               </div>
               <p className="text-sm sm:text-base text-muted-foreground">{t('help.subtitle')}</p>
               {userOrg?.plan === 'starter' && (
-                <p className="text-xs sm:text-sm text-orange-600 mt-2">
+                <p className="text-xs sm:text-sm text-(--warning-text) mt-2">
                   ⚠️ {t('help.planLimit.starter')}
                 </p>
               )}
               {userOrg?.plan === 'professional' && (
-                <p className="text-xs md:text-sm text-orange-600 mt-2">
+                <p className="text-xs md:text-sm text-(--warning-text) mt-2">
                   📊{' '}
                   {t('help.planLimit.professional', {
                     used: currentMonthTickets,
@@ -153,8 +154,8 @@ export default function HelpSupportPage() {
               )}
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogTrigger asChild>
+              <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <SheetTrigger asChild>
                   <Button
                     className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
                     onClick={handleCreateTicket}
@@ -164,23 +165,21 @@ export default function HelpSupportPage() {
                     <span className="hidden sm:inline">{t('help.createTicket')}</span>
                     <span className="sm:hidden">{t('help.createTicket')}</span>
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[85vw] max-w-3xl max-h-[95vh] flex flex-col">
-                  <DialogHeader>
-                    <DialogTitle className="text-lg md:text-xl">
-                      {t('help.createTicket')}
-                    </DialogTitle>
-                    <DialogDescription className="text-sm">{t('help.subtitle')}</DialogDescription>
-                  </DialogHeader>
-                  <div className="flex-1 min-h-0 overflow-y-auto">
+                </SheetTrigger>
+                <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+                  <SheetHeader>
+                    <SheetTitle className="text-lg md:text-xl">{t('help.createTicket')}</SheetTitle>
+                    <SheetDescription className="text-sm">{t('help.subtitle')}</SheetDescription>
+                  </SheetHeader>
+                  <SheetBody>
                     <CreateTicketWizard
                       userId={user.id as Id<'users'>}
                       onComplete={() => setCreateDialogOpen(false)}
                       onCancel={() => setCreateDialogOpen(false)}
                     />
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </SheetBody>
+                </SheetContent>
+              </Sheet>
               {/* Upgrade Plan button — only for admins and superadmins */}
               {(user?.role === 'admin' || user?.role === 'superadmin') && (
                 <Button

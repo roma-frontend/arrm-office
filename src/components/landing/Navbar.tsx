@@ -27,6 +27,26 @@ const MobileMenu = dynamic(() => import('./MobileMenu'), {
   loading: () => null,
 });
 
+const PlatformMegaMenu = dynamic(() => import('./PlatformMegaMenu'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const ResourcesMenu = dynamic(() => import('./PlatformMegaMenu').then((m) => m.ResourcesMenu), {
+  ssr: false,
+  loading: () => null,
+});
+
+const SolutionsMenu = dynamic(() => import('./SolutionMenus').then((m) => m.SolutionsMenu), {
+  ssr: false,
+  loading: () => null,
+});
+
+const WhyMenu = dynamic(() => import('./SolutionMenus').then((m) => m.WhyMenu), {
+  ssr: false,
+  loading: () => null,
+});
+
 function ShieldIcon() {
   return (
     <svg
@@ -54,6 +74,7 @@ export default function Navbar() {
   const mounted = useHydrated();
   const [scrolled, setScrolled] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const pathname = usePathname();
   const sectionIds = useMemo(
@@ -80,6 +101,10 @@ export default function Navbar() {
       ticking = true;
       window.requestAnimationFrame(() => {
         setScrolled(window.scrollY > 20);
+        // Reading progress — the navbar's thin gradient bar (Spark has none).
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - window.innerHeight;
+        setScrollProgress(max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0);
         ticking = false;
       });
     };
@@ -140,6 +165,19 @@ export default function Navbar() {
           }}
         />
 
+        {/* Reading-progress bar — the thin gradient strip under the navbar */}
+        <div
+          className="absolute bottom-0 left-0 h-0.5 pointer-events-none"
+          style={{
+            width: `${scrollProgress}%`,
+            background: 'linear-gradient(90deg, #2563eb, #06b6d4, #8b5cf6)',
+            boxShadow: '0 0 8px rgba(37, 99, 235, 0.5)',
+            transition: 'width 0.1s linear',
+            zIndex: 2,
+          }}
+          aria-hidden="true"
+        />
+
         <Link
           href="/"
           className="relative flex items-center gap-3 group"
@@ -160,29 +198,48 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="relative hidden lg:flex items-center gap-6 xl:gap-8">
+        <div className="relative hidden lg:flex items-center gap-4 xl:gap-6">
+          {mounted && <PlatformMegaMenu />}
+          {mounted && <SolutionsMenu />}
+          {mounted && <WhyMenu />}
           {mounted &&
-            [
-              { name: t('landing.features'), href: '/features' },
-              { name: t('landing.pricing'), href: '/#pricing' },
-              { name: t('landing.testimonials'), href: '/#testimonials' },
-              { name: t('landing.faq'), href: '/#faq' },
-              { name: t('nav.recruitment', 'Careers'), href: '/careers' },
-            ].map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-sm transition-colors duration-200 font-medium focus:outline-none focus:underline underline-offset-4"
-                style={{ color: 'var(--landing-navbar-text)' }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = 'var(--landing-navbar-text-hover)')
-                }
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--landing-navbar-text)')}
-                aria-label={`Navigate to ${item.name}`}
-              >
-                {item.name}
-              </Link>
-            ))}
+            (() => {
+              const isActive = activeSection === 'pricing';
+              const item = { name: t('landing.pricing'), href: '/#pricing', section: 'pricing' };
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="nav-link-underline text-sm font-medium focus:outline-none focus:underline underline-offset-4"
+                  style={{
+                    color: isActive ? 'var(--primary)' : 'var(--landing-navbar-text)',
+                    transition: 'color 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = 'var(--landing-navbar-text-hover)')
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = isActive
+                      ? 'var(--primary)'
+                      : 'var(--landing-navbar-text)')
+                  }
+                  aria-label={`Navigate to ${item.name}`}
+                  aria-current={isActive ? 'true' : undefined}
+                >
+                  {item.name}
+                  {isActive && (
+                    <span
+                      className="block h-0.5 rounded-full mt-0.5"
+                      style={{
+                        background: 'var(--primary)',
+                        animation: 'nav-dot-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both',
+                      }}
+                    />
+                  )}
+                </Link>
+              );
+            })()}
+          {mounted && <ResourcesMenu activeSection={activeSection} />}
         </div>
 
         <div className="relative flex items-center gap-2 md:gap-3">

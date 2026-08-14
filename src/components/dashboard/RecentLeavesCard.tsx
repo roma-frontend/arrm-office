@@ -69,7 +69,7 @@ export function RecentLeavesCard({ recentLeaves }: RecentLeavesCardProps) {
 
   return (
     <motion.div variants={itemVariants} className="lg:col-span-1">
-      <Card className="h-full">
+      <Card className="h-full glass-panel">
         {/* The arrow in this corner used to be decoration that looked like a
             control. It is now the link it pretended to be. */}
         <SectionHeader

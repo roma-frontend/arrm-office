@@ -125,7 +125,7 @@ export function ShiftHistory({ driverId }: ShiftHistoryProps) {
                       <p className="text-[10px] sm:text-xs text-muted-foreground">
                         {t('driver.shift.overtime', 'Overtime')}
                       </p>
-                      <p className="font-medium text-orange-600 text-xs sm:text-sm">
+                      <p className="font-medium text-(--warning-text) text-xs sm:text-sm">
                         {shift.overtimeHours.toFixed(1)}
                         {t('driver.shift.h', 'h')}
                       </p>

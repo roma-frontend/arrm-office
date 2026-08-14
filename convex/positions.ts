@@ -89,7 +89,12 @@ export const options = query({
     return positions
       .filter((p) => p.isActive !== false)
       .filter((p) => !args.departmentId || p.departmentId === args.departmentId)
-      .map((p) => ({ _id: p._id, title: p.title, departmentId: p.departmentId }))
+      .map((p) => ({
+        _id: p._id,
+        title: p.title,
+        departmentId: p.departmentId,
+        isDriverPosition: p.isDriverPosition,
+      }))
       .sort((a, b) => a.title.localeCompare(b.title));
   },
 });
@@ -114,6 +119,7 @@ export const create = mutation({
     level: v.optional(v.string()),
     salaryMin: v.optional(v.number()),
     salaryMax: v.optional(v.number()),
+    isDriverPosition: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const scope = await assertOrgStaff(ctx, args.organizationId);
@@ -140,6 +146,7 @@ export const create = mutation({
       level: args.level,
       salaryMin: args.salaryMin,
       salaryMax: args.salaryMax,
+      isDriverPosition: args.isDriverPosition,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -156,6 +163,7 @@ export const update = mutation({
     level: v.optional(v.string()),
     salaryMin: v.optional(v.number()),
     salaryMax: v.optional(v.number()),
+    isDriverPosition: v.optional(v.boolean()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {

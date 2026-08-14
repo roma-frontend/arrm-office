@@ -77,9 +77,9 @@ function getProgressBarColor(progress: number): string {
 }
 
 function getProgressColor(progress: number): string {
-  if (progress >= 70) return 'text-emerald-600';
-  if (progress >= 40) return 'text-amber-600';
-  return 'text-red-600';
+  if (progress >= 70) return 'text-(--success-text)';
+  if (progress >= 40) return 'text-(--warning-text)';
+  return 'text-(--danger-text)';
 }
 
 function AlignmentNodeCard({

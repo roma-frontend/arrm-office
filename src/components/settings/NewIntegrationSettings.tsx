@@ -448,7 +448,7 @@ export default function NewIntegrationSettings() {
                 </div>
                 <div className="flex items-center gap-2">
                   {isLive ? (
-                    <Badge variant="default" className="bg-emerald-600 text-white">
+                    <Badge variant="default" className="bg-(--success) text-(--success-foreground)">
                       <Check className="w-3 h-3 mr-1" /> {t('common.active', 'Active')}
                     </Badge>
                   ) : (

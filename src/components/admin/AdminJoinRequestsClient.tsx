@@ -117,7 +117,7 @@ export default function AdminJoinRequestsClient() {
                 <p className="text-2xl font-bold">
                   {requests.filter((r: { status: string }) => r.status === 'pending').length}
                 </p>
-                <p className="text-sm text-gray-500">{t('joinRequests.pending', 'Pending')}</p>
+                <p className="text-sm text-(--text-3)">{t('joinRequests.pending', 'Pending')}</p>
               </div>
             </div>
           </CardContent>
@@ -133,7 +133,7 @@ export default function AdminJoinRequestsClient() {
                 <p className="text-2xl font-bold">
                   {requests.filter((r: { status: string }) => r.status === 'approved').length}
                 </p>
-                <p className="text-sm text-gray-500">{t('joinRequests.approved', 'Approved')}</p>
+                <p className="text-sm text-(--text-3)">{t('joinRequests.approved', 'Approved')}</p>
               </div>
             </div>
           </CardContent>
@@ -149,7 +149,7 @@ export default function AdminJoinRequestsClient() {
                 <p className="text-2xl font-bold">
                   {requests.filter((r: { status: string }) => r.status === 'rejected').length}
                 </p>
-                <p className="text-sm text-gray-500">{t('joinRequests.rejected', 'Rejected')}</p>
+                <p className="text-sm text-(--text-3)">{t('joinRequests.rejected', 'Rejected')}</p>
               </div>
             </div>
           </CardContent>
@@ -160,7 +160,7 @@ export default function AdminJoinRequestsClient() {
       <div className="space-y-4">
         {requests.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-gray-500">
+            <CardContent className="py-8 text-center text-(--text-3)">
               <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>{t('joinRequests.noRequests', 'No join requests yet')}</p>
             </CardContent>
@@ -215,7 +215,7 @@ export default function AdminJoinRequestsClient() {
                 {request.status === 'pending' && (
                   <div className="space-y-4">
                     <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
-                      <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-(--warning-text) mt-0.5" />
                       <div className="text-sm text-amber-800 dark:text-amber-200">
                         <p className="font-medium">
                           {t(
@@ -235,7 +235,7 @@ export default function AdminJoinRequestsClient() {
                     <div className="flex gap-2">
                       <Button
                         onClick={() => handleApprove(request._id)}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-(--success) hover:opacity-90"
                       >
                         <CheckCircle2 className="w-4 h-4 mr-2" />
                         {t('joinRequests.approve', 'Approve')}
@@ -286,7 +286,7 @@ export default function AdminJoinRequestsClient() {
                 )}
 
                 {request.status === 'approved' && (
-                  <div className="flex items-center gap-2 text-green-600">
+                  <div className="flex items-center gap-2 text-(--success-text)">
                     <CheckCircle2 className="w-5 h-5" />
                     <span>
                       {t('joinRequests.approvedOn', 'Approved on')}{' '}
@@ -305,7 +305,7 @@ export default function AdminJoinRequestsClient() {
 
                 {request.status === 'rejected' && (
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-red-600">
+                    <div className="flex items-center gap-2 text-(--danger-text)">
                       <XCircle className="w-5 h-5" />
                       <span>
                         {t('joinRequests.rejectedOn', 'Rejected on')}{' '}

@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useLayoutEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
@@ -44,6 +44,14 @@ import {
   Eye,
 } from 'lucide-react';
 import Image from 'next/image';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { ShieldLoader } from '../ui/ShieldLoader';
 import { logger } from '@/lib/logger';
 
@@ -127,7 +135,7 @@ function getCategories(t: (key: string, fallback: string) => string) {
     {
       value: 'other' as DocumentCategory,
       label: t('documents.categoryOther', 'Other'),
-      icon: <FileText className="w-4 h-4 text-gray-500" />,
+      icon: <FileText className="w-4 h-4 text-(--text-3)" />,
     },
   ];
 }
@@ -822,77 +830,38 @@ export default function DocumentUploadWizard({
     }
   };
 
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-(--card) rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-y-auto"
+  return (
+    <Sheet open onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="right"
+        size="lg"
+        closeLabel={t('common.close', 'Close')}
+        hideClose
+        className="p-0"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-(--border)">
-          <h2 className="text-xl font-bold text-(--text-primary)">
-            {t('documents.uploadDocument', 'Upload Document')}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Stepper */}
-        <div className="px-6 pt-4">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => {
-              const isCompleted = index < currentStep;
-              const isCurrent = index === currentStep;
-
-              return (
-                <React.Fragment key={step.id}>
-                  <div className="flex flex-col items-center flex-1">
-                    <div
-                      className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors',
-                        isCompleted
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : isCurrent
-                            ? 'border-(--primary) bg-(--card) text-(--primary)'
-                            : 'border-(--border) bg-(--card) text-(--muted-foreground)',
-                      )}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <span className="text-xs font-semibold">{index + 1}</span>
-                      )}
-                    </div>
-                    <p
-                      className={cn(
-                        'text-xs mt-1 font-medium',
-                        isCurrent ? 'text-(--primary)' : 'text-(--muted-foreground)',
-                      )}
-                    >
-                      {step.title}
-                    </p>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div className="flex-1 h-0.5 bg-(--border) mx-2 mb-6">
-                      <div
-                        className={cn(
-                          'h-full transition-colors',
-                          isCompleted ? 'bg-(--primary)' : 'bg-(--border)',
-                        )}
-                      />
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
+        <SheetHeader className="gap-3.5">
+          <div className="flex items-center justify-between pr-8">
+            <SheetTitle className="text-heading text-(--text-primary)">
+              {t('documents.uploadDocument', 'Upload Document')}
+            </SheetTitle>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
           </div>
-        </div>
+          <WizardStepper
+            steps={steps}
+            current={currentStep}
+            onStepClick={(i) => {
+              // Backwards is always safe; forwards only through the steps the
+              // footer already lets the user reach.
+              if (i < currentStep) setCurrentStep(i);
+            }}
+          />
+        </SheetHeader>
 
         {/* Content */}
-        <div className="px-6 py-4 max-h-[60vh] overflow-y-clip">
+        <SheetBody className="px-5 py-5">
           <WizardDraftNotice
             show={draft.restored}
             step={draft.restoredStep}
@@ -924,10 +893,10 @@ export default function DocumentUploadWizard({
               {renderStepContent()}
             </motion.div>
           </AnimatePresence>
-        </div>
+        </SheetBody>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between gap-3 p-6 pt-4 border-t border-(--border)">
+        <SheetFooter className="justify-between">
           <Button
             variant="outline"
             onClick={handleBack}
@@ -973,9 +942,8 @@ export default function DocumentUploadWizard({
               )}
             </Button>
           )}
-        </div>
-      </motion.div>
-    </div>,
-    document.body,
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

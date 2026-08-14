@@ -47,6 +47,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -402,6 +408,7 @@ function DayCell({
   companyEvents,
   onClick,
   onDoubleClick,
+  onDropEvent,
 }: {
   date: Date;
   currentMonth: Date;
@@ -414,6 +421,8 @@ function DayCell({
   companyEvents: CompanyEvent[];
   onClick: () => void;
   onDoubleClick: () => void;
+  /** Drag & drop target — receives custom events dropped onto this day. */
+  onDropEvent?: (event: CalendarEvent) => void;
 }) {
   const { t } = useTranslation();
   const isCurrentMonth = isSameMonth(date, currentMonth);
@@ -437,6 +446,22 @@ function DayCell({
     <button
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onDragOver={(e) => {
+        if (onDropEvent) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }
+      }}
+      onDrop={(e) => {
+        if (!onDropEvent) return;
+        e.preventDefault();
+        try {
+          const raw = e.dataTransfer.getData('application/json');
+          if (raw) onDropEvent(JSON.parse(raw) as CalendarEvent);
+        } catch {
+          /* not one of our events — ignore */
+        }
+      }}
       className={[
         'relative w-full min-h-10 sm:min-h-22.5 rounded-xl p-1.5 text-left transition-all duration-200 border',
         isSelected
@@ -555,27 +580,101 @@ function DayCell({
               </span>
             </div>
           ))}
-          {/* Custom event pills */}
-          {customEvents.slice(0, 1).map((evt) => (
-            <div
-              key={evt.id}
-              className="flex items-center gap-1 rounded-full px-1.5 py-0.5"
-              style={{
-                background: isSelected ? 'rgba(255,255,255,0.2)' : '#3b82f622',
-              }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ background: isSelected ? '#fff' : '#3b82f6' }}
-              />
-              <span
-                className="text-[9px] font-medium truncate hidden sm:block"
-                style={{ color: isSelected ? '#fff' : '#3b82f6' }}
-              >
-                {evt.title}
-              </span>
-            </div>
-          ))}
+          {/* Custom event pills — with attendee avatars, per the redesign brief */}
+          {customEvents.slice(0, 1).map((evt) => {
+            const avatars = evt.attendees.slice(0, 3);
+            const overflow = evt.attendees.length - avatars.length;
+            const attendeeNames = evt.attendees.length ? evt.attendees.join(', ') : undefined;
+            return (
+              <TooltipRoot key={evt.id} delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <div
+                    draggable={Boolean(onDropEvent)}
+                    onDragStart={(e) => {
+                      if (!onDropEvent) return;
+                      e.dataTransfer.setData('application/json', JSON.stringify(evt));
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    className="group flex items-center gap-1.5 rounded-full px-1.5 py-0.5 cursor-grab active:cursor-grabbing"
+                    style={{
+                      background: isSelected ? 'rgba(255,255,255,0.2)' : '#3b82f622',
+                    }}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: isSelected ? '#fff' : '#3b82f6' }}
+                    />
+                    <span
+                      className="text-[9px] font-medium truncate hidden sm:block"
+                      style={{ color: isSelected ? '#fff' : '#3b82f6' }}
+                    >
+                      {evt.title}
+                    </span>
+                    {/* Attendee avatar stack — the guest list at a glance */}
+                    {avatars.length > 0 && (
+                      <span className="flex -space-x-1 shrink-0" aria-hidden>
+                        {avatars.map((name, ai) => (
+                          <span
+                            key={`a-${ai}`}
+                            className="flex size-3.5 items-center justify-center rounded-full border text-[6px] font-bold"
+                            style={{
+                              background: isSelected
+                                ? 'rgba(255,255,255,0.85)'
+                                : 'var(--surface-2)',
+                              borderColor: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--card)',
+                              color: isSelected ? 'var(--brand)' : 'var(--text-secondary)',
+                            }}
+                          >
+                            {getInitials(name).slice(0, 2)}
+                          </span>
+                        ))}
+                        {overflow > 0 && (
+                          <span
+                            className="flex size-3.5 items-center justify-center rounded-full border text-[6px] font-bold"
+                            style={{
+                              background: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--surface-3)',
+                              borderColor: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--card)',
+                              color: isSelected ? 'var(--brand)' : 'var(--text-secondary)',
+                            }}
+                          >
+                            +{overflow}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-caption font-semibold text-(--text-primary)">{evt.title}</p>
+                  {evt.startTime && !evt.allDay && (
+                    <p className="num text-caption text-(--text-muted)">
+                      {evt.startTime}–{evt.endTime}
+                    </p>
+                  )}
+                  {attendeeNames && (
+                    <ul className="mt-1.5 flex flex-col gap-1">
+                      {evt.attendees.map((name, ai) => (
+                        <li key={`${evt.id}-n-${ai}`} className="flex items-center gap-1.5">
+                          <span
+                            className="flex size-4 shrink-0 items-center justify-center rounded-full border border-(--border-default) bg-(--surface-2) text-[7px] font-bold text-(--text-secondary)"
+                            aria-hidden
+                          >
+                            {getInitials(name).slice(0, 2)}
+                          </span>
+                          <span className="truncate text-caption text-(--text-secondary)">
+                            {name}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {!attendeeNames && evt.location && (
+                    <p className="mt-0.5 text-caption text-(--text-muted)">{evt.location}</p>
+                  )}
+                </TooltipContent>
+              </TooltipRoot>
+            );
+          })}
           {/* Room booking pills */}
           {roomBookings.slice(0, 1).map((evt) => {
             const color = evt.roomColor ?? ROOM_EVENT_COLOR;
@@ -633,6 +732,57 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const eventDraft = useDraftResume('create-event:new', !showCreateEvent);
   const leaveDraft = useDraftResume('leave-request', !showLeaveModal);
   const deleteEventMutation = useMutation(api.calendarEvents.remove);
+  const updateEventMutation = useMutation(api.calendarEvents.update);
+
+  /**
+   * Drag & drop: move a custom event onto another day. Only the date moves —
+   * the room reservation, when one exists, is re-booked by the same mutation
+   * against the new window, exactly like an edit from the modal.
+   */
+  const handleMoveEventToDay = useCallback(
+    async (event: CalendarEvent, target: Date) => {
+      if (event.date === format(target, 'yyyy-MM-dd')) return;
+      try {
+        const [hh, mm] = (event.startTime || '09:00').split(':').map(Number);
+        const [eh, em] = (event.endTime || '10:00').split(':').map(Number);
+        const roomStart = new Date(
+          target.getFullYear(),
+          target.getMonth(),
+          target.getDate(),
+          hh || 9,
+          mm || 0,
+        ).getTime();
+        const roomEnd = new Date(
+          target.getFullYear(),
+          target.getMonth(),
+          target.getDate(),
+          eh || 10,
+          em || 0,
+        ).getTime();
+        await updateEventMutation({
+          id: event.id as Id<'calendarEvents'>,
+          title: event.title,
+          date: format(target, 'yyyy-MM-dd'),
+          startTime: event.allDay ? '00:00' : event.startTime,
+          endTime: event.allDay ? '23:59' : event.endTime,
+          allDay: event.allDay,
+          location: event.location || undefined,
+          description: event.description || undefined,
+          category: event.category,
+          reminder: event.reminder,
+          attachmentUrl: event.attachmentUrl,
+          attendeeIds: (event.attendeeIds ?? []) as Id<'users'>[],
+          roomId: event.roomId as Id<'meetingRooms'> | undefined,
+          roomStartTime: event.roomId ? roomStart : undefined,
+          roomEndTime: event.roomId ? roomEnd : undefined,
+        });
+        toast.success(t('calendar.eventMoved', 'Event moved'));
+      } catch {
+        toast.error(t('calendar.eventMoveFailed', 'Could not move event'));
+      }
+    },
+    [updateEventMutation, t],
+  );
   const [selectedLeave, setSelectedLeave] = useState<LeaveRequest | null>(null);
   const [selectedDriverEvent, setSelectedDriverEvent] = useState<DriverScheduleEvent | null>(null);
   const [selectedGoogleEvent, setSelectedGoogleEvent] = useState<GoogleCalendarEvent | null>(null);
@@ -1201,685 +1351,636 @@ export const CalendarClient = React.memo(function CalendarClient() {
   if (!mounted) return null;
 
   return (
-    <div className="space-y-6">
-      {/* -- Sticky Header -- */}
-      <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--text-primary)">
-                {t(`calendarScope.${scope}.title`)}
-              </h2>
-              <p className="text-(--text-muted) text-sm mt-1">
-                {t(`calendarScope.${scope}.subtitle`)}
+    <TooltipProvider delayDuration={250}>
+      <div className="space-y-6">
+        {/* -- Sticky Header -- */}
+        <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--text-primary)">
+                  {t(`calendarScope.${scope}.title`)}
+                </h2>
+                <p className="text-(--text-muted) text-sm mt-1">
+                  {t(`calendarScope.${scope}.subtitle`)}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <Button variant="outline" size="sm" onClick={goToday} className="w-full sm:w-auto">
+                  <CalendarDays className="w-4 h-4" />
+                  {t('buttons.today')}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => guardBooking(selectedDay, () => setShowLeaveModal(true))}
+                  className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t('calendar.newLeave')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => guardBooking(selectedDay, () => setShowCreateEvent(true))}
+                  className="flex items-center gap-2 w-full sm:w-auto justify-center"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t('createMeeting.title')}
+                </Button>
+              </div>
+            </div>
+
+            {/* Scope switcher — personal vs. shared calendar */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <CalendarScopeSwitcher value={scope} onChange={changeScope} counts={scopeCounts} />
+              <p className="hidden lg:block text-xs text-(--text-muted)">
+                {t(`calendarScope.${scope}.hint`)}
               </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-2">
-              <Button variant="outline" size="sm" onClick={goToday} className="w-full sm:w-auto">
-                <CalendarDays className="w-4 h-4" />
-                {t('buttons.today')}
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => guardBooking(selectedDay, () => setShowLeaveModal(true))}
-                className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
-              >
-                <Plus className="w-4 h-4" />
-                {t('calendar.newLeave')}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => guardBooking(selectedDay, () => setShowCreateEvent(true))}
-                className="flex items-center gap-2 w-full sm:w-auto justify-center"
-              >
-                <Plus className="w-4 h-4" />
-                {t('createMeeting.title')}
-              </Button>
-            </div>
-          </div>
-
-          {/* Scope switcher — personal vs. shared calendar */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <CalendarScopeSwitcher value={scope} onChange={changeScope} counts={scopeCounts} />
-            <p className="hidden lg:block text-xs text-(--text-muted)">
-              {t(`calendarScope.${scope}.hint`)}
-            </p>
-            {/* Politely announced so the change is not silent for screen readers. */}
-            <span aria-live="polite" className="sr-only">
-              {t(`calendarScope.${scope}.announce`)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div
-        id="calendar-scope-panel"
-        role="tabpanel"
-        aria-labelledby={`calendar-scope-${scope}`}
-        className="grid grid-cols-1 xl:grid-cols-4 gap-6"
-      >
-        {/* -- Calendar Panel -- */}
-        <div className="xl:col-span-3 space-y-4">
-          <Card className="overflow-hidden">
-            {/* Month nav */}
-            <CardHeader className="pb-0 px-4 pt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Button size="icon-sm" variant="ghost" onClick={prevMonth}>
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <motion.h3
-                    key={format(currentMonth, 'yyyy-MM')}
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-lg font-bold text-(--text-primary) min-w-40 text-center capitalize"
-                  >
-                    {standaloneMonth(currentMonth, lang, true)}
-                  </motion.h3>
-                  <Button size="icon-sm" variant="ghost" onClick={nextMonth}>
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Quick month stats */}
-                <div className="hidden sm:flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <span className="text-(--text-muted)">
-                      {
-                        scopedLeaves.filter(
-                          (r) =>
-                            r.status === 'approved' &&
-                            isSameMonth(new Date(r.startDate), currentMonth),
-                        ).length
-                      }{' '}
-                      {t('leave.approved')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                    <span className="text-(--text-muted)">
-                      {
-                        scopedLeaves.filter(
-                          (r) =>
-                            r.status === 'pending' &&
-                            isSameMonth(new Date(r.startDate), currentMonth),
-                        ).length
-                      }{' '}
-                      {t('leave.pending')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-3 sm:p-4">
-              {/* Day-of-week header */}
-              <div className="grid grid-cols-7 gap-1.5 mb-3">
-                {DAYS_OF_WEEK.map((d) => (
-                  <div
-                    key={d}
-                    className="text-center text-xs font-semibold text-(--text-muted) py-2 border-b border-(--border)"
-                  >
-                    {d}
-                  </div>
-                ))}
-              </div>
-
-              {/* Day grid */}
-              <AnimatePresence mode="wait">
-                <div key={format(currentMonth, 'yyyy-MM')} className="grid grid-cols-7 gap-1.5">
-                  {calendarDays.map((date, i) => {
-                    const key = format(date, 'yyyy-MM-dd');
-                    const leaves = leaveDateMap.get(key) ?? [];
-                    const gEvents = googleDateMap.get(key) ?? [];
-                    const dEvents = driverDateMap.get(key) ?? [];
-                    const cEvents = customEventsMap.get(key) ?? [];
-                    const rBookings = roomDateMap.get(key) ?? [];
-                    const orgEvents = companyEventsMap.get(key) ?? [];
-                    return (
-                      <ContextMenu key={i}>
-                        <ContextMenuTrigger>
-                          <DayCell
-                            date={date}
-                            currentMonth={currentMonth}
-                            selected={selectedDay}
-                            leaves={leaves}
-                            googleEvents={gEvents}
-                            driverEvents={dEvents}
-                            customEvents={cEvents}
-                            roomBookings={rBookings}
-                            companyEvents={orgEvents}
-                            onClick={() => setSelectedDay(date)}
-                            onDoubleClick={() => {
-                              setSelectedDay(date);
-                              // A day holding exactly one entry goes straight to
-                              // its timeline; several entries need the day list
-                              // first (each row there opens its own timeline).
-                              // An empty day keeps the "create event" shortcut.
-                              const single =
-                                rBookings.length === 0
-                                  ? singleTimelineFor(leaves, gEvents, dEvents, cEvents, orgEvents)
-                                  : null;
-                              if (single) {
-                                setTimelineInput(single);
-                              } else if (
-                                leaves.length +
-                                  gEvents.length +
-                                  dEvents.length +
-                                  cEvents.length +
-                                  rBookings.length +
-                                  orgEvents.length >
-                                0
-                              ) {
-                                setShowDayDetails(true);
-                              } else {
-                                guardBooking(date, () => setShowCreateEvent(true));
-                              }
-                            }}
-                          />
-                        </ContextMenuTrigger>
-                        <ContextMenuContent className="w-52">
-                          <ContextMenuItem
-                            disabled={isPastDate(date)}
-                            onSelect={() =>
-                              setTimeout(() => {
-                                setSelectedDay(date);
-                                guardBooking(date, () => setShowCreateEvent(true));
-                              })
-                            }
-                            className="gap-2"
-                          >
-                            <CalendarPlus className="w-4 h-4 text-blue-500" />
-                            {t('createMeeting.contextMenu.newEvent')}
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            disabled={isPastDate(date)}
-                            onSelect={() =>
-                              setTimeout(() => {
-                                setSelectedDay(date);
-                                guardBooking(date, () => setShowLeaveModal(true));
-                              })
-                            }
-                            className="gap-2"
-                          >
-                            <CalendarDays className="w-4 h-4 text-emerald-500" />
-                            {t('createMeeting.contextMenu.newLeave')}
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            disabled={isPastDate(date)}
-                            onSelect={() =>
-                              setTimeout(() => {
-                                setSelectedDay(date);
-                                guardBooking(date, () => setShowDriverModal(true));
-                              })
-                            }
-                            className="gap-2"
-                          >
-                            <Car className="w-4 h-4 text-orange-500" />
-                            {t('createMeeting.contextMenu.bookDriver')}
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            disabled={isPastDate(date) || rooms.length === 0}
-                            onSelect={() =>
-                              setTimeout(() => {
-                                setSelectedDay(date);
-                                guardBooking(date, () => {
-                                  setRoomBookingRoomId(null);
-                                  setRoomBookingDate(date);
-                                  setShowRoomBooking(true);
-                                });
-                              })
-                            }
-                            className="gap-2"
-                          >
-                            <DoorOpen className="w-4 h-4 text-sky-500" />
-                            {t('rooms.bookRoom')}
-                          </ContextMenuItem>
-                          <ContextMenuSeparator />
-                          <ContextMenuItem
-                            onSelect={() => {
-                              setSelectedDay(date);
-                              setShowDayDetails(true);
-                            }}
-                            className="gap-2"
-                          >
-                            <Clock className="w-4 h-4 text-(--text-muted)" />
-                            {t('createMeeting.contextMenu.viewDay')}
-                          </ContextMenuItem>
-                          <ContextMenuItem
-                            onSelect={() => {
-                              navigator.clipboard.writeText(format(date, 'yyyy-MM-dd'));
-                              toast.success(t('createMeeting.contextMenu.copyDate'));
-                            }}
-                            className="gap-2"
-                          >
-                            <ClipboardCopy className="w-4 h-4 text-(--text-muted)" />
-                            {t('createMeeting.contextMenu.copyDate')}
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </ContextMenu>
-                    );
-                  })}
-                </div>
-              </AnimatePresence>
-            </CardContent>
-          </Card>
-
-          {/* Legend */}
-          <div className="flex flex-wrap gap-3 px-1">
-            {(Object.entries(LEAVE_TYPE_COLORS) as [LeaveType, string][]).map(([type, color]) => (
-              <div key={type} className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ background: color }} />
-                <span className="text-xs text-(--text-muted)">{getLeaveTypeLabel(type, t)}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{ background: DRIVER_EVENT_COLOR }}
-              />
-              <span className="text-xs text-(--text-muted)">
-                {t('driver.driverBookings', 'Driver Bookings')}
+              {/* Politely announced so the change is not silent for screen readers. */}
+              <span aria-live="polite" className="sr-only">
+                {t(`calendarScope.${scope}.announce`)}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{ background: ROOM_EVENT_COLOR }}
-              />
-              <span className="text-xs text-(--text-muted)">{t('rooms.calendar.legend')}</span>
-            </div>
-            {companyEvents.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ background: COMPANY_EVENT_COLOR }}
-                />
-                <span className="text-xs text-(--text-muted)">{t('dayDetails.companyEvents')}</span>
-              </div>
-            )}
-            {googleConnected && (
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ background: GOOGLE_EVENT_COLOR }}
-                />
-                <span className="text-xs text-(--text-muted)">
-                  {t('calendar.googleCalendar', 'Google Calendar')}
-                </span>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full border-2 border-(--primary) bg-(--primary)/10 shrink-0" />
-              <span className="text-xs text-(--text-muted)">{t('timePeriods.today')}</span>
-            </div>
           </div>
         </div>
 
-        {/* -- Side Panel -- */}
-        <motion.div
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-4 scrollbar-hide"
+        <div
+          id="calendar-scope-panel"
+          role="tabpanel"
+          aria-labelledby={`calendar-scope-${scope}`}
+          className="grid grid-cols-1 xl:grid-cols-4 gap-6"
         >
-          {/* Selected day details */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm uppercase tracking-wider text-(--text-muted)">
-                {selectedDay ? fullDayLabel(selectedDay, lang) : t('calendar.selectADay')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 scrollbar-hide">
-              <AnimatePresence mode="wait">
-                {selectedDayLeaves.length === 0 &&
-                selectedDayGoogle.length === 0 &&
-                selectedDayDriverEvents.length === 0 &&
-                selectedDayCustomEvents.length === 0 &&
-                selectedDayRoomBookings.length === 0 &&
-                selectedDayCompanyEvents.length === 0 ? (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="py-6 text-center overflow-hidden"
-                  >
-                    <CalendarDays className="w-8 h-8 text-(--border) mx-auto mb-2" />
-                    <p className="text-sm text-(--text-muted)">
-                      {t(`calendarScope.${scope}.emptyDay`)}
-                    </p>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="list"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide"
-                  >
-                    {/* Company events — first, they concern the whole org */}
-                    {selectedDayCompanyEvents.map((event, i) => {
-                      const accent = COMPANY_EVENT_ACCENTS[event.eventType] ?? COMPANY_EVENT_COLOR;
+          {/* -- Calendar Panel -- */}
+          <div className="xl:col-span-3 space-y-4">
+            <Card className="overflow-hidden">
+              {/* Month nav */}
+              <CardHeader className="pb-0 px-4 pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Button size="icon-sm" variant="ghost" onClick={prevMonth}>
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <motion.h3
+                      key={format(currentMonth, 'yyyy-MM')}
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-lg font-bold text-(--text-primary) min-w-40 text-center capitalize"
+                    >
+                      {standaloneMonth(currentMonth, lang, true)}
+                    </motion.h3>
+                    <Button size="icon-sm" variant="ghost" onClick={nextMonth}>
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Quick month stats */}
+                  <div className="hidden sm:flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      <span className="text-(--text-muted)">
+                        {
+                          scopedLeaves.filter(
+                            (r) =>
+                              r.status === 'approved' &&
+                              isSameMonth(new Date(r.startDate), currentMonth),
+                          ).length
+                        }{' '}
+                        {t('leave.approved')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                      <span className="text-(--text-muted)">
+                        {
+                          scopedLeaves.filter(
+                            (r) =>
+                              r.status === 'pending' &&
+                              isSameMonth(new Date(r.startDate), currentMonth),
+                          ).length
+                        }{' '}
+                        {t('leave.pending')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-3 sm:p-4">
+                {/* Day-of-week header */}
+                <div className="grid grid-cols-7 gap-1.5 mb-3">
+                  {DAYS_OF_WEEK.map((d) => (
+                    <div
+                      key={d}
+                      className="text-center text-xs font-semibold text-(--text-muted) py-2 border-b border-(--border)"
+                    >
+                      {d}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Day grid */}
+                <AnimatePresence mode="wait">
+                  <div key={format(currentMonth, 'yyyy-MM')} className="grid grid-cols-7 gap-1.5">
+                    {calendarDays.map((date, i) => {
+                      const key = format(date, 'yyyy-MM-dd');
+                      const leaves = leaveDateMap.get(key) ?? [];
+                      const gEvents = googleDateMap.get(key) ?? [];
+                      const dEvents = driverDateMap.get(key) ?? [];
+                      const cEvents = customEventsMap.get(key) ?? [];
+                      const rBookings = roomDateMap.get(key) ?? [];
+                      const orgEvents = companyEventsMap.get(key) ?? [];
                       return (
+                        <ContextMenu key={i}>
+                          <ContextMenuTrigger>
+                            <DayCell
+                              date={date}
+                              currentMonth={currentMonth}
+                              selected={selectedDay}
+                              leaves={leaves}
+                              googleEvents={gEvents}
+                              driverEvents={dEvents}
+                              customEvents={cEvents}
+                              roomBookings={rBookings}
+                              companyEvents={orgEvents}
+                              onClick={() => setSelectedDay(date)}
+                              onDoubleClick={() => {
+                                setSelectedDay(date);
+                                // A day holding exactly one entry goes straight to
+                                // its timeline; several entries need the day list
+                                // first (each row there opens its own timeline).
+                                // An empty day keeps the "create event" shortcut.
+                                const single =
+                                  rBookings.length === 0
+                                    ? singleTimelineFor(
+                                        leaves,
+                                        gEvents,
+                                        dEvents,
+                                        cEvents,
+                                        orgEvents,
+                                      )
+                                    : null;
+                                if (single) {
+                                  setTimelineInput(single);
+                                } else if (
+                                  leaves.length +
+                                    gEvents.length +
+                                    dEvents.length +
+                                    cEvents.length +
+                                    rBookings.length +
+                                    orgEvents.length >
+                                  0
+                                ) {
+                                  setShowDayDetails(true);
+                                } else {
+                                  guardBooking(date, () => setShowCreateEvent(true));
+                                }
+                              }}
+                              onDropEvent={(event) => {
+                                void handleMoveEventToDay(event, date);
+                              }}
+                            />
+                          </ContextMenuTrigger>
+                          <ContextMenuContent className="w-52">
+                            <ContextMenuItem
+                              disabled={isPastDate(date)}
+                              onSelect={() =>
+                                setTimeout(() => {
+                                  setSelectedDay(date);
+                                  guardBooking(date, () => setShowCreateEvent(true));
+                                })
+                              }
+                              className="gap-2"
+                            >
+                              <CalendarPlus className="w-4 h-4 text-blue-500" />
+                              {t('createMeeting.contextMenu.newEvent')}
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                              disabled={isPastDate(date)}
+                              onSelect={() =>
+                                setTimeout(() => {
+                                  setSelectedDay(date);
+                                  guardBooking(date, () => setShowLeaveModal(true));
+                                })
+                              }
+                              className="gap-2"
+                            >
+                              <CalendarDays className="w-4 h-4 text-emerald-500" />
+                              {t('createMeeting.contextMenu.newLeave')}
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                              disabled={isPastDate(date)}
+                              onSelect={() =>
+                                setTimeout(() => {
+                                  setSelectedDay(date);
+                                  guardBooking(date, () => setShowDriverModal(true));
+                                })
+                              }
+                              className="gap-2"
+                            >
+                              <Car className="w-4 h-4 text-orange-500" />
+                              {t('createMeeting.contextMenu.bookDriver')}
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                              disabled={isPastDate(date) || rooms.length === 0}
+                              onSelect={() =>
+                                setTimeout(() => {
+                                  setSelectedDay(date);
+                                  guardBooking(date, () => {
+                                    setRoomBookingRoomId(null);
+                                    setRoomBookingDate(date);
+                                    setShowRoomBooking(true);
+                                  });
+                                })
+                              }
+                              className="gap-2"
+                            >
+                              <DoorOpen className="w-4 h-4 text-sky-500" />
+                              {t('rooms.bookRoom')}
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem
+                              onSelect={() => {
+                                setSelectedDay(date);
+                                setShowDayDetails(true);
+                              }}
+                              className="gap-2"
+                            >
+                              <Clock className="w-4 h-4 text-(--text-muted)" />
+                              {t('createMeeting.contextMenu.viewDay')}
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                              onSelect={() => {
+                                navigator.clipboard.writeText(format(date, 'yyyy-MM-dd'));
+                                toast.success(t('createMeeting.contextMenu.copyDate'));
+                              }}
+                              className="gap-2"
+                            >
+                              <ClipboardCopy className="w-4 h-4 text-(--text-muted)" />
+                              {t('createMeeting.contextMenu.copyDate')}
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
+                      );
+                    })}
+                  </div>
+                </AnimatePresence>
+              </CardContent>
+            </Card>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 px-1">
+              {(Object.entries(LEAVE_TYPE_COLORS) as [LeaveType, string][]).map(([type, color]) => (
+                <div key={type} className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ background: color }} />
+                  <span className="text-xs text-(--text-muted)">{getLeaveTypeLabel(type, t)}</span>
+                </div>
+              ))}
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ background: DRIVER_EVENT_COLOR }}
+                />
+                <span className="text-xs text-(--text-muted)">
+                  {t('driver.driverBookings', 'Driver Bookings')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ background: ROOM_EVENT_COLOR }}
+                />
+                <span className="text-xs text-(--text-muted)">{t('rooms.calendar.legend')}</span>
+              </div>
+              {companyEvents.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-3 h-3 rounded-full shrink-0"
+                    style={{ background: COMPANY_EVENT_COLOR }}
+                  />
+                  <span className="text-xs text-(--text-muted)">
+                    {t('dayDetails.companyEvents')}
+                  </span>
+                </div>
+              )}
+              {googleConnected && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-3 h-3 rounded-full shrink-0"
+                    style={{ background: GOOGLE_EVENT_COLOR }}
+                  />
+                  <span className="text-xs text-(--text-muted)">
+                    {t('calendar.googleCalendar', 'Google Calendar')}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full border-2 border-(--primary) bg-(--primary)/10 shrink-0" />
+                <span className="text-xs text-(--text-muted)">{t('timePeriods.today')}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* -- Side Panel -- */}
+          <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-4 scrollbar-hide"
+          >
+            {/* Selected day details */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm uppercase tracking-wider text-(--text-muted)">
+                  {selectedDay ? fullDayLabel(selectedDay, lang) : t('calendar.selectADay')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 scrollbar-hide">
+                <AnimatePresence mode="wait">
+                  {selectedDayLeaves.length === 0 &&
+                  selectedDayGoogle.length === 0 &&
+                  selectedDayDriverEvents.length === 0 &&
+                  selectedDayCustomEvents.length === 0 &&
+                  selectedDayRoomBookings.length === 0 &&
+                  selectedDayCompanyEvents.length === 0 ? (
+                    <motion.div
+                      key="empty"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="py-6 text-center overflow-hidden"
+                    >
+                      <CalendarDays className="w-8 h-8 text-(--border) mx-auto mb-2" />
+                      <p className="text-sm text-(--text-muted)">
+                        {t(`calendarScope.${scope}.emptyDay`)}
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="list"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="space-y-2 max-h-80 overflow-y-auto scrollbar-hide"
+                    >
+                      {/* Company events — first, they concern the whole org */}
+                      {selectedDayCompanyEvents.map((event, i) => {
+                        const accent =
+                          COMPANY_EVENT_ACCENTS[event.eventType] ?? COMPANY_EVENT_COLOR;
+                        return (
+                          <motion.div
+                            key={event._id}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            title={t('eventTimeline.hints.doubleClick')}
+                            className="flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors"
+                            style={{ borderColor: `${accent}55`, background: `${accent}0f` }}
+                            onClick={() =>
+                              dualClick.single(() => {
+                                setShowDayDetails(true);
+                              })
+                            }
+                            onDoubleClick={() =>
+                              dualClick.double(() =>
+                                setTimelineInput({
+                                  source: 'company',
+                                  data: toCompanyTimelineData(event),
+                                }),
+                              )
+                            }
+                          >
+                            <div
+                              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                              style={{ background: `${accent}1f`, color: accent }}
+                            >
+                              <Building2 className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-(--text-primary) truncate">
+                                {event.name}
+                              </p>
+                              <p className="text-xs truncate" style={{ color: accent }}>
+                                {t(`event.types.${event.eventType}`, {
+                                  defaultValue: event.eventType,
+                                })}
+                              </p>
+                              <p className="text-[11px] text-(--text-muted) mt-0.5 truncate">
+                                {event.isAllDay === false
+                                  ? `${format(new Date(event.startDate), 'HH:mm')} – ${format(
+                                      new Date(Math.max(event.endDate, event.startDate)),
+                                      'HH:mm',
+                                    )}`
+                                  : t('createMeeting.allDay')}
+                                {event.requiredDepartments.length > 0
+                                  ? ` · ${event.requiredDepartments.join(', ')}`
+                                  : ` · ${t('dayDetails.wholeCompany')}`}
+                              </p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+
+                      {/* Leave requests */}
+                      {selectedDayLeaves.map((leave, i) => (
                         <motion.div
-                          key={event._id}
+                          key={leave._id}
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.04 }}
                           title={t('eventTimeline.hints.doubleClick')}
-                          className="flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors"
-                          style={{ borderColor: `${accent}55`, background: `${accent}0f` }}
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
                           onClick={() =>
                             dualClick.single(() => {
-                              setShowDayDetails(true);
+                              setSelectedLeave(leave);
+                              scrollToTop();
                             })
                           }
                           onDoubleClick={() =>
                             dualClick.double(() =>
-                              setTimelineInput({
-                                source: 'company',
-                                data: toCompanyTimelineData(event),
-                              }),
+                              setTimelineInput({ source: 'leave', data: leave }),
+                            )
+                          }
+                        >
+                          <Avatar className="w-8 h-8 shrink-0">
+                            <AvatarFallback
+                              className="text-[10px] font-bold text-white"
+                              style={{ background: LEAVE_TYPE_BG[leave.type] }}
+                            >
+                              {getInitials(leave.userName ?? '?')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="text-xs font-semibold text-(--text-primary) truncate">
+                                {leave.userName ?? t('common.unknownUser', 'Unknown')}
+                              </p>
+                              <StatusIcon status={leave.status as LeaveStatus} />
+                            </div>
+                            <p className="text-[10px] text-(--text-muted) mt-0.5">
+                              {leave.userDepartment ?? ''}
+                            </p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ background: LEAVE_TYPE_BG[leave.type] }}
+                              />
+                              <span className="text-[10px] text-(--text-secondary)">
+                                {getLeaveTypeLabel(leave.type as LeaveType, t)}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-(--text-muted) mt-0.5">
+                              {safeFormat(leave.startDate, 'MMM d')} &ndash;{' '}
+                              {safeFormat(leave.endDate, 'MMM d')} &middot; {leave.days}d
+                            </p>
+                            {leave.comment && (
+                              <p className="text-[10px] text-(--text-muted) mt-1 italic line-clamp-2">
+                                &quot;{leave.comment}&quot;
+                              </p>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+
+                      {/* Google Calendar events */}
+                      {selectedDayGoogle.map((evt, i) => (
+                        <motion.div
+                          key={evt.id}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: (selectedDayLeaves.length + i) * 0.04 }}
+                          title={t('eventTimeline.hints.doubleClick')}
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
+                          onClick={() =>
+                            dualClick.single(() => {
+                              setSelectedGoogleEvent(evt);
+                              scrollToTop();
+                            })
+                          }
+                          onDoubleClick={() =>
+                            dualClick.double(() =>
+                              setTimelineInput({ source: 'google', data: evt }),
                             )
                           }
                         >
                           <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ background: `${accent}1f`, color: accent }}
+                            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
+                            style={{ background: GOOGLE_EVENT_COLOR }}
                           >
-                            <Building2 className="w-4 h-4" />
+                            G
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-(--text-primary) truncate">
-                              {event.name}
-                            </p>
-                            <p className="text-xs truncate" style={{ color: accent }}>
-                              {t(`event.types.${event.eventType}`, {
-                                defaultValue: event.eventType,
-                              })}
-                            </p>
-                            <p className="text-[11px] text-(--text-muted) mt-0.5 truncate">
-                              {event.isAllDay === false
-                                ? `${format(new Date(event.startDate), 'HH:mm')} – ${format(
-                                    new Date(Math.max(event.endDate, event.startDate)),
-                                    'HH:mm',
-                                  )}`
-                                : t('createMeeting.allDay')}
-                              {event.requiredDepartments.length > 0
-                                ? ` · ${event.requiredDepartments.join(', ')}`
-                                : ` · ${t('dayDetails.wholeCompany')}`}
-                            </p>
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="text-xs font-semibold text-(--text-primary) truncate">
+                                {evt.title}
+                              </p>
+                              {evt.htmlLink && (
+                                <a
+                                  href={evt.htmlLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-(--text-muted) hover:text-(--primary) shrink-0"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
+                            {evt.startTime && (
+                              <p className="text-[10px] text-(--text-muted) mt-0.5">
+                                {format(new Date(evt.startTime), 'HH:mm', {
+                                  locale: dateFnsLocale,
+                                })}
+                                {evt.endTime &&
+                                  ` – ${format(new Date(evt.endTime), 'HH:mm', { locale: dateFnsLocale })}`}
+                              </p>
+                            )}
+                            {!evt.startTime && (
+                              <p className="text-[10px] text-(--text-muted) mt-0.5">
+                                {t('calendar.allDay', 'All day')}
+                              </p>
+                            )}
+                            {evt.location && (
+                              <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
+                                📍 {evt.location}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1 mt-1">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ background: GOOGLE_EVENT_COLOR }}
+                              />
+                              <span className="text-[10px] text-(--text-secondary)">
+                                {t('calendar.googleCalendar', 'Google Calendar')}
+                              </span>
+                            </div>
                           </div>
                         </motion.div>
-                      );
-                    })}
+                      ))}
 
-                    {/* Leave requests */}
-                    {selectedDayLeaves.map((leave, i) => (
-                      <motion.div
-                        key={leave._id}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.04 }}
-                        title={t('eventTimeline.hints.doubleClick')}
-                        className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        onClick={() =>
-                          dualClick.single(() => {
-                            setSelectedLeave(leave);
-                            scrollToTop();
-                          })
-                        }
-                        onDoubleClick={() =>
-                          dualClick.double(() => setTimelineInput({ source: 'leave', data: leave }))
-                        }
-                      >
-                        <Avatar className="w-8 h-8 shrink-0">
-                          <AvatarFallback
-                            className="text-[10px] font-bold text-white"
-                            style={{ background: LEAVE_TYPE_BG[leave.type] }}
-                          >
-                            {getInitials(leave.userName ?? '?')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-xs font-semibold text-(--text-primary) truncate">
-                              {leave.userName ?? t('common.unknownUser', 'Unknown')}
-                            </p>
-                            <StatusIcon status={leave.status as LeaveStatus} />
-                          </div>
-                          <p className="text-[10px] text-(--text-muted) mt-0.5">
-                            {leave.userDepartment ?? ''}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ background: LEAVE_TYPE_BG[leave.type] }}
-                            />
-                            <span className="text-[10px] text-(--text-secondary)">
-                              {getLeaveTypeLabel(leave.type as LeaveType, t)}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-(--text-muted) mt-0.5">
-                            {safeFormat(leave.startDate, 'MMM d')} &ndash;{' '}
-                            {safeFormat(leave.endDate, 'MMM d')} &middot; {leave.days}d
-                          </p>
-                          {leave.comment && (
-                            <p className="text-[10px] text-(--text-muted) mt-1 italic line-clamp-2">
-                              &quot;{leave.comment}&quot;
-                            </p>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-
-                    {/* Google Calendar events */}
-                    {selectedDayGoogle.map((evt, i) => (
-                      <motion.div
-                        key={evt.id}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: (selectedDayLeaves.length + i) * 0.04 }}
-                        title={t('eventTimeline.hints.doubleClick')}
-                        className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        onClick={() =>
-                          dualClick.single(() => {
-                            setSelectedGoogleEvent(evt);
-                            scrollToTop();
-                          })
-                        }
-                        onDoubleClick={() =>
-                          dualClick.double(() => setTimelineInput({ source: 'google', data: evt }))
-                        }
-                      >
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
-                          style={{ background: GOOGLE_EVENT_COLOR }}
-                        >
-                          G
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-xs font-semibold text-(--text-primary) truncate">
-                              {evt.title}
-                            </p>
-                            {evt.htmlLink && (
-                              <a
-                                href={evt.htmlLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-(--text-muted) hover:text-(--primary) shrink-0"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                          </div>
-                          {evt.startTime && (
-                            <p className="text-[10px] text-(--text-muted) mt-0.5">
-                              {format(new Date(evt.startTime), 'HH:mm', { locale: dateFnsLocale })}
-                              {evt.endTime &&
-                                ` – ${format(new Date(evt.endTime), 'HH:mm', { locale: dateFnsLocale })}`}
-                            </p>
-                          )}
-                          {!evt.startTime && (
-                            <p className="text-[10px] text-(--text-muted) mt-0.5">
-                              {t('calendar.allDay', 'All day')}
-                            </p>
-                          )}
-                          {evt.location && (
-                            <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
-                              📍 {evt.location}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-1 mt-1">
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ background: GOOGLE_EVENT_COLOR }}
-                            />
-                            <span className="text-[10px] text-(--text-secondary)">
-                              {t('calendar.googleCalendar', 'Google Calendar')}
-                            </span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-
-                    {/* Driver booking events */}
-                    {selectedDayDriverEvents.map((evt, i) => (
-                      <motion.div
-                        key={evt._id}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          delay: (selectedDayLeaves.length + selectedDayGoogle.length + i) * 0.04,
-                        }}
-                        title={t('eventTimeline.hints.doubleClick')}
-                        className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
-                        onClick={() =>
-                          dualClick.single(() => {
-                            setSelectedDriverEvent(evt);
-                            scrollToTop();
-                          })
-                        }
-                        onDoubleClick={() =>
-                          dualClick.double(() => setTimelineInput({ source: 'driver', data: evt }))
-                        }
-                      >
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
-                          style={{ background: DRIVER_EVENT_COLOR }}
-                        >
-                          <Car className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-xs font-semibold text-(--text-primary) truncate">
-                              {evt.driverName}
-                            </p>
-                            <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">
-                              {t(`driver.${evt.type}`, { ns: 'drivers', defaultValue: evt.type })}
-                            </Badge>
-                          </div>
-                          <p className="text-[10px] text-(--text-muted) mt-0.5">
-                            {format(new Date(evt.startTime), 'HH:mm', { locale: dateFnsLocale })} –{' '}
-                            {format(new Date(evt.endTime), 'HH:mm', { locale: dateFnsLocale })}
-                          </p>
-                          {evt.tripInfo && (
-                            <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
-                              {evt.tripInfo.from} → {evt.tripInfo.to}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-1 mt-1">
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ background: DRIVER_EVENT_COLOR }}
-                            />
-                            <span className="text-[10px] text-(--text-secondary)">
-                              {t('driver.driverBookings', 'Driver Booking')}
-                            </span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-
-                    {/* Custom calendar events */}
-                    {selectedDayCustomEvents.map((evt, i) => (
-                      <motion.div
-                        key={evt.id}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          delay:
-                            (selectedDayLeaves.length +
-                              selectedDayGoogle.length +
-                              selectedDayDriverEvents.length +
-                              i) *
-                            0.04,
-                        }}
-                        title={t('eventTimeline.hints.doubleClick')}
-                        className="flex items-start gap-2.5 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-500/5 cursor-pointer hover:border-blue-400 transition-colors group"
-                        onClick={() =>
-                          dualClick.single(() => {
-                            setEditEvent(evt);
-                            setShowCreateEvent(true);
-                          })
-                        }
-                        onDoubleClick={() =>
-                          dualClick.double(() => setTimelineInput({ source: 'custom', data: evt }))
-                        }
-                      >
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500 text-white">
-                          <CalendarPlus className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-(--text-primary) truncate">
-                            {evt.title}
-                          </p>
-                          <p className="text-[10px] text-(--text-muted) mt-0.5">
-                            {evt.allDay
-                              ? t('createMeeting.allDay')
-                              : `${evt.startTime} – ${evt.endTime}`}
-                          </p>
-                          {evt.location && (
-                            <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
-                              📍 {evt.location}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="w-2 h-2 rounded-full shrink-0 bg-blue-500" />
-                            <span className="text-[10px] text-(--text-secondary)">
-                              {t('createMeeting.categories.' + evt.category, evt.category)}
-                            </span>
-                          </div>
-                          {evt.roomName && (
-                            <p className="mt-1 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-(--background) px-1.5 py-0.5 text-[10px] text-(--text-secondary)">
-                              <DoorOpen className="h-3 w-3 shrink-0" />
-                              <span className="truncate">{evt.roomName}</span>
-                            </p>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleDeleteEvent(evt);
-                          }}
-                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                        </button>
-                      </motion.div>
-                    ))}
-
-                    {/* Room bookings */}
-                    {selectedDayRoomBookings.map((booking, i) => {
-                      const color = booking.roomColor ?? ROOM_EVENT_COLOR;
-                      return (
+                      {/* Driver booking events */}
+                      {selectedDayDriverEvents.map((evt, i) => (
                         <motion.div
-                          key={booking._id}
+                          key={evt._id}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{
+                            delay: (selectedDayLeaves.length + selectedDayGoogle.length + i) * 0.04,
+                          }}
+                          title={t('eventTimeline.hints.doubleClick')}
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
+                          onClick={() =>
+                            dualClick.single(() => {
+                              setSelectedDriverEvent(evt);
+                              scrollToTop();
+                            })
+                          }
+                          onDoubleClick={() =>
+                            dualClick.double(() =>
+                              setTimelineInput({ source: 'driver', data: evt }),
+                            )
+                          }
+                        >
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
+                            style={{ background: DRIVER_EVENT_COLOR }}
+                          >
+                            <Car className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="text-xs font-semibold text-(--text-primary) truncate">
+                                {evt.driverName}
+                              </p>
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">
+                                {t(`driver.${evt.type}`, { ns: 'drivers', defaultValue: evt.type })}
+                              </Badge>
+                            </div>
+                            <p className="text-[10px] text-(--text-muted) mt-0.5">
+                              {format(new Date(evt.startTime), 'HH:mm', { locale: dateFnsLocale })}{' '}
+                              – {format(new Date(evt.endTime), 'HH:mm', { locale: dateFnsLocale })}
+                            </p>
+                            {evt.tripInfo && (
+                              <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
+                                {evt.tripInfo.from} → {evt.tripInfo.to}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1 mt-1">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ background: DRIVER_EVENT_COLOR }}
+                              />
+                              <span className="text-[10px] text-(--text-secondary)">
+                                {t('driver.driverBookings', 'Driver Booking')}
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+
+                      {/* Custom calendar events */}
+                      {selectedDayCustomEvents.map((evt, i) => (
+                        <motion.div
+                          key={evt.id}
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{
@@ -1887,944 +1988,1020 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               (selectedDayLeaves.length +
                                 selectedDayGoogle.length +
                                 selectedDayDriverEvents.length +
-                                selectedDayCustomEvents.length +
                                 i) *
                               0.04,
                           }}
-                          role="button"
-                          tabIndex={0}
-                          title={t('rooms.calendar.openRoom')}
-                          onClick={() => {
-                            const room = rooms.find((r) => r._id === booking.roomId);
-                            if (room) setDetailsRoom(room);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              const room = rooms.find((r) => r._id === booking.roomId);
-                              if (room) setDetailsRoom(room);
-                            }
-                          }}
-                          className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
+                          title={t('eventTimeline.hints.doubleClick')}
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-500/5 cursor-pointer hover:border-blue-400 transition-colors group"
+                          onClick={() =>
+                            dualClick.single(() => {
+                              setEditEvent(evt);
+                              setShowCreateEvent(true);
+                            })
+                          }
+                          onDoubleClick={() =>
+                            dualClick.double(() =>
+                              setTimelineInput({ source: 'custom', data: evt }),
+                            )
+                          }
                         >
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white"
-                            style={{ background: color }}
-                          >
-                            <DoorOpen className="w-4 h-4" />
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500 text-white">
+                            <CalendarPlus className="w-4 h-4" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-semibold text-(--text-primary) truncate">
-                              {booking.title}
+                              {evt.title}
                             </p>
-                            <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
-                              {format(new Date(booking.startTime), 'HH:mm', {
-                                locale: dateFnsLocale,
-                              })}
-                              {' – '}
-                              {format(new Date(booking.endTime), 'HH:mm', {
-                                locale: dateFnsLocale,
-                              })}
-                              {booking.organizerName ? ` · ${booking.organizerName}` : ''}
+                            <p className="text-[10px] text-(--text-muted) mt-0.5">
+                              {evt.allDay
+                                ? t('createMeeting.allDay')
+                                : `${evt.startTime} – ${evt.endTime}`}
                             </p>
-                            <div className="flex items-center gap-1 mt-1 min-w-0">
-                              <span
-                                className="w-2 h-2 rounded-full shrink-0"
-                                style={{ background: color }}
-                              />
-                              <span className="text-[10px] text-(--text-secondary) truncate">
-                                {booking.roomName}
+                            {evt.location && (
+                              <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
+                                📍 {evt.location}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1 mt-1">
+                              <span className="w-2 h-2 rounded-full shrink-0 bg-blue-500" />
+                              <span className="text-[10px] text-(--text-secondary)">
+                                {t('createMeeting.categories.' + evt.category, evt.category)}
                               </span>
                             </div>
+                            {evt.roomName && (
+                              <p className="mt-1 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-(--background) px-1.5 py-0.5 text-[10px] text-(--text-secondary)">
+                                <DoorOpen className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{evt.roomName}</span>
+                              </p>
+                            )}
                           </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteEvent(evt);
+                            }}
+                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          </button>
                         </motion.div>
-                      );
-                    })}
-                  </motion.div>
+                      ))}
+
+                      {/* Room bookings */}
+                      {selectedDayRoomBookings.map((booking, i) => {
+                        const color = booking.roomColor ?? ROOM_EVENT_COLOR;
+                        return (
+                          <motion.div
+                            key={booking._id}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{
+                              delay:
+                                (selectedDayLeaves.length +
+                                  selectedDayGoogle.length +
+                                  selectedDayDriverEvents.length +
+                                  selectedDayCustomEvents.length +
+                                  i) *
+                                0.04,
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            title={t('rooms.calendar.openRoom')}
+                            onClick={() => {
+                              const room = rooms.find((r) => r._id === booking.roomId);
+                              if (room) setDetailsRoom(room);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                const room = rooms.find((r) => r._id === booking.roomId);
+                                if (room) setDetailsRoom(room);
+                              }
+                            }}
+                            className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"
+                          >
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white"
+                              style={{ background: color }}
+                            >
+                              <DoorOpen className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-semibold text-(--text-primary) truncate">
+                                {booking.title}
+                              </p>
+                              <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
+                                {format(new Date(booking.startTime), 'HH:mm', {
+                                  locale: dateFnsLocale,
+                                })}
+                                {' – '}
+                                {format(new Date(booking.endTime), 'HH:mm', {
+                                  locale: dateFnsLocale,
+                                })}
+                                {booking.organizerName ? ` · ${booking.organizerName}` : ''}
+                              </p>
+                              <div className="flex items-center gap-1 mt-1 min-w-0">
+                                <span
+                                  className="w-2 h-2 rounded-full shrink-0"
+                                  style={{ background: color }}
+                                />
+                                <span className="text-[10px] text-(--text-secondary) truncate">
+                                  {booking.roomName}
+                                </span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Personal view: reveal what the shared calendar still holds. */}
+                {hiddenOnSelectedDay > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => changeScope('team')}
+                    className="mt-3 flex w-full items-center gap-2 rounded-xl border border-dashed border-(--border) bg-(--background-subtle) px-3 py-2.5 text-left transition-colors hover:border-(--primary)/50 hover:bg-(--background) cursor-pointer"
+                  >
+                    <Eye className="h-4 w-4 shrink-0 text-(--primary)" />
+                    <span className="min-w-0 flex-1 text-[11px] leading-snug text-(--text-secondary)">
+                      {t('calendarScope.hiddenOnDay', { count: hiddenOnSelectedDay })}
+                    </span>
+                    <span className="shrink-0 text-[11px] font-semibold text-(--primary)">
+                      {t('calendarScope.showShared')}
+                    </span>
+                  </button>
                 )}
-              </AnimatePresence>
+              </CardContent>
+            </Card>
 
-              {/* Personal view: reveal what the shared calendar still holds. */}
-              {hiddenOnSelectedDay > 0 && (
-                <button
-                  type="button"
-                  onClick={() => changeScope('team')}
-                  className="mt-3 flex w-full items-center gap-2 rounded-xl border border-dashed border-(--border) bg-(--background-subtle) px-3 py-2.5 text-left transition-colors hover:border-(--primary)/50 hover:bg-(--background) cursor-pointer"
-                >
-                  <Eye className="h-4 w-4 shrink-0 text-(--primary)" />
-                  <span className="min-w-0 flex-1 text-[11px] leading-snug text-(--text-secondary)">
-                    {t('calendarScope.hiddenOnDay', { count: hiddenOnSelectedDay })}
-                  </span>
-                  <span className="shrink-0 text-[11px] font-semibold text-(--primary)">
-                    {t('calendarScope.showShared')}
-                  </span>
-                </button>
-              )}
-            </CardContent>
-          </Card>
+            {/* Live meeting-room availability */}
+            <RoomAvailabilityStrip
+              organizationId={selectedOrgId}
+              onOpenRoom={(room) => setDetailsRoom(room)}
+              onBookRoom={(room) => {
+                setRoomBookingRoomId(room._id);
+                setRoomBookingDate(selectedDay ?? new Date());
+                setShowRoomBooking(true);
+              }}
+            />
 
-          {/* Live meeting-room availability */}
-          <RoomAvailabilityStrip
-            organizationId={selectedOrgId}
-            onOpenRoom={(room) => setDetailsRoom(room)}
-            onBookRoom={(room) => {
-              setRoomBookingRoomId(room._id);
-              setRoomBookingDate(selectedDay ?? new Date());
-              setShowRoomBooking(true);
-            }}
-          />
-
-          {/* Monthly summary */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm uppercase tracking-wider text-(--text-muted)">
-                {t('calendarExtended.monthSummary', {
-                  month: standaloneMonth(currentMonth, lang),
-                })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-2">
-              {monthlySummary.length === 0 ? (
-                <p className="text-xs text-(--text-muted)">
-                  {t(`calendarScope.${scope}.emptyMonth`)}
-                </p>
-              ) : (
-                monthlySummary.map(({ type, count }) => (
-                  <div key={type} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ background: LEAVE_TYPE_BG[type] }}
-                      />
-                      <span className="text-xs text-(--text-secondary)">
-                        {getLeaveTypeLabel(type, t)}
-                      </span>
-                    </div>
-                    <Badge variant="secondary" className="text-xs h-5 px-2">
-                      {count}
-                    </Badge>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* On leave today */}
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
+            {/* Monthly summary */}
+            <Card>
+              <CardHeader className="pb-2">
                 <CardTitle className="text-sm uppercase tracking-wider text-(--text-muted)">
-                  {isPersonalScope
-                    ? t('calendarScope.mine.statusToday')
-                    : t('calendar.onLeaveToday')}
+                  {t('calendarExtended.monthSummary', {
+                    month: standaloneMonth(currentMonth, lang),
+                  })}
                 </CardTitle>
-                {onLeaveToday.length > 0 && (
-                  <Badge variant="warning" className="text-[10px] h-5 px-2">
-                    {onLeaveToday.length}
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 space-y-2">
-              {onLeaveToday.length === 0 ? (
-                <div className="flex items-center gap-2 py-2">
-                  <Users className="w-4 h-4 text-(--border)" />
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-2">
+                {monthlySummary.length === 0 ? (
                   <p className="text-xs text-(--text-muted)">
-                    {isPersonalScope
-                      ? t('calendarScope.mine.youAreIn')
-                      : t('calendarExtended.everyoneInToday')}
+                    {t(`calendarScope.${scope}.emptyMonth`)}
                   </p>
-                </div>
-              ) : (
-                onLeaveToday.map((l) => (
-                  <div key={l._id} className="flex items-center gap-2.5">
-                    <Avatar className="w-7 h-7 shrink-0">
-                      <AvatarFallback
-                        className="text-[9px] font-bold text-white"
-                        style={{ background: LEAVE_TYPE_BG[l.type] }}
-                      >
-                        {getInitials(l.userName ?? '?')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-(--text-primary) truncate">
-                        {l.userName ?? t('common.unknownUser', 'Unknown')}
-                      </p>
-                      <p className="text-[10px] text-(--text-muted)">
-                        {getLeaveTypeLabel(l.type as LeaveType, t)}
-                      </p>
+                ) : (
+                  monthlySummary.map(({ type, count }) => (
+                    <div key={type} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ background: LEAVE_TYPE_BG[type] }}
+                        />
+                        <span className="text-xs text-(--text-secondary)">
+                          {getLeaveTypeLabel(type, t)}
+                        </span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs h-5 px-2">
+                        {count}
+                      </Badge>
                     </div>
-                    <Badge className="ml-auto text-[9px] h-4 px-1.5 shrink-0" variant="success">
-                      {t('calendarExtended.away')}
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* On leave today */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm uppercase tracking-wider text-(--text-muted)">
+                    {isPersonalScope
+                      ? t('calendarScope.mine.statusToday')
+                      : t('calendar.onLeaveToday')}
+                  </CardTitle>
+                  {onLeaveToday.length > 0 && (
+                    <Badge variant="warning" className="text-[10px] h-5 px-2">
+                      {onLeaveToday.length}
                     </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-2">
+                {onLeaveToday.length === 0 ? (
+                  <div className="flex items-center gap-2 py-2">
+                    <Users className="w-4 h-4 text-(--border)" />
+                    <p className="text-xs text-(--text-muted)">
+                      {isPersonalScope
+                        ? t('calendarScope.mine.youAreIn')
+                        : t('calendarExtended.everyoneInToday')}
+                    </p>
                   </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+                ) : (
+                  onLeaveToday.map((l) => (
+                    <div key={l._id} className="flex items-center gap-2.5">
+                      <Avatar className="w-7 h-7 shrink-0">
+                        <AvatarFallback
+                          className="text-[9px] font-bold text-white"
+                          style={{ background: LEAVE_TYPE_BG[l.type] }}
+                        >
+                          {getInitials(l.userName ?? '?')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-(--text-primary) truncate">
+                          {l.userName ?? t('common.unknownUser', 'Unknown')}
+                        </p>
+                        <p className="text-[10px] text-(--text-muted)">
+                          {getLeaveTypeLabel(l.type as LeaveType, t)}
+                        </p>
+                      </div>
+                      <Badge className="ml-auto text-[9px] h-4 px-1.5 shrink-0" variant="success">
+                        {t('calendarExtended.away')}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
 
-      {/* Leave Request Modal */}
-      <LeaveRequestModal
-        open={showLeaveModal}
-        onClose={() => setShowLeaveModal(false)}
-        preselectedStartDate={selectedDay ? format(selectedDay, 'yyyy-MM-dd') : undefined}
-      />
+        {/* Leave Request Modal */}
+        <LeaveRequestModal
+          open={showLeaveModal}
+          onClose={() => setShowLeaveModal(false)}
+          preselectedStartDate={selectedDay ? format(selectedDay, 'yyyy-MM-dd') : undefined}
+        />
 
-      {/* Driver Request Modal */}
-      <DriverRequestModal
-        open={showDriverModal}
-        onOpenChange={setShowDriverModal}
-        selectedDate={selectedDay ?? undefined}
-      />
+        {/* Driver Request Modal */}
+        <DriverRequestModal
+          open={showDriverModal}
+          onOpenChange={setShowDriverModal}
+          selectedDate={selectedDay ?? undefined}
+        />
 
-      {/* Create Event Modal */}
-      <CreateEventModal
-        open={showCreateEvent}
-        onOpenChange={(v) => {
-          setShowCreateEvent(v);
-          if (!v) setEditEvent(null);
-        }}
-        selectedDate={selectedDay}
-        // Deliberately unscoped: attendee conflict detection has to see every
-        // leave in the organization, not just the ones the viewer owns.
-        leaves={leaves}
-        editEvent={editEvent}
-      />
+        {/* Create Event Modal */}
+        <CreateEventModal
+          open={showCreateEvent}
+          onOpenChange={(v) => {
+            setShowCreateEvent(v);
+            if (!v) setEditEvent(null);
+          }}
+          selectedDate={selectedDay}
+          // Deliberately unscoped: attendee conflict detection has to see every
+          // leave in the organization, not just the ones the viewer owns.
+          leaves={leaves}
+          editEvent={editEvent}
+        />
 
-      {/* "Draft saved. Restore?" — the event wizard and the leave request both
+        {/* "Draft saved. Restore?" — the event wizard and the leave request both
           keep their contents after an accidental close; this is what tells the
           user so. One bar at a time: the event draft wins, because it is the
           longer form and the more expensive one to lose. */}
-      <DraftResumeBar
-        show={eventDraft.available}
-        label={t('createMeeting.title')}
-        step={eventDraft.step}
-        onResume={() => {
-          eventDraft.dismiss();
-          setEditEvent(null);
-          setShowCreateEvent(true);
-        }}
-        onDismiss={eventDraft.dismiss}
-        onDiscard={eventDraft.discard}
-      />
-      <DraftResumeBar
-        show={!eventDraft.available && leaveDraft.available}
-        label={t('leaveRequest.newLeaveRequest', 'New Leave Request')}
-        step={leaveDraft.step}
-        onResume={() => {
-          leaveDraft.dismiss();
-          setShowLeaveModal(true);
-        }}
-        onDismiss={leaveDraft.dismiss}
-        onDiscard={leaveDraft.discard}
-      />
+        <DraftResumeBar
+          show={eventDraft.available}
+          label={t('createMeeting.title')}
+          step={eventDraft.step}
+          onResume={() => {
+            eventDraft.dismiss();
+            setEditEvent(null);
+            setShowCreateEvent(true);
+          }}
+          onDismiss={eventDraft.dismiss}
+          onDiscard={eventDraft.discard}
+        />
+        <DraftResumeBar
+          show={!eventDraft.available && leaveDraft.available}
+          label={t('leaveRequest.newLeaveRequest', 'New Leave Request')}
+          step={leaveDraft.step}
+          onResume={() => {
+            leaveDraft.dismiss();
+            setShowLeaveModal(true);
+          }}
+          onDismiss={leaveDraft.dismiss}
+          onDiscard={leaveDraft.discard}
+        />
 
-      {/* Day Details Modal */}
-      {selectedDay && (
-        <DayDetailsModal
-          open={showDayDetails}
-          date={selectedDay}
-          leaves={selectedDayLeaves}
-          googleEvents={selectedDayGoogle}
-          driverEvents={selectedDayDriverEvents}
-          customEvents={selectedDayCustomEvents}
-          roomBookings={selectedDayRoomBookings}
-          companyEvents={selectedDayCompanyEvents}
-          onClose={() => setShowDayDetails(false)}
-          onOpenTimeline={setTimelineInput}
-          onOpenRoom={(roomId) => {
-            const room = rooms.find((r) => r._id === roomId);
-            if (room) {
-              setShowDayDetails(false);
-              setDetailsRoom(room);
-            }
+        {/* Day Details Modal */}
+        {selectedDay && (
+          <DayDetailsModal
+            open={showDayDetails}
+            date={selectedDay}
+            leaves={selectedDayLeaves}
+            googleEvents={selectedDayGoogle}
+            driverEvents={selectedDayDriverEvents}
+            customEvents={selectedDayCustomEvents}
+            roomBookings={selectedDayRoomBookings}
+            companyEvents={selectedDayCompanyEvents}
+            onClose={() => setShowDayDetails(false)}
+            onOpenTimeline={setTimelineInput}
+            onOpenRoom={(roomId) => {
+              const room = rooms.find((r) => r._id === roomId);
+              if (room) {
+                setShowDayDetails(false);
+                setDetailsRoom(room);
+              }
+            }}
+          />
+        )}
+
+        {/* Meeting room booking */}
+        <RoomBookingModal
+          open={showRoomBooking}
+          onClose={() => setShowRoomBooking(false)}
+          organizationId={selectedOrgId}
+          rooms={rooms}
+          initialRoomId={roomBookingRoomId}
+          initialDate={roomBookingDate}
+        />
+
+        {/* Meeting room details */}
+        <RoomDetailsModal
+          open={detailsRoom !== null}
+          onClose={() => setDetailsRoom(null)}
+          room={detailsRoom}
+          canManage={user?.role === 'admin' || user?.role === 'superadmin'}
+          onBook={(room, day) => {
+            setDetailsRoom(null);
+            setRoomBookingRoomId(room._id);
+            setRoomBookingDate(day);
+            setShowRoomBooking(true);
           }}
         />
-      )}
 
-      {/* Meeting room booking */}
-      <RoomBookingModal
-        open={showRoomBooking}
-        onClose={() => setShowRoomBooking(false)}
-        organizationId={selectedOrgId}
-        rooms={rooms}
-        initialRoomId={roomBookingRoomId}
-        initialDate={roomBookingDate}
-      />
+        {/* Full event timeline — opened by double-clicking any event */}
+        <EventTimelineModal input={timelineInput} onClose={() => setTimelineInput(null)} />
 
-      {/* Meeting room details */}
-      <RoomDetailsModal
-        open={detailsRoom !== null}
-        onClose={() => setDetailsRoom(null)}
-        room={detailsRoom}
-        canManage={user?.role === 'admin' || user?.role === 'superadmin'}
-        onBook={(room, day) => {
-          setDetailsRoom(null);
-          setRoomBookingRoomId(room._id);
-          setRoomBookingDate(day);
-          setShowRoomBooking(true);
-        }}
-      />
-
-      {/* Full event timeline — opened by double-clicking any event */}
-      <EventTimelineModal input={timelineInput} onClose={() => setTimelineInput(null)} />
-
-      {/* Modals rendered via portal to escape overflow/contain constraints */}
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <>
-            {/* Leave Event Detail Modal - Modern Design */}
-            {selectedLeave && (
-              <div className="fixed inset-0 lg:left-60 lg:top-16 z-50 flex items-center justify-center p-4">
-                <div
-                  className="modal-backdrop-in absolute inset-0 bg-black/60 backdrop-blur-md"
-                  onClick={() => setSelectedLeave(null)}
-                />
-                <div
-                  className="modal-panel-in relative z-10 w-full max-w-lg bg-(--card) rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Hero Header */}
-                  <div className="relative px-6 pt-6 pb-8 overflow-hidden shrink-0">
-                    <div
-                      className="absolute inset-0 opacity-15"
-                      style={{
-                        background: `linear-gradient(135deg, ${LEAVE_TYPE_BG[selectedLeave.type]} 0%, transparent 70%)`,
-                      }}
-                    />
-                    <div
-                      className="absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 opacity-10 blur-3xl"
-                      style={{ background: LEAVE_TYPE_BG[selectedLeave.type] }}
-                    />
-
-                    <div className="relative flex items-start justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg"
-                            style={{
-                              background: `linear-gradient(135deg, ${LEAVE_TYPE_BG[selectedLeave.type]}, ${LEAVE_TYPE_BG[selectedLeave.type]}dd)`,
-                            }}
-                          >
-                            {getInitials(selectedLeave.userName ?? '?')}
-                          </div>
-                          <div
-                            className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-(--card) flex items-center justify-center"
-                            style={{ background: LEAVE_TYPE_BG[selectedLeave.type] }}
-                          >
-                            {selectedLeave.status === 'approved' ? (
-                              <CheckCircle className="w-3.5 h-3.5 text-white" />
-                            ) : selectedLeave.status === 'rejected' ? (
-                              <XCircle className="w-3.5 h-3.5 text-white" />
-                            ) : (
-                              <Clock className="w-3.5 h-3.5 text-white" />
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold leading-tight drop-shadow-md">
-                            {selectedLeave.userName ?? t('common.unknownUser', 'Unknown')}
-                          </h3>
-                          <p className="text-sm mt-0.5 drop-shadow">
-                            {selectedLeave.userDepartment ?? ''}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setSelectedLeave(null)}
-                        className="text-(--text-muted) hover:text-(--text-primary) transition-colors p-2 rounded-full hover:bg-(--background-subtle) shrink-0"
-                      >
-                        <XCircle className="w-6 h-6" />
-                      </button>
-                    </div>
-
-                    {/* Leave Type Badge */}
-                    <div
-                      className="relative mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full"
-                      style={{
-                        background: `${LEAVE_TYPE_BG[selectedLeave.type]}15`,
-                        border: `1px solid ${LEAVE_TYPE_BG[selectedLeave.type]}30`,
-                      }}
-                    >
-                      <span
-                        className="w-2.5 h-2.5 rounded-full"
+        {/* Modals rendered via portal to escape overflow/contain constraints */}
+        {typeof document !== 'undefined' &&
+          createPortal(
+            <>
+              {/* Leave Event Detail Modal - Modern Design */}
+              {selectedLeave && (
+                <div className="fixed inset-0 lg:left-60 lg:top-16 z-50 flex items-center justify-center p-4">
+                  <div
+                    className="modal-backdrop-in absolute inset-0 bg-black/60 backdrop-blur-md"
+                    onClick={() => setSelectedLeave(null)}
+                  />
+                  <div
+                    className="modal-panel-in relative z-10 w-full max-w-lg bg-(--card) rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Hero Header */}
+                    <div className="relative px-6 pt-6 pb-8 overflow-hidden shrink-0">
+                      <div
+                        className="absolute inset-0 opacity-15"
+                        style={{
+                          background: `linear-gradient(135deg, ${LEAVE_TYPE_BG[selectedLeave.type]} 0%, transparent 70%)`,
+                        }}
+                      />
+                      <div
+                        className="absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 opacity-10 blur-3xl"
                         style={{ background: LEAVE_TYPE_BG[selectedLeave.type] }}
                       />
-                      <span
-                        className="text-sm font-semibold"
-                        style={{ color: LEAVE_TYPE_BG[selectedLeave.type] }}
-                      >
-                        {getLeaveTypeLabel(selectedLeave.type as LeaveType, t)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Content - Scrollable */}
-                  <div className="px-6 pb-6 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-(--border) scrollbar-track-transparent">
-                    <div className="bg-(--card) rounded-2xl border border-(--border) shadow-lg p-4 space-y-4">
-                      {/* Date Timeline */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 text-center">
-                          <p className="text-[10px] font-semibold text-(--text-muted) uppercase tracking-wider mb-1">
-                            {t('driver.from', 'From')}
-                          </p>
-                          <p className="text-3xl font-bold text-(--text-primary) leading-none">
-                            {safeFormat(selectedLeave.startDate, 'd')}
-                          </p>
-                          <p className="text-xs text-(--text-muted) mt-0.5">
-                            {safeFormat(selectedLeave.startDate, 'MMM')}
-                          </p>
-                          <p className="text-[10px] text-(--text-muted)">
-                            {safeFormat(selectedLeave.startDate, 'yyyy')}
-                          </p>
-                        </div>
-
-                        <div className="flex-1 flex flex-col items-center px-2">
-                          <div className="w-8 h-px bg-(--border) mb-1.5" />
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-(--background-subtle) border border-(--border)">
-                            <CalendarDays className="w-3.5 h-3.5 text-(--text-muted)" />
-                            <span className="text-sm font-bold text-(--text-primary)">
-                              {selectedLeave.days}
-                            </span>
-                            <span className="text-[10px] text-(--text-muted) uppercase">
-                              {t('common.daysShort', 'd')}
-                            </span>
+                      <div className="relative flex items-start justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <div
+                              className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg"
+                              style={{
+                                background: `linear-gradient(135deg, ${LEAVE_TYPE_BG[selectedLeave.type]}, ${LEAVE_TYPE_BG[selectedLeave.type]}dd)`,
+                              }}
+                            >
+                              {getInitials(selectedLeave.userName ?? '?')}
+                            </div>
+                            <div
+                              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-(--card) flex items-center justify-center"
+                              style={{ background: LEAVE_TYPE_BG[selectedLeave.type] }}
+                            >
+                              {selectedLeave.status === 'approved' ? (
+                                <CheckCircle className="w-3.5 h-3.5 text-white" />
+                              ) : selectedLeave.status === 'rejected' ? (
+                                <XCircle className="w-3.5 h-3.5 text-white" />
+                              ) : (
+                                <Clock className="w-3.5 h-3.5 text-white" />
+                              )}
+                            </div>
                           </div>
-                          <div className="w-8 h-px bg-(--border) mt-1.5" />
+                          <div>
+                            <h3 className="text-2xl font-bold leading-tight drop-shadow-md">
+                              {selectedLeave.userName ?? t('common.unknownUser', 'Unknown')}
+                            </h3>
+                            <p className="text-sm mt-0.5 drop-shadow">
+                              {selectedLeave.userDepartment ?? ''}
+                            </p>
+                          </div>
                         </div>
-
-                        <div className="flex-1 text-center">
-                          <p className="text-[10px] font-semibold text-(--text-muted) uppercase tracking-wider mb-1">
-                            {t('driver.to', 'To')}
-                          </p>
-                          <p className="text-3xl font-bold text-(--text-primary) leading-none">
-                            {safeFormat(selectedLeave.endDate, 'd')}
-                          </p>
-                          <p className="text-xs text-(--text-muted) mt-0.5">
-                            {safeFormat(selectedLeave.endDate, 'MMM')}
-                          </p>
-                          <p className="text-[10px] text-(--text-muted)">
-                            {safeFormat(selectedLeave.endDate, 'yyyy')}
-                          </p>
-                        </div>
+                        <button
+                          onClick={() => setSelectedLeave(null)}
+                          className="text-(--text-muted) hover:text-(--text-primary) transition-colors p-2 rounded-full hover:bg-(--background-subtle) shrink-0"
+                        >
+                          <XCircle className="w-6 h-6" />
+                        </button>
                       </div>
 
-                      {/* Reason */}
-                      {selectedLeave.comment && (
+                      {/* Leave Type Badge */}
+                      <div
+                        className="relative mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full"
+                        style={{
+                          background: `${LEAVE_TYPE_BG[selectedLeave.type]}15`,
+                          border: `1px solid ${LEAVE_TYPE_BG[selectedLeave.type]}30`,
+                        }}
+                      >
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ background: LEAVE_TYPE_BG[selectedLeave.type] }}
+                        />
+                        <span
+                          className="text-sm font-semibold"
+                          style={{ color: LEAVE_TYPE_BG[selectedLeave.type] }}
+                        >
+                          {getLeaveTypeLabel(selectedLeave.type as LeaveType, t)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content - Scrollable */}
+                    <div className="px-6 pb-6 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-(--border) scrollbar-track-transparent">
+                      <div className="bg-(--card) rounded-2xl border border-(--border) shadow-lg p-4 space-y-4">
+                        {/* Date Timeline */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 text-center">
+                            <p className="text-[10px] font-semibold text-(--text-muted) uppercase tracking-wider mb-1">
+                              {t('driver.from', 'From')}
+                            </p>
+                            <p className="text-3xl font-bold text-(--text-primary) leading-none">
+                              {safeFormat(selectedLeave.startDate, 'd')}
+                            </p>
+                            <p className="text-xs text-(--text-muted) mt-0.5">
+                              {safeFormat(selectedLeave.startDate, 'MMM')}
+                            </p>
+                            <p className="text-[10px] text-(--text-muted)">
+                              {safeFormat(selectedLeave.startDate, 'yyyy')}
+                            </p>
+                          </div>
+
+                          <div className="flex-1 flex flex-col items-center px-2">
+                            <div className="w-8 h-px bg-(--border) mb-1.5" />
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-(--background-subtle) border border-(--border)">
+                              <CalendarDays className="w-3.5 h-3.5 text-(--text-muted)" />
+                              <span className="text-sm font-bold text-(--text-primary)">
+                                {selectedLeave.days}
+                              </span>
+                              <span className="text-[10px] text-(--text-muted) uppercase">
+                                {t('common.daysShort', 'd')}
+                              </span>
+                            </div>
+                            <div className="w-8 h-px bg-(--border) mt-1.5" />
+                          </div>
+
+                          <div className="flex-1 text-center">
+                            <p className="text-[10px] font-semibold text-(--text-muted) uppercase tracking-wider mb-1">
+                              {t('driver.to', 'To')}
+                            </p>
+                            <p className="text-3xl font-bold text-(--text-primary) leading-none">
+                              {safeFormat(selectedLeave.endDate, 'd')}
+                            </p>
+                            <p className="text-xs text-(--text-muted) mt-0.5">
+                              {safeFormat(selectedLeave.endDate, 'MMM')}
+                            </p>
+                            <p className="text-[10px] text-(--text-muted)">
+                              {safeFormat(selectedLeave.endDate, 'yyyy')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Reason */}
+                        {selectedLeave.comment && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
+                                {t('leave.reason', 'Reason')}
+                              </span>
+                              <div className="flex-1 h-px bg-(--border)" />
+                            </div>
+                            <p className="text-sm text-(--text-secondary) leading-relaxed bg-(--background-subtle) rounded-xl p-3 border border-(--border)">
+                              {selectedLeave.comment}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Status */}
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                              {t('leave.reason', 'Reason')}
+                              {t('common.status', 'Status')}
                             </span>
                             <div className="flex-1 h-px bg-(--border)" />
                           </div>
-                          <p className="text-sm text-(--text-secondary) leading-relaxed bg-(--background-subtle) rounded-xl p-3 border border-(--border)">
-                            {selectedLeave.comment}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Status */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                            {t('common.status', 'Status')}
-                          </span>
-                          <div className="flex-1 h-px bg-(--border)" />
-                        </div>
-                        <div
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl"
-                          style={{
-                            background:
-                              selectedLeave.status === 'approved'
-                                ? '#10b98115'
+                          <div
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl"
+                            style={{
+                              background:
+                                selectedLeave.status === 'approved'
+                                  ? '#10b98115'
+                                  : selectedLeave.status === 'rejected'
+                                    ? '#ef444415'
+                                    : '#f59e0b15',
+                              border: `1px solid ${
+                                selectedLeave.status === 'approved'
+                                  ? '#10b98130'
+                                  : selectedLeave.status === 'rejected'
+                                    ? '#ef444430'
+                                    : '#f59e0b30'
+                              }`,
+                            }}
+                          >
+                            {selectedLeave.status === 'approved' ? (
+                              <CheckCircle className="w-5 h-5 text-emerald-500" />
+                            ) : selectedLeave.status === 'rejected' ? (
+                              <XCircle className="w-5 h-5 text-red-500" />
+                            ) : (
+                              <Clock className="w-5 h-5 text-amber-500" />
+                            )}
+                            <span className="text-sm font-semibold text-(--text-primary)">
+                              {selectedLeave.status === 'approved'
+                                ? t('leave.approved')
                                 : selectedLeave.status === 'rejected'
-                                  ? '#ef444415'
-                                  : '#f59e0b15',
-                            border: `1px solid ${
-                              selectedLeave.status === 'approved'
-                                ? '#10b98130'
-                                : selectedLeave.status === 'rejected'
-                                  ? '#ef444430'
-                                  : '#f59e0b30'
-                            }`,
-                          }}
-                        >
-                          {selectedLeave.status === 'approved' ? (
-                            <CheckCircle className="w-5 h-5 text-emerald-500" />
-                          ) : selectedLeave.status === 'rejected' ? (
-                            <XCircle className="w-5 h-5 text-red-500" />
-                          ) : (
-                            <Clock className="w-5 h-5 text-amber-500" />
-                          )}
-                          <span className="text-sm font-semibold text-(--text-primary)">
-                            {selectedLeave.status === 'approved'
-                              ? t('leave.approved')
-                              : selectedLeave.status === 'rejected'
-                                ? t('leave.rejected')
-                                : t('leave.pending')}
-                          </span>
+                                  ? t('leave.rejected')
+                                  : t('leave.pending')}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Driver Event Detail Modal - Modern Design */}
-            {selectedDriverEvent && (
-              <div className="fixed inset-0 lg:left-60 lg:top-16 z-50 flex items-center justify-center p-4">
-                <div
-                  className="modal-backdrop-in absolute inset-0 bg-black/60 backdrop-blur-md"
-                  onClick={() => setSelectedDriverEvent(null)}
-                />
-                <div
-                  className="modal-panel-in relative z-10 w-full max-w-lg bg-(--card) rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Hero Header */}
-                  <div className="relative px-6 pt-6 pb-8 overflow-hidden shrink-0">
-                    <div
-                      className="absolute inset-0 opacity-15"
-                      style={{
-                        background: `linear-gradient(135deg, ${DRIVER_EVENT_COLOR} 0%, transparent 70%)`,
-                      }}
-                    />
-                    <div
-                      className="absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 opacity-10 blur-3xl"
-                      style={{ background: DRIVER_EVENT_COLOR }}
-                    />
-
-                    <div className="relative flex items-start justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg"
-                            style={{
-                              background: `linear-gradient(135deg, ${DRIVER_EVENT_COLOR}, ${DRIVER_EVENT_COLOR}dd)`,
-                            }}
-                          >
-                            <Car className="w-8 h-8" />
-                          </div>
-                          <div
-                            className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-(--card) flex items-center justify-center"
-                            style={{ background: DRIVER_EVENT_COLOR }}
-                          >
-                            {selectedDriverEvent.status === 'completed' ? (
-                              <CheckCircle className="w-3.5 h-3.5 text-white" />
-                            ) : selectedDriverEvent.status === 'cancelled' ? (
-                              <XCircle className="w-3.5 h-3.5 text-white" />
-                            ) : (
-                              <Clock className="w-3.5 h-3.5 text-white" />
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-bold leading-tight">
-                            {selectedDriverEvent.driverName ?? t('common.unknownUser', 'Unknown')}
-                          </h3>
-                          <p className="text-sm mt-0.5">
-                            {selectedDriverEvent.driverVehicle?.model || ''}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setSelectedDriverEvent(null)}
-                        className="text-(--text-muted) hover:text-(--text-primary) transition-colors p-2 rounded-full hover:bg-(--background-subtle) shrink-0"
-                      >
-                        <XCircle className="w-6 h-6" />
-                      </button>
-                    </div>
-
-                    {/* Event Type Badge */}
-                    <div
-                      className="relative mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full"
-                      style={{
-                        background: `${DRIVER_EVENT_COLOR}15`,
-                        border: `1px solid ${DRIVER_EVENT_COLOR}30`,
-                      }}
-                    >
-                      <span
-                        className="w-2.5 h-2.5 rounded-full"
+              {/* Driver Event Detail Modal - Modern Design */}
+              {selectedDriverEvent && (
+                <div className="fixed inset-0 lg:left-60 lg:top-16 z-50 flex items-center justify-center p-4">
+                  <div
+                    className="modal-backdrop-in absolute inset-0 bg-black/60 backdrop-blur-md"
+                    onClick={() => setSelectedDriverEvent(null)}
+                  />
+                  <div
+                    className="modal-panel-in relative z-10 w-full max-w-lg bg-(--card) rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Hero Header */}
+                    <div className="relative px-6 pt-6 pb-8 overflow-hidden shrink-0">
+                      <div
+                        className="absolute inset-0 opacity-15"
+                        style={{
+                          background: `linear-gradient(135deg, ${DRIVER_EVENT_COLOR} 0%, transparent 70%)`,
+                        }}
+                      />
+                      <div
+                        className="absolute top-0 right-0 w-40 h-40 rounded-full -mr-20 -mt-20 opacity-10 blur-3xl"
                         style={{ background: DRIVER_EVENT_COLOR }}
                       />
-                      <span className="text-sm font-semibold" style={{ color: DRIVER_EVENT_COLOR }}>
-                        {selectedDriverEvent.type === 'trip'
-                          ? t('driver.trip', 'Trip')
-                          : selectedDriverEvent.type === 'blocked'
-                            ? t('driver.blocked', 'Blocked')
-                            : t('driver.maintenance', 'Maintenance')}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Content - Scrollable */}
-                  <div className="px-6 pb-6 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-(--border) scrollbar-track-transparent">
-                    <div className="bg-(--card) rounded-2xl border border-(--border) shadow-lg p-4 space-y-4">
-                      {/* Date Timeline */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 text-center">
-                          <p className="text-[10px] font-semibold text-(--text-muted) uppercase tracking-wider mb-1">
-                            {t('driver.from', 'From')}
-                          </p>
-                          <p className="text-3xl font-bold text-(--text-primary) leading-none">
-                            {format(new Date(selectedDriverEvent.startTime), 'd', {
-                              locale: dateFnsLocale,
-                            })}
-                          </p>
-                          <p className="text-xs text-(--text-muted) mt-1">
-                            {format(new Date(selectedDriverEvent.startTime), 'MMM', {
-                              locale: dateFnsLocale,
-                            })}
-                          </p>
-                          <p className="text-[10px] text-(--text-muted) mt-0.5">
-                            {format(new Date(selectedDriverEvent.startTime), 'HH:mm', {
-                              locale: dateFnsLocale,
-                            })}
-                          </p>
+                      <div className="relative flex items-start justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <div
+                              className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-lg"
+                              style={{
+                                background: `linear-gradient(135deg, ${DRIVER_EVENT_COLOR}, ${DRIVER_EVENT_COLOR}dd)`,
+                              }}
+                            >
+                              <Car className="w-8 h-8" />
+                            </div>
+                            <div
+                              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-(--card) flex items-center justify-center"
+                              style={{ background: DRIVER_EVENT_COLOR }}
+                            >
+                              {selectedDriverEvent.status === 'completed' ? (
+                                <CheckCircle className="w-3.5 h-3.5 text-white" />
+                              ) : selectedDriverEvent.status === 'cancelled' ? (
+                                <XCircle className="w-3.5 h-3.5 text-white" />
+                              ) : (
+                                <Clock className="w-3.5 h-3.5 text-white" />
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-bold leading-tight">
+                              {selectedDriverEvent.driverName ?? t('common.unknownUser', 'Unknown')}
+                            </h3>
+                            <p className="text-sm mt-0.5">
+                              {selectedDriverEvent.driverVehicle?.model || ''}
+                            </p>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => setSelectedDriverEvent(null)}
+                          className="text-(--text-muted) hover:text-(--text-primary) transition-colors p-2 rounded-full hover:bg-(--background-subtle) shrink-0"
+                        >
+                          <XCircle className="w-6 h-6" />
+                        </button>
+                      </div>
 
-                        <div className="flex-1 flex flex-col items-center px-4">
-                          <div className="w-10 h-px bg-(--border) mb-2" />
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-(--background-subtle) border border-(--border)">
-                            <Clock className="w-3.5 h-3.5 text-(--text-muted)" />
-                            <span className="text-xs font-bold text-(--text-primary)">
+                      {/* Event Type Badge */}
+                      <div
+                        className="relative mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full"
+                        style={{
+                          background: `${DRIVER_EVENT_COLOR}15`,
+                          border: `1px solid ${DRIVER_EVENT_COLOR}30`,
+                        }}
+                      >
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ background: DRIVER_EVENT_COLOR }}
+                        />
+                        <span
+                          className="text-sm font-semibold"
+                          style={{ color: DRIVER_EVENT_COLOR }}
+                        >
+                          {selectedDriverEvent.type === 'trip'
+                            ? t('driver.trip', 'Trip')
+                            : selectedDriverEvent.type === 'blocked'
+                              ? t('driver.blocked', 'Blocked')
+                              : t('driver.maintenance', 'Maintenance')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content - Scrollable */}
+                    <div className="px-6 pb-6 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-(--border) scrollbar-track-transparent">
+                      <div className="bg-(--card) rounded-2xl border border-(--border) shadow-lg p-4 space-y-4">
+                        {/* Date Timeline */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 text-center">
+                            <p className="text-[10px] font-semibold text-(--text-muted) uppercase tracking-wider mb-1">
+                              {t('driver.from', 'From')}
+                            </p>
+                            <p className="text-3xl font-bold text-(--text-primary) leading-none">
+                              {format(new Date(selectedDriverEvent.startTime), 'd', {
+                                locale: dateFnsLocale,
+                              })}
+                            </p>
+                            <p className="text-xs text-(--text-muted) mt-1">
+                              {format(new Date(selectedDriverEvent.startTime), 'MMM', {
+                                locale: dateFnsLocale,
+                              })}
+                            </p>
+                            <p className="text-[10px] text-(--text-muted) mt-0.5">
                               {format(new Date(selectedDriverEvent.startTime), 'HH:mm', {
                                 locale: dateFnsLocale,
-                              })}{' '}
-                              -{' '}
+                              })}
+                            </p>
+                          </div>
+
+                          <div className="flex-1 flex flex-col items-center px-4">
+                            <div className="w-10 h-px bg-(--border) mb-2" />
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-(--background-subtle) border border-(--border)">
+                              <Clock className="w-3.5 h-3.5 text-(--text-muted)" />
+                              <span className="text-xs font-bold text-(--text-primary)">
+                                {format(new Date(selectedDriverEvent.startTime), 'HH:mm', {
+                                  locale: dateFnsLocale,
+                                })}{' '}
+                                -{' '}
+                                {format(new Date(selectedDriverEvent.endTime), 'HH:mm', {
+                                  locale: dateFnsLocale,
+                                })}
+                              </span>
+                            </div>
+                            <div className="w-10 h-px bg-(--border) mt-2" />
+                          </div>
+
+                          <div className="flex-1 text-center">
+                            <p className="text-[10px] font-semibold text-(--text-muted) uppercase tracking-wider mb-1">
+                              {t('driver.to', 'To')}
+                            </p>
+                            <p className="text-3xl font-bold text-(--text-primary) leading-none">
+                              {format(new Date(selectedDriverEvent.endTime), 'd', {
+                                locale: dateFnsLocale,
+                              })}
+                            </p>
+                            <p className="text-xs text-(--text-muted) mt-1">
+                              {format(new Date(selectedDriverEvent.endTime), 'MMM', {
+                                locale: dateFnsLocale,
+                              })}
+                            </p>
+                            <p className="text-[10px] text-(--text-muted) mt-0.5">
                               {format(new Date(selectedDriverEvent.endTime), 'HH:mm', {
                                 locale: dateFnsLocale,
                               })}
-                            </span>
+                            </p>
                           </div>
-                          <div className="w-10 h-px bg-(--border) mt-2" />
                         </div>
 
-                        <div className="flex-1 text-center">
-                          <p className="text-[10px] font-semibold text-(--text-muted) uppercase tracking-wider mb-1">
-                            {t('driver.to', 'To')}
-                          </p>
-                          <p className="text-3xl font-bold text-(--text-primary) leading-none">
-                            {format(new Date(selectedDriverEvent.endTime), 'd', {
-                              locale: dateFnsLocale,
-                            })}
-                          </p>
-                          <p className="text-xs text-(--text-muted) mt-1">
-                            {format(new Date(selectedDriverEvent.endTime), 'MMM', {
-                              locale: dateFnsLocale,
-                            })}
-                          </p>
-                          <p className="text-[10px] text-(--text-muted) mt-0.5">
-                            {format(new Date(selectedDriverEvent.endTime), 'HH:mm', {
-                              locale: dateFnsLocale,
-                            })}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Route Info */}
-                      {selectedDriverEvent.tripInfo && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                              {t('driver.route', 'Route')}
-                            </span>
-                            <div className="flex-1 h-px bg-(--border)" />
-                          </div>
-                          <div className="bg-(--background-subtle) rounded-xl p-4 border border-(--border) space-y-3">
-                            <div className="flex items-start gap-3">
-                              <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                              <div>
-                                <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">
-                                  {t('driver.pickup', 'Pickup')}
-                                </p>
-                                <p className="text-sm font-semibold text-(--text-primary) mt-0.5">
-                                  {selectedDriverEvent.tripInfo.from}
-                                </p>
-                              </div>
+                        {/* Route Info */}
+                        {selectedDriverEvent.tripInfo && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
+                                {t('driver.route', 'Route')}
+                              </span>
+                              <div className="flex-1 h-px bg-(--border)" />
                             </div>
-                            <div className="ml-1.5 border-l-2 border-dashed border-(--border)/40 h-6" />
-                            <div className="flex items-start gap-3">
-                              <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                              <div>
-                                <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">
-                                  {t('driver.dropoff', 'Dropoff')}
-                                </p>
-                                <p className="text-sm font-semibold text-(--text-primary) mt-0.5">
-                                  {selectedDriverEvent.tripInfo.to}
-                                </p>
+                            <div className="bg-(--background-subtle) rounded-xl p-4 border border-(--border) space-y-3">
+                              <div className="flex items-start gap-3">
+                                <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                                <div>
+                                  <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">
+                                    {t('driver.pickup', 'Pickup')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-(--text-primary) mt-0.5">
+                                    {selectedDriverEvent.tripInfo.from}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="ml-1.5 border-l-2 border-dashed border-(--border)/40 h-6" />
+                              <div className="flex items-start gap-3">
+                                <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                                <div>
+                                  <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">
+                                    {t('driver.dropoff', 'Dropoff')}
+                                  </p>
+                                  <p className="text-sm font-semibold text-(--text-primary) mt-0.5">
+                                    {selectedDriverEvent.tripInfo.to}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Purpose */}
-                      {selectedDriverEvent.tripInfo?.purpose && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                              {t('driver.purpose', 'Purpose')}
-                            </span>
-                            <div className="flex-1 h-px bg-(--border)" />
+                        {/* Purpose */}
+                        {selectedDriverEvent.tripInfo?.purpose && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
+                                {t('driver.purpose', 'Purpose')}
+                              </span>
+                              <div className="flex-1 h-px bg-(--border)" />
+                            </div>
+                            <p className="text-sm text-(--text-secondary) leading-relaxed bg-(--background-subtle) rounded-xl p-4 border border-(--border)">
+                              {selectedDriverEvent.tripInfo.purpose}
+                            </p>
                           </div>
-                          <p className="text-sm text-(--text-secondary) leading-relaxed bg-(--background-subtle) rounded-xl p-4 border border-(--border)">
-                            {selectedDriverEvent.tripInfo.purpose}
-                          </p>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Passengers */}
-                      {selectedDriverEvent.tripInfo?.passengerCount && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                              {t('driver.passengers', 'Passengers')}
-                            </span>
-                            <div className="flex-1 h-px bg-(--border)" />
-                          </div>
-                          <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-(--background-subtle) border border-(--border)">
-                            <Users className="w-5 h-5 text-(--text-muted)" />
-                            <span className="text-lg font-bold text-(--text-primary)">
-                              {selectedDriverEvent.tripInfo.passengerCount}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Notes */}
-                      {selectedDriverEvent.tripInfo?.notes && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                              {t('driver.notes', 'Notes')}
-                            </span>
-                            <div className="flex-1 h-px bg-(--border)" />
-                          </div>
-                          <p className="text-sm text-(--text-secondary) leading-relaxed bg-(--background-subtle) rounded-xl p-4 border border-(--border)">
-                            {selectedDriverEvent.tripInfo.notes}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Vehicle Info */}
-                      {selectedDriverEvent.driverVehicle && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                              {t('driver.vehicle', 'Vehicle')}
-                            </span>
-                            <div className="flex-1 h-px bg-(--border)" />
-                          </div>
-                          <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-(--background-subtle) border border-(--border)">
-                            <Car className="w-5 h-5 text-(--text-muted)" />
-                            <div className="text-center">
-                              <p className="text-sm font-bold text-(--text-primary)">
-                                {selectedDriverEvent.driverVehicle.model}
-                              </p>
-                              <p className="text-xs text-(--text-muted)">
-                                {selectedDriverEvent.driverVehicle.plateNumber}
-                              </p>
+                        {/* Passengers */}
+                        {selectedDriverEvent.tripInfo?.passengerCount && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
+                                {t('driver.passengers', 'Passengers')}
+                              </span>
+                              <div className="flex-1 h-px bg-(--border)" />
+                            </div>
+                            <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-(--background-subtle) border border-(--border)">
+                              <Users className="w-5 h-5 text-(--text-muted)" />
+                              <span className="text-lg font-bold text-(--text-primary)">
+                                {selectedDriverEvent.tripInfo.passengerCount}
+                              </span>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Status */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                            {t('common.status', 'Status')}
-                          </span>
-                          <div className="flex-1 h-px bg-(--border)" />
-                        </div>
-                        <div
-                          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl"
-                          style={{
-                            background:
-                              selectedDriverEvent.status === 'completed'
-                                ? '#10b98115'
+                        {/* Notes */}
+                        {selectedDriverEvent.tripInfo?.notes && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
+                                {t('driver.notes', 'Notes')}
+                              </span>
+                              <div className="flex-1 h-px bg-(--border)" />
+                            </div>
+                            <p className="text-sm text-(--text-secondary) leading-relaxed bg-(--background-subtle) rounded-xl p-4 border border-(--border)">
+                              {selectedDriverEvent.tripInfo.notes}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Vehicle Info */}
+                        {selectedDriverEvent.driverVehicle && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
+                                {t('driver.vehicle', 'Vehicle')}
+                              </span>
+                              <div className="flex-1 h-px bg-(--border)" />
+                            </div>
+                            <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-(--background-subtle) border border-(--border)">
+                              <Car className="w-5 h-5 text-(--text-muted)" />
+                              <div className="text-center">
+                                <p className="text-sm font-bold text-(--text-primary)">
+                                  {selectedDriverEvent.driverVehicle.model}
+                                </p>
+                                <p className="text-xs text-(--text-muted)">
+                                  {selectedDriverEvent.driverVehicle.plateNumber}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Status */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
+                              {t('common.status', 'Status')}
+                            </span>
+                            <div className="flex-1 h-px bg-(--border)" />
+                          </div>
+                          <div
+                            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl"
+                            style={{
+                              background:
+                                selectedDriverEvent.status === 'completed'
+                                  ? '#10b98115'
+                                  : selectedDriverEvent.status === 'cancelled'
+                                    ? '#ef444415'
+                                    : '#f59e0b15',
+                              border: `1px solid ${
+                                selectedDriverEvent.status === 'completed'
+                                  ? '#10b98130'
+                                  : selectedDriverEvent.status === 'cancelled'
+                                    ? '#ef444430'
+                                    : '#f59e0b30'
+                              }`,
+                            }}
+                          >
+                            {selectedDriverEvent.status === 'completed' ? (
+                              <CheckCircle className="w-5 h-5 text-emerald-500" />
+                            ) : selectedDriverEvent.status === 'cancelled' ? (
+                              <XCircle className="w-5 h-5 text-red-500" />
+                            ) : (
+                              <Clock className="w-5 h-5 text-amber-500" />
+                            )}
+                            <span className="text-sm font-semibold text-(--text-primary)">
+                              {selectedDriverEvent.status === 'completed'
+                                ? t('driver.status.completed', 'Completed')
                                 : selectedDriverEvent.status === 'cancelled'
-                                  ? '#ef444415'
-                                  : '#f59e0b15',
-                            border: `1px solid ${
-                              selectedDriverEvent.status === 'completed'
-                                ? '#10b98130'
-                                : selectedDriverEvent.status === 'cancelled'
-                                  ? '#ef444430'
-                                  : '#f59e0b30'
-                            }`,
-                          }}
-                        >
-                          {selectedDriverEvent.status === 'completed' ? (
-                            <CheckCircle className="w-5 h-5 text-emerald-500" />
-                          ) : selectedDriverEvent.status === 'cancelled' ? (
-                            <XCircle className="w-5 h-5 text-red-500" />
-                          ) : (
-                            <Clock className="w-5 h-5 text-amber-500" />
-                          )}
-                          <span className="text-sm font-semibold text-(--text-primary)">
-                            {selectedDriverEvent.status === 'completed'
-                              ? t('driver.status.completed', 'Completed')
-                              : selectedDriverEvent.status === 'cancelled'
-                                ? t('driver.status.cancelled', 'Cancelled')
-                                : t('driver.status.scheduled', 'Scheduled')}
-                          </span>
+                                  ? t('driver.status.cancelled', 'Cancelled')
+                                  : t('driver.status.scheduled', 'Scheduled')}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-            {/* Google Calendar Event Detail Modal */}
-            {selectedGoogleEvent && (
-              <div className="fixed inset-0 lg:left-60 lg:top-16 z-50 flex items-center justify-center p-4">
-                <div
-                  className="modal-backdrop-in absolute inset-0 bg-black/50 backdrop-blur-sm"
-                  onClick={() => setSelectedGoogleEvent(null)}
-                />
-                <div
-                  className="modal-panel-in relative z-10 w-full max-w-md rounded-2xl border border-(--border) bg-(--card) shadow-2xl overflow-hidden"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Header with gradient */}
+              )}
+              {/* Google Calendar Event Detail Modal */}
+              {selectedGoogleEvent && (
+                <div className="fixed inset-0 lg:left-60 lg:top-16 z-50 flex items-center justify-center p-4">
                   <div
-                    className="px-5 pt-5 pb-4 flex items-center justify-between relative"
-                    style={{
-                      background: `linear-gradient(135deg, ${GOOGLE_EVENT_COLOR}22 0%, ${GOOGLE_EVENT_COLOR}08 100%)`,
-                      borderBottom: `2px solid ${GOOGLE_EVENT_COLOR}33`,
-                    }}
+                    className="modal-backdrop-in absolute inset-0 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setSelectedGoogleEvent(null)}
+                  />
+                  <div
+                    className="modal-panel-in relative z-10 w-full max-w-md rounded-2xl border border-(--border) bg-(--card) shadow-2xl overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg"
-                        style={{
-                          background: `linear-gradient(135deg, ${GOOGLE_EVENT_COLOR}, ${GOOGLE_EVENT_COLOR}cc)`,
-                        }}
-                      >
-                        <span className="text-lg font-bold">G</span>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-lg font-bold text-(--text-primary) truncate">
-                          {selectedGoogleEvent.title}
-                        </h3>
-                        <p className="text-xs text-(--text-muted)">Google Calendar</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setSelectedGoogleEvent(null)}
-                      className="text-(--text-muted) hover:text-(--text-primary) transition-colors p-1.5 rounded-full hover:bg-(--background-subtle) shrink-0"
+                    {/* Header with gradient */}
+                    <div
+                      className="px-5 pt-5 pb-4 flex items-center justify-between relative"
+                      style={{
+                        background: `linear-gradient(135deg, ${GOOGLE_EVENT_COLOR}22 0%, ${GOOGLE_EVENT_COLOR}08 100%)`,
+                        borderBottom: `2px solid ${GOOGLE_EVENT_COLOR}33`,
+                      }}
                     >
-                      <XCircle className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Content */}
-                  <div className="px-5 pb-5 space-y-4">
-                    {/* Date & Time */}
-                    <div className="rounded-xl border border-(--border) bg-(--background-subtle) p-4 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="w-4 h-4 text-(--text-muted) shrink-0" />
-                        <span className="text-sm font-semibold text-(--text-primary)">
-                          {safeFormat(selectedGoogleEvent.startDate, 'EEEE, MMMM d, yyyy')}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg"
+                          style={{
+                            background: `linear-gradient(135deg, ${GOOGLE_EVENT_COLOR}, ${GOOGLE_EVENT_COLOR}cc)`,
+                          }}
+                        >
+                          <span className="text-lg font-bold">G</span>
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-(--text-primary) truncate">
+                            {selectedGoogleEvent.title}
+                          </h3>
+                          <p className="text-xs text-(--text-muted)">Google Calendar</p>
+                        </div>
                       </div>
-                      {selectedGoogleEvent.startTime ? (
+                      <button
+                        onClick={() => setSelectedGoogleEvent(null)}
+                        className="text-(--text-muted) hover:text-(--text-primary) transition-colors p-1.5 rounded-full hover:bg-(--background-subtle) shrink-0"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="px-5 pb-5 space-y-4">
+                      {/* Date & Time */}
+                      <div className="rounded-xl border border-(--border) bg-(--background-subtle) p-4 space-y-3">
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-(--text-muted) shrink-0" />
-                          <span className="text-sm text-(--text-secondary)">
-                            {format(new Date(selectedGoogleEvent.startTime), 'h:mm a', {
-                              locale: dateFnsLocale,
-                            })}
-                            {selectedGoogleEvent.endTime &&
-                              ` – ${format(new Date(selectedGoogleEvent.endTime), 'h:mm a', { locale: dateFnsLocale })}`}
+                          <CalendarDays className="w-4 h-4 text-(--text-muted) shrink-0" />
+                          <span className="text-sm font-semibold text-(--text-primary)">
+                            {safeFormat(selectedGoogleEvent.startDate, 'EEEE, MMMM d, yyyy')}
                           </span>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-(--text-muted) shrink-0" />
-                          <span className="text-sm text-(--text-secondary)">
-                            {t('calendar.allDay', 'All day')}
-                          </span>
-                        </div>
-                      )}
-                      {/* Multi-day range */}
-                      {selectedGoogleEvent.endDate &&
-                        selectedGoogleEvent.startDate !==
-                          (selectedGoogleEvent.allDay
-                            ? format(
-                                addDays(new Date(selectedGoogleEvent.endDate), -1),
-                                'yyyy-MM-dd',
-                              )
-                            : selectedGoogleEvent.endDate) && (
-                          <div className="flex items-center gap-2 pt-1 border-t border-(--border)">
-                            <CalendarDays className="w-4 h-4 text-(--text-muted) shrink-0" />
-                            <span className="text-xs text-(--text-secondary)">
-                              {safeFormat(selectedGoogleEvent.startDate, 'MMM d')} &ndash;{' '}
-                              {safeFormat(
-                                selectedGoogleEvent.allDay
-                                  ? format(
-                                      addDays(new Date(selectedGoogleEvent.endDate), -1),
-                                      'yyyy-MM-dd',
-                                    )
-                                  : selectedGoogleEvent.endDate,
-                                'MMM d, yyyy',
-                              )}
+                        {selectedGoogleEvent.startTime ? (
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-(--text-muted) shrink-0" />
+                            <span className="text-sm text-(--text-secondary)">
+                              {format(new Date(selectedGoogleEvent.startTime), 'h:mm a', {
+                                locale: dateFnsLocale,
+                              })}
+                              {selectedGoogleEvent.endTime &&
+                                ` – ${format(new Date(selectedGoogleEvent.endTime), 'h:mm a', { locale: dateFnsLocale })}`}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-(--text-muted) shrink-0" />
+                            <span className="text-sm text-(--text-secondary)">
+                              {t('calendar.allDay', 'All day')}
                             </span>
                           </div>
                         )}
-                    </div>
-
-                    {/* Location */}
-                    {selectedGoogleEvent.location && (
-                      <div className="space-y-1.5">
-                        <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider flex items-center gap-1.5">
-                          <span className="text-sm">📍</span>
-                          {t('calendar.location', 'Location')}
-                        </span>
-                        <p className="text-sm text-(--text-secondary) bg-(--background-subtle) rounded-lg p-3 border border-(--border)">
-                          {selectedGoogleEvent.location}
-                        </p>
+                        {/* Multi-day range */}
+                        {selectedGoogleEvent.endDate &&
+                          selectedGoogleEvent.startDate !==
+                            (selectedGoogleEvent.allDay
+                              ? format(
+                                  addDays(new Date(selectedGoogleEvent.endDate), -1),
+                                  'yyyy-MM-dd',
+                                )
+                              : selectedGoogleEvent.endDate) && (
+                            <div className="flex items-center gap-2 pt-1 border-t border-(--border)">
+                              <CalendarDays className="w-4 h-4 text-(--text-muted) shrink-0" />
+                              <span className="text-xs text-(--text-secondary)">
+                                {safeFormat(selectedGoogleEvent.startDate, 'MMM d')} &ndash;{' '}
+                                {safeFormat(
+                                  selectedGoogleEvent.allDay
+                                    ? format(
+                                        addDays(new Date(selectedGoogleEvent.endDate), -1),
+                                        'yyyy-MM-dd',
+                                      )
+                                    : selectedGoogleEvent.endDate,
+                                  'MMM d, yyyy',
+                                )}
+                              </span>
+                            </div>
+                          )}
                       </div>
-                    )}
 
-                    {/* Description */}
-                    {selectedGoogleEvent.description && (
-                      <div className="space-y-1.5">
-                        <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
-                          {t('calendar.description', 'Description')}
-                        </span>
-                        <div className="text-sm text-(--text-secondary) bg-(--background-subtle) rounded-lg p-3 border border-(--border) leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
-                          {selectedGoogleEvent.description}
+                      {/* Location */}
+                      {selectedGoogleEvent.location && (
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="text-sm">📍</span>
+                            {t('calendar.location', 'Location')}
+                          </span>
+                          <p className="text-sm text-(--text-secondary) bg-(--background-subtle) rounded-lg p-3 border border-(--border)">
+                            {selectedGoogleEvent.location}
+                          </p>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Open in Google Calendar */}
-                    {selectedGoogleEvent.htmlLink && (
-                      <a
-                        href={selectedGoogleEvent.htmlLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-(--border) bg-(--background-subtle) text-sm font-medium text-(--text-primary) hover:bg-(--background) hover:border-(--primary)/50 transition-all"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        {t('calendar.openInGoogle', 'Open in Google Calendar')}
-                      </a>
-                    )}
+                      {/* Description */}
+                      {selectedGoogleEvent.description && (
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-semibold text-(--text-muted) uppercase tracking-wider">
+                            {t('calendar.description', 'Description')}
+                          </span>
+                          <div className="text-sm text-(--text-secondary) bg-(--background-subtle) rounded-lg p-3 border border-(--border) leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
+                            {selectedGoogleEvent.description}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Open in Google Calendar */}
+                      {selectedGoogleEvent.htmlLink && (
+                        <a
+                          href={selectedGoogleEvent.htmlLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-(--border) bg-(--background-subtle) text-sm font-medium text-(--text-primary) hover:bg-(--background) hover:border-(--primary)/50 transition-all"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          {t('calendar.openInGoogle', 'Open in Google Calendar')}
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </>,
-          document.body,
-        )}
-    </div>
+              )}
+            </>,
+            document.body,
+          )}
+      </div>
+    </TooltipProvider>
   );
 });
 

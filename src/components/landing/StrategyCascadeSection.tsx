@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useLandingTranslation } from './useLandingTranslation';
 
 const STEPS = [
   'strategyStep1',
@@ -48,29 +48,15 @@ const DOT_COLORS = [
   'bg-rose-500',
 ];
 
-export default function StrategyCascadeSection() {
-  const { t } = useTranslation();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <section className="relative px-6 md:px-12 py-16 md:py-24 overflow-hidden">
-        <div className="max-w-6xl mx-auto">
-          <div className="h-8 w-48 rounded-lg bg-white/5 animate-pulse mb-12 mx-auto" />
-          <div className="h-6 w-96 rounded-lg bg-white/5 animate-pulse mb-16 mx-auto" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse" />
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
+export default function StrategyCascadeSection({
+  initialLanguage = 'en',
+}: {
+  initialLanguage?: string;
+}) {
+  // useLandingTranslation resolves translations synchronously with the
+  // server-detected language, so this section SSRs without the old
+  // mounted-gated skeleton (which caused a below-fold content flash).
+  const { t } = useLandingTranslation(initialLanguage);
 
   return (
     <section

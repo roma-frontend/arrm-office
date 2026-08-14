@@ -9,7 +9,14 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -265,26 +272,24 @@ export function DriverShiftControls({ driverId, organizationId }: DriverShiftCon
       </Card>
 
       {/* End Shift Modal */}
-      <Dialog open={showEndShiftModal} onOpenChange={setShowEndShiftModal}>
-        <DialogContent className="max-w-md p-0 overflow-hidden max-h-[95vh] overflow-y-auto">
-          {/* Header */}
-          <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-(--border)">
+      <Sheet open={showEndShiftModal} onOpenChange={setShowEndShiftModal}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
             <div className="flex items-start gap-3">
               <div className="p-2 rounded-xl bg-(--destructive)/10 shrink-0">
                 <Square className="w-4 h-4 sm:w-5 sm:h-5 text-(--destructive)" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-(--text-primary)">
+                <SheetTitle className="text-base sm:text-lg font-semibold text-(--text-primary)">
                   {t('driver.shift.endShift', 'End Shift')}
-                </h2>
+                </SheetTitle>
                 <p className="text-xs sm:text-sm text-(--text-muted) mt-0.5">
                   {t('driver.shift.endShiftDesc', 'Complete your shift and submit final details')}
                 </p>
               </div>
             </div>
-          </div>
-          {/* Body */}
-          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
+          </SheetHeader>
+          <SheetBody className="space-y-4 sm:space-y-5">
             <div>
               <Label className="text-xs sm:text-sm font-medium text-(--text-primary) flex items-center gap-2">
                 <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-(--warning)" />
@@ -319,9 +324,8 @@ export function DriverShiftControls({ driverId, organizationId }: DriverShiftCon
                 {t('driver.shift.notesHint', 'Add any important information about this shift')}
               </p>
             </div>
-          </div>
-          {/* Footer */}
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-(--border) flex flex-col sm:flex-row gap-2 sm:gap-3 justify-end">
+          </SheetBody>
+          <SheetFooter className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-end">
             <Button
               variant="outline"
               onClick={() => setShowEndShiftModal(false)}
@@ -337,9 +341,9 @@ export function DriverShiftControls({ driverId, organizationId }: DriverShiftCon
               <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
               {t('driver.shift.endConfirm', 'End Shift')}
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

@@ -51,12 +51,13 @@ import { LeaveConflictAlerts } from '@/components/events/LeaveConflictAlerts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { logger } from '@/lib/logger';
 
 type Priority = 'high' | 'medium' | 'low';
@@ -81,20 +82,20 @@ const PRIORITY_CONFIG: Record<
   { color: string; bg: string; labelKey: string; icon: string }
 > = {
   high: {
-    color: 'text-red-600',
-    bg: 'bg-red-50 dark:bg-red-500/10',
+    color: 'text-(--danger-text)',
+    bg: 'bg-(--danger-quiet) dark:bg-(--danger-quiet)',
     labelKey: 'events.priority.high',
     icon: '🔴',
   },
   medium: {
-    color: 'text-amber-600',
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
+    color: 'text-(--warning-text)',
+    bg: 'bg-(--warning-quiet) dark:bg-(--warning-quiet)',
     labelKey: 'events.priority.medium',
     icon: '🟡',
   },
   low: {
-    color: 'text-blue-600',
-    bg: 'bg-blue-50 dark:bg-blue-500/10',
+    color: 'text-(--brand-text)',
+    bg: 'bg-(--brand-quiet) dark:bg-(--brand-quiet)',
     labelKey: 'events.priority.low',
     icon: '🔵',
   },
@@ -294,25 +295,25 @@ export default function CompanyEventsPage() {
               label: t('events.stats.totalEvents', 'Total Events'),
               value: stats.total,
               icon: Calendar,
-              color: 'text-blue-600',
+              color: 'text-(--brand-text)',
             },
             {
               label: t('events.stats.upcoming', 'Upcoming'),
               value: stats.upcoming,
               icon: Clock,
-              color: 'text-emerald-600',
+              color: 'text-(--success-text)',
             },
             {
               label: t('events.stats.highPriority', 'High Priority'),
               value: stats.highPriority,
               icon: AlertCircle,
-              color: 'text-red-600',
+              color: 'text-(--danger-text)',
             },
             {
               label: t('events.stats.thisMonth', 'This Month'),
               value: stats.thisMonth,
               icon: Bell,
-              color: 'text-amber-600',
+              color: 'text-(--warning-text)',
             },
           ].map((stat, i) => (
             <motion.div
@@ -581,7 +582,7 @@ export default function CompanyEventsPage() {
                                   }
                                 }}
                               >
-                                <Trash2 className="w-4 h-4 text-red-600" />
+                                <Trash2 className="w-4 h-4 text-(--danger-text)" />
                               </Button>
                             </div>
                           </div>
@@ -602,17 +603,14 @@ export default function CompanyEventsPage() {
       )}
 
       {/* Create Event Dialog */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent
-          className="w-[95vw] sm:w-[90vw] md:w-[85vw] max-w-2xl max-h-[95vh] flex flex-col"
-          aria-describedby={undefined}
-        >
-          <DialogHeader>
-            <DialogTitle className="text-lg md:text-xl">
+      <Sheet open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle className="text-lg md:text-xl">
               {t('events.createEvent', 'Create Event')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-y-auto">
+            </SheetTitle>
+          </SheetHeader>
+          <SheetBody>
             <CreateEventWizard
               organizationId={effectiveOrgId as Id<'organizations'>}
               onComplete={() => {
@@ -621,12 +619,12 @@ export default function CompanyEventsPage() {
               }}
               onCancel={() => setShowCreateModal(false)}
             />
-          </div>
-        </DialogContent>
-      </Dialog>
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
 
       {/* Edit Event Dialog */}
-      <Dialog
+      <Sheet
         open={showEditModal}
         onOpenChange={(open) => {
           setShowEditModal(open);
@@ -646,18 +644,15 @@ export default function CompanyEventsPage() {
           }
         }}
       >
-        <DialogContent
-          className="max-w-2xl max-h-[95vh] overflow-y-auto"
-          aria-describedby={undefined}
-        >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
+        <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2 text-xl">
               <Edit className="w-5 h-5" />
               {t('events.editEvent', 'Edit Event')}
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
           {selectedEvent && (
-            <div className="space-y-5">
+            <SheetBody className="space-y-5">
               <div>
                 <Label className="text-sm font-medium mb-2 block">
                   {t('events.eventName', 'Event Name')} <span className="text-red-500">*</span>
@@ -732,7 +727,7 @@ export default function CompanyEventsPage() {
                   ))}
                 </div>
               </div>
-              <DialogFooter className="px-0 pt-4">
+              <SheetFooter>
                 <Button variant="outline" onClick={() => setShowEditModal(false)}>
                   {t('common.cancel', 'Cancel')}
                 </Button>
@@ -765,11 +760,11 @@ export default function CompanyEventsPage() {
                 >
                   {t('common.save', 'Save Changes')}
                 </Button>
-              </DialogFooter>
-            </div>
+              </SheetFooter>
+            </SheetBody>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

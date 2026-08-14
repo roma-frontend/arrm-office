@@ -6,7 +6,14 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -260,25 +267,25 @@ export function CreatePayrollRunDialog({
   const now = new Date();
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(o) => {
         if (!o) setResetKey((k) => k + 1);
         onOpenChange(o);
       }}
     >
-      <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden gap-0 max-h-[95vh] flex flex-col">
-        <div className="px-5 py-4 md:px-6 md:py-5 border-b border-(--border) bg-gradient-to-r from-(--primary)/10 to-transparent">
-          <DialogTitle className="text-lg md:text-xl font-bold text-(--text-primary) flex items-center gap-2">
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="text-lg md:text-xl font-bold text-(--text-primary) flex items-center gap-2">
             <Calendar className="w-5 h-5 text-(--primary)" />
             {t('payroll.newRun')}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-(--text-muted) mt-1">
+          </SheetTitle>
+          <SheetDescription className="text-sm text-(--text-muted)">
             {t('payroll.createRunDescription')}
-          </DialogDescription>
-        </div>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="flex-1 min-h-0 flex flex-col">
+        <SheetBody className="flex flex-col">
           {submitting ? (
             <div className="flex-1 flex items-center justify-center py-16">
               <div className="flex flex-col items-center gap-3 text-(--text-muted)">
@@ -302,9 +309,9 @@ export function CreatePayrollRunDialog({
               }}
             />
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -352,9 +359,9 @@ export function ConfirmPayrollDialog({
             disabled={loading}
             className={
               variant === 'destructive'
-                ? 'bg-red-600 hover:bg-red-700'
+                ? 'bg-(--danger-solid) hover:opacity-90'
                 : variant === 'success'
-                  ? 'bg-green-600 hover:bg-green-700'
+                  ? 'bg-(--success) hover:opacity-90'
                   : ''
             }
           >

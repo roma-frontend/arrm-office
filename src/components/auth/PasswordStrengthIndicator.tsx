@@ -85,12 +85,12 @@ export function PasswordStrengthIndicator({
             transition={{ delay: index * 0.05 }}
             className={`flex items-start gap-2 text-xs p-2 rounded-lg ${
               item.type === 'success'
-                ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                ? 'bg-(--success-quiet) text-(--success-text) dark:text-green-400'
                 : item.type === 'error'
-                  ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                  ? 'bg-(--danger-quiet) text-(--danger-text) dark:text-red-400'
                   : item.type === 'warning'
                     ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                    : 'bg-(--brand-quiet) text-(--brand-text) dark:text-blue-400'
             }`}
           >
             <span className="text-base leading-none mt-0.5">{item.icon}</span>

@@ -266,7 +266,7 @@ export function IntegrationSettings() {
             <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start justify-between p-4 rounded-lg bg-(--surface-hover) border border-(--border) opacity-70">
               <div className="flex items-start gap-3 flex-1">
                 <div className="w-10 h-10 rounded-lg bg-blue-600/10 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-blue-600" />
+                  <Calendar className="w-5 h-5 text-(--brand-text)" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">

@@ -22,9 +22,13 @@ const NavbarWrapper = dynamic(() => import('@/components/landing/NavbarWrapper')
   ssr: false,
 });
 
+// SSR the below-fold too: sections resolve translations synchronously via
+// `getFixedT(initialLanguage)` (the landing namespaces are statically bundled),
+// so the server HTML matches the first client render — no grey skeleton flash,
+// no CLS, and crawlers see the full page content.
 const LandingBelowFold = dynamic(() => import('@/components/landing/LandingBelowFold'), {
   loading: () => null,
-  ssr: false,
+  ssr: true,
 });
 
 export default function LandingPageClient({ initialLanguage }: { initialLanguage: string }) {
@@ -32,7 +36,7 @@ export default function LandingPageClient({ initialLanguage }: { initialLanguage
     <>
       <NavbarWrapper />
       <HeroSection initialLanguage={initialLanguage} />
-      <LandingBelowFold />
+      <LandingBelowFold initialLanguage={initialLanguage} />
     </>
   );
 }

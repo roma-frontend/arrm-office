@@ -42,7 +42,6 @@ import { EmployeeSheet } from './EmployeeSheet';
 import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useDraftResume } from '@/hooks/useDraftResume';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
-import { TeamSidebar } from './TeamSidebar';
 import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 
@@ -105,7 +104,6 @@ export function EmployeesClient() {
   const [editEmployee, setEditEmployee] = useState<Doc<'users'> | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false); // Закрыт по умолчанию
   /** Employee shown in the slide-over, plus the name to title it with before the
    *  profile query resolves. */
   const [sheetEmployee, setSheetEmployee] = useState<{ id: Id<'users'>; name: string } | null>(
@@ -254,14 +252,7 @@ export function EmployeesClient() {
         </div>
       </div>
 
-      <div
-        className="space-y-6"
-        style={{
-          transition: isMobile ? 'none' : 'padding-right 600ms cubic-bezier(0.4, 0, 0.2, 1)',
-          willChange: isMobile ? 'auto' : 'padding-right',
-          paddingRight: isMobile ? '0' : isPanelOpen ? '19rem' : '5rem',
-        }}
-      >
+      <div className="space-y-6">
         {/* Info Banner for Admins */}
         {canManage && (
           <motion.div
@@ -321,7 +312,7 @@ export function EmployeesClient() {
                     setSearch('');
                     setDebouncedSearch('');
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-(--text-4) hover:text-(--text-2)"
                 >
                   ✕
                 </button>
@@ -444,11 +435,26 @@ export function EmployeesClient() {
         {(() => {
           const getPresenceBadge = (status: string | undefined) => {
             const cfg: Record<string, { labelKey: string; cls: string }> = {
-              available: { labelKey: 'presence.available', cls: 'bg-emerald-100 text-emerald-700' },
-              in_meeting: { labelKey: 'presence.inMeeting', cls: 'bg-amber-100 text-amber-700' },
-              in_call: { labelKey: 'presence.inCall', cls: 'bg-blue-100 text-blue-700' },
-              out_of_office: { labelKey: 'presence.outOfOffice', cls: 'bg-rose-100 text-rose-700' },
-              busy: { labelKey: 'presence.busy', cls: 'bg-orange-100 text-orange-700' },
+              available: {
+                labelKey: 'presence.available',
+                cls: 'bg-(--success-quiet) text-(--success-text)',
+              },
+              in_meeting: {
+                labelKey: 'presence.inMeeting',
+                cls: 'bg-(--warning-quiet) text-(--warning-text)',
+              },
+              in_call: {
+                labelKey: 'presence.inCall',
+                cls: 'bg-(--brand-quiet) text-(--brand-text)',
+              },
+              out_of_office: {
+                labelKey: 'presence.outOfOffice',
+                cls: 'bg-(--danger-quiet) text-(--danger-text)',
+              },
+              busy: {
+                labelKey: 'presence.busy',
+                cls: 'bg-(--warning-quiet) text-(--warning-text)',
+              },
             };
             return cfg[status ?? 'available'] ?? cfg['available'];
           };
@@ -539,9 +545,11 @@ export function EmployeesClient() {
                           exit={{ opacity: 0, scale: 0.95 }}
                           transition={{ delay: i * 0.03 }}
                           onClick={() => openEmployee(emp._id, emp.name ?? '')}
-                          className="flex flex-col justify-between relative p-5 rounded-2xl border group cursor-pointer hover:shadow-lg transition-shadow"
+                          className="flex flex-col justify-between relative p-5 rounded-2xl border group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                           style={{
-                            background: 'var(--card)',
+                            background: 'var(--glass-surface)',
+                            backdropFilter: 'blur(14px) saturate(1.05)',
+                            WebkitBackdropFilter: 'blur(14px) saturate(1.05)',
                             borderColor: emp.isActive ? 'var(--border)' : 'rgba(239,68,68,0.2)',
                             opacity: emp.isActive ? 1 : 0.6,
                             // Lift the whole card over the full-screen click-catcher
@@ -640,8 +648,8 @@ export function EmployeesClient() {
                               <span
                                 className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                   emp.isActive
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-red-100 text-red-700'
+                                    ? 'bg-(--success-quiet) text-(--success-text)'
+                                    : 'bg-(--danger-quiet) text-(--danger-text)'
                                 }`}
                               >
                                 {emp.isActive
@@ -748,7 +756,7 @@ export function EmployeesClient() {
                   </div>
                   {/* Desktop table view */}
                   <div
-                    className="hidden sm:block rounded-2xl border overflow-hidden"
+                    className="hidden sm:block rounded-2xl border overflow-hidden glass-panel shadow-sm"
                     style={{ borderColor: 'var(--border)' }}
                   >
                     {/* Table header */}
@@ -849,8 +857,8 @@ export function EmployeesClient() {
                               <span
                                 className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                   emp.isActive
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-red-100 text-red-700'
+                                    ? 'bg-(--success-quiet) text-(--success-text)'
+                                    : 'bg-(--danger-quiet) text-(--danger-text)'
                                 }`}
                               >
                                 {emp.isActive
@@ -885,8 +893,8 @@ export function EmployeesClient() {
                               <span
                                 className={`text-xs px-2 py-1 rounded-full font-medium ${
                                   emp.isActive
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-red-100 text-red-700'
+                                    ? 'bg-(--success-quiet) text-(--success-text)'
+                                    : 'bg-(--danger-quiet) text-(--danger-text)'
                                 }`}
                               >
                                 {emp.isActive
@@ -1060,9 +1068,6 @@ export function EmployeesClient() {
             onClick={() => setOpenMenuId(null)}
           />
         )}
-
-        {/* Team Sidebar - Compact collapsible panel */}
-        <TeamSidebar userId={user?.id as Id<'users'>} onToggle={setIsPanelOpen} />
       </div>
     </div>
   );

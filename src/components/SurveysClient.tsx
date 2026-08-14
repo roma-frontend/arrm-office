@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -37,7 +39,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -372,324 +382,277 @@ function CreateSurveyWizard({ open, onClose, organizationId, createdBy }: Create
     }
   };
 
-  const progress = ((currentStep + 1) / steps.length) * 100;
-
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[95vh]">
-        <DialogHeader className="px-5 pt-5 pb-0">
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')} className="p-0">
+        <SheetHeader className="gap-3.5">
+          <SheetTitle className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5" />
             {t('surveys.createSurvey')}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+          <WizardStepper
+            steps={steps.map((s) => ({ id: s.id, title: s.title }))}
+            current={currentStep}
+            onStepClick={(i) => {
+              // Backwards is always safe; forward only from step 0 once the
+              // title is filled, mirroring the footer button's guard.
+              if (i < currentStep || (i === 1 && !!title.trim())) setCurrentStep(i);
+            }}
+          />
+        </SheetHeader>
 
-        <div className="flex flex-col">
-          {/* Progress bar + Step indicators */}
-          <div className="px-5 pt-4 pb-3">
-            <div className="relative h-1.5 bg-muted rounded-full overflow-hidden mb-4">
-              <div
-                className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-300 ease-in-out"
-                style={{ width: `${progress}%` }}
-              />
+        {/* Step Content */}
+        <SheetBody className="px-5 py-5">
+          <WizardDraftNotice
+            show={draft.restored}
+            step={draft.restoredStep}
+            onReset={handleStartOver}
+            className="mb-4"
+          />
+
+          {/* Step 1: Survey Info */}
+          {currentStep === 0 && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">
+                  {t('surveys.form.title')} *
+                </label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={t('surveys.form.titlePlaceholder')}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">
+                  {t('surveys.form.description')}
+                </label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t('surveys.form.descriptionPlaceholder')}
+                  rows={3}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="anonymous"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="rounded"
+                />
+                <label htmlFor="anonymous" className="text-sm text-muted-foreground">
+                  {t('surveys.form.anonymous')}
+                </label>
+              </div>
             </div>
-            <div className="flex items-center justify-between gap-1">
-              {steps.map((step, idx) => {
-                const isCompleted = idx < currentStep;
-                const isCurrent = idx === currentStep;
-                return (
-                  <React.Fragment key={step.id}>
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 shrink-0 ${
-                          isCompleted
-                            ? 'bg-primary border-primary text-primary-foreground'
-                            : isCurrent
-                              ? 'border-primary bg-background text-primary scale-110'
-                              : 'border-muted-foreground/30 bg-background text-muted-foreground'
-                        }`}
-                      >
-                        {isCompleted ? <CheckCircle className="w-4 h-4" /> : step.icon}
-                      </div>
-                      <p
-                        className={`text-[10px] font-medium mt-1.5 text-center truncate w-full px-1 ${
-                          isCurrent ? 'text-primary' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {step.title}
-                      </p>
-                    </div>
-                    {idx < steps.length - 1 && (
-                      <div className="flex-1 h-0.5 bg-muted mx-1 max-w-6 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            isCompleted ? 'bg-blue-500' : 'bg-transparent'
-                          }`}
-                          style={{ width: isCompleted ? '100%' : '0%' }}
+          )}
+
+          {/* Step 2: Questions */}
+          {currentStep === 1 && (
+            <div className="space-y-4">
+              {/* Existing questions */}
+              {questions.length > 0 && (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={questions.map((_, idx) => `question-${idx}`)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2">
+                      {questions.map((q, idx) => (
+                        <SortableQuestion
+                          key={`question-${idx}`}
+                          question={q}
+                          index={idx}
+                          onRemove={removeQuestion}
+                          t={t}
                         />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+
+              {/* Add question form */}
+              <div className="border rounded-lg p-3 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase">
+                  {t('surveys.form.addQuestion')}
+                </p>
+                {/* Question type */}
+                <div className="flex flex-wrap gap-1">
+                  {(
+                    Object.entries(QUESTION_TYPE_CONFIG) as [QuestionType, QuestionTypeConfig][]
+                  ).map(([key, config]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() =>
+                        setNewQuestion((p) => ({ ...p, type: key, options: undefined }))
+                      }
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
+                        newQuestion.type === key
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                      }`}
+                    >
+                      <config.icon className="h-3 w-3" />
+                      {t(config.labelKey)}
+                    </button>
+                  ))}
+                </div>
+                {/* Question text */}
+                <Input
+                  value={newQuestion.text}
+                  onChange={(e) => setNewQuestion((p) => ({ ...p, text: e.target.value }))}
+                  placeholder={t('surveys.form.questionTextPlaceholder')}
+                  className="text-sm"
+                />
+                {/* Options for multiple choice */}
+                {newQuestion.type === 'multiple_choice' && (
+                  <div className="space-y-2">
+                    {newQuestion.options && newQuestion.options.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {newQuestion.options.map((opt, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {opt}
+                          </Badge>
+                        ))}
                       </div>
                     )}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Step Content */}
-          <div className="px-5 py-4 min-h-[300px] max-h-[50vh] overflow-y-auto">
-            <WizardDraftNotice
-              show={draft.restored}
-              step={draft.restoredStep}
-              onReset={handleStartOver}
-              className="mb-4"
-            />
-
-            {/* Step 1: Survey Info */}
-            {currentStep === 0 && (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    {t('surveys.form.title')} *
-                  </label>
-                  <Input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder={t('surveys.form.titlePlaceholder')}
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    {t('surveys.form.description')}
-                  </label>
-                  <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t('surveys.form.descriptionPlaceholder')}
-                    rows={3}
-                  />
-                </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={newOption}
+                        onChange={(e) => setNewOption(e.target.value)}
+                        placeholder={t('surveys.form.addOption')}
+                        className="text-sm flex-1"
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={addOption}
+                        disabled={!newOption.trim()}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {/* Required toggle */}
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    id="anonymous"
-                    checked={isAnonymous}
-                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                    checked={newQuestion.isRequired}
+                    onChange={(e) =>
+                      setNewQuestion((p) => ({ ...p, isRequired: e.target.checked }))
+                    }
                     className="rounded"
                   />
-                  <label htmlFor="anonymous" className="text-sm text-muted-foreground">
-                    {t('surveys.form.anonymous')}
-                  </label>
+                  <span className="text-xs text-muted-foreground">
+                    {t('surveys.form.required')}
+                  </span>
                 </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={addQuestion}
+                  disabled={!newQuestion.text.trim()}
+                  className="w-full"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  {t('surveys.form.addQuestionBtn')}
+                </Button>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Step 2: Questions */}
-            {currentStep === 1 && (
-              <div className="space-y-4">
-                {/* Existing questions */}
-                {questions.length > 0 && (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={questions.map((_, idx) => `question-${idx}`)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-2">
-                        {questions.map((q, idx) => (
-                          <SortableQuestion
-                            key={`question-${idx}`}
-                            question={q}
-                            index={idx}
-                            onRemove={removeQuestion}
-                            t={t}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-                )}
-
-                {/* Add question form */}
-                <div className="border rounded-lg p-3 space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground uppercase">
-                    {t('surveys.form.addQuestion')}
-                  </p>
-                  {/* Question type */}
-                  <div className="flex flex-wrap gap-1">
-                    {(
-                      Object.entries(QUESTION_TYPE_CONFIG) as [QuestionType, QuestionTypeConfig][]
-                    ).map(([key, config]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() =>
-                          setNewQuestion((p) => ({ ...p, type: key, options: undefined }))
-                        }
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all ${
-                          newQuestion.type === key
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                        }`}
-                      >
-                        <config.icon className="h-3 w-3" />
-                        {t(config.labelKey)}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Question text */}
-                  <Input
-                    value={newQuestion.text}
-                    onChange={(e) => setNewQuestion((p) => ({ ...p, text: e.target.value }))}
-                    placeholder={t('surveys.form.questionTextPlaceholder')}
-                    className="text-sm"
-                  />
-                  {/* Options for multiple choice */}
-                  {newQuestion.type === 'multiple_choice' && (
-                    <div className="space-y-2">
-                      {newQuestion.options && newQuestion.options.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {newQuestion.options.map((opt, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {opt}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <Input
-                          value={newOption}
-                          onChange={(e) => setNewOption(e.target.value)}
-                          placeholder={t('surveys.form.addOption')}
-                          className="text-sm flex-1"
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={addOption}
-                          disabled={!newOption.trim()}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  {/* Required toggle */}
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={newQuestion.isRequired}
-                      onChange={(e) =>
-                        setNewQuestion((p) => ({ ...p, isRequired: e.target.checked }))
-                      }
-                      className="rounded"
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {t('surveys.form.required')}
-                    </span>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={addQuestion}
-                    disabled={!newQuestion.text.trim()}
-                    className="w-full"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {t('surveys.form.addQuestionBtn')}
-                  </Button>
+          {/* Step 3: Review */}
+          {currentStep === 2 && (
+            <div className="space-y-4">
+              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t('surveys.form.title')}</p>
+                  <p className="font-medium">{title}</p>
                 </div>
-              </div>
-            )}
-
-            {/* Step 3: Review */}
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                {description && (
                   <div>
-                    <p className="text-xs text-muted-foreground">{t('surveys.form.title')}</p>
-                    <p className="font-medium">{title}</p>
+                    <p className="text-xs text-muted-foreground">{t('surveys.form.description')}</p>
+                    <p className="text-sm">{description}</p>
                   </div>
-                  {description && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">
-                        {t('surveys.form.description')}
-                      </p>
-                      <p className="text-sm">{description}</p>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Badge variant={isAnonymous ? 'default' : 'secondary'}>
-                      {isAnonymous ? t('surveys.anonymous') : t('surveys.named')}
-                    </Badge>
-                    <Badge variant="secondary">
-                      {questions.length} {t('surveys.questionsCount')}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">{t('surveys.wizard.questions')}</p>
-                  {questions.map((q, idx) => {
-                    const TypeIcon = QUESTION_TYPE_CONFIG[q.type].icon;
-                    return (
-                      <div key={idx} className="flex items-start gap-2 p-2 rounded border">
-                        <span className="text-xs text-muted-foreground mt-0.5">{idx + 1}.</span>
-                        <TypeIcon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm">{q.text}</p>
-                          {q.options && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {q.options.join(', ')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                )}
+                <div className="flex gap-2">
+                  <Badge variant={isAnonymous ? 'default' : 'secondary'}>
+                    {isAnonymous ? t('surveys.anonymous') : t('surveys.named')}
+                  </Badge>
+                  <Badge variant="secondary">
+                    {questions.length} {t('surveys.questionsCount')}
+                  </Badge>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between px-5 py-4 border-t bg-muted/30">
-            <Button
-              variant="ghost"
-              onClick={currentStep === 0 ? onClose : handleBack}
-              disabled={isSubmitting}
-              size="sm"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              {currentStep === 0 ? t('common.cancel') : t('common.back')}
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={!canGoNext() || isSubmitting}
-              size="sm"
-              className="gap-1"
-            >
-              {currentStep === steps.length - 1 ? (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  {isSubmitting ? t('common.sending') : t('surveys.createSurvey')}
-                </>
-              ) : (
-                <>
-                  {t('common.next')}
-                  <ChevronRight className="h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{t('surveys.wizard.questions')}</p>
+                {questions.map((q, idx) => {
+                  const TypeIcon = QUESTION_TYPE_CONFIG[q.type].icon;
+                  return (
+                    <div key={idx} className="flex items-start gap-2 p-2 rounded border">
+                      <span className="text-xs text-muted-foreground mt-0.5">{idx + 1}.</span>
+                      <TypeIcon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{q.text}</p>
+                        {q.options && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {q.options.join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </SheetBody>
+
+        {/* Footer */}
+        <SheetFooter className="justify-between">
+          <Button
+            variant="ghost"
+            onClick={currentStep === 0 ? onClose : handleBack}
+            disabled={isSubmitting}
+            size="sm"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            {currentStep === 0 ? t('common.cancel') : t('common.back')}
+          </Button>
+          <Button
+            onClick={handleNext}
+            disabled={!canGoNext() || isSubmitting}
+            size="sm"
+            className="gap-1"
+          >
+            {currentStep === steps.length - 1 ? (
+              <>
+                <CheckCircle className="h-4 w-4" />
+                {isSubmitting ? t('common.sending') : t('surveys.createSurvey')}
+              </>
+            ) : (
+              <>
+                {t('common.next')}
+                <ChevronRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -778,16 +741,16 @@ function TakeSurveyDialog({
   if (!surveyData) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[95vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>{surveyData.title}</DialogTitle>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{surveyData.title}</SheetTitle>
           {surveyData.description && (
             <p className="text-sm text-muted-foreground mt-1">{surveyData.description}</p>
           )}
-        </DialogHeader>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-6 py-4">
+        <SheetBody className="space-y-6">
           {surveyData.questions.map((question, idx) => (
             <div key={question._id} className="space-y-2">
               <div className="flex items-start gap-2">
@@ -918,9 +881,9 @@ function TakeSurveyDialog({
               )}
             </div>
           ))}
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <SheetFooter>
           <Button variant="ghost" onClick={onClose} size="sm">
             {t('common.cancel')}
           </Button>
@@ -928,9 +891,9 @@ function TakeSurveyDialog({
             <Send className="h-4 w-4" />
             {isSubmitting ? t('common.sending') : t('surveys.submit')}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -959,13 +922,13 @@ function SurveyResultsDialog({
   if (!results) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[95vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="xl" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             {results.survey.title} — {t('surveys.results')}
-          </DialogTitle>
+          </SheetTitle>
           <div className="flex items-center gap-3 mt-2">
             <Badge variant="default">
               {results.totalResponses} {t('surveys.responses')}
@@ -974,9 +937,9 @@ function SurveyResultsDialog({
               {results.questionResults.length} {t('surveys.questions')}
             </Badge>
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 py-4">
+        <SheetBody className="space-y-4">
           {results.questionResults.map((qr, idx) => (
             <Card key={idx}>
               <CardHeader className="pb-2">
@@ -1058,11 +1021,11 @@ function SurveyResultsDialog({
                   <div className="flex gap-4">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-green-600 flex items-center gap-1">
+                        <span className="text-sm font-medium text-(--success-text) flex items-center gap-1">
                           <ThumbsUp className="h-4 w-4" />
                           {t('surveys.yes')}
                         </span>
-                        <span className="text-sm font-bold text-green-600">
+                        <span className="text-sm font-bold text-(--success-text)">
                           {qr.totalResponses > 0
                             ? Math.round(((qr.yesCount ?? 0) / qr.totalResponses) * 100)
                             : 0}
@@ -1085,11 +1048,11 @@ function SurveyResultsDialog({
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-red-600 flex items-center gap-1">
+                        <span className="text-sm font-medium text-(--danger-text) flex items-center gap-1">
                           <ThumbsDown className="h-4 w-4" />
                           {t('surveys.no')}
                         </span>
-                        <span className="text-sm font-bold text-red-600">
+                        <span className="text-sm font-bold text-(--danger-text)">
                           {qr.totalResponses > 0
                             ? Math.round(((qr.noCount ?? 0) / qr.totalResponses) * 100)
                             : 0}
@@ -1140,9 +1103,9 @@ function SurveyResultsDialog({
               </CardContent>
             </Card>
           ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1155,6 +1118,7 @@ export function SurveysClient() {
   const user = useAuthStore(useShallow((s) => s.user));
   const selectedOrgId = useSelectedOrganization();
   const [showCreateWizard, setShowCreateWizard] = useState(false);
+  const surveyDraft = useDraftResume('create-survey', !showCreateWizard);
   const [takingSurveyId, setTakingSurveyId] = useState<Id<'surveys'> | null>(null);
   const [viewingResultsId, setViewingResultsId] = useState<Id<'surveys'> | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'active' | 'closed'>('all');
@@ -1384,7 +1348,7 @@ export function SurveysClient() {
                               }}
                               title={t('surveys.publish')}
                             >
-                              <Play className="h-4 w-4 text-green-600" />
+                              <Play className="h-4 w-4 text-(--success-text)" />
                             </Button>
                             <Button
                               size="sm"
@@ -1409,7 +1373,7 @@ export function SurveysClient() {
                             }}
                             title={t('surveys.close')}
                           >
-                            <Square className="h-4 w-4 text-red-600" />
+                            <Square className="h-4 w-4 text-(--danger-text)" />
                           </Button>
                         )}
                       </>
@@ -1439,6 +1403,20 @@ export function SurveysClient() {
           userId={user.id as Id<'users'>}
         />
       )}
+
+      {/* "Draft saved. Restore?" — the survey wizard keeps its contents after
+          an accidental close; this is what tells the user so. */}
+      <DraftResumeBar
+        show={surveyDraft.available}
+        label={t('surveys.newSurvey', 'New Survey')}
+        step={surveyDraft.step}
+        onResume={() => {
+          surveyDraft.dismiss();
+          setShowCreateWizard(true);
+        }}
+        onDismiss={surveyDraft.dismiss}
+        onDiscard={surveyDraft.discard}
+      />
 
       {viewingResultsId && (
         <SurveyResultsDialog

@@ -10,7 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -449,10 +456,12 @@ function DocumentEditDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogTitle>{t('documents.editDocument', 'Edit document')}</DialogTitle>
-        <div className="mt-4 space-y-4">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('documents.editDocument', 'Edit document')}</SheetTitle>
+        </SheetHeader>
+        <SheetBody className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="doc-title" className="text-xs font-medium text-muted-foreground">
               {t('documents.documentTitle', 'Title')}
@@ -508,16 +517,16 @@ function DocumentEditDialog({
             />
             {t('documents.mandatoryDocument', 'Mandatory document')}
           </label>
-        </div>
-        <div className="mt-4 flex justify-end gap-2">
+        </SheetBody>
+        <SheetFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             {t('common.cancel', 'Cancel')}
           </Button>
           <Button onClick={() => void handleSubmit()} disabled={saving || !title.trim()}>
             {saving ? t('common.saving', 'Saving…') : t('common.save', 'Save')}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import HeroCTA from './HeroCTA';
+import { useLandingTranslation } from './useLandingTranslation';
 
 function SparklesIcon() {
   return (
@@ -25,8 +25,8 @@ function SparklesIcon() {
   );
 }
 
-export default function CTABanner() {
-  const { t } = useTranslation();
+export default function CTABanner({ initialLanguage = 'en' }: { initialLanguage?: string }) {
+  const { t } = useLandingTranslation(initialLanguage);
 
   return (
     <section className="relative py-12 md:py-20" aria-label="Call to action">
@@ -85,7 +85,7 @@ export default function CTABanner() {
           </p>
 
           <div className="relative flex flex-col sm:flex-row justify-center gap-4">
-            <HeroCTA />
+            <HeroCTA initialLanguage={initialLanguage} />
           </div>
 
           {/* Social proof under CTA */}

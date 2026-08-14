@@ -77,7 +77,7 @@ export default function PendingApprovalPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white dark:bg-gray-800 shadow-lg mb-4">
-            <Clock className="w-10 h-10 text-amber-600" />
+            <Clock className="w-10 h-10 text-(--warning-text)" />
           </div>
           <h1 className="text-3xl font-bold mb-2">
             {t('onboarding.pendingApproval', 'Pending Approval')}
@@ -92,7 +92,7 @@ export default function PendingApprovalPage() {
           <Card className="mb-4 border-red-200 dark:border-red-800">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-red-600" />
+                <XCircle className="w-5 h-5 text-(--danger-text)" />
                 <CardTitle className="text-red-800 dark:text-red-200">
                   {t('onboarding.requestRejected', 'Request Rejected')}
                 </CardTitle>
@@ -116,7 +116,7 @@ export default function PendingApprovalPage() {
           <Card className="mb-4">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-blue-600" />
+                <Building2 className="w-5 h-5 text-(--brand-text)" />
                 <CardTitle>{t('onboarding.requestSent', 'Request Sent')}</CardTitle>
               </div>
               <CardDescription>
@@ -125,10 +125,10 @@ export default function PendingApprovalPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                <Mail className="w-5 h-5 text-blue-600" />
+                <Mail className="w-5 h-5 text-(--brand-text)" />
                 <div>
                   <p className="text-sm font-medium">{user?.email}</p>
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs text-(--brand-text)">
                     {t('onboarding.requestSentTo', 'Request sent to administrators')}
                   </p>
                 </div>
@@ -165,7 +165,7 @@ export default function PendingApprovalPage() {
         {!pendingRequest && !rejectedRequest && (
           <Card>
             <CardContent className="py-8 text-center">
-              <p className="text-gray-500">
+              <p className="text-(--text-3)">
                 {t('onboarding.noRequest', 'No pending requests found')}
               </p>
               <Button onClick={handleSignOut} className="mt-4">

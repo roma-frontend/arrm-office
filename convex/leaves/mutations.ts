@@ -8,6 +8,7 @@ import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
 import { hasCapability } from '../lib/capabilities';
 import { deductLeaveBalance, restoreLeaveBalance } from './balances';
+import { assertLeaveTypeActive } from '../lib/leaveTypes';
 import {
   assertMayReview,
   resolveApprovalRoute,
@@ -67,6 +68,10 @@ export const createLeave = mutation({
     ) {
       throw new Error('Access denied: cross-organization operation');
     }
+
+    // Not every company offers every leave type. The wizard hides the ones an
+    // org switched off, but that is only cosmetic — this is the enforcement.
+    await assertLeaveTypeActive(ctx, user.organizationId, args.type);
 
     // Where this request goes: the nearest manager in the line who may approve,
     // HR as a fallback, or — for the head of the organization, who has nobody

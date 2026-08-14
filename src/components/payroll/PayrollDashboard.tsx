@@ -393,7 +393,7 @@ export default function PayrollDashboard() {
                   {recentRuns.slice(0, 5).map((run) => (
                     <div
                       key={run._id}
-                      className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"
+                      className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md border border-(--border)"
                     >
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                         <FileText className="w-5 h-5 text-(--text-muted)" />

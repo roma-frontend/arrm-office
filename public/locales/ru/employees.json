@@ -466,7 +466,9 @@
         "departmentPlaceholder": "Выберите отдел",
         "noDepartments": "Нет доступных отделов",
         "levelLabel": "Уровень",
-        "levelPlaceholder": "например, Старший, Средний, Начальный, Ведущий"
+        "levelPlaceholder": "например, Старший, Средний, Начальный, Ведущий",
+        "driverPositionLabel": "Это должность водителя",
+        "driverPositionDescription": "Сотрудников на этой должности можно зарегистрировать как водителей автопарка"
       },
       "compensation": {
         "title": "Оплата труда",
@@ -486,11 +488,13 @@
         "departmentLabel": "Отдел",
         "levelLabel": "Уровень",
         "salaryRangeLabel": "Диапазон зарплаты",
+        "driverPositionLabel": "Должность водителя",
         "notSpecified": "Не указано"
       }
     },
     "toast": {
       "titleRequired": "Введите название должности",
+      "noOrganization": "Выберите организацию, прежде чем создавать должность",
       "salaryInvalid": "Максимальная зарплата должна быть больше минимальной",
       "createSuccess": "Должность успешно создана",
       "updateSuccess": "Должность успешно обновлена",

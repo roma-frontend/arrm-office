@@ -53,37 +53,39 @@ import {
 import { Label } from '@/components/ui/label';
 import { api } from '@/convex/_generated/api';
 import { Id, Doc } from '@/convex/_generated/dataModel';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 
 const POSITION_LEVELS = [
   {
     value: 'Entry',
     label: 'Entry Level',
     description: '0-2 years experience',
-    color: 'bg-green-500/10 text-green-600',
+    color: 'bg-(--success-quiet) text-(--success-text)',
   },
   {
     value: 'Mid',
     label: 'Mid Level',
     description: '2-5 years experience',
-    color: 'bg-blue-500/10 text-blue-600',
+    color: 'bg-(--brand-quiet) text-(--brand-text)',
   },
   {
     value: 'Senior',
     label: 'Senior Level',
     description: '5-8 years experience',
-    color: 'bg-purple-500/10 text-purple-600',
+    color: 'bg-(--purple-quiet) text-(--purple-text)',
   },
   {
     value: 'Lead',
     label: 'Lead',
     description: '8+ years experience',
-    color: 'bg-amber-500/10 text-amber-600',
+    color: 'bg-(--warning-quiet) text-(--warning-text)',
   },
   {
     value: 'Manager',
     label: 'Manager',
     description: 'Team management role',
-    color: 'bg-red-500/10 text-red-600',
+    color: 'bg-(--danger-quiet) text-(--danger-text)',
   },
   {
     value: 'Director',
@@ -122,8 +124,17 @@ function PositionWizard({
             level: position.level || '',
             salaryMin: position.salaryMin?.toString() || '',
             salaryMax: position.salaryMax?.toString() || '',
+            isDriverPosition: position.isDriverPosition ?? false,
           }
-        : { title: '', description: '', departmentId: '', level: '', salaryMin: '', salaryMax: '' },
+        : {
+            title: '',
+            description: '',
+            departmentId: '',
+            level: '',
+            salaryMin: '',
+            salaryMax: '',
+            isDriverPosition: false,
+          },
     [],
   );
 
@@ -235,6 +246,28 @@ function PositionWizard({
             }))}
             columns={3}
           />
+          {/* Driving is a job, so it is classified here rather than through the
+              permission tier on the employee record. */}
+          <label
+            htmlFor="pos-driver"
+            className="flex items-start gap-3 rounded-lg border border-border bg-background-subtle p-4 cursor-pointer"
+          >
+            <input
+              id="pos-driver"
+              type="checkbox"
+              checked={Boolean(wizardData.isDriverPosition)}
+              onChange={(e) => updateStepData('isDriverPosition', e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-(--primary)"
+            />
+            <span className="space-y-1">
+              <span className="block text-sm font-medium text-text-primary">
+                {t('positionWizard.steps.classification.driverPositionLabel')}
+              </span>
+              <span className="block text-xs text-text-muted">
+                {t('positionWizard.steps.classification.driverPositionDescription')}
+              </span>
+            </span>
+          </label>
         </div>
       ),
     },
@@ -323,6 +356,14 @@ function PositionWizard({
                     : t('positionWizard.steps.review.notSpecified')}
                 </span>
               </div>
+              {Boolean(wizardData.isDriverPosition) && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-muted">
+                    {t('positionWizard.steps.review.driverPositionLabel')}
+                  </span>
+                  <span className="font-medium text-text-primary">{t('common.yes')}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -331,7 +372,14 @@ function PositionWizard({
   ];
 
   const handleSubmit = async () => {
-    if (!selectedOrgId) return;
+    // Only creating needs an organization; `update` is keyed by the position id.
+    // Guarding both used to strand superadmins browsing in "all orgs" mode, where
+    // `selectedOrgId` is null: the list still rendered, but saving an edit
+    // returned here silently — no mutation, no toast, no clue.
+    if (!editingPosition && !selectedOrgId) {
+      toast.error(t('positionWizard.toast.noOrganization'));
+      return;
+    }
     setIsSubmitting(true);
     try {
       const salaryMin = wizardData.salaryMin ? Number(wizardData.salaryMin) : undefined;
@@ -350,6 +398,7 @@ function PositionWizard({
           level: wizardData.level ? String(wizardData.level) : undefined,
           salaryMin,
           salaryMax,
+          isDriverPosition: Boolean(wizardData.isDriverPosition),
           departmentId: wizardData.departmentId
             ? (wizardData.departmentId as Id<'departments'>)
             : undefined,
@@ -363,6 +412,7 @@ function PositionWizard({
           level: wizardData.level ? String(wizardData.level) : undefined,
           salaryMin,
           salaryMax,
+          isDriverPosition: Boolean(wizardData.isDriverPosition),
           departmentId: wizardData.departmentId
             ? (wizardData.departmentId as Id<'departments'>)
             : undefined,
@@ -431,6 +481,7 @@ export default function PositionsClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showWizard, setShowWizard] = useState(false);
+  const positionDraft = useDraftResume('create-position', !showWizard);
   const [editingPosition, setEditingPosition] = useState<Doc<'positions'> | null>(null);
 
   const positions = useQuery(
@@ -702,7 +753,7 @@ export default function PositionsClient() {
                                     e.stopPropagation();
                                     handleDelete(pos._id as Id<'positions'>);
                                   }}
-                                  className="p-1 rounded hover:bg-red-100 text-text-muted hover:text-red-500"
+                                  className="p-1 rounded hover:bg-(--danger-quiet) text-text-muted hover:text-(--danger-text)"
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </button>
@@ -774,7 +825,7 @@ export default function PositionsClient() {
                                   e.stopPropagation();
                                   handleDelete(pos._id as Id<'positions'>);
                                 }}
-                                className="p-1 rounded hover:bg-red-100 text-text-muted hover:text-red-500"
+                                className="p-1 rounded hover:bg-(--danger-quiet) text-text-muted hover:text-(--danger-text)"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
@@ -805,6 +856,20 @@ export default function PositionsClient() {
           editingPosition={editingPosition}
           departments={departments}
           onComplete={handleWizardComplete}
+        />
+
+        {/* "Draft saved. Restore?" — the position wizard keeps its contents
+            after an accidental close; this is what tells the user so. */}
+        <DraftResumeBar
+          show={positionDraft.available}
+          label={t('positionWizard.title', 'New Position')}
+          step={positionDraft.step}
+          onResume={() => {
+            positionDraft.dismiss();
+            setShowWizard(true);
+          }}
+          onDismiss={positionDraft.dismiss}
+          onDiscard={positionDraft.discard}
         />
       </div>
     </div>

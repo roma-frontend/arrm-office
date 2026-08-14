@@ -374,9 +374,7 @@ export const ConversationList = React.memo(function ConversationList({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('chat.searchConversations')}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-(--input-border) bg-(--input) text-(--text-primary) outline-none transition-all"
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--primary)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-(--input-border) bg-(--input) text-(--text-primary) outline-none transition-all focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20"
             />
           </div>
         </div>
@@ -429,7 +427,7 @@ export const ConversationList = React.memo(function ConversationList({
                     'px-3 py-1 text-xs rounded-full whitespace-nowrap transition-all shrink-0 active:scale-95',
                     activeFilters.includes(f)
                       ? 'btn-gradient text-white shadow-md'
-                      : 'text-gray-500 opacity-60 hover:opacity-100',
+                      : 'text-(--text-3) opacity-60 hover:opacity-100',
                   )}
                   style={{
                     background: activeFilters.includes(f) ? '#3b82f6' : 'transparent',

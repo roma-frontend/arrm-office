@@ -69,9 +69,9 @@ export default function AILeaveAssistant({ leaveRequestId, userId }: AILeaveAssi
   const warningConflicts = leaveConflicts.filter((c) => c.severity === 'warning');
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) return 'text-(--success-text)';
+    if (score >= 60) return 'text-(--warning-text)';
+    return 'text-(--danger-text)';
   };
 
   const getRecommendationBadge = () => {
@@ -129,18 +129,18 @@ export default function AILeaveAssistant({ leaveRequestId, userId }: AILeaveAssi
           <div className="space-y-3">
             {/* Critical Conflicts */}
             {criticalConflicts.length > 0 && (
-              <div className="p-3 rounded-lg border-2 border-red-500/30 bg-red-500/5 space-y-2">
+              <div className="p-3 rounded-lg border-2 border-(--danger-outline) bg-(--danger-quiet) space-y-2">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-600" />
-                  <span className="text-sm font-semibold text-red-700">
+                  <AlertCircle className="w-4 h-4 text-(--danger-text)" />
+                  <span className="text-sm font-semibold text-(--danger-text)">
                     {t('aiLeave.criticalConflicts', { count: criticalConflicts.length })}
                   </span>
                 </div>
                 {criticalConflicts.map((conflict, idx: number) => (
                   <div key={idx} className="text-sm">
-                    <p className="font-medium text-red-800">{conflict.title}</p>
-                    <p className="text-red-700 mt-1">{conflict.message}</p>
-                    <div className="flex items-start gap-1 mt-2 text-red-600">
+                    <p className="font-medium text-(--danger-text)">{conflict.title}</p>
+                    <p className="text-(--danger-text) mt-1 opacity-80">{conflict.message}</p>
+                    <div className="flex items-start gap-1 mt-2 text-(--danger-text)">
                       <Briefcase className="w-3 h-3 mt-0.5 shrink-0" />
                       <p className="text-xs">{conflict.suggestion}</p>
                     </div>
@@ -151,18 +151,18 @@ export default function AILeaveAssistant({ leaveRequestId, userId }: AILeaveAssi
 
             {/* Warning Conflicts */}
             {warningConflicts.length > 0 && (
-              <div className="p-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5 space-y-2">
+              <div className="p-3 rounded-lg border border-(--warning-outline) bg-(--warning-quiet) space-y-2">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-yellow-600" />
-                  <span className="text-sm font-semibold text-yellow-700">
+                  <AlertCircle className="w-4 h-4 text-(--warning-text)" />
+                  <span className="text-sm font-semibold text-(--warning-text)">
                     {t('aiLeave.warnings', { count: warningConflicts.length })}
                   </span>
                 </div>
                 {warningConflicts.map((conflict, idx: number) => (
                   <div key={idx} className="text-sm">
-                    <p className="font-medium text-yellow-800">{conflict.title}</p>
-                    <p className="text-yellow-700 mt-1">{conflict.message}</p>
-                    <div className="flex items-start gap-1 mt-2 text-yellow-600">
+                    <p className="font-medium text-(--warning-text)">{conflict.title}</p>
+                    <p className="text-(--warning-text) mt-1 opacity-80">{conflict.message}</p>
+                    <div className="flex items-start gap-1 mt-2 text-(--warning-text)">
                       <Briefcase className="w-3 h-3 mt-0.5 shrink-0" />
                       <p className="text-xs">{conflict.suggestion}</p>
                     </div>
@@ -175,12 +175,16 @@ export default function AILeaveAssistant({ leaveRequestId, userId }: AILeaveAssi
 
         {/* No Conflicts Message */}
         {leaveConflicts.length === 0 && (
-          <div className="p-3 rounded-lg border border-green-500/30 bg-green-500/5">
+          <div className="p-3 rounded-lg border border-(--success-outline) bg-(--success-quiet)">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-green-700">{t('aiLeave.noConflicts')}</span>
+              <CheckCircle className="w-4 h-4 text-(--success-text)" />
+              <span className="text-sm font-medium text-(--success-text)">
+                {t('aiLeave.noConflicts')}
+              </span>
             </div>
-            <p className="text-xs text-green-600 mt-1">{t('aiLeave.noConflictsDesc')}</p>
+            <p className="text-xs text-(--success-text) mt-1 opacity-80">
+              {t('aiLeave.noConflictsDesc')}
+            </p>
           </div>
         )}
 
@@ -270,11 +274,13 @@ export default function AILeaveAssistant({ leaveRequestId, userId }: AILeaveAssi
                 'teamMember',
               ];
               return allFactors.map((factor: string, i: number) => {
-                let icon = <CheckCircle className="w-3 h-3 text-green-600 mt-0.5 shrink-0" />;
+                let icon = (
+                  <CheckCircle className="w-3 h-3 text-(--success-text) mt-0.5 shrink-0" />
+                );
                 if (negativeKeys.includes(factor)) {
-                  icon = <Minus className="w-3 h-3 text-red-600 mt-0.5 shrink-0" />;
+                  icon = <Minus className="w-3 h-3 text-(--danger-text) mt-0.5 shrink-0" />;
                 } else if (warningKeys.some((k) => factor.includes(k))) {
-                  icon = <AlertCircle className="w-3 h-3 text-yellow-600 mt-0.5 shrink-0" />;
+                  icon = <AlertCircle className="w-3 h-3 text-(--warning-text) mt-0.5 shrink-0" />;
                 }
                 return (
                   <div key={i} className="flex items-start gap-2 text-xs">

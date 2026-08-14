@@ -251,7 +251,7 @@ export default function EditOrganizationPage() {
                 type="checkbox"
                 checked={formData.isActive}
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
+                className="w-5 h-5 rounded border-(--border-strong) text-primary focus:ring-primary"
               />
               <div>
                 <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -345,7 +345,7 @@ export default function EditOrganizationPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t('organization.activeEmployees')}</p>
-              <p className="text-lg font-semibold text-green-600">
+              <p className="text-lg font-semibold text-(--success-text)">
                 {organization.employeeCount || 0}
               </p>
             </div>

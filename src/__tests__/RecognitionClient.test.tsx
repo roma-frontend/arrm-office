@@ -129,11 +129,13 @@ jest.mock('@/components/ui/tabs', () => ({
   TabsContent: ({ children }: any) => <div>{children}</div>,
 }));
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
-  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
-  DialogHeader: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children }: any) => <h2>{children}</h2>,
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
+  SheetContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <h2>{children}</h2>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
+  SheetFooter: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock('@/components/ui/textarea', () => ({

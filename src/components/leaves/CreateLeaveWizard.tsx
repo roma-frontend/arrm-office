@@ -48,6 +48,15 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
     user?._id ? { userId: user._id as Id<'users'> } : 'skip',
   );
 
+  // Not every company runs every leave type; admins switch off the ones they
+  // don't offer. Undefined while the query is in flight — show nothing rather
+  // than the full list, so a disabled type never flashes into view.
+  const activeTypes = useQuery(api.leaveSettings.getMyActiveLeaveTypes);
+  const isActive = (type: string) =>
+    // `activeTypes` is `LeaveType[]`; coerce the caller's string so a
+    // disabled type can never be shown as active.
+    activeTypes?.includes(type as (typeof activeTypes)[number]) ?? false;
+
   const steps: WizardStep[] = [
     {
       id: 'type',
@@ -72,7 +81,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.sick'),
               description: t('leave.types.sickDesc'),
               icon: <Heart className="w-6 h-6" />,
-              color: 'bg-red-500/10 text-red-600 dark:text-red-400',
+              color: 'bg-(--danger-quiet) text-(--danger-text) dark:text-red-400',
               badge: `${user?.sickLeaveBalance ?? 10} ${t('leave.days', 'days')}`,
             },
             {
@@ -80,7 +89,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.family'),
               description: t('leave.types.familyDesc'),
               icon: <Users className="w-6 h-6" />,
-              color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+              color: 'bg-(--purple-quiet) text-(--purple-text) dark:text-purple-400',
               badge: `${user?.familyLeaveBalance ?? 5} ${t('leave.days', 'days')}`,
             },
             {
@@ -104,7 +113,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.maternity'),
               description: t('leave.types.maternityDesc'),
               icon: <Baby className="w-6 h-6" />,
-              color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
+              color: 'bg-(--pink-quiet) text-(--pink-text) dark:text-pink-400',
               badge: `${t('leave.types.maternityBadge', '18 weeks')}`,
             },
             {
@@ -114,7 +123,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               icon: <Briefcase className="w-6 h-6" />,
               color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
             },
-          ]}
+          ].filter((option) => isActive(option.value))}
           columns={3}
           required
         />
@@ -214,19 +223,21 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
                     balance: user.studyLeaveBalance ?? 5,
                     color: 'bg-sky-500',
                   },
-                ].map(({ key, label, balance, color }) => (
-                  <div
-                    key={key}
-                    className="p-2 rounded-lg border border-(--border)/50 bg-(--background-subtle)/50"
-                  >
-                    <p className="text-[10px] text-(--text-muted) truncate">{label}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
-                      <p className="text-sm font-bold text-(--text-primary)">{balance}</p>
-                      <p className="text-[9px] text-(--text-muted)">{t('leave.days', 'days')}</p>
+                ]
+                  .filter(({ key }) => isActive(key))
+                  .map(({ key, label, balance, color }) => (
+                    <div
+                      key={key}
+                      className="p-2 rounded-lg border border-(--border)/50 bg-(--background-subtle)/50"
+                    >
+                      <p className="text-[10px] text-(--text-muted) truncate">{label}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
+                        <p className="text-sm font-bold text-(--text-primary)">{balance}</p>
+                        <p className="text-[9px] text-(--text-muted)">{t('leave.days', 'days')}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}

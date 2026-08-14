@@ -25,7 +25,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+} from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { CreateIncidentWizard } from '@/components/superadmin/CreateIncidentWizard';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
@@ -318,7 +324,7 @@ export default function EmergencyDashboardPage() {
                             </span>
                             <Badge
                               variant="default"
-                              className="bg-red-600 hover:bg-red-700 text-white shadow-sm text-xs"
+                              className="bg-(--danger-solid) hover:opacity-90 text-white shadow-sm text-xs"
                             >
                               CRITICAL
                             </Badge>
@@ -389,10 +395,10 @@ export default function EmergencyDashboardPage() {
                               }
                               className={
                                 incident.severity === 'critical'
-                                  ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm text-xs'
+                                  ? 'bg-(--danger-solid) hover:opacity-90 text-white shadow-sm text-xs'
                                   : incident.severity === 'high'
-                                    ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm text-xs'
-                                    : 'bg-gray-200 hover:bg-gray-300 text-gray-800 shadow-sm text-xs'
+                                    ? 'bg-(--warning-solid) hover:opacity-90 text-white shadow-sm text-xs'
+                                    : 'bg-(--surface-3) hover:bg-(--surface-2) text-(--text-2) shadow-sm text-xs'
                               }
                             >
                               {incident.severity}
@@ -482,7 +488,7 @@ export default function EmergencyDashboardPage() {
                         </div>
                         <Badge
                           variant="default"
-                          className="bg-red-600 hover:bg-red-700 text-white shadow-sm"
+                          className="bg-(--danger-solid) hover:opacity-90 text-white shadow-sm"
                         >
                           <AlertTriangle className="w-3 h-3 mr-1" />
                           {t('superadmin.emergency.actions.block')}
@@ -549,23 +555,21 @@ export default function EmergencyDashboardPage() {
         </div>
 
         {/* Create Incident Wizard Dialog */}
-        <Dialog open={createIncidentOpen} onOpenChange={setCreateIncidentOpen}>
-          <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[85vw] max-w-2xl max-h-[95vh] flex flex-col">
-            <DialogTitle className="sr-only">
-              {t('superadmin.emergency.createIncident')}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
+        <Sheet open={createIncidentOpen} onOpenChange={setCreateIncidentOpen}>
+          <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+            <SheetTitle className="sr-only">{t('superadmin.emergency.createIncident')}</SheetTitle>
+            <SheetDescription className="sr-only">
               {t('superadmin.emergency.createIncidentDesc')}
-            </DialogDescription>
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            </SheetDescription>
+            <SheetBody>
               <CreateIncidentWizard
                 userId={user.id as Id<'users'>}
                 onComplete={() => setCreateIncidentOpen(false)}
                 onCancel={() => setCreateIncidentOpen(false)}
               />
-            </div>
-          </DialogContent>
-        </Dialog>
+            </SheetBody>
+          </SheetContent>
+        </Sheet>
 
         <PromptDialog
           open={resolvingIncidentId !== null}
@@ -657,8 +661,8 @@ function SystemStatusItem({
         <p className="text-xs text-muted-foreground">{latency}</p>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-green-500" />
-        <span className="text-xs text-green-600 capitalize">{status}</span>
+        <div className="w-2 h-2 rounded-full bg-(--success-solid)" />
+        <span className="text-xs text-(--success-text) capitalize">{status}</span>
       </div>
     </div>
   );

@@ -122,7 +122,7 @@ export function MemoryPanel({
               variant="ghost"
               size="sm"
               onClick={handleClear}
-              className={`w-full text-xs ${confirmClear ? 'text-red-500 hover:text-red-600 hover:bg-red-500/10' : ''}`}
+              className={`w-full text-xs ${confirmClear ? 'text-(--danger-text) hover:opacity-80 hover:bg-(--danger-quiet)' : ''}`}
             >
               <Trash2 className="w-3 h-3 mr-1" />
               {confirmClear

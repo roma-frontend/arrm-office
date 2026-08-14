@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -32,7 +34,6 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Sheet,
   SheetContent,
@@ -95,21 +96,21 @@ export function getPeriodDates(type: PeriodType, year: number): { start: number;
 }
 
 function getProgressColor(progress: number): string {
-  if (progress >= 70) return 'text-green-600';
-  if (progress >= 40) return 'text-yellow-600';
-  return 'text-red-600';
+  if (progress >= 70) return 'text-(--success-text)';
+  if (progress >= 40) return 'text-(--warning-text)';
+  return 'text-(--danger-text)';
 }
 
 function getConfidenceBadge(confidence: string) {
   switch (confidence) {
     case 'high':
-      return { color: 'bg-green-100 text-green-800', label: 'High' };
+      return { color: 'bg-(--success-quiet) text-(--success-text)', label: 'High' };
     case 'medium':
-      return { color: 'bg-yellow-100 text-yellow-800', label: 'Medium' };
+      return { color: 'bg-(--warning-quiet) text-(--warning-text)', label: 'Medium' };
     case 'low':
-      return { color: 'bg-red-100 text-red-800', label: 'Low' };
+      return { color: 'bg-(--danger-quiet) text-(--danger-text)', label: 'Low' };
     default:
-      return { color: 'bg-gray-100 text-gray-600', label: '—' };
+      return { color: 'bg-(--surface-3) text-(--text-3)', label: '—' };
   }
 }
 
@@ -698,11 +699,11 @@ export function CheckinDialog({
   };
 
   return (
-    <DialogContent className="sm:max-w-md">
-      <DialogHeader>
-        <DialogTitle>{t('goals.checkin.title', 'Check-in')}</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4">
+    <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+      <SheetHeader>
+        <SheetTitle>{t('goals.checkin.title', 'Check-in')}</SheetTitle>
+      </SheetHeader>
+      <SheetBody className="space-y-4">
         <p className="text-sm text-muted-foreground">{krTitle}</p>
         <div className="flex items-center gap-3">
           <div className="text-center">
@@ -771,16 +772,16 @@ export function CheckinDialog({
             rows={2}
           />
         </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            {t('common.cancel', 'Cancel')}
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting ? '...' : t('goals.checkin.submit', 'Submit Check-in')}
-          </Button>
-        </div>
-      </div>
-    </DialogContent>
+      </SheetBody>
+      <SheetFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t('common.cancel', 'Cancel')}
+        </Button>
+        <Button onClick={handleSubmit} disabled={submitting}>
+          {submitting ? '...' : t('goals.checkin.submit', 'Submit Check-in')}
+        </Button>
+      </SheetFooter>
+    </SheetContent>
   );
 }
 
@@ -877,7 +878,7 @@ export function ObjectiveDetailDialog({
           {objective.keyResults.map((kr) => {
             const pct = kr.completionPercent;
             return (
-              <Card key={kr._id}>
+              <Card key={kr._id} className="glass-panel shadow-sm">
                 <CardContent className="p-3 space-y-2">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="text-sm font-medium">{kr.title}</span>
@@ -1019,6 +1020,7 @@ export default function GoalsClient() {
   const userRole = user?.role || 'employee';
 
   const [showWizard, setShowWizard] = useState(false);
+  const objectiveDraft = useDraftResume('create-objective', !showWizard);
   const [selectedTab, setSelectedTab] = useState('my');
   const [filterPeriod, setFilterPeriod] = useState<PeriodType | 'all'>('all');
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
@@ -1145,10 +1147,10 @@ export default function GoalsClient() {
       {/* Stats */}
       {teamProgress && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100">
-                <Target className="w-5 h-5 text-blue-700" />
+              <div className="p-2 rounded-lg bg-(--brand-quiet)">
+                <Target className="w-5 h-5 text-(--brand-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{teamProgress.total}</p>
@@ -1158,10 +1160,10 @@ export default function GoalsClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100">
-                <TrendingUp className="w-5 h-5 text-green-700" />
+              <div className="p-2 rounded-lg bg-(--success-quiet)">
+                <TrendingUp className="w-5 h-5 text-(--success-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{teamProgress.avgProgress}%</p>
@@ -1171,10 +1173,10 @@ export default function GoalsClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-100">
-                <CheckCircle className="w-5 h-5 text-emerald-700" />
+              <div className="p-2 rounded-lg bg-(--success-quiet)">
+                <CheckCircle className="w-5 h-5 text-(--success-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{teamProgress.onTrack}</p>
@@ -1184,10 +1186,10 @@ export default function GoalsClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-100">
-                <AlertTriangle className="w-5 h-5 text-red-700" />
+              <div className="p-2 rounded-lg bg-(--danger-quiet)">
+                <AlertTriangle className="w-5 h-5 text-(--danger-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{teamProgress.atRisk + teamProgress.behind}</p>
@@ -1305,10 +1307,10 @@ export default function GoalsClient() {
                         <Badge
                           className={
                             obj.status === 'active'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-(--success-quiet) text-(--success-text)'
                               : obj.status === 'completed'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-600'
+                                ? 'bg-(--brand-quiet) text-(--brand-text)'
+                                : 'bg-(--surface-3) text-(--text-3)'
                           }
                         >
                           {String(t(`goals.status.${obj.status}`, obj.status))}
@@ -1337,7 +1339,7 @@ export default function GoalsClient() {
         )}
       </Sheet>
 
-      <Dialog open={!!checkinKR} onOpenChange={() => setCheckinKR(null)}>
+      <Sheet open={!!checkinKR} onOpenChange={() => setCheckinKR(null)}>
         {checkinKR && (
           <CheckinDialog
             krId={checkinKR._id}
@@ -1349,7 +1351,21 @@ export default function GoalsClient() {
             onClose={() => setCheckinKR(null)}
           />
         )}
-      </Dialog>
+      </Sheet>
+
+      {/* "Draft saved. Restore?" — the objective wizard keeps its contents
+          after an accidental close; this is what tells the user so. */}
+      <DraftResumeBar
+        show={objectiveDraft.available}
+        label={t('goals.createObjective', 'Create Objective')}
+        step={objectiveDraft.step}
+        onResume={() => {
+          objectiveDraft.dismiss();
+          setShowWizard(true);
+        }}
+        onDismiss={objectiveDraft.dismiss}
+        onDiscard={objectiveDraft.discard}
+      />
     </div>
   );
 }

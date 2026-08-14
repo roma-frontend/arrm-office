@@ -771,15 +771,53 @@ describe('Attachments', () => {
     expect(download.getAttribute('href')).toBe('https://cdn/a.png');
   });
 
-  it('renders a PDF with its size, preview iframe and download link', () => {
+  it('renders a PDF as a themed card — no browser-chrome iframe preview', () => {
+    // The native PDF viewer paints grey chrome the bubble cannot restyle, so the
+    // attachment is a token-built card instead.
     const attachments = [
       { url: 'https://cdn/doc.pdf', name: 'doc.pdf', type: 'application/pdf', size: 2048 },
     ];
     renderBubble({ attachments } as any);
     expect(screen.getByText('doc.pdf')).toBeTruthy();
+    expect(screen.getByText('PDF')).toBeTruthy();
     expect(screen.getByText('2.0 KB')).toBeTruthy();
-    expect(containerQuery('iframe')).toBeTruthy();
+    expect(containerQuery('iframe')).toBeNull();
     expect(screen.getByText('Download')).toBeTruthy();
+  });
+
+  it('forces a real download for cross-origin Cloudinary attachments', () => {
+    // The HTML `download` attribute is ignored cross-origin, so the link must
+    // carry the Cloudinary fl_attachment flag (Content-Disposition: attachment)
+    // to actually download instead of navigating to an error page.
+    const attachments = [
+      {
+        url: 'https://res.cloudinary.com/demo/raw/upload/v123/hr-office/chat-attachments/chat_1_doc.pdf',
+        name: 'doc.pdf',
+        type: 'application/pdf',
+        size: 2048,
+      },
+    ];
+    renderBubble({ attachments } as any);
+    const download = screen.getByText('Download').closest('a') as HTMLElement;
+    expect(download.getAttribute('href')).toBe(
+      'https://res.cloudinary.com/demo/raw/upload/fl_attachment/v123/hr-office/chat-attachments/chat_1_doc.pdf',
+    );
+  });
+
+  it('inserts the attachment flag into URLs without a version segment', () => {
+    const attachments = [
+      {
+        url: 'https://res.cloudinary.com/demo/raw/upload/hr-office/chat-attachments/chat_2.pdf',
+        name: 'doc2.pdf',
+        type: 'application/pdf',
+        size: 1024,
+      },
+    ];
+    renderBubble({ attachments } as any);
+    const download = screen.getByText('Download').closest('a') as HTMLElement;
+    expect(download.getAttribute('href')).toBe(
+      'https://res.cloudinary.com/demo/raw/upload/fl_attachment/hr-office/chat-attachments/chat_2.pdf',
+    );
   });
 
   it('renders an audio message with a formatted duration and waveform', () => {

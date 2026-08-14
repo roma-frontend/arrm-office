@@ -16,7 +16,15 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { UserPicker } from '@/components/ui/UserPicker';
 import {
   Select,
@@ -167,7 +175,7 @@ export default function OnboardingClient() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{activeCount}</p>
             <p className="text-xs text-muted-foreground">
@@ -175,7 +183,7 @@ export default function OnboardingClient() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{completedCount}</p>
             <p className="text-xs text-muted-foreground">
@@ -183,7 +191,7 @@ export default function OnboardingClient() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{templates?.length ?? 0}</p>
             <p className="text-xs text-muted-foreground">
@@ -191,7 +199,7 @@ export default function OnboardingClient() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{myMentees?.length ?? 0}</p>
             <p className="text-xs text-muted-foreground">
@@ -263,10 +271,10 @@ export default function OnboardingClient() {
                           <Badge
                             className={
                               prog.status === 'active'
-                                ? 'bg-blue-100 text-blue-800'
+                                ? 'bg-(--brand-quiet) text-(--brand-text)'
                                 : prog.status === 'completed'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-600'
+                                  ? 'bg-(--success-quiet) text-(--success-text)'
+                                  : 'bg-(--surface-3) text-(--text-3)'
                             }
                           >
                             {String(t(`onboarding.status.${prog.status}`, prog.status))}
@@ -349,8 +357,8 @@ export default function OnboardingClient() {
                         <Badge
                           className={
                             tpl.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-600'
+                              ? 'bg-(--success-quiet) text-(--success-text)'
+                              : 'bg-(--surface-3) text-(--text-3)'
                           }
                         >
                           {tpl.isActive
@@ -519,114 +527,122 @@ function ProgramDetailDialog({
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>
             {program?.employeeName ?? '...'} — {t('onboarding.title', 'Onboarding')}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        {!program ? (
-          <ShieldLoader size="sm" />
-        ) : (
-          <div className="space-y-4">
-            {/* Progress */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${program.progress}%` }}
-                />
+        <SheetBody>
+          {!program ? (
+            <ShieldLoader size="sm" />
+          ) : (
+            <div className="space-y-4">
+              {/* Progress */}
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${program.progress}%` }}
+                  />
+                </div>
+                <span className="text-sm font-medium">{program.progress}%</span>
               </div>
-              <span className="text-sm font-medium">{program.progress}%</span>
-            </div>
 
-            {/* Info */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="text-muted-foreground">{t('onboarding.manager', 'Manager')}:</span>{' '}
-                {program.managerName}
+              {/* Info */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">
+                    {t('onboarding.manager', 'Manager')}:
+                  </span>{' '}
+                  {program.managerName}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">{t('onboarding.buddy', 'Buddy')}:</span>{' '}
+                  {program.buddyName || '—'}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">
+                    {t('onboarding.started', 'Started')}:
+                  </span>{' '}
+                  {new Date(program.startDate).toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">
+                    {t('onboarding.status.label', 'Status')}:
+                  </span>{' '}
+                  {t(`onboarding.status.${program.status}`, program.status)}
+                </div>
               </div>
-              <div>
-                <span className="text-muted-foreground">{t('onboarding.buddy', 'Buddy')}:</span>{' '}
-                {program.buddyName || '—'}
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t('onboarding.started', 'Started')}:</span>{' '}
-                {new Date(program.startDate).toLocaleDateString()}
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {t('onboarding.status.label', 'Status')}:
-                </span>{' '}
-                {t(`onboarding.status.${program.status}`, program.status)}
-              </div>
-            </div>
 
-            {/* Tasks */}
-            <div className="space-y-2 pt-2 border-t">
-              <p className="text-sm font-semibold">
-                {t('onboarding.tasks', 'Tasks')} ({program.completedTasks}/{program.totalTasks})
-              </p>
-              {program.tasks.map((task) => (
-                <div
-                  key={task._id}
-                  className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
-                >
-                  {task.status === 'completed' ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                  ) : task.status === 'skipped' ? (
-                    <SkipForward className="h-4 w-4 text-muted-foreground shrink-0" />
-                  ) : (
-                    <button onClick={() => handleComplete(task._id)} className="shrink-0">
-                      <Circle className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
-                    </button>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${task.status === 'completed' ? 'line-through' : ''}`}>
-                      {taskTitle(t, task)}
-                    </p>
-                    <div className="flex gap-2 mt-0.5">
-                      <span className="text-xs text-muted-foreground">
-                        {t(`onboarding.assigneeType.${task.assigneeType}`, task.assigneeType)}
-                      </span>
-                      {task.assigneeName && <span className="text-xs">• {task.assigneeName}</span>}
+              {/* Tasks */}
+              <div className="space-y-2 pt-2 border-t">
+                <p className="text-sm font-semibold">
+                  {t('onboarding.tasks', 'Tasks')} ({program.completedTasks}/{program.totalTasks})
+                </p>
+                {program.tasks.map((task) => (
+                  <div
+                    key={task._id}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
+                  >
+                    {task.status === 'completed' ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    ) : task.status === 'skipped' ? (
+                      <SkipForward className="h-4 w-4 text-muted-foreground shrink-0" />
+                    ) : (
+                      <button onClick={() => handleComplete(task._id)} className="shrink-0">
+                        <Circle className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
+                      </button>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm ${task.status === 'completed' ? 'line-through' : ''}`}>
+                        {taskTitle(t, task)}
+                      </p>
+                      <div className="flex gap-2 mt-0.5">
+                        <span className="text-xs text-muted-foreground">
+                          {t(`onboarding.assigneeType.${task.assigneeType}`, task.assigneeType)}
+                        </span>
+                        {task.assigneeName && (
+                          <span className="text-xs">• {task.assigneeName}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant="outline" className="text-[10px]">
+                        {t(`onboarding.category.${task.category}`, task.category)}
+                      </Badge>
+                      {isAdmin && task.status === 'pending' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSkip(task._id);
+                          }}
+                        >
+                          <SkipForward className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Badge variant="outline" className="text-[10px]">
-                      {t(`onboarding.category.${task.category}`, task.category)}
-                    </Badge>
-                    {isAdmin && task.status === 'pending' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSkip(task._id);
-                        }}
-                      >
-                        <SkipForward className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {/* Complete program button */}
-            {isAdmin && program.status === 'active' && program.progress >= 80 && (
-              <Button className="w-full" onClick={handleCompleteProgram}>
-                <CheckCircle2 className="h-4 w-4 mr-1" />
-                {t('onboarding.completeProgram', 'Complete Onboarding')}
-              </Button>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+              {/* Complete program button */}
+              {isAdmin && program.status === 'active' && program.progress >= 80 && (
+                <Button className="w-full" onClick={handleCompleteProgram}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  {t('onboarding.completeProgram', 'Complete Onboarding')}
+                </Button>
+              )}
+            </div>
+          )}
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -659,9 +675,9 @@ function StartOnboardingWizard({
   const startOnboarding = useMutation(api.onboarding.startOnboarding);
 
   const steps = [
-    t('onboarding.wizard.step1', 'Employee'),
-    t('onboarding.wizard.step2', 'Template'),
-    t('onboarding.wizard.step3', 'Details'),
+    { id: 'employee', title: t('onboarding.wizard.step1', 'Employee') },
+    { id: 'template', title: t('onboarding.wizard.step2', 'Template') },
+    { id: 'details', title: t('onboarding.wizard.step3', 'Details') },
   ];
 
   const handleSubmit = async () => {
@@ -686,34 +702,23 @@ function StartOnboardingWizard({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0 overflow-hidden max-h-[95vh]">
-        {/* Stepper */}
-        <div className="px-5 pt-5 pb-3">
-          <DialogHeader>
-            <DialogTitle>{t('onboarding.wizard.title', 'Start Onboarding')}</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center gap-2 mt-4">
-            {steps.map((s, i) => (
-              <div key={i} className="flex items-center gap-2 flex-1">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i <= step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                >
-                  {i + 1}
-                </div>
-                <span
-                  className={`text-xs hidden sm:inline ${i <= step ? 'font-medium' : 'text-muted-foreground'}`}
-                >
-                  {s}
-                </span>
-                {i < steps.length - 1 && <div className="flex-1 h-px bg-border" />}
-              </div>
-            ))}
-          </div>
-        </div>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')} className="p-0">
+        <SheetHeader className="gap-3.5">
+          <SheetTitle>{t('onboarding.wizard.title', 'Start Onboarding')}</SheetTitle>
+          <WizardStepper
+            steps={steps}
+            current={step}
+            onStepClick={(i) => {
+              // Backwards is always safe; forward only from step 0 once the
+              // employee is picked, mirroring the footer button's guard.
+              if (i < step || (i === 1 && employeeId)) setStep(i);
+            }}
+          />
+        </SheetHeader>
 
         {/* Step content */}
-        <div className="px-5 py-4 min-h-[200px] max-h-[55vh] overflow-y-auto">
+        <SheetBody className="px-5 py-5">
           {step === 0 && (
             <div className="space-y-4">
               <UserPicker
@@ -802,10 +807,10 @@ function StartOnboardingWizard({
               />
             </div>
           )}
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t">
+        <SheetFooter className="justify-between">
           <Button variant="ghost" onClick={() => (step > 0 ? setStep(step - 1) : onClose())}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             {step > 0 ? t('common.back', 'Back') : t('common.cancel', 'Cancel')}
@@ -819,9 +824,9 @@ function StartOnboardingWizard({
               <Rocket className="h-4 w-4 mr-1" /> {t('onboarding.wizard.start', 'Start')}
             </Button>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -856,9 +861,9 @@ function CreateTemplateWizard({
   const createTemplate = useMutation(api.onboarding.createTemplate);
 
   const steps = [
-    t('onboarding.templateWizard.step1', 'Basic Info'),
-    t('onboarding.templateWizard.step2', 'Tasks'),
-    t('onboarding.templateWizard.step3', 'Review'),
+    { id: 'basic', title: t('onboarding.templateWizard.step1', 'Basic Info') },
+    { id: 'tasks', title: t('onboarding.templateWizard.step2', 'Tasks') },
+    { id: 'review', title: t('onboarding.templateWizard.step3', 'Review') },
   ];
 
   const addTask = () => {
@@ -899,34 +904,19 @@ function CreateTemplateWizard({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0 overflow-hidden max-h-[95vh]">
-        {/* Stepper */}
-        <div className="px-5 pt-5 pb-3">
-          <DialogHeader>
-            <DialogTitle>{t('onboarding.templateWizard.title', 'Create Template')}</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center gap-2 mt-4">
-            {steps.map((s, i) => (
-              <div key={i} className="flex items-center gap-2 flex-1">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i <= step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                >
-                  {i + 1}
-                </div>
-                <span
-                  className={`text-xs hidden sm:inline ${i <= step ? 'font-medium' : 'text-muted-foreground'}`}
-                >
-                  {s}
-                </span>
-                {i < steps.length - 1 && <div className="flex-1 h-px bg-border" />}
-              </div>
-            ))}
-          </div>
-        </div>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')} className="p-0">
+        <SheetHeader className="gap-3.5">
+          <SheetTitle>{t('onboarding.templateWizard.title', 'Create Template')}</SheetTitle>
+          <WizardStepper
+            steps={steps}
+            current={step}
+            onStepClick={(i) => (i < step ? setStep(i) : undefined)}
+          />
+        </SheetHeader>
 
         {/* Step content */}
-        <div className="px-5 py-4 min-h-[250px] max-h-[50vh] overflow-y-auto">
+        <SheetBody className="px-5 py-5">
           {step === 0 && (
             <div className="space-y-4">
               <div>
@@ -1087,10 +1077,10 @@ function CreateTemplateWizard({
               </div>
             </div>
           )}
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t">
+        <SheetFooter className="justify-between">
           <Button variant="ghost" onClick={() => (step > 0 ? setStep(step - 1) : onClose())}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             {step > 0 ? t('common.back', 'Back') : t('common.cancel', 'Cancel')}
@@ -1108,8 +1098,8 @@ function CreateTemplateWizard({
               {t('onboarding.templateWizard.create', 'Create')}
             </Button>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

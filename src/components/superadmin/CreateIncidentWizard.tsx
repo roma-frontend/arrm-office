@@ -46,7 +46,7 @@ export function CreateIncidentWizard({ userId, onComplete, onCancel }: CreateInc
               title: t('incidentWizard.severity.low'),
               description: t('incidentWizard.severity.lowDesc'),
               icon: <AlertCircle className="w-6 h-6" />,
-              color: 'bg-green-500/10 text-green-600',
+              color: 'bg-(--success-quiet) text-(--success-text)',
             },
             {
               value: 'medium',
@@ -67,7 +67,7 @@ export function CreateIncidentWizard({ userId, onComplete, onCancel }: CreateInc
               title: t('incidentWizard.severity.critical'),
               description: t('incidentWizard.severity.criticalDesc'),
               icon: <Shield className="w-6 h-6" />,
-              color: 'bg-red-500/10 text-red-600',
+              color: 'bg-(--danger-quiet) text-(--danger-text)',
             },
           ]}
           columns={2}

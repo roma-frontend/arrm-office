@@ -45,12 +45,13 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { logger } from '@/lib/logger';
@@ -309,16 +310,16 @@ function StepConfigDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             {paletteItem?.icon}
             {t('automation.builder.configure')} {t(paletteItem?.label || '')}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-4 py-4">
+        <SheetBody className="space-y-4">
           <div>
             <label className="text-sm font-medium text-(--text-primary) mb-1 block">
               {t('automation.builder.stepName')}
@@ -458,9 +459,9 @@ function StepConfigDialog({
               </div>
             </>
           )}
-        </div>
+        </SheetBody>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t('automation.builder.cancel')}
           </Button>
@@ -468,9 +469,9 @@ function StepConfigDialog({
             <Save className="w-4 h-4 mr-2" />
             {t('automation.builder.saveStep')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

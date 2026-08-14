@@ -278,7 +278,7 @@ export default function StripeDashboardPage() {
           <CardDescription>{t('stripeDashboard.totalRevenueDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold text-green-600">${metrics.totalRevenue}</div>
+          <div className="text-3xl font-bold text-(--success-text)">${metrics.totalRevenue}</div>
         </CardContent>
       </Card>
 

@@ -195,7 +195,6 @@ const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
 export function CreateTaskWizard({
   currentUserId,
-  userRole,
   assigneeId,
   objectiveId,
   projectId,
@@ -213,15 +212,11 @@ export function CreateTaskWizard({
   const safeUserId = currentUserId && currentUserId !== '' ? currentUserId : null;
 
   const employees = useQuery(api.tasks.getUsersForAssignment, safeUserId ? {} : 'skip');
-  const myEmployees = useQuery(
-    api.tasks.getMyEmployees,
-    userRole === 'supervisor' && safeUserId ? { supervisorId: safeUserId } : 'skip',
-  );
 
-  // Superadmins manage tasks like admins, so they also get the full employee
-  // list for assignment (myEmployees is supervisor-scoped only).
-  const availableEmployees =
-    userRole === 'admin' || userRole === 'superadmin' ? employees : myEmployees;
+  // The assignee list is exactly what the server query returns: it already
+  // scopes per caller (whole org for admins, own reporting branch for
+  // supervisors), so the wizard does not branch on role client-side.
+  const availableEmployees = employees;
 
   // Goals linkage: fetch active objectives for task linking
   const userForQuery = useQuery(

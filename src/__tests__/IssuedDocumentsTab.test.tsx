@@ -166,18 +166,20 @@ jest.mock('@/components/ui/input', () => ({
 }));
 
 let dialogProps: any = {};
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: (props: any) => {
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: (props: any) => {
     dialogProps = props;
     return props.open ? <div data-testid="dialog">{props.children}</div> : null;
   },
-  DialogContent: ({ children, className }: any) => (
+  SheetContent: ({ children, className }: any) => (
     <div data-testid="dialog-content" className={className}>
       {children}
     </div>
   ),
-  DialogTitle: ({ children }: any) => <div>{children}</div>,
-  DialogDescription: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <div>{children}</div>,
+  SheetDescription: ({ children }: any) => <div>{children}</div>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock('@/components/ui/select', () => {

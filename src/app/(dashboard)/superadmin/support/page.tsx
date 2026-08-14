@@ -34,13 +34,14 @@ import {
 } from '@/components/ui/select';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { PromptDialog } from '@/components/ui/prompt-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -79,30 +80,30 @@ export default function SupportTicketsPage() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical':
-        return 'bg-red-500/10 text-red-600 border-red-500/30';
+        return 'bg-(--danger-solid)/10 text-(--danger-text) border-(--danger-outline)/30';
       case 'high':
-        return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+        return 'bg-(--warning-solid)/10 text-(--warning-text) border-(--warning-outline)/30';
       case 'medium':
-        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
+        return 'bg-(--warning-solid)/10 text-(--warning-text) border-(--warning-outline)/30';
       default:
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/30';
+        return 'bg-(--brand)/10 text-(--brand-text) border-(--brand-outline)/30';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/30';
+        return 'bg-(--brand)/10 text-(--brand-text) border-(--brand-outline)/30';
       case 'in_progress':
-        return 'bg-purple-500/10 text-purple-600 border-purple-500/30';
+        return 'bg-(--brand)/10 text-(--brand-text) border-(--brand-outline)/30';
       case 'waiting_customer':
-        return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+        return 'bg-(--warning-solid)/10 text-(--warning-text) border-(--warning-outline)/30';
       case 'resolved':
-        return 'bg-green-500/10 text-green-600 border-green-500/30';
+        return 'bg-(--success-solid)/10 text-(--success-text) border-(--success-outline)/30';
       case 'closed':
-        return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
+        return 'bg-(--surface-2) text-(--text-secondary) border-(--border-default)';
       default:
-        return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
+        return 'bg-(--surface-2) text-(--text-secondary) border-(--border-default)';
     }
   };
 
@@ -298,17 +299,18 @@ export default function SupportTicketsPage() {
         </div>
 
         {/* Create Ticket Dialog - Using Wizard */}
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[85vw] max-w-3xl max-h-[95vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="text-lg md:text-xl">
-                {t('superadmin.support.createTicket')}
-              </DialogTitle>
-              <DialogDescription className="text-sm">
-                {t('superadmin.support.createDescription')}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 min-h-0 overflow-y-auto">
+        <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <SheetContent
+            side="right"
+            size="xl"
+            closeLabel={t('common.close', 'Close')}
+            className="p-0"
+          >
+            <SheetHeader>
+              <SheetTitle>{t('superadmin.support.createTicket')}</SheetTitle>
+              <SheetDescription>{t('superadmin.support.createDescription')}</SheetDescription>
+            </SheetHeader>
+            <SheetBody>
               <CreateSupportTicketWizard
                 userId={user.id as Id<'users'>}
                 organizationId={user.organizationId as Id<'organizations'>}
@@ -318,9 +320,9 @@ export default function SupportTicketsPage() {
                 }}
                 onCancel={() => setCreateDialogOpen(false)}
               />
-            </div>
-          </DialogContent>
-        </Dialog>
+            </SheetBody>
+          </SheetContent>
+        </Sheet>
 
         {/* Ticket Detail Dialog */}
         {selectedTicket && (
@@ -349,11 +351,11 @@ function StatCard({
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: 'text-blue-500',
-    green: 'text-green-500',
-    red: 'text-red-500',
-    purple: 'text-purple-500',
-    orange: 'text-orange-500',
+    blue: 'text-(--brand-text)',
+    green: 'text-(--success-text)',
+    red: 'text-(--danger-text)',
+    purple: 'text-(--brand-text)',
+    orange: 'text-(--warning-text)',
   };
 
   return (
@@ -475,7 +477,7 @@ function TicketRow({
             className="w-4 h-4"
             style={{ color: 'var(--text-muted)' }}
             fill="none"
-            viewBox="0 0 24 24"
+            viewBox="0 24"
             stroke="currentColor"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -539,15 +541,15 @@ function CreateTicketDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{t('superadmin.support.create.title')}</DialogTitle>
-            <DialogDescription>{t('superadmin.support.create.description')}</DialogDescription>
-          </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+          <SheetHeader>
+            <SheetTitle>{t('superadmin.support.create.title')}</SheetTitle>
+            <SheetDescription>{t('superadmin.support.create.description')}</SheetDescription>
+          </SheetHeader>
 
-          <div className="space-y-4 py-4">
+          <SheetBody className="space-y-4">
             <div>
               <Label htmlFor="title">{t('superadmin.support.create.titleLabel')}</Label>
               <Input
@@ -604,17 +606,17 @@ function CreateTicketDialog({
                 rows={6}
               />
             </div>
-          </div>
+          </SheetBody>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t('actions.cancel')}
             </Button>
             <Button type="submit">{t('superadmin.support.create.submit')}</Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -742,44 +744,44 @@ function TicketDetailDialog({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open':
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/30';
+        return 'bg-(--brand)/10 text-(--brand-text) border-(--brand-outline)/30';
       case 'in_progress':
-        return 'bg-purple-500/10 text-purple-600 border-purple-500/30';
+        return 'bg-(--brand)/10 text-(--brand-text) border-(--brand-outline)/30';
       case 'waiting_customer':
-        return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+        return 'bg-(--warning-solid)/10 text-(--warning-text) border-(--warning-outline)/30';
       case 'resolved':
-        return 'bg-green-500/10 text-green-600 border-green-500/30';
+        return 'bg-(--success-solid)/10 text-(--success-text) border-(--success-outline)/30';
       case 'closed':
-        return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
+        return 'bg-(--surface-2) text-(--text-secondary) border-(--border-default)';
       default:
-        return 'bg-gray-500/10 text-gray-600 border-gray-500/30';
+        return 'bg-(--surface-2) text-(--text-secondary) border-(--border-default)';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical':
-        return 'bg-red-500/10 text-red-600 border-red-500/30';
+        return 'bg-(--danger-solid)/10 text-(--danger-text) border-(--danger-outline)/30';
       case 'high':
-        return 'bg-orange-500/10 text-orange-600 border-orange-500/30';
+        return 'bg-(--warning-solid)/10 text-(--warning-text) border-(--warning-outline)/30';
       case 'medium':
-        return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30';
+        return 'bg-(--warning-solid)/10 text-(--warning-text) border-(--warning-outline)/30';
       default:
-        return 'bg-blue-500/10 text-blue-600 border-blue-500/30';
+        return 'bg-(--brand)/10 text-(--brand-text) border-(--brand-outline)/30';
     }
   };
 
   const ticketWithOverdue = ticket;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col p-0 animate-in fade-in zoom-in-95 duration-200">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="xl" closeLabel={t('common.close', 'Close')} className="p-0">
         {/* Header */}
-        <div className="border-b border-(--border) px-6 py-5 transition-all duration-200">
+        <SheetHeader className="px-6 pb-5 pt-6">
           <div className="flex items-start gap-3 mb-3">
-            <DialogTitle className="font-mono text-base" style={{ color: 'var(--text-muted)' }}>
+            <span className="font-mono text-base" style={{ color: 'var(--text-muted)' }}>
               {ticket.ticketNumber}
-            </DialogTitle>
+            </span>
             <Badge
               className={`${getStatusColor(ticket.status)} text-xs transition-all duration-200`}
             >
@@ -804,12 +806,12 @@ function TicketDetailDialog({
               </Badge>
             )}
           </div>
-          <DialogDescription
-            className="text-lg font-medium transition-all duration-200"
+          <SheetTitle
+            className="font-mono text-lg font-medium"
             style={{ color: 'var(--text-primary)' }}
           >
             {ticket.title}
-          </DialogDescription>
+          </SheetTitle>
 
           <div
             className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs transition-all duration-200"
@@ -835,10 +837,10 @@ function TicketDetailDialog({
               {ticket.comments?.length || 0} {t('superadmin.support.detail.comments')}
             </span>
           </div>
-        </div>
+        </SheetHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <SheetBody>
           {/* Tab Buttons */}
           <div className="border-b border-(--border) px-4 sm:px-6 pt-4">
             <div className="flex gap-4">
@@ -872,12 +874,12 @@ function TicketDetailDialog({
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0118 0z"
                     />
                   </svg>
                   <span className="hidden sm:inline">{t('superadmin.support.detail.details')}</span>
@@ -903,7 +905,7 @@ function TicketDetailDialog({
                       key={comment._id}
                       className={`p-4 rounded-lg transition-all duration-200 hover:shadow-sm ${
                         comment.isInternal
-                          ? 'bg-yellow-500/5 border border-yellow-500/20'
+                          ? 'bg-(--warning-solid)/5 border border-(--warning-outline)/20'
                           : 'bg-(--background-subtle) hover:bg-(--background)'
                       }`}
                     >
@@ -964,7 +966,7 @@ function TicketDetailDialog({
                       <svg
                         className="w-4 h-4 transition-transform duration-200"
                         fill="none"
-                        viewBox="0 0 24 24"
+                        viewBox="0 24"
                         stroke="currentColor"
                       >
                         <path
@@ -989,14 +991,14 @@ function TicketDetailDialog({
                       <svg
                         className="w-4 h-4 transition-transform duration-200"
                         fill="none"
-                        viewBox="0 0 24 24"
+                        viewBox="0 24"
                         stroke="currentColor"
                       >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 002 2h10a2 002-2V7a2 00-2-2h-2M9 5a2 2h2a2 002-2M9 012-2h2a2 012"
                         />
                       </svg>
                       {t('superadmin.support.ticketInfo')}
@@ -1278,27 +1280,27 @@ function TicketDetailDialog({
               </div>
             </div>
           </div>
-        </div>
-      </DialogContent>
+        </SheetBody>
 
-      <PromptDialog
-        open={resolvePromptOpen}
-        onOpenChange={setResolvePromptOpen}
-        title={t('superadmin.support.resolveTicket')}
-        description={t('superadmin.support.resolveHint')}
-        submitLabel={t('superadmin.support.resolveTicket')}
-        fields={[
-          {
-            name: 'resolution',
-            label: t('superadmin.support.enterResolution'),
-            placeholder: t('superadmin.support.resolutionPlaceholder'),
-            multiline: true,
-            minLength: 10,
-            maxLength: 2000,
-          },
-        ]}
-        onSubmit={handleResolve}
-      />
-    </Dialog>
+        <PromptDialog
+          open={resolvePromptOpen}
+          onOpenChange={setResolvePromptOpen}
+          title={t('superadmin.support.resolveTicket')}
+          description={t('superadmin.support.resolveHint')}
+          submitLabel={t('superadmin.support.resolveTicket')}
+          fields={[
+            {
+              name: 'resolution',
+              label: t('superadmin.support.enterResolution'),
+              placeholder: t('superadmin.support.resolutionPlaceholder'),
+              multiline: true,
+              minLength: 10,
+              maxLength: 2000,
+            },
+          ]}
+          onSubmit={handleResolve}
+        />
+      </SheetContent>
+    </Sheet>
   );
 }

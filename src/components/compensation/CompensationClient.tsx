@@ -53,6 +53,8 @@ import CompensationRecordWizard from './CompensationRecordWizard';
 import CompensationBandWizard from './CompensationBandWizard';
 import BonusProgramWizard from './BonusProgramWizard';
 import ReviewCycleWizard from './ReviewCycleWizard';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -144,6 +146,13 @@ export default function CompensationClient() {
   const [showBandWizard, setShowBandWizard] = useState(false);
   const [showBonusWizard, setShowBonusWizard] = useState(false);
   const [showCycleWizard, setShowCycleWizard] = useState(false);
+
+  // "Draft saved. Restore?" — each wizard keeps its contents after an
+  // accidental close; the bar tells the user a draft is waiting.
+  const recordDraft = useDraftResume('compensation-record', !showRecordWizard);
+  const bandDraft = useDraftResume('compensation-band', !showBandWizard);
+  const bonusDraft = useDraftResume('bonus-program', !showBonusWizard);
+  const cycleDraft = useDraftResume('review-cycle', !showCycleWizard);
 
   const compensationRecords = useQuery(
     api.compensation.listCompensationRecords,
@@ -747,6 +756,57 @@ export default function CompensationClient() {
               }}
             />
           )}
+
+          {/* Draft restore bars — one per wizard, the open one wins */}
+          <DraftResumeBar
+            show={recordDraft.available}
+            label={t('compensation.newRecord', 'New Compensation Record')}
+            step={recordDraft.step}
+            onResume={() => {
+              recordDraft.dismiss();
+              setShowRecordWizard(true);
+            }}
+            onDismiss={recordDraft.dismiss}
+            onDiscard={recordDraft.discard}
+          />
+          <DraftResumeBar
+            show={!recordDraft.available && bandDraft.available}
+            label={t('compensation.newBand', 'New Compensation Band')}
+            step={bandDraft.step}
+            onResume={() => {
+              bandDraft.dismiss();
+              setShowBandWizard(true);
+            }}
+            onDismiss={bandDraft.dismiss}
+            onDiscard={bandDraft.discard}
+          />
+          <DraftResumeBar
+            show={!recordDraft.available && !bandDraft.available && bonusDraft.available}
+            label={t('compensation.newBonusProgram', 'New Bonus Program')}
+            step={bonusDraft.step}
+            onResume={() => {
+              bonusDraft.dismiss();
+              setShowBonusWizard(true);
+            }}
+            onDismiss={bonusDraft.dismiss}
+            onDiscard={bonusDraft.discard}
+          />
+          <DraftResumeBar
+            show={
+              !recordDraft.available &&
+              !bandDraft.available &&
+              !bonusDraft.available &&
+              cycleDraft.available
+            }
+            label={t('compensation.newReviewCycle', 'New Review Cycle')}
+            step={cycleDraft.step}
+            onResume={() => {
+              cycleDraft.dismiss();
+              setShowCycleWizard(true);
+            }}
+            onDismiss={cycleDraft.dismiss}
+            onDiscard={cycleDraft.discard}
+          />
         </>
       )}
     </motion.div>

@@ -13,12 +13,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -806,12 +807,12 @@ export default function OrgChartClient() {
       </Card>
 
       {/* Add Node Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('orgChart.addNode', 'Add Node')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <Sheet open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>{t('orgChart.addNode', 'Add Node')}</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="space-y-4">
             <div>
               <label className="text-sm font-medium">{t('orgChart.nodeName', 'Name')} *</label>
               <Input
@@ -869,23 +870,23 @@ export default function OrgChartClient() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <DialogFooter>
+          </SheetBody>
+          <SheetFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               {t('common.cancel', 'Cancel')}
             </Button>
             <Button onClick={handleAddNode}>{t('common.save', 'Save')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Edit Node Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('orgChart.editNode', 'Edit Node')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <Sheet open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>{t('orgChart.editNode', 'Edit Node')}</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="space-y-4">
             <div>
               <label className="text-sm font-medium">{t('orgChart.nodeName', 'Name')} *</label>
               <Input
@@ -951,15 +952,15 @@ export default function OrgChartClient() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <DialogFooter>
+          </SheetBody>
+          <SheetFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               {t('common.cancel', 'Cancel')}
             </Button>
             <Button onClick={handleUpdateNode}>{t('common.save', 'Save')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

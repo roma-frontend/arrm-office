@@ -524,7 +524,7 @@ export function CallModal({
                 className="w-full h-full object-cover"
               />
               {!camOn && (
-                <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                <div className="absolute inset-0 bg-(--canvas) flex items-center justify-center">
                   <VideoOff className="w-5 h-5 text-gray-400" />
                 </div>
               )}
@@ -560,7 +560,7 @@ export function CallModal({
         {/* Media Error */}
         {mediaError && (
           <div className="mx-4 mb-3 px-4 py-3 rounded-xl bg-red-500/20 border border-red-500/40 text-center">
-            <p className="text-red-300 text-xs leading-relaxed">{mediaError}</p>
+            <p className="text-(--danger-text) text-xs leading-relaxed">{mediaError}</p>
             <div className="flex gap-2 mt-2 justify-center">
               {retryCount < 3 && (
                 <button
@@ -618,7 +618,7 @@ export function CallModal({
           {/* End call */}
           <button
             onClick={handleEnd}
-            className="w-14 h-14 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 transition-all hover:scale-110 shadow-lg shadow-red-500/30"
+            className="w-14 h-14 rounded-full flex items-center justify-center bg-(--danger-solid) hover:opacity-90 transition-all hover:scale-110 shadow-lg shadow-(--danger-solid)/30"
             title={t('chat.call.endCall')}
           >
             <PhoneOff className="w-6 h-6 text-white" />
@@ -639,7 +639,7 @@ export function CallModal({
                   className="w-full h-full object-cover rounded-full"
                 />
               )}
-              <AvatarFallback className="text-xs text-white bg-gray-700">
+              <AvatarFallback className="text-xs text-white bg-(--surface-3)">
                 {getInitials(currentUserName)}
               </AvatarFallback>
             </Avatar>

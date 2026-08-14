@@ -81,7 +81,7 @@ const STATUS_CONFIG: Record<
     labelKey: 'payroll.approved',
   },
   paid: {
-    color: 'text-green-600',
+    color: 'text-(--success-text)',
     bg: 'bg-green-500/15',
     border: 'border-green-500/40',
     icon: CheckCircle2,
@@ -162,9 +162,9 @@ function MonthCard({ monthData, currency }: { monthData: PayrollCalendarMonth; c
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
       className={`relative group rounded-2xl border transition-all duration-300 ${
         isCurrent
-          ? 'border-blue-400/50 shadow-md shadow-blue-500/10 bg-(--card)'
+          ? 'border-blue-400/50 shadow-md shadow-blue-500/10 bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md'
           : hasRun
-            ? 'border-(--border) hover:border-blue-400/30 hover:shadow-md bg-(--card)'
+            ? 'border-(--border) hover:border-blue-400/30 hover:shadow-md bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md'
             : 'border-(--border)/50 bg-(--background-subtle)/30'
       }`}
     >
@@ -226,7 +226,7 @@ function MonthCard({ monthData, currency }: { monthData: PayrollCalendarMonth; c
                   <DollarSign className="w-3 h-3" />
                   {t('payroll.totalGross')}
                 </span>
-                <span className="font-semibold text-emerald-600">
+                <span className="font-semibold text-(--success-text)">
                   {formatCurrency(monthData.stats.totalGross, currency)}
                 </span>
               </div>
@@ -411,7 +411,10 @@ export default function PayrollCalendar() {
           ].map((stat, idx) => {
             const Icon = stat.icon;
             return (
-              <div key={idx} className="bg-(--card) rounded-xl border border-(--border) p-3 sm:p-4">
+              <div
+                key={idx}
+                className="bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md rounded-xl border border-(--border) p-3 sm:p-4"
+              >
                 <div className="flex items-center gap-2 mb-1">
                   <div className={`p-1.5 rounded-lg ${stat.bg}`}>
                     <Icon className={`w-3.5 h-3.5 ${stat.color}`} />

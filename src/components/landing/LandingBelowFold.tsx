@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import LandingExtras from './LandingExtras';
 import StrategyCascadeSection from './StrategyCascadeSection';
+import ScrollStorySection from './ScrollStorySection';
 
 // Below-fold sections - lazy loaded for performance with SSR
 const TestimonialsSection = dynamic(() => import('./TestimonialsSection'), {
@@ -25,16 +26,6 @@ const FAQSection = dynamic(() => import('./FAQSection'), {
   ssr: true,
 });
 
-const NewsletterSection = dynamic(() => import('./NewsletterSection'), {
-  loading: () => (
-    <div
-      className="h-64 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
-
 const PricingPreview = dynamic(() => import('./PricingPreview'), {
   loading: () => (
     <div
@@ -45,25 +36,18 @@ const PricingPreview = dynamic(() => import('./PricingPreview'), {
   ssr: false, // Uses Convex useQuery hook — can't SSR before ConvexProvider activates
 });
 
-const SocialProof = dynamic(() => import('./SocialProof'), {
+// One unified live-stats band: the social-proof metrics and the platform
+// numbers merged into a single dashboard-style panel (count-up, bars, ticker).
+const LiveStatsSection = dynamic(() => import('./LiveStatsSection'), {
   loading: () => (
-    <div className="h-32 animate-pulse" style={{ backgroundColor: 'var(--landing-card-bg)' }} />
+    <div
+      className="h-64 animate-pulse rounded-3xl"
+      style={{ backgroundColor: 'var(--landing-card-bg)' }}
+    />
   ),
   ssr: true,
 });
 
-// StatsSection uses i18n — SSR causes hydration mismatch, render client-side only
-const StatsSection = dynamic(() => import('./StatsSection'), {
-  loading: () => (
-    <div
-      className="h-48 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: false,
-});
-
-// FeaturesSection, CTABanner, Footer use i18n — SSR causes hydration mismatch
 const FeaturesSection = dynamic(() => import('./FeaturesSection'), {
   loading: () => (
     <div
@@ -71,42 +55,59 @@ const FeaturesSection = dynamic(() => import('./FeaturesSection'), {
       style={{ backgroundColor: 'var(--landing-card-bg)' }}
     />
   ),
-  ssr: false,
+  ssr: true,
 });
 
-const CTABanner = dynamic(() => import('./CTABanner'), {
+const PersonasSection = dynamic(() => import('./PersonasSection'), {
   loading: () => (
     <div
-      className="h-64 animate-pulse rounded-3xl"
+      className="h-96 animate-pulse rounded-3xl"
       style={{ backgroundColor: 'var(--landing-card-bg)' }}
     />
   ),
-  ssr: false,
+  ssr: true,
+});
+
+// The last section before the footer: the CTA banner and the newsletter form
+// merged into one video-styled panel (see FinalCtaSection).
+const FinalCtaSection = dynamic(() => import('./FinalCtaSection'), {
+  loading: () => (
+    <div
+      className="h-72 animate-pulse rounded-3xl"
+      style={{ backgroundColor: 'var(--landing-card-bg)' }}
+    />
+  ),
+  ssr: true,
 });
 
 const Footer = dynamic(() => import('./Footer'), {
   loading: () => (
     <div className="h-48 animate-pulse" style={{ backgroundColor: 'var(--landing-card-bg)' }} />
   ),
-  ssr: false,
+  ssr: true,
 });
 
-export default function LandingBelowFold() {
+export default function LandingBelowFold({ initialLanguage = 'en' }: { initialLanguage?: string }) {
   return (
     <>
       {/* Page content */}
       <main className="relative">
         <div className="section-lazy">
-          <SocialProof />
+          <LiveStatsSection initialLanguage={initialLanguage} />
+        </div>
+        {/* Scroll storytelling — pinned phone with 4 scenes (check-in → cascade → AI → analytics).
+            NOT lazy: `content-visibility: auto` would break the sticky pinning. */}
+        <div className="story-not-lazy">
+          <ScrollStorySection initialLanguage={initialLanguage} />
         </div>
         <div className="section-lazy">
-          <StatsSection />
+          <StrategyCascadeSection initialLanguage={initialLanguage} />
         </div>
         <div className="section-lazy">
-          <StrategyCascadeSection />
+          <FeaturesSection initialLanguage={initialLanguage} />
         </div>
         <div className="section-lazy">
-          <FeaturesSection />
+          <PersonasSection initialLanguage={initialLanguage} />
         </div>
         <div className="section-lazy">
           <PricingPreview />
@@ -118,14 +119,11 @@ export default function LandingBelowFold() {
           <FAQSection />
         </div>
         <div className="section-lazy">
-          <NewsletterSection />
-        </div>
-        <div className="section-lazy">
-          <CTABanner />
+          <FinalCtaSection initialLanguage={initialLanguage} />
         </div>
       </main>
 
-      <Footer />
+      <Footer initialLanguage={initialLanguage} />
       <LandingExtras />
     </>
   );

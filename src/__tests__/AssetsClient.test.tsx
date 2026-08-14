@@ -56,6 +56,7 @@ let mockUser: any = { id: 'user-1', organizationId: 'org-1', role: 'admin' };
 let mockSelectedOrg: string | null = 'org-1';
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: () => ({ user: mockUser }),
+  useAuthUser: () => mockUser,
 }));
 
 jest.mock('@/hooks/useSelectedOrganization', () => ({
@@ -177,6 +178,20 @@ jest.mock('@/components/ui/dialog', () => ({
   DialogTitle: ({ children }: any) => <div>{children}</div>,
   DialogDescription: ({ children }: any) => <div>{children}</div>,
   DialogFooter: ({ children }: any) => <div>{children}</div>,
+}));
+
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
+  SheetContent: ({ children, className }: any) => (
+    <div data-testid="dialog-content" className={className}>
+      {children}
+    </div>
+  ),
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <div>{children}</div>,
+  SheetDescription: ({ children }: any) => <div>{children}</div>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
+  SheetFooter: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock('@/components/ui/select', () => ({

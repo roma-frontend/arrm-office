@@ -58,6 +58,7 @@ let mockIsAuthenticated = true;
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: (selector: any) =>
     selector({ user: mockUser, isAuthenticated: mockIsAuthenticated }),
+  useAuthUser: () => mockUser,
 }));
 
 jest.mock('zustand/shallow', () => ({
@@ -116,6 +117,8 @@ jest.mock('@/hooks/useWizardDraft', () => ({
       dismissNotice: jest.fn(),
     };
   },
+  peekWizardDraft: jest.fn(),
+  clearWizardDraft: jest.fn(),
 }));
 
 jest.mock('@/components/ui/WizardDraftNotice', () => ({
@@ -568,6 +571,7 @@ describe('PositionsClient — wizard (create)', () => {
         salaryMin: 60000,
         salaryMax: 90000,
         departmentId: 'd1',
+        isDriverPosition: false,
       }),
     );
     expect(toast.success).toHaveBeenCalledWith('positionWizard.toast.createSuccess');
@@ -597,6 +601,7 @@ describe('PositionsClient — wizard (create)', () => {
         salaryMin: 30000,
         salaryMax: undefined,
         departmentId: undefined,
+        isDriverPosition: false,
       }),
     );
   });
@@ -701,6 +706,7 @@ describe('PositionsClient — wizard (edit)', () => {
         salaryMin: 50000,
         salaryMax: 80000,
         departmentId: 'd1',
+        isDriverPosition: false,
       }),
     );
     expect(toast.success).toHaveBeenCalledWith('positionWizard.toast.updateSuccess');
@@ -735,6 +741,7 @@ describe('PositionsClient — wizard (edit)', () => {
         salaryMin: undefined,
         salaryMax: undefined,
         departmentId: undefined,
+        isDriverPosition: false,
       }),
     );
   });

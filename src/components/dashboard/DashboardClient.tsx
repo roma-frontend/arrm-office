@@ -23,6 +23,7 @@ import LeaveStats from '@/components/dashboard/LeaveStats';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { CheckInOutWidget } from '@/components/attendance/CheckInOutWidget';
 import { FocusFeed } from '@/components/dashboard/FocusFeed';
+import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
 import { useCommandPaletteStore } from '@/store/useCommandPaletteStore';
 
@@ -78,6 +79,9 @@ export default function DashboardClient() {
   ) as Organization | null;
 
   const isSuperadmin = user?.role === 'superadmin';
+  // The audit-log query behind ActivityFeed is admin/superadmin only; keep the
+  // widget off the dashboard for roles that would just render its empty state.
+  const canViewAuditLogs = user?.role === 'admin' || user?.role === 'superadmin';
   const securityStats = useQuery(
     api.security.getLoginStats,
     mounted && isSuperadmin ? { hours: 24 } : 'skip',
@@ -248,6 +252,15 @@ export default function DashboardClient() {
           </motion.div>
         )}
       </div>
+
+      {/* Live activity feed — the org's recent actions, with ticking
+          relative timestamps and a live badge. Admin/superadmin only (the
+          audit-log query behind it is role-gated). */}
+      {canViewAuditLogs && (
+        <motion.div variants={itemVariants}>
+          <ActivityFeed limit={6} />
+        </motion.div>
+      )}
 
       {/* Strategy OKR Widget */}
       <motion.div variants={itemVariants}>

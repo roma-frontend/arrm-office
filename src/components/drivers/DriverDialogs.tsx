@@ -10,7 +10,14 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -78,15 +85,15 @@ export function RatingDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Star className="w-5 h-5 text-yellow-500" />
             {t('driver.rateDriver', 'Rate Your Driver')}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
+          </SheetTitle>
+        </SheetHeader>
+        <SheetBody className="space-y-4">
           {driverName && (
             <p className="text-sm text-muted-foreground">
               {t('driver.howWasTrip', 'How was your trip with')} <strong>{driverName}</strong>?
@@ -125,17 +132,17 @@ export function RatingDialog({
               rows={3}
             />
           </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {t('cancel', 'Cancel')}
-            </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? '...' : t('driver.submitRating', 'Submit Rating')}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+        <SheetFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? '...' : t('driver.submitRating', 'Submit Rating')}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -189,15 +196,15 @@ export function ReassignDriverDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <ArrowRightLeft className="w-5 h-5" />
             {t('driver.requestAnotherDriver', 'Request Another Driver')}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
+          </SheetTitle>
+        </SheetHeader>
+        <SheetBody className="space-y-4">
           <Select value={selectedNewDriver} onValueChange={setSelectedNewDriver}>
             <SelectTrigger>
               <SelectValue placeholder={t('driver.selectNewDriver', 'Choose another driver')} />
@@ -215,16 +222,16 @@ export function ReassignDriverDialog({
               ))}
             </SelectContent>
           </Select>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              {t('cancel', 'Cancel')}
-            </Button>
-            <Button onClick={handleReassign} disabled={submitting || !selectedNewDriver}>
-              {submitting ? '...' : t('driver.reassign', 'Send Request')}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+        <SheetFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button onClick={handleReassign} disabled={submitting || !selectedNewDriver}>
+            {submitting ? '...' : t('driver.reassign', 'Send Request')}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

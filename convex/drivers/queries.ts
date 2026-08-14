@@ -10,6 +10,7 @@ import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { isSuperadmin } from '../lib/auth';
+import { loadDriverPositionIds, isDriverUser } from '../lib/driverEligibility';
 
 /** Get all available drivers - optionally scoped to organization */
 export const getAvailableDrivers = query({
@@ -44,14 +45,23 @@ export const getAvailableDrivers = query({
         .take(MAX_PAGE_SIZE);
     }
 
-    // Enrich with user info and filter only users with role 'driver'
+    // Enrich with user info, keeping only people who actually drive
+    const driverPositionIds = await loadDriverPositionIds(ctx, organizationId);
     const enriched = await Promise.all(
       drivers.map(async (driver) => {
         const user = await ctx.db.get(driver.userId);
-        // Only show if user has role 'driver'
-        if (!user || user.role !== 'driver') return null;
+        if (!user) return null;
 
         const profile = await getProfile(ctx, driver.userId);
+        // The profile is canonical for positionId; users keeps a dual-written copy.
+        if (
+          !isDriverUser(
+            { ...user, positionId: profile?.positionId ?? user.positionId },
+            driverPositionIds,
+          )
+        ) {
+          return null;
+        }
         return {
           ...driver,
           userName: user.name ?? 'Unknown',
@@ -358,11 +368,20 @@ export const getAlternativeDrivers = query({
     const endDateStr = endDate.toISOString().split('T')[0] || '';
 
     // Enrich with user info and filter
+    const driverPositionIds = await loadDriverPositionIds(ctx, organizationId);
     const enriched = await Promise.all(
       drivers.map(async (driver) => {
         const user = await ctx.db.get(driver.userId);
-        // Only show if user has role 'driver'
-        if (!user || user.role !== 'driver') return null;
+        if (!user) return null;
+        const driverProfile = await getProfile(ctx, driver.userId);
+        if (
+          !isDriverUser(
+            { ...user, positionId: driverProfile?.positionId ?? user.positionId },
+            driverPositionIds,
+          )
+        ) {
+          return null;
+        }
 
         // Check if driver is on leave
         const leaveRequests = await ctx.db
@@ -401,13 +420,12 @@ export const getAlternativeDrivers = query({
           return null; // Skip already booked drivers
         }
 
-        const profile = await getProfile(ctx, driver.userId);
         return {
           ...driver,
           userName: user.name ?? 'Unknown',
-          userAvatar: profile?.avatarUrl ?? user?.avatarUrl,
-          userPosition: profile?.position ?? user?.position,
-          userPhone: profile?.phone ?? user?.phone,
+          userAvatar: driverProfile?.avatarUrl ?? user?.avatarUrl,
+          userPosition: driverProfile?.position ?? user?.position,
+          userPhone: driverProfile?.phone ?? user?.phone,
         };
       }),
     );
@@ -486,10 +504,20 @@ export const getFilteredDrivers = query({
       )
       .take(MAX_PAGE_SIZE);
 
+    const driverPositionIds = await loadDriverPositionIds(ctx, organizationId);
     const enriched = await Promise.all(
       drivers.map(async (driver) => {
         const user = await ctx.db.get(driver.userId);
-        if (!user || user.role !== 'driver') return null;
+        if (!user) return null;
+        const profile = await getProfile(ctx, driver.userId);
+        if (
+          !isDriverUser(
+            { ...user, positionId: profile?.positionId ?? user.positionId },
+            driverPositionIds,
+          )
+        ) {
+          return null;
+        }
 
         // Filter by capacity
         if (minCapacity && driver.vehicleInfo.capacity < minCapacity) return null;
@@ -543,7 +571,6 @@ export const getFilteredDrivers = query({
           if (overlap) isTimeSlotFree = false;
         }
 
-        const profile = await getProfile(ctx, driver.userId);
         return {
           ...driver,
           userName: user.name ?? 'Unknown',

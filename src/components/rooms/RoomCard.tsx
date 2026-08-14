@@ -198,7 +198,7 @@ export function RoomCard({
                 <DropdownMenuItem
                   onSelect={() => onDelete(room)}
                   onClick={(event) => event.stopPropagation()}
-                  className="gap-2 text-red-600 focus:text-red-600"
+                  className="gap-2 text-(--danger-text) focus:text-(--danger-text)"
                 >
                   <Trash2 className="h-4 w-4" />
                   {t('rooms.deleteRoom')}

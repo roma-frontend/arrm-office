@@ -479,7 +479,7 @@ export function DayDetailsModal({
                             href={evt.htmlLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 mt-1.5"
+                            className="inline-flex items-center gap-1 text-xs text-(--purple-text) hover:opacity-80 mt-1.5"
                           >
                             <ExternalLink className="w-3 h-3" />
                             {t('calendar.openInGoogle', 'Open in Google Calendar')}
@@ -615,26 +615,26 @@ function StatusBadge({
   const config = {
     approved: {
       icon: CheckCircle,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-500/10',
+      color: 'text-(--success-text)',
+      bg: 'bg-(--success-quiet)',
       label: t('leave.approved'),
     },
     rejected: {
       icon: XCircle,
-      color: 'text-red-600',
-      bg: 'bg-red-500/10',
+      color: 'text-(--danger-text)',
+      bg: 'bg-(--danger-quiet)',
       label: t('leave.rejected'),
     },
     pending: {
       icon: Clock,
-      color: 'text-amber-600',
-      bg: 'bg-amber-500/10',
+      color: 'text-(--warning-text)',
+      bg: 'bg-(--warning-quiet)',
       label: t('leave.pending'),
     },
     cancel_requested: {
       icon: Clock,
-      color: 'text-amber-600',
-      bg: 'bg-amber-500/10',
+      color: 'text-(--warning-text)',
+      bg: 'bg-(--warning-quiet)',
       label: t('leave.cancellationRequested'),
     },
   };

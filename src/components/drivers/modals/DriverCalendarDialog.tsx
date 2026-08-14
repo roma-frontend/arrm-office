@@ -5,7 +5,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetBody, SheetTitle } from '@/components/ui/sheet';
 import { DriverCalendar } from '../DriverCalendar';
 import type { Id } from '@/convex/_generated/dataModel';
 
@@ -29,19 +29,19 @@ export function DriverCalendarDialog({
   if (!driverId) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[95vw] sm:max-w-6xl max-h-[95vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-4 py-4 sm:p-6 border-b">
-          <DialogTitle>{t('driverCalendar.dialogTitle', 'Driver Schedule')}</DialogTitle>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto min-h-0">
+    <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="right" size="full" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('driverCalendar.dialogTitle', 'Driver Schedule')}</SheetTitle>
+        </SheetHeader>
+        <SheetBody>
           <DriverCalendar
             driverId={driverId as Id<'drivers'>}
             organizationId={organizationId}
             role={role}
           />
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }

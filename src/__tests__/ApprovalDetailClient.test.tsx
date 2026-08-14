@@ -248,7 +248,7 @@ describe('ApprovalDetailClient', () => {
     render(<ApprovalDetailClient />);
     const badge = screen.getAllByTestId('badge').find((b) => b.textContent?.includes('Weird_role'));
     expect(badge).toBeDefined();
-    expect(badge?.getAttribute('data-class')).toContain('bg-green-100');
+    expect(badge?.getAttribute('data-class')).toContain('bg-(--success-quiet)');
   });
 
   it('renders the avatar image when an avatarUrl is present', () => {

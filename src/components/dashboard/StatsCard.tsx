@@ -236,8 +236,10 @@ export const StatsCard = memo(
       </>
     );
 
+    // Glass surface: the ambient orbs drift behind the tiles, and the blur
+    // keeps the number crisp over the motion.
     const shell = cn(
-      'relative overflow-hidden rounded-card border p-3 sm:p-4 shadow-sm bg-(--card)',
+      'relative overflow-hidden rounded-card border p-3 sm:p-4 shadow-sm glass-panel',
       'transition-[box-shadow,border-color] duration-140 ease-spark',
       colors.border,
       href && 'cursor-pointer hover:shadow-md hover:border-(--border-strong)',

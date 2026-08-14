@@ -631,7 +631,7 @@ export default function SecurityDashboard() {
                                 {user.name}
                               </h3>
                               {isAutoBlocked && (
-                                <span className="text-[10px] sm:text-xs font-bold bg-red-600 text-white px-1.5 sm:px-2 py-0.5 rounded">
+                                <span className="text-[10px] sm:text-xs font-bold bg-(--danger-solid) text-white px-1.5 sm:px-2 py-0.5 rounded">
                                   AUTO-BLOCKED
                                 </span>
                               )}

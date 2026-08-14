@@ -396,7 +396,7 @@ export default function ManageAdminsPage() {
                           </span>
                         )}
                         {!employee.isActive && (
-                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-500/10 text-red-600 dark:text-red-400">
+                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-(--danger-quiet) text-(--danger-text) dark:text-red-400">
                             {t('manageAdmins.inactive')}
                           </span>
                         )}

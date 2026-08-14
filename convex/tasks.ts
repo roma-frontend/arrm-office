@@ -4,6 +4,7 @@ import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/s
 import { paginationOptsValidator } from 'convex/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
+import { getSubordinateIds } from './lib/reportingLine';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
@@ -109,7 +110,9 @@ export const createTask = mutation({
     title: v.string(),
     description: v.optional(v.string()),
     assignedTo: v.id('users'),
-    assignedBy: v.id('users'),
+    // Kept optional for backward compatibility, but never trusted: the handler
+    // derives the creator from the authenticated caller instead.
+    assignedBy: v.optional(v.id('users')),
     priority: v.union(
       v.literal('low'),
       v.literal('medium'),
@@ -125,8 +128,31 @@ export const createTask = mutation({
     keyResultId: v.optional(v.id('keyResults')),
   },
   handler: async (ctx, args) => {
-    const assigner = await ctx.db.get(args.assignedBy);
-    const organizationId = assigner?.organizationId;
+    // The creator is the authenticated caller, never `args.assignedBy` — that
+    // argument used to be trusted without any check, so any client could create
+    // tasks as someone else in any organization.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (caller.role !== 'admin' && caller.role !== 'superadmin' && caller.role !== 'supervisor') {
+      throw new Error('Only admins and supervisors may assign tasks');
+    }
+    const assigner = caller;
+    const organizationId = caller.organizationId;
+
+    // The assignee must exist and live in the same organization as the caller.
+    const assignee = await ctx.db.get(args.assignedTo);
+    if (!assignee) throw new Error('Assignee not found');
+    if (organizationId && assignee.organizationId !== organizationId) {
+      throw new Error('Cannot assign a task cross-organization');
+    }
+
+    // Supervisors may only assign within their own reporting subtree.
+    if (caller.role === 'supervisor') {
+      const subordinates = await getSubordinateIds(ctx, caller._id);
+      if (args.assignedTo !== caller._id && !subordinates.includes(args.assignedTo)) {
+        throw new Error('You can only assign tasks to people in your team');
+      }
+    }
 
     // Validate objective link if provided
     if (args.objectiveId) {
@@ -158,7 +184,7 @@ export const createTask = mutation({
       title: sanitizeTitle(args.title),
       description: args.description ? sanitizeText(args.description) : undefined,
       assignedTo: args.assignedTo,
-      assignedBy: args.assignedBy,
+      assignedBy: caller._id,
       organizationId,
       status: 'pending',
       priority: args.priority,
@@ -172,10 +198,10 @@ export const createTask = mutation({
     });
 
     // Notify the person who assigned the task (skip superadmin)
-    if (assigner?.role !== 'superadmin') {
+    if (assigner.role !== 'superadmin') {
       await notify(ctx, {
         organizationId,
-        userId: args.assignedBy,
+        userId: caller._id,
         type: 'system',
         titleKey: 'notifications.titles.taskAssigned',
         messageKey: 'notifications.messages.taskAssignedByYou',
@@ -191,7 +217,7 @@ export const createTask = mutation({
     // Audit log: task created
     await ctx.db.insert('auditLogs', {
       organizationId,
-      userId: args.assignedBy,
+      userId: caller._id,
       action: 'task_created',
       target: taskId,
       details: JSON.stringify({
@@ -554,25 +580,24 @@ export const getUsersForAssignment = query({
   args: {},
   handler: async (ctx, _args) => {
     const requester = await getAuthCaller(ctx);
-    let users: Doc<'users'>[] = [];
-    if (requester) {
-      if (requester?.organizationId) {
-        users = await ctx.db
+    // Unauthenticated callers get nothing — this used to fall through to an
+    // unscoped `query('users')` that leaked every user of every tenant.
+    if (!requester) return [];
+
+    // Org-scoped roster; cross-tenant superadmins (no organizationId) fall
+    // back to every user, matching how they operate across tenants.
+    const roster = requester.organizationId
+      ? await ctx.db
           .query('users')
           .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
-          .take(DEFAULT_LIST_CAP);
-      } else {
-        users = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
-      }
-    } else {
-      users = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
-    }
-    users = users.filter((u: Doc<'users'>) => u.role !== 'superadmin');
+          .take(DEFAULT_LIST_CAP)
+      : await ctx.db.query('users').take(DEFAULT_LIST_CAP);
 
     // Return all active users (employees, supervisors, admins, AND drivers)
     // Anyone in the organization can be assigned a task
-    const activeUsers = users.filter(
+    let candidates = roster.filter(
       (u: Doc<'users'>) =>
+        u.role !== 'superadmin' &&
         u.isActive !== false &&
         u.isApproved !== false &&
         (u.role === 'employee' ||
@@ -581,11 +606,28 @@ export const getUsersForAssignment = query({
           u.role === 'driver'),
     );
 
+    // Supervisors can only assign within their own reporting branch. If the
+    // reporting lines are not filled in (no direct reports), fall back to
+    // people in the same department — never the whole organization.
+    if (requester.role === 'supervisor') {
+      const subordinates = await getSubordinateIds(ctx, requester._id);
+      if (subordinates.length > 0) {
+        const subtree = new Set<string>(subordinates);
+        candidates = candidates.filter((u) => subtree.has(u._id));
+      } else {
+        const callerDoc = await ctx.db.get(requester._id);
+        const department = callerDoc?.department;
+        candidates = department
+          ? candidates.filter((u) => u._id !== requester._id && u.department === department)
+          : [];
+      }
+    }
+
     const userProfiles = await Promise.all(
-      activeUsers.map((u: Doc<'users'>) => getProfile(ctx, u._id)),
+      candidates.map((u: Doc<'users'>) => getProfile(ctx, u._id)),
     );
 
-    return activeUsers.map((u: Doc<'users'>, i: number) => {
+    return candidates.map((u: Doc<'users'>, i: number) => {
       const profile = userProfiles[i];
       return {
         _id: u._id,

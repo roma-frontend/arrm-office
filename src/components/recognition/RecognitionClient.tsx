@@ -28,7 +28,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
@@ -51,42 +58,42 @@ import { RewardsAdminPanel } from './RewardsAdminPanel';
 const CATEGORY_CONFIG: Record<string, { icon: LucideIcon; color: string; labelKey: string }> = {
   teamwork: {
     icon: Users,
-    color: 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-300',
+    color: 'bg-(--brand-quiet) text-(--brand-text)',
     labelKey: 'recognition.category.teamwork',
   },
   innovation: {
     icon: Sparkles,
-    color: 'bg-purple-100 text-purple-900 dark:bg-purple-900/30 dark:text-purple-300',
+    color: 'bg-(--purple-quiet) text-(--purple-text)',
     labelKey: 'recognition.category.innovation',
   },
   leadership: {
     icon: Trophy,
-    color: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-300',
+    color: 'bg-(--warning-quiet) text-(--warning-text)',
     labelKey: 'recognition.category.leadership',
   },
   dedication: {
     icon: Heart,
-    color: 'bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-300',
+    color: 'bg-(--danger-quiet) text-(--danger-text)',
     labelKey: 'recognition.category.dedication',
   },
   customer_focus: {
     icon: Star,
-    color: 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-300',
+    color: 'bg-(--success-quiet) text-(--success-text)',
     labelKey: 'recognition.category.customerFocus',
   },
   mentorship: {
     icon: Award,
-    color: 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-300',
+    color: 'bg-(--purple-quiet) text-(--purple-text)',
     labelKey: 'recognition.category.mentorship',
   },
   excellence: {
     icon: TrendingUp,
-    color: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-300',
+    color: 'bg-(--success-quiet) text-(--success-text)',
     labelKey: 'recognition.category.excellence',
   },
   above_and_beyond: {
     icon: Sparkles,
-    color: 'bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-(--warning-quiet) text-(--warning-text)',
     labelKey: 'recognition.category.aboveAndBeyond',
   },
 };
@@ -214,11 +221,11 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
   const progress = ((currentStep + 1) / steps.length) * 100;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
         {/* Header */}
-        <DialogHeader className="px-5 pt-5 pb-0">
-          <DialogTitle className="flex items-center gap-4">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-4">
             <span className="flex items-center gap-2">
               <Send className="h-5 w-5" />
               {t('recognition.sendKudos')}
@@ -227,13 +234,13 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
               <Gift className="h-3 w-3 text-blue-500" />
               {allowance} / {userPoints?.allowanceTotal ?? 0} {t('rewards.wallet.allowanceShort')}
             </Badge>
-          </DialogTitle>
+          </SheetTitle>
           {cannotAfford && (
             <p className="text-xs text-destructive mt-1">{t('rewards.wallet.allowanceSpent')}</p>
           )}
-        </DialogHeader>
+        </SheetHeader>
 
-        <div className="flex flex-col">
+        <SheetBody className="flex flex-col">
           {/* Progress bar + Step indicators */}
           <div className="px-5 pt-4 pb-3">
             <div className="relative h-1.5 bg-muted rounded-full overflow-hidden mb-4">
@@ -410,7 +417,7 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
           </div>
 
           {/* Footer — navigation buttons */}
-          <div className="flex items-center justify-between px-5 py-4 border-t bg-muted/30">
+          <SheetFooter className="justify-between">
             <Button
               variant="ghost"
               onClick={currentStep === 0 ? onClose : handleBack}
@@ -440,10 +447,10 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
                 </>
               )}
             </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </SheetFooter>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 

@@ -466,7 +466,9 @@
         "departmentPlaceholder": "Abteilung auswählen",
         "noDepartments": "Keine verfügbaren Abteilungen",
         "levelLabel": "Niveau",
-        "levelPlaceholder": "z. B. Senior, Mid, Junior, Lead"
+        "levelPlaceholder": "z. B. Senior, Mid, Junior, Lead",
+        "driverPositionLabel": "Dies ist eine Fahrerposition",
+        "driverPositionDescription": "Mitarbeiter auf dieser Position können als Fuhrpark-Fahrer registriert werden"
       },
       "compensation": {
         "title": "Vergütung",
@@ -486,11 +488,13 @@
         "departmentLabel": "Abteilung",
         "levelLabel": "Niveau",
         "salaryRangeLabel": "Gehaltsbereich",
+        "driverPositionLabel": "Fahrerposition",
         "notSpecified": "Nicht angegeben"
       }
     },
     "toast": {
       "titleRequired": "Geben Sie den Namen der Position ein",
+      "noOrganization": "Wählen Sie eine Organisation aus, bevor Sie eine Position erstellen",
       "salaryInvalid": "Das Höchstgehalt muss höher als das Mindestgehalt sein",
       "createSuccess": "Position erfolgreich erstellt",
       "updateSuccess": "Position erfolgreich aktualisiert",

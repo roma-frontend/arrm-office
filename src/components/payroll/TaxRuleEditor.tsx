@@ -365,7 +365,7 @@ export function TaxRuleEditor({
             </dt>
             <dd className="text-right">−{money(preview.deductions.total)}</dd>
             <dt className="font-semibold">{t('payroll.taxEditor.net', 'Net')}</dt>
-            <dd className="text-right font-semibold text-emerald-600">
+            <dd className="text-right font-semibold text-(--success-text)">
               {money(preview.netSalary)}
             </dd>
           </dl>

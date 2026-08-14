@@ -7,11 +7,14 @@ import { describe, it, expect, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 
 // ── i18n mock ────────────────────────────────────────────────────────────────
+// `initReactI18next` is included because useLandingTranslation imports
+// '@/i18n/config', which calls i18n.use(initReactI18next) at module scope.
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: string) => fallback ?? key,
     i18n: { language: 'en' },
   }),
+  initReactI18next: { type: '3rdParty', init: jest.fn() },
 }));
 
 // ── StatsCard mock ───────────────────────────────────────────────────────────

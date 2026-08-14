@@ -46,6 +46,7 @@ import {
   ChevronLeft,
   CheckCircle,
   DoorOpen,
+  Sparkles,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -249,6 +250,49 @@ export function CreateEventModal({
   );
   const headcount = attendees.length + 1;
   const formatTime = (ms: number) => format(new Date(ms), 'HH:mm');
+
+  // --- Smart Time Finder ----------------------------------------------------
+  // "Free for all three: 15:30–16:00". Scans the chosen day in 30-minute
+  // steps, skipping slots that collide with any attendee's approved leave or
+  // with the picked room's bookings, and offers the next few that work.
+  const freeSlots = useMemo(() => {
+    if (allDay || !date) return [];
+    const dayStart = toInstant(date, '08:00');
+    const dayEnd = toInstant(date, '20:00');
+    if (dayStart === null || dayEnd === null) return [];
+    const wanted = Math.max(
+      30,
+      Math.round(((toInstant(date, endTime) ?? 0) - (toInstant(date, startTime) ?? 0)) / 60000),
+    );
+    const slots: { start: string; end: string }[] = [];
+    const stepMs = 30 * 60000;
+    for (let t = dayStart; t + wanted * 60000 <= dayEnd; t += stepMs) {
+      const s = t;
+      const e = t + wanted * 60000;
+      const anyAttendeeOnLeave = attendees.some((a) =>
+        leaves.some(
+          (l) =>
+            l.userId === a._id &&
+            l.status === 'approved' &&
+            l.startDate <= date &&
+            l.endDate >= date,
+        ),
+      );
+      const roomBlocked =
+        roomId !== null &&
+        (() => {
+          const av = roomAvailability.get(roomId);
+          if (!av) return false;
+          return av.conflicts.some((c) => c.startTime < e && c.endTime > s);
+        })();
+      if (!anyAttendeeOnLeave && !roomBlocked) {
+        slots.push({ start: formatTime(s), end: formatTime(e) });
+        if (slots.length === 3) break;
+      }
+    }
+    return slots;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, allDay, startTime, endTime, attendees, roomId, leaves]);
 
   const handlePickRoom = (room: RoomWithBookings) => {
     if (room._id === roomId) {
@@ -689,6 +733,29 @@ export function CreateEventModal({
                         {t('createMeeting.allDay')}
                       </Label>
                     </div>
+
+                    {/* Smart Time Finder — next slots that fit everyone */}
+                    {!allDay && date && freeSlots.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 rounded-card border border-(--brand-quiet) bg-(--brand-quiet)/40 px-3 py-2">
+                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-(--brand)" />
+                        <span className="text-caption font-medium text-(--text-secondary)">
+                          {t('createMeeting.freeForEveryone', 'Free for everyone')}
+                        </span>
+                        {freeSlots.map((slot) => (
+                          <button
+                            key={`${slot.start}-${slot.end}`}
+                            type="button"
+                            onClick={() => {
+                              setStartTime(slot.start);
+                              setEndTime(slot.end);
+                            }}
+                            className="rounded-control border border-(--border-subtle) bg-(--card) px-2 py-0.5 text-caption font-semibold text-(--brand-text) transition-colors duration-140 ease-spark hover:border-(--brand) hover:bg-(--brand-quiet)"
+                          >
+                            {slot.start}–{slot.end}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {/* Location */}
                   <div>

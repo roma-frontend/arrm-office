@@ -5,12 +5,13 @@ import { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Plus, ChevronRight, Video, FileText, HelpCircle } from 'lucide-react';
 
 type CourseWithLessons = {
@@ -98,12 +99,12 @@ export function CourseDetailDialog({
   if (!course) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{course.title}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{course.title}</SheetTitle>
+        </SheetHeader>
+        <SheetBody className="space-y-4">
           <div className="flex items-center gap-2">
             <Badge className={difficultyColors[course.difficulty]}>
               {t(`learning.${course.difficulty}`, course.difficulty)}
@@ -203,7 +204,7 @@ export function CourseDetailDialog({
             )}
           </div>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               {t('common.close', 'Close')}
             </Button>
@@ -219,9 +220,9 @@ export function CourseDetailDialog({
                 {t('learning.enroll', 'Enroll')}
               </Button>
             )}
-          </DialogFooter>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </SheetFooter>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }

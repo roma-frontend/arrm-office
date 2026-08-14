@@ -1022,14 +1022,12 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       setForm((p) => ({ ...p, baseSalary: parseFloat(e.target.value) || 0 }))
                     }
                     placeholder={t('payroll.baseSalaryPlaceholder') || '0'}
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all"
+                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20"
                     style={{
                       background: 'var(--input)',
                       borderColor: 'var(--border)',
                       color: 'var(--text-primary)',
                     }}
-                    onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-                    onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
                   />
                 </div>
 

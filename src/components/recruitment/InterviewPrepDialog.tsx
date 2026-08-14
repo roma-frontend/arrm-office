@@ -17,15 +17,15 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/components/ui/sheet';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { InterviewPrep } from '../../../convex/recruitmentAI';
 
 const CATEGORY_BADGE: Record<string, string> = {
-  general: 'bg-blue-100 text-blue-800',
-  technical: 'bg-purple-100 text-purple-800',
-  behavioral: 'bg-amber-100 text-amber-800',
-  culture: 'bg-emerald-100 text-emerald-800',
+  general: 'bg-(--brand-quiet) text-(--brand-text)',
+  technical: 'bg-(--purple-quiet) text-(--purple-text)',
+  behavioral: 'bg-(--warning-quiet) text-(--warning-text)',
+  culture: 'bg-(--success-quiet) text-(--success-text)',
 };
 
 /**
@@ -111,9 +111,9 @@ export function InterviewPrepDialog({
     .filter((g) => g.items.length > 0);
 
   return (
-    <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
+    <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+      <SheetHeader>
+        <SheetTitle className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-purple-500" />
           {t('interviewPrep.title', 'Interview Prep')}
           {candidate?.vacancy && (
@@ -121,13 +121,13 @@ export function InterviewPrepDialog({
               — {candidate.vacancy.title}
             </span>
           )}
-        </DialogTitle>
-      </DialogHeader>
+        </SheetTitle>
+      </SheetHeader>
 
       {!candidate ? (
         <ShieldLoader />
       ) : (
-        <div className="space-y-4">
+        <SheetBody className="space-y-4">
           {/* Context summary */}
           <div className="rounded-lg border bg-muted/30 p-3 text-xs space-y-1">
             <p>
@@ -174,7 +174,7 @@ export function InterviewPrepDialog({
               {prep.openingTips && (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 p-3">
                   <p className="text-xs font-semibold flex items-center gap-1.5 mb-1">
-                    <Lightbulb className="h-3.5 w-3.5 text-blue-600" />
+                    <Lightbulb className="h-3.5 w-3.5 text-(--brand-text)" />
                     {t('interviewPrep.opening', 'Opening')}
                   </p>
                   <p className="text-xs text-muted-foreground">{prep.openingTips}</p>
@@ -234,7 +234,7 @@ export function InterviewPrepDialog({
               {prep.redFlags.length > 0 && (
                 <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 p-3">
                   <p className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+                    <AlertTriangle className="h-3.5 w-3.5 text-(--danger-text)" />
                     {t('interviewPrep.redFlags', 'Red flags')}
                   </p>
                   <ul className="space-y-1">
@@ -251,7 +251,7 @@ export function InterviewPrepDialog({
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" size="sm" onClick={handleCopy}>
                   {copied ? (
-                    <Check className="h-3.5 w-3.5 mr-1.5 text-green-600" />
+                    <Check className="h-3.5 w-3.5 mr-1.5 text-(--success-text)" />
                   ) : (
                     <Copy className="h-3.5 w-3.5 mr-1.5" />
                   )}
@@ -268,9 +268,9 @@ export function InterviewPrepDialog({
               </div>
             </>
           )}
-        </div>
+        </SheetBody>
       )}
-    </DialogContent>
+    </SheetContent>
   );
 }
 

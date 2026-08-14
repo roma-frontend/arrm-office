@@ -21,7 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 
 export default function HolidaysPage() {
@@ -228,16 +235,16 @@ export default function HolidaysPage() {
       </div>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
+      <Sheet open={showCreate} onOpenChange={setShowCreate}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>
               {editingHoliday
                 ? t('admin.holidays.edit', 'Edit Holiday')
                 : t('admin.holidays.create', 'Create Holiday')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+            </SheetTitle>
+          </SheetHeader>
+          <SheetBody className="space-y-4">
             <div>
               <Label>{t('admin.holidays.name', 'Holiday Name')}</Label>
               <Input
@@ -286,23 +293,23 @@ export default function HolidaysPage() {
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  resetForm();
-                  setShowCreate(false);
-                }}
-              >
-                {t('common.cancel', 'Cancel')}
-              </Button>
-              <Button onClick={handleSubmit}>
-                {editingHoliday ? t('common.save', 'Save') : t('common.create', 'Create')}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </SheetBody>
+          <SheetFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetForm();
+                setShowCreate(false);
+              }}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button onClick={handleSubmit}>
+              {editingHoliday ? t('common.save', 'Save') : t('common.create', 'Create')}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -113,19 +113,19 @@ describe('filterPayrollRuns', () => {
 
 describe('getStatusColor', () => {
   it('returns green for paid', () => {
-    expect(getStatusColor('paid')).toContain('emerald');
+    expect(getStatusColor('paid')).toContain('success');
   });
 
   it('returns blue for calculated', () => {
-    expect(getStatusColor('calculated')).toContain('blue');
+    expect(getStatusColor('calculated')).toContain('brand');
   });
 
   it('returns red for cancelled', () => {
-    expect(getStatusColor('cancelled')).toContain('red');
+    expect(getStatusColor('cancelled')).toContain('danger');
   });
 
   it('returns gray for unknown status', () => {
-    expect(getStatusColor('unknown')).toContain('gray');
+    expect(getStatusColor('unknown')).toContain('text-3');
   });
 });
 
@@ -352,14 +352,14 @@ describe('filterPayrollRuns - parameterized', () => {
 
 describe('getStatusColor - parameterized', () => {
   const cases = [
-    ['paid', 'emerald'],
-    ['calculated', 'blue'],
-    ['cancelled', 'red'],
-    ['draft', 'gray'],
-    ['approved', 'green'],
-    ['unknown', 'gray'],
-    ['pending', 'gray'],
-    ['', 'gray'],
+    ['paid', 'success'],
+    ['calculated', 'brand'],
+    ['cancelled', 'danger'],
+    ['draft', 'text-3'],
+    ['approved', 'success'],
+    ['unknown', 'text-3'],
+    ['pending', 'text-3'],
+    ['', 'text-3'],
   ];
   test.each(cases)('status %s returns color containing %s', (status, colorHint) => {
     const result = getStatusColor(status);

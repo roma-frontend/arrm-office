@@ -618,7 +618,7 @@ export function FaceLogin() {
                   download, so there is no silent wait either way. */}
               {modelStatus.error ? (
                 <div className="mt-2 max-w-[90%] text-center">
-                  <p className="text-xs text-red-300">{modelStatus.error}</p>
+                  <p className="text-xs text-(--danger-text)">{modelStatus.error}</p>
                   <button
                     type="button"
                     onClick={() => {

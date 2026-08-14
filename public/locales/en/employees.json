@@ -466,7 +466,9 @@
         "departmentPlaceholder": "Select department",
         "noDepartments": "No departments available",
         "levelLabel": "Level",
-        "levelPlaceholder": "e.g. Senior, Mid, Entry, Lead"
+        "levelPlaceholder": "e.g. Senior, Mid, Entry, Lead",
+        "driverPositionLabel": "This is a driver position",
+        "driverPositionDescription": "Employees holding this position can be registered as fleet drivers"
       },
       "compensation": {
         "title": "Compensation",
@@ -486,11 +488,13 @@
         "departmentLabel": "Department",
         "levelLabel": "Level",
         "salaryRangeLabel": "Salary Range",
+        "driverPositionLabel": "Driver position",
         "notSpecified": "Not specified"
       }
     },
     "toast": {
       "titleRequired": "Please enter a position title",
+      "noOrganization": "Select an organization before creating a position",
       "salaryInvalid": "Maximum salary must be greater than minimum",
       "createSuccess": "Position created successfully",
       "updateSuccess": "Position updated successfully",

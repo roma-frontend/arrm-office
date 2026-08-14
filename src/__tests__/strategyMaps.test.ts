@@ -85,46 +85,46 @@ describe('getHealth (strategyMaps)', () => {
 describe('Strategy Maps — progress color mapping', () => {
   // This tests the client-side color logic that maps progress to colors
   function getProgressColor(progress: number): string {
-    if (progress >= 70) return 'text-emerald-600';
-    if (progress >= 40) return 'text-amber-600';
-    return 'text-red-600';
+    if (progress >= 70) return 'text-(--success-text)';
+    if (progress >= 40) return 'text-(--warning-text)';
+    return 'text-(--danger-text)';
   }
 
   function getProgressBarColor(progress: number): string {
-    if (progress >= 70) return 'bg-emerald-500';
-    if (progress >= 40) return 'bg-amber-500';
-    return 'bg-red-500';
+    if (progress >= 70) return 'bg-(--success-solid)';
+    if (progress >= 40) return 'bg-(--warning-solid)';
+    return 'bg-(--danger-solid)';
   }
 
   it('returns emerald for high progress', () => {
-    expect(getProgressColor(70)).toBe('text-emerald-600');
-    expect(getProgressColor(100)).toBe('text-emerald-600');
-    expect(getProgressBarColor(70)).toBe('bg-emerald-500');
+    expect(getProgressColor(70)).toBe('text-(--success-text)');
+    expect(getProgressColor(100)).toBe('text-(--success-text)');
+    expect(getProgressBarColor(70)).toBe('bg-(--success-solid)');
   });
 
   it('returns amber for medium progress', () => {
-    expect(getProgressColor(40)).toBe('text-amber-600');
-    expect(getProgressColor(69)).toBe('text-amber-600');
-    expect(getProgressBarColor(40)).toBe('bg-amber-500');
+    expect(getProgressColor(40)).toBe('text-(--warning-text)');
+    expect(getProgressColor(69)).toBe('text-(--warning-text)');
+    expect(getProgressBarColor(40)).toBe('bg-(--warning-solid)');
   });
 
   it('returns red for low progress', () => {
-    expect(getProgressColor(0)).toBe('text-red-600');
-    expect(getProgressColor(39)).toBe('text-red-600');
-    expect(getProgressBarColor(0)).toBe('bg-red-500');
+    expect(getProgressColor(0)).toBe('text-(--danger-text)');
+    expect(getProgressColor(39)).toBe('text-(--danger-text)');
+    expect(getProgressBarColor(0)).toBe('bg-(--danger-solid)');
   });
 
   it('has consistent color boundaries with getHealth', () => {
     // on_track (>=70) → emerald
-    expect(getProgressColor(70)).toBe('text-emerald-600');
-    expect(getProgressBarColor(70)).toBe('bg-emerald-500');
+    expect(getProgressColor(70)).toBe('text-(--success-text)');
+    expect(getProgressBarColor(70)).toBe('bg-(--success-solid)');
 
     // at_risk (40-69) → amber
-    expect(getProgressColor(50)).toBe('text-amber-600');
-    expect(getProgressBarColor(50)).toBe('bg-amber-500');
+    expect(getProgressColor(50)).toBe('text-(--warning-text)');
+    expect(getProgressBarColor(50)).toBe('bg-(--warning-solid)');
 
     // behind (<40) → red
-    expect(getProgressColor(20)).toBe('text-red-600');
-    expect(getProgressBarColor(20)).toBe('bg-red-500');
+    expect(getProgressColor(20)).toBe('text-(--danger-text)');
+    expect(getProgressBarColor(20)).toBe('bg-(--danger-solid)');
   });
 });

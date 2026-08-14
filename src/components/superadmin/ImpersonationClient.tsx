@@ -24,13 +24,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -489,18 +490,18 @@ export default function ImpersonationClient() {
         )}
       </div>
 
-      <Dialog open={startDialogOpen && canManageImpersonation} onOpenChange={setStartDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <Sheet open={startDialogOpen && canManageImpersonation} onOpenChange={setStartDialogOpen}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />
               {t('impersonate.loginAsUser')}
-            </DialogTitle>
-            <DialogDescription>{t('impersonate.fullAccessDesc')}</DialogDescription>
-          </DialogHeader>
+            </SheetTitle>
+            <SheetDescription>{t('impersonate.fullAccessDesc')}</SheetDescription>
+          </SheetHeader>
 
           {selectedUser && (
-            <div className="py-4">
+            <SheetBody>
               <div className="flex items-center gap-4 mb-4 p-4 rounded-lg bg-muted">
                 <Avatar className="w-12 h-12">
                   <AvatarImage src={selectedUser.avatarUrl} />
@@ -539,7 +540,7 @@ export default function ImpersonationClient() {
               <div className="mt-4 p-3 rounded bg-yellow-500/10 border border-yellow-500/30">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5" />
-                  <div className="text-xs text-yellow-700">
+                  <div className="text-xs text-(--warning-text)">
                     <p className="font-semibold mb-1">{t('impersonate.important')}</p>
                     <ul className="list-disc list-inside space-y-1">
                       <li>{t('impersonate.sessionExpires')}</li>
@@ -550,10 +551,10 @@ export default function ImpersonationClient() {
                   </div>
                 </div>
               </div>
-            </div>
+            </SheetBody>
           )}
 
-          <DialogFooter>
+          <SheetFooter>
             <Button
               variant="outline"
               onClick={() => {
@@ -568,9 +569,9 @@ export default function ImpersonationClient() {
               <Shield className="w-4 h-4 mr-2" />
               {t('impersonate.startSession')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

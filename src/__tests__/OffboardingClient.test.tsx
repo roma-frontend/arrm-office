@@ -136,15 +136,17 @@ jest.mock('@/components/ui/textarea', () => ({
   Textarea: (props: any) => <textarea {...props} />,
 }));
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
-  DialogContent: ({ children, className }: any) => (
-    <div data-testid="dialog-content" className={className}>
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ children, open }: any) => (open ? <div data-testid="sheet">{children}</div> : null),
+  SheetContent: ({ children, className }: any) => (
+    <div data-testid="sheet-content" className={className}>
       {children}
     </div>
   ),
-  DialogHeader: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children }: any) => <div>{children}</div>,
+  SheetHeader: ({ children }: any) => <div data-testid="sheet-header">{children}</div>,
+  SheetBody: ({ children }: any) => <div data-testid="sheet-body">{children}</div>,
+  SheetFooter: ({ children }: any) => <div data-testid="sheet-footer">{children}</div>,
+  SheetTitle: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock('@/components/ui/select', () => ({
@@ -196,6 +198,7 @@ jest.mock('lucide-react', () => {
   const icons = [
     'UserMinus',
     'CheckCircle2',
+    'Check',
     'Circle',
     'SkipForward',
     'TrendingDown',
@@ -663,7 +666,7 @@ describe('OffboardingClient', () => {
     expect(screen.getByText('Anna Petrova')).toBeInTheDocument();
     // The wizard resolves orgId the same way.
     fireEvent.click(screen.getByText('Start Offboarding'));
-    expect(screen.getByTestId('dialog-content')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-content')).toBeInTheDocument();
   });
 
   it('skips queries and guards the wizard submit without an organization', async () => {
@@ -816,7 +819,7 @@ describe('OffboardingClient', () => {
 
     // Cancel from step 0 closes the wizard.
     fireEvent.click(screen.getByText('Cancel'));
-    expect(screen.queryByTestId('dialog-content')).toBeNull();
+    expect(screen.queryByTestId('sheet-content')).toBeNull();
 
     // Back from step 1 returns to step 0.
     fireEvent.click(screen.getByText('Start Offboarding'));

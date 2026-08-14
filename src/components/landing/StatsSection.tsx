@@ -1,7 +1,7 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import StatsCard from './StatsCard';
+import { useLandingTranslation } from './useLandingTranslation';
 
 function getStatsData(t: (key: string) => string) {
   return [
@@ -95,8 +95,8 @@ function getStatsData(t: (key: string) => string) {
   ];
 }
 
-export default function StatsSection() {
-  const { t } = useTranslation();
+export default function StatsSection({ initialLanguage = 'en' }: { initialLanguage?: string }) {
+  const { t } = useLandingTranslation(initialLanguage);
   const STATS = getStatsData(t);
 
   return (

@@ -85,7 +85,7 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
   if (!data) return null;
 
   return (
-    <Card>
+    <Card className="glass-panel">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
@@ -120,13 +120,13 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
           </div>
           <div className="text-right">
             <p className="text-xs text-(--text-muted)">{t('dashboard.leaveMoney.totalValue')}</p>
-            <p className="text-lg font-bold text-emerald-600">
+            <p className="text-lg font-bold text-(--success-text)">
               {formatCurrency(data.totals.grossValue, currency)}
               <span className="text-xs font-normal text-(--text-muted) ml-1">
                 {t('dashboard.leaveMoney.grossShort')}
               </span>
             </p>
-            <p className="text-sm font-semibold text-emerald-700">
+            <p className="text-sm font-semibold text-(--success-text)">
               {formatCurrency(data.totals.netValue, currency)}
               <span className="text-xs font-normal text-(--text-muted) ml-1">
                 {t('dashboard.leaveMoney.netShort')}

@@ -530,7 +530,7 @@ export default function BlueprintEditor({
             </h4>
             <Badge variant="outline">{draft.segments.length}</Badge>
             {audit.missing.length > 0 && (
-              <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-600">
+              <Badge className="border-(--warning-outline) bg-(--warning-quiet) text-(--warning-text)">
                 <AlertTriangle className="mr-1 h-3 w-3" />
                 {t('docBuilder.missingTranslations', {
                   count: audit.missing.length,
@@ -539,7 +539,7 @@ export default function BlueprintEditor({
               </Badge>
             )}
             {audit.unknownTokens.length > 0 && (
-              <Badge className="border-red-500/20 bg-red-500/10 text-red-600">
+              <Badge className="border-(--danger-outline) bg-(--danger-quiet) text-(--danger-text)">
                 {t('docBuilder.unknownTokens', {
                   tokens: audit.unknownTokens.join(', '),
                   defaultValue: `Unknown tokens: ${audit.unknownTokens.join(', ')}`,
@@ -710,7 +710,7 @@ function SegmentRow({
           )}
 
           {missing && (
-            <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+            <span className="inline-flex items-center gap-1 text-xs text-(--warning-text)">
               <AlertTriangle className="h-3 w-3" />
               {t('docBuilder.segmentMissing', 'Translation missing')}
             </span>
@@ -792,7 +792,7 @@ function SegmentTextArea({
         <span className="text-[10px] font-semibold uppercase tracking-widest text-primary">
           {LOCALE_CAPTIONS[locale]}
         </span>
-        {!value.trim() && <span className="text-[10px] text-amber-600">•</span>}
+        {!value.trim() && <span className="text-[10px] text-(--warning-text)">•</span>}
       </div>
       <textarea
         value={value}
@@ -855,7 +855,7 @@ function TokenPalette() {
                     }}
                     className="inline-flex items-center gap-1 rounded-md border border-(--border) px-1.5 py-0.5 font-mono text-[10px] text-(--text-muted) transition hover:border-primary hover:text-(--text-primary)"
                   >
-                    {copied === token && <Check className="h-3 w-3 text-emerald-600" />}
+                    {copied === token && <Check className="h-3 w-3 text-(--success-text)" />}
                     {token}
                   </button>
                 ))}

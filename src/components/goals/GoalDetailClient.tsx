@@ -41,11 +41,12 @@ const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
   const variant =
     {
-      active: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-      completed: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-      at_risk: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-      on_hold: 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400',
-    }[status] ?? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
+      active: 'bg-(--success-quiet) bg-(--success-solid)/30 text-(--success-text)',
+      completed: 'bg-(--brand-quiet) bg-(--brand)/30 text-(--brand-text)',
+      at_risk: 'bg-(--warning-quiet) bg-(--warning-solid)/30 text-(--warning-text)',
+      on_hold:
+        'bg-(--surface-2) dark:bg-(--surface-sunken) text-(--text-primary) text-(--text-muted)',
+    }[status] ?? 'bg-(--success-quiet) bg-(--success-solid)/30 text-(--success-text)';
 
   const label =
     {
@@ -62,10 +63,10 @@ const LevelBadge = ({ level }: { level: string }) => {
   const { t } = useTranslation();
   const variant =
     {
-      company: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-      team: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-      individual: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-    }[level] ?? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
+      company: 'bg-(--brand-quiet) bg-(--brand)/30 text-(--brand-text)',
+      team: 'bg-(--brand-quiet) bg-(--brand)/30 text-(--brand-text)',
+      individual: 'bg-(--success-quiet) bg-(--success-solid)/30 text-(--success-text)',
+    }[level] ?? 'bg-(--success-quiet) bg-(--success-solid)/30 text-(--success-text)';
 
   const label =
     {
@@ -459,20 +460,20 @@ export default function GoalDetailClient() {
                     <Progress value={completionPct} className="h-2" />
                     <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="w-2 h-2 rounded-full bg-(--success-solid)" />
                         {completed} {t('taskStatus.completed', 'done')}
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span className="w-2 h-2 rounded-full bg-(--brand)" />
                         {inProgress} {t('taskStatus.inProgress', 'in progress')}
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                        <span className="w-2 h-2 rounded-full bg-(--warning-solid)" />
                         {pending} {t('taskStatus.pending', 'pending')}
                       </span>
                       {overdue > 0 && (
                         <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-red-500" />
+                          <span className="w-2 h-2 rounded-full bg-(--danger-solid)" />
                           {overdue} {t('tasksClient.overdueTag', 'overdue')}
                         </span>
                       )}
@@ -513,16 +514,16 @@ export default function GoalDetailClient() {
                       className={`flex items-center justify-between p-3 rounded-lg border border-l-4 cursor-pointer
                         hover:bg-muted/50 transition-colors group ${
                           statusColors[task.status] || 'border-l-gray-500'
-                        } ${isOverdue ? 'bg-red-50 dark:bg-red-950/10' : ''}`}
+                        } ${isOverdue ? 'bg-(--danger-quiet) bg-(--danger-solid)/10' : ''}`}
                       onClick={() => router.push(`/tasks/${task._id}`)}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <StatusIcon
                           className={`h-4 w-4 shrink-0 ${
                             task.status === 'completed'
-                              ? 'text-green-500'
+                              ? 'text-(--success-text)'
                               : isOverdue
-                                ? 'text-red-500'
+                                ? 'text-(--danger-text)'
                                 : 'text-muted-foreground'
                           }`}
                         />
@@ -535,8 +536,8 @@ export default function GoalDetailClient() {
                             {task.assignedToUser?.name ?? 'Unassigned'}
                             {isOverdue && (
                               <>
-                                <span className="text-red-400">·</span>
-                                <span className="text-red-500 font-medium">
+                                <span className="text-(--danger-text)">·</span>
+                                <span className="text-(--danger-text) font-medium">
                                   {t('tasksClient.overdueTag', 'Overdue')}
                                 </span>
                               </>
@@ -548,14 +549,14 @@ export default function GoalDetailClient() {
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                             task.status === 'completed'
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              ? 'bg-(--success-quiet) text-(--success-text) bg-(--success-solid)/30'
                               : task.status === 'in_progress'
-                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                ? 'bg-(--brand-quiet) text-(--brand-text) bg-(--brand)/30'
                                 : task.status === 'review'
-                                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                  ? 'bg-(--brand-quiet) text-(--brand-text) bg-(--brand)/30'
                                   : task.status === 'cancelled'
-                                    ? 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
-                                    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                    ? 'bg-(--surface-2) text-(--text-primary) dark:bg-(--surface-sunken) text-(--text-muted)'
+                                    : 'bg-(--warning-quiet) text-(--warning-text) bg-(--warning-solid)/30'
                           }`}
                         >
                           {task.status === 'completed'

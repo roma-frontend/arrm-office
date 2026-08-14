@@ -106,8 +106,8 @@ export const createRecurringTask = mutation({
     deadlineOffsetDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Unlike tasks.createTask, which still trusts a client-supplied assignedBy,
-    // the series owner is taken from the verified identity.
+    // The series owner is taken from the verified identity, never from the
+    // arguments — same rule `tasks.createTask` follows for one-off tasks.
     const caller = await getAuthCaller(ctx);
     if (!caller) {
       throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });

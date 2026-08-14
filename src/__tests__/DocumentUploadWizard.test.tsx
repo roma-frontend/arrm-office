@@ -147,6 +147,7 @@ jest.mock('lucide-react', () => {
     'ChevronLeft',
     'ChevronRight',
     'CheckCircle',
+    'Check',
     'X',
     'File',
     'Image',

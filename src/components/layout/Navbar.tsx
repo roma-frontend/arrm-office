@@ -121,6 +121,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { KeyboardShortcutsModal } from '@/components/KeyboardShortcutsModal';
+import { ModulesMenu } from '@/components/layout/ModulesMenu';
 import { QuickStatsWidget } from '@/components/productivity/QuickStatsWidget';
 import { TeamPresence } from '@/components/productivity/TeamPresence';
 import { PomodoroTimer } from '@/components/productivity/PomodoroTimer';
@@ -398,8 +399,12 @@ export function Navbar() {
           <Home className="w-5 h-5" />
         </Button>
 
-        {/* Page title - hidden */}
-        <div className="flex-1">{/* Title removed for cleaner navbar */}</div>
+        {/* All-modules mega menu (desktop) + page title spacer */}
+        <div className="flex-1 flex items-center gap-2">
+          <div className="hidden lg:block">
+            <ModulesMenu />
+          </div>
+        </div>
 
         {/* Right side actions */}
         <div className="flex items-center gap-1">

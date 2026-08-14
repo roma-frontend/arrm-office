@@ -498,11 +498,11 @@ describe('GoalsClient', () => {
 
   it('renders progress colors for all thresholds', () => {
     const { container } = render(<GoalsClient />);
-    expect(container.querySelector('.text-green-600')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--success-text)"]')).not.toBeNull();
     fireEvent.click(screen.getByText('Team'));
-    expect(container.querySelector('.text-yellow-600')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--warning-text)"]')).not.toBeNull();
     fireEvent.click(screen.getByText('Company'));
-    expect(container.querySelector('.text-red-600')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--danger-text)"]')).not.toBeNull();
   });
 
   it('renders the completed status badge on the team tab', () => {

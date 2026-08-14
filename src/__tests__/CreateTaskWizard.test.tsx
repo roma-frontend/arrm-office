@@ -243,7 +243,7 @@ const seed = () => {
 beforeEach(seed);
 
 const renderWizard = (props: Record<string, unknown> = {}) =>
-  render(<CreateTaskWizard currentUserId="u-1" userRole="admin" {...(props as any)} />);
+  render(<CreateTaskWizard currentUserId="u-1" {...(props as any)} />);
 
 const fillTitle = (value = 'Ship it') =>
   fireEvent.change(screen.getByTestId('input-title'), { target: { value } });
@@ -339,10 +339,14 @@ describe('CreateTaskWizard', () => {
     expect(select).toHaveTextContent('Bob');
   });
 
-  it('shows the supervisor employee list for a supervisor role', () => {
-    queryResults.getMyEmployees = [employees[0]];
-    queryResults.getUsersForAssignment = undefined;
-    renderWizard({ userRole: 'supervisor' });
+  // The wizard no longer branches on role: `getUsersForAssignment` scopes itself
+  // server-side (whole org for an admin, own reporting branch for a supervisor),
+  // so whatever it returns is exactly what the assignee step offers. This used to
+  // pair it with `getMyEmployees` for supervisors, which covered direct reports
+  // only and went empty whenever `supervisorId` was unset.
+  it('offers exactly what the assignment query returns, whatever the role', () => {
+    queryResults.getUsersForAssignment = [employees[0]];
+    renderWizard();
     fillTitle();
     fireEvent.click(screen.getByText('Next'));
     expect(screen.getByTestId('select-assigneeId')).toHaveTextContent('Anna');

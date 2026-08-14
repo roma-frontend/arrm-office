@@ -40,7 +40,7 @@ export default function SmartSuggestions({ organizationId }: SmartSuggestionsPro
       case 'policy':
         return 'bg-sky-400/10 text-sky-400 border-sky-400/30';
       default:
-        return 'bg-gray-500/10 text-gray-500 border-gray-500/30';
+        return 'bg-(--surface-3) text-(--text-3) border-(--border-default)';
     }
   };
 

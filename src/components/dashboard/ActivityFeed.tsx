@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery } from 'convex/react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/convex/_generated/api';
@@ -19,6 +20,14 @@ import {
   ListChecks,
   Bell,
   ArrowRight,
+  Shield,
+  MessageSquare,
+  FolderKanban,
+  Building2,
+  Megaphone,
+  FileCheck,
+  LogOut,
+  CalendarDays,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +53,17 @@ type ActivityAction =
   | 'driver_approved'
   | 'attendance_checkin'
   | 'recruitment_stage_changed'
+  | 'chat'
+  | 'ticket'
+  | 'project'
+  | 'organization'
+  | 'announcement'
+  | 'compliance'
+  | 'onboarding'
+  | 'offboarding'
+  | 'probation'
+  | 'security'
+  | 'review'
   | 'unknown';
 
 interface Activity {
@@ -168,6 +188,72 @@ const ACTION_CONFIG: Record<
     bg: 'bg-pink-500/10',
     defaultSeverity: 'info',
   },
+  chat: {
+    icon: MessageSquare,
+    color: 'text-sky-500',
+    bg: 'bg-sky-500/10',
+    defaultSeverity: 'info',
+  },
+  ticket: {
+    icon: FileText,
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
+    defaultSeverity: 'info',
+  },
+  project: {
+    icon: FolderKanban,
+    color: 'text-purple-500',
+    bg: 'bg-purple-500/10',
+    defaultSeverity: 'info',
+  },
+  organization: {
+    icon: Building2,
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-500/10',
+    defaultSeverity: 'info',
+  },
+  announcement: {
+    icon: Megaphone,
+    color: 'text-pink-500',
+    bg: 'bg-pink-500/10',
+    defaultSeverity: 'info',
+  },
+  compliance: {
+    icon: Shield,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    defaultSeverity: 'info',
+  },
+  onboarding: {
+    icon: ListChecks,
+    color: 'text-teal-500',
+    bg: 'bg-teal-500/10',
+    defaultSeverity: 'info',
+  },
+  offboarding: {
+    icon: LogOut,
+    color: 'text-orange-500',
+    bg: 'bg-orange-500/10',
+    defaultSeverity: 'info',
+  },
+  probation: {
+    icon: CalendarDays,
+    color: 'text-cyan-500',
+    bg: 'bg-cyan-500/10',
+    defaultSeverity: 'info',
+  },
+  security: {
+    icon: Shield,
+    color: 'text-rose-500',
+    bg: 'bg-rose-500/10',
+    defaultSeverity: 'info',
+  },
+  review: {
+    icon: FileCheck,
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+    defaultSeverity: 'info',
+  },
   unknown: {
     icon: Bell,
     color: 'text-(--text-muted)',
@@ -177,31 +263,56 @@ const ACTION_CONFIG: Record<
 };
 
 // ── Format helpers ──
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts;
+type TFunc = TFunction;
+
+function timeAgo(ts: number, now: number, t: TFunc): string {
+  const diff = now - ts;
   const mins = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 30) return `${days}d ago`;
+  if (mins < 1) return t('time.justNow', 'Just now');
+  if (mins < 60) return t('time.minutesAgo', { count: mins, defaultValue: '{{count}}m ago' });
+  if (hours < 24) return t('time.hoursAgo', { count: hours, defaultValue: '{{count}}h ago' });
+  if (days < 30) return t('time.daysAgo', { count: days, defaultValue: '{{count}}d ago' });
   return new Date(ts).toLocaleDateString();
 }
 
+/**
+ * Turn an audit action into a human-friendly label, e.g.
+ * `GENERATE_SUPERADMIN_TOKEN` → "Generate superadmin token",
+ * `chat_conversation_marked_read` → "Chat conversation marked read".
+ */
+function humanizeAction(action: string): string {
+  return action
+    .replace(/[._-]+/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
+}
+
 function formatAction(action: string): ActivityAction {
-  const normalized = action.toLowerCase().replace(/\s+/g, '_');
+  const normalized = action.toLowerCase().replace(/[.\s-]+/g, '_');
   const known: Record<string, ActivityAction> = {
     task_created: 'task_created',
     task_completed: 'task_completed',
     task_status_updated: 'task_status_updated',
     task_deleted: 'task_status_updated',
+    task_updated: 'task_status_updated',
+    task_reassigned: 'task_status_updated',
     leave_created: 'leave_created',
     leave_approved: 'leave_approved',
     leave_rejected: 'leave_rejected',
+    leave_auto_approved: 'leave_approved',
+    leave_deleted: 'leave_created',
+    leave_updated: 'leave_created',
     employee_added: 'employee_added',
     employee_updated: 'employee_updated',
+    user_created: 'employee_added',
+    user_updated: 'employee_updated',
+    user_approved: 'employee_added',
+    profile_updated: 'employee_updated',
     payroll_approved: 'payroll_approved',
     payroll_paid: 'payroll_paid',
     goal_created: 'goal_created',
@@ -210,23 +321,194 @@ function formatAction(action: string): ActivityAction {
     calculate: 'payroll_approved',
     approve: 'payroll_approved',
     pay: 'payroll_paid',
+    cancel: 'payroll_approved',
     driver_requested: 'driver_requested',
     driver_approved: 'driver_approved',
     check_in: 'attendance_checkin',
     check_out: 'attendance_checkin',
     recruitment_stage_changed: 'recruitment_stage_changed',
+    chat_message_sent: 'chat',
+    chat_message_edited: 'chat',
+    chat_message_deleted: 'chat',
+    chat_dm_created: 'chat',
+    chat_group_created: 'chat',
+    chat_conversation_marked_read: 'chat',
+    chat_member_added: 'chat',
+    chat_member_left: 'chat',
+    project_created: 'project',
+    project_updated: 'project',
+    project_deleted: 'project',
+    announcement_created: 'announcement',
+    announcement_updated: 'announcement',
+    announcement_deleted: 'announcement',
+    gdpr_request_status_changed: 'compliance',
+    consent_granted: 'compliance',
+    consent_withdrawn: 'compliance',
+    policy_created: 'compliance',
+    policy_updated: 'compliance',
+    policy_deleted: 'compliance',
+    onboarding_started: 'onboarding',
+    onboarding_completed: 'onboarding',
+    onboarding_cancelled: 'onboarding',
+    offboarding_started: 'offboarding',
+    offboarding_completed: 'offboarding',
+    offboarding_cancelled: 'offboarding',
+    probation_started: 'probation',
+    probation_extended: 'probation',
+    probation_passed_auto: 'probation',
+    probation_started_auto: 'probation',
+    login_failed: 'security',
+    face_login_failed: 'security',
+    face_id_failed_attempt: 'security',
+    account_unlocked: 'security',
+    user_auto_suspended: 'security',
+    security_setting_changed: 'security',
+    review_cycle_deleted: 'review',
+    generate_superadmin_token: 'organization',
+    revoke_superadmin_token: 'organization',
+    impersonate_user: 'security',
+    end_impersonation: 'security',
   };
-  return known[normalized] ?? 'unknown';
+  if (known[normalized]) return known[normalized];
+  // Prefix families: chat_*, ticket_*, project_*, driver_request_*, leave_balance_*,
+  // onboarding_*, offboarding_*, probation_*, messenger_*, recurring_task_* …
+  if (normalized.startsWith('chat_') || normalized.startsWith('messenger_')) return 'chat';
+  if (normalized.startsWith('ticket_')) return 'ticket';
+  if (normalized.startsWith('project_')) return 'project';
+  if (normalized.startsWith('driver_request_')) return 'driver_requested';
+  if (normalized.startsWith('onboarding_')) return 'onboarding';
+  if (normalized.startsWith('offboarding_')) return 'offboarding';
+  if (normalized.startsWith('probation_')) return 'probation';
+  if (normalized.startsWith('leave_balance') || normalized.startsWith('leave_bulk'))
+    return 'leave_created';
+  if (normalized.startsWith('recurring_task_')) return 'task_status_updated';
+  if (normalized.startsWith('face_') || normalized.startsWith('login_')) return 'security';
+  if (normalized.startsWith('announcement')) return 'announcement';
+  if (
+    normalized.startsWith('gdpr_') ||
+    normalized.startsWith('policy_') ||
+    normalized.startsWith('consent_') ||
+    normalized.startsWith('sign_')
+  )
+    return 'compliance';
+  if (normalized.startsWith('integration_') || normalized.startsWith('verification'))
+    return 'security';
+  if (
+    normalized.startsWith('organization') ||
+    normalized.startsWith('org_') ||
+    normalized.startsWith('join_request')
+  )
+    return 'organization';
+  if (normalized.startsWith('holiday_') || normalized.startsWith('leave_type'))
+    return 'leave_created';
+  return 'unknown';
+}
+
+/**
+ * Build a readable one-liner from an audit log's details JSON. Returns '' when
+ * nothing user-facing can be extracted — the widget then shows just the title.
+ */
+const NOISY_DETAIL_KEYS = new Set([
+  'tokenId',
+  'periodId',
+  'taskId',
+  'userId',
+  'organizationId',
+  '_id',
+  'id',
+  'title',
+  'createdAt',
+  'updatedAt',
+  'expiresAt',
+  'startDate',
+  'endDate',
+  'passwordHash',
+  'avatarUrl',
+  'ip',
+]);
+
+function summarizeDetails(details: Record<string, unknown>, rawAction = '', t: TFunc): string {
+  // Temp-access tokens carry a human + email — surface those.
+  if (typeof details.tempName === 'string') {
+    const who = [details.tempName, typeof details.tempEmail === 'string' ? details.tempEmail : null]
+      .filter(Boolean)
+      .join(' · ');
+    return t('activityFeed.details.tempAccess', { who, defaultValue: 'Temp access: {{who}}' });
+  }
+  // Probation / review periods: duration is the user-facing bit.
+  if (typeof details.durationDays === 'number') {
+    const isProbation = rawAction.toLowerCase().includes('probation');
+    // A named period (e.g. "Q3 Review") is more useful than a generic label.
+    if (!isProbation && typeof details.periodName === 'string') {
+      return `${details.periodName} · ${details.durationDays} days`;
+    }
+    const key = isProbation
+      ? 'activityFeed.details.probationDays'
+      : 'activityFeed.details.reviewCycleDays';
+    const fallback = isProbation ? 'Probation · {{count}} days' : 'Review cycle · {{count}} days';
+    return t(key, { count: details.durationDays, defaultValue: fallback });
+  }
+  if (typeof details.messagesRead === 'number') {
+    return t('activityFeed.details.messagesRead', {
+      count: details.messagesRead,
+      defaultValue: 'Marked {{count}} messages as read',
+    });
+  }
+  if (Array.isArray(details.updatedFields) && details.updatedFields.length > 0) {
+    const shown = details.updatedFields.slice(0, 3).map(String).join(', ');
+    const rest = details.updatedFields.length - 3;
+    const more =
+      rest > 0
+        ? `, ${t('activityFeed.details.moreFields', {
+            count: rest,
+            defaultValue: '+{{count}} more',
+          })}`
+        : '';
+    return (
+      t('activityFeed.details.updatedFields', {
+        fields: shown,
+        defaultValue: 'Updated fields: {{fields}}',
+      }) + more
+    );
+  }
+  // Fallback: a few scalar values, skipping ids/timestamps.
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(details)) {
+    if (NOISY_DETAIL_KEYS.has(key)) continue;
+    if (typeof value === 'string' && value.length < 40) parts.push(value);
+    else if (typeof value === 'number') parts.push(String(value));
+    if (parts.length >= 3) break;
+  }
+  return parts.join(' · ');
+}
+
+function deriveSeverity(action: ActivityAction, rawAction: string): Activity['severity'] {
+  const raw = rawAction.toLowerCase();
+  if (action === 'leave_rejected' || /rejected|failed|declined|revoked|deleted/.test(raw)) {
+    return 'error';
+  }
+  if (
+    action === 'task_completed' ||
+    action === 'leave_approved' ||
+    /approved|completed|paid|verified/.test(raw)
+  ) {
+    return 'success';
+  }
+  return 'info';
 }
 
 // ── Activity Item ──
 function ActivityItem({
   activity,
   index,
+  now,
+  t,
 }: {
   activity: Activity;
   index: number;
-  t: (key: string) => string;
+  /** Current time (ms) — bumped every 30s so "x m ago" stays honest. */
+  now: number;
+  t: TFunc;
 }) {
   const cfg = ACTION_CONFIG[activity.action] ?? ACTION_CONFIG.unknown;
   const Icon = cfg.icon;
@@ -267,7 +549,7 @@ function ActivityItem({
           <div className="flex items-center gap-2 mt-1">
             {' '}
             <span className="text-[10px] text-(--text-muted)">
-              {timeAgo(activity.timestamp)}
+              {timeAgo(activity.timestamp, now, t)}
             </span>{' '}
             {activity.severity === 'error' && (
               <Badge variant="destructive" className="text-[8px] px-1 py-0">
@@ -302,6 +584,14 @@ interface ActivityFeedProps {
 export default function ActivityFeed({ limit = 8, showViewAll = true }: ActivityFeedProps) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+
+  // Tick once a minute so relative timestamps ("3m ago") don't go stale while
+  // the feed sits on screen — the feed is a live surface, not a static snapshot.
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
   const isAdmin =
     user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'supervisor';
   // getAuditLogs server-side only allows admin/superadmin (not supervisor)
@@ -323,18 +613,26 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
     // Convert audit logs to activities
     for (const log of auditLogs) {
       try {
-        const details = (log.details ? JSON.parse(log.details) : {}) as Record<string, unknown> & {
-          title?: string;
-          taskId?: string;
-        };
+        const rawDetails = log.details ? JSON.parse(log.details) : {};
+        const details = (rawDetails && typeof rawDetails === 'object' ? rawDetails : {}) as Record<
+          string,
+          unknown
+        > & { title?: string; taskId?: string };
         const action = formatAction(log.action);
+        const normalized = log.action.toLowerCase().replace(/[.\s-]+/g, '_');
+        // Translated action label, falling back to a humanized English label when
+        // the action is not yet in the locale dictionaries.
+        const humanized = humanizeAction(log.action);
+        const actionLabel = t(`activityFeed.actions.${normalized}`, {
+          defaultValue: humanized,
+        });
 
         activities.push({
           id: log._id,
           action,
-          title: details.title ?? action.replace(/_/g, ' '),
+          title: typeof details.title === 'string' && details.title ? details.title : actionLabel,
           description:
-            typeof details === 'string' ? details : JSON.stringify(details).slice(0, 100),
+            typeof rawDetails === 'string' ? rawDetails : summarizeDetails(details, log.action, t),
           timestamp: log.createdAt ?? log._creationTime,
           user: log.user
             ? {
@@ -349,12 +647,7 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
               : log.action?.startsWith('payroll')
                 ? '/payroll'
                 : undefined,
-          severity:
-            action === 'leave_rejected'
-              ? 'error'
-              : action === 'task_completed' || action === 'leave_approved'
-                ? 'success'
-                : 'info',
+          severity: deriveSeverity(action, log.action ?? ''),
         });
       } catch {
         // Skip malformed logs
@@ -368,7 +661,7 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
   }, [auditLogs, limit, t]);
 
   return (
-    <Card className="h-full border-(--border) overflow-hidden">
+    <Card className="h-full border-(--border) overflow-hidden glass-panel">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
@@ -382,6 +675,29 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
             {allActivities && allActivities.length > 0 && (
               <span className="text-[10px] font-medium text-(--text-muted) bg-(--background-subtle) px-1.5 py-0.5 rounded-full">
                 {allActivities.length}
+              </span>
+            )}
+            {/* Live badge — the feed updates in place (relative timestamps
+                tick) rather than being a static list. */}
+            {allActivities && allActivities.length > 0 && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                style={{
+                  background: 'rgb(var(--green-500-ch) / 12%)',
+                  color: 'var(--success-text)',
+                }}
+              >
+                <span className="relative flex h-1.5 w-1.5">
+                  <span
+                    className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                    style={{ background: 'var(--success-solid)' }}
+                  />
+                  <span
+                    className="relative inline-flex rounded-full h-1.5 w-1.5"
+                    style={{ background: 'var(--success-solid)' }}
+                  />
+                </span>
+                {t('activityFeed.live', 'Live')}
               </span>
             )}
           </CardTitle>
@@ -415,7 +731,7 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
             {' '}
             <>
               {allActivities.map((activity, idx) => (
-                <ActivityItem key={activity.id} activity={activity} index={idx} t={t} />
+                <ActivityItem key={activity.id} activity={activity} index={idx} now={now} t={t} />
               ))}
             </>
           </div>

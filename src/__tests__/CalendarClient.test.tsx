@@ -69,6 +69,9 @@ jest.mock('@/convex/_generated/api', () => ({
 
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: () => ({ user: mockUser }),
+  // useDraftResume reads the user id through this selector — without it the
+  // draft prompts crash the calendar before it can render.
+  useAuthUser: () => mockUser,
 }));
 
 jest.mock('@/hooks/useSelectedOrganization', () => ({

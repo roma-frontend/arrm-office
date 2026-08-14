@@ -110,6 +110,16 @@ async function seed() {
       email: 'foreign@other.test',
       role: 'employee',
     });
+    // The other tenant needs someone who may actually assign work: `createTask`
+    // now takes the creator from the session and refuses employees, so foreign
+    // fixtures can no longer be authored by `foreignId` itself.
+    const foreignAdminId = await ctx.db.insert('users', {
+      ...baseUser,
+      organizationId: otherOrgId,
+      name: 'Foreign Admin',
+      email: 'foreign-admin@other.test',
+      role: 'admin',
+    });
     const superadminId = await ctx.db.insert('users', {
       ...baseUser,
       name: 'Super',
@@ -125,6 +135,7 @@ async function seed() {
       employeeId,
       peerId,
       foreignId,
+      foreignAdminId,
       superadminId,
     };
   });
@@ -136,17 +147,24 @@ function taskArgs(c: Ctx, overrides: Record<string, unknown> = {}) {
     title: 'Ship onboarding checklist',
     description: 'Prepare workspace',
     assignedTo: c.employeeId,
-    assignedBy: c.supervisorId,
     priority: 'high' as const,
     deadline: Date.now() + 7 * 24 * 60 * 60 * 1000,
     ...overrides,
   };
 }
 
+/**
+ * `createTask` takes its creator from the authenticated session — an anonymous
+ * `t.run(...)` call is rejected outright — so every fixture has to be authored
+ * by somebody. `manager@acme.test` is the default: a supervisor of both
+ * `employeeId` and `peerId`, which keeps the task's organization on Acme.
+ */
+function createTaskAs(c: Ctx, email: string, overrides: Record<string, unknown> = {}) {
+  return c.t.withIdentity({ email }).mutation(api.tasks.createTask, taskArgs(c, overrides));
+}
+
 async function createTaskWithComment(c: Ctx, overrides: Record<string, unknown> = {}) {
-  const taskId = await c.t.run((ctx) =>
-    ctx.runMutation(api.tasks.createTask, taskArgs(c, overrides)),
-  );
+  const taskId = await createTaskAs(c, 'manager@acme.test', overrides);
   await c.t.run((ctx) =>
     ctx.runMutation(api.tasks.addComment, {
       taskId,
@@ -189,14 +207,12 @@ describe('employee task queries', () => {
   it('filters out tasks from other organizations for non-superadmins', async () => {
     const c = await seed();
     await createTaskWithComment(c);
-    // A task in the foreign org assigned to the same employee: the org is taken
-    // from the assigner (foreignId), so it must be invisible to the Acme filter.
-    const foreignTaskId = await c.t.run((ctx) =>
-      ctx.runMutation(
-        api.tasks.createTask,
-        taskArgs(c, { assignedTo: c.foreignId, assignedBy: c.foreignId, title: 'Foreign task' }),
-      ),
-    );
+    // A task in the foreign org: the org is taken from the creator's session,
+    // so this one lands on otherOrg and must be invisible to the Acme filter.
+    const foreignTaskId = await createTaskAs(c, 'foreign-admin@other.test', {
+      assignedTo: c.foreignId,
+      title: 'Foreign task',
+    });
     // The foreign user sees only their own org's task.
     const res = await c.t.run((ctx) =>
       ctx.runQuery(api.tasks.getTasksForEmployee, { userId: c.foreignId }),
@@ -254,13 +270,11 @@ describe('getAllTasks', () => {
   it('lets an admin see only their organization tasks', async () => {
     const c = await seed();
     const taskId = await createTaskWithComment(c);
-    // A task in the foreign org (assigner from otherOrg → task.organizationId = otherOrg).
-    await c.t.run((ctx) =>
-      ctx.runMutation(
-        api.tasks.createTask,
-        taskArgs(c, { assignedTo: c.foreignId, assignedBy: c.foreignId, title: 'Foreign' }),
-      ),
-    );
+    // A task in the foreign org (creator from otherOrg → task.organizationId = otherOrg).
+    await createTaskAs(c, 'foreign-admin@other.test', {
+      assignedTo: c.foreignId,
+      title: 'Foreign',
+    });
     const res = await c.t
       .withIdentity({ email: 'admin@acme.test' })
       .query(api.tasks.getAllTasks, {});
@@ -271,12 +285,10 @@ describe('getAllTasks', () => {
   it('lets a superadmin filter by selected organization', async () => {
     const c = await seed();
     await createTaskWithComment(c);
-    const foreignTaskId = await c.t.run((ctx) =>
-      ctx.runMutation(
-        api.tasks.createTask,
-        taskArgs(c, { assignedTo: c.foreignId, assignedBy: c.foreignId, title: 'Foreign' }),
-      ),
-    );
+    const foreignTaskId = await createTaskAs(c, 'foreign-admin@other.test', {
+      assignedTo: c.foreignId,
+      title: 'Foreign',
+    });
     const res = await c.t
       .withIdentity({ email: 'super@acme.test' })
       .query(api.tasks.getAllTasks, { selectedOrganizationId: c.otherOrgId });
@@ -315,12 +327,10 @@ describe('team queries', () => {
   it('getTeamTasks aggregates tasks of all subordinates', async () => {
     const c = await seed();
     const t1 = await createTaskWithComment(c);
-    const t2 = await c.t.run((ctx) =>
-      ctx.runMutation(
-        api.tasks.createTask,
-        taskArgs(c, { assignedTo: c.peerId, title: 'Peer task' }),
-      ),
-    );
+    const t2 = await createTaskAs(c, 'manager@acme.test', {
+      assignedTo: c.peerId,
+      title: 'Peer task',
+    });
     const res = await c.t.run((ctx) =>
       ctx.runQuery(api.tasks.getTeamTasks, { supervisorId: c.supervisorId }),
     );
@@ -377,10 +387,29 @@ describe('assignment helpers', () => {
 
   it('getUsersForAssignment excludes superadmins', async () => {
     const c = await seed();
-    const res = await c.t.run((ctx) => ctx.runQuery(api.tasks.getUsersForAssignment, {}));
+    const res = await c.t
+      .withIdentity({ email: 'admin@acme.test' })
+      .query(api.tasks.getUsersForAssignment, {});
     const names = res.map((u) => u.name);
     expect(names).not.toContain('Super');
     expect(names).toContain('Employee');
+  });
+
+  // Previously an anonymous call fell through to an unscoped `query('users')`
+  // scan and handed back every tenant's roster.
+  it('getUsersForAssignment returns nothing without a session', async () => {
+    const c = await seed();
+    const res = await c.t.run((ctx) => ctx.runQuery(api.tasks.getUsersForAssignment, {}));
+    expect(res).toEqual([]);
+  });
+
+  it('getUsersForAssignment scopes a supervisor to their own reporting branch', async () => {
+    const c = await seed();
+    const res = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .query(api.tasks.getUsersForAssignment, {});
+    const names = res.map((u) => u.name).sort();
+    expect(names).toEqual(['Employee', 'Peer']);
   });
 
   it('getUsersForAssignment falls back to all users for a superadmin (no org)', async () => {

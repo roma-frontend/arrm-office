@@ -64,6 +64,7 @@ let mockUser: Record<string, unknown> | null = { id: 'u_admin', role: 'admin', e
 // body itself is exercised.
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: (sel: any) => sel({ user: mockUser }),
+  useAuthUser: () => mockUser,
 }));
 
 let mockSelectedOrg: string | null = 'org-1';
@@ -757,22 +758,11 @@ describe('row menu and deactivation', () => {
   });
 });
 
-// ── Team sidebar & misc ──────────────────────────────────────────────────────
-describe('team sidebar and misc', () => {
-  it('renders the team sidebar with the current user id', () => {
-    paginatedResults = [empDoc()];
-    renderClient();
-    expect(screen.getByTestId('team-sidebar')).toHaveTextContent('u_admin');
-  });
-
-  it('expands the content area when the sidebar panel is opened', () => {
-    paginatedResults = [empDoc()];
-    renderClient();
-    const content = screen.getByTestId('team-sidebar').parentElement!;
-    expect(content.style.paddingRight).toBe('5rem');
-    fireEvent.click(screen.getByText('toggle-panel'));
-    expect(content.style.paddingRight).toBe('19rem');
-  });
+// ── Misc ─────────────────────────────────────────────────────────────────────
+describe('misc', () => {
+  // The collapsible TeamSidebar panel was removed from EmployeesClient by the
+  // design-token rework; its two dedicated tests went with it. The rest of the
+  // suite covers the directory the sidebar used to sit next to.
 
   it('renders the avatar for a user with an image URL', () => {
     paginatedResults = [empDoc({ avatarUrl: 'https://img/x.png' })];

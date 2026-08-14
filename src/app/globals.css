@@ -348,8 +348,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   max-width: 100vw;
-  overflow-x: hidden;
-  /* overflow-x: hidden is safe here - doesn't break sticky since sticky parent is within viewport */
+  /* `clip` instead of `hidden`: `overflow-x: hidden` makes <body> a scroll
+     container, and the scroll-story section's `position: sticky` stage then
+     pins relative to <body> instead of the viewport — the phone scrolls away
+     with the text and three of the four scenes are never visible. `clip`
+     clips without creating a scroll container, so sticky keeps working. */
+  overflow-x: clip;
   /* Reserve scrollbar space to prevent layout shift when scrollbar appears/disappears */
   scrollbar-gutter: stable;
 }
@@ -526,6 +530,9 @@ body {
   .hero-fade-2,
   .hero-fade-3,
   .hero-fade-4,
+  .hero-float-a,
+  .hero-float-b,
+  .bento-scan,
   .scroll-line,
   .section-fade,
   .orb-pulse-1,
@@ -682,6 +689,43 @@ body {
   animation: nav-slide-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Navbar link — animated underline that grows from the left on hover */
+.nav-link-underline {
+  position: relative;
+  padding-bottom: 2px;
+}
+
+.nav-link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  border-radius: 9999px;
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-link-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* Active-section dot under the current nav link */
+@keyframes nav-dot-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Logo wiggle */
 @keyframes logo-wiggle {
   0%,
@@ -804,6 +848,64 @@ body {
   animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
 }
 
+/* Hero product-mockup floating cards — gentle vertical drift.
+   Two phases so the cards don't move in lockstep. */
+@keyframes hero-float-a {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes hero-float-b {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+.hero-float-a {
+  animation:
+    fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both,
+    hero-float-a 6s ease-in-out 1s infinite;
+}
+
+.hero-float-b {
+  animation:
+    fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both,
+    hero-float-b 7s ease-in-out 1.2s infinite;
+}
+
+/* Bento biometric card — face-scan line sweeping down */
+@keyframes bento-scan {
+  0%,
+  100% {
+    top: 12%;
+    opacity: 0;
+  }
+
+  10%,
+  90% {
+    opacity: 1;
+  }
+
+  50% {
+    top: 84%;
+  }
+}
+
+.bento-scan {
+  animation: bento-scan 3.2s ease-in-out infinite;
+}
+
 /* Scroll indicator line */
 @keyframes scroll-line {
   0%,
@@ -829,6 +931,488 @@ body {
   animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-timeline: view();
   animation-range: entry 0% entry 30%;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO LIVE DEMO — the cycling product mockup (HeroDemo.tsx)
+   All one-shot CSS animations, keyed by screen remount, so each
+   screen replays its choreography from scratch on entry.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Pop-in for stat cards / chips / rows — staggered via inline delay */
+@keyframes demo-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.demo-pop {
+  animation: demo-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.demo-pop-1 {
+  animation-delay: 0.08s;
+}
+
+.demo-pop-2 {
+  animation-delay: 0.16s;
+}
+
+/* Bar chart bars — grow from the baseline, staggered */
+@keyframes demo-bar-grow {
+  from {
+    transform: scaleY(0);
+    transform-origin: bottom;
+    opacity: 0.4;
+  }
+
+  to {
+    transform: scaleY(1);
+    transform-origin: bottom;
+    opacity: 1;
+  }
+}
+
+.demo-bar-inner {
+  animation: demo-bar-grow 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Chat bubbles — slide in from their side */
+@keyframes demo-bubble {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.demo-bubble {
+  animation: demo-bubble 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Typing indicator — three dots pulsing in sequence */
+@keyframes demo-typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.demo-typing {
+  background: var(--landing-text-muted);
+  animation: demo-typing 1.2s ease-in-out infinite;
+}
+
+/* Heatmap / calendar cells — light up in a scan order */
+@keyframes demo-cell {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.demo-cell {
+  animation: demo-cell 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Analytics line — draws itself left to right, then the dot pops */
+@keyframes demo-line-draw {
+  from {
+    stroke-dashoffset: 600;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.demo-line {
+  stroke-dasharray: 600;
+  animation: demo-line-draw 2.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+
+@keyframes demo-area-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.demo-area {
+  animation: demo-area-fade 0.8s ease 1.4s both;
+}
+
+@keyframes demo-dot-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  70% {
+    transform: scale(1.35);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.demo-dot {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: demo-dot-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) 2.1s both;
+}
+
+/* Notification slide-in (dashboard screen) */
+@keyframes demo-notify {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  12% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  88% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.demo-notify {
+  animation: demo-notify 5.5s cubic-bezier(0.22, 1, 0.36, 1) 1s both;
+}
+
+/* OKR fill — width driven by inline style, opacity fade for polish */
+@keyframes demo-fill {
+  from {
+    opacity: 0.3;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.demo-fill {
+  animation: demo-fill 0.8s ease 0.3s both;
+}
+
+/* Progress bar under the stage — fills over the screen duration; the
+   component remounts the element (key) so each screen restarts it. */
+@keyframes demo-progress {
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+.demo-progress {
+  animation: demo-progress 6.2s linear both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-pop,
+  .demo-pop-1,
+  .demo-pop-2,
+  .demo-bar-inner,
+  .demo-bubble,
+  .demo-cell,
+  .demo-line,
+  .demo-area,
+  .demo-dot,
+  .demo-notify,
+  .demo-fill {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .demo-progress {
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL STORY — pinned phone section (ScrollStorySection)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Phone frame — subtle glass bezel with a soft inner shadow */
+.phone-frame {
+  position: relative;
+  background: var(--landing-card-bg);
+  border: 1px solid var(--landing-card-border);
+  box-shadow:
+    0 1px 2px rgba(12, 26, 46, 0.06),
+    0 32px 80px -24px rgba(12, 26, 46, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Scanning ring on the biometric check-in screen */
+@keyframes story-scan {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.story-scan-ring {
+  border-radius: 9999px;
+  animation: story-scan 2.4s linear infinite;
+}
+
+/* Slim bars that grow as they enter the pinned stage */
+@keyframes story-bar {
+  from {
+    transform: scaleX(0.2);
+    opacity: 0.4;
+  }
+
+  to {
+    transform: scaleX(1);
+    opacity: 0.85;
+  }
+}
+
+.story-bar-inner {
+  transform-origin: left center;
+  animation: story-bar 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-scan-ring,
+  .story-bar-inner {
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD AMBIENT — living background orbs + glass panels
+   Applied to the product shell (Providers) so every screen shares the
+   landing's depth: drifting colour orbs behind glass cards.
+   ═══════════════════════════════════════════════════════════════ */
+
+.dashboard-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+@keyframes ambient-drift-1 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  33% {
+    transform: translate3d(4vw, -6vh, 0) scale(1.12);
+  }
+
+  66% {
+    transform: translate3d(-3vw, 4vh, 0) scale(0.94);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes ambient-drift-2 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  40% {
+    transform: translate3d(-5vw, 5vh, 0) scale(1.08);
+  }
+
+  75% {
+    transform: translate3d(3vw, -3vh, 0) scale(0.9);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes ambient-drift-3 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(6vw, 3vh, 0) scale(1.15);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.ambient-orb-1 {
+  top: -12%;
+  left: -6%;
+  width: 42vw;
+  height: 42vw;
+  background: radial-gradient(circle, var(--landing-orb-1) 0%, transparent 70%);
+  animation: ambient-drift-1 26s ease-in-out infinite;
+}
+
+.ambient-orb-2 {
+  bottom: -14%;
+  right: -8%;
+  width: 46vw;
+  height: 46vw;
+  background: radial-gradient(circle, var(--landing-orb-2) 0%, transparent 70%);
+  animation: ambient-drift-2 32s ease-in-out infinite;
+}
+
+.ambient-orb-3 {
+  top: 38%;
+  left: 42%;
+  width: 30vw;
+  height: 30vw;
+  background: radial-gradient(circle, var(--landing-orb-3) 0%, transparent 70%);
+  animation: ambient-drift-3 38s ease-in-out infinite;
+}
+
+/* Glass panel — the dashboard's card surface. Semi-transparent so the orbs
+   drift behind it, with a blur so the text stays crisp over the motion. */
+.glass-panel {
+  background: var(--glass-surface-strong);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Dark theme: keep the panel solid and readable — the harshness came from
+   `saturate(1.4)` reflecting what sits behind the glass, not from opacity.
+   Solid dark surface + strong blur + no saturation boost = frosted, not
+   mirror, and nothing behind bleeds through to fight the text. */
+.dark .glass-panel {
+  background: rgb(6 14 30 / 86%);
+  -webkit-backdrop-filter: blur(18px) saturate(1);
+  backdrop-filter: blur(18px) saturate(1);
+}
+
+/* Dark theme: give the dashboard the same ambient depth as the landing.
+   On a flat near-black canvas the drifting orbs read as bright blobs — the
+   glare that "sparkles". The landing looks calm because its background is a
+   soft navy gradient (canvas → card → canvas) the orbs melt into. Paint that
+   same gradient behind the orbs here; the orbs sit above it (later in DOM),
+   so they become atmosphere instead of spots. */
+.dark .dashboard-ambient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    var(--navy-canvas) 0%,
+    var(--navy-card) 50%,
+    var(--navy-canvas) 100%
+  );
+}
+
+/* The same gradient, far more transparent, so the orbs are quieter than on
+   the sparse landing — the dashboard is denser and every extra percent of
+   saturation reads as noise against the panels. */
+.dark .dashboard-ambient .ambient-orb {
+  opacity: 0.6;
+}
+
+.glass-panel-strong {
+  background: var(--card);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+}
+
+/* The main scrollable content sits above the ambient layer */
+.app-main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Savings calculator range slider */
+.calculator-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--brand);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 10px rgb(var(--brand-600-ch) / 45%);
+  cursor: grab;
+  transition: transform 0.15s ease;
+}
+
+.calculator-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.calculator-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: var(--brand);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 10px rgb(var(--brand-600-ch) / 45%);
+  cursor: grab;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-orb-1,
+  .ambient-orb-2,
+  .ambient-orb-3 {
+    animation: none !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1106,6 +1690,14 @@ body {
 .section-lazy {
   content-visibility: auto;
   contain-intrinsic-size: 0 600px;
+}
+
+/* The scroll-story section must opt out: `content-visibility: auto` implies
+   `contain: layout`, which makes the section a containing block for its
+   `position: sticky` stage — the phone then scrolls away with the text instead
+   of pinning, and three of the four scenes are never seen. */
+.story-not-lazy {
+  content-visibility: visible;
 }
 
 /* ── Navbar notification dropdown (replaces framer-motion) ─────── */
@@ -1880,6 +2472,15 @@ input[type='date']:focus {
   animation-play-state: paused;
 }
 
+/* Live stats ticker — continuous feed strip */
+.ticker-track {
+  animation: scroll-left 32s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    ANIMATED GRADIENT BORDER — CTA Banner
    ═══════════════════════════════════════════════════════════════ */
@@ -1963,6 +2564,7 @@ input[type='date']:focus {
   .mesh-orb-2,
   .mesh-orb-3,
   .carousel-track,
+  .ticker-track,
   .gradient-border-animated::before {
     animation: none !important;
   }

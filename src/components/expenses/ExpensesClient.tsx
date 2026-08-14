@@ -321,7 +321,7 @@ export default function ExpensesClient() {
             {/* Expenses Tab */}
             <TabsContent value="expenses">
               <motion.div variants={itemVariants}>
-                <Card>
+                <Card className="glass-panel shadow-sm">
                   <CardHeader>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <CardTitle className="text-lg">{t('expenses.expenses')}</CardTitle>
@@ -378,7 +378,7 @@ export default function ExpensesClient() {
                         {filteredExpenses.slice(0, 10).map((expense) => (
                           <div
                             key={expense._id}
-                            className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"
+                            className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md border border-(--border)"
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-(--primary)/10 flex items-center justify-center">
@@ -461,7 +461,7 @@ export default function ExpensesClient() {
             {/* Reports Tab */}
             <TabsContent value="reports">
               <motion.div variants={itemVariants}>
-                <Card>
+                <Card className="glass-panel shadow-sm">
                   <CardHeader>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <CardTitle className="text-lg">{t('expenses.reports')}</CardTitle>
@@ -479,7 +479,7 @@ export default function ExpensesClient() {
                         {expenseReports.map((report) => (
                           <div
                             key={report._id}
-                            className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card) border border-(--border)"
+                            className="flex flex-wrap gap-3 items-center justify-between p-3 rounded-lg bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md border border-(--border)"
                           >
                             <div>
                               <p className="font-medium text-(--text-primary)">{report.name}</p>
@@ -516,7 +516,7 @@ export default function ExpensesClient() {
             {/* Categories Tab */}
             <TabsContent value="categories">
               <motion.div variants={itemVariants}>
-                <Card>
+                <Card className="glass-panel shadow-sm">
                   <CardHeader>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <CardTitle className="text-lg">{t('expenses.categories')}</CardTitle>
@@ -532,7 +532,7 @@ export default function ExpensesClient() {
                     {expenseCategories && expenseCategories.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {expenseCategories.map((category) => (
-                          <Card key={category._id}>
+                          <Card key={category._id} className="glass-panel shadow-sm">
                             <CardHeader>
                               <div className="flex items-start justify-between">
                                 <div>

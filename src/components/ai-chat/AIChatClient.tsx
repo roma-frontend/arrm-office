@@ -1108,7 +1108,7 @@ export default function AIChatPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0 text-green-600"
+                          className="h-6 w-6 p-0 text-(--success-text)"
                           onClick={() => saveEditedTitle(conv._id)}
                         >
                           <Check className="w-3 h-3" />
@@ -1116,7 +1116,7 @@ export default function AIChatPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0 text-red-600"
+                          className="h-6 w-6 p-0 text-(--danger-text)"
                           onClick={cancelEditingTitle}
                         >
                           <X className="w-3 h-3" />

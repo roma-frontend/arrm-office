@@ -15,7 +15,14 @@ import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Search, Pencil } from 'lucide-react';
 
 interface EmployeeBalance {
@@ -226,15 +233,15 @@ export default function LeaveBalancesPage() {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingEmployee} onOpenChange={() => setEditingEmployee(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
+      <Sheet open={!!editingEmployee} onOpenChange={() => setEditingEmployee(null)}>
+        <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>
               {t('admin.leaveBalances.editTitle', 'Edit Balances')} — {editingEmployee?.name}
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
           {editingEmployee && (
-            <div className="space-y-4">
+            <SheetBody className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 {BALANCE_FIELDS.map((bf) => (
                   <div key={bf.key}>
@@ -270,7 +277,7 @@ export default function LeaveBalancesPage() {
                   className="mt-1"
                 />
               </div>
-              <div className="flex justify-end gap-2">
+              <SheetFooter>
                 <Button
                   variant="outline"
                   disabled={saving}
@@ -281,11 +288,11 @@ export default function LeaveBalancesPage() {
                 <Button onClick={handleSaveBalances} disabled={saving || !editReason.trim()}>
                   {saving ? t('common.saving', 'Saving...') : t('common.save', 'Save Changes')}
                 </Button>
-              </div>
-            </div>
+              </SheetFooter>
+            </SheetBody>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

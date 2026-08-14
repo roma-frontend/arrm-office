@@ -62,6 +62,8 @@ import {
   Sheet,
   SheetContent,
   SheetHeader,
+  SheetBody,
+  SheetFooter,
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
@@ -100,6 +102,8 @@ import { getLocaleString, formatDate as formatLongDate } from '@/lib/date-format
 import { applySignaturesToBlocks, collectSignaturesInOrder } from '@/lib/bilingualDocument';
 import type { AccentColor } from '@/lib/documentCatalog';
 import QRCodeModal from './QRCodeModal';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 
 /** Enriched asset returned by api.assets.getAsset (detail card). */
 type AssetDetail = NonNullable<FunctionReturnType<typeof api.assets.getAsset>>;
@@ -355,16 +359,16 @@ function AssignDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
-        <DialogHeader>
-          <DialogTitle>{t('assets.assignTitle')}</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('assets.assignTitle')}</SheetTitle>
+          <SheetDescription>
             {t('assets.assignDescription')} <strong>{asset.name}</strong>
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4 py-4">
+        <SheetBody className="space-y-4">
           <div>
             <label className="text-sm font-medium text-foreground">{t('assets.assignedTo')}</label>
             <div className="relative mt-1">
@@ -420,18 +424,18 @@ function AssignDialog({
               onChange={(e) => setExpectedReturn(e.target.value)}
             />
           </div>
-        </div>
+        </SheetBody>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
           <Button onClick={handleAssign} disabled={!selectedUserId || assigning}>
             {assigning ? t('common.saving') : t('assets.assign')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -473,16 +477,16 @@ function ReturnDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>{t('assets.returnTitle')}</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('assets.returnTitle')}</SheetTitle>
+          <SheetDescription>
             {t('assets.returnDescription')} <strong>{assignment.assetName}</strong>
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4 py-4">
+        <SheetBody className="space-y-4">
           <div>
             <label className="text-sm font-medium text-foreground">
               {t('assets.conditionLabel', 'Condition')}
@@ -508,18 +512,18 @@ function ReturnDialog({
               placeholder={t('assets.notesPlaceholder')}
             />
           </div>
-        </div>
+        </SheetBody>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
           <Button onClick={handleReturn} disabled={returning}>
             {returning ? t('common.saving') : t('assets.confirmReturn')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1009,6 +1013,7 @@ export default function AssetsClient() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const assetDraft = useDraftResume('create-asset', !createDialogOpen);
   const [selectedAsset, setSelectedAsset] = useState<{ _id: Id<'assetCatalog'> } | null>(null);
   const [assignDialogAsset, setAssignDialogAsset] = useState<{
     _id: Id<'assetCatalog'>;
@@ -1271,7 +1276,7 @@ export default function AssetsClient() {
             <TabsContent value="catalog">
               <motion.div variants={itemVariants} className="space-y-4">
                 {/* Controls */}
-                <Card>
+                <Card className="glass-panel shadow-sm">
                   <CardHeader className="pb-3">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <CardTitle className="text-lg">{t('assets.catalog')}</CardTitle>
@@ -1387,7 +1392,7 @@ export default function AssetsClient() {
                             animate={{ opacity: 1, scale: 1 }}
                             whileHover={{ y: -4 }}
                             transition={{ duration: 0.2 }}
-                            className="group bg-(--card) border border-(--border) rounded-xl overflow-hidden hover:shadow-lg hover:border-(--primary)/30 transition-all cursor-pointer"
+                            className="group bg-(--card)/60 dark:bg-(--card)/80 backdrop-blur-md border border-(--border) rounded-xl overflow-hidden hover:shadow-lg hover:border-(--primary)/30 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
                             onClick={() => setSelectedAsset(asset)}
                           >
                             <div className="p-5">
@@ -1736,7 +1741,7 @@ export default function AssetsClient() {
             {/* ── TAB: My Assets ── */}
             <TabsContent value="myAssets">
               <motion.div variants={itemVariants}>
-                <Card>
+                <Card className="glass-panel shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">{t('assets.myAssets')}</CardTitle>
                   </CardHeader>
@@ -1895,7 +1900,7 @@ export default function AssetsClient() {
             {/* ── TAB: Requests ── */}
             <TabsContent value="requests">
               <motion.div variants={itemVariants}>
-                <Card>
+                <Card className="glass-panel shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">{t('assets.requests')}</CardTitle>
                   </CardHeader>
@@ -1986,7 +1991,7 @@ export default function AssetsClient() {
             {/* ── TAB: Maintenance ── */}
             <TabsContent value="maintenance">
               <motion.div variants={itemVariants}>
-                <Card>
+                <Card className="glass-panel shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">{t('assets.maintenance')}</CardTitle>
                   </CardHeader>
@@ -2199,7 +2204,7 @@ export default function AssetsClient() {
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 my-4">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-amber-600 text-sm font-bold">!</span>
+                    <span className="text-(--warning-text) text-sm font-bold">!</span>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">
@@ -2269,6 +2274,20 @@ export default function AssetsClient() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* "Draft saved. Restore?" — the asset wizard keeps its contents after
+          an accidental close; this is what tells the user so. */}
+      <DraftResumeBar
+        show={assetDraft.available}
+        label={t('assets.createTitle', 'New Asset')}
+        step={assetDraft.step}
+        onResume={() => {
+          assetDraft.dismiss();
+          setCreateDialogOpen(true);
+        }}
+        onDismiss={assetDraft.dismiss}
+        onDiscard={assetDraft.discard}
+      />
     </motion.div>
   );
 }

@@ -6,7 +6,15 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -251,52 +259,50 @@ export function EditPayrollRecordDialog({ open, onOpenChange, record }: Props) {
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] p-0 overflow-hidden gap-0 max-h-[95vh] flex flex-col">
-        <div className="px-5 py-4 md:px-6 md:py-5 border-b border-(--border)">
-          <DialogTitle className="text-lg md:text-xl font-bold text-(--text-primary)">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="text-lg md:text-xl font-bold text-(--text-primary)">
             {t('payroll.editRecord')}
             {record.user?.name ? ` — ${record.user.name}` : ''}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-(--text-muted) mt-1">
+          </SheetTitle>
+          <SheetDescription className="text-sm text-(--text-muted)">
             {locked ? t('payroll.recordLocked') : t('payroll.editRecordDesc')}
-          </DialogDescription>
-        </div>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="flex-1 min-h-0 flex flex-col">
+        <SheetBody className="flex flex-col">
           {locked ? (
-            <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
-              <div className="space-y-4">
-                <div className="rounded-lg border border-(--border) bg-(--card) p-4 space-y-3 opacity-70">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-(--text-muted)">{t('payroll.baseSalary')}</span>
-                    <span className="font-medium text-(--text-primary)">
-                      {formatCurrency(record.baseSalary)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-(--text-muted)">{t('payroll.bonuses')}</span>
-                    <span className="font-medium text-(--text-primary)">
-                      {formatCurrency(record.bonuses ?? 0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-(--text-muted)">{t('payroll.overtimeHours')}</span>
-                    <span className="font-medium text-(--text-primary)">
-                      {record.overtimeHours ?? 0}
-                    </span>
-                  </div>
-                  {record.notes && (
-                    <div className="pt-3 border-t border-(--border)">
-                      <p className="text-xs text-(--text-muted) mb-1">{t('payroll.notes')}</p>
-                      <p className="text-sm text-(--text-primary)">{record.notes}</p>
-                    </div>
-                  )}
+            <div className="space-y-4">
+              <div className="rounded-lg border border-(--border) bg-(--card) p-4 space-y-3 opacity-70">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-(--text-muted)">{t('payroll.baseSalary')}</span>
+                  <span className="font-medium text-(--text-primary)">
+                    {formatCurrency(record.baseSalary)}
+                  </span>
                 </div>
-                <div className="rounded-lg border border-(--primary)/30 bg-(--primary)/5 px-4 py-3 flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-(--primary) shrink-0 mt-0.5" />
-                  <p className="text-sm text-(--text-primary)">{t('payroll.recordLocked')}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-(--text-muted)">{t('payroll.bonuses')}</span>
+                  <span className="font-medium text-(--text-primary)">
+                    {formatCurrency(record.bonuses ?? 0)}
+                  </span>
                 </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-(--text-muted)">{t('payroll.overtimeHours')}</span>
+                  <span className="font-medium text-(--text-primary)">
+                    {record.overtimeHours ?? 0}
+                  </span>
+                </div>
+                {record.notes && (
+                  <div className="pt-3 border-t border-(--border)">
+                    <p className="text-xs text-(--text-muted) mb-1">{t('payroll.notes')}</p>
+                    <p className="text-sm text-(--text-primary)">{record.notes}</p>
+                  </div>
+                )}
+              </div>
+              <div className="rounded-lg border border-(--primary)/30 bg-(--primary)/5 px-4 py-3 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-(--primary) shrink-0 mt-0.5" />
+                <p className="text-sm text-(--text-primary)">{t('payroll.recordLocked')}</p>
               </div>
             </div>
           ) : (
@@ -315,16 +321,16 @@ export function EditPayrollRecordDialog({ open, onOpenChange, record }: Props) {
               }}
             />
           )}
-        </div>
+        </SheetBody>
 
         {locked && (
-          <div className="shrink-0 px-4 py-4 md:px-6 md:py-5 border-t border-(--border) bg-(--background) flex justify-end">
+          <SheetFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               {t('common.cancel')}
             </Button>
-          </div>
+          </SheetFooter>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

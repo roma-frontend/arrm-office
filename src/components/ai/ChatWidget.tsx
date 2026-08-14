@@ -4,9 +4,15 @@ import { useState } from 'react';
 import { ChatWidgetButton } from './ChatWidgetButton';
 import { ChatWidgetWindow } from './ChatWidgetWindow';
 import { useChatWidgetAI } from './useChatWidgetAI';
+import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+
+  // ⌘J / Ctrl+J opens or closes the floating AI assistant from anywhere in the
+  // dashboard — the brief's persistent assistant with a keyboard shortcut.
+  // ⌘K is already taken by the command palette, so the assistant gets J.
+  useGlobalShortcut({ key: 'j', meta: true }, () => setIsOpen((open) => !open));
 
   // Drag-to-dock state
   const [docked, setDocked] = useState(false);

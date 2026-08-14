@@ -1074,6 +1074,7 @@
     "title": "OKR und Ziele",
     "subtitle": "Setzen Sie Ziele, verfolgen Sie Schlüsselergebnisse und stimmen Sie das Team ab",
     "create": "Neues Ziel",
+    "createObjective": "Ziel erstellen",
     "allPeriods": "Alle",
     "empty": "Keine Ziele vorhanden",
     "emptyHint": "Erstellen Sie das erste Ziel, um zu beginnen",
@@ -2388,7 +2389,9 @@
     "unknown": "Unbekannt",
     "openInGoogle": "In Google Kalender öffnen",
     "description": "Beschreibung",
-    "googleCalendar": "Google Kalender"
+    "googleCalendar": "Google Kalender",
+    "eventMoved": "Termin auf einen anderen Tag verschoben",
+    "eventMoveFailed": "Termin konnte nicht verschoben werden"
   },
   "calendarExtended": {
     "leaveCalendar": "Urlaubskalender",

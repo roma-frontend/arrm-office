@@ -20,16 +20,16 @@ import {
 
 const LEVEL_STYLES: Record<'high' | 'medium' | 'low', { badge: string; bar: string }> = {
   high: {
-    badge: 'bg-red-100 text-red-800 border-red-200',
-    bar: 'bg-red-500',
+    badge: 'bg-(--danger-quiet) text-(--danger-text) border-(--danger-outline)',
+    bar: 'bg-(--danger-solid)',
   },
   medium: {
-    badge: 'bg-amber-100 text-amber-800 border-amber-200',
-    bar: 'bg-amber-500',
+    badge: 'bg-(--warning-quiet) text-(--warning-text) border-(--warning-outline)',
+    bar: 'bg-(--warning-solid)',
   },
   low: {
-    badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    bar: 'bg-emerald-500',
+    badge: 'bg-(--success-quiet) text-(--success-text) border-(--success-outline)',
+    bar: 'bg-(--success-solid)',
   },
 };
 
@@ -83,7 +83,7 @@ export function AttritionRiskPanel({
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 rounded-lg bg-purple-500/10">
-            <Brain className="w-5 h-5 text-purple-600" />
+            <Brain className="w-5 h-5 text-(--purple-text)" />
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-(--text-primary) flex items-center gap-2">
@@ -112,7 +112,7 @@ export function AttritionRiskPanel({
             {/* Summary */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 p-3 text-center">
-                <Flame className="w-4 h-4 mx-auto text-red-600 mb-1" />
+                <Flame className="w-4 h-4 mx-auto text-(--danger-text) mb-1" />
                 <p className="text-lg font-bold text-red-700 dark:text-red-400">
                   {data.summary.high}
                 </p>
@@ -121,7 +121,7 @@ export function AttritionRiskPanel({
                 </p>
               </div>
               <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 p-3 text-center">
-                <AlertTriangle className="w-4 h-4 mx-auto text-amber-600 mb-1" />
+                <AlertTriangle className="w-4 h-4 mx-auto text-(--warning-text) mb-1" />
                 <p className="text-lg font-bold text-amber-700 dark:text-amber-400">
                   {data.summary.medium}
                 </p>
@@ -130,7 +130,7 @@ export function AttritionRiskPanel({
                 </p>
               </div>
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
-                <ShieldCheck className="w-4 h-4 mx-auto text-emerald-600 mb-1" />
+                <ShieldCheck className="w-4 h-4 mx-auto text-(--success-text) mb-1" />
                 <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
                   {data.summary.low}
                 </p>

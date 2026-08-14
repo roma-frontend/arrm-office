@@ -6,7 +6,7 @@ import { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/components/ui/sheet';
 import {
   Play,
   CheckCircle2,
@@ -158,18 +158,18 @@ export function LessonPlayerDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="full" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center justify-between">
             <span>{currentLesson.title}</span>
             <Badge variant="outline">
               {activeLessonIndex + 1} / {lessons.length}
             </Badge>
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-6">
+        <SheetBody className="space-y-6">
           {/* Lesson Content */}
           <div className="rounded-lg border overflow-hidden">
             {currentLesson.contentType === 'video' && currentLesson.videoUrl ? (
@@ -432,8 +432,8 @@ export function LessonPlayerDialog({
               <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }

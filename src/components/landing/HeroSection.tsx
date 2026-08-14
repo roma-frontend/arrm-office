@@ -1,12 +1,11 @@
 'use client';
 
 import React from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import HeroCTA from './HeroCTA';
+import HeroDemo from './HeroDemo';
 import { useTranslation } from 'react-i18next';
 import '@/i18n/config';
-
-// Static trusted companies list
-const TRUSTED = ['Acme Corp', 'GlobalTech', 'NovaSoft', 'Meridian Co.', 'Apex Industries'];
 
 // Inline SVG icons
 function SparklesIcon() {
@@ -31,9 +30,89 @@ function SparklesIcon() {
   );
 }
 
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function ScanFaceIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+      <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+      <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+      <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  );
+}
+
+function BotIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 8V4H8" />
+      <rect width="16" height="12" x="4" y="8" rx="2" />
+      <path d="M2 14h2" />
+      <path d="M20 14h2" />
+      <path d="M15 13v2" />
+      <path d="M9 13v2" />
+    </svg>
+  );
+}
+
 export default function HeroSection({ initialLanguage = 'en' }: { initialLanguage?: string }) {
   const { t: liveT, i18n } = useTranslation();
   const [mounted, setMounted] = React.useState(false);
+
+  // Scroll-parallax on the demo panel: it rides the viewport (sticky) while the
+  // left column scrolls past, gently drifting and tightening as it goes.
+  const demoWrapRef = React.useRef<HTMLDivElement>(null);
+  const { scrollYProgress: demoProgress } = useScroll({
+    target: demoWrapRef,
+    offset: ['start 85%', 'end 30%'],
+  });
+  const demoY = useTransform(demoProgress, [0, 1], [0, -46]);
+  const demoScale = useTransform(demoProgress, [0, 1], [1, 0.93]);
+  const glowOpacity = useTransform(demoProgress, [0, 0.8, 1], [1, 0.75, 0.5]);
+
+  // Scroll indicator fades away as the visitor starts scrolling.
+  const { scrollYProgress: pageProgress } = useScroll();
+  const indicatorOpacity = useTransform(pageProgress, [0, 0.06], [1, 0]);
 
   React.useEffect(() => {
     setMounted(true);
@@ -41,15 +120,11 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
 
   // Before mount, render with the server-detected language so the server HTML and
   // the first client render are byte-identical (no hydration mismatch, no flash).
-  // The landing + common namespaces are statically bundled for every language, so
-  // this resolves synchronously. After mount we switch to the live `t`, which lets
-  // runtime language switching keep working (and matches `initialLanguage` on a
-  // normal load, so nothing visibly changes).
   const t = mounted ? liveT : i18n.getFixedT(initialLanguage);
 
   return (
     <div
-      className="relative flex flex-col items-center text-center pt-24 pb-20 md:pb-32 px-6 min-h-screen justify-center overflow-hidden"
+      className="relative overflow-x-clip pt-28 md:pt-32 pb-10 md:pb-12 px-6 md:px-12"
       role="banner"
       aria-label="Hero section"
     >
@@ -97,184 +172,177 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
         {t('ui.skipToContent')}
       </a>
 
-      {/* Badge — CSS shimmer, no JS */}
-      <div
-        className="hero-fade-1 relative inline-flex items-center gap-3 px-6 py-3 rounded-full backdrop-blur-sm mb-8 overflow-hidden"
-        style={{
-          border: '1px solid var(--landing-card-border)',
-          background: 'var(--landing-card-bg)',
-          boxShadow: '0 4px 24px rgba(37, 99, 235, 0.08)',
-        }}
-        role="status"
-        aria-label="Premium HR platform"
-      >
-        <div className="badge-shimmer absolute inset-0" aria-hidden="true" />
-        <div
-          className="w-2 h-2 rounded-full pulse-dot"
-          style={{ backgroundColor: 'var(--primary)' }}
-          aria-hidden="true"
-        />
-        <span
-          className="relative text-xs font-bold tracking-[0.2em] uppercase"
-          style={{ color: 'var(--landing-text-muted)' }}
-        >
-          {t('landing.exclusiveHR')}
-        </span>
-        <SparklesIcon />
-      </div>
-
-      {/* Title — rendered as static HTML, no JS needed */}
-      <h1 className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-6 relative">
-        <span
-          className="hero-word-1 relative text-5xl sm:text-6xl md:text-8xl font-black tracking-tighter leading-none"
-          style={{
-            color: 'var(--landing-text-primary)',
-            textShadow: '0 2px 40px rgba(37, 99, 235, 0.15)',
-          }}
-        >
-          {t('landing.heroTitle')}
-        </span>
-        <div
-          className="hero-line absolute -bottom-4 left-1/2 -translate-x-1/2 h-[2px] w-32"
-          style={{
-            background: 'linear-gradient(to right, transparent, var(--primary), transparent)',
-          }}
-        />
-      </h1>
-
-      {/* Subtitle */}
-      <div className="hero-fade-3 max-w-3xl mx-auto mb-8">
-        <div className="flex items-center justify-center gap-3 mb-6">
+      {/* Two-column hero: copy on the left, the product demo pinned on the right.
+          The demo rides the viewport as the visitor scrolls (sticky + parallax),
+          then releases at the end of the section. */}
+      <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-12 lg:gap-16 items-start">
+        {/* ── Left: copy — scrolls away naturally while the demo is pinned ── */}
+        <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+          {/* Badge — CSS shimmer, no JS */}
           <div
-            className="w-16 h-[1px]"
-            style={{ background: 'linear-gradient(to right, transparent, var(--primary))' }}
-          />
-          <div
-            className="w-2 h-2 rounded-full pulse-dot"
-            style={{ backgroundColor: 'var(--primary)' }}
-          />
-          <div
-            className="w-16 h-[1px]"
-            style={{ background: 'linear-gradient(to left, transparent, var(--primary))' }}
-          />
-        </div>
-        <p
-          className="text-lg md:text-xl leading-loose font-light text-center"
-          style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}
-        >
-          {t('landing.heroSubtitle')}
-        </p>
-      </div>
-
-      {/* Strategy Cascade Steps — VISUAL HOOK */}
-      <div className="hero-fade-3 max-w-5xl mx-auto mb-10 grid grid-cols-2 md:grid-cols-4 gap-3">
-        {['mission', 'align', 'execute', 'succeed'].map((step, idx) => (
-          <div
-            key={step}
-            className="group relative rounded-2xl p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+            className="hero-fade-1 relative inline-flex items-center gap-3 px-6 py-3 rounded-full backdrop-blur-sm mb-8 overflow-hidden"
             style={{
-              background: 'var(--landing-card-bg)',
               border: '1px solid var(--landing-card-border)',
+              background: 'var(--landing-card-bg)',
+              boxShadow: '0 4px 24px rgba(37, 99, 235, 0.08)',
             }}
+            role="status"
+            aria-label="Premium HR platform"
           >
+            <div className="badge-shimmer absolute inset-0" aria-hidden="true" />
             <div
-              className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              className="w-2 h-2 rounded-full pulse-dot"
+              style={{ backgroundColor: 'var(--primary)' }}
+              aria-hidden="true"
+            />
+            <span
+              className="relative text-xs font-bold tracking-[0.2em] uppercase"
+              style={{ color: 'var(--landing-text-muted)' }}
+            >
+              {t('landing.exclusiveHR')}
+            </span>
+            <SparklesIcon />
+          </div>
+
+          {/* Title */}
+          <h1 className="relative mb-6">
+            <span
+              className="hero-word-1 relative block text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-[0.95]"
               style={{
-                background:
-                  'linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(139,92,246,0.04) 100%)',
+                color: 'var(--landing-text-primary)',
+                textShadow: '0 2px 40px rgba(37, 99, 235, 0.15)',
+              }}
+            >
+              {t('landing.heroTitle')}
+            </span>
+            <div
+              className="hero-line absolute -bottom-4 left-1/2 lg:left-0 -translate-x-1/2 lg:translate-x-0 h-[2px] w-32"
+              style={{
+                background: 'linear-gradient(to right, transparent, var(--primary), transparent)',
               }}
             />
-            <div className="relative">
-              <div
-                className="mx-auto w-10 h-10 rounded-xl flex items-center justify-center mb-2 text-lg font-bold"
+          </h1>
+
+          {/* Subtitle */}
+          <div className="hero-fade-3 max-w-xl mb-10">
+            <p
+              className="text-lg md:text-xl leading-relaxed font-light"
+              style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}
+            >
+              {t('landing.heroSubtitle')}
+            </p>
+          </div>
+
+          {/* CTA Buttons */}
+          <HeroCTA initialLanguage={initialLanguage} />
+
+          {/* Trust markers */}
+          <div
+            className="hero-fade-3 mt-10 flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-3"
+            aria-label="Product guarantees"
+          >
+            {(['noCreditCard', 'freeToStart', 'gdprReady'] as const).map((key) => (
+              <span
+                key={key}
+                className="inline-flex items-center gap-2 text-sm font-medium"
+                style={{ color: 'var(--landing-text-muted)' }}
+              >
+                <span style={{ color: 'var(--success-text)' }}>
+                  <CheckIcon />
+                </span>
+                {t(`landing.${key}`)}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Right: product demo — tall wrapper, the demo itself is pinned ── */}
+        <div
+          ref={demoWrapRef}
+          className="relative min-h-[560px] lg:min-h-[720px]"
+          aria-hidden="true"
+        >
+          <div className="lg:sticky lg:top-24">
+            {/* Glow behind the frame — fades subtly as the panel drifts */}
+            <motion.div
+              className="absolute -inset-10 -z-10 rounded-[3rem] pointer-events-none"
+              style={{
+                background:
+                  'radial-gradient(ellipse 60% 50% at 50% 45%, var(--landing-orb-1) 0%, transparent 70%)',
+                filter: 'blur(40px)',
+                opacity: glowOpacity,
+              }}
+            />
+
+            {/* Live product demo — rides the scroll with a gentle drift */}
+            <motion.div style={{ y: demoY, scale: demoScale }}>
+              <HeroDemo t={t} />
+            </motion.div>
+
+            {/* Floating card — biometric check-in (top right) */}
+            <div
+              className="hero-float-a absolute -top-5 -right-2 md:-right-8 hidden sm:flex items-center gap-2.5 rounded-2xl px-4 py-3 backdrop-blur-md"
+              style={{
+                background: 'var(--landing-card-bg)',
+                border: '1px solid var(--landing-card-border)',
+                boxShadow: '0 12px 32px -8px rgba(12, 26, 46, 0.2)',
+              }}
+            >
+              <span
+                className="flex items-center justify-center w-8 h-8 rounded-xl"
                 style={{
-                  background:
-                    idx === 0
-                      ? 'linear-gradient(135deg, #8b5cf6, #a78bfa)'
-                      : idx === 1
-                        ? 'linear-gradient(135deg, #3b82f6, #60a5fa)'
-                        : idx === 2
-                          ? 'linear-gradient(135deg, #f59e0b, #fbbf24)'
-                          : 'linear-gradient(135deg, #10b981, #34d399)',
-                  color: '#fff',
+                  background: 'rgb(var(--green-500-ch) / 12%)',
+                  color: 'var(--success-text)',
                 }}
               >
-                {idx + 1}
+                <ScanFaceIcon />
+              </span>
+              <div className="text-left">
+                <p
+                  className="num text-xs font-semibold leading-tight"
+                  style={{ color: 'var(--landing-text-primary)' }}
+                >
+                  {t('landing.mockCheckedIn')}
+                </p>
+                <p
+                  className="text-[10px] font-medium leading-tight"
+                  style={{ color: 'var(--success-text)' }}
+                >
+                  {t('landing.mockFaceVerified')}
+                </p>
               </div>
-              <p
-                className="text-xs font-semibold leading-tight"
-                style={{ color: 'var(--landing-text-primary)' }}
+            </div>
+
+            {/* Floating card — AI assistant (bottom left) */}
+            <div
+              className="hero-float-b absolute -bottom-5 -left-2 md:-left-8 hidden sm:flex items-center gap-2.5 rounded-2xl px-4 py-3 backdrop-blur-md"
+              style={{
+                background: 'var(--landing-card-bg)',
+                border: '1px solid var(--landing-card-border)',
+                boxShadow: '0 12px 32px -8px rgba(12, 26, 46, 0.2)',
+              }}
+            >
+              <span
+                className="flex items-center justify-center w-8 h-8 rounded-xl"
+                style={{ background: 'rgb(var(--brand-600-ch) / 10%)', color: 'var(--primary)' }}
               >
-                {t(`landing.${step}`)}
+                <BotIcon />
+              </span>
+              <p
+                className="text-xs font-medium max-w-52 text-left leading-snug"
+                style={{ color: 'var(--landing-text-secondary)' }}
+              >
+                {t('landing.mockAiMatch')}
               </p>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Arrow connecting the steps */}
-      <div className="hidden md:flex justify-center mb-8">
-        <div
-          className="h-px w-48"
-          style={{
-            background: 'linear-gradient(to right, var(--primary), transparent 80%)',
-            opacity: 0.3,
-          }}
-        />
-      </div>
-
-      {/* CTA Buttons — Client Island */}
-      <HeroCTA initialLanguage={initialLanguage} />
-
-      {/* Trusted companies */}
-      <div className="hero-fade-4 flex flex-col items-center gap-6">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-[1px]"
-            style={{
-              background: 'linear-gradient(to right, transparent, var(--primary))',
-              opacity: 0.7,
-            }}
-          />
-          <p
-            className="text-xs uppercase tracking-[0.3em] font-semibold"
-            style={{ color: 'var(--landing-text-muted)' }}
-          >
-            {t('landing.trustedByElite')}
-          </p>
-          <div
-            className="w-8 h-[1px]"
-            style={{
-              background: 'linear-gradient(to left, transparent, var(--primary))',
-              opacity: 0.7,
-            }}
-          />
-        </div>
-        <div className="flex flex-wrap justify-center gap-10">
-          {TRUSTED.map((name) => (
-            <span
-              key={name}
-              className="group relative cursor-default text-sm font-bold transition-all duration-300 hover:opacity-100"
-              style={{
-                color: 'var(--landing-text-secondary)',
-                opacity: 0.9,
-              }}
-            >
-              {name}
-              <span
-                className="absolute -bottom-1 left-0 w-0 h-[1px] group-hover:w-full transition-all duration-500 ease-out"
-                style={{
-                  background: 'linear-gradient(to right, transparent, var(--primary), transparent)',
-                }}
-              />
-            </span>
-          ))}
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div
-        className="absolute bottom-4 lg:bottom-8 xl:bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-2 hidden md:flex pointer-events-none"
+      {/* Scroll indicator — fades out on first scroll */}
+      <motion.div
+        className="mt-6 md:mt-8 flex-col items-center gap-2 hidden md:flex pointer-events-none"
+        style={{ opacity: indicatorOpacity }}
         aria-hidden="true"
       >
         <span
@@ -290,7 +358,7 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
             opacity: 0.7,
           }}
         />
-      </div>
+      </motion.div>
     </div>
   );
 }

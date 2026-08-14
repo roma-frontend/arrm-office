@@ -20,6 +20,8 @@ import {
   TripDetailsModal,
 } from '@/components/drivers/modals';
 import { toast } from 'sonner';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 
 interface VehicleInfo {
   model: string;
@@ -114,6 +116,7 @@ export default function DriversPage() {
   const [showRequestWizard, setShowRequestWizard] = useState(false);
   const [showSelectDriverModal, setShowSelectDriverModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const requestDraft = useDraftResume('request-driver', !showRequestWizard);
   const [selectedDriverCandidate, setSelectedDriverCandidate] = useState<{
     _id: Id<'users'>;
     name: string;
@@ -181,10 +184,11 @@ export default function DriversPage() {
     userId ? {} : 'skip',
   );
 
-  // Get all employees with driver role for registration
+  // Who may be registered as a driver: holders of a position flagged as a
+  // driving job (plus the legacy role='driver' accounts that predate the flag).
   const driverCandidates = useQuery(
-    api.users.queries.getUsersByRole,
-    shouldFilterByOrg ? { organizationId: effectiveOrgId, role: 'driver' } : { role: 'driver' },
+    api.users.queries.getDriverCandidates,
+    shouldFilterByOrg ? { organizationId: effectiveOrgId } : {},
   );
 
   // Sync optimistic state with server data when it loads
@@ -610,6 +614,20 @@ export default function DriversPage() {
           </div>,
           document.body,
         )}
+
+      {/* "Draft saved. Restore?" — the request wizard keeps its contents after
+          an accidental close; this is what tells the user so. */}
+      <DraftResumeBar
+        show={requestDraft.available}
+        label={t('driver.requestDriver', 'Request Driver')}
+        step={requestDraft.step}
+        onResume={() => {
+          requestDraft.dismiss();
+          setShowRequestWizard(true);
+        }}
+        onDismiss={requestDraft.dismiss}
+        onDiscard={requestDraft.discard}
+      />
     </>
   );
 }

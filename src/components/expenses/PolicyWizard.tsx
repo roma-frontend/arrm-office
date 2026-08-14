@@ -6,7 +6,14 @@ import { toast } from 'sonner';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
 import { TextInputStep, TextareaStep, SelectStep } from '@/components/ui/wizard-step-components';
 import { FileText, DollarSign, Shield } from 'lucide-react';
@@ -172,13 +179,13 @@ export default function PolicyWizard({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] p-0 gap-0 max-h-[90vh] flex flex-col overflow-visible">
-        <div className="px-5 py-4 border-b border-(--border) bg-gradient-to-r from-(--primary)/10 to-transparent shrink-0">
-          <DialogTitle>{t('expenses.newPolicy')}</DialogTitle>
-          <DialogDescription>{t('expenses.newPolicyDesc')}</DialogDescription>
-        </div>
-        <div className="flex-1 min-h-0 overflow-y-auto">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')} className="p-0">
+        <SheetHeader>
+          <SheetTitle>{t('expenses.newPolicy')}</SheetTitle>
+          <SheetDescription>{t('expenses.newPolicyDesc')}</SheetDescription>
+        </SheetHeader>
+        <SheetBody>
           <Wizard
             key={resetKey}
             steps={steps}
@@ -188,8 +195,8 @@ export default function PolicyWizard({
             showStepper={false}
             draftKey="expense-policy"
           />
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }

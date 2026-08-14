@@ -227,7 +227,7 @@ export function TripDetailsModal({
                           onClick={() => openInMap('apple')}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-(--background-subtle) flex items-center gap-2 transition-colors"
                         >
-                          <span className="w-2 h-2 rounded-full bg-gray-500" />
+                          <span className="w-2 h-2 rounded-full bg-(--text-4)" />
                           {t('driver.navigator.apple', 'Apple Maps')}
                         </button>
                         <button

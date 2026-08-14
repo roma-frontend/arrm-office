@@ -15,8 +15,22 @@ import { render, screen } from '@testing-library/react';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string | Record<string, unknown>) =>
-      typeof fallback === 'string' ? fallback : key,
+    // Emulates i18next: string fallback → return it; object with defaultValue →
+    // interpolate all {{params}} (count included). Keys without a translation
+    // return the key itself, mirroring real i18next.
+    t: (key: string, fallback?: string | Record<string, unknown>) => {
+      if (typeof fallback === 'string') return fallback;
+      if (fallback && typeof fallback === 'object' && 'defaultValue' in fallback) {
+        const { defaultValue, ...params } = fallback as Record<string, unknown> & {
+          defaultValue: string;
+        };
+        return Object.entries(params).reduce(
+          (acc, [k, v]) => acc.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v)),
+          defaultValue,
+        );
+      }
+      return key;
+    },
   }),
 }));
 
@@ -101,6 +115,15 @@ jest.mock('lucide-react', () => {
     Target: Icon,
     Truck: Icon,
     Plane: Icon,
+    Shield: Icon,
+    MessageSquare: Icon,
+    FolderKanban: Icon,
+    Building2: Icon,
+    Megaphone: Icon,
+    FileCheck: Icon,
+    ScrollText: Icon,
+    LogOut: Icon,
+    CalendarDays: Icon,
   };
 });
 
@@ -159,16 +182,19 @@ describe('ActivityFeed', () => {
 
   // ── Rendering activities ────────────────────────────────────────────────
 
-  it('renders the activity title, user name and description', () => {
+  it('renders the activity title, user name and a readable description', () => {
     queryResults.getAuditLogs = [
-      log({ details: JSON.stringify({ title: 'Write docs', taskId: 't1' }) }),
+      log({
+        action: 'task_created',
+        details: JSON.stringify({ title: 'Write docs', taskId: 't1' }),
+      }),
     ];
     render(<ActivityFeed />);
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
     expect(screen.getByText('Write docs')).toBeInTheDocument();
     expect(screen.getByText('John Doe')).toBeInTheDocument();
-    // description = JSON.stringify(details).slice(0, 100)
-    expect(screen.getByText('{"title":"Write docs","taskId":"t1"}')).toBeInTheDocument();
+    // Ids are skipped — no raw JSON in the widget
+    expect(screen.queryByText(/\{"/)).not.toBeInTheDocument();
   });
 
   it('falls back to the unknown-user label when the actor has no name', () => {
@@ -205,11 +231,12 @@ describe('ActivityFeed', () => {
     expect(container.querySelector('a[href="/tasks/t1"]')).not.toBeNull();
   });
 
-  it('maps unknown actions to the unknown config', () => {
+  it('humanizes unmapped actions instead of showing unknown', () => {
     queryResults.getAuditLogs = [log({ action: 'something_new', details: '{}' })];
     render(<ActivityFeed />);
-    // formatAction returns 'unknown'; the title falls back to the mapped name
-    expect(screen.getByText('unknown')).toBeInTheDocument();
+    // formatAction returns 'unknown' config, but the title is the humanized action
+    expect(screen.getByText('Something New')).toBeInTheDocument();
+    expect(screen.queryByText('unknown')).not.toBeInTheDocument();
   });
 
   it('normalizes task_deleted to the task_status_updated action', () => {
@@ -239,18 +266,18 @@ describe('ActivityFeed', () => {
     expect(container.querySelector('a')).toBeNull();
   });
 
-  it('falls back to a title derived from the action when details have none', () => {
+  it('falls back to a humanized title derived from the action when details have none', () => {
     queryResults.getAuditLogs = [log({ action: 'goal_created', details: '{}' })];
     render(<ActivityFeed />);
-    expect(screen.getByText('goal created')).toBeInTheDocument();
+    expect(screen.getByText('Goal Created')).toBeInTheDocument();
   });
 
-  it('treats a missing details field as an empty object', () => {
+  it('treats a missing details field as an empty object with no description', () => {
     queryResults.getAuditLogs = [log({ action: 'goal_created', details: undefined })];
     render(<ActivityFeed />);
-    // title falls back to the action string, description is JSON.stringify({}) == '{}'
-    expect(screen.getByText('goal created')).toBeInTheDocument();
-    expect(screen.getByText('{}')).toBeInTheDocument();
+    // title falls back to the humanized action, no description is rendered
+    expect(screen.getByText('Goal Created')).toBeInTheDocument();
+    expect(screen.queryByText('{}')).not.toBeInTheDocument();
   });
 
   it('uses the description verbatim when details parse to a string', () => {
@@ -258,6 +285,72 @@ describe('ActivityFeed', () => {
     queryResults.getAuditLogs = [log({ details: '"plain text note"' })];
     render(<ActivityFeed />);
     expect(screen.getByText('plain text note')).toBeInTheDocument();
+  });
+
+  it('humanizes temp-access tokens and surfaces the person + email', () => {
+    queryResults.getAuditLogs = [
+      log({
+        action: 'GENERATE_SUPERADMIN_TOKEN',
+        details: JSON.stringify({
+          tokenId: 'nh7ngw43tzvsjg66djba4v0hq58cf92h',
+          tempName: 'test',
+          tempEmail: 'test@test.com',
+          durationMs: 86400000,
+        }),
+      }),
+    ];
+    render(<ActivityFeed />);
+    expect(screen.getByText('Generate Superadmin Token')).toBeInTheDocument();
+    expect(screen.getByText('Temp access: test · test@test.com')).toBeInTheDocument();
+    // No raw JSON / token ids on screen
+    expect(screen.queryByText(/tokenId/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nh7ngw43/)).not.toBeInTheDocument();
+  });
+
+  it('summarizes review-cycle logs by period and duration', () => {
+    queryResults.getAuditLogs = [
+      log({
+        action: 'review_cycle_created',
+        details: JSON.stringify({
+          periodId: 'ss7q6t2xb1zzy7bbmgg4tegwqd8cfv2q',
+          periodName: 'Q3 Review',
+          durationDays: 90,
+          startDate: 1786695608672,
+        }),
+      }),
+    ];
+    render(<ActivityFeed />);
+    expect(screen.getByText('Review Cycle Created')).toBeInTheDocument();
+    expect(screen.getByText('Q3 Review · 90 days')).toBeInTheDocument();
+  });
+
+  it('summarizes chat read receipts', () => {
+    queryResults.getAuditLogs = [
+      log({
+        action: 'chat_conversation_marked_read',
+        details: JSON.stringify({ messagesRead: 2 }),
+      }),
+    ];
+    render(<ActivityFeed />);
+    expect(screen.getByText('Chat Conversation Marked Read')).toBeInTheDocument();
+    expect(screen.getByText('Marked 2 messages as read')).toBeInTheDocument();
+  });
+
+  it('summarizes field updates instead of dumping raw JSON', () => {
+    queryResults.getAuditLogs = [
+      log({
+        action: 'employee_updated',
+        details: JSON.stringify({
+          updatedFields: ['createdAt', 'departmentId', 'employeeType', 'familyLeaveBalance'],
+        }),
+      }),
+    ];
+    render(<ActivityFeed />);
+    expect(screen.getByText('Employee Updated')).toBeInTheDocument();
+    expect(
+      screen.getByText('Updated fields: createdAt, departmentId, employeeType, +1 more'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/updatedFields/)).not.toBeInTheDocument();
   });
 
   it('prefers createdAt over _creationTime for the timestamp', () => {

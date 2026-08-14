@@ -55,6 +55,8 @@ jest.mock('@/hooks/useWizardDraft', () => ({
       dismissNotice: jest.fn(),
     };
   },
+  peekWizardDraft: jest.fn(),
+  clearWizardDraft: jest.fn(),
 }));
 
 jest.mock('@/components/ui/WizardDraftNotice', () => ({
@@ -104,6 +106,7 @@ jest.mock('@/store/useAuthStore', () => ({
     const state = { user: mockUser };
     return selector ? selector(state) : state;
   },
+  useAuthUser: () => mockUser,
 }));
 
 // ── Convex ───────────────────────────────────────────────────────────────────
@@ -215,19 +218,31 @@ jest.mock('@/components/ui/tabs', () => {
   };
 });
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children, onOpenChange }: any) =>
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ open, children, onOpenChange }: any) =>
     open ? (
       <>
-        <button data-testid="dialog-close" onClick={() => onOpenChange(false)}>
+        <button data-testid="sheet-close" onClick={() => onOpenChange(false)}>
           close
         </button>
         {children}
       </>
     ) : null,
-  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
-  DialogHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
-  DialogTitle: ({ children }: any) => <h2 data-testid="dialog-title">{children}</h2>,
+  SheetContent: ({ children }: any) => <div data-testid="sheet-content">{children}</div>,
+  SheetHeader: ({ children }: any) => <div data-testid="sheet-header">{children}</div>,
+  SheetBody: ({ children }: any) => <div data-testid="sheet-body">{children}</div>,
+  SheetFooter: ({ children }: any) => <div data-testid="sheet-footer">{children}</div>,
+  SheetTitle: ({ children }: any) => <h2 data-testid="sheet-title">{children}</h2>,
+}));
+
+jest.mock('@/components/ui/wizard-stepper', () => ({
+  WizardStepper: ({ steps, current }: any) => (
+    <div data-testid="wizard-stepper" data-current={current}>
+      {steps.map((s: any) => (
+        <span key={s.id}>{s.title}</span>
+      ))}
+    </div>
+  ),
 }));
 
 jest.mock('@/components/ui/input', () => ({
@@ -1073,7 +1088,7 @@ describe('SurveysClient — results dialog', () => {
     expect(screen.getByText('No text responses yet')).toBeInTheDocument();
 
     // closing the dialog unmounts it
-    fireEvent.click(screen.getByTestId('dialog-close'));
+    fireEvent.click(screen.getByTestId('sheet-close'));
     await flush();
     expect(screen.queryByText('Engagement pulse — surveys.results')).toBeNull();
   });

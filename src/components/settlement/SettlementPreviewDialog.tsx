@@ -9,13 +9,14 @@ import { Download, Loader2, Calculator, CalendarDays, Wallet } from 'lucide-reac
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -184,28 +185,28 @@ export function SettlementPreviewDialog({
     : [];
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5 text-[#2563eb]" />
             {t('employees.settlement.title', 'Final Settlement')}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {employeeName ?? preview?.employeeName ?? '—'} ·{' '}
             {t(
               'employees.settlement.subtitle',
               'Unused leave + prorated salary + severance, taxed by the payroll engine',
             )}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         {!preview ? (
           <div className="flex justify-center py-10">
             <ShieldLoader size="sm" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <SheetBody className="space-y-4">
             {/* Inputs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -296,10 +297,10 @@ export function SettlementPreviewDialog({
               </div>
               <p className="text-2xl font-bold">{formatCurrency(preview.net, currency)}</p>
             </div>
-          </div>
+          </SheetBody>
         )}
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t('common.cancel', 'Cancel')}
           </Button>
@@ -313,9 +314,9 @@ export function SettlementPreviewDialog({
               ? t('employees.settlement.exporting', 'Exporting…')
               : t('employees.settlement.download', 'Download Excel')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 

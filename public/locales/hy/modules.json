@@ -1074,6 +1074,7 @@
     "title": "Նպատակներ և արդյունքներ",
     "subtitle": "Սահմանեք նպատակները, հետևեք հիմնական արդյունքներին և համահունչեցրեք ձեր թիմին",
     "create": "Նոր նպատակ",
+    "createObjective": "Ստեղծել նպատակ",
     "allPeriods": "Բոլորը",
     "empty": "Դեռ նպատակներ չկան",
     "emptyHint": "Սկսելու համար ստեղծեք ձեր առաջին նպատակն",
@@ -2388,7 +2389,9 @@
     "cannotBookPast": "Ամրագրել կարելի է միայն այսօր կամ ապագա ամսաթվերը",
     "openInGoogle": "Բացել Google Օրացույցում",
     "description": "Նկարագրություն",
-    "googleCalendar": "Google Calendar"
+    "googleCalendar": "Google Calendar",
+    "eventMoved": "Իրադարձությունը տեղափոխվեց այլ օր",
+    "eventMoveFailed": "Չհաջողվեց տեղափոխել իրադարձությունը"
   },
   "calendarExtended": {
     "leaveCalendar": "Արձակուրդների օրացույց",

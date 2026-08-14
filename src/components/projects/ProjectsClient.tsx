@@ -15,7 +15,14 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Input } from '@/components/ui/input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -190,7 +197,7 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
               color: '#64748b',
             },
           ].map((s) => (
-            <Card key={s.id}>
+            <Card key={s.id} className="glass-panel shadow-sm">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-bold" style={{ color: s.color }}>
                   {s.value}
@@ -204,7 +211,7 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
 
       {/* Overall Progress */}
       {stats && stats.totalTasks > 0 && (
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">
@@ -267,7 +274,7 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
             return (
               <Card
                 key={project._id}
-                className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+                className="glass-panel shadow-sm cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 onClick={() => router.push(`/projects/${project._id}`)}
               >
                 <CardContent className="p-5">
@@ -319,12 +326,12 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
       )}
 
       {/* Create Dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t('projects.createTitle', 'Create Project')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <Sheet open={showCreate} onOpenChange={setShowCreate}>
+        <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>{t('projects.createTitle', 'Create Project')}</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="space-y-4">
             <div>
               <Label>{t('projects.name', 'Project Name')} *</Label>
               <Input
@@ -378,17 +385,17 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowCreate(false)}>
-                {t('common.cancel', 'Cancel')}
-              </Button>
-              <Button onClick={handleCreate} disabled={creating || !createForm.name.trim()}>
-                {creating ? t('common.saving', 'Saving...') : t('common.create', 'Create')}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </SheetBody>
+          <SheetFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button onClick={handleCreate} disabled={creating || !createForm.name.trim()}>
+              {creating ? t('common.saving', 'Saving...') : t('common.create', 'Create')}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

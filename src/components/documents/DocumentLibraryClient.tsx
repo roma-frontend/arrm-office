@@ -333,20 +333,20 @@ export default function DocumentLibraryClient() {
                 <h1 className="text-2xl font-bold mb-4" style={{ color: accentHex }}>
                   {resolved.title}
                 </h1>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed text-(--text-1)">
                   {resolved.body}
                 </div>
                 {template?.signature && (
                   <div className="mt-10 grid grid-cols-2 gap-8">
                     <div>
                       <div className="border-b border-gray-400 h-8" />
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-(--text-3) mt-1">
                         {labels.name} / {labels.position}
                       </div>
                     </div>
                     <div>
                       <div className="border-b border-gray-400 h-8" />
-                      <div className="text-xs text-gray-500 mt-1">{labels.date}</div>
+                      <div className="text-xs text-(--text-3) mt-1">{labels.date}</div>
                     </div>
                   </div>
                 )}

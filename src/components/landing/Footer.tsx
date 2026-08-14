@@ -1,8 +1,8 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { useAuthStoreShallow } from '@/store/useAuthStore';
+import { useLandingTranslation } from './useLandingTranslation';
 
 function ShieldIcon() {
   return (
@@ -27,9 +27,13 @@ function getHref(isAuthenticated: boolean, link: { href: string; authHref?: stri
   return link.href;
 }
 
-export default function Footer() {
-  const { t } = useTranslation();
-  const { isAuthenticated } = useAuthStoreShallow();
+export default function Footer({ initialLanguage = 'en' }: { initialLanguage?: string }) {
+  const { t, mounted } = useLandingTranslation(initialLanguage);
+  const { isAuthenticated: authFromStore } = useAuthStoreShallow();
+  // The zustand store rehydrates from localStorage synchronously on the client,
+  // so reading it during the first render would diverge from the server HTML
+  // (which always renders the logged-out links). Gate it behind `mounted`.
+  const isAuthenticated = mounted && authFromStore;
 
   const footerLinks = {
     product: [

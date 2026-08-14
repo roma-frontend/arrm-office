@@ -275,7 +275,7 @@ export default function JoinRequestsPage() {
                 </p>
               )}
               {!user?.organizationId && user?.role === 'admin' && (
-                <p className="text-xs text-amber-600 bg-amber-50 rounded px-3 py-2 mt-2 border border-amber-200">
+                <p className="text-xs text-(--warning-text) bg-(--warning-quiet) rounded px-3 py-2 mt-2 border border-(--warning-outline)">
                   {t('joinRequestsPage.orgNotAssigned')}
                 </p>
               )}
@@ -371,7 +371,7 @@ export default function JoinRequestsPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="gap-1 text-red-500 border-red-200 hover:bg-red-50"
+                                  className="gap-1 text-(--danger-text) border-(--danger-outline) hover:bg-(--danger-quiet)"
                                   onClick={() => setRejectingId(req._id)}
                                 >
                                   <XCircle className="w-3.5 h-3.5" /> {t('ui.reject')}

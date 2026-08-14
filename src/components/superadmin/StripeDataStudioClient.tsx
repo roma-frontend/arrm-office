@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import {
   Search,
   FileSpreadsheet,
@@ -58,7 +59,7 @@ interface StripeData {
 }
 
 export default function StripeDataStudioClient() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -189,7 +190,7 @@ export default function StripeDataStudioClient() {
       case 'pending':
         return <Clock className="w-4 h-4 text-yellow-500" />;
       default:
-        return <AlertCircle className="w-4 h-4 text-gray-500" />;
+        return <AlertCircle className="w-4 h-4 text-(--text-3)" />;
     }
   };
 
@@ -340,24 +341,24 @@ export default function StripeDataStudioClient() {
       </Card>
 
       {/* Detail Dialog */}
-      <Dialog open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
-        <DialogContent className="max-w-lg">
+      <Sheet open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
+        <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
           {selectedTx && (
             <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
                   {getStatusIcon(selectedTx.status)}
                   Детали транзакции
-                </DialogTitle>
-                <DialogDescription>{selectedTx.id}</DialogDescription>
-              </DialogHeader>
+                </SheetTitle>
+                <SheetDescription>{selectedTx.id}</SheetDescription>
+              </SheetHeader>
 
-              <div className="space-y-4 p-4">
+              <SheetBody className="space-y-4">
                 {/* Main Info Grid */}
                 <div className="grid grid-cols-2 gap-4 bg-muted/30 p-4 rounded-lg">
                   <div>
                     <p className="text-xs text-muted-foreground">Сумма</p>
-                    <p className="text-xl font-bold text-green-600">${selectedTx.amount}</p>
+                    <p className="text-xl font-bold text-(--success-text)">${selectedTx.amount}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Статус</p>
@@ -420,11 +421,11 @@ export default function StripeDataStudioClient() {
                     <Copy className="w-4 h-4" /> Открыть чек Stripe
                   </Button>
                 )}
-              </div>
+              </SheetBody>
             </>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

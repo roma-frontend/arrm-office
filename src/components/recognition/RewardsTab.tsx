@@ -27,13 +27,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -66,13 +67,13 @@ export const CATEGORY_ICONS: Record<RewardCategory, LucideIcon> = {
 };
 
 export const CATEGORY_TONE: Record<RewardCategory, string> = {
-  coffee: 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200',
-  meal: 'bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-200',
-  experience: 'bg-purple-100 text-purple-900 dark:bg-purple-900/30 dark:text-purple-200',
+  coffee: 'bg-(--warning-quiet) text-(--warning-text) bg-(--warning-solid)/30',
+  meal: 'bg-(--warning-quiet) text-(--warning-text) bg-(--warning-solid)/30',
+  experience: 'bg-(--brand-quiet) text-(--brand-text) bg-(--brand)/30',
   time_off: 'bg-sky-100 text-sky-900 dark:bg-sky-900/30 dark:text-sky-200',
-  merch: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200',
-  charity: 'bg-rose-100 text-rose-900 dark:bg-rose-900/30 dark:text-rose-200',
-  other: 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-200',
+  merch: 'bg-(--success-quiet) text-(--success-text) bg-(--success-solid)/30',
+  charity: 'bg-(--danger-quiet) text-(--danger-text) bg-(--danger-solid)/30',
+  other: 'bg-(--surface-2) text-(--text-primary) dark:bg-(--surface-sunken) text-(--text-muted)',
 };
 
 /** Money formatting for the reward's cash value, which is informational only. */
@@ -241,11 +242,11 @@ function WalletStrip({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <Card className="border-yellow-200 dark:border-yellow-900/50">
+      <Card className="border-(--warning-outline)">
         <CardContent className="pt-6">
           <div className="flex items-center gap-3">
-            <div className="rounded-full bg-yellow-50 dark:bg-yellow-900/30 p-2">
-              <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-300" />
+            <div className="rounded-full bg-(--warning-quiet) bg-(--warning-solid)/30 p-2">
+              <Star className="h-5 w-5 text-(--warning-text)" />
             </div>
             <div>
               <p className="text-2xl font-bold">{balance}</p>
@@ -258,15 +259,14 @@ function WalletStrip({
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-3">
-            <div className="rounded-full bg-blue-50 dark:bg-blue-900/30 p-2">
-              <Gift className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+            <div className="rounded-full bg-(--brand-quiet) bg-(--brand)/30 p-2">
+              <Gift className="h-5 w-5 text-(--brand-text)" />
             </div>
             <div>
               <p className="text-2xl font-bold">
                 {allowance}
                 <span className="text-sm font-normal text-muted-foreground">
-                  {' '}
-                  / {allowanceTotal}
+                  {''}/ {allowanceTotal}
                 </span>
               </p>
               <p className="text-sm text-muted-foreground">{t('rewards.wallet.allowance')}</p>
@@ -278,8 +278,8 @@ function WalletStrip({
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-3">
-            <div className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 p-2">
-              <Ticket className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+            <div className="rounded-full bg-(--success-quiet) bg-(--success-solid)/30 p-2">
+              <Ticket className="h-5 w-5 text-(--success-text)" />
             </div>
             <div>
               <p className="text-2xl font-bold">{formatMoney(worth, currency, i18n.language)}</p>
@@ -454,19 +454,19 @@ function RedeemDialog({
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{item.name}</DialogTitle>
-          <DialogDescription>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{item.name}</SheetTitle>
+          <SheetDescription>
             {t('rewards.confirmSpend', {
               points: item.costPoints,
               rest: balance - item.costPoints,
             })}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4">
+        <SheetBody className="space-y-4">
           {item.description && <p className="text-sm">{item.description}</p>}
 
           {item.faceValue !== undefined && item.faceValue > 0 && (
@@ -514,29 +514,29 @@ function RedeemDialog({
               {t('rewards.approvalHint')}
             </p>
           )}
-        </div>
+        </SheetBody>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>
             {t('common.cancel')}
           </Button>
           <Button onClick={handleRedeem} disabled={busy}>
             {busy ? t('common.sending') : t('rewards.confirm')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
 // ── Voucher ──────────────────────────────────────────────────────────────────
 
 const STATUS_TONE: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200',
-  issued: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200',
-  redeemed: 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-200',
-  expired: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
-  cancelled: 'bg-rose-100 text-rose-900 dark:bg-rose-900/30 dark:text-rose-200',
+  pending: 'bg-(--warning-quiet) text-(--warning-text) bg-(--warning-solid)/30',
+  issued: 'bg-(--success-quiet) text-(--success-text) bg-(--success-solid)/30',
+  redeemed: 'bg-(--surface-2) text-(--text-primary) dark:bg-(--surface-sunken) text-(--text-muted)',
+  expired: 'bg-(--surface-2) text-(--text-muted) dark:bg-(--surface-sunken)',
+  cancelled: 'bg-(--danger-quiet) text-(--danger-text) bg-(--danger-solid)/30',
 };
 
 export function VoucherStatusBadge({ status, isExpired }: { status: string; isExpired?: boolean }) {
@@ -633,17 +633,17 @@ function VoucherDialog({
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Ticket className="h-4 w-4" />
             {voucher.title}
-          </DialogTitle>
-          <DialogDescription>{t('rewards.showToStaff')}</DialogDescription>
-        </DialogHeader>
+          </SheetTitle>
+          <SheetDescription>{t('rewards.showToStaff')}</SheetDescription>
+        </SheetHeader>
 
-        <div className="flex flex-col items-center gap-3">
+        <SheetBody className="flex flex-col items-center gap-3">
           {qr ? (
             /* eslint-disable-next-line @next/next/no-img-element -- data URL generated in-browser */
             <img
@@ -693,9 +693,9 @@ function VoucherDialog({
           {voucher.note && (
             <p className="text-xs text-muted-foreground text-center italic">“{voucher.note}”</p>
           )}
-        </div>
+        </SheetBody>
 
-        <DialogFooter className="sm:justify-between">
+        <SheetFooter className="justify-between">
           {canCancel ? (
             <Button variant="outline" onClick={handleCancel} disabled={busy} className="gap-1">
               <X className="h-4 w-4" />
@@ -710,8 +710,8 @@ function VoucherDialog({
             </span>
           )}
           <Button onClick={onClose}>{t('common.close')}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

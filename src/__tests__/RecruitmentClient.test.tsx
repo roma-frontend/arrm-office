@@ -97,6 +97,8 @@ jest.mock('@/hooks/useWizardDraft', () => ({
       dismissNotice: jest.fn(),
     };
   },
+  peekWizardDraft: jest.fn(),
+  clearWizardDraft: jest.fn(),
 }));
 
 jest.mock('@/components/ui/WizardDraftNotice', () => ({

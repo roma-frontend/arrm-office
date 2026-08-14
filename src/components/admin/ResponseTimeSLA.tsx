@@ -353,7 +353,7 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-600">
+            <CardTitle className="text-sm font-medium text-(--success-text)">
               {t('responseSLA.onTime')}
             </CardTitle>
           </CardHeader>
@@ -368,7 +368,7 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-600">
+            <CardTitle className="text-sm font-medium text-(--brand-text)">
               {t('responseSLA.pending')}
             </CardTitle>
           </CardHeader>
@@ -383,7 +383,7 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-red-600">
+            <CardTitle className="text-sm font-medium text-(--danger-text)">
               {t('responseSLA.breached')}
             </CardTitle>
           </CardHeader>

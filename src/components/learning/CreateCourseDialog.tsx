@@ -4,12 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -47,7 +48,7 @@ export function CreateCourseDialog({
   const { t } = useTranslation();
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(open) => {
         onOpenChange(open);
@@ -64,11 +65,11 @@ export function CreateCourseDialog({
         }
       }}
     >
-      <DialogContent className="max-w-lg">
-        <DialogHeader className="px-0">
-          <DialogTitle>{t('learning.createCourse', 'Create Course')}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('learning.createCourse', 'Create Course')}</SheetTitle>
+        </SheetHeader>
+        <SheetBody className="space-y-4">
           <div>
             <label className="text-sm font-medium">{t('orgChart.nodeName', 'Name')} *</label>
             <Input
@@ -150,14 +151,14 @@ export function CreateCourseDialog({
               id="isMandatory"
               checked={form.isMandatory}
               onChange={(e) => setForm({ ...form, isMandatory: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-(--border-strong)"
             />
             <label htmlFor="isMandatory" className="text-sm font-medium">
               {t('learning.mandatory', 'Mandatory')}
             </label>
           </div>
-        </div>
-        <DialogFooter>
+        </SheetBody>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel', 'Cancel')}
           </Button>
@@ -165,8 +166,8 @@ export function CreateCourseDialog({
             <Plus className="h-4 w-4 mr-2" />
             {t('learning.createCourse', 'Create Course')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

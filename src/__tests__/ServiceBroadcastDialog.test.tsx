@@ -74,8 +74,8 @@ jest.mock('@/convex/_generated/api', () => ({
   },
 }));
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children, onOpenChange: onClose }: any) =>
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ open, children, onOpenChange: onClose }: any) =>
     open ? (
       <div data-testid="dialog">
         <button type="button" data-testid="dialog-close" onClick={() => onClose(false)}>
@@ -84,12 +84,15 @@ jest.mock('@/components/ui/dialog', () => ({
         {children}
       </div>
     ) : null,
-  DialogContent: ({ children, className }: any) => (
+  SheetContent: ({ children, className }: any) => (
     <div data-testid="dialog-content" className={className}>
       {children}
     </div>
   ),
-  DialogTitle: ({ children }: any) => <h2 data-testid="dialog-title">{children}</h2>,
+  SheetTitle: ({ children }: any) => <h2 data-testid="dialog-title">{children}</h2>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
+  SheetFooter: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock('@/components/ui/CustomSelect', () => ({

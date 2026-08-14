@@ -129,9 +129,44 @@ function TestimonialCard({
   );
 }
 
+function PlayIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      className="translate-x-px"
+    >
+      <path d="M6 4.5v15a1 1 0 0 0 1.53.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 6 4.5Z" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="5" width="4" height="14" rx="1" />
+      <rect x="14" y="5" width="4" height="14" rx="1" />
+    </svg>
+  );
+}
+
 export default function TestimonialsSection() {
   const { t } = useTranslation();
   const { ref, visible } = useReveal('-30px');
+  const [paused, setPaused] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // Drive the marquee's animation-play-state from React state so the Play/Pause
+  // control below works in both browsers and reduced-motion mode (which disables
+  // the CSS animation entirely — the control then simply shows "Play").
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.style.animationPlayState = paused ? 'paused' : 'running';
+  }, [paused]);
 
   const testimonials: Testimonial[] = [
     {
@@ -216,7 +251,7 @@ export default function TestimonialsSection() {
           }}
         />
 
-        <div className="carousel-track">
+        <div ref={trackRef} className="carousel-track">
           {allTestimonials.map((testimonial, i) => (
             <div key={`${testimonial.id}-${i}`} className="flex-shrink-0 w-[340px] md:w-[400px]">
               <TestimonialCard
@@ -227,6 +262,38 @@ export default function TestimonialsSection() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Playback controls — pause/resume the scrolling wall of reviews */}
+      <div className="mt-10 flex items-center justify-center gap-4">
+        <button
+          type="button"
+          onClick={() => setPaused((p) => !p)}
+          aria-label={
+            paused ? t('landing.storyTourPlay', 'Play') : t('landing.storyTourPause', 'Pause')
+          }
+          className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 hover:scale-[1.03] active:scale-95"
+          style={{
+            border: `1px solid ${paused ? 'rgb(var(--green-500-ch) / 40%)' : 'var(--landing-card-border)'}`,
+            background: paused ? 'rgb(var(--green-500-ch) / 10%)' : 'var(--landing-card-bg)',
+            color: paused ? 'var(--success-text)' : 'var(--landing-text-primary)',
+            boxShadow: paused ? '0 0 0 4px rgb(var(--green-500-ch) / 8%)' : 'none',
+          }}
+        >
+          <span
+            className="flex items-center justify-center w-6 h-6 rounded-full"
+            style={{
+              background: paused ? 'var(--success-solid)' : 'var(--primary)',
+              color: '#fff',
+            }}
+          >
+            {paused ? <PlayIcon /> : <PauseIcon />}
+          </span>
+          {paused ? t('landing.storyTourPlay', 'Play') : t('landing.storyTourPause', 'Pause')}
+        </button>
+        <span className="text-xs font-medium" style={{ color: 'var(--landing-text-muted)' }}>
+          {t('testimonials.hoverToPause', 'Hover to pause')}
+        </span>
       </div>
     </section>
   );

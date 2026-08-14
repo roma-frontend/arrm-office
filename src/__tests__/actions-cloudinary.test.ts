@@ -209,7 +209,35 @@ describe('uploadChatAttachment', () => {
     await uploadChatAttachment(TINY_PNG, 'photo.png', 'image/png');
     expect(uploader.upload).toHaveBeenCalledWith(
       TINY_PNG,
-      expect.objectContaining({ resource_type: 'auto', transformation: expect.any(Array) }),
+      expect.objectContaining({ resource_type: 'image', transformation: expect.any(Array) }),
+    );
+  });
+
+  it('uploads a PDF as a raw resource so preview and download work', async () => {
+    uploader.upload.mockResolvedValue({ secure_url: 'https://res.cloudinary.com/x/d.pdf' });
+
+    const result = await uploadChatAttachment('JVBERi0x', 'contract.pdf', 'application/pdf');
+    expect(result.type).toBe('application/pdf');
+    // 'auto' would classify the PDF as an image resource, whose delivery is
+    // blocked by default — the in-chat iframe preview fails and the download
+    // link errors out. 'raw' serves the file verbatim.
+    expect(uploader.upload).toHaveBeenCalledWith(
+      'data:application/pdf;base64,JVBERi0x',
+      expect.objectContaining({ resource_type: 'raw', folder: 'hr-office/chat-attachments' }),
+    );
+  });
+
+  it('uploads a .docx attachment as a raw resource too', async () => {
+    uploader.upload.mockResolvedValue({ secure_url: 'https://res.cloudinary.com/x/d.docx' });
+
+    await uploadChatAttachment(
+      'UEsDBBQACAAI',
+      'notes.docx',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    expect(uploader.upload).toHaveBeenCalledWith(
+      'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,UEsDBBQACAAI',
+      expect.objectContaining({ resource_type: 'raw' }),
     );
   });
 });

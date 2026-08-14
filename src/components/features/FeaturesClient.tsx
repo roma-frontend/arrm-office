@@ -192,7 +192,8 @@ export default function FeaturesClient() {
             return (
               <div
                 key={mod.id}
-                className="group relative rounded-3xl p-8 transition-all duration-300 hover:shadow-lg"
+                id={mod.id}
+                className="group relative rounded-3xl p-8 transition-all duration-300 hover:shadow-lg scroll-mt-28"
                 style={{
                   background: 'var(--landing-card-bg)',
                   border: '1px solid var(--landing-card-border)',
@@ -266,7 +267,7 @@ export default function FeaturesClient() {
       </section>
 
       {/* Platform Features */}
-      <section className="pb-24">
+      <section id="platform" className="pb-24 scroll-mt-28">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center my-12">
             <h2
@@ -289,7 +290,8 @@ export default function FeaturesClient() {
               return (
                 <div
                   key={feat.id}
-                  className="rounded-2xl p-6 transition-all duration-200 hover:shadow-md"
+                  id={`platform-${feat.id}`}
+                  className="rounded-2xl p-6 transition-all duration-200 hover:shadow-md scroll-mt-28"
                   style={{
                     background: 'var(--landing-card-bg)',
                     border: '1px solid var(--landing-card-border)',

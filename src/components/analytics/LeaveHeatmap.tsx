@@ -40,7 +40,7 @@ export function LeaveHeatmap({ leaves, month = new Date() }: LeaveHeatmapProps) 
   const getColor = (count: number) => {
     if (count === 0) return isDark ? 'bg-slate-800/50' : 'bg-slate-100';
     const intensity = count / maxCount;
-    if (intensity > 0.75) return isDark ? 'bg-blue-500' : 'bg-blue-600';
+    if (intensity > 0.75) return 'bg-(--brand)';
     if (intensity > 0.5) return isDark ? 'bg-blue-400' : 'bg-blue-500';
     if (intensity > 0.25) return isDark ? 'bg-sky-400' : 'bg-sky-400';
     return isDark ? 'bg-sky-500/60' : 'bg-sky-300';
@@ -109,7 +109,7 @@ export function LeaveHeatmap({ leaves, month = new Date() }: LeaveHeatmapProps) 
           <div className={`w-5 h-5 rounded ${isDark ? 'bg-sky-500/60' : 'bg-sky-300'}`} />
           <div className={`w-5 h-5 rounded ${isDark ? 'bg-sky-400' : 'bg-sky-400'}`} />
           <div className={`w-5 h-5 rounded ${isDark ? 'bg-blue-400' : 'bg-blue-500'}`} />
-          <div className={`w-5 h-5 rounded ${isDark ? 'bg-blue-500' : 'bg-blue-600'}`} />
+          <div className={`w-5 h-5 rounded bg-(--brand)`} />
         </div>
         <span>{t('leaveHeatmap.more')}</span>
       </div>

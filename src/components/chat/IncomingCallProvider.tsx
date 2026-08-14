@@ -139,7 +139,7 @@ export function IncomingCallProvider() {
                   } catch {}
                   setIncomingCall(null);
                 }}
-                className="w-14 h-14 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 transition-all hover:scale-110 shadow-lg shadow-red-500/30"
+                className="w-14 h-14 rounded-full flex items-center justify-center bg-(--danger-solid) hover:opacity-90 transition-all hover:scale-110 shadow-lg shadow-(--danger-solid)/30"
                 title={t('chat.call.decline')}
               >
                 <PhoneOff className="w-6 h-6 text-white" />
@@ -156,7 +156,7 @@ export function IncomingCallProvider() {
                   setActiveCall(incomingCall);
                   setIncomingCall(null);
                 }}
-                className="w-14 h-14 rounded-full flex items-center justify-center bg-green-500 hover:bg-green-600 transition-all hover:scale-110 shadow-lg shadow-green-500/30"
+                className="w-14 h-14 rounded-full flex items-center justify-center bg-(--success-solid) hover:opacity-90 transition-all hover:scale-110 shadow-lg shadow-(--success-solid)/30"
                 title={t('chat.call.accept')}
               >
                 <Phone className="w-6 h-6 text-white" />

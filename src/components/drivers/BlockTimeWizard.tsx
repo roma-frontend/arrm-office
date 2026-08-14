@@ -60,21 +60,21 @@ export function BlockTimeWizard({
               title: t('driverCalendar.vacation'),
               description: '',
               icon: <Calendar className="w-6 h-6" />,
-              color: 'bg-blue-500/10 text-blue-600',
+              color: 'bg-(--brand-quiet) text-(--brand-text)',
             },
             {
               value: 'sick',
               title: t('driverCalendar.sickLeave'),
               description: '',
               icon: <Clock className="w-6 h-6" />,
-              color: 'bg-red-500/10 text-red-600',
+              color: 'bg-(--danger-quiet) text-(--danger-text)',
             },
             {
               value: 'personal',
               title: t('driverCalendar.personal'),
               description: '',
               icon: <FileText className="w-6 h-6" />,
-              color: 'bg-green-500/10 text-green-600',
+              color: 'bg-(--success-quiet) text-(--success-text)',
             },
           ]}
           columns={3}

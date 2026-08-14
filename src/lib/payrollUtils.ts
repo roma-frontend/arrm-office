@@ -50,13 +50,13 @@ export function formatDateTime(timestamp: number, lang = 'en'): string {
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    draft: 'text-gray-500 bg-gray-100',
-    calculated: 'text-blue-500 bg-blue-100',
-    approved: 'text-green-500 bg-green-100',
-    paid: 'text-emerald-500 bg-emerald-100',
-    cancelled: 'text-red-500 bg-red-100',
+    draft: 'text-(--text-3) bg-(--surface-2)',
+    calculated: 'text-(--brand-text) bg-(--brand-quiet)',
+    approved: 'text-(--success-text) bg-(--success-quiet)',
+    paid: 'text-(--success-text) bg-(--success-quiet)',
+    cancelled: 'text-(--danger-text) bg-(--danger-quiet)',
   };
-  return colors[status] || 'text-gray-500 bg-gray-100';
+  return colors[status] || 'text-(--text-3) bg-(--surface-2)';
 }
 
 export function calculateEffectiveTaxRate(gross: number, deductions: number): number {

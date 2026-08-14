@@ -204,12 +204,12 @@ function QuestionResultCard({
           <div className="space-y-3">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <ThumbsUp className="h-4 w-4 text-green-600" />
+                <ThumbsUp className="h-4 w-4 text-(--success-text)" />
                 <span className="text-sm font-medium">{result.yesCount ?? 0}</span>
                 <span className="text-xs text-muted-foreground">({yesPct.toFixed(0)}%)</span>
               </div>
               <div className="flex items-center gap-2">
-                <ThumbsDown className="h-4 w-4 text-red-600" />
+                <ThumbsDown className="h-4 w-4 text-(--danger-text)" />
                 <span className="text-sm font-medium">{result.noCount ?? 0}</span>
                 <span className="text-xs text-muted-foreground">({noPct.toFixed(0)}%)</span>
               </div>

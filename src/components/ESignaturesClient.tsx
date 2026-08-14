@@ -30,12 +30,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -741,16 +743,16 @@ function CreateDocumentWizard({
   if (!open) return null;
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={() => {
         onClose();
         resetForm();
       }}
     >
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden">
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
         {/* Progress Bar */}
-        <div className="relative h-1.5 bg-muted overflow-hidden">
+        <div className="relative h-1.5 bg-muted overflow-hidden shrink-0">
           <motion.div
             className="absolute inset-y-0 left-0 bg-primary"
             animate={{ width: `${progress}%` }}
@@ -758,17 +760,17 @@ function CreateDocumentWizard({
           />
         </div>
 
-        <DialogHeader className="px-5 pt-5 pb-0">
-          <DialogTitle className="text-lg font-bold">
+        <SheetHeader>
+          <SheetTitle className="text-lg font-bold">
             {t('signatures.createDocument', 'Create Document for Signing')}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
+          </SheetTitle>
+          <SheetDescription className="sr-only">
             {t('signatures.createDocument', 'Create Document for Signing')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         {/* Step Indicators */}
-        <div className="flex items-center justify-center gap-2 px-5 py-3">
+        <div className="flex items-center justify-center gap-2 px-5 py-3 shrink-0">
           {steps.map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <motion.div
@@ -794,7 +796,7 @@ function CreateDocumentWizard({
         </div>
 
         {/* Step Content */}
-        <div className="px-5 py-4 max-h-[60vh] overflow-y-auto">
+        <SheetBody>
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -952,10 +954,10 @@ function CreateDocumentWizard({
               )}
             </motion.div>
           </AnimatePresence>
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t bg-muted/30 flex items-center justify-between">
+        <SheetFooter className="justify-between">
           <Button
             variant="outline"
             size="sm"
@@ -987,9 +989,9 @@ function CreateDocumentWizard({
               </>
             )}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1118,19 +1120,19 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
   if (!open || !request) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden max-h-[85vh]">
-        <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <PenTool className="w-5 h-5 text-primary" />
             {declineMode
               ? t('signatures.declineTitle', 'Decline Document')
               : t('signatures.signTitle', 'Sign Document')}
-          </DialogTitle>
-          <DialogDescription className="sr-only">Sign or decline</DialogDescription>
-        </DialogHeader>
+          </SheetTitle>
+          <SheetDescription className="sr-only">Sign or decline</SheetDescription>
+        </SheetHeader>
 
-        <div className="px-5 pb-4 overflow-y-auto max-h-[60vh]">
+        <SheetBody>
           {doc && (
             <div className="space-y-4">
               <div>
@@ -1192,9 +1194,9 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
               )}
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        <div className="px-5 py-4 border-t bg-muted/30 flex items-center justify-between gap-3">
+        <SheetFooter className="justify-between">
           {!declineMode ? (
             <>
               <Button variant="outline" size="sm" onClick={() => setDeclineMode(true)}>
@@ -1203,7 +1205,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
               </Button>
               <div className="flex items-center gap-3 min-w-0">
                 {!isMyTurn && waitingFor.length > 0 && (
-                  <p className="text-xs text-amber-600 truncate">
+                  <p className="text-xs text-(--warning-text) truncate">
                     {t('signatures.waitingForSigners', {
                       names: waitingFor.join(', '),
                       defaultValue: 'Waiting for {{names}}',
@@ -1233,9 +1235,9 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
               </Button>
             </>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1373,10 +1375,10 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
   if (!open || !documentId) return null;
 
   const statusColor: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    signed: 'bg-green-100 text-green-800',
-    declined: 'bg-red-100 text-red-800',
-    expired: 'bg-gray-100 text-gray-800',
+    pending: 'bg-(--warning-quiet) text-(--warning-text)',
+    signed: 'bg-(--success-quiet) text-(--success-text)',
+    declined: 'bg-(--danger-quiet) text-(--danger-text)',
+    expired: 'bg-(--surface-3) text-(--text-2)',
   };
 
   const actionIcons: Record<string, LucideIcon> = {
@@ -1390,14 +1392,14 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden max-h-[85vh]">
-        <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle>{displayTitle || '...'}</DialogTitle>
-          <DialogDescription className="sr-only">Document details</DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{displayTitle || '...'}</SheetTitle>
+          <SheetDescription className="sr-only">Document details</SheetDescription>
+        </SheetHeader>
 
-        <div className="px-5 pb-4 overflow-y-auto max-h-[60vh] space-y-4">
+        <SheetBody className="space-y-4">
           {doc && (
             <>
               {/* Status Badge */}
@@ -1482,9 +1484,9 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
               )}
             </>
           )}
-        </div>
+        </SheetBody>
 
-        <div className="px-5 py-4 border-t bg-muted/30 flex items-center justify-between">
+        <SheetFooter className="justify-between">
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={onClose}>
               {t('common.close', 'Close')}
@@ -1526,9 +1528,9 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
                 {t('signatures.cancel', 'Cancel Document')}
               </Button>
             )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1581,14 +1583,14 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[80vh]">
-        <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle>{t('signatures.templates', 'Document Templates')}</DialogTitle>
-          <DialogDescription className="sr-only">Manage templates</DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('signatures.templates', 'Document Templates')}</SheetTitle>
+          <SheetDescription className="sr-only">Manage templates</SheetDescription>
+        </SheetHeader>
 
-        <div className="px-5 pb-4 overflow-y-auto max-h-[60vh]">
+        <SheetBody>
           {!creating ? (
             <div className="space-y-3">
               <Button size="sm" onClick={() => setCreating(true)}>
@@ -1673,9 +1675,9 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
               </div>
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        <div className="px-5 py-4 border-t bg-muted/30 flex items-center justify-between">
+        <SheetFooter className="justify-between">
           <Button
             variant="outline"
             size="sm"
@@ -1689,9 +1691,9 @@ function TemplateManager({ open, onClose, organizationId, userId }: TemplateMana
               {t('signatures.save', 'Save Template')}
             </Button>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1737,12 +1739,12 @@ export function ESignaturesClient() {
   }
 
   const statusBadgeClass: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-700',
-    pending: 'bg-yellow-100 text-yellow-800',
-    partially_signed: 'bg-blue-100 text-blue-800',
-    completed: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-700',
-    expired: 'bg-gray-100 text-gray-600',
+    draft: 'bg-(--surface-3) text-(--text-2)',
+    pending: 'bg-(--warning-quiet) text-(--warning-text)',
+    partially_signed: 'bg-(--brand-quiet) text-(--brand-text)',
+    completed: 'bg-(--success-quiet) text-(--success-text)',
+    cancelled: 'bg-(--danger-quiet) text-(--danger-text)',
+    expired: 'bg-(--surface-3) text-(--text-3)',
   };
 
   return (
@@ -1787,8 +1789,8 @@ export function ESignaturesClient() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-yellow-100">
-                <Clock className="w-5 h-5 text-yellow-700" />
+              <div className="p-2 rounded-lg bg-(--warning-quiet)">
+                <Clock className="w-5 h-5 text-(--warning-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.pendingMySignature}</p>
@@ -1800,8 +1802,8 @@ export function ESignaturesClient() {
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100">
-                <CheckCircle className="w-5 h-5 text-green-700" />
+              <div className="p-2 rounded-lg bg-(--success-quiet)">
+                <CheckCircle className="w-5 h-5 text-(--success-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.completed}</p>
@@ -1813,8 +1815,8 @@ export function ESignaturesClient() {
           </Card>
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100">
-                <Send className="w-5 h-5 text-blue-700" />
+              <div className="p-2 rounded-lg bg-(--brand-quiet)">
+                <Send className="w-5 h-5 text-(--brand-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.awaitingOthers}</p>
@@ -1900,7 +1902,7 @@ export function ESignaturesClient() {
                         {/* Sequential signing: name who is being waited on rather
                             than offering a pen that the mutation will refuse. */}
                         {!req.isMyTurn && req.waitingFor.length > 0 && (
-                          <p className="text-xs text-amber-600 truncate">
+                          <p className="text-xs text-(--warning-text) truncate">
                             {t('signatures.waitingForSigners', {
                               names: req.waitingFor.join(', '),
                               defaultValue: 'Waiting for {{names}}',

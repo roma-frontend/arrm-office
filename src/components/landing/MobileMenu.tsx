@@ -525,6 +525,45 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
             })}
           </div>
 
+          {/* Platform product map — mirrors the desktop mega menu */}
+          <div
+            className="pt-5 pb-3 border-t mt-5"
+            style={{ borderColor: 'var(--landing-card-border)' }}
+          >
+            <p
+              className="text-[10px] font-semibold uppercase tracking-widest mb-3 px-2"
+              style={{ color: 'var(--landing-text-muted)' }}
+            >
+              {t('landing.megaMenu.platform', 'Platform')}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { key: 'people', href: '/features' },
+                  { key: 'ops', href: '/features' },
+                  { key: 'strategy', href: '/features' },
+                  { key: 'talent', href: '/features' },
+                  { key: 'finance', href: '/features' },
+                  { key: 'insights', href: '/features' },
+                ] as const
+              ).map((group) => (
+                <a
+                  key={group.key}
+                  href={group.href}
+                  onClick={(e) => handleNavigate(e, group.href)}
+                  className="rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors"
+                  style={{
+                    backgroundColor: 'var(--landing-card-bg)',
+                    border: '1px solid var(--landing-card-border)',
+                    color: 'var(--landing-text-primary)',
+                  }}
+                >
+                  {t(`landing.megaMenu.groups.${group.key}`)}
+                </a>
+              ))}
+            </div>
+          </div>
+
           {/* Preferences Section */}
           <div
             className="pt-5 pb-3 border-t mt-5"

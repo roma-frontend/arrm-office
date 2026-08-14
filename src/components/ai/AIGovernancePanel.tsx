@@ -293,7 +293,7 @@ export default function AIGovernancePanel() {
                       {enabled && (
                         <Badge
                           variant="default"
-                          className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          className="text-[10px] bg-(--success-quiet) text-(--success-text) border-(--success-outline)"
                         >
                           {t('common.active', 'Active')}
                         </Badge>

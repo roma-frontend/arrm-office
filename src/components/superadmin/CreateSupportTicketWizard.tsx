@@ -59,14 +59,14 @@ export function CreateSupportTicketWizard({
               title: t('supportWizard.types.question'),
               description: t('supportWizard.types.questionDesc'),
               icon: <AlertCircle className="w-6 h-6" />,
-              color: 'bg-blue-500/10 text-blue-600',
+              color: 'bg-(--brand-quiet) text-(--brand-text)',
             },
             {
               value: 'issue',
               title: t('supportWizard.types.issue'),
               description: t('supportWizard.types.issueDesc'),
               icon: <AlertCircle className="w-6 h-6" />,
-              color: 'bg-red-500/10 text-red-600',
+              color: 'bg-(--danger-quiet) text-(--danger-text)',
             },
             {
               value: 'bug',
@@ -80,7 +80,7 @@ export function CreateSupportTicketWizard({
               title: t('supportWizard.types.feature'),
               description: t('supportWizard.types.featureDesc'),
               icon: <Ticket className="w-6 h-6" />,
-              color: 'bg-green-500/10 text-green-600',
+              color: 'bg-(--success-quiet) text-(--success-text)',
             },
           ]}
           columns={2}

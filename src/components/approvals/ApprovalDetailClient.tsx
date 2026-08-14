@@ -30,11 +30,11 @@ import { enUS, ru, hy } from 'date-fns/locale';
 const RoleBadge = ({ role }: { role: string }) => {
   const { t } = useTranslation();
   const variants: Record<string, string> = {
-    admin: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    superadmin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    supervisor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    employee: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    driver: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    admin: 'bg-(--danger-quiet) text-(--danger-text)',
+    superadmin: 'bg-(--purple-quiet) text-(--purple-text)',
+    supervisor: 'bg-(--brand-quiet) text-(--brand-text)',
+    employee: 'bg-(--success-quiet) text-(--success-text)',
+    driver: 'bg-(--warning-quiet) text-(--warning-text)',
   };
 
   return (

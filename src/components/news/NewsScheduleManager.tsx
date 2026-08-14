@@ -24,13 +24,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -229,73 +230,75 @@ export function NewsScheduleManager({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <CalendarClock className="h-5 w-5" />
             {t('news.schedule.title')}
-          </DialogTitle>
-          <DialogDescription>{t('news.schedule.description')}</DialogDescription>
-        </DialogHeader>
+          </SheetTitle>
+          <SheetDescription>{t('news.schedule.description')}</SheetDescription>
+        </SheetHeader>
 
-        {draft ? (
-          <DraftForm
-            draft={draft}
-            employees={employees ?? []}
-            saving={saving}
-            onChange={setDraft}
-            onCancel={() => setDraft(null)}
-            onSave={save}
-          />
-        ) : (
-          <div className="space-y-4">
-            <Button onClick={() => setDraft(emptyDraft())} className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              {t('news.schedule.add')}
-            </Button>
+        <SheetBody>
+          {draft ? (
+            <DraftForm
+              draft={draft}
+              employees={employees ?? []}
+              saving={saving}
+              onChange={setDraft}
+              onCancel={() => setDraft(null)}
+              onSave={save}
+            />
+          ) : (
+            <div className="space-y-4">
+              <Button onClick={() => setDraft(emptyDraft())} className="w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                {t('news.schedule.add')}
+              </Button>
 
-            {entries === undefined ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                {t('news.schedule.loading')}
-              </p>
-            ) : entries.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-8 text-center">
-                <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                <p className="text-sm font-medium">{t('news.schedule.emptyTitle')}</p>
-                <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-                  {t('news.schedule.emptyHint')}
+              {entries === undefined ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {t('news.schedule.loading')}
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <Group
-                  label={t('news.schedule.groupLive')}
-                  entries={grouped.live}
-                  onEdit={(entry) => setDraft(draftFrom(entry))}
-                  onDelete={remove}
-                  onTogglePause={togglePause}
-                />
-                <Group
-                  label={t('news.schedule.groupUpcoming')}
-                  entries={grouped.upcoming}
-                  onEdit={(entry) => setDraft(draftFrom(entry))}
-                  onDelete={remove}
-                  onTogglePause={togglePause}
-                />
-                <Group
-                  label={t('news.schedule.groupPaused')}
-                  entries={grouped.paused}
-                  onEdit={(entry) => setDraft(draftFrom(entry))}
-                  onDelete={remove}
-                  onTogglePause={togglePause}
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+              ) : entries.length === 0 ? (
+                <div className="rounded-xl border border-dashed p-8 text-center">
+                  <CalendarDays className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm font-medium">{t('news.schedule.emptyTitle')}</p>
+                  <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+                    {t('news.schedule.emptyHint')}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Group
+                    label={t('news.schedule.groupLive')}
+                    entries={grouped.live}
+                    onEdit={(entry) => setDraft(draftFrom(entry))}
+                    onDelete={remove}
+                    onTogglePause={togglePause}
+                  />
+                  <Group
+                    label={t('news.schedule.groupUpcoming')}
+                    entries={grouped.upcoming}
+                    onEdit={(entry) => setDraft(draftFrom(entry))}
+                    onDelete={remove}
+                    onTogglePause={togglePause}
+                  />
+                  <Group
+                    label={t('news.schedule.groupPaused')}
+                    entries={grouped.paused}
+                    onEdit={(entry) => setDraft(draftFrom(entry))}
+                    onDelete={remove}
+                    onTogglePause={togglePause}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -354,7 +357,7 @@ function Group({
                   </Badge>
                 )}
                 {entry.isUrgent && (
-                  <Badge variant="secondary" className="gap-1 text-rose-600">
+                  <Badge variant="secondary" className="gap-1 text-(--danger-text)">
                     <Zap className="h-3 w-3" />
                     {t('news.compose.urgent')}
                   </Badge>
@@ -367,7 +370,7 @@ function Group({
                 {entry.employeeName ? ` · ${entry.employeeName}` : ''}
               </p>
               {missing.length > 0 && (
-                <p className="mt-0.5 text-xs text-amber-600">
+                <p className="mt-0.5 text-xs text-(--warning-text)">
                   {t('news.schedule.missingLocales', {
                     locales: missing.map((l) => LOCALE_LABELS[l]).join(', '),
                   })}
@@ -575,14 +578,14 @@ function DraftForm({
         <p className="text-xs text-muted-foreground">{t('news.schedule.fallbackHint')}</p>
       </div>
 
-      <DialogFooter className="gap-2 sm:gap-2">
+      <SheetFooter className="gap-2">
         <Button variant="outline" onClick={onCancel} disabled={saving}>
           {t('buttons.cancel')}
         </Button>
         <Button onClick={onSave} disabled={saving}>
           {saving ? t('buttons.saving') : t('buttons.save')}
         </Button>
-      </DialogFooter>
+      </SheetFooter>
     </div>
   );
 }

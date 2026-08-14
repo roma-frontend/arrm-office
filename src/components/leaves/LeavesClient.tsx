@@ -304,7 +304,7 @@ export function LeavesClient() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
       >
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
@@ -354,7 +354,7 @@ export function LeavesClient() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-0">
             {isLoading ? (
               <div className="overflow-x-auto">
@@ -376,7 +376,7 @@ export function LeavesClient() {
                       key={req._id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="rounded-xl border border-(--border) bg-(--card) overflow-hidden"
+                      className="rounded-xl border border-(--border) bg-(--card)/60 dark:bg-(--card)/80 backdrop-blur-md overflow-hidden"
                     >
                       {/* Card Header */}
                       <div

@@ -44,6 +44,8 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import {
   TextInputStep,
   TextareaStep,
@@ -65,31 +67,31 @@ const POSITION_LEVELS = [
     value: 'Entry',
     label: 'Entry Level',
     description: '0-2 years experience',
-    color: 'bg-green-500/10 text-green-600',
+    color: 'bg-(--success-quiet) text-(--success-text)',
   },
   {
     value: 'Mid',
     label: 'Mid Level',
     description: '2-5 years experience',
-    color: 'bg-blue-500/10 text-blue-600',
+    color: 'bg-(--brand-quiet) text-(--brand-text)',
   },
   {
     value: 'Senior',
     label: 'Senior Level',
     description: '5-8 years experience',
-    color: 'bg-purple-500/10 text-purple-600',
+    color: 'bg-(--purple-quiet) text-(--purple-text)',
   },
   {
     value: 'Lead',
     label: 'Lead',
     description: '8+ years experience',
-    color: 'bg-amber-500/10 text-amber-600',
+    color: 'bg-(--warning-quiet) text-(--warning-text)',
   },
   {
     value: 'Manager',
     label: 'Manager',
     description: 'Team management role',
-    color: 'bg-red-500/10 text-red-600',
+    color: 'bg-(--danger-quiet) text-(--danger-text)',
   },
   {
     value: 'Director',
@@ -127,8 +129,17 @@ function PositionWizard({
           level: editingPosition.level || '',
           salaryMin: editingPosition.salaryMin?.toString() || '',
           salaryMax: editingPosition.salaryMax?.toString() || '',
+          isDriverPosition: editingPosition.isDriverPosition ?? false,
         }
-      : { title: '', description: '', departmentId: '', level: '', salaryMin: '', salaryMax: '' },
+      : {
+          title: '',
+          description: '',
+          departmentId: '',
+          level: '',
+          salaryMin: '',
+          salaryMax: '',
+          isDriverPosition: false,
+        },
   );
   const [_isSubmitting, setIsSubmitting] = useState(false);
 
@@ -226,6 +237,28 @@ function PositionWizard({
             }))}
             columns={3}
           />
+          {/* Mirrors the same control in PositionsClient — both wizards write the
+              same record, so a flag missing from one silently reverts the other. */}
+          <label
+            htmlFor="pos-driver"
+            className="flex items-start gap-3 rounded-lg border border-border bg-background-subtle p-4 cursor-pointer"
+          >
+            <input
+              id="pos-driver"
+              type="checkbox"
+              checked={Boolean(wizardData.isDriverPosition)}
+              onChange={(e) => updateStepData('isDriverPosition', e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-(--primary)"
+            />
+            <span className="space-y-1">
+              <span className="block text-sm font-medium text-text-primary">
+                {t('positionWizard.steps.classification.driverPositionLabel')}
+              </span>
+              <span className="block text-xs text-text-muted">
+                {t('positionWizard.steps.classification.driverPositionDescription')}
+              </span>
+            </span>
+          </label>
         </div>
       ),
     },
@@ -314,6 +347,14 @@ function PositionWizard({
                     : t('positionWizard.steps.review.notSpecified')}
                 </span>
               </div>
+              {Boolean(wizardData.isDriverPosition) && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-muted">
+                    {t('positionWizard.steps.review.driverPositionLabel')}
+                  </span>
+                  <span className="font-medium text-text-primary">{t('common.yes')}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -322,7 +363,13 @@ function PositionWizard({
   ];
 
   const handleSubmit = async () => {
-    if (!selectedOrgId) return;
+    // Only creating needs an organization; `update` is keyed by the position id.
+    // Guarding both stranded superadmins in "all orgs" mode, where selectedOrgId
+    // is null: the edit returned here silently, with no mutation and no toast.
+    if (!editingPosition && !selectedOrgId) {
+      toast.error(t('positionWizard.toast.noOrganization'));
+      return;
+    }
     setIsSubmitting(true);
     try {
       const salaryMin = wizardData.salaryMin ? Number(wizardData.salaryMin) : undefined;
@@ -341,6 +388,7 @@ function PositionWizard({
           level: wizardData.level ? String(wizardData.level) : undefined,
           salaryMin,
           salaryMax,
+          isDriverPosition: Boolean(wizardData.isDriverPosition),
           departmentId: wizardData.departmentId
             ? (wizardData.departmentId as Id<'departments'>)
             : undefined,
@@ -354,6 +402,7 @@ function PositionWizard({
           level: wizardData.level ? String(wizardData.level) : undefined,
           salaryMin,
           salaryMax,
+          isDriverPosition: Boolean(wizardData.isDriverPosition),
           departmentId: wizardData.departmentId
             ? (wizardData.departmentId as Id<'departments'>)
             : undefined,
@@ -436,6 +485,7 @@ export default function PositionDetailClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showWizard, setShowWizard] = useState(false);
+  const positionDraft = useDraftResume('create-position', !showWizard);
   const [editingPosition, setEditingPosition] = useState<Doc<'positions'> | null>(null);
 
   const isLoading = position === undefined || employees === undefined || departments === undefined;
@@ -523,11 +573,11 @@ export default function PositionDetailClient() {
   }
 
   const levelColors: Record<string, string> = {
-    Entry: 'bg-green-500/10 text-green-600',
-    Mid: 'bg-blue-500/10 text-blue-600',
-    Senior: 'bg-purple-500/10 text-purple-600',
-    Lead: 'bg-amber-500/10 text-amber-600',
-    Manager: 'bg-red-500/10 text-red-600',
+    Entry: 'bg-(--success-quiet) text-(--success-text)',
+    Mid: 'bg-(--brand-quiet) text-(--brand-text)',
+    Senior: 'bg-(--purple-quiet) text-(--purple-text)',
+    Lead: 'bg-(--warning-quiet) text-(--warning-text)',
+    Manager: 'bg-(--danger-quiet) text-(--danger-text)',
     Director: 'bg-orange-500/10 text-orange-600',
   };
 
@@ -580,7 +630,7 @@ export default function PositionDetailClient() {
                 <Button
                   variant="outline"
                   onClick={handleDelete}
-                  className="flex items-center gap-2 text-red-500 hover:text-red-600"
+                  className="flex items-center gap-2 text-(--danger-text) hover:opacity-80"
                 >
                   <Trash2 className="w-4 h-4" />
                   {t('common.delete')}
@@ -777,6 +827,20 @@ export default function PositionDetailClient() {
           editingPosition={editingPosition}
           departments={departments}
           onComplete={handleWizardComplete}
+        />
+
+        {/* "Draft saved. Restore?" — the position wizard keeps its contents
+            after an accidental close; this is what tells the user so. */}
+        <DraftResumeBar
+          show={positionDraft.available}
+          label={t('positionWizard.title', 'New Position')}
+          step={positionDraft.step}
+          onResume={() => {
+            positionDraft.dismiss();
+            setShowWizard(true);
+          }}
+          onDismiss={positionDraft.dismiss}
+          onDiscard={positionDraft.discard}
         />
       </div>
     </div>

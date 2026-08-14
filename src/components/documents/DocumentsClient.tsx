@@ -32,6 +32,8 @@ import DocumentTemplateWizard from '@/components/documents/DocumentTemplateWizar
 import DocumentBuilderTab from '@/components/documents/DocumentBuilderTab';
 import IssuedDocumentsTab from '@/components/documents/IssuedDocumentsTab';
 import { Badge } from '@/components/ui/badge';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 type DocumentWithUploader = {
   _id: Id<'documents'>;
   _creationTime: number;
@@ -76,6 +78,8 @@ export default function DocumentsClient() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showUploadWizard, setShowUploadWizard] = useState(false);
   const [showTemplateWizard, setShowTemplateWizard] = useState(false);
+  const uploadDraft = useDraftResume('document-upload', !showUploadWizard);
+  const templateDraft = useDraftResume('document-template', !showTemplateWizard);
   const [_selectedDocument, setSelectedDocument] = useState<DocumentWithUploader | null>(null);
   const [createDocFromTemplate, setCreateDocFromTemplate] =
     useState<Id<'documentTemplates'> | null>(null);
@@ -214,7 +218,7 @@ export default function DocumentsClient() {
       case 'certificate':
         return <CheckCircle className="h-5 w-5 text-yellow-500" />;
       default:
-        return <FileText className="h-5 w-5 text-gray-500" />;
+        return <FileText className="h-5 w-5 text-(--text-3)" />;
     }
   };
 
@@ -277,7 +281,7 @@ export default function DocumentsClient() {
       {/* Stats Cards */}
       {isAdmin && teamOverview && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-muted-foreground" />
@@ -290,7 +294,7 @@ export default function DocumentsClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <CheckCircle className="h-5 w-5 text-muted-foreground" />
@@ -303,7 +307,7 @@ export default function DocumentsClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <Eye className="h-5 w-5 text-muted-foreground" />
@@ -316,7 +320,7 @@ export default function DocumentsClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-panel shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <Clock className="h-5 w-5 text-muted-foreground" />
@@ -487,7 +491,10 @@ export default function DocumentsClient() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {templates.map((template) => (
-                    <Card key={template._id} className="hover:shadow-md transition-shadow">
+                    <Card
+                      key={template._id}
+                      className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                    >
                       <CardContent className="pt-6">
                         <div className="flex items-start gap-3">
                           <PenTool className="h-5 w-5 text-purple-500 shrink-0" />
@@ -554,7 +561,7 @@ export default function DocumentsClient() {
               {filteredDocuments.map((doc) => (
                 <Card
                   key={doc._id}
-                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
                   onClick={() => router.push(`/documents/${doc._id}`)}
                 >
                   <CardContent className="pt-6">
@@ -573,17 +580,17 @@ export default function DocumentsClient() {
                         </div>
                         <div className="flex items-center gap-2 mt-3">
                           {doc.isMandatory && (
-                            <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">
+                            <span className="px-2 py-0.5 rounded-full bg-(--danger-quiet) text-(--danger-text) text-xs font-medium">
                               {t('documents.mandatory', 'Mandatory')}
                             </span>
                           )}
                           {!doc.isPublished && (
-                            <span className="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                            <span className="px-2 py-0.5 rounded-full bg-(--warning-quiet) text-(--warning-text) text-xs font-medium">
                               {t('documents.unpublished', 'Unpublished')}
                             </span>
                           )}
                           {isAcknowledged(doc._id) && (
-                            <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="px-2 py-0.5 rounded-full bg-(--success-quiet) text-(--success-text) text-xs font-medium">
                               {t('documents.acknowledged', 'Acknowledged')}
                             </span>
                           )}
@@ -656,6 +663,31 @@ export default function DocumentsClient() {
           onSuccess={handleTemplateSuccess}
         />
       )}
+
+      {/* "Draft saved. Restore?" — one bar at a time; the upload wizard is the
+          longer form, so its draft wins over the template one. */}
+      <DraftResumeBar
+        show={uploadDraft.available}
+        label={t('documents.uploadTitle', 'Upload Document')}
+        step={uploadDraft.step}
+        onResume={() => {
+          uploadDraft.dismiss();
+          setShowUploadWizard(true);
+        }}
+        onDismiss={uploadDraft.dismiss}
+        onDiscard={uploadDraft.discard}
+      />
+      <DraftResumeBar
+        show={!uploadDraft.available && templateDraft.available}
+        label={t('documents.templateTitle', 'Document Template')}
+        step={templateDraft.step}
+        onResume={() => {
+          templateDraft.dismiss();
+          setShowTemplateWizard(true);
+        }}
+        onDismiss={templateDraft.dismiss}
+        onDiscard={templateDraft.discard}
+      />
     </div>
   );
 }

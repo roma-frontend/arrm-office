@@ -53,21 +53,21 @@ export function CreateTicketWizard({ userId, onComplete, onCancel }: CreateTicke
               title: t('help.wizard.step1.types.question'),
               description: t('help.wizard.step1.types.questionDesc'),
               icon: <Info className="w-6 h-6" />,
-              color: 'bg-blue-500/10 text-blue-600',
+              color: 'bg-(--brand-quiet) text-(--brand-text)',
             },
             {
               value: 'issue',
               title: t('help.wizard.step1.types.issue'),
               description: t('help.wizard.step1.types.issueDesc'),
               icon: <AlertCircle className="w-6 h-6" />,
-              color: 'bg-red-500/10 text-red-600',
+              color: 'bg-(--danger-quiet) text-(--danger-text)',
             },
             {
               value: 'feature',
               title: t('help.wizard.step1.types.feature'),
               description: t('help.wizard.step1.types.featureDesc'),
               icon: <FileText className="w-6 h-6" />,
-              color: 'bg-green-500/10 text-green-600',
+              color: 'bg-(--success-quiet) text-(--success-text)',
             },
           ]}
           columns={3}

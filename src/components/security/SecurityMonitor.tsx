@@ -81,7 +81,7 @@ export function SecurityMonitor() {
           {/* Anomaly Score */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-gray-500" />
+              <Activity className="w-4 h-4 text-(--text-3)" />
               <span className="text-sm">{t('security.threatLevel')}</span>
             </div>
             <Badge className={`${anomalyStatus.color} text-white`}>{anomalyStatus.label}</Badge>
@@ -90,7 +90,7 @@ export function SecurityMonitor() {
           {/* Blocked IPs */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-gray-500" />
+              <Lock className="w-4 h-4 text-(--text-3)" />
               <span className="text-sm">{t('security.blockedIPs')}</span>
             </div>
             <span className="font-bold text-sm">{metrics.blockedIPs}</span>
@@ -99,7 +99,7 @@ export function SecurityMonitor() {
           {/* Rate Limit Hits */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-gray-500" />
+              <AlertTriangle className="w-4 h-4 text-(--text-3)" />
               <span className="text-sm">{t('security.rateLimitHits')}</span>
             </div>
             <span className="font-bold text-sm">{metrics.rateLimitHits}</span>
@@ -108,7 +108,7 @@ export function SecurityMonitor() {
           {/* Failed Logins */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-gray-500" />
+              <Shield className="w-4 h-4 text-(--text-3)" />
               <span className="text-sm">{t('security.failedLogins')}</span>
             </div>
             <span className="font-bold text-sm">{metrics.failedLogins}</span>
@@ -117,7 +117,7 @@ export function SecurityMonitor() {
           {/* Last Incident */}
           {metrics.lastIncident && (
             <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-500">{t('security.lastIncident')}</p>
+              <p className="text-xs text-(--text-3)">{t('security.lastIncident')}</p>
               <p className="text-xs font-medium">{metrics.lastIncident.type}</p>
               <p className="text-xs text-gray-400">
                 {new Date(metrics.lastIncident.timestamp).toLocaleString()}

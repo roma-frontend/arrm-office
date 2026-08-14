@@ -31,48 +31,43 @@ export interface SmartBannerProps {
 }
 
 const colorClasses: Record<BannerType, string> = {
-  success:
-    'bg-emerald-100 border-emerald-400 text-emerald-950 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-300',
-  warning:
-    'bg-amber-100 border-amber-400 text-slate-900 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300',
-  info: 'bg-blue-100 border-blue-400 text-blue-950 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-300',
-  error:
-    'bg-red-100 border-red-400 text-red-950 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-300',
-  purple:
-    'bg-violet-100 border-violet-400 text-violet-950 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300',
+  success: 'bg-(--success-quiet) border-(--success-outline) text-(--success-text)',
+  warning: 'bg-(--warning-quiet) border-(--warning-outline) text-(--warning-text)',
+  info: 'bg-(--brand-quiet) border-(--brand-outline) text-(--brand-text)',
+  error: 'bg-(--danger-quiet) border-(--danger-outline) text-(--danger-text)',
+  purple: 'bg-(--brand-quiet) border-(--brand-outline) text-(--brand-text)',
 };
 
 const iconColors: Record<BannerType, string> = {
-  success: 'text-emerald-800 dark:text-emerald-300',
-  warning: 'text-amber-800 dark:text-amber-300',
-  info: 'text-blue-800 dark:text-blue-300',
-  error: 'text-red-800 dark:text-red-300',
-  purple: 'text-violet-800 dark:text-violet-300',
+  success: 'text-(--success-text)',
+  warning: 'text-(--warning-text)',
+  info: 'text-(--brand-text)',
+  error: 'text-(--danger-text)',
+  purple: 'text-(--brand-text)',
 };
 
 const messageColors: Record<BannerType, string> = {
-  success: 'text-emerald-950 dark:text-emerald-200',
-  warning: 'text-slate-900 dark:text-amber-200',
-  info: 'text-blue-950 dark:text-blue-200',
-  error: 'text-red-950 dark:text-red-200',
-  purple: 'text-violet-950 dark:text-violet-200',
+  success: 'text-(--success-text)',
+  warning: 'text-(--warning-text)',
+  info: 'text-(--brand-text)',
+  error: 'text-(--danger-text)',
+  purple: 'text-(--brand-text)',
 };
 
 const suggestionColors: Record<BannerType, string> = {
-  success: 'text-emerald-900 dark:text-emerald-300',
-  warning: 'text-slate-800 dark:text-amber-300',
-  info: 'text-blue-900 dark:text-blue-300',
-  error: 'text-red-900 dark:text-red-300',
-  purple: 'text-violet-900 dark:text-violet-300',
+  success: 'text-(--success-text)',
+  warning: 'text-(--warning-text)',
+  info: 'text-(--brand-text)',
+  error: 'text-(--danger-text)',
+  purple: 'text-(--brand-text)',
 };
 
 const actionColors: Record<BannerType, string> = {
-  success:
-    'text-emerald-900 hover:text-emerald-950 dark:text-emerald-300 dark:hover:text-emerald-200',
-  warning: 'text-amber-900 hover:text-amber-950 dark:text-amber-300 dark:hover:text-amber-200',
-  info: 'text-blue-900 hover:text-blue-950 dark:text-blue-300 dark:hover:text-blue-200',
-  error: 'text-red-900 hover:text-red-950 dark:text-red-300 dark:hover:text-red-200',
-  purple: 'text-violet-900 hover:text-violet-950 dark:text-violet-300 dark:hover:text-violet-200',
+  success: 'text-(--success-text) hover:text-(--success-text) dark:hover:text-(--success-text)',
+  warning: 'text-(--warning-text) hover:text-(--warning-text) dark:hover:text-(--warning-text)',
+  info: 'text-(--brand-text) hover:text-(--brand-text) dark:hover:text-(--brand-text)',
+  error: 'text-(--danger-text) hover:text-(--danger-text) dark:hover:text-(--danger-text)',
+  purple: 'text-(--brand-text) hover:text-(--brand-text) dark:hover:text-(--brand-text)',
 };
 
 const defaultIcons: Record<BannerType, React.ComponentType<{ className?: string }>> = {
@@ -129,9 +124,9 @@ export function SmartBanner({
             className="absolute inset-0 opacity-0 dark:opacity-30"
             animate={{
               background: [
-                'radial-gradient(circle at 0% 0%, currentColor 0%, transparent 50%)',
+                'radial-gradient(circle at 0% 0%, currentColor transparent 50%)',
                 'radial-gradient(circle at 100% 100%, currentColor 0%, transparent 50%)',
-                'radial-gradient(circle at 0% 0%, currentColor 0%, transparent 50%)',
+                'radial-gradient(circle at 0% 0%, currentColor transparent 50%)',
               ],
             }}
             transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}

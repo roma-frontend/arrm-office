@@ -125,11 +125,15 @@ jest.mock('@/components/ui/select', () => ({
   SelectValue: ({ placeholder }: any) => <span>{placeholder}</span>,
 }));
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
-  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
-  DialogHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
-  DialogTitle: ({ children }: any) => <div data-testid="dialog-title">{children}</div>,
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
+  SheetContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
+  SheetHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
+  SheetTitle: ({ children }: any) => <div data-testid="dialog-title">{children}</div>,
+  SheetBody: ({ children }: any) => <div data-testid="dialog-body">{children}</div>,
+  SheetFooter: ({ children }: any) => <div data-testid="dialog-footer">{children}</div>,
+  SheetDescription: ({ children }: any) => <div data-testid="dialog-description">{children}</div>,
+  SheetTrigger: ({ children }: any) => <>{children}</>,
 }));
 
 jest.mock('@/components/ui/ShieldLoader', () => ({

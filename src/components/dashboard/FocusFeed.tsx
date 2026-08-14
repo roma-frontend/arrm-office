@@ -315,7 +315,7 @@ export function FocusFeed({ onOpenSearch, className }: FocusFeedProps) {
 
         {/* ── The one thing that needs a decision ── */}
         {hasApprovals && next && (
-          <div className="mt-4 rounded-card border border-(--border-default) bg-(--card) shadow-sm">
+          <div className="mt-4 rounded-card border border-(--border-default) glass-panel shadow-sm">
             <div className="flex items-center gap-2 border-b border-(--border-subtle) px-3.5 py-2">
               <ClipboardCheck
                 className="size-3.5 shrink-0 text-(--warning-text)"
@@ -393,7 +393,7 @@ export function FocusFeed({ onOpenSearch, className }: FocusFeedProps) {
             Reached only once the queries have resolved, so a slow connection
             never flashes "all caught up" before the real state arrives. */}
         {isQuiet && !isLoading && (
-          <div className="mt-4 flex items-center gap-3 rounded-card border border-(--border-subtle) bg-(--card) px-3.5 py-3">
+          <div className="mt-4 flex items-center gap-3 rounded-card border border-(--border-subtle) glass-panel px-3.5 py-3">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-(--success-quiet) text-(--success-text)">
               <CheckCircle2 className="size-4" aria-hidden="true" />
             </span>

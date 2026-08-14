@@ -10,13 +10,21 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useAuthStore, User } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { UserPicker } from '@/components/ui/UserPicker';
 import {
   Select,
@@ -111,7 +119,7 @@ export default function OffboardingClient() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{activeCount}</p>
             <p className="text-xs text-muted-foreground">
@@ -119,7 +127,7 @@ export default function OffboardingClient() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{completedCount}</p>
             <p className="text-xs text-muted-foreground">
@@ -127,7 +135,7 @@ export default function OffboardingClient() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{insights?.avgExperience ?? '—'}</p>
             <p className="text-xs text-muted-foreground">
@@ -135,7 +143,7 @@ export default function OffboardingClient() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="glass-panel shadow-sm">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{insights?.recommendRate ?? 0}%</p>
             <p className="text-xs text-muted-foreground">
@@ -191,10 +199,10 @@ export default function OffboardingClient() {
                           <Badge
                             className={
                               prog.status === 'active'
-                                ? 'bg-orange-100 text-orange-800'
+                                ? 'bg-(--warning-quiet) text-(--warning-text)'
                                 : prog.status === 'completed'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-600'
+                                  ? 'bg-(--success-quiet) text-(--success-text)'
+                                  : 'bg-(--surface-3) text-(--text-3)'
                             }
                           >
                             {String(t(`offboarding.status.${prog.status}`, prog.status))}
@@ -420,262 +428,268 @@ function ProgramDetailDialog({
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>
             {program?.employeeName ?? '...'} — {t('offboarding.title', 'Offboarding')}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        {!program ? (
-          <ShieldLoader size="sm" />
-        ) : (
-          <div className="space-y-4">
-            {/* Progress */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-orange-500 transition-all"
-                  style={{ width: `${program.progress}%` }}
-                />
-              </div>
-              <span className="text-sm font-medium">{program.progress}%</span>
-            </div>
-
-            {/* Info */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="text-muted-foreground">
-                  {t('offboarding.reason.label', 'Reason')}:
-                </span>{' '}
-                {t(`offboarding.reason.${program.reason}`, program.reason)}
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {t('offboarding.lastDay', 'Last day')}:
-                </span>{' '}
-                {new Date(program.lastDay).toLocaleDateString()}
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {t('offboarding.manager', 'Manager')}:
-                </span>{' '}
-                {program.managerName}
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {t('offboarding.status.label', 'Status')}:
-                </span>{' '}
-                {t(`offboarding.status.${program.status}`, program.status)}
-              </div>
-            </div>
-
-            {/* Tasks */}
-            <div className="space-y-2 pt-2 border-t">
-              <p className="text-sm font-semibold">
-                {t('offboarding.checklist', 'Checklist')} ({program.completedTasks}/
-                {program.totalTasks})
-              </p>
-              {program.tasks.map((task) => (
-                <div
-                  key={task._id}
-                  className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
-                >
-                  {task.status === 'completed' ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                  ) : task.status === 'skipped' ? (
-                    <SkipForward className="h-4 w-4 text-muted-foreground shrink-0" />
-                  ) : (
-                    <button onClick={() => handleComplete(task._id)} className="shrink-0">
-                      <Circle className="h-4 w-4 text-muted-foreground hover:text-orange-500 transition-colors" />
-                    </button>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${task.status === 'completed' ? 'line-through' : ''}`}>
-                      {task.title}
-                    </p>
-                    <span className="text-xs text-muted-foreground">
-                      {t(`offboarding.assigneeType.${task.assigneeType}`, task.assigneeType)}
-                      {task.assigneeName ? ` • ${task.assigneeName}` : ''}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Badge variant="outline" className="text-[10px]">
-                      {t(`offboarding.category.${task.category}`, task.category)}
-                    </Badge>
-                    {isAdmin && task.status === 'pending' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSkip(task._id);
-                        }}
-                      >
-                        <SkipForward className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Active Assets */}
-            {activeAssets && activeAssets.length > 0 && (
-              <div className="pt-2 border-t space-y-2">
-                <p className="text-sm font-semibold flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  {t('assets.title', 'Assets to Return')} ({activeAssets.length})
-                </p>
-                {activeAssets.map((a) => (
+        <SheetBody>
+          {!program ? (
+            <ShieldLoader size="sm" />
+          ) : (
+            <div className="space-y-4">
+              {/* Progress */}
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    key={a.assignmentId}
-                    className="flex items-center gap-3 p-2.5 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20"
+                    className="h-full rounded-full bg-orange-500 transition-all"
+                    style={{ width: `${program.progress}%` }}
+                  />
+                </div>
+                <span className="text-sm font-medium">{program.progress}%</span>
+              </div>
+
+              {/* Info */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">
+                    {t('offboarding.reason.label', 'Reason')}:
+                  </span>{' '}
+                  {t(`offboarding.reason.${program.reason}`, program.reason)}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">
+                    {t('offboarding.lastDay', 'Last day')}:
+                  </span>{' '}
+                  {new Date(program.lastDay).toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">
+                    {t('offboarding.manager', 'Manager')}:
+                  </span>{' '}
+                  {program.managerName}
+                </div>
+                <div>
+                  <span className="text-muted-foreground">
+                    {t('offboarding.status.label', 'Status')}:
+                  </span>{' '}
+                  {t(`offboarding.status.${program.status}`, program.status)}
+                </div>
+              </div>
+
+              {/* Tasks */}
+              <div className="space-y-2 pt-2 border-t">
+                <p className="text-sm font-semibold">
+                  {t('offboarding.checklist', 'Checklist')} ({program.completedTasks}/
+                  {program.totalTasks})
+                </p>
+                {program.tasks.map((task) => (
+                  <div
+                    key={task._id}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
                   >
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <ArrowDownLeft className="h-4 w-4 text-primary" />
-                    </div>
+                    {task.status === 'completed' ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    ) : task.status === 'skipped' ? (
+                      <SkipForward className="h-4 w-4 text-muted-foreground shrink-0" />
+                    ) : (
+                      <button onClick={() => handleComplete(task._id)} className="shrink-0">
+                        <Circle className="h-4 w-4 text-muted-foreground hover:text-orange-500 transition-colors" />
+                      </button>
+                    )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{a.assetName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {a.icon} {t(`assets.category.${a.category}`, a.category)} ·{' '}
-                        {t('assets.assignedAt', 'Assigned')}:{' '}
-                        {new Date(a.assignedAt).toLocaleDateString()}
+                      <p className={`text-sm ${task.status === 'completed' ? 'line-through' : ''}`}>
+                        {task.title}
                       </p>
+                      <span className="text-xs text-muted-foreground">
+                        {t(`offboarding.assigneeType.${task.assigneeType}`, task.assigneeType)}
+                        {task.assigneeName ? ` • ${task.assigneeName}` : ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant="outline" className="text-[10px]">
+                        {t(`offboarding.category.${task.category}`, task.category)}
+                      </Badge>
+                      {isAdmin && task.status === 'pending' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSkip(task._id);
+                          }}
+                        >
+                          <SkipForward className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-            )}
 
-            {/* Exit Interview */}
-            {program.exitInterview && (
-              <div className="pt-2 border-t">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">
-                    {t('offboarding.exitInterview', 'Exit Interview')}
+              {/* Active Assets */}
+              {activeAssets && activeAssets.length > 0 && (
+                <div className="pt-2 border-t space-y-2">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    {t('assets.title', 'Assets to Return')} ({activeAssets.length})
                   </p>
-                  {program.exitInterview.status === 'scheduled' && isAdmin && (
-                    <Button size="sm" variant="outline" onClick={() => setShowExitForm(true)}>
-                      {t('offboarding.conductInterview', 'Conduct')}
-                    </Button>
-                  )}
+                  {activeAssets.map((a) => (
+                    <div
+                      key={a.assignmentId}
+                      className="flex items-center gap-3 p-2.5 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <ArrowDownLeft className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{a.assetName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {a.icon} {t(`assets.category.${a.category}`, a.category)} ·{' '}
+                          {t('assets.assignedAt', 'Assigned')}:{' '}
+                          {new Date(a.assignedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {program.exitInterview.status === 'completed' && (
-                  <div className="mt-2 p-3 rounded-lg bg-muted/50 text-sm space-y-1">
-                    <p>
-                      {t('offboarding.experience', 'Experience')}:{' '}
-                      {'⭐'.repeat(program.exitInterview.overallExperience ?? 0)}
+              )}
+
+              {/* Exit Interview */}
+              {program.exitInterview && (
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">
+                      {t('offboarding.exitInterview', 'Exit Interview')}
                     </p>
-                    {program.exitInterview.feedback && (
-                      <p className="text-muted-foreground">{program.exitInterview.feedback}</p>
+                    {program.exitInterview.status === 'scheduled' && isAdmin && (
+                      <Button size="sm" variant="outline" onClick={() => setShowExitForm(true)}>
+                        {t('offboarding.conductInterview', 'Conduct')}
+                      </Button>
                     )}
                   </div>
-                )}
-              </div>
-            )}
+                  {program.exitInterview.status === 'completed' && (
+                    <div className="mt-2 p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                      <p>
+                        {t('offboarding.experience', 'Experience')}:{' '}
+                        {'⭐'.repeat(program.exitInterview.overallExperience ?? 0)}
+                      </p>
+                      {program.exitInterview.feedback && (
+                        <p className="text-muted-foreground">{program.exitInterview.feedback}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Exit Interview Form */}
-            {showExitForm && (
-              <div className="p-4 rounded-lg border space-y-3">
-                <p className="text-sm font-semibold">
-                  {t('offboarding.exitForm.title', 'Exit Interview Form')}
-                </p>
-                <div>
-                  <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.experience', 'Overall Experience (1-5)')}
-                  </label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={5}
-                    value={exitForm.experience}
-                    onChange={(e) =>
-                      setExitForm({ ...exitForm, experience: parseInt(e.target.value) || 3 })
-                    }
-                    className="mt-1"
-                  />
+              {/* Exit Interview Form */}
+              {showExitForm && (
+                <div className="p-4 rounded-lg border space-y-3">
+                  <p className="text-sm font-semibold">
+                    {t('offboarding.exitForm.title', 'Exit Interview Form')}
+                  </p>
+                  <div>
+                    <label className="text-xs font-medium">
+                      {t('offboarding.exitForm.experience', 'Overall Experience (1-5)')}
+                    </label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={5}
+                      value={exitForm.experience}
+                      onChange={(e) =>
+                        setExitForm({ ...exitForm, experience: parseInt(e.target.value) || 3 })
+                      }
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">
+                      {t('offboarding.exitForm.recommend', 'Would recommend?')}
+                    </label>
+                    <Select
+                      value={exitForm.recommend ? 'yes' : 'no'}
+                      onValueChange={(v) => setExitForm({ ...exitForm, recommend: v === 'yes' })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">{t('common.yes', 'Yes')}</SelectItem>
+                        <SelectItem value="no">{t('common.no', 'No')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">
+                      {t('offboarding.exitForm.reason', 'Primary reason for leaving')}
+                    </label>
+                    <Input
+                      value={exitForm.reason}
+                      onChange={(e) => setExitForm({ ...exitForm, reason: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">
+                      {t('offboarding.exitForm.feedback', 'Feedback')}
+                    </label>
+                    <Textarea
+                      value={exitForm.feedback}
+                      onChange={(e) => setExitForm({ ...exitForm, feedback: e.target.value })}
+                      rows={2}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium">
+                      {t('offboarding.exitForm.improvements', 'Suggestions for improvement')}
+                    </label>
+                    <Textarea
+                      value={exitForm.improvements}
+                      onChange={(e) => setExitForm({ ...exitForm, improvements: e.target.value })}
+                      rows={2}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSubmitExit}>
+                      {t('offboarding.exitForm.submit', 'Submit')}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowExitForm(false)}>
+                      {t('common.cancel', 'Cancel')}
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.recommend', 'Would recommend?')}
-                  </label>
-                  <Select
-                    value={exitForm.recommend ? 'yes' : 'no'}
-                    onValueChange={(v) => setExitForm({ ...exitForm, recommend: v === 'yes' })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yes">{t('common.yes', 'Yes')}</SelectItem>
-                      <SelectItem value="no">{t('common.no', 'No')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.reason', 'Primary reason for leaving')}
-                  </label>
-                  <Input
-                    value={exitForm.reason}
-                    onChange={(e) => setExitForm({ ...exitForm, reason: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.feedback', 'Feedback')}
-                  </label>
-                  <Textarea
-                    value={exitForm.feedback}
-                    onChange={(e) => setExitForm({ ...exitForm, feedback: e.target.value })}
-                    rows={2}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium">
-                    {t('offboarding.exitForm.improvements', 'Suggestions for improvement')}
-                  </label>
-                  <Textarea
-                    value={exitForm.improvements}
-                    onChange={(e) => setExitForm({ ...exitForm, improvements: e.target.value })}
-                    rows={2}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleSubmitExit}>
-                    {t('offboarding.exitForm.submit', 'Submit')}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setShowExitForm(false)}>
-                    {t('common.cancel', 'Cancel')}
-                  </Button>
-                </div>
-              </div>
-            )}
+              )}
 
-            {/* Final Settlement (admins) */}
-            {isAdmin && (
-              <Button className="w-full" variant="outline" onClick={() => setShowSettlement(true)}>
-                <Calculator className="h-4 w-4 mr-1" />
-                {t('employees.settlement.openButton', 'Final Settlement')}
-              </Button>
-            )}
+              {/* Final Settlement (admins) */}
+              {isAdmin && (
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setShowSettlement(true)}
+                >
+                  <Calculator className="h-4 w-4 mr-1" />
+                  {t('employees.settlement.openButton', 'Final Settlement')}
+                </Button>
+              )}
 
-            {/* Complete button */}
-            {isAdmin && program.status === 'active' && program.progress >= 80 && (
-              <Button className="w-full" variant="destructive" onClick={handleCompleteProgram}>
-                <CheckCircle2 className="h-4 w-4 mr-1" />
-                {t('offboarding.completeProgram', 'Complete Offboarding')}
-              </Button>
-            )}
-          </div>
-        )}
-      </DialogContent>
+              {/* Complete button */}
+              {isAdmin && program.status === 'active' && program.progress >= 80 && (
+                <Button className="w-full" variant="destructive" onClick={handleCompleteProgram}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  {t('offboarding.completeProgram', 'Complete Offboarding')}
+                </Button>
+              )}
+            </div>
+          )}
+        </SheetBody>
+      </SheetContent>
 
       {/* Final Settlement Dialog */}
       {program && (
@@ -687,7 +701,7 @@ function ProgramDetailDialog({
           defaultLastDay={program.lastDay}
         />
       )}
-    </Dialog>
+    </Sheet>
   );
 }
 
@@ -720,9 +734,9 @@ function StartOffboardingWizard({
   const startOffboarding = useMutation(api.offboarding.startOffboarding);
 
   const steps = [
-    t('offboarding.wizard.step1', 'Employee'),
-    t('offboarding.wizard.step2', 'Details'),
-    t('offboarding.wizard.step3', 'Confirm'),
+    { id: 'employee', title: t('offboarding.wizard.step1', 'Employee') },
+    { id: 'details', title: t('offboarding.wizard.step2', 'Details') },
+    { id: 'confirm', title: t('offboarding.wizard.step3', 'Confirm') },
   ];
 
   const handleSubmit = async () => {
@@ -744,34 +758,19 @@ function StartOffboardingWizard({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0 overflow-hidden max-h-[95vh]">
-        {/* Stepper */}
-        <div className="px-5 pt-5 pb-3">
-          <DialogHeader>
-            <DialogTitle>{t('offboarding.wizard.title', 'Start Offboarding')}</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center gap-2 mt-4">
-            {steps.map((s, i) => (
-              <div key={i} className="flex items-center gap-2 flex-1">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i <= step ? 'bg-orange-500 text-white' : 'bg-muted text-muted-foreground'}`}
-                >
-                  {i + 1}
-                </div>
-                <span
-                  className={`text-xs hidden sm:inline ${i <= step ? 'font-medium' : 'text-muted-foreground'}`}
-                >
-                  {s}
-                </span>
-                {i < steps.length - 1 && <div className="flex-1 h-px bg-border" />}
-              </div>
-            ))}
-          </div>
-        </div>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')} className="p-0">
+        <SheetHeader className="gap-3.5">
+          <SheetTitle>{t('offboarding.wizard.title', 'Start Offboarding')}</SheetTitle>
+          <WizardStepper
+            steps={steps}
+            current={step}
+            onStepClick={(i) => (i < step ? setStep(i) : undefined)}
+          />
+        </SheetHeader>
 
         {/* Step content */}
-        <div className="px-5 py-4 min-h-[200px] max-h-[55vh] overflow-y-auto">
+        <SheetBody className="px-5 py-5">
           {step === 0 && (
             <div className="space-y-5">
               <UserPicker
@@ -878,10 +877,10 @@ function StartOffboardingWizard({
               </p>
             </div>
           )}
-        </div>
+        </SheetBody>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t">
+        <SheetFooter className="justify-between">
           <Button variant="ghost" onClick={() => (step > 0 ? setStep(step - 1) : onClose())}>
             <ChevronLeft className="h-4 w-4 mr-1" />
             {step > 0 ? t('common.back', 'Back') : t('common.cancel', 'Cancel')}
@@ -898,8 +897,8 @@ function StartOffboardingWizard({
               <UserMinus className="h-4 w-4 mr-1" /> {t('offboarding.wizard.start', 'Start')}
             </Button>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

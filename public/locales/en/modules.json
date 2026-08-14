@@ -1074,6 +1074,7 @@
     "title": "OKR & Goals",
     "subtitle": "Set objectives, track key results, and align your team",
     "create": "New Objective",
+    "createObjective": "Create Objective",
     "allPeriods": "All",
     "empty": "No objectives yet",
     "emptyHint": "Create your first objective to get started",
@@ -2388,7 +2389,9 @@
     "unknown": "Unknown",
     "openInGoogle": "Open in Google Calendar",
     "description": "Description",
-    "googleCalendar": "Google Calendar"
+    "googleCalendar": "Google Calendar",
+    "eventMoved": "Event moved to another day",
+    "eventMoveFailed": "Could not move the event"
   },
   "calendarExtended": {
     "leaveCalendar": "Leave Calendar",

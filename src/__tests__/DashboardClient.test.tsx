@@ -47,6 +47,11 @@ jest.mock('../../convex/_generated/api', () => ({
     security: {
       getLoginStats: { _name: 'getLoginStats' },
     },
+    users: {
+      queries: {
+        getAuditLogs: { _name: 'users.queries.getAuditLogs' },
+      },
+    },
     timeTracking: {
       getTodayStatus: { _name: 'timeTracking.getTodayStatus' },
       checkIn: { _name: 'timeTracking.checkIn' },
@@ -81,16 +86,19 @@ jest.mock('@/lib/cssMotion', () => ({
 // ── Icons mock ───────────────────────────────────────────────────────────────
 jest.mock('lucide-react', () => {
   const MockIcon = (props: any) => <span data-testid="icon" {...props} />;
-  return {
-    Users: MockIcon,
-    Clock: MockIcon,
-    CheckCircle: MockIcon,
-    UserCheck: MockIcon,
-    TrendingUp: MockIcon,
-    LogIn: MockIcon,
-    LogOut: MockIcon,
-    AlertCircle: MockIcon,
-  };
+  return new Proxy(
+    {
+      Users: MockIcon,
+      Clock: MockIcon,
+      CheckCircle: MockIcon,
+      UserCheck: MockIcon,
+      TrendingUp: MockIcon,
+      LogIn: MockIcon,
+      LogOut: MockIcon,
+      AlertCircle: MockIcon,
+    },
+    { get: (target, prop) => (prop in target ? target[prop as string] : MockIcon) },
+  );
 });
 
 // ── Types mock ───────────────────────────────────────────────────────────────

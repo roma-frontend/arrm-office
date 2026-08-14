@@ -39,7 +39,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -762,19 +762,19 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
     switch (row.status) {
       case 'signed':
         return (
-          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+          <Badge className="bg-(--success-quiet) text-(--success-text) border-(--success-outline)">
             {t('hiringPacket.statusSigned', 'Signed')}
           </Badge>
         );
       case 'sent':
         return (
-          <Badge className="bg-sky-500/10 text-sky-600 border-sky-500/20">
+          <Badge className="bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline)">
             {t('hiringPacket.statusSent', 'Awaiting signature')}
           </Badge>
         );
       case 'edited':
         return (
-          <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+          <Badge className="bg-(--warning-quiet) text-(--warning-text) border-(--warning-outline)">
             {t('hiringPacket.statusEdited', 'Edited in Word')}
           </Badge>
         );
@@ -809,7 +809,7 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
                   defaultValue: `${signedCount} of ${active.length} signed`,
                 })}
                 {mandatoryOutstanding > 0 && (
-                  <span className="ml-2 inline-flex items-center gap-1 text-amber-600">
+                  <span className="ml-2 inline-flex items-center gap-1 text-(--warning-text)">
                     <AlertTriangle className="w-3 h-3" />
                     {t('hiringPacket.mandatoryOutstanding', {
                       count: mandatoryOutstanding,
@@ -882,7 +882,7 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
                         {title}
                       </span>
                       {row.mandatory && (
-                        <span className="text-[10px] font-medium text-amber-600">
+                        <span className="text-[10px] font-medium text-(--warning-text)">
                           {t('hiringPacket.mandatory', 'required')}
                         </span>
                       )}
@@ -929,7 +929,7 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
                               rel="noopener noreferrer"
                               title={t('hiringPacket.signedPdf', 'Signed PDF')}
                             >
-                              <Check className="w-4 h-4 text-emerald-600" />
+                              <Check className="w-4 h-4 text-(--success-text)" />
                             </a>
                           </Button>
                         )}
@@ -1009,7 +1009,7 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
                     {row.signers.map((signer) => (
                       <span key={signer.requestId} className="inline-flex items-center gap-1">
                         {signer.status === 'signed' ? (
-                          <Check className="w-3 h-3 text-emerald-600" />
+                          <Check className="w-3 h-3 text-(--success-text)" />
                         ) : signer.status === 'declined' ? (
                           <XCircle className="w-3 h-3 text-red-500" />
                         ) : (
@@ -1034,42 +1034,47 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
           onChange={(e) => void handleFileSelected(e)}
         />
 
-        {/* Preview dialog */}
-        <Dialog open={previewRow !== null} onOpenChange={(open) => !open && setPreviewRow(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        {/* Preview panel — a document deserves a full-height reading pane */}
+        <Sheet open={previewRow !== null} onOpenChange={(open) => !open && setPreviewRow(null)}>
+          <SheetContent
+            side="right"
+            size="xl"
+            closeLabel={t('common.close', 'Close')}
+            className="overflow-y-auto"
+          >
             {previewRow &&
               (() => {
                 const doc = buildDoc(previewRow);
                 if (!doc) {
                   return (
                     <>
-                      <DialogTitle>
+                      <SheetTitle>
                         {t('hiringPacket.buildFailed', 'Could not build this document')}
-                      </DialogTitle>
-                      <DialogDescription>
+                      </SheetTitle>
+                      <SheetDescription>
                         {t(
                           'hiringPacket.buildFailedHint',
                           'The stored content is unreadable. Revert to the standard template.',
                         )}
-                      </DialogDescription>
+                      </SheetDescription>
                     </>
                   );
                 }
                 return (
                   <>
-                    <DialogTitle className="pr-8">{doc.title}</DialogTitle>
-                    <DialogDescription>
+                    <SheetTitle className="pr-8">{doc.title}</SheetTitle>
+                    <SheetDescription>
                       {orgName}
                       {doc.documentNumber && <> · {doc.documentNumber}</>}
-                    </DialogDescription>
+                    </SheetDescription>
                     <div className="mt-4">
                       <DocumentPreview doc={doc} />
                     </div>
                   </>
                 );
               })()}
-          </DialogContent>
-        </Dialog>
+          </SheetContent>
+        </Sheet>
       </CardContent>
     </Card>
   );

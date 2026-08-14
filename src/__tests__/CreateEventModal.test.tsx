@@ -93,6 +93,23 @@ jest.mock('@/components/ui/sheet', () => ({
   SheetDescription: ({ children }: any) => <p>{children}</p>,
 }));
 
+jest.mock('@/components/ui/wizard-stepper', () => ({
+  WizardStepper: ({ steps, current, onStepClick, maxReachable }: any) => (
+    <div data-testid="wizard-stepper" data-current={current}>
+      {steps.map((s: any, i: number) => (
+        <button
+          type="button"
+          key={s.id}
+          disabled={i !== current && i > (maxReachable ?? current)}
+          onClick={() => onStepClick?.(i)}
+        >
+          {s.title}
+        </button>
+      ))}
+    </div>
+  ),
+}));
+
 jest.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, disabled, ...p }: any) => (
     <button onClick={onClick} disabled={disabled} {...p}>
@@ -221,6 +238,7 @@ jest.mock('lucide-react', () => {
     'CheckCircle',
     'Check',
     'DoorOpen',
+    'Sparkles',
   ];
   const mocks: Record<string, any> = {};
   for (const name of names) {
@@ -264,6 +282,8 @@ jest.mock('@/hooks/useWizardDraft', () => ({
     }, []);
     return mockDraft;
   },
+  peekWizardDraft: jest.fn(),
+  clearWizardDraft: jest.fn(),
 }));
 
 jest.mock('@/components/ui/WizardDraftNotice', () => ({

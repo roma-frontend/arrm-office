@@ -10,6 +10,8 @@ import { ServiceBroadcastsManager } from './ServiceBroadcastsManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, MessageSquare } from 'lucide-react';
 import type { Id } from '../../../convex/_generated/dataModel';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 
 interface SuperadminBroadcastsPanelProps {
   organizationId?: Id<'organizations'>;
@@ -26,6 +28,7 @@ export function SuperadminBroadcastsPanel({
 }: SuperadminBroadcastsPanelProps) {
   const { t } = useTranslation();
   const [broadcastDialogOpen, setBroadcastDialogOpen] = useState(false);
+  const broadcastDraft = useDraftResume('service-broadcast', !broadcastDialogOpen);
 
   const currentUser = useQuery(api.users.queries.getCurrentUser, {});
 
@@ -96,6 +99,20 @@ export function SuperadminBroadcastsPanel({
           userId={finalUserId}
         />
       </Card>
+
+      {/* "Draft saved. Restore?" — the broadcast wizard keeps its contents
+          after an accidental close; this is what tells the user so. */}
+      <DraftResumeBar
+        show={broadcastDraft.available}
+        label={t('broadcasts.title', 'Service Broadcast')}
+        step={broadcastDraft.step}
+        onResume={() => {
+          broadcastDraft.dismiss();
+          setBroadcastDialogOpen(true);
+        }}
+        onDismiss={broadcastDraft.dismiss}
+        onDiscard={broadcastDraft.discard}
+      />
 
       {/* Broadcasts management card */}
       <ServiceBroadcastsManager organizationId={finalOrgId} userId={finalUserId} />

@@ -17,12 +17,13 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle, XCircle, Users, FileText, ChevronRight } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { logger } from '@/lib/logger';
@@ -89,24 +90,24 @@ export function LeaveConflictAlerts({ organizationId }: LeaveConflictAlertsProps
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'high':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-(--danger-quiet) text-(--danger-text) border-(--danger-outline)';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-(--warning-quiet) text-(--warning-text) border-(--warning-outline)';
       case 'low':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline)';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-(--surface-3) text-(--text-2) border-(--border-default)';
     }
   };
 
   const getConflictTypeIcon = (type: string) => {
     switch (type) {
       case 'required_employee':
-        return <Users className="w-4 h-4 text-red-600" />;
+        return <Users className="w-4 h-4 text-(--danger-text)" />;
       case 'required_department':
-        return <BriefcaseIcon className="w-4 h-4 text-orange-600" />;
+        return <BriefcaseIcon className="w-4 h-4 text-(--warning-text)" />;
       default:
-        return <AlertCircle className="w-4 h-4 text-gray-600" />;
+        return <AlertCircle className="w-4 h-4 text-(--text-3)" />;
     }
   };
 
@@ -124,7 +125,7 @@ export function LeaveConflictAlerts({ organizationId }: LeaveConflictAlertsProps
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-orange-600" />
+            <AlertCircle className="w-5 h-5 text-(--warning-text)" />
             {t('events.pendingConflictReviews', 'Pending Conflict Reviews')} ({alerts.length})
           </CardTitle>
         </CardHeader>
@@ -160,7 +161,7 @@ export function LeaveConflictAlerts({ organizationId }: LeaveConflictAlertsProps
                           {t('events.requestingLeave', 'Requesting leave')}: {alert.leaveStartDate}{' '}
                           → {alert.leaveEndDate}
                         </p>
-                        <p className="text-sm text-red-600 font-medium mt-2">
+                        <p className="text-sm text-(--danger-text) font-medium mt-2">
                           {t('events.conflictsWith', 'Conflicts with')}: {alert.eventName}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -195,9 +196,9 @@ export function LeaveConflictAlerts({ organizationId }: LeaveConflictAlertsProps
               {reviewedAlerts.slice(0, 5).map((alert) => (
                 <div key={alert._id} className="flex items-center gap-3 text-sm p-2 rounded">
                   {alert.reviewNotes?.includes('Approved') ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <CheckCircle className="w-4 h-4 text-(--success-text)" />
                   ) : (
-                    <XCircle className="w-4 h-4 text-red-600" />
+                    <XCircle className="w-4 h-4 text-(--danger-text)" />
                   )}
                   <span className="flex-1">
                     {alert.employeeName} - {alert.eventName}
@@ -215,17 +216,17 @@ export function LeaveConflictAlerts({ organizationId }: LeaveConflictAlertsProps
       </Card>
 
       {/* Review Dialog */}
-      <Dialog open={!!selectedAlert} onOpenChange={(open) => !open && setSelectedAlert(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-orange-600" />
+      <Sheet open={!!selectedAlert} onOpenChange={(open) => !open && setSelectedAlert(null)}>
+        <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-(--warning-text)" />
               {t('events.reviewLeaveConflict', 'Review Leave Conflict')}
-            </DialogTitle>
-          </DialogHeader>
+            </SheetTitle>
+          </SheetHeader>
 
           {selectedAlert && (
-            <div className="space-y-4">
+            <SheetBody className="space-y-4">
               {/* Employee Info */}
               <div className="p-4 rounded-lg bg-muted/50 border">
                 <h4 className="font-semibold text-foreground">
@@ -316,31 +317,32 @@ export function LeaveConflictAlerts({ organizationId }: LeaveConflictAlertsProps
                   className="mt-2"
                 />
               </div>
-
-              {/* Action Buttons */}
-              <DialogFooter className="gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => handleReview(false)}
-                  disabled={isReviewing}
-                  className="gap-2"
-                >
-                  <XCircle className="w-4 h-4" />
-                  {t('events.flagForDiscussion', 'Flag for Discussion')}
-                </Button>
-                <Button
-                  onClick={() => handleReview(true)}
-                  disabled={isReviewing}
-                  className="gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  {t('events.approveDespiteConflict', 'Approve Despite Conflict')}
-                </Button>
-              </DialogFooter>
-            </div>
+            </SheetBody>
           )}
-        </DialogContent>
-      </Dialog>
+
+          {selectedAlert && (
+            <SheetFooter className="gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => handleReview(false)}
+                disabled={isReviewing}
+                className="gap-2"
+              >
+                <XCircle className="w-4 h-4" />
+                {t('events.flagForDiscussion', 'Flag for Discussion')}
+              </Button>
+              <Button
+                onClick={() => handleReview(true)}
+                disabled={isReviewing}
+                className="gap-2 bg-(--success) text-(--success-foreground) hover:opacity-90"
+              >
+                <CheckCircle className="w-4 h-4" />
+                {t('events.approveDespiteConflict', 'Approve Despite Conflict')}
+              </Button>
+            </SheetFooter>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

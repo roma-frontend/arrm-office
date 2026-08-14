@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import ReactDOM from 'react-dom';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
@@ -32,6 +31,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { WizardStepper } from '@/components/ui/wizard-stepper';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { logger } from '@/lib/logger';
@@ -419,73 +420,27 @@ export default function CompensationBandWizard({
 
   if (!mounted) return null;
 
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-(--card) rounded-xl shadow-xl w-full max-w-lg mx-4 overflow-y-auto"
+  return (
+    <Sheet open onOpenChange={(v) => !v && onClose()}>
+      <SheetContent
+        side="right"
+        size="lg"
+        closeLabel={t('common.close', 'Close')}
+        className="overflow-y-auto"
       >
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-(--border)">
-          <h2 className="text-xl font-bold text-(--text-primary)">
-            {t('compensation.newBand', 'New Compensation Band')}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
+        <SheetHeader>
+          <SheetTitle>{t('compensation.newBand', 'New Compensation Band')}</SheetTitle>
+        </SheetHeader>
+
+        <div className="px-5 pt-4">
+          <WizardStepper
+            steps={steps}
+            current={currentStep}
+            onStepClick={(i) => (i < currentStep ? setCurrentStep(i) : undefined)}
+          />
         </div>
 
-        <div className="px-6 pt-4">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => {
-              const isCompleted = index < currentStep;
-              const isCurrent = index === currentStep;
-              return (
-                <React.Fragment key={step.id}>
-                  <div className="flex flex-col items-center flex-1">
-                    <div
-                      className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors',
-                        isCompleted
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : isCurrent
-                            ? 'border-(--primary) bg-(--card) text-(--primary)'
-                            : 'border-(--border) bg-(--card) text-(--muted-foreground)',
-                      )}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <span className="text-xs font-semibold">{index + 1}</span>
-                      )}
-                    </div>
-                    <p
-                      className={cn(
-                        'text-xs mt-1 font-medium',
-                        isCurrent ? 'text-(--primary)' : 'text-(--muted-foreground)',
-                      )}
-                    >
-                      {step.title}
-                    </p>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div className="flex-1 h-0.5 bg-(--border) mx-2 mb-6">
-                      <div
-                        className={cn(
-                          'h-full transition-colors',
-                          isCompleted ? 'bg-(--primary)' : 'bg-(--border)',
-                        )}
-                      />
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="px-6 py-4 overflow-y-auto">
           <WizardDraftNotice
             show={draft.restored}
             step={draft.restoredStep}
@@ -548,8 +503,7 @@ export default function CompensationBandWizard({
             </Button>
           )}
         </div>
-      </motion.div>
-    </div>,
-    document.body,
+      </SheetContent>
+    </Sheet>
   );
 }

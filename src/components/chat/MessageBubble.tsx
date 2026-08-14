@@ -301,6 +301,16 @@ function isImage(type: string) {
 function isPDF(type: string) {
   return type === 'application/pdf';
 }
+/**
+ * Cloudinary URLs are cross-origin, so the HTML `download` attribute is
+ * ignored and the browser would navigate to the file (landing on an error page
+ * for PDFs blocked under the image resource type). The `fl_attachment` flag
+ * makes Cloudinary send `Content-Disposition: attachment`, forcing a real
+ * download. Non-Cloudinary URLs are returned untouched.
+ */
+function asDownloadUrl(url: string): string {
+  return url.replace(/(\/(?:image|video|raw)\/upload\/)/, '$1fl_attachment/');
+}
 function canDeleteForEveryone(createdAt: number) {
   return Date.now() - createdAt < 5 * 60 * 1000;
 }
@@ -808,12 +818,16 @@ export const MessageBubble = React.memo(function MessageBubble({
             </div>
           )}
 
-          {/* Bubble */}
+          {/* Bubble.
+              `--chat-own` rather than `--primary`: the accent is tuned for a
+              36px control, and a thread of it at bubble size reads as a light
+              source — the same reason `--brand-panel` exists. */}
           <div
-            className="relative rounded-2xl px-3.5 py-2.5 text-[14px] leading-[1.45] wrap-break-words transition-all duration-200"
+            className="relative rounded-2xl border px-3.5 py-2.5 text-[14px] leading-[1.45] wrap-break-words transition-all duration-200"
             style={{
-              background: isOwn ? 'var(--primary)' : 'var(--secondary)',
-              color: isOwn ? 'white' : 'var(--text-primary)',
+              background: isOwn ? 'var(--chat-own)' : 'var(--chat-other)',
+              borderColor: isOwn ? 'transparent' : 'var(--chat-other-border)',
+              color: isOwn ? 'var(--chat-own-contrast)' : 'var(--text-primary)',
               borderBottomRightRadius: isOwn ? '6px' : undefined,
               borderBottomLeftRadius: !isOwn ? '6px' : undefined,
             }}
@@ -834,7 +848,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                   onBlur={() => setEditFocused(false)}
                   className="w-full bg-transparent outline-none resize-none text-sm leading-relaxed min-h-[60px] max-h-[200px]"
                   style={{
-                    color: isOwn ? 'white' : 'var(--text-primary)',
+                    color: isOwn ? 'var(--chat-own-contrast)' : 'var(--text-primary)',
                     borderColor: editFocused ? 'var(--primary)' : 'transparent',
                     borderBottom: `1px solid ${editFocused ? 'var(--primary)' : 'var(--border)'}`,
                     paddingBottom: '4px',
@@ -854,7 +868,8 @@ export const MessageBubble = React.memo(function MessageBubble({
                     className="px-3 py-1 rounded-lg text-xs font-medium transition-all duration-150 hover:opacity-80"
                     style={{
                       background: 'transparent',
-                      color: isOwn ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)',
+                      color: isOwn ? 'var(--chat-own-contrast)' : 'var(--text-muted)',
+                      opacity: isOwn ? 0.7 : 1,
                     }}
                   >
                     {L.cancel}
@@ -864,8 +879,8 @@ export const MessageBubble = React.memo(function MessageBubble({
                     disabled={!editContent.trim()}
                     className="px-3 py-1 rounded-lg text-xs font-medium transition-all duration-150 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
-                      background: isOwn ? 'rgba(255,255,255,0.2)' : 'var(--primary)',
-                      color: isOwn ? 'white' : 'white',
+                      background: isOwn ? 'var(--chat-own-inset-border)' : 'var(--primary)',
+                      color: isOwn ? 'var(--chat-own-contrast)' : 'white',
                     }}
                   >
                     {L.edit}
@@ -895,7 +910,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                         key={i}
                         className="flex items-center gap-2 p-2 rounded-xl min-w-50 max-w-70"
                         style={{
-                          background: isOwn ? 'rgba(255,255,255,0.15)' : 'var(--background-subtle)',
+                          background: isOwn ? 'var(--chat-own-inset)' : 'var(--background-subtle)',
                         }}
                       >
                         {/* Play icon */}
@@ -935,7 +950,7 @@ export const MessageBubble = React.memo(function MessageBubble({
 
                         {/* Download */}
                         <a
-                          href={att.url}
+                          href={asDownloadUrl(att.url)}
                           download={att.name}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -960,7 +975,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                           onClick={() => setLightboxSrc(att.url)}
                         />
                         <Link
-                          href={att.url}
+                          href={asDownloadUrl(att.url)}
                           download={att.name}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -976,38 +991,55 @@ export const MessageBubble = React.memo(function MessageBubble({
                     );
                   }
                   if (isPDF(att.type)) {
+                    // No inline `<iframe>` preview: the browser's own PDF viewer
+                    // paints page chrome that no outer CSS can reach, so its flat
+                    // grey cut into the bubble in both themes — and it degraded to
+                    // a broken-file placeholder whenever the viewer refused the
+                    // file outright. A card built from tokens belongs to whichever
+                    // theme is active and always says something useful.
                     return (
                       <div
                         key={i}
-                        className="rounded-xl overflow-hidden w-full max-w-50 xs:max-w-55 sm:max-w-60"
+                        className="rounded-xl overflow-hidden border w-full max-w-50 xs:max-w-55 sm:max-w-60"
+                        style={{
+                          background: isOwn ? 'var(--chat-own-inset)' : 'var(--sunken)',
+                          borderColor: isOwn ? 'var(--chat-own-inset-border)' : 'var(--border)',
+                        }}
                       >
-                        <div
-                          className="flex items-center gap-2 px-2 py-1.5 text-xs"
-                          style={{ background: isOwn ? 'rgba(255,255,255,0.15)' : 'var(--border)' }}
-                        >
-                          <FileText className="w-4 h-4 shrink-0 text-red-400" />
-                          <span className="truncate flex-1 text-[10px] xs:text-xs">{att.name}</span>
-                          <span className="shrink-0 opacity-70 text-[9px] xs:text-[10px]">
-                            {formatFileSize(att.size)}
+                        <div className="flex items-center gap-2 px-2.5 py-2">
+                          <span
+                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                            style={{
+                              background: isOwn
+                                ? 'var(--chat-own-inset-border)'
+                                : 'var(--danger-quiet)',
+                            }}
+                          >
+                            <FileText
+                              className="w-4 h-4"
+                              style={{ color: isOwn ? 'white' : 'var(--danger-text)' }}
+                            />
                           </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[10px] xs:text-xs font-medium">
+                              {att.name}
+                            </p>
+                            <p className="flex items-center gap-1 text-[9px] xs:text-[10px] opacity-70">
+                              <span>PDF</span>
+                              <span aria-hidden>•</span>
+                              <span>{formatFileSize(att.size)}</span>
+                            </p>
+                          </div>
                         </div>
-                        <iframe
-                          src={att.url + '#toolbar=0&navpanes=0&scrollbar=0'}
-                          className="w-full"
-                          style={{ height: 140 }}
-                          title={att.name}
-                        />
                         <Link
-                          href={att.url}
+                          href={asDownloadUrl(att.url)}
                           download={att.name}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-1 py-1.5 text-[9px] xs:text-xs hover:opacity-80 transition-opacity"
+                          className="flex items-center justify-center gap-1 py-1.5 border-t text-[9px] xs:text-xs hover:opacity-80 transition-opacity"
                           style={{
-                            background: isOwn
-                              ? 'rgba(255,255,255,0.1)'
-                              : 'var(--background-subtle)',
-                            color: isOwn ? 'white' : 'var(--text-muted)',
+                            borderColor: isOwn ? 'var(--chat-own-inset-border)' : 'var(--border)',
+                            color: isOwn ? 'var(--chat-own-contrast)' : 'var(--text-muted)',
                           }}
                         >
                           <Download className="w-3 h-3" /> {L.download}
@@ -1018,11 +1050,11 @@ export const MessageBubble = React.memo(function MessageBubble({
                   return (
                     <Link
                       key={i}
-                      href={att.url}
+                      href={asDownloadUrl(att.url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs hover:opacity-80 transition-all duration-200 hover:scale-[1.01]"
-                      style={{ background: isOwn ? 'rgba(255,255,255,0.15)' : 'var(--border)' }}
+                      style={{ background: isOwn ? 'var(--chat-own-inset)' : 'var(--sunken)' }}
                     >
                       <span>📎</span>
                       <span className="truncate flex-1 text-[9px] xs:text-xs">{att.name}</span>

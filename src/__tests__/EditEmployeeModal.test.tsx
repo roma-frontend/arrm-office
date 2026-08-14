@@ -492,12 +492,11 @@ describe('salary and identity steps', () => {
     fireEvent.change(currency, { target: { value: 'RUB' } });
     expect(selectValue(currency)).toBe('RUB');
 
-    // Edits + focus states for the numeric salary inputs.
+    // Edits + focus states for the numeric salary inputs. Focus styling moved
+    // from inline `onFocus` handlers to the Input primitive's focus-visible
+    // ring, so the assertion is about editing, not imperative border colors.
     const base = screen.getByDisplayValue('200') as HTMLInputElement;
     fireEvent.focus(base);
-    expect(base.style.borderColor).toBe('rgb(37, 99, 235)');
-    fireEvent.blur(base);
-    expect(base.style.borderColor).toBe('var(--border)');
     fireEvent.change(base, { target: { value: '250' } });
     fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '15' } });
     fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '' } });

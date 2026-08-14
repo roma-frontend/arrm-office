@@ -7,6 +7,8 @@ import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { isSuperadmin } from '../lib/auth';
 import { redactUser } from '../lib/userRedaction';
+import { getProfile } from '../lib/userProfile';
+import { loadDriverPositionIds, isDriverUser } from '../lib/driverEligibility';
 
 // ── Helper: Get user ID from email or userId ────────────────────────────────
 async function _getUserIdIdentityOrEmail(
@@ -389,6 +391,64 @@ export const getUsersByRole = query({
       department: u.department,
       position: u.position,
     }));
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET DRIVER CANDIDATES — who may be registered as a fleet driver
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * People eligible for driver registration: anyone holding a position flagged
+ * `isDriverPosition`, plus the legacy `role === 'driver'` accounts that predate
+ * the flag (see lib/driverEligibility.ts).
+ *
+ * Replaces `getUsersByRole({ role: 'driver' })` at the registration call site —
+ * driving is a job, and a job is a position, not a permission tier.
+ */
+export const getDriverCandidates = query({
+  args: {
+    organizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, { organizationId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+
+    // Superadmins may look across tenants; everybody else is pinned to their own.
+    const orgId = isSuperadmin(caller) ? organizationId : caller.organizationId;
+    if (!isSuperadmin(caller) && organizationId && organizationId !== caller.organizationId) {
+      return [];
+    }
+
+    const users = orgId
+      ? await ctx.db
+          .query('users')
+          .withIndex('by_org_active', (q) => q.eq('organizationId', orgId).eq('isActive', true))
+          .take(MAX_PAGE_SIZE)
+      : await ctx.db
+          .query('users')
+          .filter((q) => q.eq(q.field('isActive'), true))
+          .take(MAX_PAGE_SIZE);
+
+    const driverPositionIds = await loadDriverPositionIds(ctx, orgId ?? undefined);
+
+    const candidates = await Promise.all(
+      users.map(async (u) => {
+        // The profile is canonical for positionId; users keeps a dual-written copy.
+        const profile = await getProfile(ctx, u._id);
+        const positionId = profile?.positionId ?? u.positionId;
+        if (!isDriverUser({ role: u.role, positionId }, driverPositionIds)) return null;
+        return {
+          _id: u._id,
+          name: u.name,
+          email: u.email,
+          phone: profile?.phone ?? u.phone,
+          department: profile?.department ?? u.department,
+          position: profile?.position ?? u.position,
+        };
+      }),
+    );
+
+    return candidates.filter(Boolean) as NonNullable<(typeof candidates)[number]>[];
   },
 });
 

@@ -23,13 +23,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
@@ -221,7 +222,7 @@ export default function BulkActionsClient() {
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
-                    className="gap-2 text-green-600 hover:text-green-700"
+                    className="gap-2 text-(--success-text) hover:opacity-80"
                     onClick={() => setApproveDialogOpen(true)}
                   >
                     <CheckCircle className="w-4 h-4" />
@@ -229,7 +230,7 @@ export default function BulkActionsClient() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="gap-2 text-red-600 hover:text-red-700"
+                    className="gap-2 text-(--danger-text) hover:opacity-80"
                     onClick={() => setRejectDialogOpen(true)}
                   >
                     <XCircle className="w-4 h-4" />
@@ -323,19 +324,19 @@ export default function BulkActionsClient() {
       </div>
 
       {/* Approve Dialog */}
-      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <Sheet open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
               {t('superadmin.bulkActions.approve.title')}
-            </DialogTitle>
-            <DialogDescription>
+            </SheetTitle>
+            <SheetDescription>
               {t('superadmin.bulkActions.approve.description', { count: selectedLeaves.size })}
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
 
-          <div className="py-4">
+          <SheetBody>
             <label className="text-sm font-medium mb-2 block">
               {t('superadmin.bulkActions.approve.commentLabel')}
             </label>
@@ -345,34 +346,34 @@ export default function BulkActionsClient() {
               placeholder={t('superadmin.bulkActions.approve.commentPlaceholder')}
               rows={4}
             />
-          </div>
+          </SheetBody>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
               {t('actions.cancel')}
             </Button>
-            <Button onClick={handleBulkApprove} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleBulkApprove} className="bg-(--success) hover:opacity-90">
               <CheckCircle className="w-4 h-4 mr-2" />
               {t('superadmin.bulkActions.approve.submit', { count: selectedLeaves.size })}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Reject Dialog */}
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <Sheet open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
               <XCircle className="w-5 h-5 text-red-500" />
               {t('superadmin.bulkActions.reject.title')}
-            </DialogTitle>
-            <DialogDescription>
+            </SheetTitle>
+            <SheetDescription>
               {t('superadmin.bulkActions.reject.description', { count: selectedLeaves.size })}
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
 
-          <div className="py-4">
+          <SheetBody>
             <label className="text-sm font-medium mb-2 block">
               {t('superadmin.bulkActions.reject.reasonLabel')}
             </label>
@@ -383,9 +384,9 @@ export default function BulkActionsClient() {
               rows={4}
               required
             />
-          </div>
+          </SheetBody>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               {t('actions.cancel')}
             </Button>
@@ -393,9 +394,9 @@ export default function BulkActionsClient() {
               <XCircle className="w-4 h-4 mr-2" />
               {t('superadmin.bulkActions.reject.submit', { count: selectedLeaves.size })}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

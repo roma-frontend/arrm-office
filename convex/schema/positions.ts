@@ -28,10 +28,22 @@ export const positions = {
     rank: v.optional(v.number()),
     salaryMin: v.optional(v.number()),
     salaryMax: v.optional(v.number()),
+    /**
+     * Holders of this position drive for the fleet.
+     *
+     * Job classification belongs on the position, not on `users.role` — see the
+     * note in lib/capabilities.ts. This flag is what makes somebody eligible for
+     * driver registration and puts them in the fleet lists; `role` stays a
+     * permission tier. A flag rather than a title match because an organization
+     * can have several driving positions ("Driver", "Senior Driver") and renaming
+     * one must not silently empty the fleet.
+     */
+    isDriverPosition: v.optional(v.boolean()),
     isActive: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index('by_org', ['organizationId'])
-    .index('by_department', ['departmentId']),
+    .index('by_department', ['departmentId'])
+    .index('by_org_driver', ['organizationId', 'isDriverPosition']),
 };

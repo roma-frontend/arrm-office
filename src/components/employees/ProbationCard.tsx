@@ -12,13 +12,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import { Hourglass, CalendarClock, CheckCircle2, XCircle, Plus } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from 'react-i18next';
@@ -220,7 +221,7 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
             <Button
               size="sm"
               variant="outline"
-              className="text-emerald-600"
+              className="text-(--success-text)"
               onClick={() => setOutcome('passed')}
             >
               <CheckCircle2 className="w-4 h-4 mr-1" />
@@ -229,7 +230,7 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
             <Button
               size="sm"
               variant="outline"
-              className="text-red-600"
+              className="text-(--danger-text)"
               onClick={() => setOutcome('failed')}
             >
               <XCircle className="w-4 h-4 mr-1" />
@@ -240,15 +241,15 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
       </CardContent>
 
       {/* Extend dialog */}
-      <Dialog open={extendOpen} onOpenChange={setExtendOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('employees.probation.extendTitle')}</DialogTitle>
-            <DialogDescription>
+      <Sheet open={extendOpen} onOpenChange={setExtendOpen}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>{t('employees.probation.extendTitle')}</SheetTitle>
+            <SheetDescription>
               {t('employees.probation.extendDesc', { max: MAX_PROBATION_DAYS })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
+            </SheetDescription>
+          </SheetHeader>
+          <SheetBody className="space-y-4">
             <div className="flex gap-2">
               {EXTEND_PRESETS.map((d) => (
                 <Button
@@ -283,8 +284,8 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
                 placeholder={t('employees.probation.reasonPlaceholder')}
               />
             </div>
-          </div>
-          <DialogFooter>
+          </SheetBody>
+          <SheetFooter>
             <Button variant="ghost" onClick={() => setExtendOpen(false)}>
               {t('employees.probation.cancel')}
             </Button>
@@ -310,51 +311,51 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
             >
               {t('employees.probation.extend')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Outcome dialog */}
-      <Dialog open={outcome !== null} onOpenChange={(o) => !o && setOutcome(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+      <Sheet open={outcome !== null} onOpenChange={(o) => !o && setOutcome(null)}>
+        <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>
               {outcome === 'passed'
                 ? t('employees.probation.confirmPass')
                 : t('employees.probation.confirmFail')}
-            </DialogTitle>
-            <DialogDescription>
+            </SheetTitle>
+            <SheetDescription>
               {outcome === 'passed'
                 ? t('employees.probation.confirmPassDesc')
                 : t('employees.probation.confirmFailDesc')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-1">
+            </SheetDescription>
+          </SheetHeader>
+          <SheetBody className="space-y-4">
             <Label>{t('employees.probation.reason')}</Label>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t('employees.probation.reasonPlaceholder')}
             />
-          </div>
-          {outcome === 'failed' && isStaff && (
-            <div className="flex items-start gap-2">
-              <Checkbox
-                id="probation-offboarding"
-                checked={withOffboarding}
-                onCheckedChange={(c) => setWithOffboarding(c === true)}
-              />
-              <label htmlFor="probation-offboarding" className="space-y-0.5 leading-tight">
-                <span className="text-sm text-(--text-primary)">
-                  {t('employees.probation.startOffboarding')}
-                </span>
-                <p className="text-[11px] text-(--text-muted)">
-                  {t('employees.probation.startOffboardingHint')}
-                </p>
-              </label>
-            </div>
-          )}
-          <DialogFooter>
+            {outcome === 'failed' && isStaff && (
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="probation-offboarding"
+                  checked={withOffboarding}
+                  onCheckedChange={(c) => setWithOffboarding(c === true)}
+                />
+                <label htmlFor="probation-offboarding" className="space-y-0.5 leading-tight">
+                  <span className="text-sm text-(--text-primary)">
+                    {t('employees.probation.startOffboarding')}
+                  </span>
+                  <p className="text-[11px] text-(--text-muted)">
+                    {t('employees.probation.startOffboardingHint')}
+                  </p>
+                </label>
+              </div>
+            )}
+          </SheetBody>
+          <SheetFooter>
             <Button variant="ghost" onClick={() => setOutcome(null)}>
               {t('employees.probation.cancel')}
             </Button>
@@ -382,9 +383,9 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
             >
               {outcome === 'passed' ? t('employees.probation.pass') : t('employees.probation.fail')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }

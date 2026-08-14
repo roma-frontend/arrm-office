@@ -6,6 +6,7 @@ import { mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { SMALL_LIST_CAP } from './lib/limits';
 import { getAuthCaller } from './lib/getAuthCaller';
+import { assertLeaveTypeActive } from './lib/leaveTypes';
 
 /** Generate a URL-safe random token (share links). */
 function randomToken(bytes = 24): string {
@@ -146,6 +147,11 @@ export const createLeaveRequest = mutation({
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
+
+    // The chat path has to honour the org's disabled leave types too, otherwise
+    // asking the assistant is a way around what the wizard refuses to offer.
+    await assertLeaveTypeActive(ctx, args.organizationId, args.type);
+
     const now = Date.now();
     const days =
       Math.ceil(

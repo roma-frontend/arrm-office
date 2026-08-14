@@ -53,7 +53,7 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 items-stretch">
       <motion.div variants={itemVariants} className="lg:col-span-3">
-        <Card className="h-full">
+        <Card className="h-full glass-panel">
           {/* The legend moves into the header: it belongs with the title, and
               inside the plot it ate a row of the chart's own height. */}
           <SectionHeader
@@ -124,7 +124,7 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
       </motion.div>
 
       <motion.div variants={itemVariants} className="lg:col-span-2">
-        <Card className="h-full">
+        <Card className="h-full glass-panel">
           <SectionHeader title={t('dashboard.leaveDistribution')} />
           <CardContent className="px-4 sm:px-5 pb-4">
             {pieData.length > 0 ? (

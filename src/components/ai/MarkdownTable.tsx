@@ -93,14 +93,14 @@ export function MarkdownTable({ content }: { content: string }) {
   });
 
   return (
-    <div className="my-4 rounded-xl overflow-hidden shadow-lg border border-slate-200">
+    <div className="my-4 rounded-xl overflow-hidden shadow-lg border border-(--border-default)">
       <table className="w-full border-collapse">
         <thead>
           <tr className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800">
             {table.headers.map((header, idx) => (
               <th
                 key={idx}
-                className="px-4 py-3 text-left text-white font-semibold text-sm tracking-wide border-r border-slate-600 last:border-r-0"
+                className="px-4 py-3 text-left text-white font-semibold text-sm tracking-wide border-r border-(--border-strong) last:border-r-0"
                 style={{ minWidth: `${colWidths[idx]}ch` }}
               >
                 {header}
@@ -117,7 +117,7 @@ export function MarkdownTable({ content }: { content: string }) {
               {row.map((cell, cellIdx) => (
                 <td
                   key={cellIdx}
-                  className="px-4 py-2.5 text-slate-700 text-sm border-r border-slate-200 last:border-r-0"
+                  className="px-4 py-2.5 text-(--text-2) text-sm border-r border-(--border-default) last:border-r-0"
                 >
                   {cell}
                 </td>

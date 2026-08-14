@@ -170,7 +170,7 @@ export function QuickActions() {
   );
 
   return (
-    <Card className="border-(--border) overflow-hidden bg-(--card)">
+    <Card className="border-(--border) overflow-hidden glass-panel">
       <SectionHeader
         title={t('quickActions.title')}
         aside={

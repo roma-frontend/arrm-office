@@ -24,6 +24,7 @@ jest.mock('react-i18next', () => ({
 let mockUser: any = { id: 'u1', role: 'admin', organizationId: 'org-1' };
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: () => ({ user: mockUser }),
+  useAuthUser: () => mockUser,
 }));
 
 jest.mock('@/hooks/useSelectedOrganization', () => ({
@@ -460,9 +461,15 @@ describe('DocumentsClient', () => {
     const { container } = render(<DocumentsClient />);
     // Badges are distinguished by their colored pill classes (tab labels reuse
     // the same translated strings, so scope by class within this render).
-    expect(container.querySelector('[class*="bg-red-100"]')?.textContent).toBe('Mandatory');
-    expect(container.querySelector('[class*="bg-yellow-100"]')?.textContent).toBe('Unpublished');
-    expect(container.querySelector('[class*="bg-green-100"]')?.textContent).toBe('Acknowledged');
+    expect(container.querySelector('[class*="bg-(--danger-quiet)"]')?.textContent).toBe(
+      'Mandatory',
+    );
+    expect(container.querySelector('[class*="bg-(--warning-quiet)"]')?.textContent).toBe(
+      'Unpublished',
+    );
+    expect(container.querySelector('[class*="bg-(--success-quiet)"]')?.textContent).toBe(
+      'Acknowledged',
+    );
   });
 
   it('renders all seven category icons', () => {
@@ -482,7 +489,7 @@ describe('DocumentsClient', () => {
     expect(container.querySelector('[class*="text-orange-500"]')).not.toBeNull();
     expect(container.querySelector('[class*="text-cyan-500"]')).not.toBeNull();
     expect(container.querySelector('[class*="text-yellow-500"]')).not.toBeNull();
-    expect(container.querySelector('[class*="text-gray-500"]')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--text-3)"]')).not.toBeNull();
   });
 
   // ── View / publish / delete flows ───────────────────────────────────────

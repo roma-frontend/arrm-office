@@ -259,6 +259,22 @@
   --brand-panel: linear-gradient(135deg, var(--brand-600), var(--brand-400));
   --brand-panel-contrast: var(--n-0);
 
+  /* ── Chat bubbles ───────────────────────────────────────────────────────
+     Own bubbles are the same case as `--brand-panel`: not one 36px control but
+     a brand fill repeated down the whole thread, so `--brand` glared and every
+     attachment card inside it lost its edges. Two steps deeper keeps the bubble
+     unmistakably "mine" and lets white text and inner panels read on it.
+
+     The incoming bubble is the card colour, not `--secondary`: on a tinted
+     canvas the pressed-neutral tint sat too close to the page, so bubbles
+     needed a border to exist at all. White plus a border separates cleanly. */
+  --chat-own: var(--brand-800); /* #1e43ae */
+  --chat-own-contrast: var(--n-0);
+  --chat-own-inset: rgb(255 255 255 / 12%); /* panels nested in an own bubble */
+  --chat-own-inset-border: rgb(255 255 255 / 22%);
+  --chat-other: var(--surface-1);
+  --chat-other-border: var(--border-default);
+
   /* ── Elevation ──────────────────────────────────────────────────────────
      Brand-tinted, as the original three shadows were: a blue-cast shadow on a
      blue-cast page is what made cards sit *in* the surface rather than on top
@@ -554,6 +570,17 @@
      addition to the restored palette. */
   --brand-panel: linear-gradient(135deg, #142a5c, #1e40af);
   --brand-panel-contrast: var(--n-0);
+
+  /* Chat bubbles — same reasoning as the light theme, one step deeper than
+     `--brand` so a thread of them does not light up the navy canvas. The
+     incoming bubble stays the card colour, which on this canvas already reads
+     as a raised surface without a border. */
+  --chat-own: #1b3f8f;
+  --chat-own-contrast: var(--n-0);
+  --chat-own-inset: rgb(255 255 255 / 10%);
+  --chat-own-inset-border: rgb(255 255 255 / 18%);
+  --chat-other: var(--surface-2);
+  --chat-other-border: var(--border-default);
 
   /* Plain black ink, as the original three shadows were. On a saturated navy a
      tinted shadow turns to mud; black keeps the edge clean. `--elev-4` is new

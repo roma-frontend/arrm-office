@@ -353,7 +353,7 @@ function PhasePill({ phase }: { phase: EventTimeline['phase'] }) {
   const { t } = useTranslation();
   if (phase === 'live') {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-600">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-(--success-quiet) px-2.5 py-0.5 text-[10px] font-semibold text-(--success-text)">
         <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />

@@ -300,10 +300,10 @@ function StatsCard({
   trend: number;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-500/10 text-blue-600',
-    green: 'bg-green-500/10 text-green-600',
+    blue: 'bg-(--brand-quiet) text-(--brand-text)',
+    green: 'bg-(--success-quiet) text-(--success-text)',
     yellow: 'bg-yellow-500/10 text-yellow-600',
-    red: 'bg-red-500/10 text-red-600',
+    red: 'bg-(--danger-quiet) text-(--danger-text)',
   };
 
   return (
@@ -316,7 +316,7 @@ function StatsCard({
             {trend !== 0 && (
               <div
                 className={`flex items-center gap-1 mt-1 text-xs ${
-                  trend > 0 ? 'text-green-600' : 'text-red-600'
+                  trend > 0 ? 'text-(--success-text)' : 'text-(--danger-text)'
                 }`}
               >
                 <TrendingUp className={`w-3 h-3 ${trend < 0 ? 'rotate-180' : ''}`} />

@@ -69,24 +69,24 @@ const LEVEL_CONFIG = {
     icon: Building2,
     label: 'company',
     color: '#8b5cf6',
-    bgLight: 'from-purple-500/10 to-purple-500/5',
-    border: 'border-purple-500/20',
+    bgLight: 'from-(--brand)/10 to-(--brand)/5',
+    border: 'border-(--brand-outline)/20',
     accent: 'purple',
   },
   team: {
     icon: Users,
     label: 'team',
     color: '#3b82f6',
-    bgLight: 'from-blue-500/10 to-blue-500/5',
-    border: 'border-blue-500/20',
+    bgLight: 'from-(--brand)/10 to-(--brand)/5',
+    border: 'border-(--brand-outline)/20',
     accent: 'blue',
   },
   individual: {
     icon: User,
     label: 'individual',
     color: '#10b981',
-    bgLight: 'from-emerald-500/10 to-emerald-500/5',
-    border: 'border-emerald-500/20',
+    bgLight: 'from-(--success-solid)/10 to-(--success-solid)/5',
+    border: 'border-(--success-outline)/20',
     accent: 'emerald',
   },
 };
@@ -95,36 +95,36 @@ function getHealthConfig(health: HealthStatus) {
   switch (health) {
     case 'on_track':
       return {
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+        color: 'text-(--success-text)',
+        bg: 'bg-(--success-quiet) bg-(--success-solid)/30',
         icon: CheckCircle,
         label: 'On Track',
       };
     case 'at_risk':
       return {
-        color: 'text-amber-600',
-        bg: 'bg-amber-100 dark:bg-amber-900/30',
+        color: 'text-(--warning-text)',
+        bg: 'bg-(--warning-quiet) bg-(--warning-solid)/30',
         icon: AlertTriangle,
         label: 'At Risk',
       };
     case 'behind':
       return {
-        color: 'text-red-600',
-        bg: 'bg-red-100 dark:bg-red-900/30',
+        color: 'text-(--danger-text)',
+        bg: 'bg-(--danger-quiet) bg-(--danger-solid)/30',
         icon: AlertCircle,
         label: 'Behind',
       };
     case 'completed':
       return {
-        color: 'text-blue-600',
-        bg: 'bg-blue-100 dark:bg-blue-900/30',
+        color: 'text-(--brand-text)',
+        bg: 'bg-(--brand-quiet) bg-(--brand)/30',
         icon: CheckCircle,
         label: 'Completed',
       };
     default:
       return {
-        color: 'text-gray-400',
-        bg: 'bg-gray-100 dark:bg-gray-800',
+        color: 'text-(--text-muted)',
+        bg: 'bg-(--surface-2) dark:bg-(--surface-sunken)',
         icon: Eye,
         label: 'Draft',
       };
@@ -132,15 +132,15 @@ function getHealthConfig(health: HealthStatus) {
 }
 
 function getProgressColor(progress: number): string {
-  if (progress >= 70) return 'text-emerald-600';
-  if (progress >= 40) return 'text-amber-600';
-  return 'text-red-600';
+  if (progress >= 70) return 'text-(--success-text)';
+  if (progress >= 40) return 'text-(--warning-text)';
+  return 'text-(--danger-text)';
 }
 
 function getProgressBarColor(progress: number): string {
-  if (progress >= 70) return 'bg-emerald-500';
-  if (progress >= 40) return 'bg-amber-500';
-  return 'bg-red-500';
+  if (progress >= 70) return 'bg-(--success-solid)';
+  if (progress >= 40) return 'bg-(--warning-solid)';
+  return 'bg-(--danger-solid)';
 }
 
 // ── Tree Node Component ──────────────────────────────────────────────────────
@@ -188,9 +188,9 @@ function TreeNodeCard({
         <div
           className={`group relative rounded-xl border transition-all duration-200 hover:shadow-md hover:border-(--border) cursor-pointer ${
             node.health === 'behind'
-              ? 'border-red-200 dark:border-red-900/40'
+              ? 'border-(--danger-outline)'
               : node.health === 'at_risk'
-                ? 'border-amber-200 dark:border-amber-900/40'
+                ? 'border-(--warning-outline)'
                 : 'border-(--border)'
           }`}
           style={{
@@ -384,8 +384,8 @@ function StrategyStats({
     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
       <Card>
         <CardContent className="p-3 flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-            <Target className="w-4 h-4 text-purple-700 dark:text-purple-400" />
+          <div className="p-1.5 rounded-lg bg-(--brand-quiet) bg-(--brand)/30">
+            <Target className="w-4 h-4 text-(--brand-text)" />
           </div>
           <div>
             <p className="text-lg font-bold">{summary.total}</p>
@@ -398,8 +398,8 @@ function StrategyStats({
 
       <Card>
         <CardContent className="p-3 flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-            <TrendingUp className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+          <div className="p-1.5 rounded-lg bg-(--success-quiet) bg-(--success-solid)/30">
+            <TrendingUp className="w-4 h-4 text-(--success-text)" />
           </div>
           <div>
             <p className="text-lg font-bold">{summary.avgProgress}%</p>
@@ -412,11 +412,11 @@ function StrategyStats({
 
       <Card>
         <CardContent className="p-3 flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-            <CheckCircle className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+          <div className="p-1.5 rounded-lg bg-(--success-quiet) bg-(--success-solid)/30">
+            <CheckCircle className="w-4 h-4 text-(--success-text)" />
           </div>
           <div>
-            <p className="text-lg font-bold text-emerald-600">{summary.onTrack}</p>
+            <p className="text-lg font-bold text-(--success-text)">{summary.onTrack}</p>
             <p className="text-[10px] text-(--text-muted)">
               {t('strategyMap.onTrack', 'On Track')}
             </p>
@@ -426,11 +426,11 @@ function StrategyStats({
 
       <Card>
         <CardContent className="p-3 flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-            <AlertTriangle className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+          <div className="p-1.5 rounded-lg bg-(--warning-quiet) bg-(--warning-solid)/30">
+            <AlertTriangle className="w-4 h-4 text-(--warning-text)" />
           </div>
           <div>
-            <p className="text-lg font-bold text-amber-600">{summary.atRisk}</p>
+            <p className="text-lg font-bold text-(--warning-text)">{summary.atRisk}</p>
             <p className="text-[10px] text-(--text-muted)">{t('strategyMap.atRisk', 'At Risk')}</p>
           </div>
         </CardContent>
@@ -438,11 +438,11 @@ function StrategyStats({
 
       <Card>
         <CardContent className="p-3 flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-red-100 dark:bg-red-900/30">
-            <AlertCircle className="w-4 h-4 text-red-700 dark:text-red-400" />
+          <div className="p-1.5 rounded-lg bg-(--danger-quiet) bg-(--danger-solid)/30">
+            <AlertCircle className="w-4 h-4 text-(--danger-text)" />
           </div>
           <div>
-            <p className="text-lg font-bold text-red-600">{summary.behind}</p>
+            <p className="text-lg font-bold text-(--danger-text)">{summary.behind}</p>
             <p className="text-[10px] text-(--text-muted)">{t('strategyMap.behind', 'Behind')}</p>
           </div>
         </CardContent>
@@ -450,11 +450,11 @@ function StrategyStats({
 
       <Card>
         <CardContent className="p-3 flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-            <CheckCircle className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+          <div className="p-1.5 rounded-lg bg-(--brand-quiet) bg-(--brand)/30">
+            <CheckCircle className="w-4 h-4 text-(--brand-text)" />
           </div>
           <div>
-            <p className="text-lg font-bold text-blue-600">{summary.completed}</p>
+            <p className="text-lg font-bold text-(--brand-text)">{summary.completed}</p>
             <p className="text-[10px] text-(--text-muted)">
               {t('strategyMap.completed', 'Completed')}
             </p>
@@ -525,7 +525,7 @@ export default function StrategyMapsClient() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              <Layers className="w-7 h-7 text-purple-500" />
+              <Layers className="w-7 h-7 text-(--brand-text)" />
               {t('strategyMap.title', 'Strategy Map')}
             </h1>
             <p className="text-sm text-(--text-muted)">
@@ -577,28 +577,28 @@ export default function StrategyMapsClient() {
         {levelBreakdown && (
           <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-(--text-muted)">
             <span className="flex items-center gap-1">
-              <Building2 className="w-3 h-3 text-purple-500" />
+              <Building2 className="w-3 h-3 text-(--brand-text)" />
               {t('strategyMap.company', 'Company')}: {levelBreakdown.company}
             </span>
             <span className="flex items-center gap-1">
-              <Users className="w-3 h-3 text-blue-500" />
+              <Users className="w-3 h-3 text-(--brand-text)" />
               {t('strategyMap.team', 'Team')}: {levelBreakdown.team}
             </span>
             <span className="flex items-center gap-1">
-              <User className="w-3 h-3 text-emerald-500" />
+              <User className="w-3 h-3 text-(--success-text)" />
               {t('strategyMap.individual', 'Individual')}: {levelBreakdown.individual}
             </span>
             <span className="sm:ml-auto flex items-center gap-2">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-(--success-solid)" />
                 {t('strategyMap.onTrack', 'On Track')}
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span className="w-2 h-2 rounded-full bg-(--warning-solid)" />
                 {t('strategyMap.atRisk', 'At Risk')}
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span className="w-2 h-2 rounded-full bg-(--danger-solid)" />
                 {t('strategyMap.behind', 'Behind')}
               </span>
             </span>
@@ -647,7 +647,7 @@ export default function StrategyMapsClient() {
       {strategyTree && strategyTree.length > 0 && (
         <div className="mt-8 p-4 rounded-xl border border-(--border) bg-(--background-subtle)/50">
           <div className="flex items-center gap-2 mb-2">
-            <Zap className="w-4 h-4 text-amber-500" />
+            <Zap className="w-4 h-4 text-(--warning-text)" />
             <h3 className="text-sm font-semibold">
               {t('strategyMap.alignmentTip', 'Alignment Tip')}
             </h3>
@@ -655,8 +655,8 @@ export default function StrategyMapsClient() {
           <p className="text-xs text-(--text-muted) leading-relaxed">
             {t(
               'strategyMap.alignmentHint',
-              'Company objectives cascade down to teams and individuals through parent-child relationships. ' +
-                'Each level aligns with the level above to ensure everyone works toward the same strategic goals. ' +
+              'Company objectives cascade down to teams and individuals through parent-child relationships.' +
+                'Each level aligns with the above to ensure everyone works toward same strategic goals.' +
                 'Click any objective to view details or create new aligned objectives from the Goals page.',
             )}
           </p>
@@ -672,7 +672,7 @@ export default function StrategyMapsClient() {
       title={t('strategyMap.upgradeTitle', 'Strategy Maps')}
       description={t(
         'strategyMap.upgradeDesc',
-        'Visualize your entire OKR cascade from company objectives down to individual goals. ' +
+        'Visualize your entire OKR cascade from company objectives down to individual goals.' +
           'Upgrade to see the full strategy map with health indicators and drill-down.',
       )}
       mode="overlay"

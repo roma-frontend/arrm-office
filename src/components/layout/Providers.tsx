@@ -15,6 +15,7 @@ import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
+import DashboardAmbient from '@/components/layout/DashboardAmbient';
 
 function SidebarSkeleton() {
   return (
@@ -210,6 +211,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             definite height instead of collapsing to `auto`, which turns the
             document into the scroller and drags the sidebar out of the viewport. */}
         <div className="flex app-shell h-dvh bg-(--background) overflow-hidden">
+          {/* Ambient background — drifting colour orbs behind all content (z-0) */}
+          <DashboardAmbient />
+
           {/* Desktop Sidebar — ssr:false prevents localStorage persist mismatch */}
           <Sidebar />
 
@@ -243,8 +247,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <main
               className={
                 isChatPage || isAIChatPage
-                  ? 'flex-1 overflow-hidden flex flex-col min-h-0'
-                  : 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 main-scrollable'
+                  ? 'flex-1 overflow-hidden flex flex-col min-h-0 app-main'
+                  : 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 main-scrollable app-main'
               }
             >
               {isChatPage ? (

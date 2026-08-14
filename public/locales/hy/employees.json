@@ -466,7 +466,9 @@
         "departmentPlaceholder": "Ընտրեք բաժին",
         "noDepartments": "Բաժիններ չկան",
         "levelLabel": "Մակարդակ",
-        "levelPlaceholder": "օրինակ՝ Ավագ, Միջին, Սկսնակ, Վարող"
+        "levelPlaceholder": "օրինակ՝ Ավագ, Միջին, Սկսնակ, Վարող",
+        "driverPositionLabel": "Սա վարորդի պաշտոն է",
+        "driverPositionDescription": "Այս պաշտոնը զբաղեցնող աշխատակիցները կարող են գրանցվել որպես ավտոպարկի վարորդ"
       },
       "compensation": {
         "title": "Աշխատավարձ",
@@ -486,11 +488,13 @@
         "departmentLabel": "Բաժին",
         "levelLabel": "Մակարդակ",
         "salaryRangeLabel": "Աշխատավարձի միջակայք",
+        "driverPositionLabel": "Վարորդի պաշտոն",
         "notSpecified": "Նշված չէ"
       }
     },
     "toast": {
       "titleRequired": "Խնդրում ենք մուտքագրել պաշտոնի անվանումը",
+      "noOrganization": "Ընտրեք կազմակերպություն՝ նախքան պաշտոն ստեղծելը",
       "salaryInvalid": "Առավելագույն աշխատավարձը պետք է մեծ լինի նվազագույնից",
       "createSuccess": "Պաշտոնը հաջողությամբ ստեղծվեց",
       "updateSuccess": "Պաշտոնը հաջողությամբ թարմացվեց",

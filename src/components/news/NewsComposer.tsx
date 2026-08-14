@@ -14,13 +14,14 @@ import { AiTextActions } from '@/components/ai/AiTextActions';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -114,14 +115,14 @@ export function NewsComposer({ open, onClose, organizationId }: NewsComposerProp
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t('news.compose.title')}</DialogTitle>
-          <DialogDescription>{t('news.compose.subtitle')}</DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('news.compose.title')}</SheetTitle>
+          <SheetDescription>{t('news.compose.subtitle')}</SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-5">
+        <SheetBody className="space-y-5">
           {/* Category */}
           <div className="space-y-2">
             <Label>{t('news.compose.category')}</Label>
@@ -285,17 +286,17 @@ export function NewsComposer({ open, onClose, organizationId }: NewsComposerProp
               {t('news.compose.urgent')}
             </label>
           </div>
-        </div>
+        </SheetBody>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             {t('common.cancel')}
           </Button>
           <Button onClick={submit} disabled={submitting || !title.trim() || !content.trim()}>
             {submitting ? t('common.sending') : t('news.compose.publish')}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -83,8 +83,11 @@ export default function FeatureCard({
 
       {/* Outer glow on hover */}
       <div
-        className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-2xl -z-20"
-        style={{ background: gradient }}
+        className="absolute inset-0 rounded-3xl blur-2xl -z-20 transition-opacity duration-500"
+        style={{
+          background: gradient,
+          opacity: isHovered ? 1 : 0,
+        }}
         aria-hidden="true"
       />
 
@@ -92,28 +95,33 @@ export default function FeatureCard({
       <div
         className="relative rounded-[2rem] border backdrop-blur-2xl overflow-hidden h-full"
         style={{
-          transition: 'transform 0.3s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease',
-          borderColor: 'var(--landing-card-border)',
+          borderColor: isHovered ? `${accentColor}40` : 'var(--landing-card-border)',
           backgroundColor: 'var(--landing-card-bg)',
+          transform: isHovered ? 'translateY(-4px) scale(1.01)' : 'translateY(0) scale(1)',
           boxShadow: isHovered
-            ? `0 8px 32px ${accentColor}20, inset 0 1px 0 rgba(255,255,255,0.1)`
-            : '0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
+            ? `0 8px 32px ${accentColor}18, inset 0 1px 0 rgba(255,255,255,0.1)`
+            : '0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.05)',
+          transition:
+            'transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s cubic-bezier(0.22,1,0.36,1), border-color 0.4s cubic-bezier(0.22,1,0.36,1)',
         }}
       >
         {/* Top shimmer border */}
         <div
-          className="absolute top-0 left-0 right-0 h-px"
+          className="absolute top-0 left-0 right-0 h-px transition-opacity duration-500"
           style={{
             background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
-            opacity: 0.6,
+            opacity: isHovered ? 0.8 : 0.3,
           }}
           aria-hidden="true"
         />
 
         {/* Gradient mesh on hover */}
         <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-          style={{ background: gradient }}
+          className="absolute inset-0 transition-opacity duration-700"
+          style={{
+            background: gradient,
+            opacity: isHovered ? 1 : 0,
+          }}
           aria-hidden="true"
         />
 
@@ -133,10 +141,14 @@ export default function FeatureCard({
             </span>
           )}
 
-          {/* Icon container — CSS wiggle on hover */}
+          {/* Icon container — smooth wiggle on hover */}
           <div
-            className="flex items-center justify-center w-14 h-14 rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300"
-            style={{ background: `${accentColor}20`, border: `1px solid ${accentColor}30` }}
+            className="flex items-center justify-center w-14 h-14 rounded-2xl transition-transform duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            style={{
+              background: `${accentColor}20`,
+              border: `1px solid ${accentColor}30`,
+              transform: isHovered ? 'scale(1.1) rotate(3deg)' : 'scale(1) rotate(0deg)',
+            }}
           >
             <div style={{ color: accentColor }}>{icon}</div>
           </div>
@@ -170,8 +182,11 @@ export default function FeatureCard({
 
         {/* Corner glow decoration */}
         <div
-          className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full opacity-10 blur-2xl group-hover:opacity-25 transition-opacity duration-700"
-          style={{ background: accentColor }}
+          className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full blur-2xl transition-opacity duration-700"
+          style={{
+            background: accentColor,
+            opacity: isHovered ? 0.2 : 0.06,
+          }}
           aria-hidden="true"
         />
       </div>

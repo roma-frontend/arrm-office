@@ -138,10 +138,22 @@ function makeCtx() {
 }
 
 describe('createTask', () => {
+  /**
+   * The creator is the authenticated caller, never `args.assignedBy` — the
+   * mutation used to trust that argument and check nothing at all, so any
+   * client could create tasks as someone else in any organization.
+   *
+   * `get` resolves the assignee (org match), then anything the handler looks up
+   * afterwards; an admin caller skips the reporting-line walk entirely.
+   */
+  function asAdmin(get: jest.Mock, org: string = ORG_A) {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', org, ADMIN_ID));
+    get.mockResolvedValueOnce(userDoc({ _id: USER_ID, organizationId: org })); // assignee
+  }
+
   it('creates a task and sanitizes the title', async () => {
-    const { ctx, get, insert, patch, remove, query, withIndex, order, take, paginate, first } =
-      makeCtx();
-    get.mockResolvedValueOnce(userDoc({ role: 'admin', _id: ADMIN_ID, organizationId: ORG_A }));
+    const { ctx, get, insert } = makeCtx();
+    asAdmin(get);
 
     const id = await handlers.createTask(ctx, {
       title: '<script>alert(1)</script> Task',
@@ -168,17 +180,19 @@ describe('createTask', () => {
     );
   });
 
-  it('notifies the assigner (non-superadmin) and writes an audit log', async () => {
+  it('records the authenticated caller as the assigner, ignoring args', async () => {
     const { ctx, get, insert } = makeCtx();
-    get.mockResolvedValueOnce(userDoc({ role: 'admin', _id: ADMIN_ID }));
+    asAdmin(get);
 
     await handlers.createTask(ctx, {
       title: 'T',
       assignedTo: USER_ID,
-      assignedBy: ADMIN_ID,
+      // A forged creator: the handler must not honour it.
+      assignedBy: 'someone_else',
       priority: 'medium',
     });
 
+    expect(insert).toHaveBeenCalledWith('tasks', expect.objectContaining({ assignedBy: ADMIN_ID }));
     expect(mockNotify).toHaveBeenCalled();
     expect(insert).toHaveBeenCalledWith(
       'auditLogs',
@@ -186,16 +200,67 @@ describe('createTask', () => {
     );
   });
 
+  it('rejects an unauthenticated caller', async () => {
+    const { ctx } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(null);
+
+    await expect(
+      handlers.createTask(ctx, { title: 'T', assignedTo: USER_ID, priority: 'low' }),
+    ).rejects.toThrow('Not authenticated');
+  });
+
+  it('rejects an employee: assigning work is not theirs to do', async () => {
+    const { ctx } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+
+    await expect(
+      handlers.createTask(ctx, { title: 'T', assignedTo: 'someone', priority: 'low' }),
+    ).rejects.toThrow('Only admins and supervisors may assign tasks');
+  });
+
+  it('rejects an assignee from another organization', async () => {
+    const { ctx, get } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    get.mockResolvedValueOnce(userDoc({ _id: USER_ID, organizationId: ORG_B }));
+
+    await expect(
+      handlers.createTask(ctx, { title: 'T', assignedTo: USER_ID, priority: 'low' }),
+    ).rejects.toThrow('cross-organization');
+  });
+
+  it('lets a supervisor assign to someone in their subtree', async () => {
+    const { ctx, get, take, insert } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(makeCaller('supervisor', ORG_A, ADMIN_ID));
+    get.mockResolvedValueOnce(userDoc({ _id: USER_ID, organizationId: ORG_A }));
+    take.mockResolvedValueOnce([userDoc({ _id: USER_ID })]);
+    take.mockResolvedValue([]);
+
+    await handlers.createTask(ctx, { title: 'T', assignedTo: USER_ID, priority: 'low' });
+
+    expect(insert).toHaveBeenCalledWith('tasks', expect.objectContaining({ assignedBy: ADMIN_ID }));
+  });
+
+  it('stops a supervisor assigning outside their team', async () => {
+    const { ctx, get, take } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(makeCaller('supervisor', ORG_A, ADMIN_ID));
+    get.mockResolvedValueOnce(userDoc({ _id: 'stranger', organizationId: ORG_A }));
+    take.mockResolvedValueOnce([userDoc({ _id: 'my_report' })]);
+    take.mockResolvedValue([]);
+
+    await expect(
+      handlers.createTask(ctx, { title: 'T', assignedTo: 'stranger', priority: 'low' }),
+    ).rejects.toThrow('only assign tasks to people in your team');
+  });
+
   it('skips the notification for a superadmin assigner but still audits', async () => {
     const { ctx, get, insert } = makeCtx();
-    get.mockResolvedValueOnce(
-      userDoc({ role: 'superadmin', _id: ADMIN_ID, organizationId: ORG_A }),
-    );
+    mockGetAuthCaller.mockResolvedValue(makeCaller('superadmin', ORG_A, ADMIN_ID));
+    mockIsSuperadmin.mockReturnValue(true);
+    get.mockResolvedValueOnce(userDoc({ _id: USER_ID, organizationId: ORG_A }));
 
     await handlers.createTask(ctx, {
       title: 'T',
       assignedTo: USER_ID,
-      assignedBy: ADMIN_ID,
       priority: 'low',
     });
 
@@ -208,7 +273,7 @@ describe('createTask', () => {
 
   it('rejects an objective that does not exist', async () => {
     const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(userDoc({ role: 'admin', _id: ADMIN_ID }));
+    asAdmin(get);
     get.mockResolvedValueOnce(null); // objective
 
     await expect(
@@ -224,7 +289,7 @@ describe('createTask', () => {
 
   it('rejects a key result that does not belong to the objective', async () => {
     const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(userDoc({ role: 'admin', _id: ADMIN_ID }));
+    asAdmin(get);
     get.mockResolvedValueOnce({ _id: 'objective_1', title: 'O' }); // objective
     get.mockResolvedValueOnce({ _id: 'kr_1', objectiveId: 'objective_other' }); // key result
 
@@ -242,7 +307,7 @@ describe('createTask', () => {
 
   it('rejects a project from a foreign organization', async () => {
     const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(userDoc({ role: 'admin', _id: ADMIN_ID, organizationId: ORG_A }));
+    asAdmin(get);
     get.mockResolvedValueOnce({ _id: 'project_1', organizationId: ORG_B });
 
     await expect(
@@ -258,7 +323,7 @@ describe('createTask', () => {
 
   it('accepts a project from the same organization', async () => {
     const { ctx, get, insert } = makeCtx();
-    get.mockResolvedValueOnce(userDoc({ role: 'admin', _id: ADMIN_ID, organizationId: ORG_A }));
+    asAdmin(get);
     get.mockResolvedValueOnce({ _id: 'project_1', organizationId: ORG_A });
 
     await handlers.createTask(ctx, {
@@ -606,16 +671,53 @@ describe('getUsersForAssignment', () => {
     expect(withIndex).toHaveBeenCalledWith('by_org', expect.any(Function));
   });
 
-  it('returns all users for unauthenticated callers (no org scoping)', async () => {
+  // Previously this returned every user of every tenant: with no caller the
+  // handler fell through to an unscoped `query('users')`. The assertion below
+  // used to codify that leak as expected behaviour.
+  it('returns nothing for unauthenticated callers instead of scanning all users', async () => {
     mockGetAuthCaller.mockResolvedValue(null);
-    const { ctx, query, withIndex, take } = makeCtx();
+    const { ctx, query, take } = makeCtx();
     take.mockResolvedValueOnce([userDoc()]);
 
     const result = (await handlers.getUsersForAssignment(ctx, {})) as any[];
 
-    expect(withIndex).not.toHaveBeenCalled();
-    expect(query).toHaveBeenCalledWith('users');
-    expect(result).toHaveLength(1);
+    expect(result).toEqual([]);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it('scopes a supervisor to their own branch of the reporting line', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('supervisor', ORG_A, ADMIN_ID));
+    const { ctx, take } = makeCtx();
+    // First take() is the org roster, the rest serve the subtree walk.
+    take.mockResolvedValueOnce([
+      userDoc({ _id: 'report_1' }),
+      userDoc({ _id: 'stranger', supervisorId: 'someone_else' }),
+    ]);
+    take.mockResolvedValueOnce([userDoc({ _id: 'report_1' })]);
+    take.mockResolvedValue([]);
+
+    const result = (await handlers.getUsersForAssignment(ctx, {})) as any[];
+
+    expect(result.map((u) => u._id)).toEqual(['report_1']);
+  });
+
+  // Reporting lines are not filled in everywhere; without this a supervisor
+  // whose reports have no `supervisorId` gets an empty assignee picker.
+  it('falls back to the department when a supervisor has no subtree', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('supervisor', ORG_A, ADMIN_ID));
+    const { ctx, get, take } = makeCtx();
+    take.mockResolvedValueOnce([
+      userDoc({ _id: 'same_dept', department: 'Ops' }),
+      userDoc({ _id: 'other_dept', department: 'Sales' }),
+      userDoc({ _id: ADMIN_ID, department: 'Ops' }),
+    ]);
+    take.mockResolvedValue([]); // no direct reports anywhere
+    get.mockResolvedValue(userDoc({ _id: ADMIN_ID, department: 'Ops' }));
+
+    const result = (await handlers.getUsersForAssignment(ctx, {})) as any[];
+
+    // Same department only, and never the supervisor themselves.
+    expect(result.map((u) => u._id)).toEqual(['same_dept']);
   });
 });
 

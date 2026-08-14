@@ -293,11 +293,11 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
           >
             <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
               <UserCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-500" />
-              <span className="text-[10px] sm:text-xs text-blue-600 font-medium">
+              <span className="text-[10px] sm:text-xs text-(--brand-text) font-medium">
                 {t('employees.active')}
               </span>
             </div>
-            <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.total}</p>
+            <p className="text-xl sm:text-2xl font-bold text-(--brand-text)">{stats.total}</p>
           </BizierEasingCard>
 
           <BizierEasingCard
@@ -307,12 +307,12 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
             className="p-2 sm:p-3 rounded-xl bg-gray-500/10 border border-gray-500/20"
           >
             <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-              <UserX className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-500" />
-              <span className="text-[10px] sm:text-xs text-gray-600 font-medium">
+              <UserX className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-(--text-3)" />
+              <span className="text-[10px] sm:text-xs text-(--text-2) font-medium">
                 {t('employees.inactive')}
               </span>
             </div>
-            <p className="text-xl sm:text-2xl font-bold text-gray-600">{stats.inactive}</p>
+            <p className="text-xl sm:text-2xl font-bold text-(--text-2)">{stats.inactive}</p>
           </BizierEasingCard>
         </div>
 
@@ -328,7 +328,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
             </span>
             <Badge
               variant="secondary"
-              className="bg-purple-500/20 text-purple-600 border-purple-500/30 text-[10px] sm:text-xs"
+              className="bg-(--purple-quiet) text-(--purple-text) border-(--purple-outline) text-[10px] sm:text-xs"
             >
               {stats.admins}
             </Badge>
@@ -345,7 +345,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
             </span>
             <Badge
               variant="secondary"
-              className="bg-amber-500/20 text-amber-600 border-amber-500/30 text-[10px] sm:text-xs"
+              className="bg-(--warning-quiet) text-(--warning-text) border-(--warning-outline) text-[10px] sm:text-xs"
             >
               {stats.supervisors}
             </Badge>
@@ -362,7 +362,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
             </span>
             <Badge
               variant="secondary"
-              className="bg-green-500/20 text-green-600 border-green-500/30 text-[10px] sm:text-xs"
+              className="bg-(--success-quiet) text-(--success-text) border-(--success-outline) text-[10px] sm:text-xs"
             >
               {stats.employees}
             </Badge>
@@ -380,7 +380,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
               </span>
               <Badge
                 variant="secondary"
-                className="bg-cyan-500/20 text-cyan-600 border-cyan-500/30 text-[10px] sm:text-xs"
+                className="bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline) text-[10px] sm:text-xs"
               >
                 {stats.drivers}
               </Badge>
@@ -465,7 +465,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
 
                 <Badge
                   variant="secondary"
-                  className="text-[9px] sm:text-[10px] bg-green-500/20 text-green-600 border-green-500/30"
+                  className="text-[9px] sm:text-[10px] bg-(--success-quiet) text-(--success-text) border-(--success-outline)"
                 >
                   New
                 </Badge>

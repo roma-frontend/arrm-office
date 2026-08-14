@@ -4,7 +4,14 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -709,17 +716,19 @@ export function ServiceBroadcastDialog({
   const _currentStepData = STEPS[currentStepIndex];
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(val) => {
         if (!val) resetState();
         onOpenChange(val);
       }}
     >
-      <DialogContent className="max-w-xl max-h-[95vh] overflow-y-auto p-0 gap-0">
-        <DialogTitle className="sr-only">{t('broadcastDialog.serviceBroadcast')}</DialogTitle>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('broadcastDialog.serviceBroadcast')}</SheetTitle>
+        </SheetHeader>
         {/* Progress Bar */}
-        <div className="px-6 pt-6 pb-2">
+        <div className="px-6 pt-2 pb-2 shrink-0">
           <div className="flex items-center justify-between mb-4">
             {STEPS.map((step, idx) => {
               const Icon = step.icon;
@@ -765,7 +774,7 @@ export function ServiceBroadcastDialog({
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-6">
+        <SheetBody>
           <WizardDraftNotice
             show={draft.restored}
             step={draft.restoredStep}
@@ -819,10 +828,10 @@ export function ServiceBroadcastDialog({
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </SheetBody>
 
         {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-(--border) flex items-center justify-between bg-(--background-subtle)">
+        <SheetFooter className="justify-between">
           <Button
             variant="ghost"
             onClick={prevStep}
@@ -869,8 +878,8 @@ export function ServiceBroadcastDialog({
               </Button>
             )}
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

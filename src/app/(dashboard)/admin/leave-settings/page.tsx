@@ -102,6 +102,32 @@ export default function LeaveSettingsPage() {
     }
   };
 
+  // Switching a type off is the common case on this page — a company that never
+  // grants study leave wants it gone, not reconfigured. Keep it one click from
+  // the card header instead of buried behind "Edit", and carry the rest of the
+  // config through unchanged so turning it back on restores the old settings.
+  const handleToggleActive = async (type: string, nextActive: boolean) => {
+    const existing = configs?.find((c) => c.type === type);
+    try {
+      await upsertConfig({
+        organizationId,
+        type: type as LeaveType,
+        isActive: nextActive,
+        defaultDaysPerYear: existing?.defaultDaysPerYear ?? 10,
+        requiresDocumentation: existing?.requiresDocumentation ?? false,
+        approvalChain: existing?.approvalChain ? [...existing.approvalChain] : ['supervisor'],
+        balanceEditable: existing?.balanceEditable ?? true,
+      });
+      toast.success(
+        nextActive
+          ? t('admin.leaveSettings.enabled', 'Leave type enabled')
+          : t('admin.leaveSettings.disabled', 'Leave type disabled'),
+      );
+    } catch (e) {
+      toast.error(String(e));
+    }
+  };
+
   const handleAddApprovalRole = (role: string) => {
     if (!editForm.approvalChain.includes(role)) {
       setEditForm((prev) => ({
@@ -173,6 +199,11 @@ export default function LeaveSettingsPage() {
                     <Badge variant={isActive ? 'default' : 'secondary'}>
                       {isActive ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
                     </Badge>
+                    <Switch
+                      checked={isActive}
+                      onCheckedChange={(v) => handleToggleActive(type, v)}
+                      aria-label={t('admin.leaveSettings.toggleActive', 'Enable this leave type')}
+                    />
                     <Button size="sm" variant="outline" onClick={() => handleEdit(type)}>
                       {t('common.edit', 'Edit')}
                     </Button>
@@ -236,7 +267,7 @@ export default function LeaveSettingsPage() {
                         <Badge
                           key={role}
                           variant="secondary"
-                          className="cursor-pointer hover:bg-red-100 hover:text-red-600 transition-colors"
+                          className="cursor-pointer hover:bg-(--danger-quiet) hover:text-(--danger-text) transition-colors"
                           onClick={() => handleRemoveApprovalRole(role)}
                         >
                           {role} ✕

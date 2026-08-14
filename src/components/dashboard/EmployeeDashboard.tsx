@@ -33,42 +33,30 @@ const _AttendanceDashboard = dynamic(
     import('@/components/attendance/AttendanceDashboard').then((mod) => ({
       default: mod.AttendanceDashboard,
     })),
-  {
-    loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
-    ssr: true,
-  },
+  { loading: () => <div className="h-64 bg-(--surface-2) rounded-lg animate-pulse" />, ssr: true },
 );
 
 const AIRecommendationsCard = dynamic(() => import('@/components/ai/AIRecommendationsCard'), {
-  loading: () => <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />,
+  loading: () => <div className="h-32 bg-(--surface-2) rounded-lg animate-pulse" />,
   ssr: true,
 });
 
 // First-page widgets (My Tasks / Upcoming Birthdays / Out of Office)
 const MyTasksWidget = dynamic(() => import('@/components/dashboard/widgets/MyTasksWidget'), {
-  loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
+  loading: () => <div className="h-64 bg-(--surface-2) rounded-lg animate-pulse" />,
   ssr: true,
 });
 const UpcomingBirthdaysWidget = dynamic(
   () => import('@/components/dashboard/widgets/UpcomingBirthdaysWidget'),
-  {
-    loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
-    ssr: true,
-  },
+  { loading: () => <div className="h-64 bg-(--surface-2) rounded-lg animate-pulse" />, ssr: true },
 );
 const OutOfOfficeWidget = dynamic(
   () => import('@/components/dashboard/widgets/OutOfOfficeWidget'),
-  {
-    loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
-    ssr: true,
-  },
+  { loading: () => <div className="h-64 bg-(--surface-2) rounded-lg animate-pulse" />, ssr: true },
 );
 const ReportingLineWidget = dynamic(
   () => import('@/components/dashboard/widgets/ReportingLineWidget'),
-  {
-    loading: () => <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />,
-    ssr: true,
-  },
+  { loading: () => <div className="h-64 bg-(--surface-2) rounded-lg animate-pulse" />, ssr: true },
 );
 
 const containerVariants = {

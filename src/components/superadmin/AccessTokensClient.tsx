@@ -26,13 +26,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -206,23 +207,23 @@ export default function AccessTokensClient() {
         </div>
 
         {/* Credentials display dialog */}
-        <Dialog
+        <Sheet
           open={!!createdCredentials}
           onOpenChange={(open) => {
             if (!open) setCreatedCredentials(null);
           }}
         >
-          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+          <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
                 <Key className="w-5 h-5 text-destructive" />
                 {t('admin:accessTokens.credentialsTitle')}
-              </DialogTitle>
-              <DialogDescription>{t('admin:accessTokens.credentialsDesc')}</DialogDescription>
-            </DialogHeader>
+              </SheetTitle>
+              <SheetDescription>{t('admin:accessTokens.credentialsDesc')}</SheetDescription>
+            </SheetHeader>
 
             {createdCredentials && (
-              <div className="space-y-4 py-4">
+              <SheetBody className="space-y-4">
                 <div className="p-4 rounded-lg border-2 border-destructive/30 bg-destructive/5">
                   <div className="flex items-start gap-2 mb-3">
                     <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -309,16 +310,16 @@ export default function AccessTokensClient() {
                     {t('admin:accessTokens.credLoginUrl')}
                   </p>
                 </div>
-              </div>
+              </SheetBody>
             )}
 
-            <DialogFooter>
+            <SheetFooter>
               <Button onClick={() => setCreatedCredentials(null)} className="w-full">
                 {t('admin:accessTokens.credSaved')}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
 
         {/* Tokens list */}
         <Card style={{ background: 'var(--card)' }}>
@@ -371,7 +372,7 @@ export default function AccessTokensClient() {
                                 : t('admin:accessTokens.statusRevoked')}
                           </Badge>
                           {token.status === 'active' && (
-                            <span className="text-xs font-medium text-green-600">
+                            <span className="text-xs font-medium text-(--success-text)">
                               {t('admin:accessTokens.expiresIn', {
                                 time: formatExpiry(token.expiresAt),
                               })}
@@ -445,17 +446,17 @@ export default function AccessTokensClient() {
       </div>
 
       {/* Create dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />
               {t('admin:accessTokens.createTitle')}
-            </DialogTitle>
-            <DialogDescription>{t('admin:accessTokens.createDesc')}</DialogDescription>
-          </DialogHeader>
+            </SheetTitle>
+            <SheetDescription>{t('admin:accessTokens.createDesc')}</SheetDescription>
+          </SheetHeader>
 
-          <div className="space-y-4 py-4">
+          <SheetBody className="space-y-4">
             <div>
               <Label htmlFor="spec-name">{t('admin:accessTokens.formName')}</Label>
               <Input
@@ -516,7 +517,7 @@ export default function AccessTokensClient() {
             <div className="p-3 rounded bg-yellow-500/10 border border-yellow-500/30">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
-                <div className="text-xs text-yellow-700">
+                <div className="text-xs text-(--warning-text)">
                   <p className="font-semibold mb-1">{t('admin:accessTokens.securityNotice')}</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li>{t('admin:accessTokens.securityLine1')}</li>
@@ -528,9 +529,9 @@ export default function AccessTokensClient() {
                 </div>
               </div>
             </div>
-          </div>
+          </SheetBody>
 
-          <DialogFooter>
+          <SheetFooter>
             <Button
               variant="outline"
               onClick={() => {
@@ -550,9 +551,9 @@ export default function AccessTokensClient() {
               <Key className="w-4 h-4 mr-2" />
               {t('admin:accessTokens.generate')}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

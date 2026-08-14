@@ -31,7 +31,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -167,17 +174,17 @@ function CreateCycleWizard({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[95vh]">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
         {/* Header */}
-        <DialogHeader className="px-5 pt-5 pb-0">
-          <DialogTitle className="flex items-center gap-2">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
             {t('performance.createCycle')}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col min-h-0 flex-1">
           {/* Progress bar + Step indicators */}
           <div className="px-5 pt-4 pb-3">
             <div className="relative h-1.5 bg-muted rounded-full overflow-hidden mb-4">
@@ -229,7 +236,7 @@ function CreateCycleWizard({
           </div>
 
           {/* Step Content */}
-          <div className="px-5 py-4 min-h-[280px] overflow-y-auto max-h-[50vh]">
+          <SheetBody className="min-h-[280px]">
             {/* Step 0: Basic Info */}
             {step === 0 && (
               <div className="space-y-4">
@@ -421,10 +428,10 @@ function CreateCycleWizard({
                 </p>
               </div>
             )}
-          </div>
+          </SheetBody>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-5 py-4 border-t bg-muted/30">
+          <SheetFooter className="justify-between">
             <Button
               variant="ghost"
               onClick={step > 0 ? () => setStep(step - 1) : onClose}
@@ -455,10 +462,10 @@ function CreateCycleWizard({
                 {sending ? t('common.sending') : t('performance.createCycle')}
               </Button>
             )}
-          </div>
+          </SheetFooter>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -547,19 +554,19 @@ function FillReviewDialog({
     }[assignment?.type as string] || '';
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Star className="h-5 w-5" />
             {t('performance.fillReview')} — {typeLabel}
-          </DialogTitle>
+          </SheetTitle>
           <p className="text-sm text-muted-foreground">
             {t('performance.reviewingEmployee')}: <strong>{assignment?.revieweeName}</strong>
           </p>
-        </DialogHeader>
+        </SheetHeader>
 
-        <div className="space-y-6">
+        <SheetBody className="space-y-6">
           {/* Aligned Objectives */}
           {revieweeObjectives && revieweeObjectives.length > 0 && (
             <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
@@ -607,10 +614,10 @@ function FillReviewDialog({
                           <p
                             className={`text-sm font-bold ${
                               obj.progress >= 70
-                                ? 'text-emerald-600'
+                                ? 'text-(--success-text)'
                                 : obj.progress >= 40
-                                  ? 'text-amber-600'
-                                  : 'text-red-600'
+                                  ? 'text-(--warning-text)'
+                                  : 'text-(--danger-text)'
                             }`}
                           >
                             {obj.progress}%
@@ -729,9 +736,9 @@ function FillReviewDialog({
               />
             </div>
           </div>
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end gap-2 mt-6">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t('common.cancel')}
           </Button>
@@ -739,9 +746,9 @@ function FillReviewDialog({
             <Send className="h-4 w-4 mr-1" />
             {sending ? t('common.sending') : t('performance.submitReview')}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -803,16 +810,16 @@ function LaunchCycleDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Play className="h-5 w-5" />
             {t('performance.launchCycle')}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-4">
+        <SheetBody className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               {t('performance.selectParticipantsHint')}
@@ -850,9 +857,9 @@ function LaunchCycleDialog({
           <p className="text-sm">
             {t('performance.selectedCount')}: <strong>{selectedParticipants.length}</strong>
           </p>
-        </div>
+        </SheetBody>
 
-        <div className="flex justify-end gap-2 mt-4">
+        <SheetFooter>
           <Button variant="outline" onClick={onClose}>
             {t('common.cancel')}
           </Button>
@@ -860,9 +867,9 @@ function LaunchCycleDialog({
             <Play className="h-4 w-4 mr-1" />
             {sending ? t('common.sending') : t('performance.launchCycle')}
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -887,16 +894,16 @@ function ResultsDialog({
   if (!results) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             {t('performance.results')} — {results.reviewee?.name}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-6">
+        <SheetBody className="space-y-6">
           {/* Overall Score */}
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <div className="text-3xl font-bold">{results.overallScore}</div>
@@ -1018,9 +1025,9 @@ function ResultsDialog({
               })}
             </div>
           ) : null}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -1120,7 +1127,7 @@ export function PerformanceClient() {
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
-              <Clock className="h-5 w-5 text-orange-600" />
+              <Clock className="h-5 w-5 text-(--warning-text)" />
             </div>
             <div>
               <div className="text-2xl font-bold">{pendingAssignments.length}</div>
@@ -1131,7 +1138,7 @@ export function PerformanceClient() {
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <CheckCircle className="h-5 w-5 text-(--success-text)" />
             </div>
             <div>
               <div className="text-2xl font-bold">
@@ -1146,7 +1153,7 @@ export function PerformanceClient() {
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+              <TrendingUp className="h-5 w-5 text-(--brand-text)" />
             </div>
             <div>
               <div className="text-2xl font-bold">

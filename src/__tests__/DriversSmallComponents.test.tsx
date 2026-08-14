@@ -35,8 +35,8 @@ jest.mock('@/components/ui/button', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children, onOpenChange }: any) =>
+jest.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ open, children, onOpenChange }: any) =>
     open ? (
       <div data-testid="dialog">
         <button type="button" data-testid="dialog-close" onClick={() => onOpenChange(false)}>
@@ -45,9 +45,10 @@ jest.mock('@/components/ui/dialog', () => ({
         {children}
       </div>
     ) : null,
-  DialogContent: ({ children, className }: any) => <div className={className}>{children}</div>,
-  DialogHeader: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children }: any) => <h2>{children}</h2>,
+  SheetContent: ({ children, className }: any) => <div className={className}>{children}</div>,
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetTitle: ({ children }: any) => <h2>{children}</h2>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
 }));
 
 jest.mock('@/components/drivers/DriverCalendar', () => ({

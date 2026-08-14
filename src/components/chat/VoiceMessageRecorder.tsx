@@ -173,7 +173,7 @@ export function VoiceMessageRecorder({
           {/* Stop and send button */}
           <button
             onClick={stopRecording}
-            className="p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
+            className="p-2 rounded-lg bg-(--danger-solid) hover:opacity-90 text-white transition-colors"
             title={t('chat.voice.stopRecording')}
           >
             <Square className="w-4 h-4" />
@@ -200,7 +200,7 @@ export function VoiceMessageRecorder({
           {/* Send */}
           <button
             onClick={sendRecording}
-            className="p-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
+            className="p-2 rounded-lg bg-(--success-solid) hover:opacity-90 text-white transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>

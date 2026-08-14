@@ -37,7 +37,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -437,7 +444,7 @@ export default function IssuedDocumentsTab({
     switch (row.status) {
       case 'signed':
         return (
-          <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-600">
+          <Badge className="border-(--success-outline) bg-(--success-quiet) text-(--success-text)">
             <Check className="mr-1 h-3 w-3" />
             {t('issued.statusSigned', 'Signed')}
           </Badge>
@@ -450,7 +457,7 @@ export default function IssuedDocumentsTab({
         );
       case 'edited':
         return (
-          <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-600">
+          <Badge className="border-(--warning-outline) bg-(--warning-quiet) text-(--warning-text)">
             {t('issued.statusEdited', 'Edited in Word')}
           </Badge>
         );
@@ -675,22 +682,24 @@ export default function IssuedDocumentsTab({
       />
 
       {/* Preview */}
-      <Dialog open={previewDoc !== null} onOpenChange={(open) => !open && setPreviewDoc(null)}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+      <Sheet open={previewDoc !== null} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <SheetContent side="right" size="full" closeLabel={t('common.close', 'Close')}>
           {previewDoc && (
             <>
-              <DialogTitle className="pr-8">{previewDoc.title}</DialogTitle>
-              <DialogDescription>
-                {orgName}
-                {previewDoc.documentNumber && <> · {previewDoc.documentNumber}</>}
-              </DialogDescription>
-              <div className="mt-4">
+              <SheetHeader>
+                <SheetTitle className="pr-8">{previewDoc.title}</SheetTitle>
+                <SheetDescription>
+                  {orgName}
+                  {previewDoc.documentNumber && <> · {previewDoc.documentNumber}</>}
+                </SheetDescription>
+              </SheetHeader>
+              <SheetBody>
                 <DocumentPreview doc={previewDoc} />
-              </div>
+              </SheetBody>
             </>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

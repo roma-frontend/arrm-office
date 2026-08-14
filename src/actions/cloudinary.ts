@@ -173,9 +173,20 @@ export async function uploadChatAttachment(
   const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
   const publicId = `chat_${Date.now()}_${safeFileName}`;
 
-  // Determine resource type based on mime type
-  let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'auto';
-  if (mimeType.startsWith('audio/') || mimeType.startsWith('video/')) {
+  // Determine resource type based on mime type. PDFs and other documents MUST
+  // be uploaded as `raw` — Cloudinary's `auto` detection classifies a PDF as an
+  // `image` resource, the image pipeline appends a second `.pdf` extension, and
+  // the format sits under an unsearchable public id. `raw` serves the file
+  // verbatim via /raw/upload/ with no double extension. Mirrors `uploadDocument`.
+  //
+  // NOTE: if PDFs still refuse to open in the chat (HTTP 401, header
+  // `x-cld-error: deny or ACL failure` while JPG/XLS deliver fine), the cause is
+  // an account-wide Cloudinary setting, not this code: Settings → Security →
+  // "Allow delivery of PDF and ZIP files" is OFF by default. Images and XLS raw
+  // files are unaffected by that toggle, which is why only PDFs fail.
+  let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'raw';
+  if (mimeType.startsWith('image/')) resourceType = 'image';
+  else if (mimeType.startsWith('audio/') || mimeType.startsWith('video/')) {
     resourceType = 'video'; // Cloudinary stores audio files as video resources
   }
 

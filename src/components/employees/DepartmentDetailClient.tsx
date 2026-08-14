@@ -43,6 +43,8 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Wizard, WizardStep } from '@/components/ui/wizard';
+import { useDraftResume } from '@/hooks/useDraftResume';
+import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import {
   TextInputStep,
   TextareaStep,
@@ -52,12 +54,12 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import Link from 'next/link';
 
 const DEPARTMENT_COLORS = [
-  { value: '#3B82F6', label: 'Blue', color: 'bg-blue-500/10 text-blue-600' },
-  { value: '#10B981', label: 'Green', color: 'bg-green-500/10 text-green-600' },
-  { value: '#F59E0B', label: 'Amber', color: 'bg-amber-500/10 text-amber-600' },
-  { value: '#EF4444', label: 'Red', color: 'bg-red-500/10 text-red-600' },
-  { value: '#8B5CF6', label: 'Purple', color: 'bg-purple-500/10 text-purple-600' },
-  { value: '#EC4899', label: 'Pink', color: 'bg-pink-500/10 text-pink-600' },
+  { value: '#3B82F6', label: 'Blue', color: 'bg-(--brand-quiet) text-(--brand-text)' },
+  { value: '#10B981', label: 'Green', color: 'bg-(--success-quiet) text-(--success-text)' },
+  { value: '#F59E0B', label: 'Amber', color: 'bg-(--warning-quiet) text-(--warning-text)' },
+  { value: '#EF4444', label: 'Red', color: 'bg-(--danger-quiet) text-(--danger-text)' },
+  { value: '#8B5CF6', label: 'Purple', color: 'bg-(--purple-quiet) text-(--purple-text)' },
+  { value: '#EC4899', label: 'Pink', color: 'bg-(--pink-quiet) text-(--pink-text)' },
   { value: '#06B6D4', label: 'Cyan', color: 'bg-cyan-500/10 text-cyan-600' },
   { value: '#F97316', label: 'Orange', color: 'bg-orange-500/10 text-orange-600' },
 ];
@@ -295,6 +297,7 @@ export default function DepartmentDetailClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showWizard, setShowWizard] = useState(false);
+  const departmentDraft = useDraftResume('create-department', !showWizard);
   const [editingDepartment, setEditingDepartment] = useState<Doc<'departments'> | null>(null);
 
   const isLoading = department === undefined || employees === undefined;
@@ -416,7 +419,7 @@ export default function DepartmentDetailClient() {
                 <Button
                   variant="outline"
                   onClick={handleDelete}
-                  className="flex items-center gap-2 text-red-500 hover:text-red-600"
+                  className="flex items-center gap-2 text-(--danger-text) hover:opacity-80"
                 >
                   <Trash2 className="w-4 h-4" />
                   {t('common.delete')}
@@ -626,6 +629,20 @@ export default function DepartmentDetailClient() {
           onOpenChange={setShowWizard}
           editingDepartment={editingDepartment}
           onComplete={handleWizardComplete}
+        />
+
+        {/* "Draft saved. Restore?" — the department wizard keeps its contents
+            after an accidental close; this is what tells the user so. */}
+        <DraftResumeBar
+          show={departmentDraft.available}
+          label={t('departmentWizard.title', 'New Department')}
+          step={departmentDraft.step}
+          onResume={() => {
+            departmentDraft.dismiss();
+            setShowWizard(true);
+          }}
+          onDismiss={departmentDraft.dismiss}
+          onDiscard={departmentDraft.discard}
         />
       </div>
     </div>

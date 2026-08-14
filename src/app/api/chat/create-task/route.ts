@@ -116,11 +116,13 @@ export const POST = withCsrfProtection(async (req: NextRequest) => {
     // ═══════════════════════════════════════════════════════════════
     // CREATE TASK
     // ═══════════════════════════════════════════════════════════════
+    // No `assignedBy`: the mutation reads the creator off the authenticated
+    // session (`convex.setAuth` above), and rejects the call outright if the
+    // caller may not assign to this person.
     const taskId = await convex.mutation(api.tasks.createTask, {
       title,
       description: description || '',
       assignedTo: assignedTo as Id<'users'>,
-      assignedBy: assignedBy as Id<'users'>,
       priority: priority as 'low' | 'medium' | 'high' | 'urgent',
       deadline: deadline ? new Date(deadline).getTime() : undefined,
       tags: tags || [],

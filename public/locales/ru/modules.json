@@ -1098,6 +1098,7 @@
     "title": "OKR и Цели",
     "subtitle": "Ставьте цели, отслеживайте ключевые результаты и выравнивайте команду",
     "create": "Новая цель",
+    "createObjective": "Создать цель",
     "allPeriods": "Все",
     "empty": "Целей пока нет",
     "emptyHint": "Создайте первую цель, чтобы начать",
@@ -2412,7 +2413,9 @@
     "unknown": "Неизвестно",
     "openInGoogle": "Открыть в Google Календаре",
     "description": "Описание",
-    "googleCalendar": "Google Calendar"
+    "googleCalendar": "Google Calendar",
+    "eventMoved": "Событие перенесено на другой день",
+    "eventMoveFailed": "Не удалось перенести событие"
   },
   "calendarExtended": {
     "leaveCalendar": "Календарь отпусков",

@@ -72,7 +72,7 @@ export default function StrategyDashboardWidget() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
     >
-      <Card className="overflow-hidden border-(--border) relative">
+      <Card className="overflow-hidden border-(--border) relative glass-panel">
         <CardContent className="p-4 sm:p-5 relative">
           {/* Header */}
           <div className="flex items-start justify-between gap-3 mb-4">
@@ -141,25 +141,25 @@ export default function StrategyDashboardWidget() {
           {/* Health indicators */}
           <div className="grid grid-cols-4 gap-2">
             <div className="text-center p-2 rounded-lg bg-emerald-500/10">
-              <p className="text-lg font-bold text-emerald-600">{strategySummary.onTrack}</p>
+              <p className="text-lg font-bold text-(--success-text)">{strategySummary.onTrack}</p>
               <p className="text-[10px] text-(--text-muted) leading-tight">
                 {t('strategyMap.onTrack', 'On Track')}
               </p>
             </div>
             <div className="text-center p-2 rounded-lg bg-amber-500/10">
-              <p className="text-lg font-bold text-amber-600">{strategySummary.atRisk}</p>
+              <p className="text-lg font-bold text-(--warning-text)">{strategySummary.atRisk}</p>
               <p className="text-[10px] text-(--text-muted) leading-tight">
                 {t('strategyMap.atRisk', 'At Risk')}
               </p>
             </div>
             <div className="text-center p-2 rounded-lg bg-red-500/10">
-              <p className="text-lg font-bold text-red-600">{strategySummary.behind}</p>
+              <p className="text-lg font-bold text-(--danger-text)">{strategySummary.behind}</p>
               <p className="text-[10px] text-(--text-muted) leading-tight">
                 {t('strategyMap.behind', 'Behind')}
               </p>
             </div>
             <div className="text-center p-2 rounded-lg bg-blue-500/10">
-              <p className="text-lg font-bold text-blue-600">{strategySummary.completed}</p>
+              <p className="text-lg font-bold text-(--brand-text)">{strategySummary.completed}</p>
               <p className="text-[10px] text-(--text-muted) leading-tight">
                 {t('strategyMap.completed', 'Done')}
               </p>
@@ -207,7 +207,7 @@ export default function StrategyDashboardWidget() {
               ) : (
                 <div className="flex items-center gap-1.5">
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-xs text-emerald-600 font-medium">
+                  <span className="text-xs text-(--success-text) font-medium">
                     {t('strategyMap.allGood', 'All objectives on track')}
                   </span>
                 </div>
