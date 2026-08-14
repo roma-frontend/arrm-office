@@ -76,7 +76,7 @@ export default function UserProfile360Page() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+    <div className="min-h-screen">
       <div className="mx-auto max-w-7xl">
         {/* Back Button */}
         <div className="mb-4">

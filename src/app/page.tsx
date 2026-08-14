@@ -22,7 +22,7 @@ export default async function RootPage() {
     : 'en';
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--landing-bg)' }}>
+    <div className="min-h-screen">
       <SoftwareApplicationJsonLd />
       <OrganizationJsonLd />
       <FAQPageJsonLd />

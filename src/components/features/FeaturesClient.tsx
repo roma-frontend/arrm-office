@@ -141,7 +141,7 @@ export default function FeaturesClient() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--landing-bg)' }}>
+    <div className="min-h-screen">
       <Navbar />
 
       {/* Hero Section */}

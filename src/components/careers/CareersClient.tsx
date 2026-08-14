@@ -132,14 +132,14 @@ export default function CareersClient() {
 
   if (!isMounted) {
     return (
-      <div className="min-h-screen" style={{ background: 'var(--landing-bg)' }}>
+      <div className="min-h-screen">
         <Navbar />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--landing-bg)' }}>
+    <div className="min-h-screen">
       <Navbar />
 
       {/* Hero */}

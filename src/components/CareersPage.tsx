@@ -291,7 +291,7 @@ export default function CareersPage({ orgSlug }: { orgSlug: string }) {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--landing-bg)' }}>
+    <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Decorative orbs */}

@@ -52,7 +52,7 @@ export default function SharedChatClient() {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-(--background) py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl btn-gradient flex items-center justify-center">

@@ -6,7 +6,7 @@ import Footer from '@/components/landing/Footer';
 
 export default function CareersPageWrapper({ slug }: { slug: string }) {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--landing-bg)' }}>
+    <div className="min-h-screen">
       <Navbar />
       <CareersPage orgSlug={slug} />
       <Footer />

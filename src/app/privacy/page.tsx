@@ -15,7 +15,7 @@ export default async function PrivacyPage() {
   });
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--landing-bg)' }}>
+    <div className="min-h-screen">
       <div className="border-b px-6 py-4" style={{ borderColor: 'var(--landing-card-border)' }}>
         <Link
           href="/"

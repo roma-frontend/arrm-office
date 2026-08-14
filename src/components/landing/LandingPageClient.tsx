@@ -9,9 +9,7 @@ import dynamic from 'next/dynamic';
 // an empty placeholder until hydration, pushing LCP to ~5.7s and making the
 // cookie banner the LCP element.)
 const HeroSection = dynamic(() => import('@/components/landing/HeroSection'), {
-  loading: () => (
-    <div className="min-h-screen animate-pulse" style={{ background: 'var(--landing-bg)' }} />
-  ),
+  loading: () => <div className="min-h-screen animate-pulse" />,
   ssr: true,
 });
 

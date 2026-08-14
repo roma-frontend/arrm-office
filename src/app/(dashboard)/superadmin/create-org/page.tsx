@@ -226,7 +226,7 @@ export default function SuperadminCreateOrgPage() {
   const previewName = formData.name || t('superadmin.organizations.previewName');
 
   return (
-    <div className="min-h-screen bg-(--background)">
+    <div className="min-h-screen">
       {/* ── Sticky Header ─────────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-(--border) bg-(--background)/85 backdrop-blur supports-[backdrop-filter]:bg-(--background)/70">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
