@@ -613,7 +613,7 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
     // Convert audit logs to activities
     for (const log of auditLogs) {
       try {
-        const rawDetails = log.details ? JSON.parse(log.details) : {};
+        const rawDetails: unknown = log.details ? JSON.parse(log.details) : {};
         const details = (rawDetails && typeof rawDetails === 'object' ? rawDetails : {}) as Record<
           string,
           unknown

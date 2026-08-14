@@ -9,7 +9,6 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +25,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
-  X,
   User,
   Calendar,
   FileText,

@@ -210,7 +210,9 @@ export default function Navbar() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="nav-link-underline text-sm font-medium focus:outline-none focus:underline underline-offset-4"
+                  className={`nav-link-underline inline-flex items-center text-sm font-medium focus:outline-none focus:underline underline-offset-4 ${
+                    isActive ? 'nav-link-active' : ''
+                  }`}
                   style={{
                     color: isActive ? 'var(--primary)' : 'var(--landing-navbar-text)',
                     transition: 'color 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
@@ -227,15 +229,6 @@ export default function Navbar() {
                   aria-current={isActive ? 'true' : undefined}
                 >
                   {item.name}
-                  {isActive && (
-                    <span
-                      className="block h-0.5 rounded-full mt-0.5"
-                      style={{
-                        background: 'var(--primary)',
-                        animation: 'nav-dot-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both',
-                      }}
-                    />
-                  )}
                 </Link>
               );
             })()}

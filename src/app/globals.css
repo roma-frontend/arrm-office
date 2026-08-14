@@ -244,6 +244,9 @@ html {
   color-scheme: light dark;
   /* overflow-x: hidden removed - it breaks sticky positioning */
   overflow-y: auto;
+  /* The document is the landing's scroll container; framer-motion's useScroll
+     warns in dev when that container is position:static. Harmless visually. */
+  position: relative;
 }
 
 html.dark {
@@ -710,6 +713,14 @@ body {
 }
 
 .nav-link-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* Active section: keep the same single underline visible without hover — the
+   dot/underline used to be a separate layout element, which made the active
+   link grow taller (and look off-centre), and hovering an active link then
+   drew *two* blue lines (dot + ::after). One absolute underline, no layout. */
+.nav-link-underline.nav-link-active::after {
   transform: scaleX(1);
 }
 

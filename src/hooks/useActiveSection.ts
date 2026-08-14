@@ -16,6 +16,7 @@ export function useActiveSection(sectionIds: string[], options: Options = {}) {
 
   // ✅ ВАЖНО: явно типизируем Map — иначе легко словить Map<never, never>
   const entriesRef = useRef<Map<string, IntersectionObserverEntry>>(new Map());
+  const observedIdsRef = useRef<Set<string>>(new Set());
 
   // стабильный ключ
   const idsKey = useMemo(() => sectionIds.join('|'), [sectionIds]);
@@ -30,15 +31,26 @@ export function useActiveSection(sectionIds: string[], options: Options = {}) {
     let observer: IntersectionObserver | null = null;
 
     const setup = () => {
-      // переинициализация
-      observer?.disconnect();
-      entriesRef.current.clear();
-
       const elements = sectionIds
         .map((id) => document.getElementById(id))
         .filter(Boolean) as HTMLElement[];
 
       if (!elements.length) return; // ещё не смонтировались
+
+      // Rebuild only when the set of observed sections actually changed. The
+      // landing is full of live components (tickers, counters, story scenes),
+      // and an unconditional MutationObserver re-setup here would recreate the
+      // IntersectionObserver on every DOM mutation — its callbacks then never
+      // get a chance to fire, so the active section stops updating.
+      const nextIds = new Set(elements.map((el) => el.id));
+      const current = observedIdsRef.current;
+      if (current.size === nextIds.size && [...current].every((id) => nextIds.has(id))) {
+        return;
+      }
+
+      observer?.disconnect();
+      entriesRef.current.clear();
+      observedIdsRef.current = nextIds;
 
       observer = new IntersectionObserver(
         (entries) => {
@@ -67,12 +79,9 @@ export function useActiveSection(sectionIds: string[], options: Options = {}) {
 
     setup();
 
-    // ✅ ловим появление секций после dynamic import (ssr:false)
-    const mo = new MutationObserver(() => {
-      // если активная секция не определена — пробуем настроиться ещё раз
-      setup();
-    });
-
+    // ✅ ловим появление секций после dynamic import (ssr:false) — без
+    // пересоздания обсервера, когда состав секций не менялся
+    const mo = new MutationObserver(() => setup());
     mo.observe(document.body, { childList: true, subtree: true });
 
     return () => {

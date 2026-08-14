@@ -9,7 +9,6 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Award, ChevronLeft, ChevronRight, CheckCircle, X, Users, FileText } from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight, CheckCircle, Users, FileText } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';

@@ -45,7 +45,6 @@ import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { MobileCard } from '@/components/ui/mobile-card';
 import { Button } from '../ui/button';
 import Image from 'next/image';
@@ -87,7 +86,6 @@ export function EmployeesClient() {
   const mainRef = useMainRef();
   const user = useAuthStore(useShallow((state: { user: UserType | null }) => state.user));
   const selectedOrgId = useSelectedOrganization();
-  const isMobile = useMediaQuery('(max-width: 640px)');
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 
