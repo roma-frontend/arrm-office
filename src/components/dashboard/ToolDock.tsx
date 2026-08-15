@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/compo
 import { cn } from '@/lib/utils';
 
 const REVIEWER_ROLES = new Set(['superadmin', 'admin', 'supervisor']);
+const APPROVAL_ADMIN_ROLES = new Set(['superadmin', 'admin']);
 
 /** Max tiles before the panel scrolls; everything else lives in the all-sheet. */
 const MAX_TILES = 10;
@@ -39,11 +40,18 @@ export function ToolDock() {
   const [allOpen, setAllOpen] = useState(false);
 
   const canReview = user?.role ? REVIEWER_ROLES.has(user.role) : false;
+  const isApprovalAdmin = user?.role ? APPROVAL_ADMIN_ROLES.has(user.role) : false;
 
   const tiles = useMemo(() => modules.slice(0, MAX_TILES), [modules]);
 
-  // Live state for badges — the same queries FocusFeed already runs.
+  // Live state for badges — one query per tile, matching what that page shows.
+  // The Approvals page reviews pending *user registrations*, not leaves; the
+  // pending-leave review queue lives on the Leaves page.
   const myTasks = useQuery(api.dashboard.getMyTasks, {});
+  const pendingApprovals = useQuery(
+    api.users.queries.getPendingApprovalUsers,
+    isApprovalAdmin ? {} : 'skip',
+  );
   const pendingLeaves = useQuery(api.leaves.getPendingLeaves, canReview ? {} : 'skip');
 
   const overdueCount = useMemo(() => {
@@ -51,15 +59,23 @@ export function ToolDock() {
     return myTasks.filter((task) => task.deadline && isPast(new Date(task.deadline))).length;
   }, [myTasks]);
 
-  const approvalsCount = pendingLeaves?.length ?? 0;
-  const attentionTotal = overdueCount + (canReview ? approvalsCount : 0);
+  const approvalsCount = pendingApprovals?.length ?? 0;
+  const pendingLeavesCount = pendingLeaves?.length ?? 0;
+  const attentionTotal = overdueCount + (canReview ? pendingLeavesCount : 0) + approvalsCount;
 
   const badgeFor = (href: string): { tone: string; count: number; label: string } | null => {
     if (href === '/tasks' && overdueCount > 0) {
       return { tone: 'danger', count: overdueCount, label: t('toolDock.overdue', 'overdue') };
     }
-    if (href === '/approvals' && canReview && approvalsCount > 0) {
+    if (href === '/approvals' && isApprovalAdmin && approvalsCount > 0) {
       return { tone: 'warning', count: approvalsCount, label: t('toolDock.pending', 'pending') };
+    }
+    if (href === '/leaves' && canReview && pendingLeavesCount > 0) {
+      return {
+        tone: 'warning',
+        count: pendingLeavesCount,
+        label: t('toolDock.pending', 'pending'),
+      };
     }
     return null;
   };
